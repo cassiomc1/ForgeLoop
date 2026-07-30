@@ -1,16 +1,67 @@
 # Guias de Instruções para Agentes de IA
 
-Coleção de guias práticos em português para orientar agentes de IA (Claude Code, Cursor, Copilot, etc.) e desenvolvedores em boas práticas de código, testes, segurança e design — cobrindo web, mobile (iOS/Android) e desktop (Windows/macOS).
+Coleção de guias práticos em português para orientar **agentes de IA** (Claude Code, Cursor, GitHub Copilot, etc.) e desenvolvedores em boas práticas de código, testes, segurança e design — cobrindo **web** (desktop e mobile), **apps mobile nativos** (iOS/Android) e **apps desktop nativos** (Windows/macOS).
 
-## Arquivos
+Os arquivos foram pensados para serem usados como referência ao montar arquivos de contexto de agente (`CLAUDE.md`, `AGENTS.md`, `.cursor/rules`, `.github/copilot-instructions.md`), ou para consulta direta durante o desenvolvimento. Cada arquivo indica no início quais outros são complementares, para evitar regras duplicadas entre eles.
 
-| Arquivo | Conteúdo |
-|---|---|
-| [`clean-code.md`](./clean-code.md) | Princípios de código limpo adaptados para a era dos agentes de IA (baseado no artigo de Fabio Akita). Funções pequenas, SRP, nomes buscáveis, comentários com contexto, tipagem, DRY, testes, estrutura, DI, debugging. |
-| [`test-code.md`](./test-code.md) | Frameworks e boas práticas de teste recomendados por linguagem/tecnologia: JS/TS, Python, .NET, Java, Go, Ruby, PHP, HTML/CSS, SQL, APIs, mobile (iOS/Android) e desktop (Windows/macOS). |
-| [`sec-code.md`](./sec-code.md) | Boas práticas de segurança baseadas no OWASP Top 10:2025 (web) e OWASP Mobile Top 10:2024, cobrindo backend por linguagem, frontend, APIs, banco de dados, DevOps/CI-CD, mobile e desktop. |
-| [`design-code.md`](./design-code.md) | Guia de design premium (visual, UX, motion, performance) para web desktop/mobile, apps mobile nativos (iOS/Android) e apps desktop nativos (Windows/macOS). |
+---
 
-## Como usar
+## 📄 Arquivos
 
-Esses arquivos foram feitos para serem usados como referência ao criar `CLAUDE.md`/`AGENTS.md`/`.cursor/rules` em projetos, ou para consulta direta durante desenvolvimento. Cada arquivo indica no início quais outros arquivos são complementares, evitando duplicidade de regras.
+### [`clean-code.md`](./clean-code.md) — Código limpo para agentes de IA
+
+Tradução e adaptação do artigo *"Clean Code for AI Agents"* de Fabio Akita, reorganizada como instruções práticas. Parte do princípio de que, em 2026, o principal "leitor" do código passou a ser um agente de IA, e não mais um humano — o que muda a prioridade de várias práticas clássicas do livro *Clean Code* (Uncle Bob).
+
+Cobre, em ordem de importância para um agente:
+- Funções e arquivos pequenos (evita truncamento de leitura)
+- Princípio da Responsabilidade Única (SRP)
+- Nomes significativos e **buscáveis** (importantes para grep)
+- Comentários com contexto e proveniência (por que o agente deve *manter*, não remover, comentários)
+- Tipagem explícita, DRY, testes executáveis, estrutura de diretórios previsível
+- Injeção de dependência, evitar aninhamento profundo, erros com contexto, formatação automática
+- Uma seção de **debugging**: o que fazer quando um erro não tem causa óbvia (aumentar o nível de log antes de tentar correções especulativas)
+- Um template pronto para colar em `CLAUDE.md`/`AGENTS.md`
+
+### [`test-code.md`](./test-code.md) — Guia de testes por linguagem e tecnologia
+
+Framework e ferramentas de teste recomendados (unitário, integração, E2E) para as principais stacks do mercado, incluindo:
+- **Backend/linguagens**: JavaScript/TypeScript (Vitest, Playwright, Jest), Python (pytest), .NET/C# (xUnit, Moq), Java (JUnit 5, Mockito), Go (testing + Testify), Ruby (RSpec), PHP (PHPUnit/Pest)
+- **Frontend**: HTML (acessibilidade, Lighthouse, Storybook) e CSS (Stylelint, regressão visual, responsividade)
+- **Dados e integração**: SQL/bancos de dados, APIs REST/GraphQL, Testcontainers
+- **Mobile**: iOS (XCTest), Android (JUnit/Espresso), React Native (Detox), Flutter (`flutter_test`)
+- **Desktop nativo**: Windows (WinAppDriver), macOS (XCUITest), apps cross-platform (Electron, Tauri, .NET MAUI)
+- Princípios gerais (pirâmide de testes, F.I.R.S.T, cobertura, testes determinísticos) e um template pronto para `CLAUDE.md`/`AGENTS.md`
+
+### [`sec-code.md`](./sec-code.md) — Boas práticas de segurança
+
+Guia de segurança (*secure coding*) baseado no **OWASP Top 10:2025** (web) e no **OWASP Mobile Top 10:2024**, cobrindo:
+- Princípios gerais (secure by design, menor privilégio, defesa em profundidade, nunca confiar no cliente, gestão de segredos)
+- Os 10 riscos do OWASP Top 10:2025 e como mitigá-los
+- Segurança de backend por linguagem (Node, Python, .NET, Java, PHP, Ruby, Go)
+- Segurança de frontend (CSP, XSS, CSRF, cookies, CORS, headers HTTP)
+- APIs REST/GraphQL, autenticação (OAuth2/JWT), banco de dados, DevOps/CI-CD (SAST/DAST, secrets management, container security)
+- **Mobile**: os 10 riscos do OWASP Mobile Top 10:2024, com detalhes específicos de iOS (Keychain, ATS, certificate pinning) e Android (Keystore, Network Security Config, ProGuard/R8)
+- **Desktop**: Windows (DPAPI, code signing) e macOS (Keychain, notarização, App Sandbox)
+- Apps híbridos (Electron, React Native, Flutter, .NET MAUI) e um template pronto para `CLAUDE.md`/`AGENTS.md`
+
+### [`design-code.md`](./design-code.md) — Design premium para web, mobile e desktop
+
+Guia de direção visual, UX, motion e performance para criar (ou revisar) experiências digitais com aparência premium/high-end. Funciona como uma "receita" com valores exatos, não apenas sugestões:
+- Paletas de cores prontas e combinações tipográficas prontas (escolher 1 de cada, nunca misturar)
+- Layout, espaçamento, grid e anatomia de página padrão para landing pages
+- Especificidades de **web mobile** (safe areas, área de toque, CTA sticky, performance mobile-first)
+- Motion com GSAP/ScrollTrigger e regras de uso de 3D/Three.js
+- Componentes premium com specs exatos (botões, cards, navegação, imagens)
+- Acessibilidade, performance (Core Web Vitals) e uma "lista negra" de anti-padrões a evitar
+- **Apps mobile nativos** (iOS — Human Interface Guidelines; Android — Material Design 3)
+- **Apps desktop nativos** (Windows — Fluent Design/WinUI; macOS — Human Interface Guidelines)
+- Checklists de revisão para cada contexto (web, mobile, desktop)
+
+---
+
+## 🎯 Como usar
+
+1. Escolha o(s) arquivo(s) relevante(s) para o seu projeto.
+2. Copie os blocos de "Template de instruções" (presentes em `clean-code.md`, `test-code.md` e `sec-code.md`) para o `CLAUDE.md`/`AGENTS.md`/`.cursor/rules` do seu projeto, adaptando à sua stack.
+3. Use `design-code.md` como receita ao criar ou revisar a UI de um produto (web, mobile ou desktop).
+4. Se for expandir algum arquivo, verifique primeiro a nota "Documentos relacionados" no topo de cada um, para não duplicar uma regra que já existe em outro arquivo.
