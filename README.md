@@ -71,6 +71,20 @@ Guia técnico para medir, diagnosticar e melhorar performance real, sem otimiza�
 
 ---
 
+## English versions
+
+English translations of all guides are available with `-eng` before the `.md` extension:
+
+| Portuguese guide | English version | Description |
+|---|---|---|
+| [`clean-code.md`](./clean-code.md) | [`clean-code-eng.md`](./clean-code-eng.md) | Clean code principles adapted for AI agents. |
+| [`test-code.md`](./test-code.md) | [`test-code-eng.md`](./test-code-eng.md) | Testing frameworks and practices by language and platform. |
+| [`sec-code.md`](./sec-code.md) | [`sec-code-eng.md`](./sec-code-eng.md) | Secure coding practices for web, mobile and desktop. |
+| [`design-code.md`](./design-code.md) | [`design-code-eng.md`](./design-code-eng.md) | Premium design guidelines for web, mobile and desktop apps. |
+| [`perf-code.md`](./perf-code.md) | [`perf-code-eng.md`](./perf-code-eng.md) | Performance practices for web, mobile, desktop, APIs and databases. |
+
+The English files preserve the same technical structure, commands, code examples, metrics, links and agent instruction templates as the Portuguese originals.
+
 ## 🎯 Como usar
 
 1. Escolha o(s) arquivo(s) relevante(s) para o seu projeto.
