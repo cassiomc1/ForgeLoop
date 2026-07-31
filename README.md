@@ -98,6 +98,21 @@ Cobre:
 - Relação entre performance e segurança.
 - Template para agentes e checklist de revisão.
 
+### [`games-code-design-web.md`](./games-code-design-web.md) — Desenvolvimento e design de games web
+
+Guia específico para criar games web 2D e 3D, com foco em desenvolvimento procedural e data-driven.
+
+Cobre:
+
+- Escolha de Canvas, WebGL/WebGPU, Phaser, PixiJS, Three.js, Babylon.js, PlayCanvas, Godot Web e TypeScript/Vite.
+- Arquitetura de game loop, simulação com timestep fixo, ECS/data-oriented design e separação entre simulação e apresentação.
+- Geração procedural determinística: seeds, PRNG injetável, chunks, streaming, regras, constraints, validação, versionamento, reprodutibilidade e fallbacks.
+- Conteúdo híbrido: combinação de autoria manual com sistemas procedurais e critérios para saber quando não usar procedural.
+- Input, Gamepad API, Pointer Lock, física, câmera, assets, áudio, acessibilidade e compatibilidade mobile.
+- Multiplayer com WebSockets/WebRTC, servidor autoritativo, reconciliação e segurança.
+- WebAssembly, Rust, C++, Emscripten, PWA, service workers, CDN, testes, CI/CD e performance.
+- Template para agentes e checklist de revisão de games web.
+
 ---
 
 # English Version
@@ -192,6 +207,21 @@ It covers:
 - The relationship between performance and security.
 - An agent template and performance review checklist.
 
+### [`games-code-design-web-eng.md`](./games-code-design-web-eng.md) — Web Game Development and Design
+
+A dedicated guide for building 2D and 3D web games, with a focus on procedural and data-driven development.
+
+It covers:
+
+- Choosing Canvas, WebGL/WebGPU, Phaser, PixiJS, Three.js, Babylon.js, PlayCanvas, Godot Web and TypeScript/Vite.
+- Game loop architecture, fixed-step simulation, ECS/data-oriented design and separation between simulation and presentation.
+- Deterministic procedural generation: seeds, injectable PRNG, chunks, streaming, rules, constraints, validation, versioning, reproducibility and fallbacks.
+- Hybrid content: combining authored content with procedural systems and criteria for when not to use procedural generation.
+- Input, Gamepad API, Pointer Lock, physics, cameras, assets, audio, accessibility and mobile compatibility.
+- Multiplayer with WebSockets/WebRTC, authoritative servers, reconciliation and security.
+- WebAssembly, Rust, C++, Emscripten, PWA, service workers, CDN, testing, CI/CD and performance.
+- An agent template and web game review checklist.
+
 ---
 
 ## Como usar / How to use
@@ -200,7 +230,7 @@ It covers:
 
 1. Escolha os arquivos em português adequados ao projeto.
 2. Copie os blocos de template para `CLAUDE.md`, `AGENTS.md` ou `.cursor/rules`.
-3. Use `design-code.md` para orientar UI/UX e `perf-code.md` para definir budgets e critérios de performance.
+3. Use `design-code.md` para orientar UI/UX, `perf-code.md` para definir budgets e critérios de performance e `games-code-design-web.md` para desenvolvimento de games web procedural/data-driven.
 4. Consulte `clean-code.md`, `test-code.md` e `sec-code.md` para regras de código, testes e segurança.
 5. Verifique a seção "Documentos relacionados" antes de adicionar uma regra, para evitar redundância.
 
@@ -208,6 +238,6 @@ It covers:
 
 1. Choose the English files that apply to the project.
 2. Copy the instruction templates into `CLAUDE.md`, `AGENTS.md` or `.cursor/rules`.
-3. Use `design-code-eng.md` for UI/UX guidance and `perf-code-eng.md` for performance budgets and criteria.
+3. Use `design-code-eng.md` for UI/UX guidance, `perf-code-eng.md` for performance budgets and criteria, and `games-code-design-web-eng.md` for procedural/data-driven web game development.
 4. Consult `clean-code-eng.md`, `test-code-eng.md` and `sec-code-eng.md` for code quality, testing and security rules.
 5. Check the "Related documents" section before adding a rule, to avoid duplication.
