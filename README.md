@@ -98,6 +98,20 @@ Cobre:
 - Relação entre performance e segurança.
 - Template para agentes e checklist de revisão.
 
+### [`acessibilidade-code.md`](./acessibilidade-code.md) — Acessibilidade como linha de base (A11Y)
+
+Protocolo de acessibilidade adaptado do projeto *A11Y.md* (WCAG 2.2 AA, ADA, EAA, ISO 9241-171).
+
+Cobre:
+
+- Princípio Zero: acessibilidade como pré-condição técnica, não melhoria posterior.
+- Perfis de conformidade (Shield AAA, Standard AA, Launchpad A) e modelo de severidade.
+- Contrato de comportamento para agentes de IA (sem inferência, APG, reuso de componentes, memória de decisões).
+- Padrões técnicos POUR: contraste, alt text, teclado, foco, alvos de toque, `prefers-reduced-motion`, rótulos, `aria-live` e HTML semântico.
+- Diretrizes visuais rígidas: indicador de foco, tipografia mínima e hit areas.
+- Protocolo para componentes complexos e antipadrões (divs clicáveis, focus traps vazados, placeholder como rótulo, sopa de ARIA).
+- Checklist de verificação (Definition of Done) com zoom/reflow, ordem de Tab e auditoria de exceções.
+
 ### [`games-code-design-web.md`](./games-code-design-web.md) — Desenvolvimento e design de games web
 
 Guia específico para criar games web 2D e 3D, com foco em desenvolvimento procedural e data-driven.
@@ -207,6 +221,20 @@ It covers:
 - The relationship between performance and security.
 - An agent template and performance review checklist.
 
+### [`accessibility-eng.md`](./accessibility-eng.md) — Accessibility as a Baseline (A11Y)
+
+Accessibility protocol adapted from the *A11Y.md* project (WCAG 2.2 AA, ADA, EAA, ISO 9241-171).
+
+It covers:
+
+- Principle Zero: accessibility as a technical pre-condition, not a later improvement.
+- Compliance profiles (Shield AAA, Standard AA, Launchpad A) and the severity model.
+- AI agent behavior contract (no inference, APG, component reuse, decision memory).
+- POUR technical standards: contrast, alt text, keyboard, focus, touch targets, `prefers-reduced-motion`, labels, `aria-live` and semantic HTML.
+- Strict visual directives: focus indicator, minimum typography and hit areas.
+- Complex component protocol and anti-patterns (clickable divs, leaked focus traps, placeholder labels, ARIA soup).
+- Verification checklist (Definition of Done) with zoom/reflow, tab order and exceptions audit.
+
 ### [`games-code-design-web-eng.md`](./games-code-design-web-eng.md) — Web Game Development and Design
 
 A dedicated guide for building 2D and 3D web games, with a focus on procedural and data-driven development.
@@ -230,7 +258,7 @@ It covers:
 
 1. Escolha os arquivos em português adequados ao projeto.
 2. Copie os blocos de template para `CLAUDE.md`, `AGENTS.md` ou `.cursor/rules`.
-3. Use `design-code.md` para orientar UI/UX, `perf-code.md` para definir budgets e critérios de performance e `games-code-design-web.md` para desenvolvimento de games web procedural/data-driven.
+3. Use `design-code.md` para orientar UI/UX, `acessibilidade-code.md` para regras de acessibilidade (WCAG/ARIA), `perf-code.md` para definir budgets e critérios de performance e `games-code-design-web.md` para desenvolvimento de games web procedural/data-driven.
 4. Consulte `clean-code.md`, `test-code.md` e `sec-code.md` para regras de código, testes e segurança.
 5. Verifique a seção "Documentos relacionados" antes de adicionar uma regra, para evitar redundância.
 
@@ -238,6 +266,6 @@ It covers:
 
 1. Choose the English files that apply to the project.
 2. Copy the instruction templates into `CLAUDE.md`, `AGENTS.md` or `.cursor/rules`.
-3. Use `design-code-eng.md` for UI/UX guidance, `perf-code-eng.md` for performance budgets and criteria, and `games-code-design-web-eng.md` for procedural/data-driven web game development.
+3. Use `design-code-eng.md` for UI/UX guidance, `accessibility-eng.md` for accessibility rules (WCAG/ARIA), `perf-code-eng.md` for performance budgets and criteria, and `games-code-design-web-eng.md` for procedural/data-driven web game development.
 4. Consult `clean-code-eng.md`, `test-code-eng.md` and `sec-code-eng.md` for code quality, testing and security rules.
 5. Check the "Related documents" section before adding a rule, to avoid duplication.
