@@ -4,15 +4,22 @@ Esta coleção reúne guias práticos para orientar agentes de IA (Claude Code, 
 
 Os guias cobrem desenvolvimento **web** (desktop e mobile), **apps mobile nativos** (iOS/Android) e **apps desktop nativos** (Windows/macOS). Eles podem ser usados como referência direta ou como base para arquivos de contexto como `CLAUDE.md`, `AGENTS.md`, `.cursor/rules` e `.github/copilot-instructions.md`.
 
+## Estrutura do projeto
+
+Os arquivos estão organizados em duas pastas por idioma:
+
+- [`PT-BR/`](./PT-BR/) — guias em português (versão principal), com sufixo `-pt.md`.
+- [`ENG/`](./ENG/) — guias em inglês, com sufixo `-eng.md`.
+
 ---
 
 # Versão em Português
 
 Esta é a versão principal dos guias, escrita em português.
 
-## Arquivos em português
+## Arquivos em português (pasta [`PT-BR/`](./PT-BR/))
 
-### [`clean-code.md`](./clean-code.md) — Código limpo para agentes de IA
+### [`PT-BR/clean-code-pt.md`](./PT-BR/clean-code-pt.md) — Código limpo para agentes de IA
 
 Adaptação do artigo *"Clean Code for AI Agents"*, de Fabio Akita, organizada como instruções práticas para agentes de IA.
 
@@ -29,7 +36,7 @@ Cobre:
 - Debugging orientado por evidências: aumentar o nível de log quando a causa de um erro não for clara, reproduzir o problema e só então corrigir.
 - Template para `CLAUDE.md`/`AGENTS.md`.
 
-### [`test-code.md`](./test-code.md) — Testes por linguagem e tecnologia
+### [`PT-BR/test-code-pt.md`](./PT-BR/test-code-pt.md) — Testes por linguagem e tecnologia
 
 Guia de frameworks, ferramentas e práticas de teste para:
 
@@ -47,7 +54,7 @@ Guia de frameworks, ferramentas e práticas de teste para:
 
 Também inclui princípios como pirâmide de testes, F.I.R.S.T, cobertura, testes determinísticos e integração contínua.
 
-### [`sec-code.md`](./sec-code.md) — Segurança para web, mobile e desktop
+### [`PT-BR/sec-code-pt.md`](./PT-BR/sec-code-pt.md) — Segurança para web, mobile e desktop
 
 Guia de *secure coding* baseado no OWASP Top 10:2025, OWASP Mobile Top 10:2024 e OWASP MASVS.
 
@@ -66,7 +73,7 @@ Cobre:
 - Segurança de Electron, React Native, Flutter e .NET MAUI.
 - Template de segurança para `CLAUDE.md`/`AGENTS.md`.
 
-### [`design-code.md`](./design-code.md) — Design premium para web, mobile e desktop
+### [`PT-BR/design-code-pt.md`](./PT-BR/design-code-pt.md) — Design premium para web, mobile e desktop
 
 Receita de direção visual, UX, motion e performance percebida para experiências digitais premium.
 
@@ -82,7 +89,7 @@ Cobre:
 - Apps desktop seguindo Fluent Design/WinUI no Windows e HIG no macOS.
 - Checklists para web, mobile e desktop.
 
-### [`perf-code.md`](./perf-code.md) — Performance por tecnologia e plataforma
+### [`PT-BR/perf-code-pt.md`](./PT-BR/perf-code-pt.md) — Performance por tecnologia e plataforma
 
 Guia técnico para medir, diagnosticar e melhorar performance sem otimizações especulativas.
 
@@ -98,7 +105,7 @@ Cobre:
 - Relação entre performance e segurança.
 - Template para agentes e checklist de revisão.
 
-### [`acessibilidade-code.md`](./acessibilidade-code.md) — Acessibilidade como linha de base (A11Y)
+### [`PT-BR/acessibilidade-code-pt.md`](./PT-BR/acessibilidade-code-pt.md) — Acessibilidade como linha de base (A11Y)
 
 Protocolo de acessibilidade adaptado do projeto *A11Y.md* (WCAG 2.2 AA, ADA, EAA, ISO 9241-171).
 
@@ -112,7 +119,7 @@ Cobre:
 - Protocolo para componentes complexos e antipadrões (divs clicáveis, focus traps vazados, placeholder como rótulo, sopa de ARIA).
 - Checklist de verificação (Definition of Done) com zoom/reflow, ordem de Tab e auditoria de exceções.
 
-### [`games-code-design-web.md`](./games-code-design-web.md) — Desenvolvimento e design de games web
+### [`PT-BR/games-code-design-web-pt.md`](./PT-BR/games-code-design-web-pt.md) — Desenvolvimento e design de games web
 
 Guia específico para criar games web 2D e 3D, com foco em desenvolvimento procedural e data-driven.
 
@@ -133,9 +140,9 @@ Cobre:
 
 This section documents the English translations of the guides. The English files preserve the technical structure, commands, metrics, code examples, links and agent instruction templates from the Portuguese originals.
 
-## English files
+## English files (folder [`ENG/`](./ENG/))
 
-### [`clean-code-eng.md`](./clean-code-eng.md) — Clean Code for AI Agents
+### [`ENG/clean-code-eng.md`](./ENG/clean-code-eng.md) — Clean Code for AI Agents
 
 English adaptation of Fabio Akita's *"Clean Code for AI Agents"* article, organized as practical instructions for AI coding agents.
 
@@ -152,7 +159,7 @@ It covers:
 - Evidence-driven debugging: increase the log level when the root cause is unclear, reproduce the issue, and only then fix it.
 - A template for `CLAUDE.md`/`AGENTS.md`.
 
-### [`test-code-eng.md`](./test-code-eng.md) — Testing by Language and Technology
+### [`ENG/test-code-eng.md`](./ENG/test-code-eng.md) — Testing by Language and Technology
 
 Guide to testing frameworks, tools and practices for:
 
@@ -170,7 +177,7 @@ Guide to testing frameworks, tools and practices for:
 
 It also includes the testing pyramid, F.I.R.S.T principles, coverage, deterministic tests and continuous integration.
 
-### [`sec-code-eng.md`](./sec-code-eng.md) — Security for Web, Mobile and Desktop
+### [`ENG/sec-code-eng.md`](./ENG/sec-code-eng.md) — Security for Web, Mobile and Desktop
 
 Secure coding guide based on OWASP Top 10:2025, OWASP Mobile Top 10:2024 and OWASP MASVS.
 
@@ -189,7 +196,7 @@ It covers:
 - Electron, React Native, Flutter and .NET MAUI security.
 - A security template for `CLAUDE.md`/`AGENTS.md`.
 
-### [`design-code-eng.md`](./design-code-eng.md) — Premium Design for Web, Mobile and Desktop
+### [`ENG/design-code-eng.md`](./ENG/design-code-eng.md) — Premium Design for Web, Mobile and Desktop
 
 A visual direction, UX, motion and perceived performance recipe for premium digital experiences.
 
@@ -205,7 +212,7 @@ It covers:
 - Desktop apps following Fluent Design/WinUI on Windows and HIG on macOS.
 - Web, mobile and desktop review checklists.
 
-### [`perf-code-eng.md`](./perf-code-eng.md) — Performance by Technology and Platform
+### [`ENG/perf-code-eng.md`](./ENG/perf-code-eng.md) — Performance by Technology and Platform
 
 Technical guide for measuring, diagnosing and improving performance without speculative optimization.
 
@@ -221,7 +228,7 @@ It covers:
 - The relationship between performance and security.
 - An agent template and performance review checklist.
 
-### [`accessibility-eng.md`](./accessibility-eng.md) — Accessibility as a Baseline (A11Y)
+### [`ENG/accessibility-eng.md`](./ENG/accessibility-eng.md) — Accessibility as a Baseline (A11Y)
 
 Accessibility protocol adapted from the *A11Y.md* project (WCAG 2.2 AA, ADA, EAA, ISO 9241-171).
 
@@ -235,7 +242,7 @@ It covers:
 - Complex component protocol and anti-patterns (clickable divs, leaked focus traps, placeholder labels, ARIA soup).
 - Verification checklist (Definition of Done) with zoom/reflow, tab order and exceptions audit.
 
-### [`games-code-design-web-eng.md`](./games-code-design-web-eng.md) — Web Game Development and Design
+### [`ENG/games-code-design-web-eng.md`](./ENG/games-code-design-web-eng.md) — Web Game Development and Design
 
 A dedicated guide for building 2D and 3D web games, with a focus on procedural and data-driven development.
 
@@ -256,16 +263,16 @@ It covers:
 
 ### Português
 
-1. Escolha os arquivos em português adequados ao projeto.
+1. Escolha os arquivos adequados ao projeto na pasta [`PT-BR/`](./PT-BR/).
 2. Copie os blocos de template para `CLAUDE.md`, `AGENTS.md` ou `.cursor/rules`.
-3. Use `design-code.md` para orientar UI/UX, `acessibilidade-code.md` para regras de acessibilidade (WCAG/ARIA), `perf-code.md` para definir budgets e critérios de performance e `games-code-design-web.md` para desenvolvimento de games web procedural/data-driven.
-4. Consulte `clean-code.md`, `test-code.md` e `sec-code.md` para regras de código, testes e segurança.
+3. Use `PT-BR/design-code-pt.md` para orientar UI/UX, `PT-BR/acessibilidade-code-pt.md` para regras de acessibilidade (WCAG/ARIA), `PT-BR/perf-code-pt.md` para definir budgets e critérios de performance e `PT-BR/games-code-design-web-pt.md` para desenvolvimento de games web procedural/data-driven.
+4. Consulte `PT-BR/clean-code-pt.md`, `PT-BR/test-code-pt.md` e `PT-BR/sec-code-pt.md` para regras de código, testes e segurança.
 5. Verifique a seção "Documentos relacionados" antes de adicionar uma regra, para evitar redundância.
 
 ### English
 
-1. Choose the English files that apply to the project.
+1. Choose the files that apply to the project from the [`ENG/`](./ENG/) folder.
 2. Copy the instruction templates into `CLAUDE.md`, `AGENTS.md` or `.cursor/rules`.
-3. Use `design-code-eng.md` for UI/UX guidance, `accessibility-eng.md` for accessibility rules (WCAG/ARIA), `perf-code-eng.md` for performance budgets and criteria, and `games-code-design-web-eng.md` for procedural/data-driven web game development.
-4. Consult `clean-code-eng.md`, `test-code-eng.md` and `sec-code-eng.md` for code quality, testing and security rules.
+3. Use `ENG/design-code-eng.md` for UI/UX guidance, `ENG/accessibility-eng.md` for accessibility rules (WCAG/ARIA), `ENG/perf-code-eng.md` for performance budgets and criteria, and `ENG/games-code-design-web-eng.md` for procedural/data-driven web game development.
+4. Consult `ENG/clean-code-eng.md`, `ENG/test-code-eng.md` and `ENG/sec-code-eng.md` for code quality, testing and security rules.
 5. Check the "Related documents" section before adding a rule, to avoid duplication.
