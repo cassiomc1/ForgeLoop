@@ -4,6 +4,8 @@
 
 > **Documentos relacionados**: para frameworks/ferramentas de teste por linguagem, ver `test-code.md`. Para boas práticas de segurança, ver `sec-code.md`. Para diretrizes visuais/UX, ver `design-code.md`. Este arquivo foca em qualidade e estrutura de código, não repete o conteúdo detalhado dos demais.
 
+> **Ferramentas obrigatórias**: se qualquer ferramenta, dependência, runtime, CLI ou utilitário necessário para executar este guia (linter, formatter, framework de teste, scanner, profiler, engine, etc.) não estiver instalado no ambiente, **solicite a instalação ao usuário imediatamente** (ou instale com aprovação, conforme a política do ambiente). Nenhuma etapa, verificação ou entrega pode ser pulada, adiada ou substituída por "a ferramenta não está instalada" — a tarefa só está completa quando todas as verificações exigidas foram de fato executadas.
+
 ## Contexto
 
 Em 2008, Robert C. Martin (Uncle Bob) publicou o livro *Clean Code*, estabelecendo que código deveria ser escrito para ser lido por humanos. Em 2026, o principal "leitor" do código passou a ser um agente de IA. Isso muda a importância relativa de várias práticas: algumas se tornaram ainda mais críticas, outras mudaram de peso, e surgiram exigências novas que Uncle Bob não previu.

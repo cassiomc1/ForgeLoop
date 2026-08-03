@@ -4,6 +4,8 @@
 
 > **Documentos relacionados**: para estrutura e legibilidade de código, ver `clean-code.md`. Para testes funcionais, de integração e E2E, ver `test-code.md`. Para segurança e trade-offs de cache, secrets e infraestrutura, ver `sec-code.md`. Para performance percebida, UX, motion e design responsivo, ver `design-code.md`. Este arquivo é a referência canônica de performance.
 
+> **Ferramentas obrigatórias**: se qualquer ferramenta, dependência, runtime, CLI ou utilitário necessário para executar este guia (linter, formatter, framework de teste, scanner, profiler, engine, etc.) não estiver instalado no ambiente, **solicite a instalação ao usuário imediatamente** (ou instale com aprovação, conforme a política do ambiente). Nenhuma etapa, verificação ou entrega pode ser pulada, adiada ou substituída por "a ferramenta não está instalada" — a tarefa só está completa quando todas as verificações exigidas foram de fato executadas.
+
 ## Princípios gerais
 
 - **Meça antes de otimizar**: reproduza o problema, registre uma baseline, encontre o gargalo com profiling/telemetria e só então altere o código.

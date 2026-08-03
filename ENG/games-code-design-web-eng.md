@@ -4,6 +4,8 @@
 
 > **Related documents**: for general code structure, naming, dependency injection, and debugging, see `clean-code-eng.md`. For test strategy and tools such as Vitest and Playwright, see `test-code-eng.md`. For browser security, CSP, dependency scanning, and multiplayer threat models, see `sec-code-eng.md`. For budgets, profiling, WebAssembly, PWA, CDN, and device performance, see `perf-code-eng.md`. This guide focuses on game architecture and delivery; it does not replace those documents.
 
+> **Mandatory tooling**: if any tool, dependency, runtime, CLI or utility required to execute this guide (linter, formatter, test framework, scanner, profiler, engine, etc.) is not installed in the environment, **request its installation from the user immediately** (or install it with approval, per the environment's policy). No step, check or deliverable may be skipped, postponed or replaced because "the tool is not installed" — the task is only complete when all required checks have actually been executed.
+
 ## How to use this guide (mandatory process)
 
 1. Define the target devices, browsers, input methods, network model, visual style, game modes, and performance budget.

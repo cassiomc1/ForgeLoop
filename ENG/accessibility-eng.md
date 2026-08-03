@@ -4,6 +4,8 @@
 
 > **Related documents**: for visual/UX direction (palettes, typography, motion), see `design-code-eng.md`. For automated testing tools (axe-core, Lighthouse, visual regression), see `test-code-eng.md`. For code quality/structure, see `clean-code-eng.md`. This file is the canonical reference for **accessibility rules** (WCAG, ARIA, keyboard, focus, screen readers) — it does not repeat the content of the others.
 
+> **Mandatory tooling**: if any tool, dependency, runtime, CLI or utility required to execute this guide (linter, formatter, test framework, scanner, profiler, engine, etc.) is not installed in the environment, **request its installation from the user immediately** (or install it with approval, per the environment's policy). No step, check or deliverable may be skipped, postponed or replaced because "the tool is not installed" — the task is only complete when all required checks have actually been executed.
+
 ## 0. Principle Zero: accessibility as a pre-condition
 
 - Accessibility is not a feature or an incremental improvement; it is a **pre-condition for use**.

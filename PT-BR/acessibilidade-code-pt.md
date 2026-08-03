@@ -4,6 +4,8 @@
 
 > **Documentos relacionados**: para direção visual/UX (paletas, tipografia, motion), ver `design-code.md`. Para ferramentas de teste automatizado (axe-core, Lighthouse, regressão visual), ver `test-code.md`. Para qualidade/estrutura de código, ver `clean-code.md`. Este arquivo é a referência canônica de **regras de acessibilidade** (WCAG, ARIA, teclado, foco, leitores de tela) — não repete o conteúdo dos demais.
 
+> **Ferramentas obrigatórias**: se qualquer ferramenta, dependência, runtime, CLI ou utilitário necessário para executar este guia (linter, formatter, framework de teste, scanner, profiler, engine, etc.) não estiver instalado no ambiente, **solicite a instalação ao usuário imediatamente** (ou instale com aprovação, conforme a política do ambiente). Nenhuma etapa, verificação ou entrega pode ser pulada, adiada ou substituída por "a ferramenta não está instalada" — a tarefa só está completa quando todas as verificações exigidas foram de fato executadas.
+
 ## 0. Princípio Zero: acessibilidade como pré-condição
 
 - Acessibilidade não é uma funcionalidade ou melhoria incremental; é uma **pré-condição para o uso**.

@@ -4,6 +4,8 @@
 
 > **Documentos relacionados**: para estrutura, legibilidade, tipagem e organização do código, ver `clean-code.md`. Para testes, cobertura, Playwright e CI, ver `test-code.md`. Para segurança de clientes web, APIs, secrets e dependências, ver `sec-code.md`. Para profiling, budgets, CDN, PWA e WebAssembly, ver `perf-code.md`. Para direção visual, UX, motion e design responsivo, ver `design-code.md`. Este arquivo é a referência específica para games web 2D/3D e seus sistemas de runtime.
 
+> **Ferramentas obrigatórias**: se qualquer ferramenta, dependência, runtime, CLI ou utilitário necessário para executar este guia (linter, formatter, framework de teste, scanner, profiler, engine, etc.) não estiver instalado no ambiente, **solicite a instalação ao usuário imediatamente** (ou instale com aprovação, conforme a política do ambiente). Nenhuma etapa, verificação ou entrega pode ser pulada, adiada ou substituída por "a ferramenta não está instalada" — a tarefa só está completa quando todas as verificações exigidas foram de fato executadas.
+
 ## Princípios gerais
 
 - **Escolha o menor runtime que resolve o jogo**: Canvas 2D para jogos 2D simples, uma engine 2D para jogos com cenas e física, e WebGL/WebGPU ou uma engine 3D quando a cena realmente exigir renderização 3D.

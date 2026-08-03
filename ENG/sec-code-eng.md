@@ -4,6 +4,8 @@
 
 > **Related documents**: for general code quality/structure, see `clean-code-eng.md`. For testing frameworks and tools (including SAST/DAST as part of the pipeline), see `test-code-eng.md`. This file is the canonical security reference; secrets, authorization, cryptography, and OWASP rules live here, not in the other files.
 
+> **Mandatory tooling**: if any tool, dependency, runtime, CLI or utility required to execute this guide (linter, formatter, test framework, scanner, profiler, engine, etc.) is not installed in the environment, **request its installation from the user immediately** (or install it with approval, per the environment's policy). No step, check or deliverable may be skipped, postponed or replaced because "the tool is not installed" — the task is only complete when all required checks have actually been executed.
+
 ## General principles (valid for any platform)
 
 - **Secure by design**: think about security during the design phase, not as a "review" at the end. Perform threat modeling for sensitive features (login, payment, file upload).

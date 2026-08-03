@@ -9,6 +9,8 @@ description: 'Premium guide to visual direction, UX, motion, and performance in 
 
 > **Related documents**: for the quality/structure of the code that implements this design, see `clean-code-eng.md`. For accessibility/visual/E2E testing, see `test-code-eng.md`. For form security, authentication, and client-side storage, see `sec-code-eng.md`. This file focuses exclusively on UI/UX/visuals — it does not repeat code, testing, or security rules.
 
+> **Mandatory tooling**: if any tool, dependency, runtime, CLI or utility required to execute this guide (linter, formatter, test framework, scanner, profiler, engine, etc.) is not installed in the environment, **request its installation from the user immediately** (or install it with approval, per the environment's policy). No step, check or deliverable may be skipped, postponed or replaced because "the tool is not installed" — the task is only complete when all required checks have actually been executed.
+
 ## How to use this guide (mandatory process)
 
 Follow this order whenever creating a page from scratch:

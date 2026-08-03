@@ -4,6 +4,8 @@
 
 > **Documentos relacionados**: para qualidade/estrutura geral de código, ver `clean-code.md`. Para frameworks e ferramentas de teste (incluindo SAST/DAST como parte do pipeline), ver `test-code.md`. Este arquivo é a referência canônica de segurança; regras de secrets, autorização, criptografia e OWASP vivem aqui, não nos outros arquivos.
 
+> **Ferramentas obrigatórias**: se qualquer ferramenta, dependência, runtime, CLI ou utilitário necessário para executar este guia (linter, formatter, framework de teste, scanner, profiler, engine, etc.) não estiver instalado no ambiente, **solicite a instalação ao usuário imediatamente** (ou instale com aprovação, conforme a política do ambiente). Nenhuma etapa, verificação ou entrega pode ser pulada, adiada ou substituída por "a ferramenta não está instalada" — a tarefa só está completa quando todas as verificações exigidas foram de fato executadas.
+
 ## Princípios gerais (válidos para qualquer plataforma)
 
 - **Secure by design**: pense em segurança na fase de design, não como "revisão" no final. Modele ameaças (threat modeling) para funcionalidades sensíveis (login, pagamento, upload de arquivo).

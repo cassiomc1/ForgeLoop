@@ -9,6 +9,8 @@ description: 'Guia premium para direção visual, UX, motion e performance em ex
 
 > **Documentos relacionados**: para qualidade/estrutura do código que implementa este design, ver `clean-code.md`. Para testes de acessibilidade/visual/E2E, ver `test-code.md`. Para segurança de formulários, autenticação e armazenamento no cliente, ver `sec-code.md`. Este arquivo foca exclusivamente em UI/UX/visual — não repete regras de código, teste ou segurança.
 
+> **Ferramentas obrigatórias**: se qualquer ferramenta, dependência, runtime, CLI ou utilitário necessário para executar este guia (linter, formatter, framework de teste, scanner, profiler, engine, etc.) não estiver instalado no ambiente, **solicite a instalação ao usuário imediatamente** (ou instale com aprovação, conforme a política do ambiente). Nenhuma etapa, verificação ou entrega pode ser pulada, adiada ou substituída por "a ferramenta não está instalada" — a tarefa só está completa quando todas as verificações exigidas foram de fato executadas.
+
 ## Como usar este guia (processo obrigatório)
 
 Siga esta ordem sempre que criar uma página do zero:

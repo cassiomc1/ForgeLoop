@@ -4,6 +4,8 @@
 
 > **Related documents**: for general clean code principles (names, small functions, formatting), see `clean-code-eng.md`. For security (including security testing/SAST/DAST), see `sec-code-eng.md`. This file is the canonical reference for which testing framework to use by language/platform.
 
+> **Mandatory tooling**: if any tool, dependency, runtime, CLI or utility required to execute this guide (linter, formatter, test framework, scanner, profiler, engine, etc.) is not installed in the environment, **request its installation from the user immediately** (or install it with approval, per the environment's policy). No step, check or deliverable may be skipped, postponed or replaced because "the tool is not installed" — the task is only complete when all required checks have actually been executed.
+
 ## General principles (valid for any language)
 
 - **Testing pyramid**: many unit tests (fast and inexpensive), fewer integration tests, and few end-to-end (E2E) tests (slow and expensive).

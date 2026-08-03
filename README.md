@@ -4,6 +4,12 @@ Esta coleção reúne guias práticos para orientar agentes de IA (Claude Code, 
 
 Os guias cobrem desenvolvimento **web** (desktop e mobile), **apps mobile nativos** (iOS/Android) e **apps desktop nativos** (Windows/macOS). Eles podem ser usados como referência direta ou como base para arquivos de contexto como `CLAUDE.md`, `AGENTS.md`, `.cursor/rules` e `.github/copilot-instructions.md`.
 
+## Regra comum a todos os guias: ferramentas obrigatórias
+
+Todos os guias desta coleção incluem a seguinte instrução para agentes de IA e desenvolvedores:
+
+> Se qualquer ferramenta, dependência, runtime, CLI ou utilitário necessário para executar o guia (linter, formatter, framework de teste, scanner, profiler, engine, etc.) **não estiver instalado no ambiente, solicite a instalação ao usuário imediatamente** (ou instale com aprovação, conforme a política do ambiente). Nenhuma etapa, verificação ou entrega pode ser pulada, adiada ou substituída por "a ferramenta não está instalada" — a tarefa só está completa quando todas as verificações exigidas foram de fato executadas.
+
 ## Estrutura do projeto
 
 Os arquivos estão organizados em duas pastas por idioma:
@@ -139,6 +145,12 @@ Cobre:
 # English Version
 
 This section documents the English translations of the guides. The English files preserve the technical structure, commands, metrics, code examples, links and agent instruction templates from the Portuguese originals.
+
+## Rule common to all guides: mandatory tooling
+
+Every guide in this collection includes the following instruction for AI agents and developers:
+
+> If any tool, dependency, runtime, CLI or utility required to execute the guide (linter, formatter, test framework, scanner, profiler, engine, etc.) **is not installed in the environment, request its installation from the user immediately** (or install it with approval, per the environment's policy). No step, check or deliverable may be skipped, postponed or replaced because "the tool is not installed" — the task is only complete when all required checks have actually been executed.
 
 ## English files (folder [`ENG/`](./ENG/))
 

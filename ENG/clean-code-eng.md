@@ -4,6 +4,8 @@
 
 > **Related documents**: for language-specific testing frameworks/tools, see `test-code-eng.md`. For security best practices, see `sec-code-eng.md`. For visual/UX guidelines, see `design-code-eng.md`. This file focuses on code quality and structure; it does not repeat the detailed content of the others.
 
+> **Mandatory tooling**: if any tool, dependency, runtime, CLI or utility required to execute this guide (linter, formatter, test framework, scanner, profiler, engine, etc.) is not installed in the environment, **request its installation from the user immediately** (or install it with approval, per the environment's policy). No step, check or deliverable may be skipped, postponed or replaced because "the tool is not installed" — the task is only complete when all required checks have actually been executed.
+
 ## Context
 
 In 2008, Robert C. Martin (Uncle Bob) published the book *Clean Code*, establishing that code should be written to be read by humans. In 2026, the primary "reader" of code became an AI agent. This changes the relative importance of several practices: some have become even more critical, others have changed in weight, and new requirements have emerged that Uncle Bob could not have anticipated.
