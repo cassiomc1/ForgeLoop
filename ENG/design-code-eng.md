@@ -329,7 +329,7 @@ if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
 - **Minimum touch area**: `48x48dp`.
 - **Dark theme**: required to support (`isSystemInDarkTheme()` / `DayNight` theme), it is not optional in premium Android products.
 - **Motion**: use M3 easing curves (`emphasized`, `standard`), durations `200–500ms` according to the size of the transition (small → fast, full screen → longer). Container transitions (`Container Transform`) for navigation between card and detail.
-- **Icons**: `Material Symbols` (outlined by default, filled for active/selected state).
+- **Icons**: `Material Symbols` (outlined by default, filled for active/selected state). For searching and discovering web/app icons, see also [Koboyo Icons](https://koboyo.com/icons).
 
 ### Common rules for both platforms
 
@@ -403,6 +403,7 @@ if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
 - GSAP: https://github.com/greensock/gsap-skills
 - ScrollWorld: https://github.com/oso95/scroll-world
 - Three.js: https://threejs.org/
+- Koboyo Icons (Icon Search & Discovery): https://koboyo.com/icons
 - Apple Human Interface Guidelines (iOS/macOS): https://developer.apple.com/design/human-interface-guidelines/
 - Material Design 3 (Android): https://m3.material.io/
 - Microsoft Fluent Design / WinUI 3 (Windows): https://learn.microsoft.com/windows/apps/design/
