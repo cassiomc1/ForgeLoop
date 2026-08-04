@@ -2,7 +2,7 @@
 
 Esta coleção reúne guias práticos para orientar agentes de IA (Claude Code, Cursor, GitHub Copilot etc.) e desenvolvedores em boas práticas de código, testes, segurança, performance e design.
 
-Os guias cobrem desenvolvimento **web** (desktop e mobile), **apps mobile nativos** (iOS/Android), **apps desktop nativos** (Windows/macOS) e, quando fizer sentido, composição audiovisual HTML/CSS/JS com [HyperFrames](https://hyperframes.heygen.com). Eles podem ser usados como referência direta ou como base para arquivos de contexto como `CLAUDE.md`, `AGENTS.md`, `.cursor/rules` e `.github/copilot-instructions.md`.
+Os guias cobrem desenvolvimento **web** (desktop e mobile), criação de sites em nível de grandes estúdios de design, **apps mobile nativos** (iOS/Android), **apps desktop nativos** (Windows/macOS) e, quando fizer sentido, composição audiovisual HTML/CSS/JS com [HyperFrames](https://hyperframes.heygen.com). Eles podem ser usados como referência direta ou como base para arquivos de contexto como `CLAUDE.md`, `AGENTS.md`, `.cursor/rules` e `.github/copilot-instructions.md`.
 
 ## Regra comum a todos os guias: ferramentas obrigatórias
 
@@ -42,6 +42,10 @@ For projects that need an automated trailer, product demo, motion graphic, prese
 Esta é a versão principal dos guias, escrita em português.
 
 ## Arquivos em português (pasta [`PT-BR/`](./PT-BR/))
+
+### [`PT-BR/premium-sites-studio-pt.md`](./PT-BR/premium-sites-studio-pt.md) — Sites premium em nível de estúdio
+
+Processo completo para criar sites de alto nível, cobrindo estratégia, conteúdo, arquitetura de informação, direção criativa, design system, UX, implementação, motion, SEO, acessibilidade, performance, segurança, QA, lançamento e manutenção.
 
 ### [`PT-BR/clean-code-pt.md`](./PT-BR/clean-code-pt.md) — Código limpo para agentes de IA
 
@@ -172,6 +176,10 @@ Every guide in this collection includes the following instruction for AI agents 
 
 ## English files (folder [`ENG/`](./ENG/))
 
+### [`ENG/premium-sites-studio-eng.md`](./ENG/premium-sites-studio-eng.md) — Premium websites at studio level
+
+Complete process for high-end websites, covering strategy, content, information architecture, creative direction, design systems, UX, implementation, motion, SEO, accessibility, performance, security, QA, launch, and maintenance.
+
 ### [`ENG/clean-code-eng.md`](./ENG/clean-code-eng.md) — Clean Code for AI Agents
 
 English adaptation of Fabio Akita's *"Clean Code for AI Agents"* article, organized as practical instructions for AI coding agents.
@@ -295,7 +303,7 @@ It covers:
 
 1. Escolha os arquivos adequados ao projeto na pasta [`PT-BR/`](./PT-BR/).
 2. Copie os blocos de template para `CLAUDE.md`, `AGENTS.md` ou `.cursor/rules`.
-3. Use `PT-BR/design-code-pt.md` para orientar UI/UX, `PT-BR/acessibilidade-code-pt.md` para regras de acessibilidade (WCAG/ARIA), `PT-BR/perf-code-pt.md` para definir budgets e critérios de performance e `PT-BR/games-code-design-web-pt.md` para desenvolvimento de games web procedural/data-driven.
+3. Use `PT-BR/premium-sites-studio-pt.md` como processo principal para sites de alto nível; complemente com `PT-BR/design-code-pt.md` para UI/UX, `PT-BR/acessibilidade-code-pt.md` para regras de acessibilidade (WCAG/ARIA), `PT-BR/perf-code-pt.md` para budgets e critérios de performance e `PT-BR/games-code-design-web-pt.md` para desenvolvimento de games web procedural/data-driven.
 4. Consulte `PT-BR/clean-code-pt.md`, `PT-BR/test-code-pt.md` e `PT-BR/sec-code-pt.md` para regras de código, testes e segurança.
 5. Verifique a seção "Documentos relacionados" antes de adicionar uma regra, para evitar redundância.
 6. Para vídeos e motion baseados em HTML, use o [HyperFrames](https://hyperframes.heygen.com) em conjunto com as regras de design, acessibilidade, performance e testes — ele não substitui essas validações.
@@ -304,7 +312,7 @@ It covers:
 
 1. Choose the files that apply to the project from the [`ENG/`](./ENG/) folder.
 2. Copy the instruction templates into `CLAUDE.md`, `AGENTS.md` or `.cursor/rules`.
-3. Use `ENG/design-code-eng.md` for UI/UX guidance, `ENG/accessibility-eng.md` for accessibility rules (WCAG/ARIA), `ENG/perf-code-eng.md` for performance budgets and criteria, and `ENG/games-code-design-web-eng.md` for procedural/data-driven web game development.
+3. Use `ENG/premium-sites-studio-eng.md` as the main process for high-end websites; complement it with `ENG/design-code-eng.md` for UI/UX, `ENG/accessibility-eng.md` for accessibility rules (WCAG/ARIA), `ENG/perf-code-eng.md` for performance budgets and criteria, and `ENG/games-code-design-web-eng.md` for procedural/data-driven web game development.
 4. Consult `ENG/clean-code-eng.md`, `ENG/test-code-eng.md` and `ENG/sec-code-eng.md` for code quality, testing and security rules.
 5. Check the "Related documents" section before adding a rule, to avoid duplication.
 6. For HTML-based video and motion, use [HyperFrames](https://hyperframes.heygen.com) together with the design, accessibility, performance, and testing rules; it does not replace those validations.
