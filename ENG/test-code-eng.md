@@ -2,7 +2,7 @@
 
 > Practical software testing instructions (unit, integration, end-to-end) for the main languages and technologies used in modern development. Use this document as a reference to guide AI agents and developers on which tools to use and testing best practices for each stack.
 
-> **Related documents**: for general clean code principles (names, small functions, formatting), see `clean-code-eng.md`. For security (including security testing/SAST/DAST), see `sec-code-eng.md`. This file is the canonical reference for which testing framework to use by language/platform.
+> **Related documents**: for general clean code principles (names, small functions, formatting), see [`clean-code-eng.md`](./clean-code-eng.md). For security (including security testing/SAST/DAST), see [`sec-code-eng.md`](./sec-code-eng.md). For HTML video and motion, see [HyperFrames](https://hyperframes.heygen.com). This file is the canonical reference for which testing framework to use by language/platform.
 
 > **Mandatory tooling**: if any tool, dependency, runtime, CLI or utility required to execute this guide (linter, formatter, test framework, scanner, profiler, engine, etc.) is not installed in the environment, **request its installation from the user immediately** (or install it with approval, per the environment's policy). No step, check or deliverable may be skipped, postponed or replaced because "the tool is not installed" — the task is only complete when all required checks have actually been executed.
 
@@ -146,6 +146,7 @@
 ## HTML / Visual Frontend
 
 - **Accessibility testing**: **axe-core** (through `jest-axe` or a Playwright/Cypress plugin) to automatically validate WCAG.
+- **HyperFrames**: treat the composition as testable frontend; run `hyperframes lint`/`hyperframes check` when available, validate previews at multiple output sizes, and use snapshots or visual comparison of critical frames to catch regressions.
 - **Visual regression testing**: see the tools in the "CSS" section below (the same tools work for markup + style regression).
 - **Markup validation**: W3C HTML Validator / `html-validate` in CI pipelines.
 - **Lighthouse CI** for automated performance, SEO, and accessibility metrics.
@@ -265,7 +266,7 @@
 - No test may depend on execution order, system time,
   or random data without a fixed seed.
 - Every test must run in CI on every push/PR.
-- Automated formatting/linting: see the rules in `clean-code-eng.md` (section
+- Automated formatting/linting: see the rules in [`clean-code-eng.md`](./clean-code-eng.md) (section
   "Formatting and style"). They must run in CI before/alongside the tests.
 ```
 

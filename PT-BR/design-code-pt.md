@@ -7,7 +7,7 @@ description: 'Guia premium para direção visual, UX, motion e performance em ex
 
 > Este guia é uma RECEITA, não uma sugestão. Onde houver um valor numérico, uma paleta ou um snippet, USE exatamente o que está aqui, a menos que o usuário peça explicitamente algo diferente. Não invente valores "no olho". Isso existe para que qualquer execução (mesmo sem julgamento estético refinado) resulte em algo premium.
 
-> **Documentos relacionados**: para qualidade/estrutura do código que implementa este design, ver `clean-code.md`. Para testes de acessibilidade/visual/E2E, ver `test-code.md`. Para segurança de formulários, autenticação e armazenamento no cliente, ver `sec-code.md`. Este arquivo foca exclusivamente em UI/UX/visual — não repete regras de código, teste ou segurança.
+> **Documentos relacionados**: para qualidade/estrutura do código que implementa este design, ver [`clean-code-pt.md`](./clean-code-pt.md). Para testes de acessibilidade/visual/E2E, ver [`test-code-pt.md`](./test-code-pt.md). Para segurança de formulários, autenticação e armazenamento no cliente, ver [`sec-code-pt.md`](./sec-code-pt.md). Para transformar direção visual em vídeo HTML, consulte o [HyperFrames](https://hyperframes.heygen.com). Este arquivo foca exclusivamente em UI/UX/visual — não repete regras de código, teste ou segurança.
 
 > **Ferramentas obrigatórias**: se qualquer ferramenta, dependência, runtime, CLI ou utilitário necessário para executar este guia (linter, formatter, framework de teste, scanner, profiler, engine, etc.) não estiver instalado no ambiente, **solicite a instalação ao usuário imediatamente** (ou instale com aprovação, conforme a política do ambiente). Nenhuma etapa, verificação ou entrega pode ser pulada, adiada ou substituída por "a ferramenta não está instalada" — a tarefa só está completa quando todas as verificações exigidas foram de fato executadas.
 
@@ -191,6 +191,16 @@ gsap.utils.toArray('[data-reveal]').forEach((el) => {
   });
 });
 ```
+
+### Motion para vídeo com HyperFrames (opcional)
+
+Quando o destino for um vídeo, trailer, demonstração ou motion graphic renderizado a partir de HTML, CSS e JavaScript, considere o [HyperFrames](https://hyperframes.heygen.com). Ele complementa — não substitui — as regras visuais deste guia.
+
+- Preserve os tokens de marca (paleta, tipografia, espaçamento e raio) ao adaptar a interface para o frame; evite simplesmente capturar a página inteira.
+- Prefira animações determinísticas e controláveis por frame, com timeline pausada/seekable, para que preview, testes e render reproduzam o mesmo resultado.
+- Mantenha texto grande o bastante para o formato de saída, contraste AA, área segura e leitura sem depender de áudio ou movimento.
+- Respeite `prefers-reduced-motion` no preview interativo e ofereça uma versão estática ou reduzida para pessoas que optarem por menos movimento.
+- Comece pelo [quickstart oficial](https://hyperframes.heygen.com/quickstart) e use `npx hyperframes preview`, `npx hyperframes lint` e `npx hyperframes render` no ciclo de qualidade quando o projeto usar a CLI.
 
 Regras de motion:
 
@@ -403,6 +413,7 @@ if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
 - GSAP: https://github.com/greensock/gsap-skills
 - ScrollWorld: https://github.com/oso95/scroll-world
 - Three.js: https://threejs.org/
+- HyperFrames (vídeo e motion HTML): https://hyperframes.heygen.com/ | https://github.com/heygen-com/hyperframes
 - Koboyo Icons (Busca e Referência de Ícones): https://koboyo.com/icons
 - Apple Human Interface Guidelines (iOS/macOS): https://developer.apple.com/design/human-interface-guidelines/
 - Material Design 3 (Android): https://m3.material.io/

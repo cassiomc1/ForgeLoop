@@ -2,7 +2,7 @@
 
 > Instruções práticas para projetar, medir, diagnosticar e melhorar performance em aplicações web, mobile (iOS/Android), desktop (Windows/macOS), APIs, infraestrutura e bancos de dados. Use este documento para orientar agentes de IA e desenvolvedores. Performance deve ser medida em cenários reais antes e depois da mudança — não otimizada por suposição.
 
-> **Documentos relacionados**: para estrutura e legibilidade de código, ver `clean-code.md`. Para testes funcionais, de integração e E2E, ver `test-code.md`. Para segurança e trade-offs de cache, secrets e infraestrutura, ver `sec-code.md`. Para performance percebida, UX, motion e design responsivo, ver `design-code.md`. Este arquivo é a referência canônica de performance.
+> **Documentos relacionados**: para estrutura e legibilidade de código, ver [`clean-code-pt.md`](./clean-code-pt.md). Para testes funcionais, de integração e E2E, ver [`test-code-pt.md`](./test-code-pt.md). Para segurança e trade-offs de cache, secrets e infraestrutura, ver [`sec-code-pt.md`](./sec-code-pt.md). Para performance percebida, UX, motion e design responsivo, ver [`design-code-pt.md`](./design-code-pt.md). Para performance de preview e renderização de vídeo HTML, consulte o [HyperFrames](https://hyperframes.heygen.com). Este arquivo é a referência canônica de performance.
 
 > **Ferramentas obrigatórias**: se qualquer ferramenta, dependência, runtime, CLI ou utilitário necessário para executar este guia (linter, formatter, framework de teste, scanner, profiler, engine, etc.) não estiver instalado no ambiente, **solicite a instalação ao usuário imediatamente** (ou instale com aprovação, conforme a política do ambiente). Nenhuma etapa, verificação ou entrega pode ser pulada, adiada ou substituída por "a ferramenta não está instalada" — a tarefa só está completa quando todas as verificações exigidas foram de fato executadas.
 
@@ -17,7 +17,7 @@
 - **Menos trabalho é melhor que trabalho mais rápido**: elimine chamadas, renders, queries, alocações, payloads e inicializações desnecessárias antes de micro-otimizar um algoritmo.
 - **Evite otimização especulativa**: não adicione cache, pooling, memoização ou complexidade sem evidência de gargalo e sem medir invalidação, memória e custo de manutenção.
 - **Controle concorrência e recursos**: use timeouts, limites de fila, backpressure, quotas, circuit breakers e cancelamento para evitar que lentidão se transforme em exaustão de recursos.
-- **Performance não pode quebrar segurança**: não desabilite TLS, autenticação, validação, isolamento ou controles de segurança para obter velocidade. Consulte `sec-code.md` antes de otimizar fluxos sensíveis.
+- **Performance não pode quebrar segurança**: não desabilite TLS, autenticação, validação, isolamento ou controles de segurança para obter velocidade. Consulte [`sec-code-pt.md`](./sec-code-pt.md) antes de otimizar fluxos sensíveis.
 - **Registre a causa da otimização**: documente a métrica afetada, o cenário reproduzido e o trade-off aceito; remova instrumentação temporária depois da investigação.
 
 ---
@@ -29,7 +29,7 @@
 3. **Colete baseline**: registre p50/p95/p99, CPU, memória, I/O, rede, erros, throughput e consumo de bateria quando aplicável.
 4. **Localize o gargalo**: use profiler, traces, logs estruturados, métricas e flame graphs. Não conclua que o problema é CPU sem medir CPU.
 5. **Faça uma alteração pequena**: mude uma variável principal por vez para atribuir causalidade ao resultado.
-6. **Teste carga e regressão**: valide o caminho otimizado com os mesmos dados e compare com a baseline; rode os testes de `test-code.md`.
+6. **Teste carga e regressão**: valide o caminho otimizado com os mesmos dados e compare com a baseline; rode os testes de [`test-code-pt.md`](./test-code-pt.md).
 7. **Valide em condições reais**: dispositivos modestos, rede lenta, cache frio/quente, volume realista e concorrência realista.
 8. **Monitore após publicar**: compare RUM/telemetria de produção, defina alertas e reverta se o resultado degradar outros indicadores.
 
@@ -223,7 +223,7 @@ Lighthouse é diagnóstico de laboratório; RUM/CrUX representa usuários reais.
 - Carregue listas e imagens sob demanda, use paginação, cache limitado, prefetch controlado e placeholders com dimensões estáveis.
 - Reduza trabalho de rede: payloads compactos, compressão, cache HTTP, requests agrupados e cancelamento de requests quando a tela deixar de existir.
 - Monitore crash-free rate, ANR/hangs, jank, startup, consumo de memória/bateria e latência de API em produção.
-- Nunca use profiling/logs verbosos permanentes em Release; a instrumentação deve preservar privacidade e seguir `sec-code.md`.
+- Nunca use profiling/logs verbosos permanentes em Release; a instrumentação deve preservar privacidade e seguir [`sec-code-pt.md`](./sec-code-pt.md).
 
 ### iOS (Swift / SwiftUI / UIKit)
 
@@ -329,7 +329,7 @@ Lighthouse é diagnóstico de laboratório; RUM/CrUX representa usuários reais.
 - Cachear dados autenticados exige isolamento por usuário/tenant; nunca permitir que cache compartilhado entregue resposta de outro usuário.
 - Não remover validação, autorização, criptografia, rate limiting ou auditoria apenas para reduzir latência.
 - Limite payloads e complexidade de requests para prevenir consumo descontrolado de CPU/memória (DoS de aplicação).
-- Não logue payloads completos, tokens ou PII ao criar instrumentação de performance; consulte `sec-code.md`.
+- Não logue payloads completos, tokens ou PII ao criar instrumentação de performance; consulte [`sec-code-pt.md`](./sec-code-pt.md).
 - Faça profiling com dados anonimizados ou sintéticos quando os dados reais contiverem informação sensível.
 
 ---
@@ -361,7 +361,7 @@ Lighthouse é diagnóstico de laboratório; RUM/CrUX representa usuários reais.
   em queries reais e pool de conexões dimensionado por medição.
 - Performance não justifica remover controles de segurança. Não desabilite
   TLS, autorização, validação ou rate limiting para ganhar velocidade.
-- Depois de otimizar, rode os testes de `test-code.md`, compare com a baseline,
+- Depois de otimizar, rode os testes de [`test-code-pt.md`](./test-code-pt.md), compare com a baseline,
   verifique regressões e remova instrumentação temporária.
 ```
 
@@ -402,7 +402,7 @@ Lighthouse é diagnóstico de laboratório; RUM/CrUX representa usuários reais.
 
 - [ ] A otimização não removeu controles de segurança ou privacidade.
 - [ ] Logs e traces não expõem secrets, tokens ou PII.
-- [ ] Testes funcionais e de performance rodam no CI conforme `test-code.md`.
+- [ ] Testes funcionais e de performance rodam no CI conforme [`test-code-pt.md`](./test-code-pt.md).
 - [ ] O resultado e os trade-offs estão documentados.
 
 ---

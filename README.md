@@ -2,7 +2,7 @@
 
 Esta coleção reúne guias práticos para orientar agentes de IA (Claude Code, Cursor, GitHub Copilot etc.) e desenvolvedores em boas práticas de código, testes, segurança, performance e design.
 
-Os guias cobrem desenvolvimento **web** (desktop e mobile), **apps mobile nativos** (iOS/Android) e **apps desktop nativos** (Windows/macOS). Eles podem ser usados como referência direta ou como base para arquivos de contexto como `CLAUDE.md`, `AGENTS.md`, `.cursor/rules` e `.github/copilot-instructions.md`.
+Os guias cobrem desenvolvimento **web** (desktop e mobile), **apps mobile nativos** (iOS/Android), **apps desktop nativos** (Windows/macOS) e, quando fizer sentido, composição audiovisual HTML/CSS/JS com [HyperFrames](https://hyperframes.heygen.com). Eles podem ser usados como referência direta ou como base para arquivos de contexto como `CLAUDE.md`, `AGENTS.md`, `.cursor/rules` e `.github/copilot-instructions.md`.
 
 ## Regra comum a todos os guias: ferramentas obrigatórias
 
@@ -16,6 +16,24 @@ Os arquivos estão organizados em duas pastas por idioma:
 
 - [`PT-BR/`](./PT-BR/) — guias em português (versão principal), com sufixo `-pt.md`.
 - [`ENG/`](./ENG/) — guias em inglês, com sufixo `-eng.md`.
+
+## HyperFrames: vídeo e motion com HTML / HTML video and motion
+
+Quando o projeto precisar de um trailer, demonstração de produto, motion graphic, apresentação ou outro vídeo automatizável, consulte o [HyperFrames](https://hyperframes.heygen.com). A ferramenta transforma HTML, CSS, mídia e animações controláveis por frame em vídeos renderizáveis e pode ser usada localmente por agentes de código.
+
+Fluxo mínimo recomendado:
+
+```bash
+npx hyperframes skills update
+npx hyperframes init meu-video
+cd meu-video
+npx hyperframes preview
+npx hyperframes render
+```
+
+Para a instalação guiada e as opções de workflow, use o [quickstart oficial](https://hyperframes.heygen.com/quickstart). O render local exige Node.js 22+ e FFmpeg; valide custos, licenças, acessibilidade, mídia de terceiros e permissões antes de publicar.
+
+For projects that need an automated trailer, product demo, motion graphic, presentation, or another video, see [HyperFrames](https://hyperframes.heygen.com). It turns HTML, CSS, media, and frame-controllable animation into renderable video and can be used locally by coding agents. Follow the [official quickstart](https://hyperframes.heygen.com/quickstart); local rendering requires Node.js 22+ and FFmpeg.
 
 ---
 
@@ -280,6 +298,7 @@ It covers:
 3. Use `PT-BR/design-code-pt.md` para orientar UI/UX, `PT-BR/acessibilidade-code-pt.md` para regras de acessibilidade (WCAG/ARIA), `PT-BR/perf-code-pt.md` para definir budgets e critérios de performance e `PT-BR/games-code-design-web-pt.md` para desenvolvimento de games web procedural/data-driven.
 4. Consulte `PT-BR/clean-code-pt.md`, `PT-BR/test-code-pt.md` e `PT-BR/sec-code-pt.md` para regras de código, testes e segurança.
 5. Verifique a seção "Documentos relacionados" antes de adicionar uma regra, para evitar redundância.
+6. Para vídeos e motion baseados em HTML, use o [HyperFrames](https://hyperframes.heygen.com) em conjunto com as regras de design, acessibilidade, performance e testes — ele não substitui essas validações.
 
 ### English
 
@@ -288,3 +307,4 @@ It covers:
 3. Use `ENG/design-code-eng.md` for UI/UX guidance, `ENG/accessibility-eng.md` for accessibility rules (WCAG/ARIA), `ENG/perf-code-eng.md` for performance budgets and criteria, and `ENG/games-code-design-web-eng.md` for procedural/data-driven web game development.
 4. Consult `ENG/clean-code-eng.md`, `ENG/test-code-eng.md` and `ENG/sec-code-eng.md` for code quality, testing and security rules.
 5. Check the "Related documents" section before adding a rule, to avoid duplication.
+6. For HTML-based video and motion, use [HyperFrames](https://hyperframes.heygen.com) together with the design, accessibility, performance, and testing rules; it does not replace those validations.

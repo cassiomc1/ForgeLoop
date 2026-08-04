@@ -2,7 +2,7 @@
 
 > Practical security instructions (secure coding) for the main languages and technologies used in modern development — web, mobile (iOS/Android), and desktop (Windows/macOS). Use this document as a reference to guide AI agents and developers on common risks and how to mitigate them in each stack. Based on OWASP Top 10:2025 (web), OWASP Mobile Top 10:2024, and OWASP MASVS.
 
-> **Related documents**: for general code quality/structure, see `clean-code-eng.md`. For testing frameworks and tools (including SAST/DAST as part of the pipeline), see `test-code-eng.md`. This file is the canonical security reference; secrets, authorization, cryptography, and OWASP rules live here, not in the other files.
+> **Related documents**: for general code quality/structure, see [`clean-code-eng.md`](./clean-code-eng.md). For testing frameworks and tools (including SAST/DAST as part of the pipeline), see [`test-code-eng.md`](./test-code-eng.md). For video and HTML compositions, see [HyperFrames](https://hyperframes.heygen.com) and treat scripts, assets, and external URLs as an attack surface. This file is the canonical security reference; secrets, authorization, cryptography, and OWASP rules live here, not in the other files.
 
 > **Mandatory tooling**: if any tool, dependency, runtime, CLI or utility required to execute this guide (linter, formatter, test framework, scanner, profiler, engine, etc.) is not installed in the environment, **request its installation from the user immediately** (or install it with approval, per the environment's policy). No step, check or deliverable may be skipped, postponed or replaced because "the tool is not installed" — the task is only complete when all required checks have actually been executed.
 
@@ -14,6 +14,7 @@
 - **Never trust the client**: data coming from the browser, mobile app, or desktop app can be manipulated. Every security decision (authentication, authorization, price, permission) is made on the server.
 - **Fail secure / secure by default**: in case of an error or missing configuration, the system must deny access by default, never grant it.
 - **Secrets never in source code**: API keys, passwords, tokens, and certificates belong in environment variables or secret management services (Vault, AWS Secrets Manager, Azure Key Vault, GCP Secret Manager) — never committed to git.
+- **Compositions and media are inputs too**: validate generated HTML/JS, manifests, URLs, formats, sizes, and media origins; pin dependencies where possible and never embed secrets in a composition or video bundle.
 - **Continuously update dependencies**: use automated scanners (Dependabot, Renovate, Snyk, `npm audit`, `pip-audit`, `bundler-audit`) and treat critical vulnerabilities as high-priority bugs.
 - **Log security events, never sensitive data**: record login attempts, authorization failures, and permission changes; never log passwords, complete tokens, card numbers, or personal data in plain text.
 - **Cryptography**: use industry-standard libraries/algorithms (AES-256, RSA-2048+, Argon2/bcrypt/scrypt for passwords). Never implement your own encryption or hashing algorithm.

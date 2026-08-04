@@ -2,7 +2,7 @@
 
 > Instruções práticas para projetar, implementar, testar, otimizar e publicar games executados no navegador, em 2D e 3D, com suporte a desktop, mobile e diferentes capacidades de hardware. Use este documento para orientar agentes de IA e desenvolvedores. Escolha a tecnologia pelo tipo de jogo e pelas restrições de distribuição; não empilhe engines e abstrações sem necessidade.
 
-> **Documentos relacionados**: para estrutura, legibilidade, tipagem e organização do código, ver `clean-code.md`. Para testes, cobertura, Playwright e CI, ver `test-code.md`. Para segurança de clientes web, APIs, secrets e dependências, ver `sec-code.md`. Para profiling, budgets, CDN, PWA e WebAssembly, ver `perf-code.md`. Para direção visual, UX, motion e design responsivo, ver `design-code.md`. Este arquivo é a referência específica para games web 2D/3D e seus sistemas de runtime.
+> **Documentos relacionados**: para estrutura, legibilidade, tipagem e organização do código, ver [`clean-code-pt.md`](./clean-code-pt.md). Para testes, cobertura, Playwright e CI, ver [`test-code-pt.md`](./test-code-pt.md). Para segurança de clientes web, APIs, secrets e dependências, ver [`sec-code-pt.md`](./sec-code-pt.md). Para profiling, budgets, CDN, PWA e WebAssembly, ver [`perf-code-pt.md`](./perf-code-pt.md). Para direção visual, UX, motion e design responsivo, ver [`design-code-pt.md`](./design-code-pt.md). Para trailers, devlogs e vídeos de gameplay baseados em HTML, consulte o [HyperFrames](https://hyperframes.heygen.com). Este arquivo é a referência específica para games web 2D/3D e seus sistemas de runtime.
 
 > **Ferramentas obrigatórias**: se qualquer ferramenta, dependência, runtime, CLI ou utilitário necessário para executar este guia (linter, formatter, framework de teste, scanner, profiler, engine, etc.) não estiver instalado no ambiente, **solicite a instalação ao usuário imediatamente** (ou instale com aprovação, conforme a política do ambiente). Nenhuma etapa, verificação ou entrega pode ser pulada, adiada ou substituída por "a ferramenta não está instalada" — a tarefa só está completa quando todas as verificações exigidas foram de fato executadas.
 
@@ -343,7 +343,7 @@ Falhas devem ser explícitas: retorne `GenerationError` com seed, etapa, versão
 - Autentique no servidor, valide autorização por sala/ação, expire sessões e não coloque secrets de serviço no bundle.
 - Valide todos os dados do cliente: schema, limites, rate, ownership, transições e estado atual. Nunca confie em `score`, `position`, `damage`, `itemId` ou `seed` enviados pelo cliente.
 - Use TLS (`wss://`/HTTPS), CORS/origin checks quando apropriado, limites de mensagem, heartbeat, timeout e proteção contra spam/flood.
-- Não exponha PII, tokens permanentes ou logs de payloads sensíveis. Consulte `sec-code.md` para regras gerais de web security.
+- Não exponha PII, tokens permanentes ou logs de payloads sensíveis. Consulte [`sec-code-pt.md`](./sec-code-pt.md) para regras gerais de web security.
 
 ---
 
@@ -409,7 +409,7 @@ Falhas devem ser explícitas: retorne `GenerationError` com seed, etapa, versão
 
 - Trate o cliente como não confiável. O bundle, código WASM, seed local, regras visuais e chamadas de rede podem ser inspecionados e alterados.
 - Nunca coloque API keys privadas, secrets de matchmaking, credenciais de banco ou assinatura de conteúdo sensível no frontend.
-- Faça validação de input, output encoding, CSP, SRI quando aplicável, dependências fixadas/auditadas, CORS mínimo, cookies seguros e proteção contra XSS/CSRF conforme `sec-code.md`.
+- Faça validação de input, output encoding, CSP, SRI quando aplicável, dependências fixadas/auditadas, CORS mínimo, cookies seguros e proteção contra XSS/CSRF conforme [`sec-code-pt.md`](./sec-code-pt.md).
 - Em jogos competitivos, mantenha pontuação, inventário, economia, matchmaking, cooldown, dano e RNG relevante no servidor; anti-cheat no cliente é apenas sinal, não autoridade.
 - Valide pacotes, manifests, saves importados, mods e arquivos de usuário por schema, tamanho, profundidade, tipos e limites de tempo. Não deserialize objetos executáveis.
 - Evite logs com tokens, identificadores pessoais, conteúdo de chat ou localização precisa. Defina retenção e consentimento para telemetria.
@@ -511,7 +511,7 @@ Copie e adapte este bloco para o repositório do game:
 ## Segurança
 - Nunca coloque secrets no cliente.
 - Valide no servidor comandos, payloads, saves, economia, permissões e rate limits.
-- Não registre tokens, PII ou payloads sensíveis; consulte `sec-code.md`.
+- Não registre tokens, PII ou payloads sensíveis; consulte [`sec-code-pt.md`](./sec-code-pt.md).
 ```
 
 ---

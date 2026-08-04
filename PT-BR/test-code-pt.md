@@ -2,7 +2,7 @@
 
 > Instruções práticas de testes de software (unitários, integração, end-to-end) para as principais linguagens e tecnologias usadas no desenvolvimento moderno. Use este documento como referência para orientar agentes de IA e desenvolvedores sobre quais ferramentas usar e boas práticas de teste em cada stack.
 
-> **Documentos relacionados**: para princípios gerais de código limpo (nomes, funções pequenas, formatação) ver `clean-code.md`. Para segurança (inclusive testes de segurança/SAST/DAST) ver `sec-code.md`. Este arquivo é a referência canônica de qual framework de teste usar por linguagem/plataforma.
+> **Documentos relacionados**: para princípios gerais de código limpo (nomes, funções pequenas, formatação) ver [`clean-code-pt.md`](./clean-code-pt.md). Para segurança (inclusive testes de segurança/SAST/DAST) ver [`sec-code-pt.md`](./sec-code-pt.md). Para vídeo e motion HTML, consulte o [HyperFrames](https://hyperframes.heygen.com). Este arquivo é a referência canônica de qual framework de teste usar por linguagem/plataforma.
 
 > **Ferramentas obrigatórias**: se qualquer ferramenta, dependência, runtime, CLI ou utilitário necessário para executar este guia (linter, formatter, framework de teste, scanner, profiler, engine, etc.) não estiver instalado no ambiente, **solicite a instalação ao usuário imediatamente** (ou instale com aprovação, conforme a política do ambiente). Nenhuma etapa, verificação ou entrega pode ser pulada, adiada ou substituída por "a ferramenta não está instalada" — a tarefa só está completa quando todas as verificações exigidas foram de fato executadas.
 
@@ -146,6 +146,7 @@
 ## HTML / Frontend visual
 
 - **Testes de acessibilidade**: **axe-core** (via `jest-axe` ou plugin do Playwright/Cypress) para validar WCAG automaticamente.
+- **HyperFrames**: trate a composição como frontend testável; rode `hyperframes lint`/`hyperframes check` quando disponíveis, valide preview em múltiplos formatos e use snapshots ou comparação visual dos frames críticos para detectar regressões.
 - **Testes de regressão visual**: ver ferramentas na seção "CSS" abaixo (mesmas ferramentas servem para regressão de marcação + estilo).
 - **Validação de marcação**: W3C HTML Validator / `html-validate` em pipelines de CI.
 - **Lighthouse CI** para métricas de performance, SEO e acessibilidade automatizadas.
@@ -265,7 +266,7 @@
 - Nenhum teste pode depender de ordem de execução, horário do sistema
   ou dados aleatórios sem seed fixa.
 - Todo teste deve rodar em CI a cada push/PR.
-- Formatação/lint automatizados: ver regras em `clean-code.md` (seção
+- Formatação/lint automatizados: ver regras em [`clean-code-pt.md`](./clean-code-pt.md) (seção
   "Formatação e estilo"). Devem rodar em CI antes/junto dos testes.
 ```
 

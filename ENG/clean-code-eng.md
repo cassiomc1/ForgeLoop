@@ -2,7 +2,7 @@
 
 > Translation and adaptation of the tips from the article "Clean Code for AI Agents" by Fabio Akita (akitaonrails.com), organized as practical instructions to guide AI agents (Claude Code, Cursor, Copilot, etc.) to write higher-quality code.
 
-> **Related documents**: for language-specific testing frameworks/tools, see `test-code-eng.md`. For security best practices, see `sec-code-eng.md`. For visual/UX guidelines, see `design-code-eng.md`. This file focuses on code quality and structure; it does not repeat the detailed content of the others.
+> **Related documents**: for language-specific testing frameworks/tools, see [`test-code-eng.md`](./test-code-eng.md). For security best practices, see [`sec-code-eng.md`](./sec-code-eng.md). For visual/UX guidelines, see [`design-code-eng.md`](./design-code-eng.md). For HTML-based video and motion, see [HyperFrames](https://hyperframes.heygen.com). This file focuses on code quality and structure; it does not repeat the detailed content of the others.
 
 > **Mandatory tooling**: if any tool, dependency, runtime, CLI or utility required to execute this guide (linter, formatter, test framework, scanner, profiler, engine, etc.) is not installed in the environment, **request its installation from the user immediately** (or install it with approval, per the environment's policy). No step, check or deliverable may be skipped, postponed or replaced because "the tool is not installed" — the task is only complete when all required checks have actually been executed.
 
@@ -103,7 +103,7 @@ No AI model follows these practices by default — they must be **explicitly ins
 
 ## Tests
 
-- See detailed framework/tool rules per language in `test-code-eng.md`.
+- See detailed framework/tool rules per language in [`test-code-eng.md`](./test-code-eng.md).
 - Minimum rule here: tests run with a single documented command, and every
   new function and every bug fix receives a corresponding test.
 

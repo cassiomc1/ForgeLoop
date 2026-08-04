@@ -2,7 +2,7 @@
 
 > Instruções práticas de segurança (secure coding) para as principais linguagens e tecnologias usadas no desenvolvimento moderno — web, mobile (iOS/Android) e desktop (Windows/macOS). Use este documento como referência para orientar agentes de IA e desenvolvedores sobre riscos comuns e como mitigá-los em cada stack. Baseado no OWASP Top 10:2025 (web), OWASP Mobile Top 10:2024 e OWASP MASVS.
 
-> **Documentos relacionados**: para qualidade/estrutura geral de código, ver `clean-code.md`. Para frameworks e ferramentas de teste (incluindo SAST/DAST como parte do pipeline), ver `test-code.md`. Este arquivo é a referência canônica de segurança; regras de secrets, autorização, criptografia e OWASP vivem aqui, não nos outros arquivos.
+> **Documentos relacionados**: para qualidade/estrutura geral de código, ver [`clean-code-pt.md`](./clean-code-pt.md). Para frameworks e ferramentas de teste (incluindo SAST/DAST como parte do pipeline), ver [`test-code-pt.md`](./test-code-pt.md). Para vídeos e composições HTML, consulte o [HyperFrames](https://hyperframes.heygen.com) e trate scripts, assets e URLs externas como superfície de ataque. Este arquivo é a referência canônica de segurança; regras de secrets, autorização, criptografia e OWASP vivem aqui, não nos outros arquivos.
 
 > **Ferramentas obrigatórias**: se qualquer ferramenta, dependência, runtime, CLI ou utilitário necessário para executar este guia (linter, formatter, framework de teste, scanner, profiler, engine, etc.) não estiver instalado no ambiente, **solicite a instalação ao usuário imediatamente** (ou instale com aprovação, conforme a política do ambiente). Nenhuma etapa, verificação ou entrega pode ser pulada, adiada ou substituída por "a ferramenta não está instalada" — a tarefa só está completa quando todas as verificações exigidas foram de fato executadas.
 
@@ -14,6 +14,7 @@
 - **Nunca confie no cliente**: dados vindos do navegador, app mobile ou app desktop podem ser manipulados. Toda decisão de segurança (autenticação, autorização, preço, permissão) é feita no servidor.
 - **Fail secure / secure by default**: em caso de erro ou configuração ausente, o sistema deve negar acesso por padrão, nunca liberar.
 - **Segredos nunca em código-fonte**: chaves de API, senhas, tokens e certificados vão em variáveis de ambiente ou serviços de secret management (Vault, AWS Secrets Manager, Azure Key Vault, GCP Secret Manager) — nunca commitados no git.
+- **Composições e mídia também são entrada**: valide HTML/JS gerado, manifests, URLs, formatos, tamanho e origem de mídia; fixe dependências quando possível e nunca embuta secrets em uma composição ou no bundle de vídeo.
 - **Atualize dependências continuamente**: use scanners automatizados (Dependabot, Renovate, Snyk, `npm audit`, `pip-audit`, `bundler-audit`) e trate vulnerabilidades críticas como bugs de prioridade alta.
 - **Logue eventos de segurança, nunca dados sensíveis**: registre tentativas de login, falhas de autorização e mudanças de permissão; nunca logue senhas, tokens completos, números de cartão ou dados pessoais em texto claro.
 - **Criptografia**: use bibliotecas/algoritmos padrão do mercado (AES-256, RSA-2048+, Argon2/bcrypt/scrypt para senhas). Nunca implemente seu próprio algoritmo de criptografia ou hashing.

@@ -2,7 +2,7 @@
 
 > Practical instructions for designing, measuring, diagnosing, and improving performance in web, mobile (iOS/Android), desktop (Windows/macOS), APIs, infrastructure, and databases. Use this document to guide AI agents and developers. Performance must be measured in real scenarios before and after the change — do not optimize based on assumptions.
 
-> **Related documents**: for code structure and readability, see `clean-code-eng.md`. For functional, integration, and E2E testing, see `test-code-eng.md`. For security and cache, secrets, and infrastructure trade-offs, see `sec-code-eng.md`. For perceived performance, UX, motion, and responsive design, see `design-code-eng.md`. This file is the canonical performance reference.
+> **Related documents**: for code structure and readability, see [`clean-code-eng.md`](./clean-code-eng.md). For functional, integration, and E2E testing, see [`test-code-eng.md`](./test-code-eng.md). For security and cache, secrets, and infrastructure trade-offs, see [`sec-code-eng.md`](./sec-code-eng.md). For perceived performance, UX, motion, and responsive design, see [`design-code-eng.md`](./design-code-eng.md). For HTML video preview and rendering performance, see [HyperFrames](https://hyperframes.heygen.com). This file is the canonical performance reference.
 
 > **Mandatory tooling**: if any tool, dependency, runtime, CLI or utility required to execute this guide (linter, formatter, test framework, scanner, profiler, engine, etc.) is not installed in the environment, **request its installation from the user immediately** (or install it with approval, per the environment's policy). No step, check or deliverable may be skipped, postponed or replaced because "the tool is not installed" — the task is only complete when all required checks have actually been executed.
 
@@ -17,7 +17,7 @@
 - **Less work is better than faster work**: eliminate unnecessary calls, renders, queries, allocations, payloads, and initializations before micro-optimizing an algorithm.
 - **Avoid speculative optimization**: do not add cache, pooling, memoization, or complexity without evidence of a bottleneck and without measuring invalidation, memory, and maintenance cost.
 - **Control concurrency and resources**: use timeouts, queue limits, backpressure, quotas, circuit breakers, and cancellation to prevent slowness from becoming resource exhaustion.
-- **Performance must not break security**: do not disable TLS, authentication, validation, isolation, or security controls to gain speed. Consult `sec-code-eng.md` before optimizing sensitive flows.
+- **Performance must not break security**: do not disable TLS, authentication, validation, isolation, or security controls to gain speed. Consult [`sec-code-eng.md`](./sec-code-eng.md) before optimizing sensitive flows.
 - **Record the reason for the optimization**: document the affected metric, the reproduced scenario, and the accepted trade-off; remove temporary instrumentation after the investigation.
 
 ---
@@ -29,7 +29,7 @@
 3. **Collect a baseline**: record p50/p95/p99, CPU, memory, I/O, network, errors, throughput, and battery consumption when applicable.
 4. **Locate the bottleneck**: use a profiler, traces, structured logs, metrics, and flame graphs. Do not conclude that the problem is CPU without measuring CPU.
 5. **Make a small change**: change one main variable at a time to attribute causality to the result.
-6. **Test load and regression**: validate the optimized path with the same data and compare it with the baseline; run the tests from `test-code-eng.md`.
+6. **Test load and regression**: validate the optimized path with the same data and compare it with the baseline; run the tests from [`test-code-eng.md`](./test-code-eng.md).
 7. **Validate under real conditions**: modest devices, slow network, cold/warm cache, realistic volume, and realistic concurrency.
 8. **Monitor after publishing**: compare production RUM/telemetry, define alerts, and revert if the result degrades other indicators.
 
@@ -223,7 +223,7 @@ Lighthouse is a lab diagnostic tool; RUM/CrUX represents real users. Use both: t
 - Load lists and images on demand, use pagination, limited cache, controlled prefetch, and placeholders with stable dimensions.
 - Reduce network work: compact payloads, compression, HTTP cache, grouped requests, and request cancellation when the screen no longer exists.
 - Monitor crash-free rate, ANR/hangs, jank, startup, memory/battery consumption, and API latency in production.
-- Never use permanent verbose profiling/logs in Release; instrumentation must preserve privacy and follow `sec-code-eng.md`.
+- Never use permanent verbose profiling/logs in Release; instrumentation must preserve privacy and follow [`sec-code-eng.md`](./sec-code-eng.md).
 
 ### iOS (Swift / SwiftUI / UIKit)
 
@@ -329,7 +329,7 @@ Lighthouse is a lab diagnostic tool; RUM/CrUX represents real users. Use both: t
 - Caching authenticated data requires isolation by user/tenant; never allow shared cache to deliver another user's response.
 - Do not remove validation, authorization, encryption, rate limiting, or auditing just to reduce latency.
 - Limit payloads and request complexity to prevent uncontrolled CPU/memory consumption (application DoS).
-- Do not log complete payloads, tokens, or PII when creating performance instrumentation; consult `sec-code-eng.md`.
+- Do not log complete payloads, tokens, or PII when creating performance instrumentation; consult [`sec-code-eng.md`](./sec-code-eng.md).
 - Profile with anonymized or synthetic data when real data contains sensitive information.
 
 ---
@@ -361,7 +361,7 @@ Lighthouse is a lab diagnostic tool; RUM/CrUX represents real users. Use both: t
   on real queries, and a connection pool sized through measurement.
 - Performance does not justify removing security controls. Do not disable
   TLS, authorization, validation, or rate limiting to gain speed.
-- After optimizing, run the `test-code-eng.md` tests, compare with the baseline,
+- After optimizing, run the [`test-code-eng.md`](./test-code-eng.md) tests, compare with the baseline,
   check for regressions, and remove temporary instrumentation.
 ```
 
@@ -402,7 +402,7 @@ Lighthouse is a lab diagnostic tool; RUM/CrUX represents real users. Use both: t
 
 - [ ] The optimization did not remove security or privacy controls.
 - [ ] Logs and traces do not expose secrets, tokens, or PII.
-- [ ] Functional and performance tests run in CI according to `test-code-eng.md`.
+- [ ] Functional and performance tests run in CI according to [`test-code-eng.md`](./test-code-eng.md).
 - [ ] The result and trade-offs are documented.
 
 ---

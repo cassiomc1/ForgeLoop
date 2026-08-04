@@ -2,7 +2,7 @@
 
 > Tradução e adaptação das dicas do artigo "Clean Code for AI Agents" de Fabio Akita (akitaonrails.com), organizadas como instruções práticas para orientar agentes de IA (Claude Code, Cursor, Copilot, etc.) a escrever código de melhor qualidade.
 
-> **Documentos relacionados**: para frameworks/ferramentas de teste por linguagem, ver `test-code.md`. Para boas práticas de segurança, ver `sec-code.md`. Para diretrizes visuais/UX, ver `design-code.md`. Este arquivo foca em qualidade e estrutura de código, não repete o conteúdo detalhado dos demais.
+> **Documentos relacionados**: para frameworks/ferramentas de teste por linguagem, ver [`test-code-pt.md`](./test-code-pt.md). Para boas práticas de segurança, ver [`sec-code-pt.md`](./sec-code-pt.md). Para diretrizes visuais/UX, ver [`design-code-pt.md`](./design-code-pt.md). Para vídeo e motion baseados em HTML, consulte o [HyperFrames](https://hyperframes.heygen.com). Este arquivo foca em qualidade e estrutura de código, não repete o conteúdo detalhado dos demais.
 
 > **Ferramentas obrigatórias**: se qualquer ferramenta, dependência, runtime, CLI ou utilitário necessário para executar este guia (linter, formatter, framework de teste, scanner, profiler, engine, etc.) não estiver instalado no ambiente, **solicite a instalação ao usuário imediatamente** (ou instale com aprovação, conforme a política do ambiente). Nenhuma etapa, verificação ou entrega pode ser pulada, adiada ou substituída por "a ferramenta não está instalada" — a tarefa só está completa quando todas as verificações exigidas foram de fato executadas.
 
@@ -103,7 +103,7 @@ Nenhum modelo de IA segue essas práticas por padrão — é preciso **instruir 
 
 ## Testes
 
-- Ver regras detalhadas de framework/ferramenta por linguagem em `test-code.md`.
+- Ver regras detalhadas de framework/ferramenta por linguagem em [`test-code-pt.md`](./test-code-pt.md).
 - Regra mínima aqui: testes rodam com um único comando documentado, toda
   função nova e toda correção de bug recebem teste correspondente.
 

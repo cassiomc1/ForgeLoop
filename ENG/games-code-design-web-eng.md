@@ -2,7 +2,7 @@
 
 > Practical instructions for designing, implementing, testing, shipping, and operating 2D and 3D games for the web. Use this document as a reference for AI coding agents and developers. Prefer measured, data-driven decisions, progressive enhancement, graceful degradation, and deterministic behavior over framework defaults or platform assumptions.
 
-> **Related documents**: for general code structure, naming, dependency injection, and debugging, see `clean-code-eng.md`. For test strategy and tools such as Vitest and Playwright, see `test-code-eng.md`. For browser security, CSP, dependency scanning, and multiplayer threat models, see `sec-code-eng.md`. For budgets, profiling, WebAssembly, PWA, CDN, and device performance, see `perf-code-eng.md`. This guide focuses on game architecture and delivery; it does not replace those documents.
+> **Related documents**: for general code structure, naming, dependency injection, and debugging, see [`clean-code-eng.md`](./clean-code-eng.md). For test strategy and tools such as Vitest and Playwright, see [`test-code-eng.md`](./test-code-eng.md). For browser security, CSP, dependency scanning, and multiplayer threat models, see [`sec-code-eng.md`](./sec-code-eng.md). For budgets, profiling, WebAssembly, PWA, CDN, and device performance, see [`perf-code-eng.md`](./perf-code-eng.md). For HTML-based gameplay trailers, devlogs, and demos, see [HyperFrames](https://hyperframes.heygen.com). This guide focuses on game architecture and delivery; it does not replace those documents.
 
 > **Mandatory tooling**: if any tool, dependency, runtime, CLI or utility required to execute this guide (linter, formatter, test framework, scanner, profiler, engine, etc.) is not installed in the environment, **request its installation from the user immediately** (or install it with approval, per the environment's policy). No step, check or deliverable may be skipped, postponed or replaced because "the tool is not installed" — the task is only complete when all required checks have actually been executed.
 
@@ -283,7 +283,7 @@ Document world, camera, screen, and UI coordinate spaces. Centralize transforms 
 - For 3D, standardize on a tested interchange format such as `glTF`/`GLB`; validate materials, animations, skeletons, coordinate conventions, and texture limits in CI.
 - Use `ImageBitmap`, workers, streaming, and incremental decoding where supported, with a non-worker fallback.
 - Dispose GPU resources, object URLs, audio buffers, and worker data when scenes or chunks are removed.
-- Do not trust asset metadata or downloaded content. Validate type, size, schema, and origin; see `sec-code-eng.md` for supply-chain and browser security rules.
+- Do not trust asset metadata or downloaded content. Validate type, size, schema, and origin; see [`sec-code-eng.md`](./sec-code-eng.md) for supply-chain and browser security rules.
 - Make asset cache keys include the build/content version so a PWA does not combine incompatible code and data.
 
 ---
@@ -348,7 +348,7 @@ Use **Web Audio** and `AudioContext` for game audio that needs mixing, effects, 
 - Make generated worlds reproducible from versioned seeds/algorithms, but do not trust a client-provided seed or generated result for rewards or competitive outcomes.
 - Design reconnect, duplicate messages, late messages, clock drift, tab suspension, packet loss, and server restart behavior explicitly.
 - Avoid sending the entire world to every client. Stream authorized chunks/entities and remove stale subscriptions.
-- Protect matchmaking, chat, invites, and session tokens with the rules in `sec-code-eng.md`; WebSockets and WebRTC are not authorization boundaries.
+- Protect matchmaking, chat, invites, and session tokens with the rules in [`sec-code-eng.md`](./sec-code-eng.md); WebSockets and WebRTC are not authorization boundaries.
 
 ### Multiplayer testing
 
@@ -389,7 +389,7 @@ Canvas pixels are not a sufficient accessibility API. Build a semantic DOM layer
 
 ## Security and privacy
 
-Game clients are untrusted. Apply `sec-code-eng.md` and additionally:
+Game clients are untrusted. Apply [`sec-code-eng.md`](./sec-code-eng.md) and additionally:
 
 - Never trust client-side scores, inventory, currency, damage, cooldowns, generated loot, collision claims, or permission checks.
 - Validate and authorize WebSocket/WebRTC messages server-side; enforce message size, rate, session, and state limits.
@@ -467,7 +467,7 @@ Use a **Progressive Web App (PWA)** when offline launch, installability, or a re
 
 ## Testing strategy
 
-Follow the testing pyramid from `test-code-eng.md`, with additional game-specific layers:
+Follow the testing pyramid from [`test-code-eng.md`](./test-code-eng.md), with additional game-specific layers:
 
 - **Pure unit tests**: math, collision helpers, state reducers, PRNG, command parsing, serialization, cooldowns, scoring rules, and accessibility preference logic.
 - **Simulation tests**: fixed-step runs, deterministic replays, save/load, pause/resume, system ordering, physics boundaries, and server/client reconciliation.
@@ -499,7 +499,7 @@ Every push/PR should run, at minimum:
 6. Production build (`npm run build`) and a served smoke test (`npm run preview` in a bounded CI job or an equivalent static server).
 7. Playwright Chromium/Firefox/WebKit smoke tests where CI capacity permits.
 8. Accessibility and Lighthouse CI checks for the shell and critical routes.
-9. Dependency/SCA, SAST, secret, license, and WASM/native artifact scans according to `sec-code-eng.md`.
+9. Dependency/SCA, SAST, secret, license, and WASM/native artifact scans according to [`sec-code-eng.md`](./sec-code-eng.md).
 10. Bundle, initial download, asset, and performance budget checks; fail or require an explicit review when budgets regress.
 
 Use a release artifact with hashed assets, a versioned manifest, source-map handling, and a rollback plan. Deploy to staging first, run real-browser smoke tests, then publish gradually when the product's risk warrants it. Keep generator versions, seeds, content manifests, and protocol versions traceable to the deployed commit.
@@ -539,7 +539,7 @@ Use a release artifact with hashed assets, a versioned manifest, source-map hand
 
 - Provide a semantic DOM UI for menus, HUD status, settings, objectives, captions, and essential instructions. Support keyboard navigation, visible focus, reduced motion, readable contrast, color-independent state, scalable UI, and touch targets.
 - Treat the browser as untrusted. Server-authorize scores, inventory, damage, progression, generated loot, and permissions; validate every WebSockets/WebRTC message and apply rate/size limits.
-- Follow `sec-code-eng.md`: HTTPS, restrictive CSP, explicit CORS, safe sessions, dependency scanning, no secrets in the bundle, schema validation for saves/mods/chat, and no unsafe HTML evaluation.
+- Follow [`sec-code-eng.md`](./sec-code-eng.md): HTTPS, restrictive CSP, explicit CORS, safe sessions, dependency scanning, no secrets in the bundle, schema validation for saves/mods/chat, and no unsafe HTML evaluation.
 - Use WebSockets for authoritative client/server state and WebRTC only with explicit signaling, STUN/TURN, abuse controls, and a trust model. Design reconnect, ordering, loss, prediction, and protocol versioning.
 
 ## Validation and Release
