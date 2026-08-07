@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Registrar shadcn/ui, TanStack Charts e Cuelume nos dois guias de design web, com contexto de uso e links oficiais.
+**Goal:** Registrar shadcn/ui, TanStack Charts, Cuelume e Impeccable nos dois guias de design web, com contexto de uso, links oficiais e uma etapa obrigatória de auditoria visual.
 
-**Architecture:** A alteração será somente documental. Cada guia receberá uma orientação contextual na seção de componentes e duas entradas na seção já existente de fontes e referências, mantendo paralelismo entre português e inglês.
+**Architecture:** A alteração será somente documental. Cada guia receberá uma orientação contextual na seção de componentes, uma etapa obrigatória de auditoria/polimento no processo, um item de checklist e entradas na seção já existente de fontes e referências, mantendo paralelismo entre português e inglês.
 
 **Tech Stack:** Markdown, Git, `rg` e `git diff --check`.
 
@@ -16,6 +16,8 @@
 - Cada URL deve aparecer pelo menos uma vez em cada guia.
 - Não tratar as ferramentas como dependências obrigatórias nem recomendar copiar defaults visuais sem adaptação.
 - Preservar contraste, acessibilidade e coerência com a paleta escolhida.
+- Antes da publicação, executar `/impeccable audit` e `/impeccable polish` na interface inteira; repetir a auditoria após os ajustes.
+- Se o Impeccable não estiver instalado, solicitar sua instalação conforme a regra existente de ferramentas obrigatórias.
 
 ---
 
@@ -93,7 +95,48 @@ Run: `rg -n 'https://ui\.shadcn\.com/|https://github\.com/TanStack/charts|https:
 
 Expected: as três URLs aparecem no arquivo.
 
-### Task 3: Revisar escopo e qualidade do Markdown
+### Task 3: Tornar o Impeccable requisito de revisão da interface
+
+**Files:**
+- Modify: `PT-BR/design-code-pt.md`, na seção `Como usar este guia` e no `Checklist de Revisão`.
+- Modify: `ENG/design-code-eng.md`, na seção `How to use this guide` e no `Review Checklist`.
+
+**Interfaces:**
+- Consumes: a regra existente de ferramentas obrigatórias e a referência oficial `https://impeccable.style/`.
+- Produces: requisito explícito para auditar e polir a interface inteira antes da publicação.
+
+- [ ] **Step 1: Adicionar o requisito no processo em português**
+
+Adicionar como etapa 8, após o Checklist Anti-Slop:
+
+```markdown
+8. **Auditar e polir a interface inteira com Impeccable**: executar `/impeccable audit` para identificar problemas de qualidade e `/impeccable polish` para aplicar melhorias. Avaliar a interface completa, não apenas um componente, preservar o design system existente e repetir a auditoria após os ajustes.
+```
+
+- [ ] **Step 2: Adicionar o requisito no processo em inglês**
+
+Adicionar como step 8, após o Anti-Slop Checklist:
+
+```markdown
+8. **Audit and polish the entire interface with Impeccable**: run `/impeccable audit` to identify quality issues and `/impeccable polish` to apply improvements. Evaluate the complete interface, not only one component, preserve the existing design system, and repeat the audit after the changes.
+```
+
+- [ ] **Step 3: Adicionar o item ao checklist dos dois idiomas**
+
+Adicionar ao checklist de cada guia:
+
+```markdown
+- [ ] Executei `/impeccable audit` e `/impeccable polish` na interface inteira e corrigi os achados aplicáveis.
+- [ ] Ran `/impeccable audit` and `/impeccable polish` across the entire interface and addressed applicable findings.
+```
+
+- [ ] **Step 4: Validar o requisito e a referência**
+
+Run: `rg -n 'impeccable\.style|/impeccable audit|/impeccable polish|interface inteira|entire interface' PT-BR/design-code-pt.md ENG/design-code-eng.md`
+
+Expected: cada guia contém o link oficial, os dois comandos e a exigência de avaliar a interface completa.
+
+### Task 4: Revisar escopo e qualidade do Markdown
 
 **Files:**
 - Test: `PT-BR/design-code-pt.md`, `ENG/design-code-eng.md`.
@@ -110,7 +153,7 @@ Expected: `git diff --check` termina sem saída de erro e o diff contém apenas 
 
 - [ ] **Step 2: Confirmar URLs e escopo final**
 
-Run: `rg -l 'https://ui\.shadcn\.com/|https://github\.com/TanStack/charts|https://cuelume-site\.pages\.dev/' PT-BR/design-code-pt.md ENG/design-code-eng.md && git status -sb`
+Run: `rg -l 'https://ui\.shadcn\.com/|https://github\.com/TanStack/charts|https://cuelume-site\.pages\.dev/|https://impeccable\.style/' PT-BR/design-code-pt.md ENG/design-code-eng.md && git status -sb`
 
 Expected: os dois arquivos são listados, e nenhum terceiro arquivo de implementação aparece como modificado.
 

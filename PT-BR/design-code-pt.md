@@ -22,6 +22,7 @@ Siga esta ordem sempre que criar uma página do zero:
 5. **Aplicar componentes** (botões, cards, nav) com os specs exatos da seção "Componentes".
 6. **Adicionar motion** apenas conforme os snippets da seção "Motion" — nunca motion "criativo" fora do padrão.
 7. **Rodar o Checklist Anti-Slop** antes de considerar pronto.
+8. **Auditar e polir a interface inteira com Impeccable**: executar `/impeccable audit` para identificar problemas de qualidade e `/impeccable polish` para aplicar melhorias. Avaliar a interface completa, não apenas um componente, preservar o design system existente e repetir a auditoria após os ajustes.
 
 Nunca pule a etapa 1 e 2. A maior causa de resultado "amador" é misturar paletas/fontes aleatórias ou usar defaults do framework (ex.: azul Bootstrap, Inter em tudo, sombra genérica `box-shadow: 0 0 10px rgba(0,0,0,0.1)`).
 
@@ -315,6 +316,7 @@ if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
 - [ ] Página funciona (visualmente e funcionalmente) sem JS de motion/3D.
 - [ ] Nenhum item da "Lista Negra" está presente.
 - [ ] Testado em mobile (360px) e desktop (1440px).
+- [ ] Executei `/impeccable audit` e `/impeccable polish` na interface inteira e corrigi os achados aplicáveis.
 
 ---
 
@@ -427,3 +429,4 @@ if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
 - shadcn/ui (componentes web acessíveis e composáveis): https://ui.shadcn.com/
 - TanStack Charts (visualização de dados): https://github.com/TanStack/charts
 - Cuelume (sons de interação para web): https://cuelume-site.pages.dev/
+- Impeccable (auditoria e polimento de interfaces): https://impeccable.style/
