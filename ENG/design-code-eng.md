@@ -22,6 +22,7 @@ Follow this order whenever creating a page from scratch:
 5. **Apply components** (buttons, cards, nav) with the exact specs from the "Components" section.
 6. **Add motion** only according to the snippets in the "Motion" section — never "creative" motion outside the standard.
 7. **Run the Anti-Slop Checklist** before considering it ready.
+8. **Audit and polish the entire interface with Impeccable**: run `/impeccable audit` to identify quality issues and `/impeccable polish` to apply improvements. Evaluate the complete interface, not only one component, preserve the existing design system, and repeat the audit after the changes.
 
 Never skip steps 1 and 2. The biggest cause of an "amateur" result is mixing random palettes/fonts or using framework defaults (e.g., Bootstrap blue, Inter everywhere, generic shadow `box-shadow: 0 0 10px rgba(0,0,0,0.1)`).
 
@@ -315,6 +316,7 @@ if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
 - [ ] The page works (visually and functionally) without motion/3D JS.
 - [ ] No item from the "Blacklist" is present.
 - [ ] Tested on mobile (360px) and desktop (1440px).
+- [ ] Ran `/impeccable audit` and `/impeccable polish` across the entire interface and addressed applicable findings.
 
 ---
 
@@ -427,3 +429,4 @@ if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
 - shadcn/ui (accessible, composable web components): https://ui.shadcn.com/
 - TanStack Charts (data visualization): https://github.com/TanStack/charts
 - Cuelume (web interaction sounds): https://cuelume-site.pages.dev/
+- Impeccable (interface auditing and polish): https://impeccable.style/
