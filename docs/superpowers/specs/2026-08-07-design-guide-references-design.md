@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Registrar nos guias de design web as referências oficiais do [shadcn/ui](https://ui.shadcn.com/) e do [TanStack Charts](https://github.com/TanStack/charts), explicando também quando cada recurso é apropriado.
+Registrar nos guias de design web as referências oficiais do [shadcn/ui](https://ui.shadcn.com/), do [TanStack Charts](https://github.com/TanStack/charts) e do [Cuelume](https://cuelume-site.pages.dev/), explicando também quando cada recurso é apropriado.
 
 ## Escopo
 
@@ -15,8 +15,8 @@ Registrar nos guias de design web as referências oficiais do [shadcn/ui](https:
 
 As referências serão incluídas em dois pontos complementares de cada guia:
 
-1. Na seção de componentes, uma orientação curta e prática indicará o shadcn/ui como base de componentes web acessíveis, composáveis e customizáveis, e o TanStack Charts para visualização de dados responsiva e acessível.
-2. Na seção existente de fontes e referências, os dois links serão listados com seus nomes e papéis para facilitar a descoberta posterior.
+1. Na seção de componentes, uma orientação curta e prática indicará o shadcn/ui como base de componentes web acessíveis, composáveis e customizáveis; o TanStack Charts para visualização de dados responsiva e acessível; e o Cuelume para sons de interação sutis, com controle de volume/silêncio e sem depender de áudio para comunicar informação essencial.
+2. Na seção existente de fontes e referências, os três links serão listados com seus nomes e papéis para facilitar a descoberta posterior.
 
 O texto em português e inglês manterá o mesmo significado e a mesma estrutura, respeitando o idioma de cada guia.
 

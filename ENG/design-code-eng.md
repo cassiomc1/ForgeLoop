@@ -263,6 +263,7 @@ if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
 
 - For accessible, composable, and customizable web components, consult [shadcn/ui](https://ui.shadcn.com/); adapt tokens, states, and composition to the project's visual system instead of copying defaults without intent.
 - For charts and data visualization, consult [TanStack Charts](https://github.com/TanStack/charts); preserve responsiveness, contrast, keyboard readability, and never rely on color alone to communicate series or states.
+- For subtle interaction sounds, consult [Cuelume](https://cuelume-site.pages.dev/); provide volume/mute controls and never rely on audio to communicate essential information.
 
 ---
 
@@ -425,3 +426,4 @@ if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
 - Microsoft Fluent Design / WinUI 3 (Windows): https://learn.microsoft.com/windows/apps/design/
 - shadcn/ui (accessible, composable web components): https://ui.shadcn.com/
 - TanStack Charts (data visualization): https://github.com/TanStack/charts
+- Cuelume (web interaction sounds): https://cuelume-site.pages.dev/

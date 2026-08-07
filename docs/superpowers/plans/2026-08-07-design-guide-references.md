@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Registrar shadcn/ui e TanStack Charts nos dois guias de design web, com contexto de uso e links oficiais.
+**Goal:** Registrar shadcn/ui, TanStack Charts e Cuelume nos dois guias de design web, com contexto de uso e links oficiais.
 
 **Architecture:** A alteração será somente documental. Cada guia receberá uma orientação contextual na seção de componentes e duas entradas na seção já existente de fontes e referências, mantendo paralelismo entre português e inglês.
 
@@ -37,6 +37,7 @@ Inserir após o bloco de imagens:
 
 - Para componentes web acessíveis, composáveis e customizáveis, consulte [shadcn/ui](https://ui.shadcn.com/); adapte tokens, estados e composição ao sistema visual do projeto em vez de copiar defaults sem intenção.
 - Para gráficos e visualizações de dados, consulte [TanStack Charts](https://github.com/TanStack/charts); preserve responsividade, contraste, leitura por teclado e não dependa apenas de cor para comunicar séries ou estados.
+- Para sons de interação sutis, consulte [Cuelume](https://cuelume-site.pages.dev/); ofereça controle de volume/silêncio e nunca dependa de áudio para comunicar informação essencial.
 ```
 
 - [ ] **Step 2: Adicionar as duas referências na lista final**
@@ -46,13 +47,14 @@ Inserir no final de `Fontes e Referências (Skills Base)`:
 ```markdown
 - shadcn/ui (componentes web acessíveis e composáveis): https://ui.shadcn.com/
 - TanStack Charts (visualização de dados): https://github.com/TanStack/charts
+- Cuelume (sons de interação para web): https://cuelume-site.pages.dev/
 ```
 
 - [ ] **Step 3: Validar o guia em português**
 
-Run: `rg -n 'https://ui\.shadcn\.com/|https://github\.com/TanStack/charts' PT-BR/design-code-pt.md`
+Run: `rg -n 'https://ui\.shadcn\.com/|https://github\.com/TanStack/charts|https://cuelume-site\.pages\.dev/' PT-BR/design-code-pt.md`
 
-Expected: as duas URLs aparecem no arquivo.
+Expected: as três URLs aparecem no arquivo.
 
 ### Task 2: Atualizar o guia em inglês
 
@@ -72,6 +74,7 @@ Inserir após o bloco de imagens:
 
 - For accessible, composable, and customizable web components, consult [shadcn/ui](https://ui.shadcn.com/); adapt tokens, states, and composition to the project's visual system instead of copying defaults without intent.
 - For charts and data visualization, consult [TanStack Charts](https://github.com/TanStack/charts); preserve responsiveness, contrast, keyboard readability, and never rely on color alone to communicate series or states.
+- For subtle interaction sounds, consult [Cuelume](https://cuelume-site.pages.dev/); provide volume/mute controls and never rely on audio to communicate essential information.
 ```
 
 - [ ] **Step 2: Adicionar as duas referências na lista final**
@@ -81,13 +84,14 @@ Inserir no final de `Sources and References (Base Skills)`:
 ```markdown
 - shadcn/ui (accessible, composable web components): https://ui.shadcn.com/
 - TanStack Charts (data visualization): https://github.com/TanStack/charts
+- Cuelume (web interaction sounds): https://cuelume-site.pages.dev/
 ```
 
 - [ ] **Step 3: Validar o guia em inglês**
 
-Run: `rg -n 'https://ui\.shadcn\.com/|https://github\.com/TanStack/charts' ENG/design-code-eng.md`
+Run: `rg -n 'https://ui\.shadcn\.com/|https://github\.com/TanStack/charts|https://cuelume-site\.pages\.dev/' ENG/design-code-eng.md`
 
-Expected: as duas URLs aparecem no arquivo.
+Expected: as três URLs aparecem no arquivo.
 
 ### Task 3: Revisar escopo e qualidade do Markdown
 
@@ -106,7 +110,7 @@ Expected: `git diff --check` termina sem saída de erro e o diff contém apenas 
 
 - [ ] **Step 2: Confirmar URLs e escopo final**
 
-Run: `rg -l 'https://ui\.shadcn\.com/|https://github\.com/TanStack/charts' PT-BR/design-code-pt.md ENG/design-code-eng.md && git status -sb`
+Run: `rg -l 'https://ui\.shadcn\.com/|https://github\.com/TanStack/charts|https://cuelume-site\.pages\.dev/' PT-BR/design-code-pt.md ENG/design-code-eng.md && git status -sb`
 
 Expected: os dois arquivos são listados, e nenhum terceiro arquivo de implementação aparece como modificado.
 
