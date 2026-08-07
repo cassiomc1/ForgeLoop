@@ -259,6 +259,11 @@ if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
 - `border-radius` consistent with the rest of the UI.
 - Never stretch/distort an image.
 
+**UI libraries and data visualization**
+
+- For accessible, composable, and customizable web components, consult [shadcn/ui](https://ui.shadcn.com/); adapt tokens, states, and composition to the project's visual system instead of copying defaults without intent.
+- For charts and data visualization, consult [TanStack Charts](https://github.com/TanStack/charts); preserve responsiveness, contrast, keyboard readability, and never rely on color alone to communicate series or states.
+
 ---
 
 ## UX, Accessibility, and Quality
@@ -418,3 +423,5 @@ if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
 - Apple Human Interface Guidelines (iOS/macOS): https://developer.apple.com/design/human-interface-guidelines/
 - Material Design 3 (Android): https://m3.material.io/
 - Microsoft Fluent Design / WinUI 3 (Windows): https://learn.microsoft.com/windows/apps/design/
+- shadcn/ui (accessible, composable web components): https://ui.shadcn.com/
+- TanStack Charts (data visualization): https://github.com/TanStack/charts
