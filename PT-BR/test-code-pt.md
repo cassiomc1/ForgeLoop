@@ -69,6 +69,23 @@ Uma ferramenta é candidata, não vencedora por ranking. Registre a decisão no 
 
 Mocks, stubs e fakes pertencem aos testes isolados. Para integração, prefira dependências descartáveis equivalentes à produção quando isso reduz diferenças relevantes. Tipagem, lint e análise estática complementam os testes; não substituem a execução do comportamento.
 
+## Matriz operacional por domínio e framework
+
+Execute somente as linhas aplicáveis ao produto e ao risco registrado. Um nome de ferramenta sem hipótese, oráculo e gate não constitui estratégia.
+
+| Contexto | Risco que exige evidência | Abordagem e gate operacional | Ferramentas/fontes oficiais |
+| --- | --- | --- | --- |
+| APIs e schemas | drift entre implementação e contrato, mudança incompatível, erro/autorização não descritos | valide request/response e casos negativos contra a versão do schema; execute contratos consumidor/provedor; bloqueie breaking change sem transição compatível e verificação do provedor | [OpenAPI](https://spec.openapis.org/oas/), [JSON Schema](https://json-schema.org/learn), [GraphQL](https://spec.graphql.org/) e [Pact](https://docs.pact.io/) |
+| ASP.NET Core | diferenças de routing, middleware, autenticação, serialização e persistência | teste regras isoladas; use `WebApplicationFactory`/`TestServer` para o pipeline e dependência real descartável quando o banco importa; aprove somente com status, headers, auth, persistência e falhas críticas observados | [Microsoft — integration tests](https://learn.microsoft.com/aspnet/core/test/integration-tests) e [Testcontainers for .NET](https://dotnet.testcontainers.org/) |
+| Spring Boot | slice que mascara configuração, profile/security incorreto, transação ou integração divergente | use slices para feedback focado e `@SpringBootTest`/porta aleatória quando o risco atravessa camadas; valide profile, security chain, transações, migração e dependências relevantes | [Spring Boot — testing](https://docs.spring.io/spring-boot/reference/testing/spring-boot-applications.html) e [Testcontainers](https://java.testcontainers.org/) |
+| Rails | callbacks, validações, routes, jobs, mailers e fluxo de sistema divergentes | combine testes de model/request/job/mailbox/system conforme o risco e use o adapter de banco suportado na integração; o gate observa regra, resposta, side effects e ao menos a jornada crítica afetada | [Rails — Testing Rails Applications](https://guides.rubyonrails.org/testing.html) |
+| Laravel | middleware, validation, policies/auth, filas e banco não exercitados por unitário puro | separe unit de feature/HTTP/database; use fakes apenas no limite que está fora do oráculo e verifique efeitos persistidos; aprove endpoint crítico com auth, validação, resposta, banco e job/evento aplicáveis | [Laravel — testing](https://laravel.com/docs/12.x/testing), [HTTP tests](https://laravel.com/docs/12.x/http-tests) e [database testing](https://laravel.com/docs/12.x/database-testing) |
+| HTML e HyperFrames | markup inválido, overflow, timing não determinístico ou frame crítico incorreto | valide HTML; execute `hyperframes lint`/`hyperframes check` quando expostos pela versão fixada; faça preview/render nos formatos declarados e revise frames/limites críticos; qualquer erro estrutural, temporal ou de layout bloqueia | [WHATWG — validators](https://whatwg.org/validator/), [Nu HTML Checker](https://validator.w3.org/nu/) e [HyperFrames](https://hyperframes.heygen.com) |
+| CSS e regressão visual | cascade, responsividade, tema, fonte ou ambiente altera layout/comportamento | rode Stylelint e asserções semânticas/interação; compare screenshots somente em ambiente controlado e na matriz de risco; diffs exigem revisão explícita e o gate não depende de snapshot de CSS gerado | [Stylelint](https://stylelint.io/user-guide/get-started/) e [Playwright visual comparisons](https://playwright.dev/docs/test-snapshots) |
+| Terraform | configuração válida produz replace/destroy, custo, exposição ou estado inesperado | rode `fmt`/`validate`, teste asserts do módulo e revise `plan`; use conta/ambiente dedicado para `terraform test` que cria recursos; bloqueie ações inesperadas e confirme cleanup de todo recurso de teste | [Terraform validate](https://developer.hashicorp.com/terraform/cli/commands/validate), [test](https://developer.hashicorp.com/terraform/cli/commands/test) e [plan](https://developer.hashicorp.com/terraform/cli/commands/plan) |
+| Kubernetes e containers | schema aceito localmente falha no cluster, rollout/probe/rollback ou imagem diverge | faça validação estrita e dry-run server-side; use cluster efêmero quando rollout/controller justificar; rode build checks e smoke da imagem; gate cobre probes, recursos, permissões, rollback aplicável e cleanup | [kubectl apply](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_apply/) e [Docker build checks](https://docs.docker.com/reference/build-checks/) |
+| Ansible | playbook não idempotente, mudança destrutiva ou estado final incorreto | execute syntax/check quando seguro e cenário Molecule com converge, verify, idempotence e destroy conforme risco; aprove somente se a segunda convergência não causar mudança indevida e o ambiente for limpo | [Ansible Molecule](https://docs.ansible.com/projects/molecule/) e [test sequence](https://docs.ansible.com/projects/molecule/usage/) |
+
 ## Fixtures, cassettes e oráculos
 
 - Prefira dados sintéticos mínimos. Quando derivar fixtures de produção, anonimize de forma irreversível e revise risco de reidentificação, retenção e licença antes do commit.
@@ -114,7 +131,7 @@ Antes do teste, transforme expectativas em critérios de pass/fail ligados a SLO
 - volume, distribuição de operações, concorrência, dataset e limites de dependências;
 - budget de regressão relativo a um baseline comparável, além dos limites absolutos do SLO.
 
-Documente hardware, região, build, configuração, dataset e interferências. Separe **warm-up** da janela medida. Execute smoke de capacidade antes de testes caros, carga esperada para baseline, **spike** para subida súbita e recuperação, **soak** para degradação prolongada e stress/breakpoint somente em ambiente autorizado. Falhe o gate quando um threshold versionado não for atendido; média isolada não substitui p95/p99 nem distribuição.
+Documente hardware, região, build, configuração, dataset e interferências. Separe **warm-up** da janela medida. Quando desempenho for relevante, use smoke de capacidade e baseline comparável como evidência mínima. Acrescente **spike** somente se bursts, rate limits, autoscaling ou recuperação forem riscos; **soak** somente se duração, leaks, pools, filas, cache ou sessões longas forem hipóteses; stress/breakpoint somente quando limite, headroom ou modo de falha precisarem ser conhecidos, sempre em ambiente autorizado. A frequência de cada modalidade deriva do SLO, perfil de carga, mudanças e custo: não existe tipo ou cadência universal. Falhe o gate quando um threshold versionado não for atendido; média isolada não substitui p95/p99 nem distribuição.
 
 ## Mobile e desktop
 
@@ -163,7 +180,7 @@ Documente hardware, região, build, configuração, dataset e interferências. S
 | --- | --- |
 | A cada PR | lint/typecheck aplicáveis, unitários e integração impactados, smoke das jornadas críticas afetadas, checks automatizados de acessibilidade e segurança, cobertura/mutação conforme risco |
 | Merge/branch protegida | contratos, integração ampliada e artefatos reproduzíveis; políticas de exceção validadas |
-| Agendado | matriz ampla de navegadores/SO/dispositivos, E2E completo, sandbox externo, mutation testing mais caro, soak/spike e varreduras extensas |
+| Agendado | suites amplas selecionadas pelo risco: matriz de plataformas, E2E, sandbox externo, mutation testing caro, modalidades de carga justificadas e varreduras extensas |
 | Release | instalador/upgrade/rollback operacional, smoke pós-deploy, acessibilidade manual pendente, restore/migração e critérios SLO do release |
 
 Uma suíte ampla não precisa rodar inteira em toda PR quando o custo reduz o feedback sem diminuir risco. A seleção por impacto precisa ser conservadora, auditável e acompanhada por execução agendada que detecte lacunas. Um comando documentado deve reproduzir cada gate; qualquer check não executado é `bloqueado` ou `não aplicável` com justificativa, nunca `aprovado`.
@@ -186,6 +203,7 @@ Uma suíte ampla não precisa rodar inteira em toda PR quando o custo reduz o fe
 - PR smoke: `[comando]`
 - Suite ampliada agendada: `[comando]`
 - Performance/acessibilidade/migração: `[comandos ou runbooks]`
+- Gates de domínio (API/IaC/framework/HTML/CSS): `[comandos e evidências aplicáveis]`
 
 ### Gates
 
@@ -207,6 +225,7 @@ Uma suíte ampla não precisa rodar inteira em toda PR quando o custo reduz o fe
 - [ ] Mutation testing foi executado ou descartado com justificativa de custo/risco.
 - [ ] Smoke de PR e suites amplas agendadas têm comandos e evidências separados.
 - [ ] SLOs/budgets incluem p95/p99, throughput, taxa de erro, warm-up e, quando aplicável, soak/spike.
+- [ ] Cada domínio/framework aplicável tem risco, abordagem, ferramenta e gate operacional registrados.
 - [ ] Jornadas cobrem rede degradada/offline, permissões e background/foreground quando relevantes.
 - [ ] A matriz de SO/dispositivos inclui hardware real onde o emulador não prova o risco.
 - [ ] Acessibilidade automatizada foi complementada por teclado, AT, zoom/reflow, foco, contraste e mobile nativo.
@@ -233,3 +252,7 @@ Afirmações temporais desta revisão foram verificadas em **2026-08-08**. Reval
 - [VCR.py — filtragem de dados sensíveis](https://vcrpy.readthedocs.io/en/latest/advanced.html#filter-sensitive-data-from-the-request): filtros de headers, query, body e respostas antes da gravação.
 - [Prisma — expand-and-contract migrations](https://docs.prisma.io/docs/guides/database/data-migration): sequência expandir, migrar dados e contrair em produção.
 - [Stryker — mutation testing](https://stryker-mutator.io/docs/): uso de mutantes para avaliar a capacidade de detecção da suíte.
+- [Spring Boot testing](https://docs.spring.io/spring-boot/reference/testing/spring-boot-applications.html), [ASP.NET Core integration tests](https://learn.microsoft.com/aspnet/core/test/integration-tests), [Rails testing](https://guides.rubyonrails.org/testing.html) e [Laravel testing](https://laravel.com/docs/12.x/testing): harnesses oficiais dos frameworks.
+- [OpenAPI](https://spec.openapis.org/oas/), [JSON Schema](https://json-schema.org/learn), [GraphQL](https://spec.graphql.org/) e [Pact](https://docs.pact.io/): schemas e contratos de API.
+- [Terraform testing](https://developer.hashicorp.com/terraform/cli/test), [Kubernetes kubectl apply](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_apply/), [Ansible Molecule](https://docs.ansible.com/projects/molecule/) e [Docker build checks](https://docs.docker.com/reference/build-checks/): evidência operacional de IaC/DevOps.
+- [Stylelint](https://stylelint.io/user-guide/get-started/), [Playwright visual comparisons](https://playwright.dev/docs/test-snapshots), [WHATWG validators](https://whatwg.org/validator/) e [HyperFrames](https://hyperframes.heygen.com): checks de CSS, visual, HTML e composição.
