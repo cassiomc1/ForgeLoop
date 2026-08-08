@@ -12,4 +12,6 @@ exclude = [
   '^https?://(?:www\.)?example\.(?:com|org|net)(?:/|$)',
   # Phaser responde 403 a automação; links mais específicos continuam verificados.
   '^https://phaser\.io/$',
+  # O artigo responde no navegador, mas expira de forma intermitente no runner.
+  '^https://akitaonrails\.com/en/2026/04/20/clean-code-for-ai-agents/$',
 ]
