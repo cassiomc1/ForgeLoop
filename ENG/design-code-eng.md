@@ -308,7 +308,7 @@ Measure and test the effect in Safari and Firefox, over light and dark backgroun
 - For DOM/CSS animations, animate only `transform` and `opacity`; use `will-change` sparingly (remove after the animation). Shader/filter deformation or glare is an internal effect only: short, pausable, and never an interaction requirement.
 - Images in `WebP`/`AVIF`, `srcset` + `loading="lazy"` (except the hero image, which must be eager/preload).
 - Fonts: `font-display: swap`, preload only the critical hero font (1–2 files, max.).
-- Performance budget: LCP < 2.5s, CLS < 0.1, INP within the product's responsiveness target; motion/3D JS must not block the initial load (load via `defer`/lazy-init after interaction or scroll).
+- Performance budget: LCP < 2.5s, CLS < 0.1, and INP ≤ 200 ms at p75 in field data, reported separately for mobile and desktop, unless a different documented product target applies; motion/3D JS must not block the initial load (load via `defer`/lazy-init after interaction or scroll).
 
 ---
 

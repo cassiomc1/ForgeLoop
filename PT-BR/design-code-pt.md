@@ -308,7 +308,7 @@ Meça e teste o efeito em Safari e Firefox, sobre fundos claros e escuros, image
 - Em animações DOM/CSS, animar apenas `transform` e `opacity`; usar `will-change` com parcimônia (remover após a animação). Deformação ou brilho via shader/filtro é só efeito interno, curto e pausável, nunca requisito de interação.
 - Imagens em `WebP`/`AVIF`, `srcset` + `loading="lazy"` (exceto imagem do hero, que deve ser eager/preload).
 - Fontes: `font-display: swap`, preload só da fonte crítica do hero (1–2 arquivos, no máx.).
-- Orçamento de performance: LCP < 2.5s, CLS < 0.1, INP dentro da meta de responsividade do produto; JS de motion/3D não deve bloquear o carregamento inicial (carregar via `defer`/lazy-init após interação ou scroll).
+- Orçamento de performance: LCP < 2.5s, CLS < 0.1 e INP ≤ 200 ms no p75 em dados de campo, separado por mobile e desktop, salvo meta documentada diferente para o produto; JS de motion/3D não deve bloquear o carregamento inicial (carregar via `defer`/lazy-init após interação ou scroll).
 
 ---
 
@@ -362,7 +362,7 @@ Meça e teste o efeito em Safari e Firefox, sobre fundos claros e escuros, image
 
 ### iOS/iPadOS (Human Interface Guidelines)
 
-- **Liquid Glass**: compile com o SDK Apple atual e, em iOS/iPadOS, verifique a disponibilidade da API em runtime antes de usar o material. Quando disponível, prefira APIs nativas e respeite HIG, Reduce Transparency e Increase Contrast; em sistemas anteriores, mantenha superfícies convencionais legíveis. Não imponha essa estética a Windows/Android.
+- **Liquid Glass**: compile com o SDK Apple atual e, em iOS/iPadOS, verifique a disponibilidade da API em tempo de execução antes de usar o material. Quando disponível, prefira APIs nativas e respeite HIG, Reduce Transparency e Increase Contrast; em sistemas anteriores, mantenha superfícies convencionais legíveis. Não imponha essa estética a Windows/Android.
 - **Tipografia**: fonte do sistema `SF Pro` (Display para títulos grandes, Text para corpo). Usar os estilos dinâmicos do sistema (Dynamic Type) em vez de tamanhos fixos, para suportar acessibilidade:
   - Large Title `34pt`, Title 1 `28pt`, Title 2 `22pt`, Title 3 `20pt`
   - Headline `17pt` (semibold), Body `17pt`, Callout `16pt`, Subhead `15pt`
@@ -422,7 +422,7 @@ Meça e teste o efeito em Safari e Firefox, sobre fundos claros e escuros, image
 
 ### macOS (Human Interface Guidelines)
 
-- **Liquid Glass**: compile com o SDK Apple atual e verifique a disponibilidade da API em runtime antes de usar o material. Quando disponível, prefira APIs nativas e respeite HIG, Reduce Transparency e Increase Contrast; em sistemas anteriores, mantenha superfícies convencionais legíveis. Não imponha essa estética a Windows/Android.
+- **Liquid Glass**: compile com o SDK Apple atual e verifique a disponibilidade da API em tempo de execução antes de usar o material. Quando disponível, prefira APIs nativas e respeite HIG, Reduce Transparency e Increase Contrast; em sistemas anteriores, mantenha superfícies convencionais legíveis. Não imponha essa estética a Windows/Android.
 - **Tipografia**: `SF Pro` (Display/Text), respeitando os tamanhos de texto do sistema; suportar preferências de tamanho de texto do usuário quando aplicável.
 - **Espaçamento**: grid de `8pt`, margens generosas (macOS tende a ter mais respiro que Windows). Padding de conteúdo `20–24pt`.
 - **Navegação**: `NSSplitView`/sidebar à esquerda + toolbar superior contextual; menu bar do sistema (topo da tela) deve conter todos os comandos principais do app, não só atalhos escondidos na UI.
@@ -470,7 +470,7 @@ Meça e teste o efeito em Safari e Firefox, sobre fundos claros e escuros, image
 - Canvas UI (efeitos canvas/WebGL criativos e agnósticos de framework): https://canvasui.dev/
 - Impeccable (auditoria e polimento de interfaces): https://impeccable.style/
 - Liquid Glass Design (galeria independente de inspiração, não afiliada à Apple; não é especificação nem banco de assets): https://liquidglassdesign.com/
-- As imagens e obras da galeria são distintas dos recursos externos que ela apenas indexa. Consulte os [termos](https://liquidglassdesign.com/terms); não faça rehost, redistribuição ou uso comercial direto de imagens ou obras sem permissão.
+- As imagens e obras da galeria são distintas dos recursos externos que ela apenas indexa. Consulte os [termos](https://liquidglassdesign.com/terms); não faça republicação ou hospedagem em outro serviço, redistribuição ou uso comercial direto de imagens ou obras sem permissão.
 - Para cada prompt ou código externo, verifique individualmente licença, proveniência, créditos, compatibilidade e manutenção antes de usar; o fato de um recurso estar indexado não transfere direitos.
 - Liquid Glass Design — guia sobre material, glassmorphism e implementação web: https://liquidglassdesign.com/what-is-liquid-glass
 - Liquid Glass Design — recursos de design e desenvolvimento: https://liquidglassdesign.com/resources
