@@ -228,6 +228,8 @@ if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
 - Limit: <5000 particles, no heavy post-processing (bloom may stay, avoid SSAO/motion blur).
 - Pause rendering when the canvas leaves the viewport (`IntersectionObserver`).
 
+For Canvas UI and WebGL effects, provide a functional fallback when the capability is unavailable, respect `prefers-reduced-motion`, pause work outside the viewport, and test across browsers and modest devices. The interface must remain understandable and usable without the effect.
+
 ---
 
 ## Premium Components (exact specs)
@@ -259,6 +261,12 @@ if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
 - Always `object-fit: cover` with a fixed `aspect-ratio` per context (e.g., `16/10` for cards, `1/1` for avatars).
 - `border-radius` consistent with the rest of the UI.
 - Never stretch/distort an image.
+
+**Optional canvas/WebGL effects**
+
+- For high-impact moments — such as heroes, reveals, and special interactions — consult [Canvas UI](https://canvasui.dev/) as a source of copyable, adaptable canvas/WebGL components.
+- Use an effect only when it reinforces the narrative; adapt tokens, composition, and behavior to the project's identity instead of copying the default result.
+- Keep text, navigation, controls, and every essential action as semantic, accessible HTML; canvas is progressive enhancement, never the only communication channel.
 
 **UI libraries and data visualization**
 
@@ -429,4 +437,5 @@ if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
 - shadcn/ui (accessible, composable web components): https://ui.shadcn.com/
 - TanStack Charts (data visualization): https://github.com/TanStack/charts
 - Cuelume (web interaction sounds): https://cuelume-site.pages.dev/
+- Canvas UI (creative, framework-agnostic canvas/WebGL effects): https://canvasui.dev/
 - Impeccable (interface auditing and polish): https://impeccable.style/

@@ -228,6 +228,8 @@ if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
 - Limitar: <5000 partículas, sem pós-processamento pesado (bloom pode ficar, SSAO/motion blur evitar).
 - Pausar renderização quando o canvas sair da viewport (`IntersectionObserver`).
 
+Para efeitos Canvas UI e WebGL, forneça fallback funcional quando o recurso não estiver disponível, respeite `prefers-reduced-motion`, pause o trabalho fora da viewport e teste em navegadores e dispositivos modestos. A interface deve continuar compreensível e utilizável sem o efeito.
+
 ---
 
 ## Componentes Premium (specs exatos)
@@ -259,6 +261,12 @@ if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
 - Sempre `object-fit: cover` com `aspect-ratio` fixo por contexto (ex.: `16/10` para cards, `1/1` para avatares).
 - `border-radius` consistente com o resto da UI.
 - Nunca esticar/distorcer imagem.
+
+**Efeitos canvas/WebGL opcionais**
+
+- Para momentos de alto impacto — como hero, revelações e interações especiais — consulte [Canvas UI](https://canvasui.dev/) como fonte de componentes canvas/WebGL copiáveis e adaptáveis.
+- Use o efeito somente quando ele reforçar a narrativa; adapte tokens, composição e comportamento à identidade do projeto em vez de copiar o resultado padrão.
+- Mantenha texto, navegação, controles e qualquer ação essencial como HTML semântico e acessível; o canvas é aprimoramento progressivo, nunca o único canal de comunicação.
 
 **Bibliotecas de UI e visualização de dados**
 
@@ -429,4 +437,5 @@ if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
 - shadcn/ui (componentes web acessíveis e composáveis): https://ui.shadcn.com/
 - TanStack Charts (visualização de dados): https://github.com/TanStack/charts
 - Cuelume (sons de interação para web): https://cuelume-site.pages.dev/
+- Canvas UI (efeitos canvas/WebGL criativos e agnósticos de framework): https://canvasui.dev/
 - Impeccable (auditoria e polimento de interfaces): https://impeccable.style/
