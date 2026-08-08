@@ -27,13 +27,62 @@ Cada guia declara no frontmatter o idioma, a contraparte, a versão e a data da 
 
 Each guide declares its language, counterpart, version, and last review date in frontmatter. All 8 pairs are aligned at version `2026.08`, reviewed on `2026-08-08`.
 
-## Como adotar / How to adopt
+## Loop universal / Universal loop
 
-1. Escolha o idioma e os guias aplicáveis ao projeto. / Choose the language and the guides that apply to the project.
-2. Use o guia de sites premium como processo principal quando houver uma entrega web completa. / Use the premium websites guide as the main process for complete web deliveries.
-3. Combine design, acessibilidade, performance, segurança e testes como requisitos transversais. / Combine design, accessibility, performance, security, and testing as cross-cutting requirements.
-4. Copie apenas os templates e regras necessários para o arquivo de instruções do projeto. / Copy only the templates and rules needed by the project's instruction file.
-5. Preserve links para os guias de origem e evite duplicar regras divergentes. / Preserve links to the source guides and avoid duplicating divergent rules.
+O kit transforma cada pedido em um ciclo verificável: descobrir o projeto, definir um contrato, selecionar os guias aplicáveis, executar, verificar, diagnosticar e corrigir até atingir o sucesso ou um bloqueio externo real. O [`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md) é a fonte operacional; o [`GUIDE_ROUTER.md`](./GUIDE_ROUTER.md) evita carregar documentos irrelevantes; e o [`PROJECT_PROFILE.md`](./PROJECT_PROFILE.md) preserva somente fatos duráveis e comprovados do projeto.
+
+The kit turns every request into a verifiable cycle: discover the project, define the execution contract, select applicable guides, execute, verify, diagnose, and correct until success or a genuine external blocker. Thin adapters support Codex, Claude Code, Cursor, and GitHub Copilot while delegating to the same canonical files.
+
+```text
+Pedido → descoberta → perfil → roteamento → plano → execução
+       → verificação → correção, se necessária → evidências finais
+```
+
+### Instalação em um projeto
+
+Baixe o repositório privado como ZIP ou clone-o em um diretório temporário. Copie esta estrutura para a raiz do projeto de destino, preservando os caminhos:
+
+```text
+AGENTS.md
+CLAUDE.md
+LOOP_ENGINEERING.md
+GUIDE_ROUTER.md
+PROJECT_PROFILE.md
+LOOP_SYSTEM_DESIGN.md
+.github/copilot-instructions.md
+.cursor/rules/project-loop.mdc
+PT-BR/
+ENG/
+```
+
+Se o projeto já possuir `AGENTS.md`, `CLAUDE.md`, instruções do Copilot ou regras do Cursor, incorpore apenas o bloco que aponta para o loop; não sobrescreva regras específicas existentes. As pastas `scripts/`, `.github/workflows/` e os arquivos de qualidade são opcionais para quem apenas consome o kit, mas necessários para manter ou validar a coleção.
+
+### Primeira execução
+
+Na primeira tarefa em um projeto com código ou manifests, o agente deve trocar `profile-mode` de `template` para `project`, descobrir a stack e preencher somente fatos confirmados em `PROJECT_PROFILE.md`. O português é o idioma padrão; use `language: en` para selecionar as contrapartes inglesas.
+
+O perfil não guarda tokens, senhas, chaves ou logs de tarefas. Comandos desconhecidos continuam marcados como não verificados até aparecer uma fonte real no projeto.
+
+### Confirmar ativação
+
+Envie este pedido ao agente antes da primeira implementação:
+
+```text
+Antes de implementar, informe qual perfil do projeto foi confirmado, quais guias foram selecionados pelo GUIDE_ROUTER.md e quais verificações serão usadas. Não altere arquivos ainda.
+```
+
+A resposta deve citar evidências do perfil, um único idioma, os IDs dos guias selecionados e comandos reais do projeto. Uma resposta genérica que não mencione o loop, o roteador ou as fontes indica que o adaptador não foi carregado.
+
+### Atualizar o kit
+
+Ao baixar uma versão nova, preserve os fatos específicos do `PROJECT_PROFILE.md` do projeto de destino. Compare adaptadores antes de substituí-los, atualize loop, roteador e guias como um conjunto coerente e não apague instruções locais. Se o validador tiver sido copiado, execute:
+
+```bash
+python3 scripts/validate_loop_system.py --self-test
+python3 scripts/validate_loop_system.py
+```
+
+O racional e os limites da arquitetura estão em [`LOOP_SYSTEM_DESIGN.md`](./LOOP_SYSTEM_DESIGN.md).
 
 ## Política de ferramentas / Tooling policy
 
@@ -51,9 +100,18 @@ Each guide declares its language, counterpart, version, and last review date in 
 
 ```text
 .
+├── AGENTS.md                      # entrada Codex e agentes compatíveis
+├── CLAUDE.md                      # entrada Claude Code
+├── LOOP_ENGINEERING.md            # ciclo operacional canônico
+├── GUIDE_ROUTER.md                # seleção contextual dos guias
+├── PROJECT_PROFILE.md             # fatos verificados do projeto
+├── LOOP_SYSTEM_DESIGN.md          # arquitetura e limites
 ├── PT-BR/                         # 8 guias em português
 ├── ENG/                           # 8 English guides
+├── .cursor/rules/                 # regra sempre ativa do Cursor
+├── .github/copilot-instructions.md # entrada GitHub Copilot
 ├── .github/workflows/             # automação de qualidade
+├── scripts/                       # validação estrutural do kit
 ├── .gitignore                     # arquivos locais ignorados pelo Git
 ├── .lychee.toml                   # verificação de links
 ├── .markdownlint-cli2.jsonc       # regras de Markdown
@@ -73,11 +131,13 @@ Lint local / Local lint:
 
 ```bash
 npx --yes markdownlint-cli2@0.23.2
+python3 scripts/validate_loop_system.py --self-test
+python3 scripts/validate_loop_system.py
 ```
 
-O workflow [Docs quality](./.github/workflows/docs-quality.yml) também verifica links, frontmatter, nomes únicos, contrapartes, fences de código e links relativos em pushes e pull requests.
+O workflow [Docs quality](./.github/workflows/docs-quality.yml) também verifica links, frontmatter, nomes únicos, contrapartes, fences de código, links relativos, adaptadores, pares do roteador e cenários de seleção em pushes e pull requests.
 
-The [Docs quality](./.github/workflows/docs-quality.yml) workflow also checks links, frontmatter, unique names, counterparts, code fences, and relative links on pushes and pull requests.
+The [Docs quality](./.github/workflows/docs-quality.yml) workflow also checks links, frontmatter, unique names, counterparts, code fences, relative links, adapters, router pairs, and selection scenarios on pushes and pull requests.
 
 ## Direitos e proveniência / Rights and provenance
 
