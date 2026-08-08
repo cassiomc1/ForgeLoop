@@ -1,347 +1,86 @@
 # Guias de Instruções para Agentes de IA
 
-Esta coleção reúne guias práticos para orientar agentes de IA (Claude Code, Cursor, GitHub Copilot etc.) e desenvolvedores em boas práticas de código, testes, segurança, performance e design.
+[![Docs quality](https://github.com/cassiomc1/mdfiles/actions/workflows/docs-quality.yml/badge.svg?branch=main)](https://github.com/cassiomc1/mdfiles/actions/workflows/docs-quality.yml)
 
-Os guias cobrem desenvolvimento **web** (desktop e mobile), criação de sites em nível de grandes estúdios de design, **apps mobile nativos** (iOS/Android), **apps desktop nativos** (Windows/macOS) e, quando fizer sentido, composição audiovisual HTML/CSS/JS com [HyperFrames](https://hyperframes.heygen.com). Eles podem ser usados como referência direta ou como base para arquivos de contexto como `CLAUDE.md`, `AGENTS.md`, `.cursor/rules` e `.github/copilot-instructions.md`.
+Coleção bilíngue de guias operacionais para agentes de IA e desenvolvedores. O conteúdo cobre estratégia de produto, código, testes, segurança, performance, acessibilidade, design e games web em projetos web, mobile e desktop.
 
-## Política comum de ferramentas / Common tooling policy
+Bilingual collection of operational guides for AI agents and developers. It covers product strategy, code, testing, security, performance, accessibility, design, and web games across web, mobile, and desktop projects.
 
-**Português:** identifique a stack, a etapa do trabalho e os checks realmente aplicáveis. Prefira uma ferramenta equivalente já disponível quando ela produzir evidência compatível e peça autorização antes de instalar software ou alterar o ambiente. Se uma verificação necessária não puder ser executada e não houver alternativa segura, registre o bloqueio e nunca afirme que o check passou. Referências opcionais não devem ser instaladas automaticamente.
+Os arquivos são Markdown e podem ser usados como referência ou como base para `AGENTS.md`, `CLAUDE.md`, `.cursor/rules` e `.github/copilot-instructions.md`. Adote somente os guias relevantes ao projeto; esta coleção não é um pacote de dependências.
 
-**English:** identify the stack, the current stage, and the checks that actually apply. Prefer an equivalent tool already available when it produces compatible evidence, and ask for authorization before installing software or changing the environment. If a required check cannot run and no safe alternative exists, record the blocker and never claim that the check passed. Optional references must not be installed automatically.
+The files are Markdown and can be used as references or as a foundation for `AGENTS.md`, `CLAUDE.md`, `.cursor/rules`, and `.github/copilot-instructions.md`. Adopt only the guides relevant to the project; this collection is not a dependency bundle.
 
-## Estrutura do projeto
+## Catálogo / Catalog
 
-Os arquivos estão organizados em duas pastas por idioma:
+| Tema / Topic | Quando usar / When to use | Português | English |
+| --- | --- | --- | --- |
+| Sites premium / Premium websites | Processo completo de estratégia ao lançamento / End-to-end process from strategy to launch | [`premium-sites-studio-pt.md`](./PT-BR/premium-sites-studio-pt.md) | [`premium-sites-studio-eng.md`](./ENG/premium-sites-studio-eng.md) |
+| Código limpo / Clean code | Código legível, observável, seguro e operável / Readable, observable, secure, and operable code | [`clean-code-pt.md`](./PT-BR/clean-code-pt.md) | [`clean-code-eng.md`](./ENG/clean-code-eng.md) |
+| Testes / Testing | Estratégia de testes orientada a risco / Risk-based testing strategy | [`test-code-pt.md`](./PT-BR/test-code-pt.md) | [`test-code-eng.md`](./ENG/test-code-eng.md) |
+| Segurança / Security | Web, mobile, desktop, APIs e supply chain / Web, mobile, desktop, APIs, and supply chain | [`sec-code-pt.md`](./PT-BR/sec-code-pt.md) | [`sec-code-eng.md`](./ENG/sec-code-eng.md) |
+| Design | Direção visual, UX, motion e performance percebida / Visual direction, UX, motion, and perceived performance | [`design-code-pt.md`](./PT-BR/design-code-pt.md) | [`design-code-eng.md`](./ENG/design-code-eng.md) |
+| Performance | Medição, diagnóstico, budgets e otimização / Measurement, diagnosis, budgets, and optimization | [`perf-code-pt.md`](./PT-BR/perf-code-pt.md) | [`perf-code-eng.md`](./ENG/perf-code-eng.md) |
+| Acessibilidade / Accessibility | Protocolo orientado à WCAG 2.2 para interfaces / WCAG 2.2-oriented protocol for interfaces | [`acessibilidade-code-pt.md`](./PT-BR/acessibilidade-code-pt.md) | [`accessibility-eng.md`](./ENG/accessibility-eng.md) |
+| Games web / Web games | Arquitetura, design e operação de games 2D, 3D e procedurais / Architecture, design, and operation of 2D, 3D, and procedural games | [`games-code-design-web-pt.md`](./PT-BR/games-code-design-web-pt.md) | [`games-code-design-web-eng.md`](./ENG/games-code-design-web-eng.md) |
 
-- [`PT-BR/`](./PT-BR/) — guias em português (versão principal), com sufixo `-pt.md`.
-- [`ENG/`](./ENG/) — guias em inglês, com sufixo `-eng.md`.
+Cada guia declara no frontmatter o idioma, a contraparte, a versão e a data da última revisão. Os 8 pares estão alinhados na versão `2026.08`, revisada em `2026-08-08`.
 
-## Manutenção e paridade / Maintenance and parity
+Each guide declares its language, counterpart, version, and last review date in frontmatter. All 8 pairs are aligned at version `2026.08`, reviewed on `2026-08-08`.
 
-| Par / Pair | Idioma principal / Primary language | Contraparte / Counterpart | Versão / Version | Revisão / Review | Status |
-| --- | --- | --- | --- | --- | --- |
-| Sites premium em nível de estúdio / Premium websites at studio level | `pt-BR` — [`PT-BR/premium-sites-studio-pt.md`](./PT-BR/premium-sites-studio-pt.md) | `en` — [`ENG/premium-sites-studio-eng.md`](./ENG/premium-sites-studio-eng.md) | `2026.08` | `2026-08-08` | mantido / maintained |
-| Código limpo / Clean code | `pt-BR` — [`PT-BR/clean-code-pt.md`](./PT-BR/clean-code-pt.md) | `en` — [`ENG/clean-code-eng.md`](./ENG/clean-code-eng.md) | `2026.08` | `2026-08-08` | mantido / maintained |
-| Testes / Testing | `pt-BR` — [`PT-BR/test-code-pt.md`](./PT-BR/test-code-pt.md) | `en` — [`ENG/test-code-eng.md`](./ENG/test-code-eng.md) | `2026.08` | `2026-08-08` | mantido / maintained |
-| Segurança / Security | `pt-BR` — [`PT-BR/sec-code-pt.md`](./PT-BR/sec-code-pt.md) | `en` — [`ENG/sec-code-eng.md`](./ENG/sec-code-eng.md) | `2026.08` | `2026-08-08` | mantido / maintained |
-| Design | `pt-BR` — [`PT-BR/design-code-pt.md`](./PT-BR/design-code-pt.md) | `en` — [`ENG/design-code-eng.md`](./ENG/design-code-eng.md) | `2026.08` | `2026-08-08` | mantido / maintained |
-| Performance | `pt-BR` — [`PT-BR/perf-code-pt.md`](./PT-BR/perf-code-pt.md) | `en` — [`ENG/perf-code-eng.md`](./ENG/perf-code-eng.md) | `2026.08` | `2026-08-08` | mantido / maintained |
-| Acessibilidade / Accessibility | `pt-BR` — [`PT-BR/acessibilidade-code-pt.md`](./PT-BR/acessibilidade-code-pt.md) | `en` — [`ENG/accessibility-eng.md`](./ENG/accessibility-eng.md) | `2026.08` | `2026-08-08` | mantido / maintained |
-| Games web / Web games | `pt-BR` — [`PT-BR/games-code-design-web-pt.md`](./PT-BR/games-code-design-web-pt.md) | `en` — [`ENG/games-code-design-web-eng.md`](./ENG/games-code-design-web-eng.md) | `2026.08` | `2026-08-08` | mantido / maintained |
+## Como adotar / How to adopt
+
+1. Escolha o idioma e os guias aplicáveis ao projeto. / Choose the language and the guides that apply to the project.
+2. Use o guia de sites premium como processo principal quando houver uma entrega web completa. / Use the premium websites guide as the main process for complete web deliveries.
+3. Combine design, acessibilidade, performance, segurança e testes como requisitos transversais. / Combine design, accessibility, performance, security, and testing as cross-cutting requirements.
+4. Copie apenas os templates e regras necessários para o arquivo de instruções do projeto. / Copy only the templates and rules needed by the project's instruction file.
+5. Preserve links para os guias de origem e evite duplicar regras divergentes. / Preserve links to the source guides and avoid duplicating divergent rules.
+
+## Política de ferramentas / Tooling policy
+
+**Português:** identifique a stack, a etapa do trabalho e os checks aplicáveis. Prefira uma ferramenta equivalente já disponível quando ela produzir evidência compatível. Peça autorização antes de instalar software ou alterar o ambiente. Se uma verificação necessária não puder ser executada e não houver alternativa segura, registre o bloqueio e não afirme que o check passou. Referências opcionais não devem ser instaladas automaticamente.
+
+**English:** identify the stack, the current stage, and the applicable checks. Prefer an equivalent tool already available when it produces compatible evidence. Ask for authorization before installing software or changing the environment. If a required check cannot run and no safe alternative exists, record the blocker and do not claim that the check passed. Optional references must not be installed automatically.
+
+## HyperFrames para vídeo e motion / HyperFrames for video and motion
+
+[HyperFrames](https://hyperframes.heygen.com) é uma opção para trailers, demonstrações, apresentações e motion graphics determinísticos baseados em HTML, CSS e JavaScript. Ele complementa os guias de design, acessibilidade, performance e testes; não substitui essas validações. Consulte o [quickstart](https://hyperframes.heygen.com/quickstart) e a [CLI](https://hyperframes.heygen.com/packages/cli) antes da adoção. O render local requer Node.js 22+ e FFmpeg.
+
+[HyperFrames](https://hyperframes.heygen.com) is an option for deterministic HTML, CSS, and JavaScript-based trailers, demos, presentations, and motion graphics. It complements the design, accessibility, performance, and testing guides; it does not replace those validations. Review the [quickstart](https://hyperframes.heygen.com/quickstart) and [CLI documentation](https://hyperframes.heygen.com/packages/cli) before adoption. Local rendering requires Node.js 22+ and FFmpeg.
+
+## Estrutura / Structure
+
+```text
+.
+├── PT-BR/                         # 8 guias em português
+├── ENG/                           # 8 English guides
+├── .github/workflows/             # automação de qualidade
+├── .gitignore                     # arquivos locais ignorados pelo Git
+├── .lychee.toml                   # verificação de links
+├── .markdownlint-cli2.jsonc       # regras de Markdown
+├── THIRD_PARTY_NOTICES.md         # proveniência e direitos
+└── README.md
+```
+
+## Manutenção / Maintenance
+
+- Atualize as duas contrapartes quando uma regra normativa mudar. / Update both counterparts when a normative rule changes.
+- Preserve a paridade de requisitos, exceções, números, exemplos e referências. / Preserve parity for requirements, exceptions, numbers, examples, and references.
+- Atualize `version` e `last-reviewed` no frontmatter quando aplicável. / Update `version` and `last-reviewed` in frontmatter when applicable.
+- Use ponto decimal em inglês e vírgula decimal em português fora de código e URLs. / Use decimal points in English and decimal commas in Portuguese outside code and URLs.
+- Verifique se os links relativos continuam dentro do repositório. / Verify that relative links remain inside the repository.
+
+Lint local / Local lint:
+
+```bash
+npx --yes markdownlint-cli2@0.23.2
+```
+
+O workflow [Docs quality](./.github/workflows/docs-quality.yml) também verifica links, frontmatter, nomes únicos, contrapartes, fences de código e links relativos em pushes e pull requests.
+
+The [Docs quality](./.github/workflows/docs-quality.yml) workflow also checks links, frontmatter, unique names, counterparts, code fences, and relative links on pushes and pull requests.
+
+## Direitos e proveniência / Rights and provenance
 
 Esta coleção não declara uma licença global. Qualquer reutilização depende da autorização do titular aplicável e das condições registradas em [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md).
 
 This collection does not declare a global license. Any reuse depends on permission from the applicable rights holder and on the conditions recorded in [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md).
-
-## HyperFrames: vídeo e motion com HTML / HTML video and motion
-
-Quando o projeto precisar de um trailer, demonstração de produto, motion graphic, apresentação ou outro vídeo automatizável, consulte o [HyperFrames](https://hyperframes.heygen.com). A ferramenta transforma HTML, CSS, mídia e animações controláveis por frame em vídeos renderizáveis e pode ser usada localmente por agentes de código.
-
-Instalação das skills para um agente:
-
-```bash
-npx skills add heygen-com/hyperframes --full-depth
-```
-
-Fluxo manual mínimo recomendado:
-
-```bash
-npx hyperframes init meu-video --example blank --non-interactive
-cd meu-video
-npx hyperframes doctor
-npx hyperframes lint
-npx hyperframes check
-npx hyperframes preview
-npx hyperframes render --output output.mp4
-```
-
-Para a instalação guiada e as opções de workflow, use o [quickstart oficial](https://hyperframes.heygen.com/quickstart) e a [referência oficial da CLI](https://hyperframes.heygen.com/packages/cli). O render local exige Node.js 22+ e FFmpeg. Antes de publicar, faça validação visual do resultado, confira acessibilidade e direitos de toda mídia e entenda os custos de serviços opcionais.
-
-For projects that need an automated trailer, product demo, motion graphic, presentation, or another video, see [HyperFrames](https://hyperframes.heygen.com). It turns HTML, CSS, media, and frame-controllable animation into renderable video and can be used locally by coding agents. Agent skill installation is separate from the manual CLI workflow shown above. Follow the [official quickstart](https://hyperframes.heygen.com/quickstart) and [official CLI reference](https://hyperframes.heygen.com/packages/cli); local rendering requires Node.js 22+ and FFmpeg. Before publishing, visually validate the result, verify accessibility and rights for all media, and understand the costs of optional services.
-
----
-
-## Versão em Português
-
-Esta é a versão principal dos guias, escrita em português.
-
-### Arquivos em português (pasta [`PT-BR/`](./PT-BR/))
-
-#### [`PT-BR/premium-sites-studio-pt.md`](./PT-BR/premium-sites-studio-pt.md) — Sites premium em nível de estúdio
-
-Processo completo para criar sites de alto nível, cobrindo estratégia, conteúdo, arquitetura de informação, direção criativa, design system, UX, implementação, motion, SEO, acessibilidade, performance, segurança, QA, lançamento e manutenção.
-
-#### [`PT-BR/clean-code-pt.md`](./PT-BR/clean-code-pt.md) — Código limpo para agentes de IA
-
-Síntese operacional influenciada pelo artigo *"Clean Code for AI Agents"*, de Fabio Akita, organizada como instruções práticas para agentes de IA.
-
-Cobre:
-
-- Funções e arquivos pequenos.
-- Princípio da Responsabilidade Única (SRP).
-- Nomes significativos e buscáveis para facilitar o uso de `grep`.
-- Comentários com contexto e proveniência.
-- Tipagem explícita, DRY e injeção de dependência.
-- Estrutura de diretórios previsível.
-- Testes executáveis e formatação automática.
-- Tratamento de erros com contexto.
-- Debugging orientado por evidências: aumentar o nível de log quando a causa de um erro não for clara, reproduzir o problema e só então corrigir.
-- Template para `CLAUDE.md`/`AGENTS.md`.
-
-#### [`PT-BR/test-code-pt.md`](./PT-BR/test-code-pt.md) — Testes por linguagem e tecnologia
-
-Guia de frameworks, ferramentas e práticas de teste para:
-
-- JavaScript/TypeScript e Node.js: Vitest, Jest, Playwright e Testing Library.
-- Python: pytest, unittest, Hypothesis e pytest-cov.
-- .NET/C#: xUnit, NUnit, MSTest, Moq e WebApplicationFactory.
-- Java: JUnit 5, Mockito, AssertJ e Spring Boot Test.
-- Go: `testing`, Testify e Ginkgo/Gomega.
-- Ruby: RSpec, Minitest, FactoryBot e Capybara.
-- PHP: PHPUnit, Pest e Behat.
-- HTML/CSS: acessibilidade, Lighthouse, Storybook, Stylelint e regressão visual.
-- SQL, bancos de dados, APIs REST/GraphQL e Testcontainers.
-- Mobile: XCTest, Espresso, React Native, Detox e Flutter.
-- Desktop: WinAppDriver, XCUITest, Appium, Electron, Tauri e .NET MAUI.
-
-Também inclui princípios como pirâmide de testes, F.I.R.S.T, cobertura, testes determinísticos e integração contínua.
-
-#### [`PT-BR/sec-code-pt.md`](./PT-BR/sec-code-pt.md) — Segurança para web, mobile e desktop
-
-Guia de *secure coding* baseado no OWASP Top 10:2025, OWASP Mobile Top 10:2024 e OWASP MASVS.
-
-Cobre:
-
-- Secure by design, menor privilégio e defesa em profundidade.
-- Gestão segura de secrets e credenciais.
-- Os dez riscos do OWASP Top 10:2025.
-- Segurança de backend em Node.js, Python, .NET, Java, PHP, Ruby e Go.
-- CSP, XSS, CSRF, CORS, cookies e headers HTTP.
-- APIs REST/GraphQL, OAuth2, OIDC, JWT e rate limiting.
-- Banco de dados, queries parametrizadas e criptografia.
-- SAST, DAST, dependency scanning, containers e CI/CD.
-- Segurança mobile no iOS e Android.
-- Segurança desktop no Windows e macOS.
-- Segurança de Electron, React Native, Flutter e .NET MAUI.
-- Template de segurança para `CLAUDE.md`/`AGENTS.md`.
-
-#### [`PT-BR/design-code-pt.md`](./PT-BR/design-code-pt.md) — Design premium para web, mobile e desktop
-
-Receita de direção visual, UX, motion e performance percebida para experiências digitais premium.
-
-Cobre:
-
-- Paletas e combinações tipográficas prontas.
-- Grid, espaçamento, composição e anatomia de páginas premium.
-- Web desktop e web mobile.
-- Safe areas, áreas de toque, CTA sticky e design responsivo.
-- Motion com GSAP/ScrollTrigger e uso criterioso de Three.js.
-- Efeitos canvas/WebGL opcionais com [Canvas UI](https://canvasui.dev/), com fallback acessível, reduced motion e atenção a compatibilidade/performance.
-- Superfícies translúcidas/Liquid Glass limitadas a controles contextuais, com fallback opaco e regras de acessibilidade/performance; referência conceitual na galeria [Liquid Glass Design](https://liquidglassdesign.com/).
-- Referências de UI e dados — [shadcn/ui](https://ui.shadcn.com/), [TanStack Charts](https://github.com/TanStack/charts), [Cuelume](https://cuelume-site.pages.dev/) — e auditoria final obrigatória da interface com [Impeccable](https://impeccable.style/).
-- Componentes premium, acessibilidade e Core Web Vitals.
-- Apps mobile nativos seguindo Apple Human Interface Guidelines e Material Design 3.
-- Apps desktop seguindo Fluent Design/WinUI no Windows e HIG no macOS.
-- Checklists para web, mobile e desktop.
-
-#### [`PT-BR/perf-code-pt.md`](./PT-BR/perf-code-pt.md) — Performance por tecnologia e plataforma
-
-Guia técnico para medir, diagnosticar e melhorar performance sem otimizações especulativas.
-
-Cobre:
-
-- Baseline, profiling, budgets e métricas p50/p75/p95/p99.
-- Web: Core Web Vitals, TTFB, CDN, cache, imagens, CSS, JavaScript, React/Next.js, Vue/Nuxt, Angular, PWA e WebAssembly.
-- Backend/APIs: Node.js, Python, .NET, Java e Go.
-- Bancos: PostgreSQL, MySQL/MariaDB, SQL Server, Redis, MongoDB e Elasticsearch/OpenSearch.
-- Mobile: iOS, Android, React Native e Flutter.
-- Desktop: Windows, macOS, Electron e Tauri.
-- APIs distribuídas, filas, containers, cloud, autoscaling e testes de carga.
-- Relação entre performance e segurança.
-- Template para agentes e checklist de revisão.
-
-#### [`PT-BR/acessibilidade-code-pt.md`](./PT-BR/acessibilidade-code-pt.md) — Acessibilidade como linha de base (A11Y)
-
-Protocolo de acessibilidade adaptado do projeto *A11Y.md* (WCAG 2.2 AA, ADA, EAA, ISO 9241-171).
-
-Cobre:
-
-- Princípio Zero: acessibilidade como pré-condição técnica, não melhoria posterior.
-- Perfis de conformidade (Shield AAA, Standard AA, Launchpad A) e modelo de severidade.
-- Contrato de comportamento para agentes de IA (sem inferência, APG, reuso de componentes, memória de decisões).
-- Padrões técnicos POUR: contraste, alt text, teclado, foco, alvos de toque, `prefers-reduced-motion`, rótulos, `aria-live` e HTML semântico.
-- Diretrizes visuais rígidas: indicador de foco, tipografia mínima e hit areas.
-- Protocolo para componentes complexos e antipadrões (divs clicáveis, focus traps vazados, placeholder como rótulo, sopa de ARIA).
-- Checklist de verificação (Definition of Done) com zoom/reflow, ordem de Tab e auditoria de exceções.
-
-#### [`PT-BR/games-code-design-web-pt.md`](./PT-BR/games-code-design-web-pt.md) — Desenvolvimento e design de games web
-
-Guia específico para criar games web 2D e 3D, com foco em desenvolvimento procedural e data-driven.
-
-Cobre:
-
-- Escolha de Canvas, WebGL/WebGPU, Phaser, PixiJS, Three.js, Babylon.js, PlayCanvas, Godot Web e TypeScript/Vite.
-- Arquitetura de game loop, simulação com timestep fixo, ECS/data-oriented design e separação entre simulação e apresentação.
-- Geração procedural determinística: seeds, PRNG injetável, chunks, streaming, regras, constraints, validação, versionamento, reprodutibilidade e fallbacks.
-- Conteúdo híbrido: combinação de autoria manual com sistemas procedurais e critérios para saber quando não usar procedural.
-- Input, Gamepad API, Pointer Lock, física, câmera, assets, áudio, acessibilidade e compatibilidade mobile.
-- Multiplayer com WebSockets/WebRTC, servidor autoritativo, reconciliação e segurança.
-- WebAssembly, Rust, C++, Emscripten, PWA, service workers, CDN, testes, CI/CD e performance.
-- Template para agentes e checklist de revisão de games web.
-
----
-
-## English Version
-
-This section documents the English counterparts of the guides. The English files preserve the technical structure, commands, metrics, code examples, links and agent instruction templates from the Portuguese originals.
-
-### Common tooling policy
-
-Identify the stack, the current stage, and the checks that actually apply. Prefer an equivalent tool already available when it produces compatible evidence, and ask for authorization before installing software or changing the environment. If a required check cannot run and no safe alternative exists, record the blocker and never claim that the check passed. Optional references must not be installed automatically.
-
-### English files (folder [`ENG/`](./ENG/))
-
-#### [`ENG/premium-sites-studio-eng.md`](./ENG/premium-sites-studio-eng.md) — Premium websites at studio level
-
-Complete process for high-end websites, covering strategy, content, information architecture, creative direction, design systems, UX, implementation, motion, SEO, accessibility, performance, security, QA, launch, and maintenance.
-
-#### [`ENG/clean-code-eng.md`](./ENG/clean-code-eng.md) — Clean Code for AI Agents
-
-Operational synthesis influenced by Fabio Akita's *"Clean Code for AI Agents"* article, organized as practical instructions for AI coding agents.
-
-It covers:
-
-- Small functions and files.
-- The Single Responsibility Principle (SRP).
-- Meaningful, searchable names for effective `grep` navigation.
-- Comments containing context and provenance.
-- Explicit typing, DRY and dependency injection.
-- Predictable directory structure.
-- Executable tests and automated formatting.
-- Context-rich error handling.
-- Evidence-driven debugging: increase the log level when the root cause is unclear, reproduce the issue, and only then fix it.
-- A template for `CLAUDE.md`/`AGENTS.md`.
-
-#### [`ENG/test-code-eng.md`](./ENG/test-code-eng.md) — Testing by Language and Technology
-
-Guide to testing frameworks, tools and practices for:
-
-- JavaScript/TypeScript and Node.js: Vitest, Jest, Playwright and Testing Library.
-- Python: pytest, unittest, Hypothesis and pytest-cov.
-- .NET/C#: xUnit, NUnit, MSTest, Moq and WebApplicationFactory.
-- Java: JUnit 5, Mockito, AssertJ and Spring Boot Test.
-- Go: `testing`, Testify and Ginkgo/Gomega.
-- Ruby: RSpec, Minitest, FactoryBot and Capybara.
-- PHP: PHPUnit, Pest and Behat.
-- HTML/CSS: accessibility, Lighthouse, Storybook, Stylelint and visual regression testing.
-- SQL, databases, REST/GraphQL APIs and Testcontainers.
-- Mobile: XCTest, Espresso, React Native, Detox and Flutter.
-- Desktop: WinAppDriver, XCUITest, Appium, Electron, Tauri and .NET MAUI.
-
-It also includes the testing pyramid, F.I.R.S.T principles, coverage, deterministic tests and continuous integration.
-
-#### [`ENG/sec-code-eng.md`](./ENG/sec-code-eng.md) — Security for Web, Mobile and Desktop
-
-Secure coding guide based on OWASP Top 10:2025, OWASP Mobile Top 10:2024 and OWASP MASVS.
-
-It covers:
-
-- Secure by design, least privilege and defense in depth.
-- Secure secrets and credential management.
-- All ten OWASP Top 10:2025 risks.
-- Backend security for Node.js, Python, .NET, Java, PHP, Ruby and Go.
-- CSP, XSS, CSRF, CORS, cookies and HTTP security headers.
-- REST/GraphQL APIs, OAuth2, OIDC, JWT and rate limiting.
-- Databases, parameterized queries and cryptography.
-- SAST, DAST, dependency scanning, containers and CI/CD.
-- Mobile security for iOS and Android.
-- Desktop security for Windows and macOS.
-- Electron, React Native, Flutter and .NET MAUI security.
-- A security template for `CLAUDE.md`/`AGENTS.md`.
-
-#### [`ENG/design-code-eng.md`](./ENG/design-code-eng.md) — Premium Design for Web, Mobile and Desktop
-
-A visual direction, UX, motion and perceived performance recipe for premium digital experiences.
-
-It covers:
-
-- Ready-made color palettes and typographic combinations.
-- Grid, spacing, composition and premium page anatomy.
-- Desktop web and mobile web.
-- Safe areas, touch targets, sticky CTAs and responsive design.
-- GSAP/ScrollTrigger motion and careful Three.js usage.
-- Optional canvas/WebGL effects with [Canvas UI](https://canvasui.dev/), with accessible fallbacks, reduced-motion support, and compatibility/performance guidance.
-- Translucent/Liquid Glass surfaces limited to contextual controls, with opaque fallbacks and accessibility/performance rules; conceptual reference at the [Liquid Glass Design](https://liquidglassdesign.com/) gallery.
-- UI and data references — [shadcn/ui](https://ui.shadcn.com/), [TanStack Charts](https://github.com/TanStack/charts), [Cuelume](https://cuelume-site.pages.dev/) — plus a mandatory final interface audit with [Impeccable](https://impeccable.style/).
-- Premium components, accessibility and Core Web Vitals.
-- Native mobile apps following Apple's Human Interface Guidelines and Material Design 3.
-- Desktop apps following Fluent Design/WinUI on Windows and HIG on macOS.
-- Web, mobile and desktop review checklists.
-
-#### [`ENG/perf-code-eng.md`](./ENG/perf-code-eng.md) — Performance by Technology and Platform
-
-Technical guide for measuring, diagnosing and improving performance without speculative optimization.
-
-It covers:
-
-- Baselines, profiling, budgets and p50/p75/p95/p99 metrics.
-- Web: Core Web Vitals, TTFB, CDN, caching, images, CSS, JavaScript, React/Next.js, Vue/Nuxt, Angular, PWA and WebAssembly.
-- Backend/APIs: Node.js, Python, .NET, Java and Go.
-- Databases: PostgreSQL, MySQL/MariaDB, SQL Server, Redis, MongoDB and Elasticsearch/OpenSearch.
-- Mobile: iOS, Android, React Native and Flutter.
-- Desktop: Windows, macOS, Electron and Tauri.
-- Distributed APIs, queues, containers, cloud, autoscaling and load testing.
-- The relationship between performance and security.
-- An agent template and performance review checklist.
-
-#### [`ENG/accessibility-eng.md`](./ENG/accessibility-eng.md) — Accessibility as a Baseline (A11Y)
-
-Accessibility protocol adapted from the *A11Y.md* project (WCAG 2.2 AA, ADA, EAA, ISO 9241-171).
-
-It covers:
-
-- Principle Zero: accessibility as a technical pre-condition, not a later improvement.
-- Compliance profiles (Shield AAA, Standard AA, Launchpad A) and the severity model.
-- AI agent behavior contract (no inference, APG, component reuse, decision memory).
-- POUR technical standards: contrast, alt text, keyboard, focus, touch targets, `prefers-reduced-motion`, labels, `aria-live` and semantic HTML.
-- Strict visual directives: focus indicator, minimum typography and hit areas.
-- Complex component protocol and anti-patterns (clickable divs, leaked focus traps, placeholder labels, ARIA soup).
-- Verification checklist (Definition of Done) with zoom/reflow, tab order and exceptions audit.
-
-#### [`ENG/games-code-design-web-eng.md`](./ENG/games-code-design-web-eng.md) — Web Game Development and Design
-
-A dedicated guide for building 2D and 3D web games, with a focus on procedural and data-driven development.
-
-It covers:
-
-- Choosing Canvas, WebGL/WebGPU, Phaser, PixiJS, Three.js, Babylon.js, PlayCanvas, Godot Web and TypeScript/Vite.
-- Game loop architecture, fixed-step simulation, ECS/data-oriented design and separation between simulation and presentation.
-- Deterministic procedural generation: seeds, injectable PRNG, chunks, streaming, rules, constraints, validation, versioning, reproducibility and fallbacks.
-- Hybrid content: combining authored content with procedural systems and criteria for when not to use procedural generation.
-- Input, Gamepad API, Pointer Lock, physics, cameras, assets, audio, accessibility and mobile compatibility.
-- Multiplayer with WebSockets/WebRTC, authoritative servers, reconciliation and security.
-- WebAssembly, Rust, C++, Emscripten, PWA, service workers, CDN, testing, CI/CD and performance.
-- An agent template and web game review checklist.
-
----
-
-## Como usar / How to use
-
-### Português
-
-1. Escolha os arquivos adequados ao projeto na pasta [`PT-BR/`](./PT-BR/).
-2. Copie os blocos de template para `CLAUDE.md`, `AGENTS.md` ou `.cursor/rules`.
-3. Use `PT-BR/premium-sites-studio-pt.md` como processo principal para sites de alto nível; complemente com `PT-BR/design-code-pt.md` para UI/UX, `PT-BR/acessibilidade-code-pt.md` para regras de acessibilidade (WCAG/ARIA), `PT-BR/perf-code-pt.md` para budgets e critérios de performance e `PT-BR/games-code-design-web-pt.md` para desenvolvimento de games web procedural/data-driven.
-4. Consulte `PT-BR/clean-code-pt.md`, `PT-BR/test-code-pt.md` e `PT-BR/sec-code-pt.md` para regras de código, testes e segurança.
-5. Verifique a seção "Documentos relacionados" antes de adicionar uma regra, para evitar redundância.
-6. Para vídeos e motion baseados em HTML, use o [HyperFrames](https://hyperframes.heygen.com) em conjunto com as regras de design, acessibilidade, performance e testes — ele não substitui essas validações.
-
-### English
-
-1. Choose the files that apply to the project from the [`ENG/`](./ENG/) folder.
-2. Copy the instruction templates into `CLAUDE.md`, `AGENTS.md` or `.cursor/rules`.
-3. Use `ENG/premium-sites-studio-eng.md` as the main process for high-end websites; complement it with `ENG/design-code-eng.md` for UI/UX, `ENG/accessibility-eng.md` for accessibility rules (WCAG/ARIA), `ENG/perf-code-eng.md` for performance budgets and criteria, and `ENG/games-code-design-web-eng.md` for procedural/data-driven web game development.
-4. Consult `ENG/clean-code-eng.md`, `ENG/test-code-eng.md` and `ENG/sec-code-eng.md` for code quality, testing and security rules.
-5. Check the "Related documents" section before adding a rule, to avoid duplication.
-6. For HTML-based video and motion, use [HyperFrames](https://hyperframes.heygen.com) together with the design, accessibility, performance, and testing rules; it does not replace those validations.
