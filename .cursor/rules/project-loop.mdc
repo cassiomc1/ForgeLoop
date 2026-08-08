@@ -1,0 +1,18 @@
+---
+description: Universal verified project loop
+alwaysApply: true
+---
+
+# Cursor — Loop Universal
+
+1. Leia [`LOOP_ENGINEERING.md`](../../LOOP_ENGINEERING.md) antes de planejar ou editar.
+2. Confirme [`PROJECT_PROFILE.md`](../../PROJECT_PROFILE.md) por fontes reais; inicialize-o em projetos de destino quando estiver em modo `template`.
+3. Use [`GUIDE_ROUTER.md`](../../GUIDE_ROUTER.md) para ativar todos e somente os guias relevantes.
+4. Carregue apenas um idioma e informe os IDs selecionados.
+5. Respeite instruções superiores, locais e o pedido mais recente.
+6. Execute mudança mínima, check específico e regressão proporcional.
+7. Diagnostique falhas antes de corrigir e não repita sem evidência nova.
+8. Peça autoridade para ações externas, destrutivas, instalações e publicações.
+9. Relate somente resultados e verificações comprovados.
+
+O loop e o roteador são fontes canônicas; não duplique regras de domínio.

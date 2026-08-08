@@ -1,5 +1,6 @@
 ---
 language: pt-BR
+profile-mode: template
 profile-status: uninitialized
 last-confirmed: unknown
 ---
@@ -11,6 +12,7 @@ last-confirmed: unknown
 ## Regras de manutenção
 
 - Atualize somente após inspecionar arquivos, comandos ou fontes autoritativas.
+- Preserve `profile-mode: template` ao manter o repositório-fonte deste kit. Em um projeto de destino com manifests ou código do produto, altere-o para `project` na primeira descoberta.
 - Registre a fonte de cada fato material.
 - Nunca armazene secrets, tokens, senhas, chaves privadas ou credenciais brutas.
 - Preserve decisões explícitas do projeto até evidência mais recente substituí-las.
