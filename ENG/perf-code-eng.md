@@ -10,9 +10,7 @@ last-reviewed: "2026-08-08"
 # Performance Guide for Web, Mobile, Desktop, and Database Development
 
 > Practical instructions for designing, measuring, diagnosing, and improving performance in web, mobile (iOS/Android), desktop (Windows/macOS), APIs, infrastructure, and databases. Use this document to guide AI agents and developers. Performance must be measured in real scenarios before and after the change — do not optimize based on assumptions.
-
 > **Related documents**: for code structure and readability, see [`clean-code-eng.md`](./clean-code-eng.md). For functional, integration, and E2E testing, see [`test-code-eng.md`](./test-code-eng.md). For security and cache, secrets, and infrastructure trade-offs, see [`sec-code-eng.md`](./sec-code-eng.md). For perceived performance, UX, motion, and responsive design, see [`design-code-eng.md`](./design-code-eng.md). For HTML video preview and rendering performance, see [HyperFrames](https://hyperframes.heygen.com). This file is the canonical performance reference.
-
 > **Tooling policy**: identify the stack, the stage, and the applicable checks; prefer an already available equivalent that produces compatible evidence. Ask for authorization before installing a tool or changing the environment. If no safe equivalent exists, record the required check as blocked and never claim that it passed. Do not install merely optional resources.
 
 ## General principles
@@ -55,14 +53,14 @@ last-reviewed: "2026-08-08"
 
 ### Core Web Vitals
 
-Monitor lab data and real user data (RUM). As an initial reference, target the "good" thresholds recommended by web.dev at the 75th percentile:
+Monitor lab data and real user data (RUM). To decide whether the experience meets Core Web Vitals, use first-party RUM or CrUX at the 75th percentile (p75) of page loads, segmented by mobile and desktop and by the relevant URL or URL group. As an initial reference, target the "good" thresholds recommended by web.dev:
 
-- **LCP (Largest Contentful Paint)**: up to `2,5s` — loading of the largest visible content.
+- **LCP (Largest Contentful Paint)**: up to `2.5 s` — loading of the largest visible content.
 - **INP (Interaction to Next Paint)**: up to `200ms` — interaction responsiveness.
-- **CLS (Cumulative Layout Shift)**: up to `0,1` — visual stability.
+- **CLS (Cumulative Layout Shift)**: up to `0.1` — visual stability.
 - Also track **TTFB**, FCP, page weight, hydration time, and JavaScript errors.
 
-Lighthouse is a lab diagnostic tool; RUM/CrUX represents real users. Use both: the lab to investigate and production to decide whether the experience actually improved.
+Lighthouse is a lab diagnostic tool: reproduce and investigate issues in it, but do not treat it as proof of the real-user experience. RUM/CrUX at p75, with the segmentation above, is the evidence for deciding whether users' experience improved.
 
 ### Document delivery and network
 
@@ -77,7 +75,17 @@ Lighthouse is a lab diagnostic tool; RUM/CrUX represents real users. Use both: t
 
 ### HTML, CSS, and images
 
-- Deliver images in the required format and size: **AVIF/WebP**, appropriate compression, `srcset`, `sizes`, explicit dimensions, and `aspect-ratio`.
+- Deliver images in the required format and size: **AVIF/WebP**, appropriate compression, `srcset`, `sizes`, explicit dimensions, and `aspect-ratio`; do not assume these formats are compatible without a fallback.
+- Prefer `<picture>` with `AVIF`/`WebP` in `<source>` and JPEG/PNG in the `<img>` fallback. Replace that markup with CDN format negotiation only after a support matrix proves that it honors `Accept`, returns the fallback, and varies caches correctly.
+
+```html
+<picture>
+  <source srcset="/image.avif" type="image/avif">
+  <source srcset="/image.webp" type="image/webp">
+  <img src="/image.jpg" alt="Image description" width="1200" height="800">
+</picture>
+```
+
 - Do not use `loading="lazy"` on the LCP image; use priority loading for above-the-fold content and lazy loading for the rest.
 - Avoid layout shift: reserve space for images, ads, embeds, and fonts before they load.
 - Minify CSS, remove unused CSS, and avoid excessively complex selectors or selectors that force broad recalculation.
@@ -259,7 +267,7 @@ Lighthouse is a lab diagnostic tool; RUM/CrUX represents real users. Use both: t
 
 ### React Native and Flutter
 
-- **React Native**: reduce bridge traffic, avoid rendering entire lists, use `FlatList`/`FlashList` with virtualization, move animations to the UI thread (Reanimated), and profile with Flipper/React DevTools.
+- **React Native**: reduce bridge traffic, avoid rendering entire lists, use `FlatList`/`FlashList` with virtualization, and move animations to the UI thread (Reanimated). Use React Native DevTools to profile renders and commits; use Android Studio and Xcode for native layers. Keep Flipper only for manual/legacy integration in older versions, not as the current default tool.
 - **Flutter**: use DevTools (CPU/Memory/Performance), keep frames within the budget, prefer `const` widgets, `ListView.builder`, and appropriately sized images, and avoid broad rebuilds; use isolates for CPU-bound work.
 - In both, measure the cost of the cross-platform layer and use native code only for proven hot paths.
 
@@ -360,8 +368,9 @@ Lighthouse is a lab diagnostic tool; RUM/CrUX represents real users. Use both: t
   Never treat cache as the single source of truth.
 - Configure timeouts, cancellation, concurrency limits, backpressure, and
   retries with backoff/jitter. Do not retry indefinitely.
-- Web: monitor LCP <= 2.5s, INP <= 200ms, and CLS <= 0.1 at p75; use RUM +
-  Lighthouse, responsive images, code splitting, and CDN.
+- Web: monitor LCP ≤ 2.5 s, INP ≤ 200 ms, and CLS ≤ 0.1 at the p75 of RUM/CrUX,
+  segmented by mobile/desktop and URL/group; use Lighthouse for diagnosis,
+  responsive images with a fallback, code splitting, and a proven CDN.
 - Mobile: measure startup, jank, ANR/hangs, memory, and battery on real devices;
   defer initialization and keep the UI thread free.
 - Desktop: measure cold/warm startup, first interactive window, CPU/memory, and
@@ -387,8 +396,9 @@ Lighthouse is a lab diagnostic tool; RUM/CrUX represents real users. Use both: t
 
 ### Web and APIs
 
-- [ ] LCP, INP, CLS, and TTFB are within the defined budget.
-- [ ] Assets have appropriate compression, dimensions, caching, and loading.
+- [ ] LCP, INP, and CLS were evaluated at the p75 of RUM/CrUX by mobile/desktop and URL/group; Lighthouse was used only for diagnosis.
+- [ ] TTFB is within the defined budget.
+- [ ] Assets have appropriate compression, dimensions, caching, and loading; AVIF/WebP has a JPEG/PNG fallback or proven CDN negotiation.
 - [ ] The bundle was analyzed; unused code and dependencies were removed.
 - [ ] Endpoints have pagination, timeout, payload limits, and observability.
 - [ ] There are no N+1 queries, avoidable waterfalls, or excessively large responses.
@@ -418,7 +428,10 @@ Lighthouse is a lab diagnostic tool; RUM/CrUX represents real users. Use both: t
 
 ## Sources and references
 
-- web.dev — Core Web Vitals and web performance: https://web.dev/explore/fast
+- web.dev — Core Web Vitals, p75, and device segmentation: https://web.dev/articles/vitals
+- web.dev — Field measurement, RUM, and CrUX: https://web.dev/articles/vitals-field-measurement-best-practices
+- web.dev — Image performance and `<picture>` fallback: https://web.dev/learn/performance/image-performance
+- React Native — React Native DevTools and native tooling: https://reactnative.dev/docs/react-native-devtools
 - Android Developers — App performance guide: https://developer.android.com/topic/performance/overview
 - Apple Developer — Performance and Instruments: https://developer.apple.com/documentation/xcode/improving-your-app-s-performance/
 - Microsoft Learn — Windows app performance: https://learn.microsoft.com/windows/apps/develop/performance/
