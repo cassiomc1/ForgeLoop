@@ -59,7 +59,7 @@ A tool is a candidate, not a ranking winner. Record the decision in the reposito
 | Components and browser | [Testing Library](https://testing-library.com/docs/), [Playwright](https://playwright.dev/docs/intro), [Cypress](https://docs.cypress.io/) | required browsers, isolation, failure artifacts, parallelism, accessibility, and app compatibility |
 | Python | [pytest](https://docs.pytest.org/), [`unittest`](https://docs.python.org/3/library/unittest.html) | dependency policy, fixtures/plugins, Python versions, and existing integration |
 | .NET | [xUnit.net](https://xunit.net/), [NUnit](https://docs.nunit.org/), [MSTest](https://learn.microsoft.com/dotnet/core/testing/unit-testing-mstest-intro) | .NET version, runner/IDE, fixture model, assertions, and existing projects |
-| Java/JVM | [JUnit](https://junit.org/junit5/docs/current/user-guide/), [TestNG](https://testng.org/) | Maven/Gradle build, extensions, parallelism, integration, and existing conventions |
+| Java/JVM | [JUnit](https://docs.junit.org/current/overview.html), [TestNG](https://testng.org/) | Maven/Gradle build, extensions, parallelism, integration, and existing conventions |
 | Go | [`testing`](https://pkg.go.dev/testing), [Testify](https://pkg.go.dev/github.com/stretchr/testify) | sufficient standard library or a proven need for helpers, suites, and mocks |
 | Ruby | [RSpec](https://rspec.info/documentation/), [Minitest](https://ruby-doc.org/3.4/gems/minitest/Minitest.html) | Rails/Ruby conventions, fixtures, DSL, and existing suite |
 | PHP | [PHPUnit](https://docs.phpunit.de/), [Pest](https://pestphp.com/docs/installation) | PHP/framework version, plugins, and migration cost |
