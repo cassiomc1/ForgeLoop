@@ -1,6 +1,10 @@
 ---
-name: web-design-premium-v2
-description: 'Guia premium para direção visual, UX, motion e performance em experiências digitais sofisticadas — web desktop, web mobile, apps nativos iOS/Android e apps desktop Windows/macOS. Use SEMPRE que for criar, redesenhar ou revisar uma landing page, site institucional, produto digital ou aplicativo que precise parecer premium/high-end.'
+name: design-code-pt
+language: pt-BR
+counterpart: ../ENG/design-code-eng.md
+description: "Direção visual, UX, motion e performance percebida para experiências digitais premium."
+version: "2026.08"
+last-reviewed: "2026-08-08"
 ---
 
 # Web Design Premium v2 — Diretrizes Práticas
@@ -9,7 +13,7 @@ description: 'Guia premium para direção visual, UX, motion e performance em ex
 
 > **Documentos relacionados**: para o processo completo de produção de sites em nível de estúdio, ver [`premium-sites-studio-pt.md`](./premium-sites-studio-pt.md). Para qualidade/estrutura do código que implementa este design, ver [`clean-code-pt.md`](./clean-code-pt.md). Para testes de acessibilidade/visual/E2E, ver [`test-code-pt.md`](./test-code-pt.md). Para segurança de formulários, autenticação e armazenamento no cliente, ver [`sec-code-pt.md`](./sec-code-pt.md). Para transformar direção visual em vídeo HTML, consulte o [HyperFrames](https://hyperframes.heygen.com). Este arquivo foca exclusivamente em UI/UX/visual — não repete regras de código, teste ou segurança.
 
-> **Ferramentas obrigatórias**: se qualquer ferramenta, dependência, runtime, CLI ou utilitário necessário para executar este guia (linter, formatter, framework de teste, scanner, profiler, engine, etc.) não estiver instalado no ambiente, **solicite a instalação ao usuário imediatamente** (ou instale com aprovação, conforme a política do ambiente). Nenhuma etapa, verificação ou entrega pode ser pulada, adiada ou substituída por "a ferramenta não está instalada" — a tarefa só está completa quando todas as verificações exigidas foram de fato executadas.
+> **Política de ferramentas**: identifique a stack, a etapa e os checks aplicáveis; prefira um equivalente já disponível que produza evidência compatível. Antes de instalar uma ferramenta ou alterar o ambiente, peça autorização. Se não houver equivalente seguro, registre o check necessário como bloqueado e nunca afirme que ele passou. Não instale recursos meramente opcionais.
 
 ## Como usar este guia (processo obrigatório)
 

@@ -1,10 +1,19 @@
+---
+name: games-code-design-web-pt
+language: pt-BR
+counterpart: ../ENG/games-code-design-web-eng.md
+description: "Arquitetura, design, testes e operação de games web 2D, 3D e procedurais."
+version: "2026.08"
+last-reviewed: "2026-08-08"
+---
+
 # Guia de Desenvolvimento e Design de Games Web 2D e 3D
 
 > Instruções práticas para projetar, implementar, testar, otimizar e publicar games executados no navegador, em 2D e 3D, com suporte a desktop, mobile e diferentes capacidades de hardware. Use este documento para orientar agentes de IA e desenvolvedores. Escolha a tecnologia pelo tipo de jogo e pelas restrições de distribuição; não empilhe engines e abstrações sem necessidade.
 
 > **Documentos relacionados**: para estrutura, legibilidade, tipagem e organização do código, ver [`clean-code-pt.md`](./clean-code-pt.md). Para testes, cobertura, Playwright e CI, ver [`test-code-pt.md`](./test-code-pt.md). Para segurança de clientes web, APIs, secrets e dependências, ver [`sec-code-pt.md`](./sec-code-pt.md). Para profiling, budgets, CDN, PWA e WebAssembly, ver [`perf-code-pt.md`](./perf-code-pt.md). Para direção visual, UX, motion e design responsivo, ver [`design-code-pt.md`](./design-code-pt.md). Para trailers, devlogs e vídeos de gameplay baseados em HTML, consulte o [HyperFrames](https://hyperframes.heygen.com). Este arquivo é a referência específica para games web 2D/3D e seus sistemas de runtime.
 
-> **Ferramentas obrigatórias**: se qualquer ferramenta, dependência, runtime, CLI ou utilitário necessário para executar este guia (linter, formatter, framework de teste, scanner, profiler, engine, etc.) não estiver instalado no ambiente, **solicite a instalação ao usuário imediatamente** (ou instale com aprovação, conforme a política do ambiente). Nenhuma etapa, verificação ou entrega pode ser pulada, adiada ou substituída por "a ferramenta não está instalada" — a tarefa só está completa quando todas as verificações exigidas foram de fato executadas.
+> **Política de ferramentas**: identifique a stack, a etapa e os checks aplicáveis; prefira um equivalente já disponível que produza evidência compatível. Antes de instalar uma ferramenta ou alterar o ambiente, peça autorização. Se não houver equivalente seguro, registre o check necessário como bloqueado e nunca afirme que ele passou. Não instale recursos meramente opcionais.
 
 ## Princípios gerais
 

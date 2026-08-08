@@ -1,10 +1,19 @@
+---
+name: accessibility-eng
+language: en
+counterpart: ../PT-BR/acessibilidade-code-pt.md
+description: "Practical WCAG 2.2-oriented accessibility protocol for web, mobile, and desktop."
+version: "2026.08"
+last-reviewed: "2026-08-08"
+---
+
 # Accessibility as a Baseline (A11Y)
 
 > Accessibility instructions adapted from the [A11Y.md](https://github.com/fecarrico/A11Y.md) project (Felipe A. Carriço, MIT license) — a validation protocol and persistent context system for building accessible software from the very first line of code, aligned with **WCAG 2.2 AA**, **ISO 9241-171**, **ADA**, and **EAA**.
 
 > **Related documents**: for visual/UX direction (palettes, typography, motion), see [`design-code-eng.md`](./design-code-eng.md). For automated testing tools (axe-core, Lighthouse, visual regression), see [`test-code-eng.md`](./test-code-eng.md). For code quality/structure, see [`clean-code-eng.md`](./clean-code-eng.md). For HTML-based video and motion, also see [HyperFrames](https://hyperframes.heygen.com). This file is the canonical reference for **accessibility rules** (WCAG, ARIA, keyboard, focus, screen readers) — it does not repeat the content of the others.
 
-> **Mandatory tooling**: if any tool, dependency, runtime, CLI or utility required to execute this guide (linter, formatter, test framework, scanner, profiler, engine, etc.) is not installed in the environment, **request its installation from the user immediately** (or install it with approval, per the environment's policy). No step, check or deliverable may be skipped, postponed or replaced because "the tool is not installed" — the task is only complete when all required checks have actually been executed.
+> **Tooling policy**: identify the stack, the stage, and the applicable checks; prefer an already available equivalent that produces compatible evidence. Ask for authorization before installing a tool or changing the environment. If no safe equivalent exists, record the required check as blocked and never claim that it passed. Do not install merely optional resources.
 
 ## 0. Principle Zero: accessibility as a pre-condition
 

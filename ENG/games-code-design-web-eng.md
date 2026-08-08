@@ -1,10 +1,19 @@
+---
+name: games-code-design-web-eng
+language: en
+counterpart: ../PT-BR/games-code-design-web-pt.md
+description: "Architecture, design, testing, and operation of 2D, 3D, and procedural web games."
+version: "2026.08"
+last-reviewed: "2026-08-08"
+---
+
 # Web Game Development Guide — 2D, 3D, and Procedural Systems
 
 > Practical instructions for designing, implementing, testing, shipping, and operating 2D and 3D games for the web. Use this document as a reference for AI coding agents and developers. Prefer measured, data-driven decisions, progressive enhancement, graceful degradation, and deterministic behavior over framework defaults or platform assumptions.
 
 > **Related documents**: for general code structure, naming, dependency injection, and debugging, see [`clean-code-eng.md`](./clean-code-eng.md). For test strategy and tools such as Vitest and Playwright, see [`test-code-eng.md`](./test-code-eng.md). For browser security, CSP, dependency scanning, and multiplayer threat models, see [`sec-code-eng.md`](./sec-code-eng.md). For budgets, profiling, WebAssembly, PWA, CDN, and device performance, see [`perf-code-eng.md`](./perf-code-eng.md). For HTML-based gameplay trailers, devlogs, and demos, see [HyperFrames](https://hyperframes.heygen.com). This guide focuses on game architecture and delivery; it does not replace those documents.
 
-> **Mandatory tooling**: if any tool, dependency, runtime, CLI or utility required to execute this guide (linter, formatter, test framework, scanner, profiler, engine, etc.) is not installed in the environment, **request its installation from the user immediately** (or install it with approval, per the environment's policy). No step, check or deliverable may be skipped, postponed or replaced because "the tool is not installed" — the task is only complete when all required checks have actually been executed.
+> **Tooling policy**: identify the stack, the stage, and the applicable checks; prefer an already available equivalent that produces compatible evidence. Ask for authorization before installing a tool or changing the environment. If no safe equivalent exists, record the required check as blocked and never claim that it passed. Do not install merely optional resources.
 
 ## How to use this guide (mandatory process)
 

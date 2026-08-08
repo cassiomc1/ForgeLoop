@@ -1,10 +1,19 @@
+---
+name: perf-code-eng
+language: en
+counterpart: ../PT-BR/perf-code-pt.md
+description: "Performance measurement, diagnosis, and improvement for web, mobile, desktop, APIs, and data."
+version: "2026.08"
+last-reviewed: "2026-08-08"
+---
+
 # Performance Guide for Web, Mobile, Desktop, and Database Development
 
 > Practical instructions for designing, measuring, diagnosing, and improving performance in web, mobile (iOS/Android), desktop (Windows/macOS), APIs, infrastructure, and databases. Use this document to guide AI agents and developers. Performance must be measured in real scenarios before and after the change — do not optimize based on assumptions.
 
 > **Related documents**: for code structure and readability, see [`clean-code-eng.md`](./clean-code-eng.md). For functional, integration, and E2E testing, see [`test-code-eng.md`](./test-code-eng.md). For security and cache, secrets, and infrastructure trade-offs, see [`sec-code-eng.md`](./sec-code-eng.md). For perceived performance, UX, motion, and responsive design, see [`design-code-eng.md`](./design-code-eng.md). For HTML video preview and rendering performance, see [HyperFrames](https://hyperframes.heygen.com). This file is the canonical performance reference.
 
-> **Mandatory tooling**: if any tool, dependency, runtime, CLI or utility required to execute this guide (linter, formatter, test framework, scanner, profiler, engine, etc.) is not installed in the environment, **request its installation from the user immediately** (or install it with approval, per the environment's policy). No step, check or deliverable may be skipped, postponed or replaced because "the tool is not installed" — the task is only complete when all required checks have actually been executed.
+> **Tooling policy**: identify the stack, the stage, and the applicable checks; prefer an already available equivalent that produces compatible evidence. Ask for authorization before installing a tool or changing the environment. If no safe equivalent exists, record the required check as blocked and never claim that it passed. Do not install merely optional resources.
 
 ## General principles
 

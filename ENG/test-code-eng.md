@@ -1,10 +1,19 @@
+---
+name: test-code-eng
+language: en
+counterpart: ../PT-BR/test-code-pt.md
+description: "Risk-based testing strategy and tools for modern languages and platforms."
+version: "2026.08"
+last-reviewed: "2026-08-08"
+---
+
 # Recommended Testing Guide by Language and Technology
 
 > Practical software testing instructions (unit, integration, end-to-end) for the main languages and technologies used in modern development. Use this document as a reference to guide AI agents and developers on which tools to use and testing best practices for each stack.
 
 > **Related documents**: for general clean code principles (names, small functions, formatting), see [`clean-code-eng.md`](./clean-code-eng.md). For security (including security testing/SAST/DAST), see [`sec-code-eng.md`](./sec-code-eng.md). For HTML video and motion, see [HyperFrames](https://hyperframes.heygen.com). This file is the canonical reference for which testing framework to use by language/platform.
 
-> **Mandatory tooling**: if any tool, dependency, runtime, CLI or utility required to execute this guide (linter, formatter, test framework, scanner, profiler, engine, etc.) is not installed in the environment, **request its installation from the user immediately** (or install it with approval, per the environment's policy). No step, check or deliverable may be skipped, postponed or replaced because "the tool is not installed" — the task is only complete when all required checks have actually been executed.
+> **Tooling policy**: identify the stack, the stage, and the applicable checks; prefer an already available equivalent that produces compatible evidence. Ask for authorization before installing a tool or changing the environment. If no safe equivalent exists, record the required check as blocked and never claim that it passed. Do not install merely optional resources.
 
 ## General principles (valid for any language)
 

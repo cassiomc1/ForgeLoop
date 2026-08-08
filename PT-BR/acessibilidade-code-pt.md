@@ -1,10 +1,19 @@
+---
+name: acessibilidade-code-pt
+language: pt-BR
+counterpart: ../ENG/accessibility-eng.md
+description: "Protocolo prático de acessibilidade orientado à WCAG 2.2 para web, mobile e desktop."
+version: "2026.08"
+last-reviewed: "2026-08-08"
+---
+
 # Acessibilidade como Linha de Base (A11Y)
 
 > Instruções de acessibilidade adaptadas do projeto [A11Y.md](https://github.com/fecarrico/A11Y.md) (Felipe A. Carriço, licença MIT) — um protocolo de validação e contexto persistente para desenvolver software acessível desde a primeira linha de código, alinhado a **WCAG 2.2 AA**, **ISO 9241-171**, **ADA** e **EAA**.
 
 > **Documentos relacionados**: para direção visual/UX (paletas, tipografia, motion), ver [`design-code-pt.md`](./design-code-pt.md). Para ferramentas de teste automatizado (axe-core, Lighthouse, regressão visual), ver [`test-code-pt.md`](./test-code-pt.md). Para qualidade/estrutura de código, ver [`clean-code-pt.md`](./clean-code-pt.md). Para vídeo e motion HTML, ver também o [HyperFrames](https://hyperframes.heygen.com). Este arquivo é a referência canônica de **regras de acessibilidade** (WCAG, ARIA, teclado, foco, leitores de tela) — não repete o conteúdo dos demais.
 
-> **Ferramentas obrigatórias**: se qualquer ferramenta, dependência, runtime, CLI ou utilitário necessário para executar este guia (linter, formatter, framework de teste, scanner, profiler, engine, etc.) não estiver instalado no ambiente, **solicite a instalação ao usuário imediatamente** (ou instale com aprovação, conforme a política do ambiente). Nenhuma etapa, verificação ou entrega pode ser pulada, adiada ou substituída por "a ferramenta não está instalada" — a tarefa só está completa quando todas as verificações exigidas foram de fato executadas.
+> **Política de ferramentas**: identifique a stack, a etapa e os checks aplicáveis; prefira um equivalente já disponível que produza evidência compatível. Antes de instalar uma ferramenta ou alterar o ambiente, peça autorização. Se não houver equivalente seguro, registre o check necessário como bloqueado e nunca afirme que ele passou. Não instale recursos meramente opcionais.
 
 ## 0. Princípio Zero: acessibilidade como pré-condição
 

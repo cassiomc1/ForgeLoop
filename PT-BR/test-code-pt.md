@@ -1,10 +1,19 @@
+---
+name: test-code-pt
+language: pt-BR
+counterpart: ../ENG/test-code-eng.md
+description: "Estratégia e ferramentas de teste orientadas a risco para linguagens e plataformas modernas."
+version: "2026.08"
+last-reviewed: "2026-08-08"
+---
+
 # Guia de Testes Recomendados por Linguagem e Tecnologia
 
 > Instruções práticas de testes de software (unitários, integração, end-to-end) para as principais linguagens e tecnologias usadas no desenvolvimento moderno. Use este documento como referência para orientar agentes de IA e desenvolvedores sobre quais ferramentas usar e boas práticas de teste em cada stack.
 
 > **Documentos relacionados**: para princípios gerais de código limpo (nomes, funções pequenas, formatação) ver [`clean-code-pt.md`](./clean-code-pt.md). Para segurança (inclusive testes de segurança/SAST/DAST) ver [`sec-code-pt.md`](./sec-code-pt.md). Para vídeo e motion HTML, consulte o [HyperFrames](https://hyperframes.heygen.com). Este arquivo é a referência canônica de qual framework de teste usar por linguagem/plataforma.
 
-> **Ferramentas obrigatórias**: se qualquer ferramenta, dependência, runtime, CLI ou utilitário necessário para executar este guia (linter, formatter, framework de teste, scanner, profiler, engine, etc.) não estiver instalado no ambiente, **solicite a instalação ao usuário imediatamente** (ou instale com aprovação, conforme a política do ambiente). Nenhuma etapa, verificação ou entrega pode ser pulada, adiada ou substituída por "a ferramenta não está instalada" — a tarefa só está completa quando todas as verificações exigidas foram de fato executadas.
+> **Política de ferramentas**: identifique a stack, a etapa e os checks aplicáveis; prefira um equivalente já disponível que produza evidência compatível. Antes de instalar uma ferramenta ou alterar o ambiente, peça autorização. Se não houver equivalente seguro, registre o check necessário como bloqueado e nunca afirme que ele passou. Não instale recursos meramente opcionais.
 
 ## Princípios gerais (válidos para qualquer linguagem)
 

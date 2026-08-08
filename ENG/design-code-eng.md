@@ -1,6 +1,10 @@
 ---
-name: web-design-premium-v2-eng
-description: 'Premium guide to visual direction, UX, motion, and performance in sophisticated digital experiences — desktop web, mobile web, native iOS/Android apps, and Windows/macOS desktop apps. ALWAYS use it when creating, redesigning, or reviewing a landing page, institutional website, digital product, or application that needs to look premium/high-end.'
+name: design-code-eng
+language: en
+counterpart: ../PT-BR/design-code-pt.md
+description: "Visual direction, UX, motion, and perceived performance for premium digital experiences."
+version: "2026.08"
+last-reviewed: "2026-08-08"
 ---
 
 # Web Design Premium v2 — Practical Guidelines
@@ -9,7 +13,7 @@ description: 'Premium guide to visual direction, UX, motion, and performance in 
 
 > **Related documents**: for the complete studio-level website production process, see [`premium-sites-studio-eng.md`](./premium-sites-studio-eng.md). For the quality/structure of the code that implements this design, see [`clean-code-eng.md`](./clean-code-eng.md). For accessibility/visual/E2E testing, see [`test-code-eng.md`](./test-code-eng.md). For form security, authentication, and client-side storage, see [`sec-code-eng.md`](./sec-code-eng.md). To translate visual direction into HTML video, see [HyperFrames](https://hyperframes.heygen.com). This file focuses exclusively on UI/UX/visuals — it does not repeat code, testing, or security rules.
 
-> **Mandatory tooling**: if any tool, dependency, runtime, CLI or utility required to execute this guide (linter, formatter, test framework, scanner, profiler, engine, etc.) is not installed in the environment, **request its installation from the user immediately** (or install it with approval, per the environment's policy). No step, check or deliverable may be skipped, postponed or replaced because "the tool is not installed" — the task is only complete when all required checks have actually been executed.
+> **Tooling policy**: identify the stack, the stage, and the applicable checks; prefer an already available equivalent that produces compatible evidence. Ask for authorization before installing a tool or changing the environment. If no safe equivalent exists, record the required check as blocked and never claim that it passed. Do not install merely optional resources.
 
 ## How to use this guide (mandatory process)
 

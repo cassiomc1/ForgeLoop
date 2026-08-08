@@ -1,10 +1,19 @@
+---
+name: clean-code-pt
+language: pt-BR
+counterpart: ../ENG/clean-code-eng.md
+description: "Práticas de código legível, observável, seguro e operável por agentes de IA."
+version: "2026.08"
+last-reviewed: "2026-08-08"
+---
+
 # Clean Code para Agentes de IA
 
 > Tradução e adaptação das dicas do artigo "Clean Code for AI Agents" de Fabio Akita (akitaonrails.com), organizadas como instruções práticas para orientar agentes de IA (Claude Code, Cursor, Copilot, etc.) a escrever código de melhor qualidade.
 
 > **Documentos relacionados**: para frameworks/ferramentas de teste por linguagem, ver [`test-code-pt.md`](./test-code-pt.md). Para boas práticas de segurança, ver [`sec-code-pt.md`](./sec-code-pt.md). Para diretrizes visuais/UX, ver [`design-code-pt.md`](./design-code-pt.md). Para vídeo e motion baseados em HTML, consulte o [HyperFrames](https://hyperframes.heygen.com). Este arquivo foca em qualidade e estrutura de código, não repete o conteúdo detalhado dos demais.
 
-> **Ferramentas obrigatórias**: se qualquer ferramenta, dependência, runtime, CLI ou utilitário necessário para executar este guia (linter, formatter, framework de teste, scanner, profiler, engine, etc.) não estiver instalado no ambiente, **solicite a instalação ao usuário imediatamente** (ou instale com aprovação, conforme a política do ambiente). Nenhuma etapa, verificação ou entrega pode ser pulada, adiada ou substituída por "a ferramenta não está instalada" — a tarefa só está completa quando todas as verificações exigidas foram de fato executadas.
+> **Política de ferramentas**: identifique a stack, a etapa e os checks aplicáveis; prefira um equivalente já disponível que produza evidência compatível. Antes de instalar uma ferramenta ou alterar o ambiente, peça autorização. Se não houver equivalente seguro, registre o check necessário como bloqueado e nunca afirme que ele passou. Não instale recursos meramente opcionais.
 
 ## Contexto
 

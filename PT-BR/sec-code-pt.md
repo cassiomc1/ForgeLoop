@@ -1,10 +1,19 @@
+---
+name: sec-code-pt
+language: pt-BR
+counterpart: ../ENG/sec-code-eng.md
+description: "Segurança verificável para desenvolvimento web, mobile, desktop, APIs e supply chain."
+version: "2026.08"
+last-reviewed: "2026-08-08"
+---
+
 # Guia de Segurança para Desenvolvimento Web, Mobile e Desktop
 
 > Instruções práticas de segurança (secure coding) para as principais linguagens e tecnologias usadas no desenvolvimento moderno — web, mobile (iOS/Android) e desktop (Windows/macOS). Use este documento como referência para orientar agentes de IA e desenvolvedores sobre riscos comuns e como mitigá-los em cada stack. Baseado no OWASP Top 10:2025 (web), OWASP Mobile Top 10:2024 e OWASP MASVS.
 
 > **Documentos relacionados**: para qualidade/estrutura geral de código, ver [`clean-code-pt.md`](./clean-code-pt.md). Para frameworks e ferramentas de teste (incluindo SAST/DAST como parte do pipeline), ver [`test-code-pt.md`](./test-code-pt.md). Para vídeos e composições HTML, consulte o [HyperFrames](https://hyperframes.heygen.com) e trate scripts, assets e URLs externas como superfície de ataque. Este arquivo é a referência canônica de segurança; regras de secrets, autorização, criptografia e OWASP vivem aqui, não nos outros arquivos.
 
-> **Ferramentas obrigatórias**: se qualquer ferramenta, dependência, runtime, CLI ou utilitário necessário para executar este guia (linter, formatter, framework de teste, scanner, profiler, engine, etc.) não estiver instalado no ambiente, **solicite a instalação ao usuário imediatamente** (ou instale com aprovação, conforme a política do ambiente). Nenhuma etapa, verificação ou entrega pode ser pulada, adiada ou substituída por "a ferramenta não está instalada" — a tarefa só está completa quando todas as verificações exigidas foram de fato executadas.
+> **Política de ferramentas**: identifique a stack, a etapa e os checks aplicáveis; prefira um equivalente já disponível que produza evidência compatível. Antes de instalar uma ferramenta ou alterar o ambiente, peça autorização. Se não houver equivalente seguro, registre o check necessário como bloqueado e nunca afirme que ele passou. Não instale recursos meramente opcionais.
 
 ## Princípios gerais (válidos para qualquer plataforma)
 

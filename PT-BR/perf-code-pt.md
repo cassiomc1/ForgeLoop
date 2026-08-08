@@ -1,10 +1,19 @@
+---
+name: perf-code-pt
+language: pt-BR
+counterpart: ../ENG/perf-code-eng.md
+description: "Medição, diagnóstico e melhoria de performance em web, mobile, desktop, APIs e dados."
+version: "2026.08"
+last-reviewed: "2026-08-08"
+---
+
 # Guia de Performance para Desenvolvimento Web, Mobile, Desktop e Bancos de Dados
 
 > Instruções práticas para projetar, medir, diagnosticar e melhorar performance em aplicações web, mobile (iOS/Android), desktop (Windows/macOS), APIs, infraestrutura e bancos de dados. Use este documento para orientar agentes de IA e desenvolvedores. Performance deve ser medida em cenários reais antes e depois da mudança — não otimizada por suposição.
 
 > **Documentos relacionados**: para estrutura e legibilidade de código, ver [`clean-code-pt.md`](./clean-code-pt.md). Para testes funcionais, de integração e E2E, ver [`test-code-pt.md`](./test-code-pt.md). Para segurança e trade-offs de cache, secrets e infraestrutura, ver [`sec-code-pt.md`](./sec-code-pt.md). Para performance percebida, UX, motion e design responsivo, ver [`design-code-pt.md`](./design-code-pt.md). Para performance de preview e renderização de vídeo HTML, consulte o [HyperFrames](https://hyperframes.heygen.com). Este arquivo é a referência canônica de performance.
 
-> **Ferramentas obrigatórias**: se qualquer ferramenta, dependência, runtime, CLI ou utilitário necessário para executar este guia (linter, formatter, framework de teste, scanner, profiler, engine, etc.) não estiver instalado no ambiente, **solicite a instalação ao usuário imediatamente** (ou instale com aprovação, conforme a política do ambiente). Nenhuma etapa, verificação ou entrega pode ser pulada, adiada ou substituída por "a ferramenta não está instalada" — a tarefa só está completa quando todas as verificações exigidas foram de fato executadas.
+> **Política de ferramentas**: identifique a stack, a etapa e os checks aplicáveis; prefira um equivalente já disponível que produza evidência compatível. Antes de instalar uma ferramenta ou alterar o ambiente, peça autorização. Se não houver equivalente seguro, registre o check necessário como bloqueado e nunca afirme que ele passou. Não instale recursos meramente opcionais.
 
 ## Princípios gerais
 

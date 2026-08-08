@@ -1,10 +1,19 @@
+---
+name: clean-code-eng
+language: en
+counterpart: ../PT-BR/clean-code-pt.md
+description: "Practices for readable, observable, secure code operated by AI agents."
+version: "2026.08"
+last-reviewed: "2026-08-08"
+---
+
 # Clean Code for AI Agents
 
 > Translation and adaptation of the tips from the article "Clean Code for AI Agents" by Fabio Akita (akitaonrails.com), organized as practical instructions to guide AI agents (Claude Code, Cursor, Copilot, etc.) to write higher-quality code.
 
 > **Related documents**: for language-specific testing frameworks/tools, see [`test-code-eng.md`](./test-code-eng.md). For security best practices, see [`sec-code-eng.md`](./sec-code-eng.md). For visual/UX guidelines, see [`design-code-eng.md`](./design-code-eng.md). For HTML-based video and motion, see [HyperFrames](https://hyperframes.heygen.com). This file focuses on code quality and structure; it does not repeat the detailed content of the others.
 
-> **Mandatory tooling**: if any tool, dependency, runtime, CLI or utility required to execute this guide (linter, formatter, test framework, scanner, profiler, engine, etc.) is not installed in the environment, **request its installation from the user immediately** (or install it with approval, per the environment's policy). No step, check or deliverable may be skipped, postponed or replaced because "the tool is not installed" — the task is only complete when all required checks have actually been executed.
+> **Tooling policy**: identify the stack, the stage, and the applicable checks; prefer an already available equivalent that produces compatible evidence. Ask for authorization before installing a tool or changing the environment. If no safe equivalent exists, record the required check as blocked and never claim that it passed. Do not install merely optional resources.
 
 ## Context
 
