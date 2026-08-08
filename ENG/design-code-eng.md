@@ -172,7 +172,7 @@ Rule: never repeat the same "image left + text right" pattern in 2 consecutive s
 ### Liquid Glass, glassmorphism, and translucency
 
 - **Glassmorphism** is a static approximation: transparency, `backdrop-filter: blur()`, a subtle border, and shadow. **Liquid Glass** describes a dynamic material that attempts to simulate refraction, specular highlights, tint, shadow, and deformation responsive to content or movement.
-- Do not call CSS blur real refraction. On the web, more faithful refraction requires SVG displacement or WebGL shaders; both are optional, costlier enhancements that require a fallback.
+- Do not call CSS blur real refraction. On the web, refraction normally requires displacement or shaders, for example SVG, WebGL, or WebGPU; these are optional, costlier enhancements that require a fallback.
 - Reserve transparency/refraction for one or two low-density floating surfaces — contextual navigation, toolbar, tab bar, sheet, popover, or a focused control. Body copy, long forms, prices, critical states, decisions, and essential CTAs remain on solid or predictably contrasting surfaces.
 - Validate every state against the most complex background that could pass behind the surface. Glass over glass, long text over moving/refracted backgrounds, and transparency across every layer turn depth into noise.
 
@@ -217,7 +217,7 @@ Motion rules:
 - Easing: `power3.out` or `expo.out` for entrances; `power2.inOut` for state transitions.
 - Stagger between elements in a list: `0.06–0.1s`.
 - Never: bounce, elastic, exaggerated rotation, aggressive parallax (>30% of scroll speed), video autoplay with sound, infinite decorative loops that compete with the content.
-- On Liquid Glass surfaces, limit elasticity, morphing, glare, and pointer/touch tracking to short, pausable motion. With `prefers-reduced-motion: reduce`, use a static surface; comprehension, focus, and action must remain identical.
+- On Liquid Glass surfaces, elastic easing remains prohibited. Any internal micro-deformation, morphing, glare, or cursor/touch response is visual finish only: short and pausable, never required to understand, focus, or act. With `prefers-reduced-motion: reduce`, use a static surface.
 - Always wrap all motion logic in:
 
 ```js
@@ -232,11 +232,11 @@ if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
 
 - Use only if it reinforces the product/narrative (e.g., physical product, technical data, technology brand). If you are not sure it helps, do not use it.
 - Keep elements subtle: light particles, simple shapes, soft lighting.
-- Always provide a 2D fallback (static image) for browsers without WebGL and for `prefers-reduced-motion`.
+- For purely decorative 3D scenes, provide a 2D fallback (static image) for browsers without WebGL and for `prefers-reduced-motion`.
 - Limit: <5000 particles, no heavy post-processing (bloom may stay, avoid SSAO/motion blur).
 - Pause rendering when the canvas leaves the viewport (`IntersectionObserver`).
 
-For Canvas, WebGL, SVG displacement, or Liquid Glass effects, detect capability before loading shaders; limit resolution/DPR, multipass filters, and animated surfaces; initialize on demand; pause outside the viewport and while the page is hidden; and simplify or disable the effect on modest devices. Without the effect, render an opaque HTML/CSS surface with the same content, focus, hover, pressed, disabled, error, success, selection, and action states.
+For Canvas, WebGL, SVG displacement, or Liquid Glass effects, detect capability before loading shaders; limit resolution/DPR, multipass filters, and animated surfaces; initialize on demand; pause outside the viewport and while the page is hidden; and simplify or disable the effect on modest devices. For every interactive Liquid Glass surface, semantic HTML/CSS must exist before enhancement and work without JavaScript, with equivalent content, focus, hover, pressed, disabled, error, success, selection, and action states; without the effect, render that opaque surface.
 
 Measure and test the effect in Safari and Firefox, over light and dark backgrounds, complex images and videos, and on modest devices. If legibility, performance, or equivalent states fail, use the opaque HTML/CSS surface.
 
@@ -281,7 +281,7 @@ Measure and test the effect in Safari and Firefox, over light and dark backgroun
 **Liquid Glass surface (optional)**
 
 - Use it for short-content controls or contextual navigation; keep the real element focusable and actionable in HTML.
-- Prefer a simple shape, restrained tint/blur/highlights, and conventional focus states. Deformation, elasticity, glare, and pointer tracking are finish, not affordance or an interaction requirement.
+- Prefer a simple shape, restrained tint/blur/highlights, and conventional focus states. Elastic easing is prohibited; internal micro-deformation, glare, and pointer tracking are finish, not affordance or an interaction requirement.
 - Do not apply chromatic aberration, distortion, or reflection to readable text, essential icons, fields, tables, or status messages.
 
 **UI libraries and data visualization**
@@ -299,15 +299,16 @@ Measure and test the effect in Safari and Firefox, over light and dark backgroun
 - Never communicate state through color alone (add an icon, text, or pattern).
 - Test at 200% zoom and on screens 360px wide.
 - Every `<img>` with descriptive `alt`; decorative icons with `aria-hidden="true"`.
+- When the platform exposes contrast or transparency preferences, including `prefers-contrast` and `forced-colors` where applicable, provide an opaque or less-transparent variant. Where no reliable media query exists, provide an equivalent in-product control.
 
 ---
 
 ## Performance
 
-- Animate only `transform` and `opacity`; use `will-change` sparingly (remove after the animation).
+- For DOM/CSS animations, animate only `transform` and `opacity`; use `will-change` sparingly (remove after the animation). Shader/filter deformation or glare is an internal effect only: short, pausable, and never an interaction requirement.
 - Images in `WebP`/`AVIF`, `srcset` + `loading="lazy"` (except the hero image, which must be eager/preload).
 - Fonts: `font-display: swap`, preload only the critical hero font (1–2 files, max.).
-- Performance budget: LCP < 2.5s, CLS < 0.1, motion/3D JS must not block the initial load (load via `defer`/lazy-init after interaction or scroll).
+- Performance budget: LCP < 2.5s, CLS < 0.1, INP within the product's responsiveness target; motion/3D JS must not block the initial load (load via `defer`/lazy-init after interaction or scroll).
 
 ---
 
@@ -348,6 +349,7 @@ Measure and test the effect in Safari and Firefox, over light and dark backgroun
 - [ ] I validated contrast and legibility against the worst possible background and at 200% zoom.
 - [ ] The interface preserves content, focus, states, and actions without WebGL, SVG displacement, transparency, or motion.
 - [ ] No more than two translucent layers compete on the same screen, and each has a clear contextual function.
+- [ ] Where the platform exposes contrast/transparency preferences, including `prefers-contrast` or `forced-colors` when applicable, the opaque/less-transparent variant works; without a reliable media query, there is an equivalent in-product control.
 - [ ] No item from the "Blacklist" is present.
 - [ ] Tested on mobile (360px) and desktop (1440px).
 - [ ] Ran `/impeccable audit` and `/impeccable polish` across the entire interface and addressed applicable findings.
@@ -358,9 +360,9 @@ Measure and test the effect in Safari and Firefox, over light and dark backgroun
 
 > Native apps do NOT strictly follow this guide's web palette/typography guidelines. The priority is the platform's design language (Apple HIG / Material Design 3), ensuring that the app looks "premium native", not like a packaged website.
 
-### iOS (Human Interface Guidelines)
+### iOS/iPadOS (Human Interface Guidelines)
 
-- **Liquid Glass**: when the SDK and deployment target support Apple's current material, prefer native APIs and respect HIG, Reduce Transparency, and Increase Contrast. On earlier versions, use legible conventional surfaces. Do not impose the material on Windows or Android.
+- **Liquid Glass**: build with the current Apple SDK and, on iOS/iPadOS, check API availability at runtime before using the material. When available, prefer native APIs and respect HIG, Reduce Transparency, and Increase Contrast. On earlier systems, retain legible conventional surfaces. Do not impose this aesthetic on Windows or Android.
 - **Typography**: system font `SF Pro` (Display for large headings, Text for body). Use the system's dynamic styles (Dynamic Type) instead of fixed sizes, to support accessibility:
   - Large Title `34pt`, Title 1 `28pt`, Title 2 `22pt`, Title 3 `20pt`
   - Headline `17pt` (semibold), Body `17pt`, Callout `16pt`, Subhead `15pt`
@@ -420,7 +422,7 @@ Measure and test the effect in Safari and Firefox, over light and dark backgroun
 
 ### macOS (Human Interface Guidelines)
 
-- **Liquid Glass**: when the SDK and deployment target support Apple's current material, prefer native APIs and respect HIG, Reduce Transparency, and Increase Contrast. On earlier versions, use legible conventional surfaces. Do not impose the material on Windows or Android.
+- **Liquid Glass**: build with the current Apple SDK and check API availability at runtime before using the material. When available, prefer native APIs and respect HIG, Reduce Transparency, and Increase Contrast. On earlier systems, retain legible conventional surfaces. Do not impose this aesthetic on Windows or Android.
 - **Typography**: `SF Pro` (Display/Text), respecting system text sizes; support user text-size preferences when applicable.
 - **Spacing**: `8pt` grid, generous margins (macOS tends to have more breathing room than Windows). Content padding `20–24pt`.
 - **Navigation**: `NSSplitView`/left sidebar + contextual top toolbar; the system menu bar (top of the screen) must contain all of the app's main commands, not only shortcuts hidden in the UI.
@@ -467,9 +469,10 @@ Measure and test the effect in Safari and Firefox, over light and dark backgroun
 - Cuelume (web interaction sounds): https://cuelume-site.pages.dev/
 - Canvas UI (creative, framework-agnostic canvas/WebGL effects): https://canvasui.dev/
 - Impeccable (interface auditing and polish): https://impeccable.style/
-- Liquid Glass Design (gallery and conceptual guide; inspiration, not a specification or asset library): https://liquidglassdesign.com/
-- Do not copy or redistribute images, prompts, or works from the Liquid Glass Design gallery; consult its terms and obtain permission where necessary.
+- Liquid Glass Design (an independent inspiration gallery, not affiliated with Apple; not a specification or asset library): https://liquidglassdesign.com/
+- The gallery's images and works are distinct from external resources it merely indexes. Consult the [terms](https://liquidglassdesign.com/terms); do not rehost, redistribute, or directly use images or works commercially without permission.
+- For each external prompt or code resource, verify its license, provenance, credits, compatibility, and maintenance individually before use; being indexed does not transfer rights.
 - Liquid Glass Design — guide to the material, glassmorphism, and web implementation: https://liquidglassdesign.com/what-is-liquid-glass
 - Liquid Glass Design — design and development resources: https://liquidglassdesign.com/resources
-- Apple — Adopting Liquid Glass (normative reference for Apple platforms): https://developer.apple.com/documentation/TechnologyOverviews/adopting-liquid-glass
+- Apple — Adopting Liquid Glass (official guidance for Apple platforms): https://developer.apple.com/documentation/TechnologyOverviews/adopting-liquid-glass
 - Liquid Glass React, SVG, and Studio (experimental implementations; assess license, compatibility, weight, and maintenance): https://github.com/rdev/liquid-glass-react | https://github.com/shuding/liquid-glass | https://github.com/iyinchao/liquid-glass-studio
