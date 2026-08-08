@@ -751,3 +751,6 @@ jobs:
               f"{len(markdown_files)} Markdown files"
           )
           PY
+
+      - name: Validate universal project loop
+        run: python3 scripts/validate_loop_system.py --self-test && python3 scripts/validate_loop_system.py
