@@ -10,7 +10,7 @@ last-reviewed: "2026-08-08"
 # Premium Websites at Studio Level — Complete Process
 
 > This guide defines the production process. For detailed visual rules, also use [`design-code-eng.md`](./design-code-eng.md). For accessibility, code quality, testing, security, and performance, consult the related documents at the end. A high-end website is not only a beautiful interface: it is a coherent, useful, fast, accessible, measurable, and maintainable experience.
-
+>
 > **Tooling policy**: identify the stack, the stage, and the applicable checks; prefer an already available equivalent that produces compatible evidence. Ask for authorization before installing a tool or changing the environment. If no safe equivalent exists, record the required check as blocked and never claim that it passed. Do not install merely optional resources.
 
 ## 1. Quality bar

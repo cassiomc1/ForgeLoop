@@ -332,7 +332,7 @@ Efeitos Canvas, WebGL, SVG displacement e Liquid Glass seguem o **Contrato norma
 - `Inter` ou `Roboto` como única fonte do site inteiro sem fonte display.
 - Ícones de banco de stock genéricos (setas 3D, emojis de foguete, "lightbulb").
 - Textos centralizados em blocos longos de parágrafo.
-- Mais de 3 fontes ou mais de 2 acentos decorativos simultâneos; os sete tokens semânticos funcionais não entram nessa contagem.
+- Mais de 2 famílias tipográficas ou mais de 2 acentos decorativos simultâneos; os sete tokens semânticos funcionais não entram nessa contagem.
 - Seções todas com o mesmo padrão de grid/alinhamento (visual de "template clonado").
 - Animação de "fade in" idêntica aplicada indiscriminadamente a TUDO sem hierarquia de timing.
 - Botões sem estado de hover/focus perceptível.
@@ -350,7 +350,7 @@ Efeitos Canvas, WebGL, SVG displacement e Liquid Glass seguem o **Contrato norma
 
 ## Checklist de Revisão (antes de publicar)
 
-- [ ] Escolhi 1 paleta pronta e não misturei cores fora dela.
+- [ ] Escolhi 1 paleta semântica, não misturei outra paleta e documentei os 1–2 acentos decorativos adicionais, quando usados.
 - [ ] Usei no máximo 2 famílias tipográficas, seguindo a escala definida.
 - [ ] O espaçamento entre seções segue a escala (mínimo 96–160px).
 - [ ] Nenhuma seção repete o mesmo layout da anterior.

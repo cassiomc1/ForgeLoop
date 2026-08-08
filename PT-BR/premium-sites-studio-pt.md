@@ -10,7 +10,7 @@ last-reviewed: "2026-08-08"
 # Sites Premium em Nível de Estúdio — Processo Completo
 
 > Este guia define o processo de produção. Para regras visuais detalhadas, use também [`design-code-pt.md`](./design-code-pt.md). Para acessibilidade, qualidade de código, testes, segurança e performance, consulte os documentos relacionados ao final. Um site de alto nível não é apenas uma interface bonita: é uma experiência coerente, útil, rápida, acessível, mensurável e sustentável.
-
+>
 > **Política de ferramentas**: identifique a stack, a etapa e os checks aplicáveis; prefira um equivalente já disponível que produza evidência compatível. Antes de instalar uma ferramenta ou alterar o ambiente, peça autorização. Se não houver equivalente seguro, registre o check necessário como bloqueado e nunca afirme que ele passou. Não instale recursos meramente opcionais.
 
 ## 1. Padrão de qualidade

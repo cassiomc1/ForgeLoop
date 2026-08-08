@@ -608,7 +608,8 @@ data independently of that choice.
   one algorithm. Separate keys/config/paths if both are unavoidable.
 - Dependencies: run vulnerability audits (npm audit, pip-audit,
   govulncheck, dotnet list package --vulnerable) and resolve high-severity
-  issues; pin actions by commit and plugins/artifacts by version/digest.
+  issues; pin actions by commit and plugins/artifacts by an immutable version
+  or verified digest.
 - Mobile: sensitive data only in Keychain (iOS) or encrypted with a key in
   Keystore (Android). EncryptedSharedPreferences is legacy/migration only.
 - Desktop: secrets only in the OS's native credential vault (DPAPI/Credential
@@ -639,7 +640,7 @@ data independently of that choice.
   rotation, idle/absolute timeout, logout, and revocation (ASVS 5.0.0, V3.3
   and V7).
 - [ ] OAuth/OIDC uses Code + PKCE, `state`, `nonce`, and exact redirects; JWTs
-  and refresh tokens have validation, replay, rotation, and revocation tests
+  and refresh tokens have validation, replay, rotation, and revocation tests.
   Short/single-use codes, confidential-client backchannel authentication, and
   (`iss`, `sub`) OIDC accounts are verified (ASVS 5.0.0, V9/V10).
 - [ ] JWT separates symmetric/asymmetric algorithms by context and binds each
@@ -649,8 +650,8 @@ data independently of that choice.
   revocation, rotation, audit, and Git remediation playbook (ASVS 5.0.0,
   V13.3).
 - [ ] Dependencies come from a trusted registry; actions use full commits,
-  plugins/artifacts use immutable versions or digests, provenance is verified,
-  and dependency confusion is tested.
+  plugins/artifacts use an immutable version or verified digest, provenance is
+  verified, and dependency confusion is tested.
 - [ ] Passwords use Argon2id/scrypt or a documented exception; data uses AEAD,
   and there is a cryptographic inventory/agility plan (ASVS 5.0.0, V11).
 - [ ] Android uses Keystore and platform TLS; any pinning has a threat model,

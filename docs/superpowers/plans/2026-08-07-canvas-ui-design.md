@@ -87,7 +87,7 @@ Insert after the `**Images**` block (or equivalent):
 ```markdown
 **Optional canvas/WebGL effects**
 
-- For high-impact moments — such as heroes, reveals, and special interactions — consult [Canvas UI](https://canvasui.dev/) as a source of copyable, adaptable canvas/WebGL components.
+- For high-impact moments — such as heroes, reveals, and special interactions — consult [Canvas UI](https://canvasui.dev/) as a reference for adaptable canvas/WebGL effects, subject to license, provenance, and attribution review.
 - Use an effect only when it reinforces the narrative; adapt tokens, composition, and behavior to the project's identity instead of copying the default result.
 - Keep text, navigation, controls, and every essential action as semantic, accessible HTML; canvas is progressive enhancement, never the only communication channel.
 ```

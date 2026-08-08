@@ -2,6 +2,10 @@
 
 ## Status
 
+- Implementada em 2026-08-08.
+- Evidência temática: `ec00979..be227fd`.
+- O fechamento autorreferente é identificado pelo assunto
+  `docs: concluir polimento integral dos guias`; nenhum SHA foi antecipado.
 - Aprovada pelo usuário em 2026-08-08 pela instrução “execute tudo”.
 - Escopo: toda a coleção documental, mantendo equivalência entre PT-BR e inglês.
 
@@ -119,7 +123,7 @@ Substituir a exigência de instalar imediatamente toda ferramenta mencionada por
 - O loop de passo fixo terá `maxStepsPerFrame`, evento de frame lento e política intencional de recuperação/resincronização.
 - O manifest de assets conterá licença, atribuição e origem, com validação em CI e geração de notices.
 - Os dois idiomas apontarão para design e acessibilidade; PT-BR ganhará teste automatizado com axe-core mais smoke manual.
-- Remover os links quebrados `https://web.dev/games/` e `https://www.w3.org/WAI/gaming/`; usar referências ativas e específicas.
+- Remover os dois URLs legados 404 identificados na auditoria e usar referências ativas e específicas.
 
 ### Sites premium
 
@@ -146,6 +150,17 @@ O trabalho só poderá ser considerado concluído quando houver evidência fresc
 - ausência dos dois URLs quebrados conhecidos e das recomendações obsoletas identificadas;
 - paridade semântica dos oito pares de guias;
 - revisão independente por tarefa e revisão final de toda a branch sem achados Critical ou Important.
+
+Evidência de implementação coletada em 2026-08-08:
+
+- Markdown lint global: 27 arquivos e zero issues;
+- validador exato do workflow: 16 guias, 16 nomes únicos e 27 arquivos
+  Markdown, com self-tests positivos e negativos dos parsers aprovados;
+- checker HTTP read-only: 201 destinos canônicos, 200 verificados, uma
+  exclusão declarada em `.lychee.toml` e zero falhas;
+- auditoria de paridade: oito pares e 53 grupos de marcadores obrigatórios,
+  sem lacunas, com notação decimal localizada correta;
+- `git diff --check` sem erros.
 
 ## Fora de escopo
 

@@ -181,7 +181,7 @@ Documente hardware, região, build, configuração, dataset e interferências. S
 | A cada PR | lint/typecheck aplicáveis, unitários e integração impactados, smoke das jornadas críticas afetadas, checks automatizados de acessibilidade e segurança, cobertura/mutação conforme risco |
 | Merge/branch protegida | contratos, integração ampliada e artefatos reproduzíveis; políticas de exceção validadas |
 | Agendado | suites amplas selecionadas pelo risco: matriz de plataformas, E2E, sandbox externo, mutation testing caro, modalidades de carga justificadas e varreduras extensas |
-| Release | instalador/upgrade/rollback operacional, smoke pós-deploy, acessibilidade manual pendente, restore/migração e critérios SLO do release |
+| Release | instalador/upgrade/rollback operacional, smoke pós-deploy, evidência manual de acessibilidade concluída, restore/migração e critérios SLO do release; sem essa evidência, bloquear o release ou registrar exceção formal com owner e prazo |
 
 Uma suíte ampla não precisa rodar inteira em toda PR quando o custo reduz o feedback sem diminuir risco. A seleção por impacto precisa ser conservadora, auditável e acompanhada por execução agendada que detecte lacunas. Um comando documentado deve reproduzir cada gate; qualquer check não executado é `bloqueado` ou `não aplicável` com justificativa, nunca `aprovado`.
 

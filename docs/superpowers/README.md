@@ -16,6 +16,12 @@ Este diretório preserva decisões e evidências do trabalho documental executad
 
 Em todos os seis registros acima, a proibição original de editar `README.md` limitava apenas o patch inicial. A consolidação posterior de governança atualizou o índice do repositório sem alterar a evidência histórica da implementação.
 
+## Registros concluídos em 2026-08-08
+
+| Tema | Especificação | Plano | Evidência | Status |
+| --- | --- | --- | --- | --- |
+| Polimento integral dos guias | [`2026-08-08-repository-guide-polish-design.md`](./specs/2026-08-08-repository-guide-polish-design.md) | [`2026-08-08-repository-guide-polish.md`](./plans/2026-08-08-repository-guide-polish.md) | `ec00979..be227fd`; fechamento identificado pelo assunto `docs: concluir polimento integral dos guias` | concluído em 2026-08-08 |
+
 ## Trabalho posterior
 
 Documentos com datas posteriores devem declarar o próprio status. Antes de reutilizar um plano, confira o estado atual da branch, os metadados dos guias e as políticas vigentes na raiz do repositório.

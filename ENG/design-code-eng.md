@@ -332,7 +332,7 @@ Canvas, WebGL, SVG displacement, and Liquid Glass effects follow the **normative
 - `Inter` or `Roboto` as the site's only font without a display font.
 - Generic stock-library icons (3D arrows, rocket emojis, "lightbulb").
 - Centered text in long paragraph blocks.
-- More than 3 fonts or more than 2 simultaneous decorative accents; the seven functional semantic tokens do not count toward that limit.
+- More than 2 font families or more than 2 simultaneous decorative accents; the seven functional semantic tokens do not count toward that limit.
 - Sections all using the same grid/alignment pattern ("cloned template" look).
 - Identical "fade in" animation applied indiscriminately to EVERYTHING without timing hierarchy.
 - Buttons without a noticeable hover/focus state.
@@ -350,7 +350,7 @@ Canvas, WebGL, SVG displacement, and Liquid Glass effects follow the **normative
 
 ## Review Checklist (before publishing)
 
-- [ ] I chose 1 ready-made palette and did not mix colors outside it.
+- [ ] I chose 1 semantic palette, did not mix in another palette, and documented the 1–2 additional decorative accents when used.
 - [ ] I used at most 2 font families, following the defined scale.
 - [ ] Spacing between sections follows the scale (minimum 96–160px).
 - [ ] No section repeats the same layout as the previous one.

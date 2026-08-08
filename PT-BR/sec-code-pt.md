@@ -604,7 +604,8 @@ público exigir e proteja dados independentemente dessa escolha.
   a um algoritmo. Separar chaves/config/paths se ambas forem inevitáveis.
 - Dependências: rodar audit de vulnerabilidades (npm audit, pip-audit,
   govulncheck, dotnet list package --vulnerable) e resolver criticidades
-  altas; fixar actions por commit e plugins/artefatos por versão/digest.
+  altas; fixar actions por commit e plugins/artefatos por versão imutável ou
+  digest verificado.
 - Mobile: dados sensíveis só em Keychain (iOS) ou cifrados com chave no
   Keystore (Android). EncryptedSharedPreferences é apenas legado/migração.
 - Desktop: segredos só no cofre de credenciais nativo do SO (DPAPI/Credential
@@ -643,8 +644,8 @@ público exigir e proteja dados independentemente dessa escolha.
 - [ ] Secret scanning cobre pre-commit, CI e histórico; exposição tem playbook
   de revogação, rotação, auditoria e remediação Git (ASVS 5.0.0, V13.3).
 - [ ] Dependências vêm de registry confiável; actions estão em commit completo,
-  plugins/artefatos em versão ou digest imutável, provenance foi verificada e
-  dependency confusion foi testada.
+  plugins/artefatos em versão imutável ou digest verificado; provenance foi
+  verificada e dependency confusion foi testada.
 - [ ] Senhas usam Argon2id/scrypt ou exceção documentada; dados usam AEAD e há
   inventário/agilidade criptográfica (ASVS 5.0.0, V11).
 - [ ] Android usa Keystore e TLS da plataforma; qualquer pinning tem threat

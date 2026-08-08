@@ -181,7 +181,7 @@ Document hardware, region, build, configuration, dataset, and interference. Sepa
 | Every PR | applicable lint/typecheck, impacted unit and integration tests, smoke for affected critical journeys, automated accessibility/security checks, coverage/mutation according to risk |
 | Merge/protected branch | contracts, broader integration, and reproducible artifacts; exception policies validated |
 | Scheduled | broad suites selected by risk: platform matrix, E2E, external sandbox, expensive mutation testing, justified load modes, and extensive scans |
-| Release | installer/upgrade/operational rollback, post-deploy smoke, pending manual accessibility, restore/migration, and release SLO criteria |
+| Release | installer/upgrade/operational rollback, post-deploy smoke, completed manual accessibility evidence, restore/migration, and release SLO criteria; without that evidence, block the release or record a formal exception with an owner and deadline |
 
 A broad suite need not run in full on every PR when its cost reduces feedback without lowering risk. Impact selection must be conservative, auditable, and backed by scheduled execution that detects gaps. A documented command must reproduce each gate; any unexecuted check is `blocked` or `not applicable` with a reason, never `approved`.
 

@@ -36,7 +36,9 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           from urllib.parse import unquote
+          import json
           import re
+          import tempfile
 
           root = Path.cwd()
           guides = sorted((*root.glob("PT-BR/*.md"), *root.glob("ENG/*.md")))
@@ -47,7 +49,9 @@ jobs:
           required = {"name", "language", "counterpart", "description", "version", "last-reviewed"}
           names = set()
           metadata_by_path = {}
-          link_pattern = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
+
+          class ValidationError(ValueError):
+              pass
 
           if len(guides) != 16:
               raise SystemExit(f"expected 16 guides, found {len(guides)}")
@@ -68,7 +72,436 @@ jobs:
                   ):
                       opening = None
               if opening is not None:
-                  raise SystemExit(f"{path}: unclosed code fence opened at line {opening[2]}")
+                  raise ValidationError(
+                      f"{path}: unclosed code fence opened at line {opening[2]}"
+                  )
+
+          def parse_scalar(raw_value, path, line_number):
+              value = raw_value.strip()
+              if not value:
+                  raise ValidationError(
+                      f"{path}:{line_number}: empty frontmatter value"
+                  )
+
+              if value.startswith('"'):
+                  try:
+                      parsed = json.loads(value)
+                  except json.JSONDecodeError as error:
+                      raise ValidationError(
+                          f"{path}:{line_number}: invalid double-quoted scalar"
+                      ) from error
+                  if not isinstance(parsed, str):
+                      raise ValidationError(
+                          f"{path}:{line_number}: frontmatter value must be a string"
+                      )
+                  return parsed
+
+              if value.startswith("'"):
+                  if len(value) < 2 or not value.endswith("'"):
+                      raise ValidationError(
+                          f"{path}:{line_number}: invalid single-quoted scalar"
+                      )
+                  body = value[1:-1]
+                  if "'" in body.replace("''", ""):
+                      raise ValidationError(
+                          f"{path}:{line_number}: invalid single-quote escape"
+                      )
+                  return body.replace("''", "'")
+
+              if re.fullmatch(
+                  r"(?i:null|true|false|yes|no|on|off|~|[-+]?\d+(?:\.\d+)?)",
+                  value,
+              ) or re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+                  raise ValidationError(
+                      f"{path}:{line_number}: implicit non-string YAML value is forbidden"
+                  )
+              if not re.fullmatch(
+                  r"(?:[A-Za-z0-9][A-Za-z0-9._/+:-]*|\.\.?/[A-Za-z0-9._/+:-]+)",
+                  value,
+              ):
+                  raise ValidationError(
+                      f"{path}:{line_number}: unsupported unquoted scalar"
+                  )
+              return value
+
+          def parse_frontmatter(text, path):
+              lines = text.splitlines()
+              if not lines or lines[0] != "---":
+                  raise ValidationError(f"{path}: missing exact opening frontmatter delimiter")
+              try:
+                  closing_index = lines.index("---", 1)
+              except ValueError as error:
+                  raise ValidationError(
+                      f"{path}: missing exact closing frontmatter delimiter"
+                  ) from error
+
+              metadata = {}
+              for line_number, line in enumerate(lines[1:closing_index], 2):
+                  match = re.fullmatch(
+                      r"(name|language|counterpart|description|version|last-reviewed):[ \t]+(.+)",
+                      line,
+                  )
+                  if not match:
+                      raise ValidationError(
+                          f"{path}:{line_number}: invalid frontmatter line"
+                      )
+                  key, raw_value = match.groups()
+                  if key in metadata:
+                      raise ValidationError(
+                          f"{path}:{line_number}: duplicate frontmatter key {key}"
+                      )
+                  metadata[key] = parse_scalar(raw_value, path, line_number)
+
+              if set(metadata) != required:
+                  raise ValidationError(f"{path}: frontmatter keys differ from contract")
+              return metadata
+
+          def is_escaped(text, index):
+              backslashes = 0
+              index -= 1
+              while index >= 0 and text[index] == "\\":
+                  backslashes += 1
+                  index -= 1
+              return backslashes % 2 == 1
+
+          def strip_inline_code(line):
+              characters = list(line)
+              index = 0
+              while index < len(line):
+                  if line[index] != "`" or is_escaped(line, index):
+                      index += 1
+                      continue
+                  run_end = index
+                  while run_end < len(line) and line[run_end] == "`":
+                      run_end += 1
+                  run_length = run_end - index
+                  search = run_end
+                  closing_end = None
+                  while search < len(line):
+                      candidate = line.find("`", search)
+                      if candidate < 0:
+                          break
+                      candidate_end = candidate
+                      while candidate_end < len(line) and line[candidate_end] == "`":
+                          candidate_end += 1
+                      if (
+                          not is_escaped(line, candidate)
+                          and candidate_end - candidate == run_length
+                      ):
+                          closing_end = candidate_end
+                          break
+                      search = candidate_end
+                  if closing_end is None:
+                      index = run_end
+                      continue
+                  for position in range(index, closing_end):
+                      if characters[position] not in "\r\n":
+                          characters[position] = " "
+                  index = closing_end
+              return "".join(characters)
+
+          def markdown_without_code(text):
+              output = []
+              opening = None
+              for line in text.splitlines(keepends=True):
+                  content = line.rstrip("\r\n")
+                  line_ending = line[len(content):]
+                  match = re.match(r"^[ \t]{0,3}(`{3,}|~{3,})(.*)$", content)
+                  if opening is None and match:
+                      marker = match.group(1)
+                      opening = (marker[0], len(marker))
+                      output.append(line_ending)
+                  elif opening is not None:
+                      if (
+                          match
+                          and match.group(1)[0] == opening[0]
+                          and len(match.group(1)) >= opening[1]
+                          and re.fullmatch(r"[ \t]*", match.group(2))
+                      ):
+                          opening = None
+                      output.append(line_ending)
+                  else:
+                      output.append(line)
+              return strip_inline_code("".join(output))
+
+          def normalize_reference_label(label):
+              return re.sub(r"[ \t\r\n]+", " ", label.strip()).casefold()
+
+          def unescape_markdown_target(target):
+              return re.sub(r"\\([\\`*{}\[\]()#+.!_>-])", r"\1", target)
+
+          def parse_optional_title(text, index, closing_character, path):
+              while index < len(text) and text[index] in " \t\r\n":
+                  index += 1
+              if index < len(text) and text[index] == closing_character:
+                  return index + 1
+              if index >= len(text) or text[index] not in "\"'(":
+                  raise ValidationError(f"{path}: malformed Markdown link title")
+              opener = text[index]
+              closer = ")" if opener == "(" else opener
+              index += 1
+              while index < len(text):
+                  if text[index] == closer and not is_escaped(text, index):
+                      index += 1
+                      break
+                  index += 1
+              else:
+                  raise ValidationError(f"{path}: unclosed Markdown link title")
+              while index < len(text) and text[index] in " \t\r\n":
+                  index += 1
+              if index >= len(text) or text[index] != closing_character:
+                  raise ValidationError(f"{path}: malformed Markdown link")
+              return index + 1
+
+          def parse_inline_destination(text, opening_index, path):
+              index = opening_index + 1
+              while index < len(text) and text[index] in " \t\r\n":
+                  index += 1
+              if index >= len(text):
+                  raise ValidationError(f"{path}: unclosed Markdown link")
+
+              if text[index] == "<":
+                  target_start = index + 1
+                  index = target_start
+                  while index < len(text):
+                      if text[index] == ">" and not is_escaped(text, index):
+                          target = text[target_start:index]
+                          return target, parse_optional_title(text, index + 1, ")", path)
+                      if text[index] in "\r\n":
+                          break
+                      index += 1
+                  raise ValidationError(f"{path}: malformed angle-bracket link target")
+
+              target_start = index
+              depth = 0
+              while index < len(text):
+                  character = text[index]
+                  if character == "\\" and index + 1 < len(text):
+                      index += 2
+                      continue
+                  if character == "(":
+                      depth += 1
+                  elif character == ")":
+                      if depth == 0:
+                          target = unescape_markdown_target(text[target_start:index])
+                          return target, index + 1
+                      depth -= 1
+                  elif character in " \t\r\n" and depth == 0:
+                      target = unescape_markdown_target(text[target_start:index])
+                      return target, parse_optional_title(text, index, ")", path)
+                  index += 1
+              raise ValidationError(f"{path}: unclosed Markdown link")
+
+          def parse_definition_destination(raw_value, path):
+              value = raw_value.lstrip()
+              if not value:
+                  raise ValidationError(f"{path}: empty reference definition")
+              if value.startswith("<"):
+                  index = 1
+                  while index < len(value):
+                      if value[index] == ">" and not is_escaped(value, index):
+                          target = value[1:index]
+                          remainder = value[index + 1:].strip()
+                          break
+                      index += 1
+                  else:
+                      raise ValidationError(f"{path}: malformed reference target")
+              else:
+                  depth = 0
+                  index = 0
+                  while index < len(value):
+                      character = value[index]
+                      if character == "\\" and index + 1 < len(value):
+                          index += 2
+                          continue
+                      if character == "(":
+                          depth += 1
+                      elif character == ")":
+                          if depth == 0:
+                              raise ValidationError(f"{path}: unbalanced reference target")
+                          depth -= 1
+                      elif character in " \t" and depth == 0:
+                          break
+                      index += 1
+                  if depth:
+                      raise ValidationError(f"{path}: unbalanced reference target")
+                  target = unescape_markdown_target(value[:index])
+                  remainder = value[index:].strip()
+              if not target:
+                  raise ValidationError(f"{path}: empty reference target")
+              if remainder and not (
+                  len(remainder) >= 2
+                  and remainder[0] in "\"'("
+                  and remainder[-1] == (")" if remainder[0] == "(" else remainder[0])
+              ):
+                  raise ValidationError(f"{path}: malformed reference title")
+              return target
+
+          def extract_markdown_targets(text, path):
+              visible = markdown_without_code(text)
+              definitions = {}
+              targets = []
+              definition_pattern = re.compile(
+                  r"^[ \t]{0,3}\[([^\]\r\n]+)\]:[ \t]*(.*)$", re.MULTILINE
+              )
+              for match in definition_pattern.finditer(visible):
+                  label = normalize_reference_label(match.group(1))
+                  if not label or label.startswith("^"):
+                      continue
+                  if label in definitions:
+                      raise ValidationError(
+                          f"{path}: duplicate reference definition [{match.group(1)}]"
+                      )
+                  target = parse_definition_destination(match.group(2), path)
+                  definitions[label] = target
+                  targets.append(target)
+
+              inline_spans = []
+              label_pattern = re.compile(r"!?\[[^\]\r\n]*\]")
+              for match in label_pattern.finditer(visible):
+                  bracket_index = match.start() + (1 if visible[match.start()] == "!" else 0)
+                  if is_escaped(visible, bracket_index):
+                      continue
+                  if match.end() < len(visible) and visible[match.end()] == "(":
+                      target, end = parse_inline_destination(visible, match.end(), path)
+                      targets.append(target)
+                      inline_spans.append((match.start(), end))
+
+              reference_spans = []
+              reference_pattern = re.compile(
+                  r"!?\[([^\]\r\n]+)\]\[([^\]\r\n]*)\]"
+              )
+              for match in reference_pattern.finditer(visible):
+                  bracket_index = match.start() + (1 if visible[match.start()] == "!" else 0)
+                  if is_escaped(visible, bracket_index):
+                      continue
+                  label = normalize_reference_label(match.group(2) or match.group(1))
+                  if label not in definitions:
+                      raise ValidationError(
+                          f"{path}: missing reference definition [{match.group(2) or match.group(1)}]"
+                      )
+                  reference_spans.append(match.span())
+
+              occupied = inline_spans + reference_spans
+              for match in label_pattern.finditer(visible):
+                  if any(start <= match.start() < end for start, end in occupied):
+                      continue
+                  bracket_index = match.start() + (1 if visible[match.start()] == "!" else 0)
+                  if is_escaped(visible, bracket_index):
+                      continue
+                  label = normalize_reference_label(match.group(0).lstrip("!")[1:-1])
+                  if label in definitions:
+                      occupied.append(match.span())
+              return targets
+
+          def validate_relative_links(text, path, repository_root):
+              for target in extract_markdown_targets(text, path):
+                  target = target.strip()
+                  if (
+                      not target
+                      or target.startswith("#")
+                      or target.startswith("//")
+                      or re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", target)
+                  ):
+                      continue
+                  clean_target = unquote(target.split("#", 1)[0].split("?", 1)[0])
+                  linked_path = (
+                      repository_root / clean_target.lstrip("/")
+                      if clean_target.startswith("/")
+                      else path.parent / clean_target
+                  )
+                  if clean_target and not linked_path.resolve().exists():
+                      raise ValidationError(
+                          f"{path}: missing relative link target {target}"
+                      )
+
+          def run_self_tests():
+              valid_frontmatter = """---
+          name: sample
+          language: en
+          counterpart: ../PT-BR/sample.md
+          description: "Valid scalar with punctuation."
+          version: "2026.08"
+          last-reviewed: "2026-08-08"
+          ---
+          # Sample
+          """
+              parse_frontmatter(valid_frontmatter, "frontmatter-positive")
+              invalid_frontmatter = {
+                  "duplicate key": valid_frontmatter.replace(
+                      "language: en\n", "language: en\nlanguage: pt-BR\n"
+                  ),
+                  "flow sequence": valid_frontmatter.replace(
+                      'description: "Valid scalar with punctuation."', "description: ["
+                  ),
+                  "wrong opening delimiter": valid_frontmatter.replace(
+                      "---\n", "...\n", 1
+                  ),
+                  "wrong closing delimiter": valid_frontmatter.replace(
+                      "---\n# Sample", "...\n# Sample"
+                  ),
+                  "nested value": valid_frontmatter.replace(
+                      'description: "Valid scalar with punctuation."',
+                      "description:\n  nested: true",
+                  ),
+                  "implicit boolean": valid_frontmatter.replace(
+                      "language: en", "language: true"
+                  ),
+                  "unterminated quote": valid_frontmatter.replace(
+                      'version: "2026.08"', 'version: "2026.08'
+                  ),
+              }
+              for case, fixture in invalid_frontmatter.items():
+                  try:
+                      parse_frontmatter(fixture, case)
+                  except ValidationError:
+                      pass
+                  else:
+                      raise AssertionError(f"frontmatter self-test accepted {case}")
+
+              with tempfile.TemporaryDirectory() as directory:
+                  fixture_root = Path(directory)
+                  (fixture_root / "docs").mkdir()
+                  existing = fixture_root / "docs/example_(v1).md"
+                  existing.write_text("# Existing\n", encoding="utf-8")
+                  source = fixture_root / "source.md"
+                  positive = """[inline](docs/example_(v1).md)
+          [reference][guide]
+          [collapsed][]
+          [shortcut]
+
+          [guide]: docs/example_(v1).md
+          [collapsed]: docs/example_(v1).md
+          [shortcut]: docs/example_(v1).md
+          """
+                  validate_relative_links(positive, source, fixture_root)
+                  ignored = """`[inline-code](missing.md)`
+          `http://apache.org/xml/features/disallow-doctype-decl`
+          `multiline code
+          [multiline-code](missing.md)
+          span`
+          ```md
+          [fenced-code](missing.md)
+          http://apache.org/xml/features/disallow-doctype-decl
+          ```
+          """
+                  if extract_markdown_targets(ignored, source):
+                      raise AssertionError("code-contained links were not ignored")
+                  for case, fixture in {
+                      "missing reference": "[reference][absent]",
+                      "missing local target": "[missing](docs/missing_(v1).md)",
+                  }.items():
+                      try:
+                          validate_relative_links(fixture, source, fixture_root)
+                      except ValidationError:
+                          pass
+                      else:
+                          raise AssertionError(f"link self-test accepted {case}")
+
+              print(
+                  "parser self-tests passed: strict frontmatter; balanced inline "
+                  "targets; references; missing targets; code ignored"
+              )
 
           def validate_counterparts(metadata_by_path):
               guide_paths = set(metadata_by_path)
@@ -101,20 +534,14 @@ jobs:
               if len(set(counterpart_paths)) != len(guide_paths):
                   raise SystemExit("counterpart relationships are not a bijection")
 
+          run_self_tests()
+
           for path in guides:
               text = path.read_text(encoding="utf-8")
-              if not text.startswith("---\n"):
-                  raise SystemExit(f"{path}: missing frontmatter")
-              _, raw_frontmatter, _ = text.split("---", 2)
-              metadata = {}
-              for line in raw_frontmatter.strip().splitlines():
-                  key, separator, value = line.partition(":")
-                  if not separator:
-                      raise SystemExit(f"{path}: invalid frontmatter line: {line}")
-                  metadata[key.strip()] = value.strip().strip('"\'')
-
-              if set(metadata) != required:
-                  raise SystemExit(f"{path}: frontmatter keys differ from contract")
+              try:
+                  metadata = parse_frontmatter(text, path)
+              except ValidationError as error:
+                  raise SystemExit(str(error)) from error
               if metadata["name"] != path.stem or not metadata["description"]:
                   raise SystemExit(f"{path}: invalid name or empty description")
               expected_language = "pt-BR" if path.parent.name == "PT-BR" else "en"
@@ -131,20 +558,11 @@ jobs:
 
           for path in markdown_files:
               text = path.read_text(encoding="utf-8")
-              balanced_fences(text, path)
-
-              for raw_target in link_pattern.findall(text):
-                  target = raw_target.strip()
-                  if target.startswith("<") and ">" in target:
-                      target = target[1:target.index(">")]
-                  else:
-                      target = target.split(maxsplit=1)[0]
-                  if not target or target.startswith("#") or re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", target):
-                      continue
-                  clean_target = unquote(target.split("#", 1)[0].split("?", 1)[0])
-                  linked_path = (root / clean_target.lstrip("/")) if clean_target.startswith("/") else (path.parent / clean_target)
-                  if clean_target and not linked_path.resolve().exists():
-                      raise SystemExit(f"{path}: missing relative link target {target}")
+              try:
+                  balanced_fences(text, path)
+                  validate_relative_links(text, path, root)
+              except ValidationError as error:
+                  raise SystemExit(str(error)) from error
 
           print(
               f"validated {len(guides)} guides, {len(names)} unique names, "
