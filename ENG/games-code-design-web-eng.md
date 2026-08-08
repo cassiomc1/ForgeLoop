@@ -10,9 +10,9 @@ last-reviewed: "2026-08-08"
 # Web Game Development Guide — 2D, 3D, and Procedural Systems
 
 > Practical instructions for designing, implementing, testing, shipping, and operating 2D and 3D games for the web. Use this document as a reference for AI coding agents and developers. Prefer measured, data-driven decisions, progressive enhancement, graceful degradation, and deterministic behavior over framework defaults or platform assumptions.
-
-> **Related documents**: for general code structure, naming, dependency injection, and debugging, see [`clean-code-eng.md`](./clean-code-eng.md). For test strategy and tools such as Vitest and Playwright, see [`test-code-eng.md`](./test-code-eng.md). For browser security, CSP, dependency scanning, and multiplayer threat models, see [`sec-code-eng.md`](./sec-code-eng.md). For budgets, profiling, WebAssembly, PWA, CDN, and device performance, see [`perf-code-eng.md`](./perf-code-eng.md). For HTML-based gameplay trailers, devlogs, and demos, see [HyperFrames](https://hyperframes.heygen.com). This guide focuses on game architecture and delivery; it does not replace those documents.
-
+>
+> **Related documents**: for general code structure, naming, dependency injection, and debugging, see [`clean-code-eng.md`](./clean-code-eng.md). For test strategy and tools such as Vitest and Playwright, see [`test-code-eng.md`](./test-code-eng.md). For browser security, CSP, dependency scanning, and multiplayer threat models, see [`sec-code-eng.md`](./sec-code-eng.md). For budgets, profiling, WebAssembly, PWA, CDN, and device performance, see [`perf-code-eng.md`](./perf-code-eng.md). For visual direction, UX, motion, and responsive design, see [`design-code-eng.md`](./design-code-eng.md). For WCAG 2.2-oriented implementation, assistive technology, and manual testing, see [`accessibility-eng.md`](./accessibility-eng.md). For HTML-based gameplay trailers, devlogs, and demos, see [HyperFrames](https://hyperframes.heygen.com). This guide focuses on game architecture and delivery; it does not replace those documents.
+>
 > **Tooling policy**: identify the stack, the stage, and the applicable checks; prefer an already available equivalent that produces compatible evidence. Ask for authorization before installing a tool or changing the environment. If no safe equivalent exists, record the required check as blocked and never claim that it passed. Do not install merely optional resources.
 
 ## How to use this guide (mandatory process)
@@ -103,6 +103,7 @@ type Clock = {
 
 const stepMs = 1000 / 60;
 const maxFrameMs = 250;
+const maxStepsPerFrame = 5;
 const clock: Clock = { previousMs: performance.now(), accumulatorMs: 0 };
 
 function frame(nowMs: number): void {
@@ -110,9 +111,21 @@ function frame(nowMs: number): void {
   clock.previousMs = nowMs;
   clock.accumulatorMs += elapsedMs;
 
-  while (clock.accumulatorMs >= stepMs) {
+  let steps = 0;
+  while (clock.accumulatorMs >= stepMs && steps < maxStepsPerFrame) {
     simulation.step(stepMs / 1000, input.consumeForStep());
     clock.accumulatorMs -= stepMs;
+    steps += 1;
+  }
+
+  if (clock.accumulatorMs >= stepMs) {
+    telemetry.record('slow_frame', { pendingMs: clock.accumulatorMs, steps });
+    if (session.isMultiplayer) {
+      network.requestAuthoritativeResync();
+      clock.accumulatorMs = 0; // wait for the snapshot without local time debt
+    } else {
+      clock.accumulatorMs = Math.min(clock.accumulatorMs, stepMs);
+    }
   }
 
   const alpha = clock.accumulatorMs / stepMs;
@@ -126,7 +139,7 @@ requestAnimationFrame(frame);
 Rules:
 
 - Clamp elapsed time to avoid a spiral of death after a tab is suspended.
-- Bound the number of simulation steps per frame; if the limit is reached, record a slow-frame event and recover intentionally.
+- Define `maxStepsPerFrame` explicitly and never catch up without a bound. If the limit is reached, record a `slow_frame` telemetry/event with pending time and available cause, then follow a documented local recovery policy (for example, discard debt above one step) or request an authoritative snapshot/resync in multiplayer. While waiting for that snapshot, cap or clear local debt to keep `alpha <= 1` and deduplicate the pending request.
 - Pause or reduce work when `document.visibilityState !== 'visible'`, but preserve required network/session behavior.
 - Never use wall-clock time for gameplay rules that must be replayable. Inject a clock into systems that need real time.
 - Use interpolation only for presentation; never feed interpolated render positions back into authoritative simulation state.
@@ -285,7 +298,7 @@ Document world, camera, screen, and UI coordinate spaces. Centralize transforms 
 
 ## Assets, scenes, and content pipeline
 
-- Maintain a versioned asset manifest containing URLs, hashes, type, dimensions, compression, dependencies, and fallback assets.
+- Maintain a versioned asset manifest containing URLs, hashes, origin/provenance, license, attribution, type, dimensions, compression, dependencies, and fallback assets. Attribution must identify the rights holder and any required text or destination when applicable.
 - Load a small boot scene first; show progress and allow the user to understand what is loading.
 - Prefer `WebP`/`AVIF` where supported, compressed texture formats when the renderer supports them, and appropriately sized atlases rather than many tiny requests.
 - Use sprite sheets/atlases, mesh simplification, texture compression, mipmaps, LODs, and instancing based on profiling.
@@ -294,6 +307,7 @@ Document world, camera, screen, and UI coordinate spaces. Centralize transforms 
 - Dispose GPU resources, object URLs, audio buffers, and worker data when scenes or chunks are removed.
 - Do not trust asset metadata or downloaded content. Validate type, size, schema, and origin; see [`sec-code-eng.md`](./sec-code-eng.md) for supply-chain and browser security rules.
 - Make asset cache keys include the build/content version so a PWA does not combine incompatible code and data.
+- Generate distribution notices from the manifest and ship them with every game distribution; do not treat a license field as sufficient if the required attribution is absent.
 
 ---
 
@@ -392,6 +406,7 @@ Canvas pixels are not a sufficient accessibility API. Build a semantic DOM layer
 - Use ARIA carefully on the DOM interface (`role="status"`, labels, live regions); do not attempt to make every animated sprite individually focusable.
 - Make touch targets large enough, support landscape/portrait changes, and avoid controls hidden behind browser or device safe areas.
 - Test with keyboard-only navigation, screen readers, zoom, reduced motion, high contrast, color-vision simulation, touch, gamepad, and a low-power device.
+- Use `axe-core` only for the semantic DOM layer. Canvas/WebGL and gameplay require manual smoke flows for keyboard, assistive technology, zoom, and the game flow; automation finds only a subset of issues and does not prove conformance.
 - Include accessibility acceptance criteria in content and procedural-generation validation: a generated level must preserve a reachable route, readable landmarks, and required fallback cues.
 
 ---
@@ -488,7 +503,7 @@ Follow the testing pyramid from [`test-code-eng.md`](./test-code-eng.md), with a
 - **E2E tests**: use **Playwright** for boot, menu, settings, keyboard/touch smoke flows, save/reload, fallback rendering, and a small multiplayer smoke test. Do not make every test depend on timing-sensitive animation.
 - **Visual regression**: use fixed seeds, fixed viewport/DPR, stable fonts/assets, and `toHaveScreenshot()` only for selected deterministic scenes.
 - **Performance tests**: release build startup, frame-time budgets, long tasks, memory growth, asset loading, and representative low-end device runs.
-- **Accessibility tests**: `axe-core` for the semantic DOM, keyboard/screen-reader smoke flows, focus checks, contrast, reduced motion, captions, and generated-level accessibility guarantees.
+- **Accessibility tests**: `axe-core` only for the semantic DOM; manual smoke flows for keyboard, assistive technology, zoom, and the game flow; focus checks, contrast, reduced motion, captions, and generated-level accessibility guarantees. Automation does not prove conformance.
 
 For TypeScript/Vite, a practical baseline is **Vitest** for unit/integration tests, **fast-check** for property-based generation tests, and **Playwright** for E2E/visual testing. Use `npm run lint`, `npm run format -- --check`, `npm run test`, `npm run test:e2e`, and `npm run build` when those scripts exist; document the project's exact commands in `README.md` and `CLAUDE.md`/`AGENTS.md`.
 
@@ -504,7 +519,7 @@ Every push/PR should run, at minimum:
 2. Typecheck (`npm run typecheck` or the project's equivalent).
 3. Lint and formatting checks (`npm run lint`, `npm run format -- --check`).
 4. Unit/integration/property tests with coverage (`npm run test -- --coverage` when configured).
-5. Asset/schema/content validation, including procedural seed corpus and fallbacks.
+5. Asset/schema/content validation, including the hash, origin/provenance, license, and attribution fields for every manifest item; generate notices and verify they accompany the distribution, as well as procedural seed corpus and fallbacks.
 6. Production build (`npm run build`) and a served smoke test (`npm run preview` in a bounded CI job or an equivalent static server).
 7. Playwright Chromium/Firefox/WebKit smoke tests where CI capacity permits.
 8. Accessibility and Lighthouse CI checks for the shell and critical routes.
@@ -538,15 +553,15 @@ Use a release artifact with hashed assets, a versioned manifest, source-map hand
 
 ## Runtime and Assets
 
-- Use an accumulator/fixed-step loop, clamp elapsed time, bound catch-up work, and never update gameplay only from a renderer callback.
+- Use an accumulator/fixed-step loop, clamp elapsed time, set `maxStepsPerFrame`, and never update gameplay only from a renderer callback. At the cap, record `slow_frame` and apply local recovery or authoritative resync; never use unlimited catch-up.
 - Normalize keyboard, pointer, touch, Gamepad, and Pointer Lock into remappable actions. Provide keyboard/touch alternatives and an escape path from pointer capture.
 - Use Web Audio only after a user gesture, with mute/volume buses, captions/visual cues for important events, and mobile interruption handling.
-- Version and validate asset manifests. Use compressed, appropriately sized textures/audio/GLB assets, dispose resources, and include fallbacks.
+- Version and validate asset manifests, including hash, origin/provenance, license, and attribution. Generate notices that ship with the distribution; use compressed, appropriately sized textures/audio/GLB assets, dispose resources, and include fallbacks.
 - Move generation, parsing, and other CPU-heavy work to Web Workers or WebAssembly only after measuring; keep JS↔WASM calls coarse and provide a fallback when practical.
 
 ## Accessibility, Security, and Multiplayer
 
-- Provide a semantic DOM UI for menus, HUD status, settings, objectives, captions, and essential instructions. Support keyboard navigation, visible focus, reduced motion, readable contrast, color-independent state, scalable UI, and touch targets.
+- Provide a semantic DOM UI for menus, HUD status, settings, objectives, captions, and essential instructions. Support keyboard navigation, visible focus, reduced motion, readable contrast, color-independent state, scalable UI, and touch targets. Run `axe-core` only on the DOM layer, then manually smoke keyboard, assistive technology, zoom, and the game flow; automation does not prove conformance.
 - Treat the browser as untrusted. Server-authorize scores, inventory, damage, progression, generated loot, and permissions; validate every WebSockets/WebRTC message and apply rate/size limits.
 - Follow [`sec-code-eng.md`](./sec-code-eng.md): HTTPS, restrictive CSP, explicit CORS, safe sessions, dependency scanning, no secrets in the bundle, schema validation for saves/mods/chat, and no unsafe HTML evaluation.
 - Use WebSockets for authoritative client/server state and WebRTC only with explicit signaling, STUN/TURN, abuse controls, and a trust model. Design reconnect, ordering, loss, prediction, and protocol versioning.
@@ -569,6 +584,7 @@ Use a release artifact with hashed assets, a versioned manifest, source-map hand
 - [ ] Target browsers, devices, inputs, network model, quality tiers, and budgets are documented.
 - [ ] Simulation is independent from rendering, DOM, audio, and transport adapters.
 - [ ] Timing model is fixed-step or explicitly justified; elapsed time is clamped and catch-up work is bounded.
+- [ ] `maxStepsPerFrame`, `slow_frame` telemetry, and the recovery/resync policy at the cap are explicit; there is no unlimited catch-up.
 - [ ] ECS/data-oriented design is used only where it improves clarity or measured hot paths.
 - [ ] Renderer selection supports the documented WebGPU/WebGL/Canvas fallback policy.
 
@@ -588,14 +604,14 @@ Use a release artifact with hashed assets, a versioned manifest, source-map hand
 - [ ] Keyboard, pointer, touch, Gamepad, and Pointer Lock behavior is normalized and remappable as applicable.
 - [ ] Every essential action has an accessible alternative; pointer capture can be exited.
 - [ ] Physics uses documented units, fixed steps, collision layers, and validated/simple collision geometry.
-- [ ] Asset manifests are versioned, validated, compressed, appropriately sized, and disposable; missing assets have fallbacks.
+- [ ] Asset manifests are versioned and validated for hash, origin/provenance, license, and attribution; generated notices ship with the distribution; assets are compressed, appropriately sized, and disposable; missing assets have fallbacks.
 - [ ] Web Audio handles user gestures, autoplay rejection, mute, volume groups, captions/visual cues, visibility, and mobile interruptions.
 - [ ] WebGL context loss and WebGPU device loss are handled without losing CPU-side game state.
 
 ### Accessibility and security
 
 - [ ] Menus, HUD status, settings, objectives, and critical instructions have a semantic DOM representation.
-- [ ] Keyboard focus, contrast, reduced motion, captions, scalable UI, touch targets, and color-independent feedback are tested.
+- [ ] Keyboard focus, contrast, reduced motion, captions, scalable UI, touch targets, and color-independent feedback are tested; `axe-core` covers only the DOM and manual smoke covers keyboard, assistive technology, zoom, and the game flow. Automation is not treated as proof of conformance.
 - [ ] Client data is never trusted for authority; WebSockets/WebRTC messages are authenticated, authorized, schema-validated, and rate-limited.
 - [ ] CSP, HTTPS, CORS, SRI, dependency scanning, secret handling, save/mod/chat validation, and safe DOM output are configured.
 - [ ] Telemetry is minimized, documented, and free of unnecessary personal or sensitive data.
@@ -642,14 +658,14 @@ Use a release artifact with hashed assets, a versioned manifest, source-map hand
 - Emscripten: https://emscripten.org/
 - Progressive Web Apps: https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps
 - Service Worker API: https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API
-- web.dev game development: https://web.dev/games/
+- web.dev — Ready Player Web: https://web.dev/articles/ready-player-web
 - Web performance: https://web.dev/performance/
 - Can I Use: https://caniuse.com/
 - Vitest: https://vitest.dev/
 - fast-check: https://fast-check.dev/
 - Playwright: https://playwright.dev/
 - axe-core: https://github.com/dequelabs/axe-core
-- Web Game Accessibility Guidelines: https://www.w3.org/WAI/gaming/
-- Web Content Accessibility Guidelines (WCAG): https://www.w3.org/WAI/standards-guidelines/wcag/
+- WCAG 2.2: https://www.w3.org/TR/WCAG22/
+- Game Accessibility Guidelines (complementary community guidance, not a standard and not a replacement for WCAG): https://gameaccessibilityguidelines.com/
 - OWASP Cheat Sheet Series: https://cheatsheetseries.owasp.org/
 - MDN Web Docs — Web APIs: https://developer.mozilla.org/en-US/docs/Web/API
