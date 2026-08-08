@@ -254,25 +254,8 @@ jobs:
                       output.append(line)
               return strip_inline_code("".join(output))
 
-          def unescape_markdown_label(label):
-              output = []
-              index = 0
-              while index < len(label):
-                  if (
-                      label[index] == "\\"
-                      and index + 1 < len(label)
-                      and label[index + 1] in string.punctuation
-                  ):
-                      output.append(label[index + 1])
-                      index += 2
-                  else:
-                      output.append(label[index])
-                      index += 1
-              return "".join(output)
-
           def normalize_reference_label(label):
-              unescaped = unescape_markdown_label(label)
-              return re.sub(r"[ \t\r\n]+", " ", unescaped.strip()).casefold()
+              return re.sub(r"[ \t\r\n]+", " ", label.strip()).casefold()
 
           def scan_bracket_label(text, opening_index):
               if opening_index >= len(text) or text[opening_index] != "[":
@@ -616,6 +599,10 @@ jobs:
                   )
                   existing = fixture_root / "docs/example_(v1).md"
                   existing.write_text("# Existing\n", encoding="utf-8")
+                  escaped_label_target = fixture_root / "docs/escaped-label.md"
+                  escaped_label_target.write_text("# Escaped\n", encoding="utf-8")
+                  plain_label_target = fixture_root / "docs/plain-label.md"
+                  plain_label_target.write_text("# Plain\n", encoding="utf-8")
                   source = fixture_root / "source.md"
                   positive = r"""[inline](docs/example_(v1).md)
           [escaped inline x\]y](docs/example_(v1).md)
@@ -631,8 +618,17 @@ jobs:
           [escaped\]label]: docs/example_(v1).md
           [collapsed]: docs/example_(v1).md
           [shortcut]: docs/example_(v1).md
-          """
+                  """
                   validate_relative_links(positive, source, fixture_root)
+                  distinct_escaped_labels = r"""[escaped][foo\!]
+          [plain][foo!]
+
+          [foo\!]: docs/escaped-label.md
+          [foo!]: docs/plain-label.md
+          """
+                  validate_relative_links(
+                      distinct_escaped_labels, source, fixture_root
+                  )
                   ignored = """`[inline-code](missing.md)`
           `http://apache.org/xml/features/disallow-doctype-decl`
           `multiline code
@@ -684,8 +680,8 @@ jobs:
 
               print(
                   "parser self-tests passed: per-key frontmatter; balanced inline "
-                  "targets; escaped/nested labels; references; repository "
-                  "containment; missing targets; code ignored"
+                  "targets; escaped/nested labels; escape-distinct references; "
+                  "repository containment; missing targets; code ignored"
               )
 
           def validate_counterparts(metadata_by_path):
