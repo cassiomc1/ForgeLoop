@@ -38,6 +38,7 @@ jobs:
           from urllib.parse import unquote
           import json
           import re
+          import string
           import tempfile
 
           root = Path.cwd()
@@ -253,8 +254,81 @@ jobs:
                       output.append(line)
               return strip_inline_code("".join(output))
 
+          def unescape_markdown_label(label):
+              output = []
+              index = 0
+              while index < len(label):
+                  if (
+                      label[index] == "\\"
+                      and index + 1 < len(label)
+                      and label[index + 1] in string.punctuation
+                  ):
+                      output.append(label[index + 1])
+                      index += 2
+                  else:
+                      output.append(label[index])
+                      index += 1
+              return "".join(output)
+
           def normalize_reference_label(label):
-              return re.sub(r"[ \t\r\n]+", " ", label.strip()).casefold()
+              unescaped = unescape_markdown_label(label)
+              return re.sub(r"[ \t\r\n]+", " ", unescaped.strip()).casefold()
+
+          def scan_bracket_label(text, opening_index):
+              if opening_index >= len(text) or text[opening_index] != "[":
+                  return None
+              depth = 1
+              index = opening_index + 1
+              while index < len(text):
+                  character = text[index]
+                  if character in "\r\n":
+                      return None
+                  if (
+                      character == "\\"
+                      and index + 1 < len(text)
+                      and text[index + 1] in string.punctuation
+                  ):
+                      index += 2
+                      continue
+                  if character == "[":
+                      depth += 1
+                  elif character == "]":
+                      depth -= 1
+                      if depth == 0:
+                          return text[opening_index + 1:index], index + 1
+                  index += 1
+              return None
+
+          def scan_markdown_labels(text):
+              labels = []
+              index = 0
+              while index < len(text):
+                  span_start = index
+                  if (
+                      text[index] == "!"
+                      and not is_escaped(text, index)
+                      and index + 1 < len(text)
+                      and text[index + 1] == "["
+                  ):
+                      opening_index = index + 1
+                  elif text[index] == "[" and not is_escaped(text, index):
+                      opening_index = index
+                  else:
+                      index += 1
+                      continue
+                  parsed = scan_bracket_label(text, opening_index)
+                  if parsed is None:
+                      index = opening_index + 1
+                      continue
+                  label, end = parsed
+                  labels.append((span_start, opening_index, label, end))
+                  adjacent = (
+                      scan_bracket_label(text, end)
+                      if end < len(text) and text[end] == "["
+                      else None
+                  )
+                  index = adjacent[1] if adjacent is not None else end
+              return labels
 
           def unescape_markdown_target(target):
               return re.sub(r"\\([\\`*{}\[\]()#+.!_>-])", r"\1", target)
@@ -366,61 +440,78 @@ jobs:
                   raise ValidationError(f"{path}: malformed reference title")
               return target
 
-          def extract_markdown_targets(text, path):
-              visible = markdown_without_code(text)
+          def scan_reference_definitions(text, path):
               definitions = {}
               targets = []
-              definition_pattern = re.compile(
-                  r"^[ \t]{0,3}\[([^\]\r\n]+)\]:[ \t]*(.*)$", re.MULTILINE
-              )
-              for match in definition_pattern.finditer(visible):
-                  label = normalize_reference_label(match.group(1))
-                  if not label or label.startswith("^"):
-                      continue
-                  if label in definitions:
-                      raise ValidationError(
-                          f"{path}: duplicate reference definition [{match.group(1)}]"
-                      )
-                  target = parse_definition_destination(match.group(2), path)
-                  definitions[label] = target
-                  targets.append(target)
+              spans = []
+              line_start = 0
+              for line in text.splitlines(keepends=True):
+                  content = line.rstrip("\r\n")
+                  indentation = re.match(r"^[ \t]{0,3}", content).end()
+                  if indentation < len(content) and content[indentation] == "[":
+                      parsed = scan_bracket_label(content, indentation)
+                      if parsed is not None:
+                          raw_label, end = parsed
+                          if end < len(content) and content[end] == ":":
+                              label = normalize_reference_label(raw_label)
+                              if label and not label.startswith("^"):
+                                  if label in definitions:
+                                      raise ValidationError(
+                                          f"{path}: duplicate reference definition "
+                                          f"[{raw_label}]"
+                                      )
+                                  target = parse_definition_destination(
+                                      content[end + 1:], path
+                                  )
+                                  definitions[label] = target
+                                  targets.append(target)
+                                  spans.append(
+                                      (line_start + indentation, line_start + len(content))
+                                  )
+                  line_start += len(line)
+              return definitions, targets, spans
 
+          def extract_markdown_targets(text, path):
+              visible = markdown_without_code(text)
+              definitions, targets, definition_spans = scan_reference_definitions(
+                  visible, path
+              )
+              labels = scan_markdown_labels(visible)
               inline_spans = []
-              label_pattern = re.compile(r"!?\[[^\]\r\n]*\]")
-              for match in label_pattern.finditer(visible):
-                  bracket_index = match.start() + (1 if visible[match.start()] == "!" else 0)
-                  if is_escaped(visible, bracket_index):
+              for span_start, _, _, label_end in labels:
+                  if any(start <= span_start < end for start, end in definition_spans):
                       continue
-                  if match.end() < len(visible) and visible[match.end()] == "(":
-                      target, end = parse_inline_destination(visible, match.end(), path)
+                  if label_end < len(visible) and visible[label_end] == "(":
+                      target, end = parse_inline_destination(visible, label_end, path)
                       targets.append(target)
-                      inline_spans.append((match.start(), end))
+                      inline_spans.append((span_start, end))
 
               reference_spans = []
-              reference_pattern = re.compile(
-                  r"!?\[([^\]\r\n]+)\]\[([^\]\r\n]*)\]"
-              )
-              for match in reference_pattern.finditer(visible):
-                  bracket_index = match.start() + (1 if visible[match.start()] == "!" else 0)
-                  if is_escaped(visible, bracket_index):
+              occupied = definition_spans + inline_spans
+              for span_start, _, raw_label, label_end in labels:
+                  if any(start <= span_start < end for start, end in occupied):
                       continue
-                  label = normalize_reference_label(match.group(2) or match.group(1))
+                  if label_end >= len(visible) or visible[label_end] != "[":
+                      continue
+                  parsed_reference = scan_bracket_label(visible, label_end)
+                  if parsed_reference is None:
+                      continue
+                  raw_reference, reference_end = parsed_reference
+                  label = normalize_reference_label(raw_reference or raw_label)
                   if label not in definitions:
                       raise ValidationError(
-                          f"{path}: missing reference definition [{match.group(2) or match.group(1)}]"
+                          f"{path}: missing reference definition "
+                          f"[{raw_reference or raw_label}]"
                       )
-                  reference_spans.append(match.span())
+                  reference_spans.append((span_start, reference_end))
 
-              occupied = inline_spans + reference_spans
-              for match in label_pattern.finditer(visible):
-                  if any(start <= match.start() < end for start, end in occupied):
+              occupied.extend(reference_spans)
+              for span_start, _, raw_label, label_end in labels:
+                  if any(start <= span_start < end for start, end in occupied):
                       continue
-                  bracket_index = match.start() + (1 if visible[match.start()] == "!" else 0)
-                  if is_escaped(visible, bracket_index):
-                      continue
-                  label = normalize_reference_label(match.group(0).lstrip("!")[1:-1])
+                  label = normalize_reference_label(raw_label)
                   if label in definitions:
-                      occupied.append(match.span())
+                      occupied.append((span_start, label_end))
               return targets
 
           def validate_relative_links(text, path, repository_root):
@@ -526,12 +617,18 @@ jobs:
                   existing = fixture_root / "docs/example_(v1).md"
                   existing.write_text("# Existing\n", encoding="utf-8")
                   source = fixture_root / "source.md"
-                  positive = """[inline](docs/example_(v1).md)
+                  positive = r"""[inline](docs/example_(v1).md)
+          [escaped inline x\]y](docs/example_(v1).md)
+          ![escaped image x\]y](docs/example_(v1).md)
+          [nested [label]](docs/example_(v1).md)
           [reference][guide]
+          [reference followed by text][guide](docs/missing.md)
+          [escaped reference][escaped\]label]
           [collapsed][]
           [shortcut]
 
           [guide]: docs/example_(v1).md
+          [escaped\]label]: docs/example_(v1).md
           [collapsed]: docs/example_(v1).md
           [shortcut]: docs/example_(v1).md
           """
@@ -561,10 +658,34 @@ jobs:
                       else:
                           raise AssertionError(f"link self-test accepted {case}")
 
+                  escaped_containment = {
+                      "escaped inline parent traversal": (
+                          r"[x\]y](../outside/target.md)"
+                      ),
+                      "escaped reference parent traversal": r"""[use][x\]y]
+
+          [x\]y]: ../outside/target.md
+          """,
+                      "escaped definition symlink": (
+                          r"[x\]y]: escape/target.md"
+                      ),
+                  }
+                  for case, fixture in escaped_containment.items():
+                      try:
+                          validate_relative_links(fixture, source, fixture_root)
+                      except ValidationError as error:
+                          if "escapes repository" not in str(error):
+                              raise AssertionError(
+                                  f"link self-test {case} failed for wrong reason: "
+                                  f"{error}"
+                              ) from error
+                      else:
+                          raise AssertionError(f"link self-test accepted {case}")
+
               print(
                   "parser self-tests passed: per-key frontmatter; balanced inline "
-                  "targets; references; repository containment; missing targets; "
-                  "code ignored"
+                  "targets; escaped/nested labels; references; repository "
+                  "containment; missing targets; code ignored"
               )
 
           def validate_counterparts(metadata_by_path):
