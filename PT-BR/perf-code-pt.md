@@ -1,10 +1,17 @@
+---
+name: perf-code-pt
+language: pt-BR
+counterpart: ../ENG/perf-code-eng.md
+description: "Medição, diagnóstico e melhoria de performance em web, mobile, desktop, APIs e dados."
+version: "2026.08"
+last-reviewed: "2026-08-08"
+---
+
 # Guia de Performance para Desenvolvimento Web, Mobile, Desktop e Bancos de Dados
 
 > Instruções práticas para projetar, medir, diagnosticar e melhorar performance em aplicações web, mobile (iOS/Android), desktop (Windows/macOS), APIs, infraestrutura e bancos de dados. Use este documento para orientar agentes de IA e desenvolvedores. Performance deve ser medida em cenários reais antes e depois da mudança — não otimizada por suposição.
-
 > **Documentos relacionados**: para estrutura e legibilidade de código, ver [`clean-code-pt.md`](./clean-code-pt.md). Para testes funcionais, de integração e E2E, ver [`test-code-pt.md`](./test-code-pt.md). Para segurança e trade-offs de cache, secrets e infraestrutura, ver [`sec-code-pt.md`](./sec-code-pt.md). Para performance percebida, UX, motion e design responsivo, ver [`design-code-pt.md`](./design-code-pt.md). Para performance de preview e renderização de vídeo HTML, consulte o [HyperFrames](https://hyperframes.heygen.com). Este arquivo é a referência canônica de performance.
-
-> **Ferramentas obrigatórias**: se qualquer ferramenta, dependência, runtime, CLI ou utilitário necessário para executar este guia (linter, formatter, framework de teste, scanner, profiler, engine, etc.) não estiver instalado no ambiente, **solicite a instalação ao usuário imediatamente** (ou instale com aprovação, conforme a política do ambiente). Nenhuma etapa, verificação ou entrega pode ser pulada, adiada ou substituída por "a ferramenta não está instalada" — a tarefa só está completa quando todas as verificações exigidas foram de fato executadas.
+> **Política de ferramentas**: identifique a stack, a etapa e os checks aplicáveis; prefira um equivalente já disponível que produza evidência compatível. Antes de instalar uma ferramenta ou alterar o ambiente, peça autorização. Se não houver equivalente seguro, registre o check necessário como bloqueado e nunca afirme que ele passou. Não instale recursos meramente opcionais.
 
 ## Princípios gerais
 
@@ -46,14 +53,14 @@
 
 ### Core Web Vitals
 
-Monitore dados de laboratório e de usuários reais (RUM). Como referência inicial, busque os limiares "bons" recomendados pelo web.dev no percentil 75:
+Monitore dados de laboratório e de usuários reais (RUM). Para decidir se a experiência atende aos Core Web Vitals, use RUM próprio ou CrUX no percentil 75 (p75) dos carregamentos, segmentado entre mobile e desktop e por URL ou grupo de URLs relevante. Como referência inicial, busque os limiares "bons" recomendados pelo web.dev:
 
-- **LCP (Largest Contentful Paint)**: até `2,5s` — carregamento do maior conteúdo visível.
+- **LCP (Largest Contentful Paint)**: até `2,5 s` — carregamento do maior conteúdo visível.
 - **INP (Interaction to Next Paint)**: até `200ms` — responsividade das interações.
 - **CLS (Cumulative Layout Shift)**: até `0,1` — estabilidade visual.
 - Acompanhe também **TTFB**, FCP, peso de página, tempo de hidratação e erros JavaScript.
 
-Lighthouse é diagnóstico de laboratório; RUM/CrUX representa usuários reais. Use os dois: laboratório para investigar e produção para decidir se a experiência realmente melhorou.
+Lighthouse é diagnóstico de laboratório: reproduza e investigue problemas nele, mas não o use como prova da experiência real. RUM/CrUX no p75, com a segmentação definida acima, é a evidência para decidir se a experiência dos usuários melhorou.
 
 ### Entrega de documentos e rede
 
@@ -68,7 +75,17 @@ Lighthouse é diagnóstico de laboratório; RUM/CrUX representa usuários reais.
 
 ### HTML, CSS e imagens
 
-- Envie imagens no formato e tamanho necessários: **AVIF/WebP**, compressão adequada, `srcset`, `sizes`, dimensões explícitas e `aspect-ratio`.
+- Envie imagens no formato e tamanho necessários: **AVIF/WebP**, compressão adequada, `srcset`, `sizes`, dimensões explícitas e `aspect-ratio`; não presuma que esses formatos são compatíveis sem fallback.
+- Prefira `<picture>` com `AVIF`/`WebP` em `<source>` e JPEG/PNG no `<img>` como fallback. Só substitua esse markup por negociação de formato na CDN após comprovar, na matriz de suporte, que ela respeita `Accept`, retorna o fallback e varia o cache corretamente.
+
+```html
+<picture>
+  <source srcset="/imagem.avif" type="image/avif">
+  <source srcset="/imagem.webp" type="image/webp">
+  <img src="/imagem.jpg" alt="Descrição da imagem" width="1200" height="800">
+</picture>
+```
+
 - Não use `loading="lazy"` na imagem LCP; use carregamento prioritário para o conteúdo acima da dobra e lazy loading para o restante.
 - Evite layout shift: reserve espaço para imagens, anúncios, embeds e fontes antes de eles carregarem.
 - Minifique CSS, remova CSS não usado e evite seletores excessivamente complexos ou que forcem recálculo amplo.
@@ -250,7 +267,7 @@ Lighthouse é diagnóstico de laboratório; RUM/CrUX representa usuários reais.
 
 ### React Native e Flutter
 
-- **React Native**: reduza bridge traffic, evite renders de listas inteiras, use `FlatList`/`FlashList` com virtualização, mova animações para UI thread (Reanimated) e profile com Flipper/React DevTools.
+- **React Native**: reduza bridge traffic, evite renders de listas inteiras, use `FlatList`/`FlashList` com virtualização e mova animações para a UI thread (Reanimated). Para profiling de renders e commits, use React Native DevTools; para camadas nativas, use Android Studio e Xcode. Mantenha Flipper apenas para integração manual/legada em versões antigas, não como ferramenta padrão atual.
 - **Flutter**: use DevTools (CPU/Memory/Performance), mantenha frames dentro do orçamento, prefira `const` widgets, `ListView.builder`, imagens dimensionadas e evite rebuilds amplos; use isolates para CPU-bound.
 - Em ambos, meça o custo da camada cross-platform e use código nativo somente para hot paths comprovados.
 
@@ -351,8 +368,9 @@ Lighthouse é diagnóstico de laboratório; RUM/CrUX representa usuários reais.
   hit/miss. Nunca trate cache como fonte única de verdade.
 - Configure timeouts, cancelamento, limites de concorrência, backpressure e
   retries com backoff/jitter. Não faça retry infinito.
-- Web: monitore LCP <= 2.5s, INP <= 200ms e CLS <= 0.1 no p75; use RUM +
-  Lighthouse, imagens responsivas, code splitting e CDN.
+- Web: monitore LCP ≤ 2,5 s, INP ≤ 200 ms e CLS ≤ 0,1 no p75 de RUM/CrUX,
+  segmentado por mobile/desktop e URL/grupo; use Lighthouse para diagnóstico,
+  imagens responsivas com fallback, code splitting e CDN comprovada.
 - Mobile: meça startup, jank, ANR/hangs, memória e bateria em dispositivos reais;
   adie inicialização e mantenha a UI thread livre.
 - Desktop: meça cold/warm startup, primeira janela interativa, CPU/memória e
@@ -378,8 +396,9 @@ Lighthouse é diagnóstico de laboratório; RUM/CrUX representa usuários reais.
 
 ### Web e APIs
 
-- [ ] LCP, INP, CLS e TTFB estão dentro do orçamento definido.
-- [ ] Assets têm compressão, dimensões, cache e carregamento adequados.
+- [ ] LCP, INP e CLS foram avaliados no p75 de RUM/CrUX, por mobile/desktop e URL/grupo; Lighthouse foi usado apenas para diagnóstico.
+- [ ] TTFB está dentro do orçamento definido.
+- [ ] Assets têm compressão, dimensões, cache e carregamento adequados; AVIF/WebP têm fallback em JPEG/PNG ou negociação de CDN comprovada.
 - [ ] Bundle foi analisado; código e dependências não usados foram removidos.
 - [ ] Endpoints têm paginação, timeout, limites de payload e observabilidade.
 - [ ] Não existem N+1 queries, waterfalls evitáveis ou respostas excessivamente grandes.
@@ -409,7 +428,10 @@ Lighthouse é diagnóstico de laboratório; RUM/CrUX representa usuários reais.
 
 ## Fontes e referências
 
-- web.dev — Core Web Vitals e performance web: https://web.dev/explore/fast
+- web.dev — Core Web Vitals, p75 e segmentação por dispositivo: https://web.dev/articles/vitals
+- web.dev — Medição de campo, RUM e CrUX: https://web.dev/articles/vitals-field-measurement-best-practices
+- web.dev — Performance de imagens e fallback com `<picture>`: https://web.dev/learn/performance/image-performance
+- React Native — React Native DevTools e ferramentas nativas: https://reactnative.dev/docs/react-native-devtools
 - Android Developers — App performance guide: https://developer.android.com/topic/performance/overview
 - Apple Developer — Performance e Instruments: https://developer.apple.com/documentation/xcode/improving-your-app-s-performance/
 - Microsoft Learn — Windows app performance: https://learn.microsoft.com/windows/apps/develop/performance/

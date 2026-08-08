@@ -1,5 +1,12 @@
 # Especificação: referências de UI e visualização nos guias de design
 
+## Status do registro
+
+- **Status:** concluído
+- **Data:** 2026-08-07
+- **Evidência final:** `6e88768`
+- **Nota de escopo:** a proibição original de editar `README.md` valia apenas para o patch inicial; a consolidação posterior atualizou o índice do repositório.
+
 ## Objetivo
 
 Registrar nos guias de design web as referências oficiais do [shadcn/ui](https://ui.shadcn.com/), do [TanStack Charts](https://github.com/TanStack/charts), do [Cuelume](https://cuelume-site.pages.dev/) e do [Impeccable](https://impeccable.style/), explicando também quando cada recurso é apropriado.

@@ -1,21 +1,24 @@
 ---
-name: web-design-premium-v2
-description: 'Guia premium para direção visual, UX, motion e performance em experiências digitais sofisticadas — web desktop, web mobile, apps nativos iOS/Android e apps desktop Windows/macOS. Use SEMPRE que for criar, redesenhar ou revisar uma landing page, site institucional, produto digital ou aplicativo que precise parecer premium/high-end.'
+name: design-code-pt
+language: pt-BR
+counterpart: ../ENG/design-code-eng.md
+description: "Direção visual, UX, motion e performance percebida para experiências digitais premium."
+version: "2026.08"
+last-reviewed: "2026-08-08"
 ---
 
 # Web Design Premium v2 — Diretrizes Práticas
 
-> Este guia é uma RECEITA, não uma sugestão. Onde houver um valor numérico, uma paleta ou um snippet, USE exatamente o que está aqui, a menos que o usuário peça explicitamente algo diferente. Não invente valores "no olho". Isso existe para que qualquer execução (mesmo sem julgamento estético refinado) resulte em algo premium.
-
+> Este guia oferece defaults fortes, não uma receita cega. Use os valores, paletas e snippets como ponto de partida verificável; afaste-se deles quando houver requisito explícito de usuário/produto ou uma exceção documentada que preserve hierarquia, acessibilidade e desempenho. Não invente valores "no olho".
 > **Documentos relacionados**: para o processo completo de produção de sites em nível de estúdio, ver [`premium-sites-studio-pt.md`](./premium-sites-studio-pt.md). Para qualidade/estrutura do código que implementa este design, ver [`clean-code-pt.md`](./clean-code-pt.md). Para testes de acessibilidade/visual/E2E, ver [`test-code-pt.md`](./test-code-pt.md). Para segurança de formulários, autenticação e armazenamento no cliente, ver [`sec-code-pt.md`](./sec-code-pt.md). Para transformar direção visual em vídeo HTML, consulte o [HyperFrames](https://hyperframes.heygen.com). Este arquivo foca exclusivamente em UI/UX/visual — não repete regras de código, teste ou segurança.
+>
+> **Política de ferramentas**: identifique a stack, a etapa e os checks aplicáveis; prefira um equivalente já disponível que produza evidência compatível. Antes de instalar uma ferramenta ou alterar o ambiente, peça autorização. Se não houver equivalente seguro, registre o check necessário como bloqueado e nunca afirme que ele passou. Não instale recursos meramente opcionais.
 
-> **Ferramentas obrigatórias**: se qualquer ferramenta, dependência, runtime, CLI ou utilitário necessário para executar este guia (linter, formatter, framework de teste, scanner, profiler, engine, etc.) não estiver instalado no ambiente, **solicite a instalação ao usuário imediatamente** (ou instale com aprovação, conforme a política do ambiente). Nenhuma etapa, verificação ou entrega pode ser pulada, adiada ou substituída por "a ferramenta não está instalada" — a tarefa só está completa quando todas as verificações exigidas foram de fato executadas.
+## Como usar este guia (processo padrão forte)
 
-## Como usar este guia (processo obrigatório)
+Adote esta ordem como default ao criar uma página do zero; documente uma exceção quando o produto, a plataforma ou o usuário exigirem outra sequência:
 
-Siga esta ordem sempre que criar uma página do zero:
-
-1. **Escolher 1 paleta pronta** da seção "Paletas Prontas" (não misturar paletas).
+1. **Escolher 1 paleta semântica pronta** da seção "Paletas semânticas prontas" (não misturar paletas).
 2. **Escolher 1 combinação tipográfica pronta** da seção "Combinações Tipográficas".
 3. **Definir a lista de seções** da página usando a "Anatomia de Página Premium".
 4. **Aplicar o grid e os espaçamentos** exatos da seção "Layout & Espaçamento".
@@ -24,7 +27,7 @@ Siga esta ordem sempre que criar uma página do zero:
 7. **Rodar o Checklist Anti-Slop** antes de considerar pronto.
 8. **Auditar e polir a interface inteira com Impeccable**: executar `/impeccable audit` para identificar problemas de qualidade e `/impeccable polish` para aplicar melhorias. Avaliar a interface completa, não apenas um componente, preservar o design system existente e repetir a auditoria após os ajustes.
 
-Nunca pule a etapa 1 e 2. A maior causa de resultado "amador" é misturar paletas/fontes aleatórias ou usar defaults do framework (ex.: azul Bootstrap, Inter em tudo, sombra genérica `box-shadow: 0 0 10px rgba(0,0,0,0.1)`).
+Não pule as etapas 1 e 2 sem uma exceção documentada. A maior causa de resultado "amador" é misturar paletas/fontes aleatórias ou usar defaults do framework (ex.: azul Bootstrap, Inter em tudo, sombra genérica `box-shadow: 0 0 10px rgba(0,0,0,0.1)`).
 
 > **Este guia cobre 3 contextos.** Para site/produto web (desktop e mobile), siga o fluxo acima normalmente. Para **apps nativos mobile** (iOS/Android), vá direto para a seção "Apps Mobile Premium". Para **apps desktop nativos** (Windows/macOS), vá para "Apps Desktop Premium". Nesses dois últimos casos, as paletas e tipografia deste guia ainda servem de referência de tom, mas as diretrizes de plataforma (HIG, Material Design, Fluent) têm prioridade sobre os valores genéricos definidos aqui.
 
@@ -40,9 +43,9 @@ Nunca pule a etapa 1 e 2. A maior causa de resultado "amador" é misturar paleta
 
 ---
 
-## Paletas Prontas (escolha 1, não misture)
+## Paletas semânticas prontas (escolha 1, não misture)
 
-Cada paleta tem: fundo, texto, primária, neutra de apoio, acento (uso raro, <5% da UI).
+Cada paleta materializa **sete tokens semânticos de base**: `fundo-base`, `fundo-alternativo`, `texto`, `texto-secundário`, `primária`, `borda/divisor` e `acento-semântico`. Eles sustentam função e contraste; não são o mesmo que acentos decorativos opcionais.
 
 **A. Editorial Escuro (moda, arquitetura, luxo)**
 
@@ -79,21 +82,22 @@ Cada paleta tem: fundo, texto, primária, neutra de apoio, acento (uso raro, <5%
 Regras de uso de cor:
 
 - Primária: usada em CTAs, links ativos, ícones-chave. Máx. 10% da área visível.
-- Acento: usado 1–2 vezes por página inteira (ex.: um único badge, um único highlight).
-- Nunca usar mais de 4 cores distintas na paleta total (contando neutros).
-- Nunca usar gradiente com mais de 2 cores; opacidade do gradiente sempre entre 5%–20% quando sobre fundo sólido.
+- Acento-semântico: reserve para papel consistente (por exemplo, estado, destaque curto ou sinalização), sem mudar o seu significado entre componentes.
+- Acentos **decorativos** são extras, não tokens: como default, limite-os a 1–2 simultâneos por tela/vista (por exemplo, badge ou highlight). Esse limite não conta os tokens funcionais de fundo, texto, primária e borda.
+- Estados derivados (hover, foco, pressionado, desabilitado, erro, sucesso e seleção) devem preservar contraste, significado e coerência com os tokens de origem.
+- Como default, use gradiente de no máximo 2 cores e opacidade de 5%–20% sobre fundo sólido; documente a exceção e teste contraste se o produto exigir mais.
 
 ---
 
 ## Combinações Tipográficas Prontas (escolha 1)
 
-Formato: Display (headings) + Texto (body). Todas via Google Fonts, gratuitas.
+Formato: Display (headings) + Texto (body). As famílias marcadas como Google Fonts podem ser carregadas desse catálogo; `General Sans`, `Clash Display` e `Satoshi` **não** são Google Fonts e não devem ser tratadas como gratuitas por padrão.
 
 1. **Editorial clássico**: `Fraunces` (display, serif, pesos 400/600) + `Inter` (body).
 2. **Luxo moderno**: `Playfair Display` (display) + `Manrope` (body).
-3. **Tech/produto**: `General Sans` ou `Space Grotesk` (display) + `Inter` (body).
+3. **Tech/produto**: `Space Grotesk` (Google Fonts) ou `General Sans` (externa, sob licença) como display + `Inter` (Google Fonts) como body.
 4. **Minimal quente**: `Instrument Serif` (display, só para títulos grandes) + `Sans` neutra tipo `Public Sans` (body).
-5. **Bold contemporâneo**: `Clash Display` (display) + `Satoshi` (body).
+5. **Bold contemporâneo**: `Clash Display` (externa, sob licença) como display + `Satoshi` (externa, sob licença) como body.
 
 Regras:
 
@@ -107,14 +111,15 @@ Regras:
   - Small/legenda: `0.875rem`, line-height `1.5`
 - Largura máxima de texto corrido: `65ch`.
 - Peso de fonte: títulos 500–700, body 400–450 (nunca 300 para corpo, prejudica legibilidade).
+- Antes de usar uma fonte externa, registre sua origem/fornecedor, licença e pesos/arquivos autorizados; inclua fallback de sistema apropriado, por exemplo `system-ui, -apple-system, "Segoe UI", sans-serif`. Não presuma que uma fonte vista em uma galeria possa ser hospedada ou redistribuída.
 
 ---
 
-## Layout & Espaçamento (valores exatos)
+## Layout & Espaçamento (defaults mensuráveis)
 
 - Container máximo: `1280px`, centralizado, padding lateral `clamp(24px, 6vw, 96px)`.
 - Grid: 12 colunas, gap `24px` desktop / `16px` mobile.
-- Escala de espaçamento (usar SEMPRE múltiplos desta escala, nunca valores arbitrários):
+- Escala de espaçamento (use múltiplos desta escala como default; documente valores fora dela quando melhorarem uma necessidade concreta):
   `4, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192px`
 - Espaçamento vertical entre seções: mínimo `96px` mobile, `160px` desktop.
 - Espaçamento interno de seção (padding top/bottom): `64px` mobile, `120px` desktop.
@@ -176,11 +181,21 @@ Regra: nunca repetir o mesmo padrão de "imagem esquerda + texto direita" em 2 s
 - Reserve transparência/refração para uma ou duas superfícies flutuantes de baixa densidade — navegação contextual, toolbar, tab bar, sheet, popover ou controle pontual. Corpo de texto, formulários extensos, preços, estados críticos, decisões e CTAs essenciais ficam em superfícies sólidas ou de contraste previsível.
 - Valide cada estado contra o fundo mais complexo que pode passar atrás da superfície. Vidro sobre vidro, texto longo sobre fundo móvel/refratado e transparência em todas as camadas transformam profundidade em ruído.
 
+### Contrato normativo de progressive enhancement para Canvas e Liquid Glass
+
+Este contrato se aplica a Canvas UI, Canvas/WebGL/WebGPU, displacement SVG e Liquid Glass; as demais seções apenas o complementam.
+
+1. **Base funcional primeiro:** entregue HTML semântico e controles HTML reais antes de qualquer efeito. Conteúdo, ação e estados de foco, hover, pressionado, desabilitado, erro, sucesso e seleção devem funcionar sem JavaScript, WebGL ou shader.
+2. **Fallback equivalente:** sem o aprimoramento, renderize uma superfície opaca com o mesmo conteúdo, controles, ações, estados e contraste previsível. Não transfira significado para refração, brilho, transparência, movimento ou ponteiro.
+3. **Preferências e compatibilidade:** detecte capacidade e compatibilidade antes de carregar efeitos; respeite `prefers-reduced-motion` com versão estática, e reduza ou remova transparência para preferências de contraste/transparência (`prefers-contrast`, `forced-colors` ou controle equivalente quando não houver media query confiável).
+4. **Orçamento de execução:** inicialize sob demanda; pause ao sair da viewport e quando a página estiver oculta; limite DPR/resolução, blur, filtros multipasse e efeitos/superfícies animadas simultâneos. Simplifique ou desative no aparelho modesto antes de sacrificar interação, leitura ou carregamento inicial.
+5. **Aceitação mensurável:** teste as variantes em navegadores suportados, em aparelho modesto, com movimento reduzido e com o pior fundo plausível (claro, escuro, imagem e vídeo complexos). Registre DPR, superfícies ativas e resultado de legibilidade, estados equivalentes e orçamento de performance; se qualquer um falhar, entregue o fallback opaco.
+
 ---
 
 ## Motion (GSAP / ScrollTrigger)
 
-Usar SEMPRE este padrão base de reveal (não inventar variações):
+Use este padrão base de reveal como default forte. Troque-o apenas por requisito do produto/usuário ou exceção documentada que preserve hierarquia, acessibilidade e o contrato de progressive enhancement:
 
 ```js
 gsap.registerPlugin(ScrollTrigger);
@@ -218,7 +233,7 @@ Regras de motion:
 - Stagger entre elementos de uma lista: `0.06–0.1s`.
 - Nunca: bounce, elastic, rotação exagerada, parallax agressivo (>30% da velocidade de scroll), auto-play de vídeo com som, loops decorativos infinitos que competem com o conteúdo.
 - Em superfícies Liquid Glass, easing elástico continua proibido. Qualquer microdeformação interna, morphing, brilho ou reação ao cursor/toque é apenas acabamento visual, curto e pausável; não pode ser necessário para compreender, focar ou acionar algo. Com `prefers-reduced-motion: reduce`, use uma superfície estática.
-- Sempre envolver toda a lógica de motion em:
+- Envolva a lógica de motion neste guard como default; uma exceção documentada ainda precisa respeitar `prefers-reduced-motion` e o contrato de progressive enhancement:
 
 ```js
 if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -232,17 +247,15 @@ if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
 
 - Usar apenas se reforça o produto/narrativa (ex.: produto físico, dado técnico, marca de tecnologia). Se não tem certeza que ajuda, não usar.
 - Manter elementos sutis: partículas leves, formas simples, iluminação suave.
-- Para cenas 3D puramente decorativas, fornecer fallback 2D (imagem estática) para navegadores sem WebGL e para `prefers-reduced-motion`.
+- Para cenas 3D puramente decorativas, aplique o contrato de progressive enhancement: o fallback 2D/opaco deve atender navegadores sem WebGL e pessoas que reduzirem movimento.
 - Limitar: <5000 partículas, sem pós-processamento pesado (bloom pode ficar, SSAO/motion blur evitar).
 - Pausar renderização quando o canvas sair da viewport (`IntersectionObserver`).
 
-Para efeitos Canvas, WebGL, SVG displacement ou Liquid Glass, detecte a capacidade antes de carregar shaders, limite resolução/DPR, filtros multipasse e superfícies animadas, inicialize sob demanda, pause fora da viewport e quando a página não estiver visível, e simplifique/desative em dispositivos modestos. Para qualquer superfície Liquid Glass interativa, o HTML/CSS semântico deve existir antes do aprimoramento e funcionar sem JavaScript, com conteúdo, foco, hover, pressionado, desabilitado, erro, sucesso, seleção e ação equivalentes; sem o efeito, renderize essa superfície opaca.
-
-Meça e teste o efeito em Safari e Firefox, sobre fundos claros e escuros, imagens e vídeos complexos, e em dispositivos modestos; se legibilidade, desempenho ou estados equivalentes falharem, use a superfície HTML/CSS opaca.
+Efeitos Canvas, WebGL, SVG displacement e Liquid Glass seguem o **Contrato normativo de progressive enhancement** acima. Aplique-o também a cenas 3D decorativas, sem criar um caminho alternativo de interação.
 
 ---
 
-## Componentes Premium (specs exatos)
+## Componentes Premium (defaults mensuráveis)
 
 **Botão primário**
 
@@ -268,20 +281,20 @@ Meça e teste o efeito em Safari e Firefox, sobre fundos claros e escuros, image
 
 **Imagens**
 
-- Sempre `object-fit: cover` com `aspect-ratio` fixo por contexto (ex.: `16/10` para cards, `1/1` para avatares).
+- Use `object-fit: cover` com `aspect-ratio` fixo apenas em imagem editorial/decorativa (por exemplo, foto de card ou avatar). Para logo, gráfico, screenshot e conteúdo informativo, use `contain` ou preserve a proporção intrínseca para não cortar informação.
 - `border-radius` consistente com o resto da UI.
 - Nunca esticar/distorcer imagem.
 
 **Efeitos canvas/WebGL opcionais**
 
-- Para momentos de alto impacto — como hero, revelações e interações especiais — consulte [Canvas UI](https://canvasui.dev/) como fonte de componentes canvas/WebGL copiáveis e adaptáveis.
-- Use o efeito somente quando ele reforçar a narrativa; adapte tokens, composição e comportamento à identidade do projeto em vez de copiar o resultado padrão.
-- Mantenha texto, navegação, controles e qualquer ação essencial como HTML semântico e acessível; o canvas é aprimoramento progressivo, nunca o único canal de comunicação.
+- Para momentos de alto impacto — como hero, revelações e interações especiais — consulte [Canvas UI](https://canvasui.dev/) como **referência adaptável**, nunca como fonte automaticamente reutilizável.
+- Antes de reutilizar qualquer ativo, texto, imagem ou código, confirme origem, autoria, licença e obrigações de crédito; adapte tokens, composição e comportamento à identidade do projeto, sem copiar resultado ou componente.
+- Mantenha texto, navegação, controles e qualquer ação essencial como HTML semântico e acessível. O canvas segue o **Contrato normativo de progressive enhancement**, nunca é o único canal de comunicação.
 
 **Superfície Liquid Glass (opcional)**
 
 - Use em controles ou navegação contextual com conteúdo curto; mantenha o elemento real, focável e acionável em HTML.
-- Prefira forma simples, tonalidade, desfoque e realce discretos, além de estados de foco convencionais. Microdeformação interna, brilho e acompanhamento de ponteiro seguem a regra de Liquid Glass da seção Motion.
+- Prefira forma simples, tonalidade, desfoque e realce discretos, além de estados de foco convencionais. Microdeformação interna, brilho e acompanhamento de ponteiro seguem a regra de Liquid Glass da seção Motion e o contrato de progressive enhancement.
 - Não aplique aberração cromática, distorção ou reflexão sobre texto legível, ícones essenciais, campos, tabelas ou mensagens de estado.
 
 **Bibliotecas de UI e visualização de dados**
@@ -305,7 +318,7 @@ Meça e teste o efeito em Safari e Firefox, sobre fundos claros e escuros, image
 
 ## Performance
 
-- Em animações DOM/CSS, animar apenas `transform` e `opacity`; usar `will-change` com parcimônia (remover após a animação). Deformação ou brilho via shader/filtro segue a regra de Liquid Glass da seção Motion.
+- Em animações DOM/CSS, animar apenas `transform` e `opacity`; usar `will-change` com parcimônia (remover após a animação). Deformação ou brilho via shader/filtro segue o contrato de progressive enhancement.
 - Imagens em `WebP`/`AVIF`, `srcset` + `loading="lazy"` (exceto imagem do hero, que deve ser eager/preload).
 - Fontes: `font-display: swap`, preload só da fonte crítica do hero (1–2 arquivos, no máx.).
 - Orçamento de performance: LCP < 2.5s, CLS < 0.1 e INP ≤ 200 ms no p75 em dados de campo, separado por mobile e desktop, salvo meta documentada diferente para o produto; JS de motion/3D não deve bloquear o carregamento inicial (carregar via `defer`/lazy-init após interação ou scroll).
@@ -319,7 +332,7 @@ Meça e teste o efeito em Safari e Firefox, sobre fundos claros e escuros, image
 - `Inter` ou `Roboto` como única fonte do site inteiro sem fonte display.
 - Ícones de banco de stock genéricos (setas 3D, emojis de foguete, "lightbulb").
 - Textos centralizados em blocos longos de parágrafo.
-- Mais de 3 fontes ou mais de 4 cores.
+- Mais de 2 famílias tipográficas ou mais de 2 acentos decorativos simultâneos; os sete tokens semânticos funcionais não entram nessa contagem.
 - Seções todas com o mesmo padrão de grid/alinhamento (visual de "template clonado").
 - Animação de "fade in" idêntica aplicada indiscriminadamente a TUDO sem hierarquia de timing.
 - Botões sem estado de hover/focus perceptível.
@@ -337,7 +350,7 @@ Meça e teste o efeito em Safari e Firefox, sobre fundos claros e escuros, image
 
 ## Checklist de Revisão (antes de publicar)
 
-- [ ] Escolhi 1 paleta pronta e não misturei cores fora dela.
+- [ ] Escolhi 1 paleta semântica, não misturei outra paleta e documentei os 1–2 acentos decorativos adicionais, quando usados.
 - [ ] Usei no máximo 2 famílias tipográficas, seguindo a escala definida.
 - [ ] O espaçamento entre seções segue a escala (mínimo 96–160px).
 - [ ] Nenhuma seção repete o mesmo layout da anterior.
@@ -348,6 +361,7 @@ Meça e teste o efeito em Safari e Firefox, sobre fundos claros e escuros, image
 - [ ] Página funciona (visualmente e funcionalmente) sem JS de motion/3D.
 - [ ] Validei contraste e legibilidade no pior fundo possível e em zoom de 200%.
 - [ ] A interface preserva conteúdo, foco, estados e ações sem WebGL, SVG displacement, transparência ou motion.
+- [ ] Efeitos Canvas/Liquid Glass obedecem ao contrato: HTML e fallback opaco equivalentes, sem JS/WebGL, preferências atendidas, pausa fora da viewport/página oculta e orçamento de DPR/blur/efeitos registrado.
 - [ ] Há no máximo duas camadas translúcidas concorrendo na mesma tela e cada uma tem função contextual clara.
 - [ ] Quando a plataforma expõe preferências de contraste/transparência, inclusive `prefers-contrast` ou `forced-colors` quando aplicáveis, a variante opaca/menos transparente funciona; sem media query confiável, há controle equivalente no produto.
 - [ ] Nenhum item da "Lista Negra" está presente.
@@ -362,7 +376,7 @@ Meça e teste o efeito em Safari e Firefox, sobre fundos claros e escuros, image
 
 ### iOS/iPadOS (Human Interface Guidelines)
 
-- **Liquid Glass**: compile com o SDK Apple atual e verifique a disponibilidade da API em tempo de execução antes de usar o material. Quando disponível, prefira APIs nativas e respeite HIG, Reduce Transparency e Increase Contrast; em sistemas anteriores, mantenha superfícies convencionais legíveis. Não imponha essa estética a Windows/Android.
+- **Liquid Glass**: aplique esta orientação somente quando a plataforma Apple alvo e o SDK/API correspondente forem aplicáveis. Compile com o SDK Apple atual e verifique a disponibilidade da API em tempo de execução antes de usar o material. Quando disponível, prefira APIs nativas e respeite HIG, Reduce Transparency e Increase Contrast; em sistemas anteriores, mantenha superfícies convencionais legíveis. Não imponha essa estética a Windows/Android.
 - **Tipografia**: fonte do sistema `SF Pro` (Display para títulos grandes, Text para corpo). Usar os estilos dinâmicos do sistema (Dynamic Type) em vez de tamanhos fixos, para suportar acessibilidade:
   - Large Title `34pt`, Title 1 `28pt`, Title 2 `22pt`, Title 3 `20pt`
   - Headline `17pt` (semibold), Body `17pt`, Callout `16pt`, Subhead `15pt`
@@ -422,7 +436,7 @@ Meça e teste o efeito em Safari e Firefox, sobre fundos claros e escuros, image
 
 ### macOS (Human Interface Guidelines)
 
-- **Liquid Glass**: compile com o SDK Apple atual e verifique a disponibilidade da API em tempo de execução antes de usar o material. Quando disponível, prefira APIs nativas e respeite HIG, Reduce Transparency e Increase Contrast; em sistemas anteriores, mantenha superfícies convencionais legíveis. Não imponha essa estética a Windows/Android.
+- **Liquid Glass**: aplique esta orientação somente quando a plataforma Apple alvo e o SDK/API correspondente forem aplicáveis. Compile com o SDK Apple atual e verifique a disponibilidade da API em tempo de execução antes de usar o material. Quando disponível, prefira APIs nativas e respeite HIG, Reduce Transparency e Increase Contrast; em sistemas anteriores, mantenha superfícies convencionais legíveis. Não imponha essa estética a Windows/Android.
 - **Tipografia**: `SF Pro` (Display/Text), respeitando os tamanhos de texto do sistema; suportar preferências de tamanho de texto do usuário quando aplicável.
 - **Espaçamento**: grid de `8pt`, margens generosas (macOS tende a ter mais respiro que Windows). Padding de conteúdo `20–24pt`.
 - **Navegação**: `NSSplitView`/sidebar à esquerda + toolbar superior contextual; menu bar do sistema (topo da tela) deve conter todos os comandos principais do app, não só atalhos escondidos na UI.
@@ -467,7 +481,7 @@ Meça e teste o efeito em Safari e Firefox, sobre fundos claros e escuros, image
 - shadcn/ui (componentes web acessíveis e composáveis): https://ui.shadcn.com/
 - TanStack Charts (visualização de dados): https://github.com/TanStack/charts
 - Cuelume (sons de interação para web): https://cuelume-site.pages.dev/
-- Canvas UI (efeitos canvas/WebGL criativos e agnósticos de framework): https://canvasui.dev/
+- Canvas UI (referência adaptável de efeitos canvas/WebGL; confirme origem, licença e créditos antes de qualquer reutilização): https://canvasui.dev/
 - Impeccable (auditoria e polimento de interfaces): https://impeccable.style/
 - Liquid Glass Design (galeria independente de inspiração, não afiliada à Apple; não é especificação nem banco de assets): https://liquidglassdesign.com/
   - Guia sobre o material, glassmorphism e implementação web: https://liquidglassdesign.com/what-is-liquid-glass

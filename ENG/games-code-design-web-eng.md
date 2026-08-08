@@ -1,10 +1,19 @@
+---
+name: games-code-design-web-eng
+language: en
+counterpart: ../PT-BR/games-code-design-web-pt.md
+description: "Architecture, design, testing, and operation of 2D, 3D, and procedural web games."
+version: "2026.08"
+last-reviewed: "2026-08-08"
+---
+
 # Web Game Development Guide — 2D, 3D, and Procedural Systems
 
 > Practical instructions for designing, implementing, testing, shipping, and operating 2D and 3D games for the web. Use this document as a reference for AI coding agents and developers. Prefer measured, data-driven decisions, progressive enhancement, graceful degradation, and deterministic behavior over framework defaults or platform assumptions.
-
-> **Related documents**: for general code structure, naming, dependency injection, and debugging, see [`clean-code-eng.md`](./clean-code-eng.md). For test strategy and tools such as Vitest and Playwright, see [`test-code-eng.md`](./test-code-eng.md). For browser security, CSP, dependency scanning, and multiplayer threat models, see [`sec-code-eng.md`](./sec-code-eng.md). For budgets, profiling, WebAssembly, PWA, CDN, and device performance, see [`perf-code-eng.md`](./perf-code-eng.md). For HTML-based gameplay trailers, devlogs, and demos, see [HyperFrames](https://hyperframes.heygen.com). This guide focuses on game architecture and delivery; it does not replace those documents.
-
-> **Mandatory tooling**: if any tool, dependency, runtime, CLI or utility required to execute this guide (linter, formatter, test framework, scanner, profiler, engine, etc.) is not installed in the environment, **request its installation from the user immediately** (or install it with approval, per the environment's policy). No step, check or deliverable may be skipped, postponed or replaced because "the tool is not installed" — the task is only complete when all required checks have actually been executed.
+>
+> **Related documents**: for general code structure, naming, dependency injection, and debugging, see [`clean-code-eng.md`](./clean-code-eng.md). For test strategy and tools such as Vitest and Playwright, see [`test-code-eng.md`](./test-code-eng.md). For browser security, CSP, dependency scanning, and multiplayer threat models, see [`sec-code-eng.md`](./sec-code-eng.md). For budgets, profiling, WebAssembly, PWA, CDN, and device performance, see [`perf-code-eng.md`](./perf-code-eng.md). For visual direction, UX, motion, and responsive design, see [`design-code-eng.md`](./design-code-eng.md). For WCAG 2.2-oriented implementation, assistive technology, and manual testing, see [`accessibility-eng.md`](./accessibility-eng.md). For HTML-based gameplay trailers, devlogs, and demos, see [HyperFrames](https://hyperframes.heygen.com). This guide focuses on game architecture and delivery; it does not replace those documents.
+>
+> **Tooling policy**: identify the stack, the stage, and the applicable checks; prefer an already available equivalent that produces compatible evidence. Ask for authorization before installing a tool or changing the environment. If no safe equivalent exists, record the required check as blocked and never claim that it passed. Do not install merely optional resources.
 
 ## How to use this guide (mandatory process)
 
@@ -86,24 +95,88 @@ Do not let a rendering callback become the only place where gameplay state is up
 
 Use a fixed simulation step for physics, deterministic replays, and network prediction. Render at the display rate and interpolate between simulation states when appropriate.
 
+The TypeScript-shaped pseudocode below assumes `simulation`, `input`, `network`, `telemetry`, and `session` adapters; their project contracts must expose the named operations and be tested.
+
 ```ts
 type Clock = {
   previousMs: number;
   accumulatorMs: number;
 };
+type Snapshot = { tick: number; state: unknown };
+type ResyncFailureReason = 'request_failed' | 'snapshot_rejected' | 'network_disconnected';
 
 const stepMs = 1000 / 60;
 const maxFrameMs = 250;
+const maxStepsPerFrame = 5;
 const clock: Clock = { previousMs: performance.now(), accumulatorMs: 0 };
+let resyncPending = false;
+
+function clearSimulationDebt(): void {
+  clock.accumulatorMs = 0;
+}
+
+function enterSafeReconnect(reason: ResyncFailureReason): void {
+  telemetry.record('resync_failed', { reason });
+  clearSimulationDebt();
+  resyncPending = true;
+  simulation.pausePrediction();
+  network.reconnectOrReturnToSafeMenu();
+}
+
+function requestAuthoritativeResync(): void {
+  clearSimulationDebt();
+  simulation.pausePrediction();
+  if (resyncPending) return; // one request while a snapshot is pending
+
+  resyncPending = true;
+  try {
+    network.requestAuthoritativeResync();
+  } catch {
+    enterSafeReconnect('request_failed');
+  }
+}
+
+network.onAuthoritativeSnapshot((snapshot: Snapshot) => {
+  try {
+    simulation.applyAuthoritativeSnapshot(snapshot.state);
+    input.discardPredictedCommandsThrough(snapshot.tick);
+    clearSimulationDebt();
+    resyncPending = false;
+    simulation.resumePrediction();
+  } catch {
+    enterSafeReconnect('snapshot_rejected');
+  }
+});
+network.onResyncError(() => enterSafeReconnect('request_failed'));
+network.onDisconnect(() => enterSafeReconnect('network_disconnected'));
 
 function frame(nowMs: number): void {
   const elapsedMs = Math.min(nowMs - clock.previousMs, maxFrameMs);
   clock.previousMs = nowMs;
   clock.accumulatorMs += elapsedMs;
 
-  while (clock.accumulatorMs >= stepMs) {
+  if (session.isMultiplayer && resyncPending) {
+    clearSimulationDebt(); // every pending frame keeps alpha at 0
+    simulation.pausePrediction();
+    renderer.render(simulation.createRenderSnapshot(0)); // confirmed snapshot and safe reconnect UI
+    requestAnimationFrame(frame);
+    return;
+  }
+
+  let steps = 0;
+  while (clock.accumulatorMs >= stepMs && steps < maxStepsPerFrame) {
     simulation.step(stepMs / 1000, input.consumeForStep());
     clock.accumulatorMs -= stepMs;
+    steps += 1;
+  }
+
+  if (clock.accumulatorMs >= stepMs) {
+    telemetry.record('slow_frame', { pendingMs: clock.accumulatorMs, steps });
+    if (session.isMultiplayer) {
+      requestAuthoritativeResync();
+    } else {
+      clock.accumulatorMs = Math.min(clock.accumulatorMs, stepMs);
+    }
   }
 
   const alpha = clock.accumulatorMs / stepMs;
@@ -117,7 +190,9 @@ requestAnimationFrame(frame);
 Rules:
 
 - Clamp elapsed time to avoid a spiral of death after a tab is suspended.
-- Bound the number of simulation steps per frame; if the limit is reached, record a slow-frame event and recover intentionally.
+- Define `maxStepsPerFrame` explicitly and never catch up without a bound. If the limit is reached, record a `slow_frame` telemetry/event with pending time and available cause, then follow a documented local recovery policy (for example, discard debt above one step) or request an authoritative snapshot/resync in multiplayer. While waiting for that snapshot, cap or clear local debt to keep `alpha <= 1` and deduplicate the pending request.
+- `resyncPending` must be explicit state: set it before sending the request, pause simulation/prediction, and clear debt on **every** pending frame; render only the last confirmed snapshot and a safe reconnect UI. When the snapshot arrives, apply/reconcile state, discard predicted commands already covered by its tick, clear debt, and only then clear the flag and resume prediction. An error, disconnect, or reconciliation failure must keep simulation paused and trigger reconnect or a safe return; `alpha` must never exceed `1`.
+- For `resync_failed`, record only a stable, enumerated `reason`, such as `request_failed`, `snapshot_rejected`, or `network_disconnected`; callbacks and `catch` blocks map to those codes without sending exceptions, payloads, or raw values to telemetry.
 - Pause or reduce work when `document.visibilityState !== 'visible'`, but preserve required network/session behavior.
 - Never use wall-clock time for gameplay rules that must be replayable. Inject a clock into systems that need real time.
 - Use interpolation only for presentation; never feed interpolated render positions back into authoritative simulation state.
@@ -258,6 +333,9 @@ Normalize all devices into actions rather than letting gameplay systems inspect 
 - Provide an escape path from `Pointer Lock`, a visible cursor/crosshair state, and a non-pointer alternative.
 - Prevent browser defaults only on the canvas/game region and only when the action is captured; do not break page scrolling or assistive technology.
 - Support `touch-action` deliberately, large touch targets, safe-area insets, and orientation changes.
+- Handle Gamepad connection/disconnection, unstable indices, dead zones, remapping, optional vibration, and differing layouts; show the detected device rather than assuming button `0` always has the same role.
+- Handle `pointerlockchange`, `pointerlockerror`, Escape, and focus loss; request Pointer Lock only after an explicit gesture and retain a drag/touch alternative.
+- Clear pressed keys on focus/visibility loss and make camera smoothing, shake reduction, resize, and device-pixel-ratio behavior configurable.
 
 ### Camera and coordinate spaces
 
@@ -271,12 +349,13 @@ Document world, camera, screen, and UI coordinate spaces. Centralize transforms 
 - Avoid tunneling with continuous collision detection or swept tests for fast bodies.
 - Do not make physics engine state the only save/replay format; serialize domain state explicitly.
 - Validate third-party physics behavior under the target browser/WASM path and decide whether deterministic lockstep is actually supported.
+- Never trust client collision for authoritative decisions; validate movement, range, cadence, area of effect, and allowed transitions on the server. Test high speed, stacked bodies, boundaries, moving platforms, teleport, pause, rollback/reconnect, and extreme scales.
 
 ---
 
 ## Assets, scenes, and content pipeline
 
-- Maintain a versioned asset manifest containing URLs, hashes, type, dimensions, compression, dependencies, and fallback assets.
+- Maintain a versioned asset manifest containing URLs, hashes, origin/provenance, license, attribution, type, dimensions, compression, dependencies, and fallback assets. Attribution must identify the rights holder and any required text or destination when applicable.
 - Load a small boot scene first; show progress and allow the user to understand what is loading.
 - Prefer `WebP`/`AVIF` where supported, compressed texture formats when the renderer supports them, and appropriately sized atlases rather than many tiny requests.
 - Use sprite sheets/atlases, mesh simplification, texture compression, mipmaps, LODs, and instancing based on profiling.
@@ -285,6 +364,8 @@ Document world, camera, screen, and UI coordinate spaces. Centralize transforms 
 - Dispose GPU resources, object URLs, audio buffers, and worker data when scenes or chunks are removed.
 - Do not trust asset metadata or downloaded content. Validate type, size, schema, and origin; see [`sec-code-eng.md`](./sec-code-eng.md) for supply-chain and browser security rules.
 - Make asset cache keys include the build/content version so a PWA does not combine incompatible code and data.
+- Generate distribution notices from the manifest and ship them with every game distribution; do not treat a license field as sufficient if the required attribution is absent.
+- Preload in phases (boot shell, first scene, nearby content, optional content) and expose real progress rather than a fake bar; release GPU resources, object URLs, audio buffers, and worker data when scenes or chunks leave memory.
 
 ---
 
@@ -343,6 +424,7 @@ Use **Web Audio** and `AudioContext` for game audio that needs mixing, effects, 
 
 - Define a versioned protocol with schemas, message sizes, sequence numbers, timestamps/ticks, acknowledgements where needed, and explicit disconnect/reconnect states.
 - Validate every inbound message on the server and enforce rate, payload, frequency, and state-transition limits.
+- Apply backpressure: bound queued messages, input frequency, payload size, synchronized entities, and messages per second; disconnect or degrade abusive clients rather than allowing unbounded work.
 - Prefer server-authoritative simulation for competitive or persistent state. The client may predict local movement and interpolate snapshots, but the server resolves truth.
 - Use client-side prediction, reconciliation, snapshot interpolation, interest management, and delta compression only after measuring latency and bandwidth.
 - Make generated worlds reproducible from versioned seeds/algorithms, but do not trust a client-provided seed or generated result for rewards or competitive outcomes.
@@ -368,6 +450,7 @@ Use **WebAssembly** for a measured CPU-bound path, a mature native library, dete
 - Provide a JavaScript/TypeScript fallback for unsupported or failed WASM initialization when the feature is not critical.
 - Use COOP/COEP and cross-origin isolation only when required by the chosen threading/shared-memory path, and verify that CDN, iframe, analytics, and third-party resources remain compatible.
 - Version the WASM binary and generated bindings; run native and Web tests against the same fixtures when behavior should match.
+- Serve `.wasm` with the correct MIME type, effective Brotli/gzip compression, and hash-based caching. Do not instantiate a large module on the critical path when the game can boot without it; initialize it progressively or on demand.
 
 ---
 
@@ -383,6 +466,7 @@ Canvas pixels are not a sufficient accessibility API. Build a semantic DOM layer
 - Use ARIA carefully on the DOM interface (`role="status"`, labels, live regions); do not attempt to make every animated sprite individually focusable.
 - Make touch targets large enough, support landscape/portrait changes, and avoid controls hidden behind browser or device safe areas.
 - Test with keyboard-only navigation, screen readers, zoom, reduced motion, high contrast, color-vision simulation, touch, gamepad, and a low-power device.
+- Use `axe-core` only for the semantic DOM layer. Canvas/WebGL and gameplay require manual smoke flows for keyboard, assistive technology, zoom, and the game flow; automation finds only a subset of issues and does not prove conformance.
 - Include accessibility acceptance criteria in content and procedural-generation validation: a generated level must preserve a reachable route, readable landmarks, and required fallback cues.
 
 ---
@@ -452,6 +536,7 @@ Use a **Progressive Web App (PWA)** when offline launch, installability, or a re
 - Implement offline/poor-network states and a predictable recovery path when a cache is incomplete or corrupted.
 - Never cache secrets, personalized responses, or authoritative multiplayer state as if they were immutable public assets.
 - Test install, update while playing, rollback/recovery, storage quota exhaustion, private browsing, offline boot, and service-worker failure.
+- Store local saves in IndexedDB or an appropriate mechanism, with a versioned schema, migrations, quota handling, optional export/import, and a fallback when storage is unavailable. Do not rely on `localStorage` for large, critical, or sensitive saves.
 
 ### CDN and static hosting
 
@@ -462,6 +547,7 @@ Use a **Progressive Web App (PWA)** when offline launch, installability, or a re
 - Upload source maps privately or restrict access; do not expose secrets through source maps or build-time environment variables.
 - Use SRI for external CDN scripts and lock versions. Prefer bundling critical dependencies when supply-chain and availability risk outweigh CDN benefits.
 - If using cross-origin isolation for WASM threads, configure `Cross-Origin-Opener-Policy` and `Cross-Origin-Embedder-Policy` deliberately and test every embedded/third-party resource.
+- Deploy atomically: a manifest must point to one consistent asset version, and new HTML must never reference hashes that are not yet available on the CDN.
 
 ---
 
@@ -479,7 +565,7 @@ Follow the testing pyramid from [`test-code-eng.md`](./test-code-eng.md), with a
 - **E2E tests**: use **Playwright** for boot, menu, settings, keyboard/touch smoke flows, save/reload, fallback rendering, and a small multiplayer smoke test. Do not make every test depend on timing-sensitive animation.
 - **Visual regression**: use fixed seeds, fixed viewport/DPR, stable fonts/assets, and `toHaveScreenshot()` only for selected deterministic scenes.
 - **Performance tests**: release build startup, frame-time budgets, long tasks, memory growth, asset loading, and representative low-end device runs.
-- **Accessibility tests**: `axe-core` for the semantic DOM, keyboard/screen-reader smoke flows, focus checks, contrast, reduced motion, captions, and generated-level accessibility guarantees.
+- **Accessibility tests**: `axe-core` only for the semantic DOM; manual smoke flows for keyboard, assistive technology, zoom, and the game flow; focus checks, contrast, reduced motion, captions, and generated-level accessibility guarantees. Automation does not prove conformance.
 
 For TypeScript/Vite, a practical baseline is **Vitest** for unit/integration tests, **fast-check** for property-based generation tests, and **Playwright** for E2E/visual testing. Use `npm run lint`, `npm run format -- --check`, `npm run test`, `npm run test:e2e`, and `npm run build` when those scripts exist; document the project's exact commands in `README.md` and `CLAUDE.md`/`AGENTS.md`.
 
@@ -495,7 +581,7 @@ Every push/PR should run, at minimum:
 2. Typecheck (`npm run typecheck` or the project's equivalent).
 3. Lint and formatting checks (`npm run lint`, `npm run format -- --check`).
 4. Unit/integration/property tests with coverage (`npm run test -- --coverage` when configured).
-5. Asset/schema/content validation, including procedural seed corpus and fallbacks.
+5. Asset/schema/content validation, including the hash, origin/provenance, license, and attribution fields for every manifest item; generate notices and verify they accompany the distribution, as well as procedural seed corpus and fallbacks.
 6. Production build (`npm run build`) and a served smoke test (`npm run preview` in a bounded CI job or an equivalent static server).
 7. Playwright Chromium/Firefox/WebKit smoke tests where CI capacity permits.
 8. Accessibility and Lighthouse CI checks for the shell and critical routes.
@@ -520,7 +606,7 @@ Use a release artifact with hashed assets, a versioned manifest, source-map hand
 
 - Interpret “always develop procedurally” as: use procedural/data-driven generation whenever it improves variation, scale, replayability, streaming, compression, or iteration. Do not use it for critical UX, authored narrative, deliberate puzzles, compliance content, or content that cannot be validated safely.
 - Every generated feature has an explicit seed, injectable PRNG, algorithmVersion, normalized inputs, staged pipeline, constraints, validation, and a fallback.
-- Never call Math.random() inside generation or simulation. Use named/forked deterministic PRNG streams and document whether cross-language bit-for-bit determinism is supported.
+- Never call Math.random() inside generation or simulation. Use named/forked deterministic PRNG streams and claim cross-runtime bit-for-bit determinism only when PRNG, integer width, floating point, serialization, and algorithm are specified and tested; client/server authority remains with the server or its compact generation inputs.
 - Generate in deterministic stages: normalize, plan, assemble, place guarantees, decorate, validate, cache, and stream. Use chunks with stable coordinate keys and cancel stale work.
 - Persist seed, generator/algorithm version, configuration, content/schema versions, and relevant protocol versions in saves, replays, bug reports, and multiplayer metadata.
 - Author critical routes, onboarding, narrative landmarks, accessibility paths, and recovery content; use procedural systems for bounded variation around those authored guarantees.
@@ -529,25 +615,27 @@ Use a release artifact with hashed assets, a versioned manifest, source-map hand
 
 ## Runtime and Assets
 
-- Use an accumulator/fixed-step loop, clamp elapsed time, bound catch-up work, and never update gameplay only from a renderer callback.
-- Normalize keyboard, pointer, touch, Gamepad, and Pointer Lock into remappable actions. Provide keyboard/touch alternatives and an escape path from pointer capture.
+- Use an accumulator/fixed-step loop, clamp elapsed time, set `maxStepsPerFrame`, and never update gameplay only from a renderer callback. At the cap, record `slow_frame` and apply local recovery or authoritative resync; never use unlimited catch-up. `resyncPending` must deduplicate the request, pause simulation/prediction, clear debt on every pending frame, and only resume after applying/reconciling the snapshot; error/disconnect goes to reconnect or a safe screen.
+- Normalize keyboard, pointer, touch, Gamepad, and Pointer Lock into remappable actions. Provide keyboard/touch alternatives and an escape path from pointer capture. Prevent defaults only in the game region when the action is consumed, preserving page scrolling and assistive technology.
 - Use Web Audio only after a user gesture, with mute/volume buses, captions/visual cues for important events, and mobile interruption handling.
-- Version and validate asset manifests. Use compressed, appropriately sized textures/audio/GLB assets, dispose resources, and include fallbacks.
+- Version and validate asset manifests, including hash, origin/provenance, license, and attribution. Generate notices that ship with the distribution; use compressed, appropriately sized textures/audio/GLB assets, dispose resources, and include fallbacks.
+- Validate GLB/glTF materials, animations, skeletons, coordinates, and texture limits in CI; serve WASM with correct MIME/compression/hash caching and defer large noncritical initialization.
 - Move generation, parsing, and other CPU-heavy work to Web Workers or WebAssembly only after measuring; keep JS↔WASM calls coarse and provide a fallback when practical.
 
 ## Accessibility, Security, and Multiplayer
 
-- Provide a semantic DOM UI for menus, HUD status, settings, objectives, captions, and essential instructions. Support keyboard navigation, visible focus, reduced motion, readable contrast, color-independent state, scalable UI, and touch targets.
+- Provide a semantic DOM UI for menus, HUD status, settings, objectives, captions, and essential instructions. Support keyboard navigation, visible focus, reduced motion, readable contrast, color-independent state, scalable UI, and touch targets. Run `axe-core` only on the DOM layer, then manually smoke keyboard, assistive technology, zoom, and the game flow; automation does not prove conformance.
 - Treat the browser as untrusted. Server-authorize scores, inventory, damage, progression, generated loot, and permissions; validate every WebSockets/WebRTC message and apply rate/size limits.
 - Follow [`sec-code-eng.md`](./sec-code-eng.md): HTTPS, restrictive CSP, explicit CORS, safe sessions, dependency scanning, no secrets in the bundle, schema validation for saves/mods/chat, and no unsafe HTML evaluation.
+- Escape chat, names, generated text, and debug URLs at the DOM boundary; sanitize rich text only when necessary. Use short-lived, scoped tokens outside URLs, logs, and `localStorage` when a safer cookie/session design is available.
 - Use WebSockets for authoritative client/server state and WebRTC only with explicit signaling, STUN/TURN, abuse controls, and a trust model. Design reconnect, ordering, loss, prediction, and protocol versioning.
 
 ## Validation and Release
 
-- Required checks: `npm ci`, typecheck, `npm run lint`, `npm run format -- --check`, unit/property tests, asset validation, `npm run build`, Playwright smoke tests, accessibility checks, dependency/security scans, and performance/bundle budgets.
+- Required checks: `npm ci`, typecheck, `npm run lint`, `npm run format -- --check`, unit/property tests, asset validation, `npm run build`, Playwright smoke tests, accessibility checks, SCA/SAST/secrets/license/WASM-native scans, and performance/bundle budgets.
 - Use Vitest, fast-check, and Playwright for TypeScript/Vite projects unless the repository documents an equivalent.
 - Test release builds on Chromium, Firefox, Safari, Android, iOS/iPadOS, modest hardware, different DPR/orientations, reduced motion, low power, offline/poor networks, and renderer fallback paths.
-- For PWA/CDN deployments, version service-worker caches and manifests together; cache immutable hashed assets, never cache secrets, test updates/rollback/offline recovery, and configure CORS/SRI/COOP/COEP deliberately.
+- For PWA/CDN deployments, version service-worker caches and manifests together; cache immutable hashed assets, never cache secrets, test updates/rollback/offline recovery, use versioned/migrated/quota-aware saves with export/import and a storage fallback instead of `localStorage` for large, critical, or sensitive data, configure CORS/SRI/COOP/COEP deliberately, and deploy HTML/manifests/assets atomically.
 - Measure frame time, long tasks, startup, memory, network, and battery before claiming a performance improvement.
 ```
 
@@ -560,6 +648,7 @@ Use a release artifact with hashed assets, a versioned manifest, source-map hand
 - [ ] Target browsers, devices, inputs, network model, quality tiers, and budgets are documented.
 - [ ] Simulation is independent from rendering, DOM, audio, and transport adapters.
 - [ ] Timing model is fixed-step or explicitly justified; elapsed time is clamped and catch-up work is bounded.
+- [ ] `maxStepsPerFrame`, `slow_frame` telemetry, and the recovery/resync policy at the cap are explicit; there is no unlimited catch-up. `resyncPending` deduplicates requests, pauses simulation/prediction, clears debt on every pending frame, and resumes only after snapshot reconciliation; error/disconnect reaches reconnect or a safe screen and `alpha <= 1`.
 - [ ] ECS/data-oriented design is used only where it improves clarity or measured hot paths.
 - [ ] Renderer selection supports the documented WebGPU/WebGL/Canvas fallback policy.
 
@@ -567,6 +656,7 @@ Use a release artifact with hashed assets, a versioned manifest, source-map hand
 
 - [ ] Appropriate variable/streamed/replayable content uses data-driven/procedural systems.
 - [ ] Every generator has a deterministic seed, injectable PRNG, named streams, and an `algorithmVersion`.
+- [ ] Cross-runtime bit-for-bit determinism is claimed only with specified/tested PRNG, integer width, floating point, serialization, and algorithm; client/server authority remains with the server or its compact generation inputs.
 - [ ] Generation is staged, chunk-aware, bounded, cancellable, and independent of request/frame timing.
 - [ ] Rules, hard/soft constraints, validation, repair limits, and critical guarantees are explicit.
 - [ ] Seed, algorithm, content/schema versions, and configuration are reproducible in saves/replays/bug reports.
@@ -577,18 +667,21 @@ Use a release artifact with hashed assets, a versioned manifest, source-map hand
 ### Input, physics, assets, and audio
 
 - [ ] Keyboard, pointer, touch, Gamepad, and Pointer Lock behavior is normalized and remappable as applicable.
+- [ ] Browser defaults are captured only in the game region for consumed actions; page scrolling and assistive technology remain functional.
 - [ ] Every essential action has an accessible alternative; pointer capture can be exited.
 - [ ] Physics uses documented units, fixed steps, collision layers, and validated/simple collision geometry.
-- [ ] Asset manifests are versioned, validated, compressed, appropriately sized, and disposable; missing assets have fallbacks.
+- [ ] Asset manifests are versioned and validated for hash, origin/provenance, license, and attribution; generated notices ship with the distribution; assets are compressed, appropriately sized, and disposable; missing assets have fallbacks.
+- [ ] GLB/glTF materials, animations, skeletons, coordinates, and texture limits are validated in CI; GPU resources, object URLs, audio buffers, and worker data are released with scenes/chunks; WASM MIME/compression/hash caching and deferred noncritical initialization are verified.
 - [ ] Web Audio handles user gestures, autoplay rejection, mute, volume groups, captions/visual cues, visibility, and mobile interruptions.
 - [ ] WebGL context loss and WebGPU device loss are handled without losing CPU-side game state.
 
 ### Accessibility and security
 
 - [ ] Menus, HUD status, settings, objectives, and critical instructions have a semantic DOM representation.
-- [ ] Keyboard focus, contrast, reduced motion, captions, scalable UI, touch targets, and color-independent feedback are tested.
+- [ ] Keyboard focus, contrast, reduced motion, captions, scalable UI, touch targets, and color-independent feedback are tested; `axe-core` covers only the DOM and manual smoke covers keyboard, assistive technology, zoom, and the game flow. Automation is not treated as proof of conformance.
 - [ ] Client data is never trusted for authority; WebSockets/WebRTC messages are authenticated, authorized, schema-validated, and rate-limited.
 - [ ] CSP, HTTPS, CORS, SRI, dependency scanning, secret handling, save/mod/chat validation, and safe DOM output are configured.
+- [ ] Chat, names, generated text, and debug URLs are protected from XSS; short-lived, scoped tokens do not appear in URLs, logs, or `localStorage` when a safer cookie/session design exists.
 - [ ] Telemetry is minimized, documented, and free of unnecessary personal or sensitive data.
 
 ### Multiplayer and compatibility
@@ -602,10 +695,12 @@ Use a release artifact with hashed assets, a versioned manifest, source-map hand
 
 - [ ] Frame-time/long-task, startup, memory, network, battery, bundle, texture/audio, and worker budgets are measured on representative devices.
 - [ ] Vitest/unit, property-based, simulation, asset, renderer, accessibility, Playwright E2E, and selected visual regression tests exist.
-- [ ] CI runs typecheck, lint, formatting, tests, seed corpus, asset validation, production build, smoke tests, accessibility, security, and budget checks.
-- [ ] PWA service-worker caches, manifests, updates, offline recovery, quota failure, and rollback are tested.
+- [ ] CI runs typecheck, lint, formatting, tests, seed corpus, asset validation, production build, smoke tests, accessibility, SCA/SAST/secrets/license/WASM-native scans, and budget checks.
+- [ ] PWA service-worker caches, manifests, updates, offline recovery, quota failure, and rollback are tested; saves use a versioned schema, migrations, quota handling, optional export/import, and a storage fallback, without `localStorage` for large, critical, or sensitive data.
+- [ ] Deployment is atomic: HTML, manifest, and asset hashes reference a consistent version already available on the CDN.
 - [ ] CDN uses hashed immutable assets, correct MIME/CORS, compression, cache policy, SRI for external scripts, and a rollback plan.
 - [ ] Generator versions, seeds, content manifests, protocol versions, and release commit are traceable in production diagnostics.
+- [ ] A versioned, hashed artifact passes staging, real-browser smoke, and gradual rollout when appropriate; release commit, generator, seeds, manifest, and protocol are traceable.
 
 ---
 
@@ -633,14 +728,14 @@ Use a release artifact with hashed assets, a versioned manifest, source-map hand
 - Emscripten: https://emscripten.org/
 - Progressive Web Apps: https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps
 - Service Worker API: https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API
-- web.dev game development: https://web.dev/games/
+- web.dev — Ready Player Web: https://web.dev/articles/ready-player-web
 - Web performance: https://web.dev/performance/
 - Can I Use: https://caniuse.com/
 - Vitest: https://vitest.dev/
 - fast-check: https://fast-check.dev/
 - Playwright: https://playwright.dev/
 - axe-core: https://github.com/dequelabs/axe-core
-- Web Game Accessibility Guidelines: https://www.w3.org/WAI/gaming/
-- Web Content Accessibility Guidelines (WCAG): https://www.w3.org/WAI/standards-guidelines/wcag/
+- WCAG 2.2: https://www.w3.org/TR/WCAG22/
+- Game Accessibility Guidelines (complementary community guidance, not a standard and not a replacement for WCAG): https://gameaccessibilityguidelines.com/
 - OWASP Cheat Sheet Series: https://cheatsheetseries.owasp.org/
 - MDN Web Docs — Web APIs: https://developer.mozilla.org/en-US/docs/Web/API

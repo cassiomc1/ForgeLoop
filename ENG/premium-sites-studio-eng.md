@@ -1,13 +1,17 @@
 ---
-name: premium-sites-studio
-description: 'Complete process for building high-end websites at the level of major design studios: strategy, content, UX, art direction, design systems, implementation, motion, accessibility, performance, SEO, QA, launch, and maintenance. ALWAYS use for institutional sites, portfolios, campaigns, digital products, and premium web experiences.'
+name: premium-sites-studio-eng
+language: en
+counterpart: ../PT-BR/premium-sites-studio-pt.md
+description: "Complete process for building premium websites at major design-studio quality."
+version: "2026.08"
+last-reviewed: "2026-08-08"
 ---
 
 # Premium Websites at Studio Level — Complete Process
 
 > This guide defines the production process. For detailed visual rules, also use [`design-code-eng.md`](./design-code-eng.md). For accessibility, code quality, testing, security, and performance, consult the related documents at the end. A high-end website is not only a beautiful interface: it is a coherent, useful, fast, accessible, measurable, and maintainable experience.
-
-> **Mandatory tooling**: if any tool, dependency, runtime, CLI, or utility required to execute this guide is not installed, **request its installation immediately** (or install it with approval, according to the environment policy). No stage, check, or deliverable may be skipped or replaced with an assumption.
+>
+> **Tooling policy**: identify the stack, the stage, and the applicable checks; prefer an already available equivalent that produces compatible evidence. Ask for authorization before installing a tool or changing the environment. If no safe equivalent exists, record the required check as blocked and never claim that it passed. Do not install merely optional resources.
 
 ## 1. Quality bar
 

@@ -1,13 +1,17 @@
 ---
-name: premium-sites-studio
-description: 'Processo completo para criar sites web de alto nível, no padrão de grandes estúdios de design: estratégia, conteúdo, UX, direção de arte, design system, implementação, motion, acessibilidade, performance, SEO, QA, lançamento e manutenção. Use SEMPRE em sites institucionais, portfólios, campanhas, produtos digitais e experiências web premium.'
+name: premium-sites-studio-pt
+language: pt-BR
+counterpart: ../ENG/premium-sites-studio-eng.md
+description: "Processo completo para criar sites premium no padrão de grandes estúdios de design."
+version: "2026.08"
+last-reviewed: "2026-08-08"
 ---
 
 # Sites Premium em Nível de Estúdio — Processo Completo
 
 > Este guia define o processo de produção. Para regras visuais detalhadas, use também [`design-code-pt.md`](./design-code-pt.md). Para acessibilidade, qualidade de código, testes, segurança e performance, consulte os documentos relacionados ao final. Um site de alto nível não é apenas uma interface bonita: é uma experiência coerente, útil, rápida, acessível, mensurável e sustentável.
-
-> **Ferramentas obrigatórias**: se qualquer ferramenta, dependência, runtime, CLI ou utilitário necessário para executar este guia não estiver instalado no ambiente, **solicite a instalação ao usuário imediatamente** (ou instale com aprovação, conforme a política do ambiente). Nenhuma etapa, verificação ou entrega pode ser pulada ou substituída por uma suposição.
+>
+> **Política de ferramentas**: identifique a stack, a etapa e os checks aplicáveis; prefira um equivalente já disponível que produza evidência compatível. Antes de instalar uma ferramenta ou alterar o ambiente, peça autorização. Se não houver equivalente seguro, registre o check necessário como bloqueado e nunca afirme que ele passou. Não instale recursos meramente opcionais.
 
 ## 1. Padrão de qualidade
 

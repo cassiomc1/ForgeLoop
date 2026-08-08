@@ -1,5 +1,12 @@
 # Especificação: Canvas UI nos guias de design
 
+## Status do registro
+
+- **Status:** concluído
+- **Data:** 2026-08-07
+- **Evidência final:** `6e88768`
+- **Nota de escopo:** a proibição original de editar `README.md` valia apenas para o patch inicial; a consolidação posterior atualizou o índice do repositório.
+
 ## Objetivo
 
 Incorporar o [Canvas UI](https://canvasui.dev/) aos guias bilíngues de design web como uma referência opcional para efeitos criativos baseados em canvas e WebGL, com critérios claros de uso, adaptação visual, compatibilidade, acessibilidade e desempenho.

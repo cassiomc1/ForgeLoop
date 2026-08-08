@@ -1,6 +1,11 @@
 # Canvas UI Design Guide Integration Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+## Status do registro
+
+- **Status:** concluído
+- **Data:** 2026-08-07
+- **Evidência final:** `6e88768`
+- **Nota de escopo:** a proibição original de editar `README.md` valia apenas para o patch inicial; a consolidação posterior atualizou o índice do repositório.
 
 **Goal:** Registrar o Canvas UI nos guias de design web em português e inglês como referência opcional para efeitos canvas/WebGL, com salvaguardas de acessibilidade, compatibilidade e desempenho.
 
@@ -24,13 +29,15 @@
 ### Task 1: Atualizar o guia em português
 
 **Files:**
-- Modify: `PT-BR/design-code-pt.md`, seções `Premium Components`, `3D e Interatividade` e `Fontes e Referências (Skills Base)`.
+
+- Modify: `PT-BR/design-code-pt.md`, seções `Componentes Premium`, `3D e Interatividade` e `Fontes e Referências (Skills Base)`.
 
 **Interfaces:**
+
 - Consumes: `docs/superpowers/specs/2026-08-07-canvas-ui-design-spec.md` e a estrutura existente do guia.
 - Produces: orientação em português sobre uso criterioso do Canvas UI e sua referência oficial.
 
-- [ ] **Step 1: Adicionar orientação contextual na seção de componentes**
+- [x] **Step 1: Adicionar orientação contextual na seção de componentes**
 
 Inserir após o bloco `**Images**` (ou equivalente):
 
@@ -42,7 +49,7 @@ Inserir após o bloco `**Images**` (ou equivalente):
 - Mantenha texto, navegação, controles e qualquer ação essencial como HTML semântico e acessível; o canvas é aprimoramento progressivo, nunca o único canal de comunicação.
 ```
 
-- [ ] **Step 2: Complementar as regras de 3D e interatividade**
+- [x] **Step 2: Complementar as regras de 3D e interatividade**
 
 Adicionar ao final da seção existente:
 
@@ -50,7 +57,7 @@ Adicionar ao final da seção existente:
 Para efeitos Canvas UI e WebGL, forneça fallback funcional quando o recurso não estiver disponível, respeite `prefers-reduced-motion`, pause o trabalho fora da viewport e teste em navegadores e dispositivos modestos. A interface deve continuar compreensível e utilizável sem o efeito.
 ```
 
-- [ ] **Step 3: Adicionar a referência oficial**
+- [x] **Step 3: Adicionar a referência oficial**
 
 Adicionar à lista de fontes:
 
@@ -58,32 +65,34 @@ Adicionar à lista de fontes:
 - Canvas UI (efeitos canvas/WebGL criativos e agnósticos de framework): https://canvasui.dev/
 ```
 
-- [ ] **Step 4: Revisar o texto em português**
+- [x] **Step 4: Revisar o texto em português**
 
 Confirmar que a URL aparece na orientação e na lista final, que o fallback é explícito e que nenhuma regra transforma a biblioteca em dependência obrigatória.
 
 ### Task 2: Atualizar o guia em inglês
 
 **Files:**
+
 - Modify: `ENG/design-code-eng.md`, sections `Premium Components`, `3D and Interactivity`, and `Sources and References (Base Skills)`.
 
 **Interfaces:**
+
 - Consumes: a orientação aprovada em português, a especificação e a estrutura existente do guia em inglês.
 - Produces: orientação equivalente em inglês sobre uso criterioso do Canvas UI e sua referência oficial.
 
-- [ ] **Step 1: Add contextual guidance in the components section**
+- [x] **Step 1: Add contextual guidance in the components section**
 
 Insert after the `**Images**` block (or equivalent):
 
 ```markdown
 **Optional canvas/WebGL effects**
 
-- For high-impact moments — such as heroes, reveals, and special interactions — consult [Canvas UI](https://canvasui.dev/) as a source of copyable, adaptable canvas/WebGL components.
+- For high-impact moments — such as heroes, reveals, and special interactions — consult [Canvas UI](https://canvasui.dev/) as a reference for adaptable canvas/WebGL effects, subject to license, provenance, and attribution review.
 - Use an effect only when it reinforces the narrative; adapt tokens, composition, and behavior to the project's identity instead of copying the default result.
 - Keep text, navigation, controls, and every essential action as semantic, accessible HTML; canvas is progressive enhancement, never the only communication channel.
 ```
 
-- [ ] **Step 2: Complement the 3D and interactivity rules**
+- [x] **Step 2: Complement the 3D and interactivity rules**
 
 Add to the end of the existing section:
 
@@ -91,7 +100,7 @@ Add to the end of the existing section:
 For Canvas UI and WebGL effects, provide a functional fallback when the capability is unavailable, respect `prefers-reduced-motion`, pause work outside the viewport, and test across browsers and modest devices. The interface must remain understandable and usable without the effect.
 ```
 
-- [ ] **Step 3: Add the official reference**
+- [x] **Step 3: Add the official reference**
 
 Add to the sources list:
 
@@ -99,20 +108,22 @@ Add to the sources list:
 - Canvas UI (creative, framework-agnostic canvas/WebGL effects): https://canvasui.dev/
 ```
 
-- [ ] **Step 4: Review the English text**
+- [x] **Step 4: Review the English text**
 
 Confirm that the URL appears in the guidance and final list, the fallback is explicit, and no rule makes the library a required dependency.
 
 ### Task 3: Validar escopo e paridade bilíngue
 
 **Files:**
+
 - Test: `PT-BR/design-code-pt.md`, `ENG/design-code-eng.md`.
 
 **Interfaces:**
+
 - Consumes: os dois guias editados.
 - Produces: diff limpo e evidência de que todos os critérios de aceitação foram cobertos.
 
-- [ ] **Step 1: Verificar URL oficial e salvaguardas**
+- [x] **Step 1: Verificar URL oficial e salvaguardas**
 
 Run:
 
@@ -122,7 +133,7 @@ rg -n 'https://canvasui\.dev/|fallback|prefers-reduced-motion|semantic|semântic
 
 Expected: ambos os guias contêm URL oficial, fallback, movimento reduzido, HTML semântico e orientação para dispositivos modestos/desempenho.
 
-- [ ] **Step 2: Verificar whitespace e inspecionar o diff completo**
+- [x] **Step 2: Verificar whitespace e inspecionar o diff completo**
 
 Run:
 
@@ -133,7 +144,7 @@ git diff -- PT-BR/design-code-pt.md ENG/design-code-eng.md
 
 Expected: `git diff --check` termina com sucesso, e o diff contém somente as adições planejadas nos dois guias.
 
-- [ ] **Step 3: Confirmar escopo do repositório**
+- [x] **Step 3: Confirmar escopo do repositório**
 
 Run:
 
@@ -144,7 +155,7 @@ git diff --name-only
 
 Expected: somente `PT-BR/design-code-pt.md` e `ENG/design-code-eng.md` estão modificados para a implementação.
 
-- [ ] **Step 4: Commitar as alterações documentais**
+- [x] **Step 4: Commitar as alterações documentais**
 
 Run:
 

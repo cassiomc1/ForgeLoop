@@ -1,10 +1,19 @@
+---
+name: games-code-design-web-pt
+language: pt-BR
+counterpart: ../ENG/games-code-design-web-eng.md
+description: "Arquitetura, design, testes e operação de games web 2D, 3D e procedurais."
+version: "2026.08"
+last-reviewed: "2026-08-08"
+---
+
 # Guia de Desenvolvimento e Design de Games Web 2D e 3D
 
 > Instruções práticas para projetar, implementar, testar, otimizar e publicar games executados no navegador, em 2D e 3D, com suporte a desktop, mobile e diferentes capacidades de hardware. Use este documento para orientar agentes de IA e desenvolvedores. Escolha a tecnologia pelo tipo de jogo e pelas restrições de distribuição; não empilhe engines e abstrações sem necessidade.
-
-> **Documentos relacionados**: para estrutura, legibilidade, tipagem e organização do código, ver [`clean-code-pt.md`](./clean-code-pt.md). Para testes, cobertura, Playwright e CI, ver [`test-code-pt.md`](./test-code-pt.md). Para segurança de clientes web, APIs, secrets e dependências, ver [`sec-code-pt.md`](./sec-code-pt.md). Para profiling, budgets, CDN, PWA e WebAssembly, ver [`perf-code-pt.md`](./perf-code-pt.md). Para direção visual, UX, motion e design responsivo, ver [`design-code-pt.md`](./design-code-pt.md). Para trailers, devlogs e vídeos de gameplay baseados em HTML, consulte o [HyperFrames](https://hyperframes.heygen.com). Este arquivo é a referência específica para games web 2D/3D e seus sistemas de runtime.
-
-> **Ferramentas obrigatórias**: se qualquer ferramenta, dependência, runtime, CLI ou utilitário necessário para executar este guia (linter, formatter, framework de teste, scanner, profiler, engine, etc.) não estiver instalado no ambiente, **solicite a instalação ao usuário imediatamente** (ou instale com aprovação, conforme a política do ambiente). Nenhuma etapa, verificação ou entrega pode ser pulada, adiada ou substituída por "a ferramenta não está instalada" — a tarefa só está completa quando todas as verificações exigidas foram de fato executadas.
+>
+> **Documentos relacionados**: para estrutura, legibilidade, tipagem e organização do código, ver [`clean-code-pt.md`](./clean-code-pt.md). Para testes, cobertura, Playwright e CI, ver [`test-code-pt.md`](./test-code-pt.md). Para segurança de clientes web, APIs, secrets e dependências, ver [`sec-code-pt.md`](./sec-code-pt.md). Para profiling, budgets, CDN, PWA e WebAssembly, ver [`perf-code-pt.md`](./perf-code-pt.md). Para direção visual, UX, motion e design responsivo, ver [`design-code-pt.md`](./design-code-pt.md). Para implementação orientada à WCAG 2.2, tecnologia assistiva e testes manuais, ver [`acessibilidade-code-pt.md`](./acessibilidade-code-pt.md). Para trailers, devlogs e vídeos de gameplay baseados em HTML, consulte o [HyperFrames](https://hyperframes.heygen.com). Este arquivo é a referência específica para games web 2D/3D e seus sistemas de runtime.
+>
+> **Política de ferramentas**: identifique a stack, a etapa e os checks aplicáveis; prefira um equivalente já disponível que produza evidência compatível. Antes de instalar uma ferramenta ou alterar o ambiente, peça autorização. Se não houver equivalente seguro, registre o check necessário como bloqueado e nunca afirme que ele passou. Não instale recursos meramente opcionais.
 
 ## Princípios gerais
 
@@ -114,12 +123,57 @@ src/
 
 Use um loop com simulação de passo fixo e renderização desacoplada quando a lógica exigir física, multiplayer, replay ou reprodutibilidade:
 
+O pseudocódigo inspirado em TypeScript abaixo pressupõe adapters de `simulation`, `input`, `network`, `telemetry` e `session`; seus contratos devem expor as operações nomeadas e ser testados no projeto.
+
 ```ts
 type Clock = { now(): number };
+type Snapshot = { tick: number; state: unknown };
+type ResyncFailureReason = 'request_failed' | 'snapshot_rejected' | 'network_disconnected';
 
 const FIXED_STEP = 1 / 60;
+const maxStepsPerFrame = 5;
 let accumulator = 0;
 let previous = clock.now();
+let resyncPending = false;
+
+function clearSimulationDebt(): void {
+  accumulator = 0;
+}
+
+function enterSafeReconnect(reason: ResyncFailureReason): void {
+  telemetry.record('resync_failed', { reason });
+  clearSimulationDebt();
+  resyncPending = true;
+  simulation.pausePrediction();
+  network.reconnectOrReturnToSafeMenu();
+}
+
+function requestAuthoritativeResync(): void {
+  clearSimulationDebt();
+  simulation.pausePrediction();
+  if (resyncPending) return; // uma única solicitação enquanto aguarda snapshot
+
+  resyncPending = true;
+  try {
+    network.requestAuthoritativeResync();
+  } catch {
+    enterSafeReconnect('request_failed');
+  }
+}
+
+network.onAuthoritativeSnapshot((snapshot: Snapshot) => {
+  try {
+    simulation.applyAuthoritativeSnapshot(snapshot.state);
+    input.discardPredictedCommandsThrough(snapshot.tick);
+    clearSimulationDebt();
+    resyncPending = false;
+    simulation.resumePrediction();
+  } catch {
+    enterSafeReconnect('snapshot_rejected');
+  }
+});
+network.onResyncError(() => enterSafeReconnect('request_failed'));
+network.onDisconnect(() => enterSafeReconnect('network_disconnected'));
 
 function frame() {
   const current = clock.now();
@@ -127,11 +181,30 @@ function frame() {
   previous = current;
   accumulator += delta;
 
+  if (session.isMultiplayer && resyncPending) {
+    clearSimulationDebt(); // em todos os frames pendentes, alpha continua em 0
+    simulation.pausePrediction();
+    render(0); // apresenta o último snapshot confirmado e UI de reconexão
+    requestAnimationFrame(frame);
+    return;
+  }
+
   processInput();
 
-  while (accumulator >= FIXED_STEP) {
+  let steps = 0;
+  while (accumulator >= FIXED_STEP && steps < maxStepsPerFrame) {
     simulate(FIXED_STEP);
     accumulator -= FIXED_STEP;
+    steps += 1;
+  }
+
+  if (accumulator >= FIXED_STEP) {
+    telemetry.record('slow_frame', { pendingMs: accumulator * 1000, steps });
+    if (session.isMultiplayer) {
+      requestAuthoritativeResync();
+    } else {
+      accumulator = Math.min(accumulator, FIXED_STEP);
+    }
   }
 
   const alpha = accumulator / FIXED_STEP;
@@ -144,6 +217,9 @@ Regras:
 
 - Use `requestAnimationFrame` para sincronizar a apresentação com o navegador; nunca use `setInterval` como render loop.
 - Limite o `delta` para evitar o “spiral of death” após aba em background, suspensão do celular ou breakpoint.
+- Defina `maxStepsPerFrame` explicitamente e nunca faça catch-up ilimitado. Ao atingir o teto, emita telemetria/evento de `slow_frame` com a dívida de tempo e a causa disponível; aplique uma política documentada de recuperação local (por exemplo, descartar dívida acima de uma etapa) ou solicite snapshot/ressincronização autoritativa no multiplayer. Enquanto aguarda o snapshot, limite ou zere a dívida local para manter `alpha <= 1` e deduplique a solicitação pendente. Não esconda o atraso executando passos sem limite.
+- `resyncPending` precisa ser estado explícito: marque-o antes de enviar a solicitação, pause simulação/prediction e zere a dívida em **cada** frame pendente; renderize apenas o último snapshot confirmado e uma UI segura de reconexão. Ao receber o snapshot, aplique/reconcilie o estado, descarte comandos previstos já cobertos pelo tick, zere a dívida e só então libere o flag e a prediction. Erro, desconexão ou falha de reconciliação devem manter a simulation pausada e acionar reconexão ou retorno seguro; `alpha` nunca pode exceder `1`.
+- Para `resync_failed`, registre apenas um `reason` estável e enumerado, como `request_failed`, `snapshot_rejected` ou `network_disconnected`; callbacks e `catch` mapeiam para esses códigos sem enviar exceções, payloads ou valores brutos à telemetria.
 - Em jogos simples sem física/rede, um delta variável pode ser aceitável; documente o trade-off e teste variações de frame rate.
 - Congele ou reduza a simulação quando `document.visibilityState === 'hidden'`, mas preserve timers de servidor e reconexão conforme o contrato do jogo.
 - Não use `Date.now()` ou `Math.random()` dentro da simulação determinística. Injete `Clock` e `PRNG`.
@@ -244,6 +320,7 @@ Falhas devem ser explícitas: retorne `GenerationError` com seed, etapa, versão
 - Inclua no replay/log o seed, versão do algoritmo, sequência de inputs, tick inicial e configuração relevante.
 - Para diagnóstico, registre a receita/seed e o identificador de build, sem registrar dados pessoais desnecessários.
 - Se a geração não precisar ser reproduzida byte a byte entre navegadores, defina invariantes de equivalência e use operações numéricas estáveis; para multiplayer competitivo, prefira simulação autoritativa no servidor.
+- Não prometa determinismo bit a bit entre runtimes sem especificar e testar PRNG, largura de inteiros, operações de ponto flutuante, serialização e algoritmo; para cliente/servidor, resultados gerados pelo servidor ou inputs compactos de geração são autoritativos.
 
 ### Testes property-based
 
@@ -260,11 +337,13 @@ Falhas devem ser explícitas: retorne `GenerationError` com seed, etapa, versão
 - Normalize teclado, mouse, toque, stylus e Gamepad em comandos de domínio (`move`, `aim`, `accept`, `pause`), não espalhe `keydown` pela gameplay.
 - Use `KeyboardEvent.code` quando a ação depender da posição física e permita remapeamento por ação; não dependa apenas de `key` ou layout US.
 - Para ponteiro/toque, use Pointer Events, `setPointerCapture`, `touch-action` adequado e conversão para coordenadas do canvas. Diferencie toque, arrasto, clique e gesto de câmera.
+- Previna defaults do navegador somente na região do canvas/jogo e somente quando a ação tiver sido capturada; não quebre scroll da página nem tecnologia assistiva.
 - **Gamepad API**: trate conexão/desconexão (`gamepadconnected`, `gamepaddisconnected`), índices instáveis, dead zones, remapeamento, vibração opcional e layouts diferentes. Mostre o dispositivo detectado e não assuma que o botão `0` tem sempre a mesma função.
 - **Pointer Lock API**: use apenas após gesto explícito do usuário; trate `pointerlockchange`, `pointerlockerror`, escape, perda de foco e alternativa por arrastar/toque. Nunca prenda o ponteiro sem explicar como sair.
 - Em mobile, respeite orientação, safe areas, notch, teclado virtual, zoom acidental e multitouch. Botões virtuais devem ter alvos grandes e configuração de opacidade/posição.
 - Separe estado “pressionado”, “acabou de pressionar” e “acabou de soltar” por tick. Limpe teclas ao perder foco/visibilidade para não deixar ações presas.
 - Câmera deve ter limites, smoothing configurável, opção de reduzir tremor e comportamento correto em resize/device pixel ratio.
+- Documente e centralize transformações entre espaços de mundo, câmera, tela e UI; teste DPR, zoom e viewport, em vez de usar escala CSS como substituto para a resolução interna correta.
 
 ---
 
@@ -277,19 +356,21 @@ Falhas devem ser explícitas: retorne `GenerationError` com seed, etapa, versão
 - Não confie em colisão do cliente para decisões autoritativas. No servidor, valide movimento, alcance, cadência, área de efeito e transições permitidas.
 - Teste tunneling, alta velocidade, corpos empilhados, bordas, plataformas móveis, teleporte, pausa, rollback/reconexão e escalas extremas.
 - Se a física não for deterministicamente reproduzível entre plataformas, não use o estado físico bruto como protocolo de multiplayer; envie comandos/estado autoritativo ou use uma simulação comum controlada.
+- Mantenha a geometria de colisão mais simples que a visual e gere-a de assets/dados validados; serialize estado de domínio, não o estado bruto da engine física, em saves e replays.
 
 ---
 
 ## Assets, cenas e pipeline de conteúdo
 
-- Mantenha um manifest data-driven com ID, tipo, URL/hash, tamanho, dependências, compressão, variante de qualidade, licença e fallback.
-- Use `GLB/glTF` para modelos 3D quando adequado, spritesheets/atlases para 2D e formatos de textura/áudio compatíveis com os navegadores alvo. Comprima e valide no build.
+- Mantenha um manifest data-driven e versionado com ID, tipo, URL, hash, origem/proveniência, licença, atribuição, tamanho, dependências, compressão, variante de qualidade e fallback. A atribuição deve identificar o titular e o texto ou destino exigido pela licença, quando aplicável.
+- Use `GLB/glTF` para modelos 3D quando adequado, spritesheets/atlases para 2D e formatos de textura/áudio compatíveis com os navegadores alvo. Comprima e valide no build/CI materiais, animações, esqueletos, convenções de coordenadas e limites de textura.
 - Faça pré-carregamento por fases: shell mínimo, assets da primeira cena, conteúdo próximo e conteúdo opcional. Mostre progresso real, não uma barra falsa.
 - Use `createImageBitmap`, `ImageDecoder`, workers e parsing assíncrono quando suportados e medidos; não bloqueie a thread principal com importação de arquivos grandes.
 - Para 3D, limite materiais, meshes e animações, use LOD, instancing, frustum/occlusion culling quando aplicável e comprima geometria/texturas. Para 2D, reduza trocas de textura, draw calls e resoluções fora da viewport.
 - Não carregue dados arbitrários de uma URL informada pelo usuário sem validação. Prefira allowlist de origem, manifest assinado ou assets empacotados.
-- Licenças e atribuições devem acompanhar o asset no manifest; não copie conteúdo protegido apenas porque está acessível na web.
+- Licenças e atribuições devem acompanhar o asset no manifest, e os notices gerados a partir dele devem acompanhar toda distribuição do jogo; não copie conteúdo protegido apenas porque está acessível na web.
 - Assets críticos têm fallback: ícone/textura placeholder, som silencioso, fonte alternativa, mesh simplificada e UI textual. Um erro de asset não deve travar o boot inteiro.
+- Libere recursos de GPU, URLs de objeto, buffers de áudio e dados de workers quando cenas ou chunks forem removidos.
 
 ---
 
@@ -316,6 +397,7 @@ Falhas devem ser explícitas: retorne `GenerationError` com seed, etapa, versão
 - Forneça legendas, transcrição e indicadores visuais de direção/alerta quando áudio espacial ou fala forem importantes.
 - Não dependa de hover, pointer lock ou vibração. Toda ação essencial precisa de alternativa por teclado, botão, toque ou controle configurável.
 - Teste com teclado, screen reader, zoom, contraste, orientação retrato/paisagem, controles externos, baixo volume e motion reduzido.
+- Use `axe-core` somente para a camada DOM semântica; Canvas/WebGL e gameplay exigem smoke manual de teclado, tecnologia assistiva, zoom e fluxo de jogo. Automação encontra apenas parte dos problemas e não prova conformidade.
 
 ---
 
@@ -395,13 +477,15 @@ Falhas devem ser explícitas: retorne `GenerationError` com seed, etapa, versão
 
 - Use **PWA** quando instalação, offline, ícone, launch experience ou retorno frequente trouxerem valor real; não adicione service worker apenas por checklist.
 - Defina `manifest.webmanifest` com nome, ícones, `start_url`, `display`, orientação e cores coerentes. Valide instalação e atualização em Android, desktop e Safari conforme o suporte necessário.
-- Faça precache apenas do shell mínimo. Use estratégias separadas para código versionado, assets imutáveis, dados de sessão, saves e conteúdo online; nunca cacheie tokens ou dados sensíveis indiscriminadamente.
+- Faça precache apenas do shell mínimo. Use cache de runtime para conteúdo imutável versionado e `network-first` ou `no-cache` para contas, multiplayer e estado mutável; nunca cacheie tokens ou dados sensíveis indiscriminadamente.
 - Versione o service worker e mostre atualização pendente de forma segura. Não substitua o jogo durante uma partida sem preservar o save/estado; ofereça reload em momento seguro.
+- Implemente estado offline/rede ruim e recuperação previsível se o cache estiver incompleto ou corrompido. Teste instalação, atualização durante o jogo, rollback/recuperação, esgotamento de quota, navegação privada, boot offline e falha do service worker.
 - Use CDN para JS, WASM, texturas, áudio, modelos e manifests. Sirva assets com nomes hashados, `Cache-Control: public, max-age=31536000, immutable` quando imutáveis e headers corretos para `.wasm` e fontes.
 - Configure HTTPS, HTTP/2 ou HTTP/3, Brotli/gzip, `Content-Type`, `Cross-Origin-Resource-Policy` e CORS conforme a arquitetura. Evite bloquear assets do jogo por headers incompatíveis.
 - Use deploy atômico: manifest aponta para uma versão consistente de assets; não publique HTML novo que referencia hashes ainda ausentes na CDN.
 - Tenha rollback, purge seletivo, health check, smoke test pós-deploy, source maps protegidos, monitoramento de erro e alerta para falha de boot, asset 404, contexto gráfico, áudio, instalação e reconexão.
-- Saves locais devem usar IndexedDB ou mecanismo adequado, com schema versionado, migração, limite de espaço, export/import opcional e fallback quando storage estiver indisponível. Não confie em `localStorage` para dados grandes ou críticos.
+- Mantenha origin ou deploy de fallback e monitore cache misses, erros, banda e disponibilidade regional. Publique source maps privadamente ou restrinja acesso; use SRI e versões fixadas para scripts CDN externos, ou empacote dependências críticas quando o risco de supply chain/disponibilidade for maior.
+- Saves locais devem usar IndexedDB ou mecanismo adequado, com schema versionado, migração, quota/limite de espaço, export/import opcional e fallback quando storage estiver indisponível. Não confie em `localStorage` para dados grandes, críticos ou sensíveis.
 
 ---
 
@@ -414,6 +498,8 @@ Falhas devem ser explícitas: retorne `GenerationError` com seed, etapa, versão
 - Valide pacotes, manifests, saves importados, mods e arquivos de usuário por schema, tamanho, profundidade, tipos e limites de tempo. Não deserialize objetos executáveis.
 - Evite logs com tokens, identificadores pessoais, conteúdo de chat ou localização precisa. Defina retenção e consentimento para telemetria.
 - Use rate limiting, quotas, heartbeat, timeouts, backpressure e limites de salas/conexões para reduzir abuso e negação de serviço.
+- Evite XSS em chat, nomes de jogadores/clãs, texto gerado e URLs de debug: faça escape da saída no DOM e sanitize somente rich text que seja realmente necessário.
+- Use tokens curtos e com escopo; nunca coloque tokens sensíveis em URLs, logs ou `localStorage` quando um desenho de cookie/sessão mais seguro estiver disponível.
 - Atualize engines, loaders, parsers e bibliotecas WASM; trate arquivos de terceiros como superfície de ataque.
 
 ---
@@ -428,6 +514,7 @@ Falhas devem ser explícitas: retorne `GenerationError` com seed, etapa, versão
 - **E2E/smoke**: boot, primeira interação, pause/resume, troca de cena, fallback de renderização, mute, remapeamento, save/load, instalação PWA e fluxo multiplayer mínimo. Use Playwright em Chromium, Firefox e WebKit quando possível.
 - **Visual/regressão**: screenshots de HUD, menus, cena base e fallback em viewports fixos; controle diferenças de GPU, fontes e animações antes de comparar pixels.
 - **Performance**: benchmarks de geração e simulação; budgets de bundle/assets; Lighthouse CI para a casca web; profiling em dispositivos representativos. Não trate FPS de um único computador como prova.
+- **Acessibilidade**: `axe-core` na camada DOM semântica, seguido de smoke manual de teclado, tecnologia assistiva, zoom e fluxo de jogo; a automação não prova conformidade.
 
 ### Determinismo e replays
 
@@ -451,15 +538,18 @@ npm run build
 
 Inclua quando aplicável:
 
-- validação de schemas, manifests, licenças, nomes/hash de assets e links;
+- validação de schemas e de todos os campos do manifest — incluindo hash, origem/proveniência, licença e atribuição —, nomes/hash de assets, geração de notices e confirmação de que esses notices acompanham cada distribuição;
 - testes de geração com seeds fixas e property-based com limite de tempo;
 - `npm run test:e2e` com Playwright em browsers instalados;
 - análise de bundle, tamanho de WASM, orçamento de assets e Lighthouse CI;
 - `cargo test`/`cargo clippy` para Rust, testes C++ e build `emcc`/Emscripten quando houver módulo nativo;
+- SCA, SAST, scan de secrets, licença e artefatos WASM/nativos conforme [`sec-code-pt.md`](./sec-code-pt.md);
 - smoke test servido via HTTPS, pois service workers, `SharedArrayBuffer` e algumas APIs não funcionam corretamente em `file://`;
 - artefatos de cobertura, screenshots, replay mínimo e relatório de compatibilidade sem publicar secrets.
 
 Falhas de browser/engine não disponíveis no runner devem ser cobertas por jobs específicos, BrowserStack/Sauce Labs ou runners próprios; não desative o teste silenciosamente.
+
+Publique artefato versionado com assets hashados, manifest, tratamento de source maps e plano de rollback. Faça staging, smoke manual em navegadores reais e rollout gradual quando o risco do produto justificar; mantenha versões de gerador, seeds, manifest de conteúdo, protocolo e commit de release rastreáveis.
 
 ---
 
@@ -479,9 +569,10 @@ Copie e adapte este bloco para o repositório do game:
 
 ## Regras de arquitetura
 - Mantenha domínio/simulação independente de DOM, Canvas, engine, áudio e rede.
-- Use game loop com [passo fixo/contrato documentado], clock injetável e limites de delta.
+- Use game loop com [passo fixo/contrato documentado], clock injetável, limites de delta e `maxStepsPerFrame`; ao atingir o teto, registre `slow_frame` e aplique recovery local ou ressincronização autoritativa, sem catch-up ilimitado. `resyncPending` deve deduplicar a solicitação, pausar simulation/prediction, zerar a dívida em todos os frames pendentes e só liberar após aplicar/reconciliar o snapshot; erro/desconexão seguem para reconexão ou tela segura.
 - Use ECS/data-oriented apenas onde o volume de entidades e o profiling justificarem.
 - Input vira comandos de domínio; não espalhe listeners pela gameplay.
+- Capture/prevena defaults somente na região do jogo quando a ação for consumida, preservando scroll e tecnologia assistiva.
 - O servidor é autoridade para [pontuação/dano/inventário/loot/movimento], quando multiplayer.
 
 ## Procedural e data-driven — obrigatório quando fizer sentido
@@ -494,11 +585,13 @@ Copie e adapte este bloco para o repositório do game:
 - Use property-based tests, seeds de regressão e casos reduzidos quando uma propriedade falhar.
 - Use conteúdo manual para narrativa, UX e momentos críticos; permita overrides por ID e fallback determinístico.
 - Versione seeds, algoritmos, schemas, tabelas e prefabs. Nunca mude resultados de saves silenciosamente.
+- Só prometa determinismo bit a bit entre runtimes com PRNG, largura de inteiros, ponto flutuante, serialização e algoritmo especificados/testados; em cliente/servidor, o servidor ou seus inputs compactos são autoritativos.
 
 ## Assets, áudio e acessibilidade
-- Assets vêm de manifest validado, com hash, licença, tamanho, dependências e fallback.
+- Assets vêm de manifest validado, com hash, origem/proveniência, licença, atribuição, tamanho, dependências e fallback; CI valida todos os campos e notices acompanham a distribuição.
+- Para 3D, valide GLB/glTF em CI (materiais, animações, esqueletos, coordenadas e limites de textura); libere GPU, object URLs, buffers de áudio e dados de workers ao remover cena/chunk.
 - Web Audio deve respeitar gesto do usuário, mute, mixer, limites de vozes e alternativa visual/legendas.
-- Suporte remapeamento, teclado/Gamepad/toque, pause, contraste, tamanho de HUD, redução de movimento/flash e DOM acessível para UI.
+- Suporte remapeamento, teclado/Gamepad/toque, pause, contraste, tamanho de HUD, redução de movimento/flash e DOM acessível para UI. Use `axe-core` apenas no DOM e complete com smoke manual de teclado, tecnologia assistiva, zoom e fluxo de jogo; automação não prova conformidade.
 - Pointer Lock e fullscreen só após ação explícita e sempre com alternativa e saída clara.
 
 ## Qualidade e comandos
@@ -506,11 +599,13 @@ Copie e adapte este bloco para o repositório do game:
 - Para mudanças visuais, rode smoke/E2E e compare screenshots em viewports definidos.
 - Para geração/estado, adicione ou atualize testes determinísticos e property-based.
 - Para performance, registre baseline, cenário, métrica e resultado; não faça otimização especulativa.
+- Inclua SCA, SAST, scan de secrets, licença e artefatos WASM/nativos nos gates aplicáveis; publique artefato versionado/hashado em staging, faça smoke em navegador real, rollout gradual e rastreie o commit de release.
 - Não adicione dependência, engine ou API externa sem justificar bundle, compatibilidade, licença e fallback.
 
 ## Segurança
 - Nunca coloque secrets no cliente.
 - Valide no servidor comandos, payloads, saves, economia, permissões e rate limits.
+- Faça escape de chat, nomes, texto gerado e URLs de debug no DOM; sanitize rich text somente quando necessário. Use tokens curtos/com escopo fora de URL, logs e `localStorage` quando houver sessão/cookie mais seguro.
 - Não registre tokens, PII ou payloads sensíveis; consulte [`sec-code-pt.md`](./sec-code-pt.md).
 ```
 
@@ -523,12 +618,14 @@ Copie e adapte este bloco para o repositório do game:
 - [ ] A stack é a menor que resolve o jogo e cada engine/biblioteca tem uma justificativa registrada.
 - [ ] O domínio/simulação pode ser testado sem DOM, renderer, áudio ou rede.
 - [ ] O loop, timestep, ordem dos sistemas, pausa e comportamento em background estão definidos.
+- [ ] `maxStepsPerFrame`, telemetria de `slow_frame` e a política de recovery/ressincronização ao atingir o teto estão definidos; não há catch-up ilimitado. `resyncPending` deduplica a solicitação, pausa simulation/prediction, zera a dívida em todos os frames pendentes e só libera após reconciliar snapshot; erro/desconexão levam a reconexão ou tela segura e `alpha <= 1`.
 - [ ] A matriz de navegadores, dispositivos, APIs e fallback está documentada.
 
 ### Procedural/data-driven
 
 - [ ] Geração procedural foi usada onde há variação/volume; conteúdo autoral, UX crítica e narrativa dirigida têm composição manual ou overrides.
 - [ ] Seed, PRNG injetável, algoritmo e streams derivados são determinísticos e reproduzíveis.
+- [ ] Determinismo bit a bit entre runtimes só é alegado com PRNG, largura de inteiros, ponto flutuante, serialização e algoritmo especificados/testados; cliente/servidor mantém autoridade no servidor ou em seus inputs compactos.
 - [ ] A geração está dividida em etapas com regras, constraints, limites e erros explícitos.
 - [ ] Chunks têm fronteiras consistentes, streaming cancelável e política de persistência de alterações.
 - [ ] Resultado passa por validação de conectividade, acessibilidade, dificuldade, colisão, orçamento e serialização.
@@ -539,10 +636,12 @@ Copie e adapte este bloco para o repositório do game:
 
 - [ ] WebGPU falha para WebGL2 e depois Canvas 2D/tela de compatibilidade de forma controlada.
 - [ ] Perda de contexto gráfico, falha de asset, falha de áudio e ausência de API não travam o jogo inteiro.
+- [ ] GLB/glTF valida materiais, animações, esqueletos, coordenadas e limites de textura em CI; cenas/chunks liberam GPU, object URLs, buffers de áudio e dados de workers.
 - [ ] Teclado, mouse, toque, Gamepad e Pointer Lock têm normalização, remapeamento e fallback quando aplicável.
+- [ ] Defaults do navegador são capturados somente na região do jogo e na ação consumida; scroll e tecnologia assistiva permanecem funcionais.
 - [ ] Há pause, resume, perda de foco, orientação, safe areas e controles mobile testados.
 - [ ] Web Audio respeita autoplay, tem mixer, mute, limite de vozes e alternativa visual/legendas.
-- [ ] UI/HUD crítica existe em DOM acessível; foco, teclado, contraste e screen reader foram verificados.
+- [ ] UI/HUD crítica existe em DOM acessível; `axe-core` foi aplicado somente a essa camada e smoke manual de foco, teclado, tecnologia assistiva, zoom e fluxo de jogo foi executado. A automação não foi tratada como prova de conformidade.
 - [ ] `prefers-reduced-motion`, redução de flash/tremor/partículas e escala de texto funcionam.
 
 ### Multiplayer e segurança
@@ -551,17 +650,20 @@ Copie e adapte este bloco para o repositório do game:
 - [ ] Servidor valida comandos, transições, pontuação, dano, inventário, seeds competitivas e rate limits.
 - [ ] Reconexão, jitter, perda, duplicação, reorder, rollback/reconciliation e versão incompatível foram testados.
 - [ ] Não existem secrets no bundle, nem logs de tokens/PII; HTTPS/WSS, CSP, CORS e dependências foram revisados.
+- [ ] Chat, nomes, texto gerado e URLs de debug são seguros contra XSS; tokens curtos/com escopo não aparecem em URLs, logs ou `localStorage` quando há sessão/cookie mais seguro.
 
 ### Performance, testes e publicação
 
 - [ ] Budgets de frame time, startup, bundle, assets, memória, entidades e rede foram medidos em hardware realista.
 - [ ] Parsing/generation/pathfinding pesados não bloqueiam a main thread sem justificativa medida.
 - [ ] Há testes unitários, integração, property-based, E2E/smoke, visual e performance na proporção adequada.
-- [ ] CI roda lint, format check, typecheck, testes, build, validação de assets e smoke test.
-- [ ] PWA/service worker têm precache mínimo, atualização segura, cache versionado e suporte a rollback.
+- [ ] CI roda lint, format check, typecheck, testes, build, validação de todos os campos de assets (hash, origem, licença e atribuição), geração de notices distribuídos com o jogo, smoke test e SCA/SAST/scan de secrets/licença/artefatos WASM-nativos aplicáveis.
+- [ ] PWA/service worker têm precache mínimo, atualização segura, cache versionado e suporte a rollback; saves usam schema versionado, migração, quota, export/import opcional e fallback de storage, sem `localStorage` para dados grandes, críticos ou sensíveis.
+- [ ] Deploy é atômico: HTML, manifest e hashes de assets referenciam uma versão consistente já disponível na CDN.
 - [ ] CDN usa HTTPS, hashes, headers corretos, compressão, MIME de WASM e deploy atômico.
 - [ ] Saves têm schema versionado, migração, limite de espaço e fallback para storage indisponível.
 - [ ] Telemetria amostrada mede boot, erros, contexto gráfico, assets, áudio, performance e conexão sem dados desnecessários.
+- [ ] Artefato versionado/hashado passa por staging, smoke em navegador real e rollout gradual quando aplicável; commit, seeds, gerador, manifest e protocolo são rastreáveis.
 
 ---
 
@@ -589,8 +691,10 @@ Copie e adapte este bloco para o repositório do game:
 - Vite: https://vite.dev/guide/
 - Web.dev — Progressive Web Apps: https://web.dev/explore/progressive-web-apps
 - web.dev — Learn Performance: https://web.dev/learn/performance
+- web.dev — Ready Player Web: https://web.dev/articles/ready-player-web
 - W3C Web Accessibility Initiative: https://www.w3.org/WAI/
 - WCAG 2.2: https://www.w3.org/TR/WCAG22/
+- Game Accessibility Guidelines (orientação complementar da comunidade; não é norma e não substitui a WCAG): https://gameaccessibilityguidelines.com/
 - Playwright: https://playwright.dev/
 - Vitest: https://vitest.dev/
 - fast-check: https://fast-check.dev/
