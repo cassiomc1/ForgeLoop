@@ -1,0 +1,24 @@
+{
+  "config": {
+    "default": true,
+    // MD013: linhas operacionais, tabelas e URLs auditáveis podem ser longas.
+    "MD013": false,
+    // MD024: títulos iguais são aceitos apenas quando pertencem a seções distintas.
+    "MD024": {
+      "siblings_only": true
+    },
+    // MD033: os guias contêm exemplos HTML deliberados.
+    "MD033": false,
+    // MD034: listas auditáveis preservam URLs explícitas.
+    "MD034": false,
+    // MD036: rótulos editoriais existentes usam ênfase em vez de títulos.
+    "MD036": false,
+    // MD040: alguns blocos reproduzem conteúdo cuja linguagem é indeterminada.
+    "MD040": false
+  },
+  "globs": [
+    "**/*.md",
+    "!**/.worktrees/**",
+    "!**/.superpowers/**"
+  ]
+}

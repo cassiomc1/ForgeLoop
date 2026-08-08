@@ -1,5 +1,12 @@
 # Especificação: integração profunda de Liquid Glass nos guias de design
 
+## Status do registro
+
+- **Status:** concluído
+- **Data:** 2026-08-07
+- **Evidência final:** `6e88768`
+- **Nota de escopo:** a proibição original de editar `README.md` valia apenas para o patch inicial; a consolidação posterior atualizou o índice do repositório.
+
 ## Objetivo
 
 Atualizar os guias bilíngues de design web com os aprendizados úteis de [Liquid Glass Design](https://liquidglassdesign.com/), distinguindo glassmorphism estático de Liquid Glass refrativo e transformando a referência visual em regras práticas de uso responsável, acessibilidade, fallback, compatibilidade e desempenho.

@@ -1,0 +1,119 @@
+name: Docs quality
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Lint Markdown
+        uses: DavidAnson/markdownlint-cli2-action@21c1be1b93ad9ed58fa840aacc3f279cde2a72ff # v24.2.0
+
+      - name: Check links
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          args: --config .lychee.toml './**/*.md'
+          fail: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate guide structure
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from urllib.parse import unquote
+          import re
+
+          root = Path.cwd()
+          guides = sorted((*root.glob("PT-BR/*.md"), *root.glob("ENG/*.md")))
+          markdown_files = sorted(
+              path for path in root.rglob("*.md")
+              if not ({".worktrees", ".superpowers"} & set(path.relative_to(root).parts))
+          )
+          required = {"name", "language", "counterpart", "description", "version", "last-reviewed"}
+          names = set()
+          link_pattern = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
+
+          if len(guides) != 16:
+              raise SystemExit(f"expected 16 guides, found {len(guides)}")
+
+          def balanced_fences(text, path):
+              opening = None
+              for line_number, line in enumerate(text.splitlines(), 1):
+                  match = re.match(r"^[ \t]{0,3}(`{3,}|~{3,})", line)
+                  if not match:
+                      continue
+                  marker = match.group(1)
+                  if opening is None:
+                      opening = (marker[0], len(marker), line_number)
+                  elif marker[0] == opening[0] and len(marker) >= opening[1]:
+                      opening = None
+              if opening is not None:
+                  raise SystemExit(f"{path}: unclosed code fence opened at line {opening[2]}")
+
+          for path in guides:
+              text = path.read_text(encoding="utf-8")
+              if not text.startswith("---\n"):
+                  raise SystemExit(f"{path}: missing frontmatter")
+              _, raw_frontmatter, _ = text.split("---", 2)
+              metadata = {}
+              for line in raw_frontmatter.strip().splitlines():
+                  key, separator, value = line.partition(":")
+                  if not separator:
+                      raise SystemExit(f"{path}: invalid frontmatter line: {line}")
+                  metadata[key.strip()] = value.strip().strip('"\'')
+
+              if set(metadata) != required:
+                  raise SystemExit(f"{path}: frontmatter keys differ from contract")
+              if metadata["name"] != path.stem or not metadata["description"]:
+                  raise SystemExit(f"{path}: invalid name or empty description")
+              expected_language = "pt-BR" if path.parent.name == "PT-BR" else "en"
+              if metadata["language"] != expected_language:
+                  raise SystemExit(f"{path}: expected language {expected_language}")
+              if metadata["version"] != "2026.08" or metadata["last-reviewed"] != "2026-08-08":
+                  raise SystemExit(f"{path}: unexpected version or review date")
+              if metadata["name"] in names:
+                  raise SystemExit(f"{path}: duplicate name {metadata['name']}")
+              names.add(metadata["name"])
+
+              counterpart = (path.parent / metadata["counterpart"]).resolve()
+              if not counterpart.is_file():
+                  raise SystemExit(f"{path}: missing counterpart {metadata['counterpart']}")
+
+          for path in markdown_files:
+              text = path.read_text(encoding="utf-8")
+              balanced_fences(text, path)
+
+              for raw_target in link_pattern.findall(text):
+                  target = raw_target.strip()
+                  if target.startswith("<") and ">" in target:
+                      target = target[1:target.index(">")]
+                  else:
+                      target = target.split(maxsplit=1)[0]
+                  if not target or target.startswith("#") or re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", target):
+                      continue
+                  clean_target = unquote(target.split("#", 1)[0].split("?", 1)[0])
+                  linked_path = (root / clean_target.lstrip("/")) if clean_target.startswith("/") else (path.parent / clean_target)
+                  if clean_target and not linked_path.resolve().exists():
+                      raise SystemExit(f"{path}: missing relative link target {target}")
+
+          print(
+              f"validated {len(guides)} guides, {len(names)} unique names, "
+              f"frontmatter and counterparts; fences and relative links in "
+              f"{len(markdown_files)} Markdown files"
+          )
+          PY

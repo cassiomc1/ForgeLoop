@@ -4,11 +4,11 @@ Esta coleção reúne guias práticos para orientar agentes de IA (Claude Code, 
 
 Os guias cobrem desenvolvimento **web** (desktop e mobile), criação de sites em nível de grandes estúdios de design, **apps mobile nativos** (iOS/Android), **apps desktop nativos** (Windows/macOS) e, quando fizer sentido, composição audiovisual HTML/CSS/JS com [HyperFrames](https://hyperframes.heygen.com). Eles podem ser usados como referência direta ou como base para arquivos de contexto como `CLAUDE.md`, `AGENTS.md`, `.cursor/rules` e `.github/copilot-instructions.md`.
 
-## Regra comum a todos os guias: ferramentas obrigatórias
+## Política comum de ferramentas / Common tooling policy
 
-Todos os guias desta coleção incluem a seguinte instrução para agentes de IA e desenvolvedores:
+**Português:** identifique a stack, a etapa do trabalho e os checks realmente aplicáveis. Prefira uma ferramenta equivalente já disponível quando ela produzir evidência compatível e peça autorização antes de instalar software ou alterar o ambiente. Se uma verificação necessária não puder ser executada e não houver alternativa segura, registre o bloqueio e nunca afirme que o check passou. Referências opcionais não devem ser instaladas automaticamente.
 
-> Se qualquer ferramenta, dependência, runtime, CLI ou utilitário necessário para executar o guia (linter, formatter, framework de teste, scanner, profiler, engine, etc.) **não estiver instalado no ambiente, solicite a instalação ao usuário imediatamente** (ou instale com aprovação, conforme a política do ambiente). Nenhuma etapa, verificação ou entrega pode ser pulada, adiada ou substituída por "a ferramenta não está instalada" — a tarefa só está completa quando todas as verificações exigidas foram de fato executadas.
+**English:** identify the stack, the current stage, and the checks that actually apply. Prefer an equivalent tool already available when it produces compatible evidence, and ask for authorization before installing software or changing the environment. If a required check cannot run and no safe alternative exists, record the blocker and never claim that the check passed. Optional references must not be installed automatically.
 
 ## Estrutura do projeto
 
@@ -17,39 +17,64 @@ Os arquivos estão organizados em duas pastas por idioma:
 - [`PT-BR/`](./PT-BR/) — guias em português (versão principal), com sufixo `-pt.md`.
 - [`ENG/`](./ENG/) — guias em inglês, com sufixo `-eng.md`.
 
+## Manutenção e paridade / Maintenance and parity
+
+| Par / Pair | Idioma principal / Primary language | Contraparte / Counterpart | Versão / Version | Revisão / Review | Status |
+| --- | --- | --- | --- | --- | --- |
+| Sites premium em nível de estúdio / Premium websites at studio level | `pt-BR` — [`PT-BR/premium-sites-studio-pt.md`](./PT-BR/premium-sites-studio-pt.md) | `en` — [`ENG/premium-sites-studio-eng.md`](./ENG/premium-sites-studio-eng.md) | `2026.08` | `2026-08-08` | mantido / maintained |
+| Código limpo / Clean code | `pt-BR` — [`PT-BR/clean-code-pt.md`](./PT-BR/clean-code-pt.md) | `en` — [`ENG/clean-code-eng.md`](./ENG/clean-code-eng.md) | `2026.08` | `2026-08-08` | mantido / maintained |
+| Testes / Testing | `pt-BR` — [`PT-BR/test-code-pt.md`](./PT-BR/test-code-pt.md) | `en` — [`ENG/test-code-eng.md`](./ENG/test-code-eng.md) | `2026.08` | `2026-08-08` | mantido / maintained |
+| Segurança / Security | `pt-BR` — [`PT-BR/sec-code-pt.md`](./PT-BR/sec-code-pt.md) | `en` — [`ENG/sec-code-eng.md`](./ENG/sec-code-eng.md) | `2026.08` | `2026-08-08` | mantido / maintained |
+| Design | `pt-BR` — [`PT-BR/design-code-pt.md`](./PT-BR/design-code-pt.md) | `en` — [`ENG/design-code-eng.md`](./ENG/design-code-eng.md) | `2026.08` | `2026-08-08` | mantido / maintained |
+| Performance | `pt-BR` — [`PT-BR/perf-code-pt.md`](./PT-BR/perf-code-pt.md) | `en` — [`ENG/perf-code-eng.md`](./ENG/perf-code-eng.md) | `2026.08` | `2026-08-08` | mantido / maintained |
+| Acessibilidade / Accessibility | `pt-BR` — [`PT-BR/acessibilidade-code-pt.md`](./PT-BR/acessibilidade-code-pt.md) | `en` — [`ENG/accessibility-eng.md`](./ENG/accessibility-eng.md) | `2026.08` | `2026-08-08` | mantido / maintained |
+| Games web / Web games | `pt-BR` — [`PT-BR/games-code-design-web-pt.md`](./PT-BR/games-code-design-web-pt.md) | `en` — [`ENG/games-code-design-web-eng.md`](./ENG/games-code-design-web-eng.md) | `2026.08` | `2026-08-08` | mantido / maintained |
+
+Esta coleção não declara uma licença global. Qualquer reutilização depende da autorização do titular aplicável e das condições registradas em [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md).
+
+This collection does not declare a global license. Any reuse depends on permission from the applicable rights holder and on the conditions recorded in [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md).
+
 ## HyperFrames: vídeo e motion com HTML / HTML video and motion
 
 Quando o projeto precisar de um trailer, demonstração de produto, motion graphic, apresentação ou outro vídeo automatizável, consulte o [HyperFrames](https://hyperframes.heygen.com). A ferramenta transforma HTML, CSS, mídia e animações controláveis por frame em vídeos renderizáveis e pode ser usada localmente por agentes de código.
 
-Fluxo mínimo recomendado:
+Instalação das skills para um agente:
 
 ```bash
-npx hyperframes skills update
-npx hyperframes init meu-video
-cd meu-video
-npx hyperframes preview
-npx hyperframes render
+npx skills add heygen-com/hyperframes --full-depth
 ```
 
-Para a instalação guiada e as opções de workflow, use o [quickstart oficial](https://hyperframes.heygen.com/quickstart). O render local exige Node.js 22+ e FFmpeg; valide custos, licenças, acessibilidade, mídia de terceiros e permissões antes de publicar.
+Fluxo manual mínimo recomendado:
 
-For projects that need an automated trailer, product demo, motion graphic, presentation, or another video, see [HyperFrames](https://hyperframes.heygen.com). It turns HTML, CSS, media, and frame-controllable animation into renderable video and can be used locally by coding agents. Follow the [official quickstart](https://hyperframes.heygen.com/quickstart); local rendering requires Node.js 22+ and FFmpeg.
+```bash
+npx hyperframes init meu-video --example blank --non-interactive
+cd meu-video
+npx hyperframes doctor
+npx hyperframes lint
+npx hyperframes check
+npx hyperframes preview
+npx hyperframes render --output output.mp4
+```
+
+Para a instalação guiada e as opções de workflow, use o [quickstart oficial](https://hyperframes.heygen.com/quickstart) e a [referência oficial da CLI](https://hyperframes.heygen.com/packages/cli). O render local exige Node.js 22+ e FFmpeg. Antes de publicar, faça validação visual do resultado, confira acessibilidade e direitos de toda mídia e entenda os custos de serviços opcionais.
+
+For projects that need an automated trailer, product demo, motion graphic, presentation, or another video, see [HyperFrames](https://hyperframes.heygen.com). It turns HTML, CSS, media, and frame-controllable animation into renderable video and can be used locally by coding agents. Agent skill installation is separate from the manual CLI workflow shown above. Follow the [official quickstart](https://hyperframes.heygen.com/quickstart) and [official CLI reference](https://hyperframes.heygen.com/packages/cli); local rendering requires Node.js 22+ and FFmpeg. Before publishing, visually validate the result, verify accessibility and rights for all media, and understand the costs of optional services.
 
 ---
 
-# Versão em Português
+## Versão em Português
 
 Esta é a versão principal dos guias, escrita em português.
 
-## Arquivos em português (pasta [`PT-BR/`](./PT-BR/))
+### Arquivos em português (pasta [`PT-BR/`](./PT-BR/))
 
-### [`PT-BR/premium-sites-studio-pt.md`](./PT-BR/premium-sites-studio-pt.md) — Sites premium em nível de estúdio
+#### [`PT-BR/premium-sites-studio-pt.md`](./PT-BR/premium-sites-studio-pt.md) — Sites premium em nível de estúdio
 
 Processo completo para criar sites de alto nível, cobrindo estratégia, conteúdo, arquitetura de informação, direção criativa, design system, UX, implementação, motion, SEO, acessibilidade, performance, segurança, QA, lançamento e manutenção.
 
-### [`PT-BR/clean-code-pt.md`](./PT-BR/clean-code-pt.md) — Código limpo para agentes de IA
+#### [`PT-BR/clean-code-pt.md`](./PT-BR/clean-code-pt.md) — Código limpo para agentes de IA
 
-Adaptação do artigo *"Clean Code for AI Agents"*, de Fabio Akita, organizada como instruções práticas para agentes de IA.
+Síntese operacional influenciada pelo artigo *"Clean Code for AI Agents"*, de Fabio Akita, organizada como instruções práticas para agentes de IA.
 
 Cobre:
 
@@ -64,7 +89,7 @@ Cobre:
 - Debugging orientado por evidências: aumentar o nível de log quando a causa de um erro não for clara, reproduzir o problema e só então corrigir.
 - Template para `CLAUDE.md`/`AGENTS.md`.
 
-### [`PT-BR/test-code-pt.md`](./PT-BR/test-code-pt.md) — Testes por linguagem e tecnologia
+#### [`PT-BR/test-code-pt.md`](./PT-BR/test-code-pt.md) — Testes por linguagem e tecnologia
 
 Guia de frameworks, ferramentas e práticas de teste para:
 
@@ -82,7 +107,7 @@ Guia de frameworks, ferramentas e práticas de teste para:
 
 Também inclui princípios como pirâmide de testes, F.I.R.S.T, cobertura, testes determinísticos e integração contínua.
 
-### [`PT-BR/sec-code-pt.md`](./PT-BR/sec-code-pt.md) — Segurança para web, mobile e desktop
+#### [`PT-BR/sec-code-pt.md`](./PT-BR/sec-code-pt.md) — Segurança para web, mobile e desktop
 
 Guia de *secure coding* baseado no OWASP Top 10:2025, OWASP Mobile Top 10:2024 e OWASP MASVS.
 
@@ -101,7 +126,7 @@ Cobre:
 - Segurança de Electron, React Native, Flutter e .NET MAUI.
 - Template de segurança para `CLAUDE.md`/`AGENTS.md`.
 
-### [`PT-BR/design-code-pt.md`](./PT-BR/design-code-pt.md) — Design premium para web, mobile e desktop
+#### [`PT-BR/design-code-pt.md`](./PT-BR/design-code-pt.md) — Design premium para web, mobile e desktop
 
 Receita de direção visual, UX, motion e performance percebida para experiências digitais premium.
 
@@ -120,7 +145,7 @@ Cobre:
 - Apps desktop seguindo Fluent Design/WinUI no Windows e HIG no macOS.
 - Checklists para web, mobile e desktop.
 
-### [`PT-BR/perf-code-pt.md`](./PT-BR/perf-code-pt.md) — Performance por tecnologia e plataforma
+#### [`PT-BR/perf-code-pt.md`](./PT-BR/perf-code-pt.md) — Performance por tecnologia e plataforma
 
 Guia técnico para medir, diagnosticar e melhorar performance sem otimizações especulativas.
 
@@ -136,7 +161,7 @@ Cobre:
 - Relação entre performance e segurança.
 - Template para agentes e checklist de revisão.
 
-### [`PT-BR/acessibilidade-code-pt.md`](./PT-BR/acessibilidade-code-pt.md) — Acessibilidade como linha de base (A11Y)
+#### [`PT-BR/acessibilidade-code-pt.md`](./PT-BR/acessibilidade-code-pt.md) — Acessibilidade como linha de base (A11Y)
 
 Protocolo de acessibilidade adaptado do projeto *A11Y.md* (WCAG 2.2 AA, ADA, EAA, ISO 9241-171).
 
@@ -150,7 +175,7 @@ Cobre:
 - Protocolo para componentes complexos e antipadrões (divs clicáveis, focus traps vazados, placeholder como rótulo, sopa de ARIA).
 - Checklist de verificação (Definition of Done) com zoom/reflow, ordem de Tab e auditoria de exceções.
 
-### [`PT-BR/games-code-design-web-pt.md`](./PT-BR/games-code-design-web-pt.md) — Desenvolvimento e design de games web
+#### [`PT-BR/games-code-design-web-pt.md`](./PT-BR/games-code-design-web-pt.md) — Desenvolvimento e design de games web
 
 Guia específico para criar games web 2D e 3D, com foco em desenvolvimento procedural e data-driven.
 
@@ -167,25 +192,23 @@ Cobre:
 
 ---
 
-# English Version
+## English Version
 
-This section documents the English translations of the guides. The English files preserve the technical structure, commands, metrics, code examples, links and agent instruction templates from the Portuguese originals.
+This section documents the English counterparts of the guides. The English files preserve the technical structure, commands, metrics, code examples, links and agent instruction templates from the Portuguese originals.
 
-## Rule common to all guides: mandatory tooling
+### Common tooling policy
 
-Every guide in this collection includes the following instruction for AI agents and developers:
+Identify the stack, the current stage, and the checks that actually apply. Prefer an equivalent tool already available when it produces compatible evidence, and ask for authorization before installing software or changing the environment. If a required check cannot run and no safe alternative exists, record the blocker and never claim that the check passed. Optional references must not be installed automatically.
 
-> If any tool, dependency, runtime, CLI or utility required to execute the guide (linter, formatter, test framework, scanner, profiler, engine, etc.) **is not installed in the environment, request its installation from the user immediately** (or install it with approval, per the environment's policy). No step, check or deliverable may be skipped, postponed or replaced because "the tool is not installed" — the task is only complete when all required checks have actually been executed.
+### English files (folder [`ENG/`](./ENG/))
 
-## English files (folder [`ENG/`](./ENG/))
-
-### [`ENG/premium-sites-studio-eng.md`](./ENG/premium-sites-studio-eng.md) — Premium websites at studio level
+#### [`ENG/premium-sites-studio-eng.md`](./ENG/premium-sites-studio-eng.md) — Premium websites at studio level
 
 Complete process for high-end websites, covering strategy, content, information architecture, creative direction, design systems, UX, implementation, motion, SEO, accessibility, performance, security, QA, launch, and maintenance.
 
-### [`ENG/clean-code-eng.md`](./ENG/clean-code-eng.md) — Clean Code for AI Agents
+#### [`ENG/clean-code-eng.md`](./ENG/clean-code-eng.md) — Clean Code for AI Agents
 
-English adaptation of Fabio Akita's *"Clean Code for AI Agents"* article, organized as practical instructions for AI coding agents.
+Operational synthesis influenced by Fabio Akita's *"Clean Code for AI Agents"* article, organized as practical instructions for AI coding agents.
 
 It covers:
 
@@ -200,7 +223,7 @@ It covers:
 - Evidence-driven debugging: increase the log level when the root cause is unclear, reproduce the issue, and only then fix it.
 - A template for `CLAUDE.md`/`AGENTS.md`.
 
-### [`ENG/test-code-eng.md`](./ENG/test-code-eng.md) — Testing by Language and Technology
+#### [`ENG/test-code-eng.md`](./ENG/test-code-eng.md) — Testing by Language and Technology
 
 Guide to testing frameworks, tools and practices for:
 
@@ -218,7 +241,7 @@ Guide to testing frameworks, tools and practices for:
 
 It also includes the testing pyramid, F.I.R.S.T principles, coverage, deterministic tests and continuous integration.
 
-### [`ENG/sec-code-eng.md`](./ENG/sec-code-eng.md) — Security for Web, Mobile and Desktop
+#### [`ENG/sec-code-eng.md`](./ENG/sec-code-eng.md) — Security for Web, Mobile and Desktop
 
 Secure coding guide based on OWASP Top 10:2025, OWASP Mobile Top 10:2024 and OWASP MASVS.
 
@@ -237,7 +260,7 @@ It covers:
 - Electron, React Native, Flutter and .NET MAUI security.
 - A security template for `CLAUDE.md`/`AGENTS.md`.
 
-### [`ENG/design-code-eng.md`](./ENG/design-code-eng.md) — Premium Design for Web, Mobile and Desktop
+#### [`ENG/design-code-eng.md`](./ENG/design-code-eng.md) — Premium Design for Web, Mobile and Desktop
 
 A visual direction, UX, motion and perceived performance recipe for premium digital experiences.
 
@@ -256,7 +279,7 @@ It covers:
 - Desktop apps following Fluent Design/WinUI on Windows and HIG on macOS.
 - Web, mobile and desktop review checklists.
 
-### [`ENG/perf-code-eng.md`](./ENG/perf-code-eng.md) — Performance by Technology and Platform
+#### [`ENG/perf-code-eng.md`](./ENG/perf-code-eng.md) — Performance by Technology and Platform
 
 Technical guide for measuring, diagnosing and improving performance without speculative optimization.
 
@@ -272,7 +295,7 @@ It covers:
 - The relationship between performance and security.
 - An agent template and performance review checklist.
 
-### [`ENG/accessibility-eng.md`](./ENG/accessibility-eng.md) — Accessibility as a Baseline (A11Y)
+#### [`ENG/accessibility-eng.md`](./ENG/accessibility-eng.md) — Accessibility as a Baseline (A11Y)
 
 Accessibility protocol adapted from the *A11Y.md* project (WCAG 2.2 AA, ADA, EAA, ISO 9241-171).
 
@@ -286,7 +309,7 @@ It covers:
 - Complex component protocol and anti-patterns (clickable divs, leaked focus traps, placeholder labels, ARIA soup).
 - Verification checklist (Definition of Done) with zoom/reflow, tab order and exceptions audit.
 
-### [`ENG/games-code-design-web-eng.md`](./ENG/games-code-design-web-eng.md) — Web Game Development and Design
+#### [`ENG/games-code-design-web-eng.md`](./ENG/games-code-design-web-eng.md) — Web Game Development and Design
 
 A dedicated guide for building 2D and 3D web games, with a focus on procedural and data-driven development.
 
