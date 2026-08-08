@@ -194,7 +194,8 @@ Adapte este bloco ao repositório e à linguagem:
 ## Erros, async e observabilidade
 
 - Use códigos de erro estáveis e contexto seguro. Nunca registre valores brutos, secrets, tokens, PII, cartões ou payloads completos.
-- Propague cancelamento, configure timeout, limite retries com backoff e jitter e preserve idempotência antes de repetir efeitos externos.
+- Propague cancelamento e configure timeout. Faça retry somente de falhas transitórias, com tentativas limitadas, backoff, jitter e idempotência antes de repetir efeitos externos.
+- Limite a concorrência para proteger dependências e faça cleanup de recursos em sucesso, falha e cancelamento.
 - Emita eventos estruturados com event, level, request_id, duração, resultado e campos redigidos.
 - Use logs para diagnóstico seguro, métricas para agregados e traces para atravessar fronteiras. Defina retenção e acesso.
 

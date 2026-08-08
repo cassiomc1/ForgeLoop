@@ -194,7 +194,8 @@ Adapt this block to the repository and language:
 ## Errors, async, and observability
 
 - Use stable error codes and safe context. Never log raw values, secrets, tokens, PII, cards, or complete payloads.
-- Propagate cancellation, configure timeouts, limit retries with backoff and jitter, and preserve idempotency before repeating external effects.
+- Propagate cancellation and configure timeouts. Retry only transient failures, with limited attempts, backoff, jitter, and idempotency before repeating external effects.
+- Limit concurrency to protect dependencies and clean up resources on success, failure, and cancellation.
 - Emit structured events with event, level, request_id, duration, result, and redacted fields.
 - Use logs for safe diagnosis, metrics for aggregates, and traces to cross boundaries. Define retention and access.
 
