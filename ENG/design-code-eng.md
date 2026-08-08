@@ -169,6 +169,13 @@ Rule: never repeat the same "image left + text right" pattern in 2 consecutive s
 - Soft backgrounds and subtle gradients (opacity 5–20%, without banding).
 - Depth built with light layers: blur (`8–24px`), subtle shadow, controlled overlay — never hard shadows (`0 0 20px black`).
 
+### Liquid Glass, glassmorphism, and translucency
+
+- **Glassmorphism** is a static approximation: transparency, `backdrop-filter: blur()`, a subtle border, and shadow. **Liquid Glass** describes a dynamic material that attempts to simulate refraction, specular highlights, tint, shadow, and deformation responsive to content or movement.
+- Do not call CSS blur real refraction. On the web, more faithful refraction requires SVG displacement or WebGL shaders; both are optional, costlier enhancements that require a fallback.
+- Reserve transparency/refraction for one or two low-density floating surfaces — contextual navigation, toolbar, tab bar, sheet, popover, or a focused control. Body copy, long forms, prices, critical states, decisions, and essential CTAs remain on solid or predictably contrasting surfaces.
+- Validate every state against the most complex background that could pass behind the surface. Glass over glass, long text over moving/refracted backgrounds, and transparency across every layer turn depth into noise.
+
 ---
 
 ## Motion (GSAP / ScrollTrigger)
@@ -210,6 +217,7 @@ Motion rules:
 - Easing: `power3.out` or `expo.out` for entrances; `power2.inOut` for state transitions.
 - Stagger between elements in a list: `0.06–0.1s`.
 - Never: bounce, elastic, exaggerated rotation, aggressive parallax (>30% of scroll speed), video autoplay with sound, infinite decorative loops that compete with the content.
+- On Liquid Glass surfaces, limit elasticity, morphing, glare, and pointer/touch tracking to short, pausable motion. With `prefers-reduced-motion: reduce`, use a static surface; comprehension, focus, and action must remain identical.
 - Always wrap all motion logic in:
 
 ```js
@@ -228,7 +236,9 @@ if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
 - Limit: <5000 particles, no heavy post-processing (bloom may stay, avoid SSAO/motion blur).
 - Pause rendering when the canvas leaves the viewport (`IntersectionObserver`).
 
-For Canvas UI and WebGL effects, provide a functional fallback when the capability is unavailable, respect `prefers-reduced-motion`, pause work outside the viewport, and test across browsers and modest devices. The interface must remain understandable and usable without the effect.
+For Canvas, WebGL, SVG displacement, or Liquid Glass effects, detect capability before loading shaders; limit resolution/DPR, multipass filters, and animated surfaces; initialize on demand; pause outside the viewport and while the page is hidden; and simplify or disable the effect on modest devices. Without the effect, render an opaque HTML/CSS surface with the same content, focus, hover, pressed, disabled, error, success, selection, and action states.
+
+Measure and test the effect in Safari and Firefox, over light and dark backgrounds, complex images and videos, and on modest devices. If legibility, performance, or equivalent states fail, use the opaque HTML/CSS surface.
 
 ---
 
@@ -267,6 +277,12 @@ For Canvas UI and WebGL effects, provide a functional fallback when the capabili
 - For high-impact moments — such as heroes, reveals, and special interactions — consult [Canvas UI](https://canvasui.dev/) as a source of copyable, adaptable canvas/WebGL components.
 - Use an effect only when it reinforces the narrative; adapt tokens, composition, and behavior to the project's identity instead of copying the default result.
 - Keep text, navigation, controls, and every essential action as semantic, accessible HTML; canvas is progressive enhancement, never the only communication channel.
+
+**Liquid Glass surface (optional)**
+
+- Use it for short-content controls or contextual navigation; keep the real element focusable and actionable in HTML.
+- Prefer a simple shape, restrained tint/blur/highlights, and conventional focus states. Deformation, elasticity, glare, and pointer tracking are finish, not affordance or an interaction requirement.
+- Do not apply chromatic aberration, distortion, or reflection to readable text, essential icons, fields, tables, or status messages.
 
 **UI libraries and data visualization**
 
@@ -308,6 +324,13 @@ For Canvas UI and WebGL effects, provide a functional fallback when the capabili
 - Buttons without a noticeable hover/focus state.
 - Excessive badges, tags, and decorative "glassmorphism" without a function.
 - Footer with 6+ columns of irrelevant links just to fill space.
+- Glass over glass.
+- More than two translucent layers without a semantic function.
+- Long text over a moving/refracted background.
+- Chromatic aberration on readable content.
+- Decorative video behind controls.
+- Blur-only presented as refraction.
+- Reliance on glare, transparency, movement, or a mouse pointer to communicate state.
 
 ---
 
@@ -322,6 +345,9 @@ For Canvas UI and WebGL effects, provide a functional fallback when the capabili
 - [ ] Text contrast passes AA.
 - [ ] Buttons/links have visible focus and noticeable hover.
 - [ ] The page works (visually and functionally) without motion/3D JS.
+- [ ] I validated contrast and legibility against the worst possible background and at 200% zoom.
+- [ ] The interface preserves content, focus, states, and actions without WebGL, SVG displacement, transparency, or motion.
+- [ ] No more than two translucent layers compete on the same screen, and each has a clear contextual function.
 - [ ] No item from the "Blacklist" is present.
 - [ ] Tested on mobile (360px) and desktop (1440px).
 - [ ] Ran `/impeccable audit` and `/impeccable polish` across the entire interface and addressed applicable findings.
@@ -334,6 +360,7 @@ For Canvas UI and WebGL effects, provide a functional fallback when the capabili
 
 ### iOS (Human Interface Guidelines)
 
+- **Liquid Glass**: when the SDK and deployment target support Apple's current material, prefer native APIs and respect HIG, Reduce Transparency, and Increase Contrast. On earlier versions, use legible conventional surfaces. Do not impose the material on Windows or Android.
 - **Typography**: system font `SF Pro` (Display for large headings, Text for body). Use the system's dynamic styles (Dynamic Type) instead of fixed sizes, to support accessibility:
   - Large Title `34pt`, Title 1 `28pt`, Title 2 `22pt`, Title 3 `20pt`
   - Headline `17pt` (semibold), Body `17pt`, Callout `16pt`, Subhead `15pt`
@@ -393,6 +420,7 @@ For Canvas UI and WebGL effects, provide a functional fallback when the capabili
 
 ### macOS (Human Interface Guidelines)
 
+- **Liquid Glass**: when the SDK and deployment target support Apple's current material, prefer native APIs and respect HIG, Reduce Transparency, and Increase Contrast. On earlier versions, use legible conventional surfaces. Do not impose the material on Windows or Android.
 - **Typography**: `SF Pro` (Display/Text), respecting system text sizes; support user text-size preferences when applicable.
 - **Spacing**: `8pt` grid, generous margins (macOS tends to have more breathing room than Windows). Content padding `20–24pt`.
 - **Navigation**: `NSSplitView`/left sidebar + contextual top toolbar; the system menu bar (top of the screen) must contain all of the app's main commands, not only shortcuts hidden in the UI.
@@ -439,3 +467,9 @@ For Canvas UI and WebGL effects, provide a functional fallback when the capabili
 - Cuelume (web interaction sounds): https://cuelume-site.pages.dev/
 - Canvas UI (creative, framework-agnostic canvas/WebGL effects): https://canvasui.dev/
 - Impeccable (interface auditing and polish): https://impeccable.style/
+- Liquid Glass Design (gallery and conceptual guide; inspiration, not a specification or asset library): https://liquidglassdesign.com/
+- Do not copy or redistribute images, prompts, or works from the Liquid Glass Design gallery; consult its terms and obtain permission where necessary.
+- Liquid Glass Design — guide to the material, glassmorphism, and web implementation: https://liquidglassdesign.com/what-is-liquid-glass
+- Liquid Glass Design — design and development resources: https://liquidglassdesign.com/resources
+- Apple — Adopting Liquid Glass (normative reference for Apple platforms): https://developer.apple.com/documentation/TechnologyOverviews/adopting-liquid-glass
+- Liquid Glass React, SVG, and Studio (experimental implementations; assess license, compatibility, weight, and maintenance): https://github.com/rdev/liquid-glass-react | https://github.com/shuding/liquid-glass | https://github.com/iyinchao/liquid-glass-studio
