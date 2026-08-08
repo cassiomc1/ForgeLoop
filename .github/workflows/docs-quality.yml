@@ -64,7 +64,7 @@ jobs:
                   elif (
                       marker[0] == opening[0]
                       and len(marker) >= opening[1]
-                      and not match.group(2).strip()
+                      and re.fullmatch(r"[ \t]*", match.group(2))
                   ):
                       opening = None
               if opening is not None:
