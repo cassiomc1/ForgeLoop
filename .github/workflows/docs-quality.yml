@@ -76,11 +76,45 @@ jobs:
                       f"{path}: unclosed code fence opened at line {opening[2]}"
                   )
 
-          def parse_scalar(raw_value, path, line_number):
+          quoted_frontmatter_keys = {"description", "version", "last-reviewed"}
+          plain_frontmatter_patterns = {
+              "name": re.compile(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*"),
+              "language": re.compile(r"[a-z]{2}(?:-[A-Z]{2})?"),
+              "counterpart": re.compile(
+                  r"\.\./[A-Za-z0-9][A-Za-z0-9-]*/"
+                  r"[A-Za-z0-9][A-Za-z0-9.-]*\.md"
+              ),
+          }
+          implicit_plain_yaml = re.compile(
+              r"(?ix:"
+              r"~|null|true|false|yes|no|on|off|"
+              r"[-+]?(?:0b[01_]+|0o[0-7_]+|0x[0-9a-f_]+|0[0-7_]+|"
+              r"(?:0|[1-9][0-9_]*))|"
+              r"[-+]?(?:[0-9][0-9_]*)?\.[0-9_]+(?:e[-+]?[0-9]+)?|"
+              r"[-+]?[0-9][0-9_]*e[-+]?[0-9]+|"
+              r"[-+]?\.(?:inf|nan)|"
+              r"[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}(?:"
+              r"(?:[Tt]|[ \t]+)[0-9]{1,2}:[0-9]{2}:[0-9]{2}"
+              r"(?:\.[0-9]+)?(?:[ \t]*(?:Z|[-+][0-9]{1,2}(?::[0-9]{2})?))?"
+              r")?"
+              r")"
+          )
+
+          def parse_scalar(key, raw_value, path, line_number):
               value = raw_value.strip()
               if not value:
                   raise ValidationError(
                       f"{path}:{line_number}: empty frontmatter value"
+                  )
+
+              is_quoted = value.startswith(('"', "'"))
+              if key in quoted_frontmatter_keys and not is_quoted:
+                  raise ValidationError(
+                      f"{path}:{line_number}: {key} must be a quoted string"
+                  )
+              if key in plain_frontmatter_patterns and is_quoted:
+                  raise ValidationError(
+                      f"{path}:{line_number}: {key} must be a plain scalar"
                   )
 
               if value.startswith('"'):
@@ -108,19 +142,14 @@ jobs:
                       )
                   return body.replace("''", "'")
 
-              if re.fullmatch(
-                  r"(?i:null|true|false|yes|no|on|off|~|[-+]?\d+(?:\.\d+)?)",
-                  value,
-              ) or re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+              if implicit_plain_yaml.fullmatch(value):
                   raise ValidationError(
                       f"{path}:{line_number}: implicit non-string YAML value is forbidden"
                   )
-              if not re.fullmatch(
-                  r"(?:[A-Za-z0-9][A-Za-z0-9._/+:-]*|\.\.?/[A-Za-z0-9._/+:-]+)",
-                  value,
-              ):
+              pattern = plain_frontmatter_patterns.get(key)
+              if pattern is None or not pattern.fullmatch(value):
                   raise ValidationError(
-                      f"{path}:{line_number}: unsupported unquoted scalar"
+                      f"{path}:{line_number}: unsupported plain scalar for {key}"
                   )
               return value
 
@@ -150,7 +179,7 @@ jobs:
                       raise ValidationError(
                           f"{path}:{line_number}: duplicate frontmatter key {key}"
                       )
-                  metadata[key] = parse_scalar(raw_value, path, line_number)
+                  metadata[key] = parse_scalar(key, raw_value, path, line_number)
 
               if set(metadata) != required:
                   raise ValidationError(f"{path}: frontmatter keys differ from contract")
@@ -395,6 +424,7 @@ jobs:
               return targets
 
           def validate_relative_links(text, path, repository_root):
+              resolved_root = repository_root.resolve()
               for target in extract_markdown_targets(text, path):
                   target = target.strip()
                   if (
@@ -406,11 +436,18 @@ jobs:
                       continue
                   clean_target = unquote(target.split("#", 1)[0].split("?", 1)[0])
                   linked_path = (
-                      repository_root / clean_target.lstrip("/")
+                      resolved_root / clean_target.lstrip("/")
                       if clean_target.startswith("/")
                       else path.parent / clean_target
                   )
-                  if clean_target and not linked_path.resolve().exists():
+                  resolved_link = linked_path.resolve()
+                  try:
+                      resolved_link.relative_to(resolved_root)
+                  except ValueError as error:
+                      raise ValidationError(
+                          f"{path}: relative link target escapes repository {target}"
+                      ) from error
+                  if clean_target and not resolved_link.exists():
                       raise ValidationError(
                           f"{path}: missing relative link target {target}"
                       )
@@ -445,7 +482,24 @@ jobs:
                       "description:\n  nested: true",
                   ),
                   "implicit boolean": valid_frontmatter.replace(
-                      "language: en", "language: true"
+                      "name: sample", "name: true"
+                  ),
+                  "unquoted hex": valid_frontmatter.replace(
+                      'description: "Valid scalar with punctuation."',
+                      "description: 0x10",
+                  ),
+                  "unquoted octal": valid_frontmatter.replace(
+                      'version: "2026.08"', "version: 0o10"
+                  ),
+                  "unquoted float": valid_frontmatter.replace(
+                      'version: "2026.08"', "version: 2026.08"
+                  ),
+                  "unquoted timestamp": valid_frontmatter.replace(
+                      'last-reviewed: "2026-08-08"',
+                      "last-reviewed: 2026-08-08T12:30:00Z",
+                  ),
+                  "quoted plain key": valid_frontmatter.replace(
+                      "name: sample", 'name: "sample"'
                   ),
                   "unterminated quote": valid_frontmatter.replace(
                       'version: "2026.08"', 'version: "2026.08'
@@ -460,8 +514,15 @@ jobs:
                       raise AssertionError(f"frontmatter self-test accepted {case}")
 
               with tempfile.TemporaryDirectory() as directory:
-                  fixture_root = Path(directory)
-                  (fixture_root / "docs").mkdir()
+                  sandbox = Path(directory)
+                  fixture_root = sandbox / "repository"
+                  (fixture_root / "docs").mkdir(parents=True)
+                  outside = sandbox / "outside"
+                  outside.mkdir()
+                  (outside / "target.md").write_text("# Outside\n", encoding="utf-8")
+                  (fixture_root / "escape").symlink_to(
+                      outside, target_is_directory=True
+                  )
                   existing = fixture_root / "docs/example_(v1).md"
                   existing.write_text("# Existing\n", encoding="utf-8")
                   source = fixture_root / "source.md"
@@ -490,6 +551,8 @@ jobs:
                   for case, fixture in {
                       "missing reference": "[reference][absent]",
                       "missing local target": "[missing](docs/missing_(v1).md)",
+                      "parent traversal": "[outside](../outside/target.md)",
+                      "symlink escape": "[outside](escape/target.md)",
                   }.items():
                       try:
                           validate_relative_links(fixture, source, fixture_root)
@@ -499,8 +562,9 @@ jobs:
                           raise AssertionError(f"link self-test accepted {case}")
 
               print(
-                  "parser self-tests passed: strict frontmatter; balanced inline "
-                  "targets; references; missing targets; code ignored"
+                  "parser self-tests passed: per-key frontmatter; balanced inline "
+                  "targets; references; repository containment; missing targets; "
+                  "code ignored"
               )
 
           def validate_counterparts(metadata_by_path):
