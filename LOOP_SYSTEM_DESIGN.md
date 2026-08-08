@@ -1,6 +1,6 @@
 # Arquitetura do Loop Universal de Projeto
 
-Status: desenho aprovado em alto nível, aguardando revisão antes da implementação.
+Status: implementado e validado em `2026-08-08`.
 
 ## Objetivo
 
@@ -115,6 +115,8 @@ Contexto durável do projeto de destino. Será criado como template e preenchido
 - fontes de cada fato relevante.
 
 O perfil só será atualizado quando a descoberta revelar mudança real. Ele não funcionará como diário de tarefas.
+
+No repositório-fonte, `profile-mode: template` preserva o arquivo como modelo. Ao ser copiado para um projeto com código ou manifests, o primeiro ciclo altera o modo para `project` e preenche somente os fatos confirmados.
 
 ### Guias existentes
 

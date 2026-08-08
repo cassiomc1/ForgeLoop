@@ -49,6 +49,8 @@ Perguntas úteis:
 
 ## Regras por guia
 
+Os comandos de localização abaixo mostram o caminho PT-BR por ser o default. Quando o idioma selecionado for English, execute a mesma busca no caminho inglês correspondente do catálogo; não leia primeiro o arquivo português.
+
 ### `clean` — código e estrutura
 
 **Ative quando:** criar ou modificar código, corrigir bug, refatorar, alterar arquitetura, revisar qualidade ou produzir instruções de desenvolvimento.
