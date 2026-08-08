@@ -30,7 +30,7 @@
 - Modify: `PT-BR/design-code-pt.md`, seções visuais, 3D/interatividade, componentes, motion, Anti-Slop, checklist web, orientação Apple e referências.
 
 **Interfaces:**
-- Consumes: `docs/superpowers/specs/2026-08-07-liquid-glass-design-design.md` e findings dos agentes.
+- Consumes: `docs/superpowers/specs/2026-08-07-liquid-glass-design-spec.md` e findings dos agentes.
 - Produces: regras PT-BR acionáveis sobre Liquid Glass, sem duplicar o contrato técnico existente.
 
 - [ ] **Step 1: Inserir a distinção conceitual após as regras de profundidade**

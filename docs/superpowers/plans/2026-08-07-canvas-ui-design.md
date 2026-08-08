@@ -27,7 +27,7 @@
 - Modify: `PT-BR/design-code-pt.md`, seções `Premium Components`, `3D e Interatividade` e `Fontes e Referências (Skills Base)`.
 
 **Interfaces:**
-- Consumes: `docs/superpowers/specs/2026-08-07-canvas-ui-design.md` e a estrutura existente do guia.
+- Consumes: `docs/superpowers/specs/2026-08-07-canvas-ui-design-spec.md` e a estrutura existente do guia.
 - Produces: orientação em português sobre uso criterioso do Canvas UI e sua referência oficial.
 
 - [ ] **Step 1: Adicionar orientação contextual na seção de componentes**

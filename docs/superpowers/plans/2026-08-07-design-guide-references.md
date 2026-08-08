@@ -27,7 +27,7 @@
 - Modify: `PT-BR/design-code-pt.md`, na seção `Componentes Premium` e na seção `Fontes e Referências (Skills Base)`.
 
 **Interfaces:**
-- Consumes: a especificação `docs/superpowers/specs/2026-08-07-design-guide-references-design.md`.
+- Consumes: a especificação `docs/superpowers/specs/2026-08-07-design-guide-references-spec.md`.
 - Produces: orientação em português e links oficiais para uso posterior por agentes e desenvolvedores.
 
 - [ ] **Step 1: Adicionar orientação contextual na seção de componentes**
@@ -42,7 +42,7 @@ Inserir após o bloco de imagens:
 - Para sons de interação sutis, consulte [Cuelume](https://cuelume-site.pages.dev/); ofereça controle de volume/silêncio e nunca dependa de áudio para comunicar informação essencial.
 ```
 
-- [ ] **Step 2: Adicionar as duas referências na lista final**
+- [ ] **Step 2: Adicionar as três referências na lista final**
 
 Inserir no final de `Fontes e Referências (Skills Base)`:
 
@@ -79,7 +79,7 @@ Inserir após o bloco de imagens:
 - For subtle interaction sounds, consult [Cuelume](https://cuelume-site.pages.dev/); provide volume/mute controls and never rely on audio to communicate essential information.
 ```
 
-- [ ] **Step 2: Adicionar as duas referências na lista final**
+- [ ] **Step 2: Adicionar as três referências na lista final**
 
 Inserir no final de `Sources and References (Base Skills)`:
 

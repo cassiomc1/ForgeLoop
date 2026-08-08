@@ -281,7 +281,7 @@ Meça e teste o efeito em Safari e Firefox, sobre fundos claros e escuros, image
 **Superfície Liquid Glass (opcional)**
 
 - Use em controles ou navegação contextual com conteúdo curto; mantenha o elemento real, focável e acionável em HTML.
-- Prefira forma simples, tonalidade, desfoque e realce discretos, além de estados de foco convencionais. Easing elástico é proibido; microdeformação interna, brilho e acompanhamento de ponteiro são acabamento, não affordance nem requisito de interação.
+- Prefira forma simples, tonalidade, desfoque e realce discretos, além de estados de foco convencionais. Microdeformação interna, brilho e acompanhamento de ponteiro seguem a regra de Liquid Glass da seção Motion.
 - Não aplique aberração cromática, distorção ou reflexão sobre texto legível, ícones essenciais, campos, tabelas ou mensagens de estado.
 
 **Bibliotecas de UI e visualização de dados**
@@ -305,7 +305,7 @@ Meça e teste o efeito em Safari e Firefox, sobre fundos claros e escuros, image
 
 ## Performance
 
-- Em animações DOM/CSS, animar apenas `transform` e `opacity`; usar `will-change` com parcimônia (remover após a animação). Deformação ou brilho via shader/filtro é só efeito interno, curto e pausável, nunca requisito de interação.
+- Em animações DOM/CSS, animar apenas `transform` e `opacity`; usar `will-change` com parcimônia (remover após a animação). Deformação ou brilho via shader/filtro segue a regra de Liquid Glass da seção Motion.
 - Imagens em `WebP`/`AVIF`, `srcset` + `loading="lazy"` (exceto imagem do hero, que deve ser eager/preload).
 - Fontes: `font-display: swap`, preload só da fonte crítica do hero (1–2 arquivos, no máx.).
 - Orçamento de performance: LCP < 2.5s, CLS < 0.1 e INP ≤ 200 ms no p75 em dados de campo, separado por mobile e desktop, salvo meta documentada diferente para o produto; JS de motion/3D não deve bloquear o carregamento inicial (carregar via `defer`/lazy-init após interação ou scroll).
@@ -362,7 +362,7 @@ Meça e teste o efeito em Safari e Firefox, sobre fundos claros e escuros, image
 
 ### iOS/iPadOS (Human Interface Guidelines)
 
-- **Liquid Glass**: compile com o SDK Apple atual e, em iOS/iPadOS, verifique a disponibilidade da API em tempo de execução antes de usar o material. Quando disponível, prefira APIs nativas e respeite HIG, Reduce Transparency e Increase Contrast; em sistemas anteriores, mantenha superfícies convencionais legíveis. Não imponha essa estética a Windows/Android.
+- **Liquid Glass**: compile com o SDK Apple atual e verifique a disponibilidade da API em tempo de execução antes de usar o material. Quando disponível, prefira APIs nativas e respeite HIG, Reduce Transparency e Increase Contrast; em sistemas anteriores, mantenha superfícies convencionais legíveis. Não imponha essa estética a Windows/Android.
 - **Tipografia**: fonte do sistema `SF Pro` (Display para títulos grandes, Text para corpo). Usar os estilos dinâmicos do sistema (Dynamic Type) em vez de tamanhos fixos, para suportar acessibilidade:
   - Large Title `34pt`, Title 1 `28pt`, Title 2 `22pt`, Title 3 `20pt`
   - Headline `17pt` (semibold), Body `17pt`, Callout `16pt`, Subhead `15pt`
@@ -470,9 +470,8 @@ Meça e teste o efeito em Safari e Firefox, sobre fundos claros e escuros, image
 - Canvas UI (efeitos canvas/WebGL criativos e agnósticos de framework): https://canvasui.dev/
 - Impeccable (auditoria e polimento de interfaces): https://impeccable.style/
 - Liquid Glass Design (galeria independente de inspiração, não afiliada à Apple; não é especificação nem banco de assets): https://liquidglassdesign.com/
-- As imagens e obras da galeria são distintas dos recursos externos que ela apenas indexa. Consulte os [termos](https://liquidglassdesign.com/terms); não faça republicação ou hospedagem em outro serviço, redistribuição ou uso comercial direto de imagens ou obras sem permissão.
-- Para cada prompt ou código externo, verifique individualmente licença, proveniência, créditos, compatibilidade e manutenção antes de usar; o fato de um recurso estar indexado não transfere direitos.
-- Liquid Glass Design — guia sobre material, glassmorphism e implementação web: https://liquidglassdesign.com/what-is-liquid-glass
-- Liquid Glass Design — recursos de design e desenvolvimento: https://liquidglassdesign.com/resources
+  - Guia sobre o material, glassmorphism e implementação web: https://liquidglassdesign.com/what-is-liquid-glass
+  - Recursos de design e desenvolvimento: https://liquidglassdesign.com/resources
+  - Direitos: as imagens e obras da galeria são distintas dos recursos externos que ela apenas indexa. Consulte os [termos](https://liquidglassdesign.com/terms); não rehospede, redistribua ou use comercialmente imagens ou obras sem permissão. Para cada prompt ou código externo, verifique individualmente licença, proveniência, créditos, compatibilidade e manutenção antes de usar — estar indexado não transfere direitos.
 - Apple — Adopting Liquid Glass (orientação oficial para plataformas Apple): https://developer.apple.com/documentation/TechnologyOverviews/adopting-liquid-glass
 - Liquid Glass React, SVG e Studio (implementações experimentais; avaliar licença, compatibilidade, peso e manutenção): https://github.com/rdev/liquid-glass-react | https://github.com/shuding/liquid-glass | https://github.com/iyinchao/liquid-glass-studio
