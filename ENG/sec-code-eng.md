@@ -9,11 +9,24 @@ last-reviewed: "2026-08-08"
 
 # Security Guide for Web, Mobile, and Desktop Development
 
-> Practical security instructions (secure coding) for the main languages and technologies used in modern development — web, mobile (iOS/Android), and desktop (Windows/macOS). Use this document as a reference to guide AI agents and developers on common risks and how to mitigate them in each stack. Based on OWASP Top 10:2025 (web), OWASP Mobile Top 10:2024, and OWASP MASVS.
+Practical secure-coding guidance for web, mobile (iOS/Android), and desktop
+(Windows/macOS) development. Use this document to turn risks into testable
+controls, evidence, and recorded decisions.
 
-> **Related documents**: for general code quality/structure, see [`clean-code-eng.md`](./clean-code-eng.md). For testing frameworks and tools (including SAST/DAST as part of the pipeline), see [`test-code-eng.md`](./test-code-eng.md). For video and HTML compositions, see [HyperFrames](https://hyperframes.heygen.com) and treat scripts, assets, and external URLs as an attack surface. This file is the canonical security reference; secrets, authorization, cryptography, and OWASP rules live here, not in the other files.
+**Related documents**: for general code quality/structure, see
+[`clean-code-eng.md`](./clean-code-eng.md). For testing frameworks and tools
+(including SAST/DAST in the pipeline), see
+[`test-code-eng.md`](./test-code-eng.md). For videos and HTML compositions,
+see [HyperFrames](https://hyperframes.heygen.com) and treat scripts, assets,
+and external URLs as attack surface. This file is the canonical security
+reference; secrets, authorization, cryptography, and OWASP rules live here,
+not in the other files.
 
-> **Tooling policy**: identify the stack, the stage, and the applicable checks; prefer an already available equivalent that produces compatible evidence. Ask for authorization before installing a tool or changing the environment. If no safe equivalent exists, record the required check as blocked and never claim that it passed. Do not install merely optional resources.
+**Tooling policy**: identify the stack, stage, and applicable checks; prefer an
+already-available equivalent that produces compatible evidence. Ask for
+authorization before installing a tool or changing the environment. If no
+safe equivalent exists, record the required check as blocked and never claim
+it passed. Do not install merely optional resources.
 
 ## General principles (valid for any platform)
 
@@ -26,7 +39,101 @@ last-reviewed: "2026-08-08"
 - **Compositions and media are inputs too**: validate generated HTML/JS, manifests, URLs, formats, sizes, and media origins; pin dependencies where possible and never embed secrets in a composition or video bundle.
 - **Continuously update dependencies**: use automated scanners (Dependabot, Renovate, Snyk, `npm audit`, `pip-audit`, `bundler-audit`) and treat critical vulnerabilities as high-priority bugs.
 - **Log security events, never sensitive data**: record login attempts, authorization failures, and permission changes; never log passwords, complete tokens, card numbers, or personal data in plain text.
-- **Cryptography**: use industry-standard libraries/algorithms (AES-256, RSA-2048+, Argon2/bcrypt/scrypt for passwords). Never implement your own encryption or hashing algorithm.
+- **Cryptography**: use a high-level library and a validated implementation;
+  choose the algorithm, mode, key size, and parameters for the use case, and
+  maintain an inventory and migration path. Never implement primitives or
+  mistake an algorithm name for a security guarantee.
+
+---
+
+## Verifiable baseline: OWASP ASVS 5.0
+
+- Adopt **OWASP ASVS 5.0.0 Level 1 (L1)** as the minimum baseline for web
+  applications and APIs. Adopt **L2** for sensitive applications, including
+  those handling material authentication, health, financial, regulated, or
+  high-impact operations. L3 requires specialist analysis and is not inferred
+  automatically.
+- Use the OWASP Top 10 for awareness and risk prioritization, not as a
+  sufficient verification checklist. Record the ASVS level, applicable
+  requirements, exceptions, owner, evidence, and verification date.
+- Cite requirements with the full version, for example
+  `v5.0.0-1.2.4`; unversioned IDs can change. Do not claim conformance just
+  because a scanner passed: every applicable requirement needs reproducible
+  evidence, manual review, or a not-applicable rationale.
+- For mobile, complement this baseline with MASVS/MASTG; ASVS still applies to
+  the web backend and API controls used by the app.
+
+### Minimum evidence map
+
+| Control | Confirmed ASVS 5.0.0 references | Expected evidence |
+| --- | --- | --- |
+| Server-side validation and authorization | `v5.0.0-2.2.2`, `v5.0.0-8.3.1` | negative tests per operation and resource |
+| Parameterized SQL | `v5.0.0-1.2.4` | test/review showing no input concatenation |
+| Cookies and headers | chapters V3.3 and V3.4 | captured responses and browser tests |
+| File upload | chapters V5.1 through V5.4 | valid, invalid, compressed, and malicious corpus |
+| Session | chapters V7.2 through V7.4 | verified rotation, expiry, and invalidation |
+| OAuth/OIDC and tokens | chapters V9 and V10 | signature, claim, replay, and redirect cases |
+| Secrets and dependencies | chapters V13.3 and V15.1/V15.2 | scans, inventory, SBOM, and rotation trail |
+
+---
+
+## High-risk input contracts
+
+### Outbound requests and SSRF
+
+Before untrusted input may influence an outbound request, define and test this
+contract (`v5.0.0-1.3.6`, `v5.0.0-13.2.4`,
+`v5.0.0-15.3.2`):
+
+- accept only required schemes, normally `https`; parse and canonicalize with
+  a URL library, reject embedded credentials, fragments, and ambiguous syntax,
+  and compare scheme, host, and port with an exact business-destination
+  allowlist;
+- resolve every A and AAAA record and reject any non-global result: private,
+  loopback, link-local, multicast, reserved, and cloud metadata endpoints.
+  Apply the same policy at the egress firewall/proxy;
+- prevent **DNS rebinding**: validate every DNS answer immediately before the
+  connection, connect only to the validated address, and preserve TLS
+  validation of the expected hostname. Do not rely on textual domain
+  validation alone;
+- disable redirects by default. If required, cap the number of hops and repeat
+  parsing, allowlisting, DNS resolution, and IP blocking for **every** target;
+- do not forward internal cookies, tokens, or headers to the destination.
+  Define connect and total timeouts, response-size, concurrency, retry, and
+  bandwidth limits; fail closed and log the reason without secrets;
+- test alternative URL syntax and IPv4/IPv6, redirects, DNS changes, internal
+  destinations, `169.254.169.254`/metadata, and slow or oversized responses.
+
+If the product genuinely needs arbitrary destinations, isolate the fetcher
+without credentials, enforce an egress proxy, and use a special-address
+denylist as an additional defense; never present a denylist as an allowlist
+replacement.
+
+### File upload, processing, and download
+
+Every file flow must document types and limits before implementation and meet,
+according to its level, ASVS 5.0.0 chapters V5.1 through V5.4:
+
+- allow only necessary extensions and verify extension, signature (*magic
+  bytes*), and content with a specialized parser; never trust the client-sent
+  `Content-Type`;
+- generate the name/ID on the server, retain the original name only as
+  sanitized metadata, and never use user input to build paths;
+- limit received bytes, dimensions/complexity, quantity per user, items in an
+  archive, and **post-decompression limits** before extraction
+  (`v5.0.0-5.1.1`, `v5.0.0-5.2.1` through `v5.0.0-5.2.3`);
+- store files in a private service or outside the webroot, without execute
+  permission and with a server-defined content type. Isolate parsers and
+  converters;
+- apply antivirus/sandboxing and CDR to compatible formats when risk requires
+  it. Quarantine the file until a result arrives and define behavior on
+  scanner timeout or failure;
+- serve downloads only after authentication and per-object authorization,
+  through a handler that maps an internal ID, with
+  `Content-Disposition: attachment` and a sanitized name; never expose the
+  real path or permit active execution;
+- test double extensions, false MIME, path traversal, zip slip, symlinks, ZIP
+  or XML bombs, polyglot files, unavailable parsers, and horizontal access.
 
 ---
 
@@ -35,7 +142,9 @@ last-reviewed: "2026-08-08"
 1. **A01 – Broken Access Control (Broken access control)**: validate authorization on every route/endpoint, on the server, for every resource (including direct ID/IDOR). Never trust a `role` sent by the client. Apply deny-by-default.
 2. **A02 – Security Misconfiguration**: remove default accounts/services, disable stack traces and detailed error messages in production, configure security headers (see HTTP section), and keep dev/staging/prod environments consistently hardened.
 3. **A03 – Software Supply Chain Failures**: audit dependencies, use lockfiles (`package-lock.json`, `poetry.lock`), generate an SBOM (Software Bill of Materials), validate package integrity (checksums/signatures), and restrict CI/CD and publish-token permissions.
-4. **A04 – Cryptographic Failures**: use HTTPS/TLS 1.2+ everywhere, never store passwords in plain text (use Argon2/bcrypt), do not use obsolete algorithms (MD5, SHA1, DES), and manage encryption keys outside the code.
+4. **A04 – Cryptographic Failures**: use modern HTTPS/TLS, calibrated password
+   hashing, and AEAD through a high-level library; keep keys outside code and
+   maintain a cryptographic inventory and migration plan.
 5. **A05 – Injection**: use parameterized queries/ORMs (never concatenate SQL), validate and sanitize all input, escape output in templates (protection against XSS), and avoid `eval`/`exec` with external data.
 6. **A06 – Insecure Design**: apply threat modeling, and review critical flows (password recovery, upload, payment) with a focus on abuse, not just the "happy path."
 7. **A07 – Authentication Failures**: require MFA for sensitive accounts, apply rate limiting to login, block/delay after failed attempts, use session tokens with expiration and rotation, and never reveal whether the "user exists" in login error messages.
@@ -48,6 +157,7 @@ last-reviewed: "2026-08-08"
 ## Web — Backend by language/technology
 
 ### Node.js / JavaScript / TypeScript
+
 - **Helmet** (Express) or equivalent middleware to configure security headers automatically.
 - Input validation with **Zod**, **Joi**, or **Yup** — never trust `req.body` without a schema.
 - ORMs with parameterized queries (**Prisma**, **Drizzle**, **TypeORM**) instead of manually concatenated SQL.
@@ -56,13 +166,15 @@ last-reviewed: "2026-08-08"
 - Rate limiting with **express-rate-limit** or at the gateway/CDN (Cloudflare, etc.).
 
 ### Python
+
 - ORMs with parameterized queries (**Django ORM**, **SQLAlchemy**) — never `cursor.execute(f"...{var}...")`.
 - Schema validation with **Pydantic** (FastAPI already uses it natively).
 - `pip-audit` / **Safety** / **Bandit** (static SAST for Python) in CI.
 - Django: keep `DEBUG = False` in production, keep `SECRET_KEY` outside the code, restrict `ALLOWED_HOSTS`, and use `django-csp` for Content-Security-Policy.
 - Never use `pickle` to deserialize data from an untrusted source (arbitrary code execution).
 
-### .NET / C#
+### .NET / C\#
+
 - Use **Entity Framework** with LINQ/parameters (never `SqlCommand` with string concatenation).
 - **ASP.NET Core Identity** or **Duende IdentityServer**/**Microsoft.Identity.Web** for authentication/OAuth2/OIDC.
 - Data Protection API for encrypting data at rest and tokens.
@@ -70,24 +182,28 @@ last-reviewed: "2026-08-08"
 - Configure `[ValidateAntiForgeryToken]` on forms; use `HttpOnly`/`Secure`/`SameSite` on session cookies.
 
 ### Java
+
 - **Prepared Statements**/parameterized JPA (never `Statement` with concatenation).
 - **Spring Security** for declarative authentication/authorization; **OWASP Dependency-Check** or **Snyk** integrated with Maven/Gradle.
 - Avoid insecure deserialization of Java objects (`ObjectInputStream` from untrusted sources) — use JSON with a validated schema instead of Java binary serialization whenever possible.
 - Disable external entity resolution in XML parsers (protection against XXE): `setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)`.
 
 ### PHP
+
 - **PDO with prepared statements** (never `mysqli_query` with concatenation).
 - Modern frameworks (Laravel, Symfony) already perform automatic escaping in templates (Blade/Twig) — avoid `{!! !!}`/`|raw` without sanitization.
 - `composer audit` for vulnerable dependencies.
 - Configure `session.cookie_httponly`, `session.cookie_secure`, `session.cookie_samesite` in `php.ini`.
 
 ### Ruby / Rails
+
 - ActiveRecord with parameters (never `where("... #{var}")`).
 - **Brakeman** (SAST specific to Rails) in CI.
 - `bundler-audit` for vulnerable gems.
 - Rails protects against CSRF by default (`protect_from_forgery`) — never disable it without a justified need.
 
 ### Go
+
 - `database/sql` with parameters (`?`/`$1`) — never use `fmt.Sprintf` to build SQL.
 - **govulncheck** to check for known vulnerabilities in dependencies and the stdlib.
 - Use `context.Context` with a timeout in every external call to avoid resource exhaustion.
@@ -96,37 +212,164 @@ last-reviewed: "2026-08-08"
 
 ## Web — Frontend / Browser
 
-- **Content Security Policy (CSP)**: define a restrictive policy (`default-src 'self'`), avoid `unsafe-inline`/`unsafe-eval`; use nonces/hashes for necessary inline scripts.
-- **XSS**: never insert unsanitized HTML through `innerHTML`/`dangerouslySetInnerHTML`/`v-html` with user data. Modern frameworks (React, Vue, Angular) escape by default — do not bypass this behavior without sanitization (`DOMPurify`).
-- **CSRF**: use anti-CSRF tokens in forms/state-changing requests, or `SameSite=Lax/Strict` cookies combined with origin verification (`Origin`/`Referer`) for APIs.
-- **Session cookies**: always use `HttpOnly` (inaccessible through JS), `Secure` (HTTPS only), and `SameSite=Lax` or `Strict`.
-- **Clickjacking**: use the `X-Frame-Options: DENY` header or `frame-ancestors 'none'` in the CSP.
-- **CORS**: never use `Access-Control-Allow-Origin: *` on authenticated endpoints; specify explicit origins and use `Access-Control-Allow-Credentials` carefully.
-- **Subresource Integrity (SRI)**: use the `integrity` attribute on `<script>`/`<link>` elements from external CDNs.
-- **Client-side storage**: never store sensitive session tokens in `localStorage` (accessible through XSS) when possible — prefer `HttpOnly` cookies. If you need `localStorage`/`sessionStorage`, assume that any XSS exposes their contents.
-- **Third-party dependencies (npm/CDN)**: every third-party script is an attack surface; audit analytics/marketing-tag scripts.
+- **XSS**: never insert unsanitized HTML through `innerHTML`,
+  `dangerouslySetInnerHTML`, or `v-html` with user data. Modern frameworks
+  escape by default; do not bypass that behavior without contextual
+  sanitization by a maintained library.
+- **CSRF**: use an anti-CSRF token for state-changing operations and validate
+  `Origin`/`Referer` where applicable. `SameSite` helps but does not replace a
+  CSRF control when the flow permits cross-site requests.
+- **Clickjacking**: use CSP `frame-ancestors`. `X-Frame-Options: DENY` may
+  remain for legacy clients, but is not the primary control
+  (`v5.0.0-3.4.6`).
+- **Subresource Integrity (SRI)**: use `integrity` and `crossorigin` for static,
+  versioned CDN assets; prefer self-hosting when a resource changes without
+  versioning.
+- **Client-side storage**: do not store tokens or sensitive data in
+  `localStorage`, `sessionStorage`, or IndexedDB when an `HttpOnly` session
+  cookie satisfies the flow. Assume XSS can read all JavaScript-accessible
+  storage.
+- **Third parties**: every browser script, tag, widget, and SDK is part of the
+  supply chain; minimize, inventory, pin versions, and review data flows.
 
-### Recommended HTTP security headers
-```
-Content-Security-Policy: default-src 'self'
-Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+### CSP rollout and reporting
+
+Start with `Content-Security-Policy-Report-Only`, correct legitimate
+violations, and only then promote the same tested policy to
+`Content-Security-Policy`. Nonces must be random, unpredictable, and new for
+every response; never copy the placeholder below literally. Rate-limit the
+reporting endpoint and apply retention and redaction because payloads can
+contain URL data.
+
+```http
+Reporting-Endpoints: csp="https://example.com/security/csp-reports"
+Content-Security-Policy-Report-Only: default-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'nonce-{RANDOM_PER_RESPONSE}'; report-to csp
 X-Content-Type-Options: nosniff
-X-Frame-Options: DENY
 Referrer-Policy: strict-origin-when-cross-origin
 Permissions-Policy: geolocation=(), camera=(), microphone=()
 ```
 
+`object-src 'none'` and `base-uri 'none'` are the minimum in
+`v5.0.0-3.4.3`; fit `frame-ancestors`, `form-action`, `connect-src`,
+`img-src`, `style-src`, and other directives to the architecture. Avoid
+`unsafe-inline`, `unsafe-eval`, broad wildcards, and unnecessary hosts.
+Collect and test reports, but do not treat `Report-Only` as enforcement.
+
+### Exact-origin CORS
+
+- Compare a canonicalized origin by the **scheme + host + port** tuple with an
+  explicit allowlist (`v5.0.0-3.4.2`). Reject `Origin: null`, subdomain
+  wildcards, and permissive regexes; `example.com.attacker.tld` is not part of
+  `example.com`.
+- If the response reflects an allowlisted origin, return exactly that origin
+  and include `Vary: Origin` so caches do not share the wrong variant. Never
+  reflect the header before the comparison.
+- Use `Access-Control-Allow-Credentials: true` only for trusted origins with a
+  documented need. `*` is only for a genuinely public response without
+  credentials or sensitive data.
+- Restrict methods and headers, validate preflight, and keep authentication and
+  authorization at the endpoint: CORS is a browser policy, not access control
+  against non-browser clients.
+
+### Staged HSTS
+
+Send HSTS only over HTTPS. Start in a controlled environment with a short
+`max-age`, monitor failures, and gradually increase it to at least one year
+(`v5.0.0-3.4.1`). Add `includeSubDomains` only after inventorying **every**
+current and future subdomain and confirming valid HTTPS on each one.
+
+```http
+Strict-Transport-Security: max-age=300
+```
+
+The example is the initial stage and does not yet satisfy ASVS verification.
+After a validated rollout, the L1 target is `max-age=31536000` or greater; at
+L2+, the policy must also cover every subdomain.
+
+Preload is an explicit L3 decision (`v5.0.0-3.7.4`) with impact that is hard
+to reverse. Use `max-age=63072000; includeSubDomains; preload` only after the
+inventory, domain-owner approval, a recovery plan, and compliance with the
+preload-list requirements. Sending the directive does not submit the domain.
+
+### Cookies and session lifecycle
+
+Use `SameSite=Strict` or `Lax` by default. `SameSite=None` is an exception for
+a documented cross-site flow and requires `Secure` plus compatible CSRF
+protection. Prefer the `__Host-` prefix, which requires `Secure`, `Path=/`, and
+no `Domain`; session tokens also use `HttpOnly` (`v5.0.0-3.3.1` through
+`v5.0.0-3.3.4`).
+
+```http
+Set-Cookie: __Host-Session=<opaque>; Path=/; Secure; HttpOnly; SameSite=Lax
+```
+
+Generate opaque IDs with a CSPRNG, rotate them at login, reauthentication, and
+privilege change, and invalidate the old value (`v5.0.0-7.2.3`,
+`v5.0.0-7.2.4`). Define and enforce server-side **idle** and **absolute**
+timeouts based on risk (`v5.0.0-7.3.1`, `v5.0.0-7.3.2`). Logout, expiry,
+account disablement, and revocation must prevent reuse, not merely delete the
+browser cookie.
+
 ---
 
-## REST / GraphQL APIs / Authentication
+## REST / GraphQL APIs / Identity
 
-- **Authentication**: OAuth2/OIDC for identity delegation (e.g., Auth0, Keycloak, Okta, Cognito); JWT with short expiration (`exp`) + rotating refresh token; always validate the JWT signature and `iss`/`aud` on the server.
-- **Authorization**: RBAC (Role-Based) or ABAC (Attribute-Based) applied in the backend for every operation — never only by hiding buttons in the frontend.
-- **Rate limiting and throttling**: limit by IP/user/API key to mitigate brute-force attacks and abuse (429 Too Many Requests).
-- **Schema validation**: validate input payloads against OpenAPI/JSON Schema before processing.
-- **GraphQL**: limit query depth (`query depth limiting`) and complexity (`cost analysis`) to prevent DoS through nested queries; disable introspection in production if the API is not public.
-- **API keys**: never embed them in mobile/frontend apps without a restricted scope; rotate them periodically; use an API Gateway to centralize authentication/rate limiting.
-- **mTLS** or request signing for sensitive server-to-server communication (webhooks, financial integrations).
+- **Authorization**: enforce RBAC/ABAC in the backend for every operation,
+  object, and field; deny by default and test horizontal and vertical access.
+  Hiding buttons is not authorization.
+- **Rate limits and schemas**: limit by user, credential, and operation, not
+  only by IP; validate payloads against OpenAPI/JSON Schema and impose size,
+  depth, pagination, and time limits.
+- **Service-to-service communication**: use workload identities, short-lived
+  tokens, or least-privilege certificates. Avoid shared static credentials
+  (`v5.0.0-13.2.1`). Use mTLS or message signing when the risk analysis
+  requires it.
+
+### OAuth 2.0 and OpenID Connect
+
+- Use **Authorization Code + PKCE** with `S256` for public and confidential
+  clients. Bind `code_verifier`, `state`, and, for OIDC, `nonce` to the
+  initiating transaction and session; each value is unpredictable and
+  single-use (`v5.0.0-10.1.2`, `v5.0.0-10.2.1`,
+  `v5.0.0-10.5.1`).
+- Compare redirect URIs with the registered allowlist by exact string; do not
+  use wildcards, prefixes, or open redirectors (`v5.0.0-10.4.1`). Validate the
+  expected issuer and protect multi-issuer clients against mix-up.
+- Do not use the implicit grant (`response_type=token`) or Resource Owner
+  Password Credentials/password grant. Tokens leave through the token
+  endpoint, never through a front-channel URL. Restrict scopes and audiences
+  to the minimum required.
+
+### JWTs, revocation, and refresh tokens
+
+- Allowlist algorithms per context and reject `none`; validate the
+  signature/MAC before claims and obtain keys only from trusted issuer
+  configuration (`v5.0.0-9.1.1` through `v5.0.0-9.1.3`). Never derive the
+  accepted algorithm solely from the received header.
+- Validate token type and purpose, `iss`, `aud`, `exp`, and `nbf`, with minimal,
+  explicit clock skew (`v5.0.0-9.2.1` through `v5.0.0-9.2.3`). Do not use an
+  ID Token as an access token.
+- For replay-sensitive operations, validate a unique identifier/`jti` and use
+  state, or adopt sender-constrained tokens (mTLS/DPoP). Short expiration
+  reduces the window but does not detect replay by itself.
+- Plan revocation: reference tokens can use **token introspection**;
+  self-contained JWTs require a denylist, a per-user key/version, or a cutoff
+  timestamp. On logout, incident, or loss of authorization, invalidate the
+  corresponding state (`v5.0.0-7.4.1`).
+- Refresh tokens are rotated and protected like credentials. On every
+  exchange, invalidate the previous one; reuse of an already rotated token
+  revokes the family, terminates the session, and raises an alert. For public
+  clients, use rotation or sender constraint as required by RFC 9700.
+
+### GraphQL
+
+Enforce authorization at every resolver/operation/field, validate input,
+limit depth, quantity, batching, and cost (`v5.0.0-4.3.1`), and apply timeouts
+and rate limits. Disabling or restricting **introspection** can reduce schema
+exposure where it is not public (`v5.0.0-4.3.2`), but it is optional hardening
+only: it replaces neither authorization nor anti-abuse controls, and fields
+can still be guessed. Keep it when the public contract requires it and protect
+data independently of that choice.
 
 ---
 
@@ -141,17 +384,88 @@ Permissions-Policy: geolocation=(), camera=(), microphone=()
 
 ---
 
+## Cryptography and passwords
+
+- **Passwords**: use **Argon2id** first and calibrate memory, iterations, and
+  parallelism on production hardware to retain defensive cost without causing
+  DoS. If unavailable, use scrypt; keep bcrypt for legacy only, accounting for
+  its input limit; use PBKDF2 when FIPS requires it. Store the algorithm and
+  parameters with the hash and rehash after authentication when policy evolves
+  (`v5.0.0-11.4.2`).
+- **Data at rest**: prefer AEAD, such as AES-GCM or
+  **ChaCha20-Poly1305**, through a high-level API. Never reuse a nonce with the
+  same key; authenticate relevant metadata as AAD and fail closed on tag
+  failure. Do not use ECB, unauthenticated encryption, or keys derived by a
+  fast hash (`v5.0.0-11.3.1` through `v5.0.0-11.3.3`). Specific evidence of
+  nonce generation and uniqueness is L3 (`v5.0.0-11.3.4`).
+- **Keys**: generate with a CSPRNG, separate by environment and purpose, store
+  in an appropriate KMS/HSM/Keystore, restrict access, and document generation,
+  activation, rotation, revocation, backup, and destruction. Never log a key
+  or plaintext.
+- **Algorithm agility**: maintain an inventory of algorithms, keys, and
+  certificates, a versioned format, and a tested path to change algorithms,
+  parameters, and keys and to re-encrypt data (`v5.0.0-11.1.2`,
+  `v5.0.0-11.2.1`, `v5.0.0-11.2.2`). Agility does not mean accepting an
+  attacker-selected algorithm.
+
+---
+
 ## Infrastructure, DevOps, and CI/CD
 
-- **Secrets management**: Vault, AWS Secrets Manager, Azure Key Vault, GCP Secret Manager, or at least GitHub/GitLab Secrets — never a committed `.env` file.
-- **SAST** (Static Application Security Testing): SonarQube, Semgrep, CodeQL, integrated into the PR pipeline.
-- **DAST** (Dynamic Application Security Testing): OWASP ZAP, Burp Suite (automated scans against a staging environment).
-- **Dependency scanning / SCA**: Dependabot, Snyk, Renovate — block the merge if there is a critical vulnerability without a justified exception.
-- **Container security**: minimal base images (`distroless`, `alpine`), image scanning (**Trivy**, **Grype**), never run a container as `root`, and use `.dockerignore` to avoid copying secrets/`.git` into the image.
-- **IaC scanning**: **Checkov**, **tfsec**, **Terrascan** to validate Terraform/CloudFormation before `apply`.
-- **Least privilege in the cloud**: IAM roles/policies specific to each service, never administrator credentials in deployment pipelines.
-- **Artifact signing**: sign container images (**cosign**/Sigstore) and validate the signature during deployment.
-- **Branch protection**: require review + green CI before merging into `main`; never allow direct pushes to production without a pipeline.
+### Secrets and workload identities
+
+- Centralize secrets in an appropriate service; separate
+  dev/test/staging/prod, enforce least privilege, and prefer workload
+  identities, OIDC federation, certificates, or short-lived dynamic
+  credentials to static keys (`v5.0.0-13.2.1`, `v5.0.0-13.3.1`).
+- Run secret scanning in the IDE or **pre-commit**, block in CI/PR, and
+  periodically scan all Git history, artifacts, images, and logs. Use
+  recognizable fake values in examples and tests; do not rely only on regexes
+  or log redaction.
+- Track the owner, consumers, environment, purpose, expiry, and rotation
+  schedule. Audit reads, changes, failures, and anomalous use without logging
+  the value; test rotation and revocation without downtime.
+- On exposure, treat it as an incident: contain, **revoke first**, rotate every
+  dependent, investigate logs/artifacts/clones, notify owners, and document the
+  cause. Deleting the file or making another commit does not invalidate the
+  secret.
+- Remove a value from Git history only after revocation and coordinated impact
+  analysis; rewriting affects SHAs, branches, forks, and clones and requires
+  communication plus reintroduction prevention. Treat the secret as
+  compromised even after cleanup.
+
+### Supply chain and promotion
+
+- Use lockfiles and allowlisted, trusted registries/proxies. Reserve internal
+  namespaces and names, configure explicit scopes, and verify the origin of
+  direct and transitive dependencies to prevent **dependency confusion**
+  (`v5.0.0-15.1.2`, `v5.0.0-15.2.4`).
+- Pin GitHub Actions and reusable workflows to a full commit; pin plugins and
+  tools to an immutable version or verified digest as supported by their
+  ecosystem, and pin images/artifacts by digest. Mutable tags and branches are
+  not identity evidence. Automate update proposals, but require review and run
+  with a minimal token.
+- Generate SBOMs and provenance/attestations in the isolated builder; sign when
+  applicable and verify builder identity, source, commit, and digest before
+  deployment. A checksum from the same compromised channel is insufficient.
+- Build once and promote the **same immutable artifact** between environments;
+  do not rebuild for production. Record approvals and associate release, SBOM,
+  attestation, tests, and configuration with the digest.
+- Roll out gradually (canary/percentage), monitor technical and security
+  signals, provide automatic abort, and roll back to a previously verified
+  digest. Never “fix” production by modifying the running artifact.
+
+### Pipeline verification
+
+- Integrate SAST, SCA, secret scanning, IaC scanning, container scanning, and
+  DAST according to the architecture; critical failures block merge/deploy or
+  receive a time-bound exception with an owner and documented risk.
+- Use ephemeral runners, branch protection, mandatory workflow review, minimum
+  permissions, and approved environments. Do not expose production secrets to
+  untrusted pull-request builds.
+- Base images must be minimal, must not run as `root`, and must be rebuilt in a
+  controlled way when fixes arrive; verify signature/attestation at
+  admission/deploy, not only during the build.
 
 ---
 
@@ -161,23 +475,48 @@ Permissions-Policy: geolocation=(), camera=(), microphone=()
 2. **M2 – Inadequate Supply Chain Security**: audit third-party SDKs (analytics, ads) for permissions and collected data; pin dependency versions (lockfiles).
 3. **M3 – Insecure Authentication/Authorization**: every authorization decision belongs in the backend; tokens with short expiration; biometrics (Face ID/Touch ID, BiometricPrompt) only as a *convenience* for accessing an already protected secret, never as the sole authentication factor for the backend.
 4. **M4 – Insufficient Input/Output Validation**: validate all input (deep links, intents, forms) both in the app and in the backend.
-5. **M5 – Insecure Communication**: HTTPS is mandatory (App Transport Security on iOS, `usesCleartextTraffic=false` on Android); **certificate pinning** for highly sensitive apps (banking, healthcare).
+5. **M5 – Insecure Communication**: HTTPS is mandatory (App Transport Security
+   on iOS, `usesCleartextTraffic=false` on Android); use platform TLS
+   validation. Pinning requires a threat model and operational plan.
 6. **M6 – Inadequate Privacy Controls**: request only the necessary permissions (camera, location, contacts), explain the reason (App Tracking Transparency on iOS), and minimize personal-data collection.
 7. **M7 – Insufficient Binary Protections**: code obfuscation (ProGuard/R8 on Android, symbol obfuscation on iOS), jailbreak/root detection for sensitive apps, and binary integrity verification.
 8. **M8 – Security Misconfiguration**: disable debug/verbose logs in production builds, and remove test/staging endpoints from the published app.
-9. **M9 – Insecure Data Storage**: never save sensitive data in plain text in `SharedPreferences`/`UserDefaults`/flat files; use **Keychain** (iOS) and **Android Keystore/EncryptedSharedPreferences** (Android).
-10. **M10 – Insufficient Cryptography**: use the platform's native cryptographic APIs (CryptoKit on iOS, Jetpack Security/Tink on Android); never implement your own cipher.
+9. **M9 – Insecure Data Storage**: never save sensitive data in plaintext in
+   `SharedPreferences`, `UserDefaults`, or flat files; use **Keychain** on iOS
+   and keys in the **Android Keystore**, with storage encryption appropriate
+   for the data.
+10. **M10 – Insufficient Cryptography**: use native cryptographic APIs or a
+    maintained high-level library with authenticated encryption; never
+    implement a cipher.
 
 ### iOS — specific
+
 - **Keychain Services** for tokens, passwords, and keys — never `UserDefaults` for sensitive data.
 - **App Transport Security (ATS)** enabled (blocks insecure HTTP by default); exceptions only with documented justification.
-- **Certificate/SSL Pinning** through `URLSessionDelegate` for high-risk apps.
+- Prefer platform TLS validation; adopt pinning only after threat modeling,
+  with backup pins, expiry, telemetry, and tested recovery.
 - Review `Info.plist` permissions (`NSCameraUsageDescription`, etc.) — request only what is necessary, with a clear description for the user.
 - Use **Data Protection** (`NSFileProtectionComplete`) for sensitive files on disk.
 
 ### Android — specific
-- **Android Keystore System** for generating/storing hardware-protected cryptographic keys (StrongBox when available).
-- **Network Security Config** (`network_security_config.xml`) to enforce HTTPS and configure pinning declaratively.
+
+- Use the **Android Keystore System** to generate and retain non-exportable
+  keys, hardware/StrongBox-backed where available and necessary. Encrypt data
+  with AEAD and store only ciphertext in a file/database; Keystore stores the
+  key, not arbitrary data.
+- Prefer platform TLS and Certificate Transparency. Android does not recommend
+  certificate pinning by default; use it only when the threat model outweighs
+  outage risk, with multiple backup pins (at least one under your control), a
+  short expiration, telemetry, recovery, and tested updates. Never implement a
+  `TrustManager` that accepts every certificate.
+- `EncryptedSharedPreferences` is deprecated. Retain it only during
+  legacy/migration work with a removal plan and verified backup rules; do not
+  recommend it for new code and never put secrets in plain
+  `SharedPreferences`.
+- Use **Network Security Config** for cleartext policy and trusted CAs.
+  Certificate Transparency is unavailable through API 35; it is opt-in on API
+  36 and enabled by default on API 37+, unless an exception is configured. Set
+  pins only when exceptionally approved.
 - **ProGuard/R8** for obfuscation and removal of unused code in release builds.
 - Be careful with **implicit Intents** and **Deep Links** — validate the origin and sanitize data received through `Intent`/`Deep Link`; never trust them as a secure source.
 - `android:exported="false"` on components (Activities/Services/Receivers) that do not need to be accessed by other apps.
@@ -188,6 +527,7 @@ Permissions-Policy: geolocation=(), camera=(), microphone=()
 ## Desktop — Windows and macOS
 
 ### Windows
+
 - **DPAPI (Data Protection API)** or **Windows Credential Manager** to store local secrets (never in plain-text configuration files).
 - **Code signing** with a valid certificate — unsigned builds trigger SmartScreen/Defender alerts.
 - Run with the lowest possible privilege; avoid requiring administrator elevation unless strictly necessary (UAC).
@@ -195,6 +535,7 @@ Permissions-Policy: geolocation=(), camera=(), microphone=()
 - Sandboxing where possible (**AppContainer**, MSIX with restricted capabilities).
 
 ### macOS
+
 - **Keychain Services** (the same conceptual API as iOS) to store credentials and keys.
 - **Apple notarization** and **code signing (codesign)** required for distribution outside the App Store without triggering Gatekeeper blocking.
 - **App Sandbox** and **Hardened Runtime** enabled, requesting only the necessary *entitlements* (network, camera, file access).
@@ -202,6 +543,7 @@ Permissions-Policy: geolocation=(), camera=(), microphone=()
 - Validate the integrity of auto-updates (e.g., **Sparkle** framework) with an EdDSA signature before installing.
 
 ### Common rules (Windows + macOS)
+
 - Never store passwords, tokens, or API keys in plain-text configuration files (`.ini`, `.json`, `.xml`) in the user directory — use the OS's native credential vault.
 - Every auto-update channel must use HTTPS + package signature verification before installation.
 - Minimize permissions requested from the OS (file, network, automation access) and explain the reason to the user.
@@ -223,23 +565,33 @@ Permissions-Policy: geolocation=(), camera=(), microphone=()
 ```
 ## Security
 
-- Never commit secrets (keys, passwords, tokens, certificates). Use
-  environment variables or a secret manager. Check before every commit.
+- Web/API baseline: OWASP ASVS 5.0.0 L1; use L2 for sensitive applications.
+  Record the requirement, evidence, and exception, not only a scanner result.
+- Never commit secrets (keys, passwords, tokens, certificates). Use a secret
+  manager and short-lived identity. Scan pre-commit, CI, and history.
 - All user input is untrusted: validate and sanitize in the backend,
   even if it has already been validated in the frontend/app.
+- Every outbound URL uses an exact allowlist, blocks non-global/metadata
+  networks and DNS rebinding, and revalidates redirects; set timeouts/limits.
+- Uploads use generated names, validate type/content and post-decompression
+  size, stay outside the webroot, and are downloaded only after authorization.
 - Every database query uses parameters/prepared statements or an ORM.
   Never concatenate SQL strings.
 - Every authorization decision is made on the server. Never trust
   roles/permissions sent by the client.
-- Passwords: hash with Argon2/bcrypt/scrypt. Never plain text, never MD5/SHA1.
-- Session cookies: HttpOnly + Secure + SameSite=Lax/Strict.
-- Configure security headers (CSP, HSTS, X-Content-Type-Options,
-  X-Frame-Options) on every HTTP response.
+- Passwords: calibrated Argon2id; scrypt fallback, bcrypt legacy, PBKDF2/FIPS.
+  Data: AEAD AES-GCM/ChaCha20-Poly1305 through a high-level library.
+- Cookies: __Host- + Path=/ + HttpOnly + Secure + SameSite=Lax/Strict;
+  document SameSite=None. Apply idle/absolute timeouts and rotation.
+- Deploy CSP through Report-Only/reporting. Stage HSTS; never enable
+  includeSubDomains/preload without an inventory and explicit decision.
+- OAuth/OIDC: Authorization Code + PKCE S256, state, nonce, exact redirect;
+  prohibit implicit/password. JWT validates algorithm, signature, and claims.
 - Dependencies: run vulnerability audits (npm audit, pip-audit,
   govulncheck, dotnet list package --vulnerable) and resolve high-severity
-  issues before merging.
-- Mobile: sensitive data only in Keychain (iOS) / Keystore-EncryptedSharedPreferences
-  (Android). Never in plain UserDefaults/SharedPreferences.
+  issues; pin actions by commit and plugins/artifacts by version/digest.
+- Mobile: sensitive data only in Keychain (iOS) or encrypted with a key in
+  Keystore (Android). EncryptedSharedPreferences is legacy/migration only.
 - Desktop: secrets only in the OS's native credential vault (DPAPI/Credential
   Manager on Windows, Keychain on macOS). Never in a flat config file.
 - Logs never contain passwords, complete tokens, card data, or PII in
@@ -252,25 +604,73 @@ Permissions-Policy: geolocation=(), camera=(), microphone=()
 
 ## Security Review Checklist
 
-- [ ] No secrets hardcoded in the code or git history.
-- [ ] Every query uses parameters/an ORM, with no SQL concatenation.
-- [ ] Authorization validated on the server for every sensitive endpoint.
-- [ ] Security headers configured (CSP, HSTS, X-Frame-Options, etc.).
-- [ ] Session cookies use `HttpOnly`, `Secure`, `SameSite`.
-- [ ] Dependencies scanned and free of open critical vulnerabilities.
-- [ ] Sensitive data on mobile/desktop stored through Keychain/Keystore/DPAPI, never in plain text.
-- [ ] HTTPS/TLS mandatory for all communication (web, API, mobile, auto-update).
-- [ ] Rate limiting on authentication endpoints and public APIs.
-- [ ] Security logs present, with no sensitive data exposed.
-- [ ] CI pipeline with SAST/dependency scanning blocking merges on critical failures.
+- [ ] Scope, ASVS 5.0.0 level (L1 or L2), exceptions, and evidence are
+  recorded; the Top 10 was not used as a replacement checklist.
+- [ ] Input and authorization are enforced server-side; SQL is parameterized
+  (`v5.0.0-2.2.2`, `v5.0.0-8.3.1`, `v5.0.0-1.2.4`).
+- [ ] SSRF cases cover allowlists, non-global/metadata IPs, DNS rebinding,
+  redirects, timeouts, and limits (`v5.0.0-1.3.6`).
+- [ ] Uploads cover generated names, type/content, post-decompression limits,
+  private storage, applicable AV/CDR, and authorized download (ASVS 5.0.0,
+  V5.1–V5.4).
+- [ ] CSP passed through `Report-Only`, CORS matches an exact origin and sends
+  `Vary: Origin`, and HSTS shipped without automatic preload (ASVS 5.0.0,
+  V3.4).
+- [ ] The `__Host-` cookie and session lifecycle were tested for SameSite,
+  rotation, idle/absolute timeout, logout, and revocation (ASVS 5.0.0, V3.3
+  and V7).
+- [ ] OAuth/OIDC uses Code + PKCE, `state`, `nonce`, and exact redirects; JWTs
+  and refresh tokens have validation, replay, rotation, and revocation tests
+  (ASVS 5.0.0, V9/V10).
+- [ ] Secret scanning covers pre-commit, CI, and history; exposure has a
+  revocation, rotation, audit, and Git remediation playbook (ASVS 5.0.0,
+  V13.3).
+- [ ] Dependencies come from a trusted registry; actions use full commits,
+  plugins/artifacts use immutable versions or digests, provenance is verified,
+  and dependency confusion is tested.
+- [ ] Passwords use Argon2id/scrypt or a documented exception; data uses AEAD,
+  and there is a cryptographic inventory/agility plan (ASVS 5.0.0, V11).
+- [ ] Android uses Keystore and platform TLS; any pinning has a threat model,
+  backups, expiration, telemetry, and recovery. Legacy
+  `EncryptedSharedPreferences` has a migration.
+- [ ] GraphQL enforces authorization and anti-abuse independently of
+  introspection (`v5.0.0-4.3.1`, `v5.0.0-4.3.2`).
+- [ ] Logs and alerts prove security events without exposing secrets or PII;
+  code, dependency, IaC, image, and runtime scans have a failure policy.
 
 ---
 
 ## Sources and References
 
+- OWASP ASVS 5.0.0: https://owasp.org/www-project-application-security-verification-standard/
+- Official OWASP ASVS 5.0.0 CSV: https://github.com/OWASP/ASVS/raw/v5.0.0/5.0/docs_en/OWASP_Application_Security_Verification_Standard_5.0.0_en.csv
 - OWASP Top 10:2025 (Web): https://owasp.org/Top10/2025/
 - OWASP Mobile Top 10:2024: https://owasp.org/www-project-mobile-top-10/
 - OWASP Mobile Application Security Verification Standard (MASVS) / MASTG: https://owasp.org/www-project-mobile-app-security/
 - OWASP Cheat Sheet Series: https://cheatsheetseries.owasp.org/
+- OWASP SSRF Prevention: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+- OWASP File Upload: https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html
+- OWASP Content Security Policy: https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html
+- OWASP HTTP Strict Transport Security: https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Strict_Transport_Security_Cheat_Sheet.html
+- OWASP HTTP Headers: https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Headers_Cheat_Sheet.html
+- OWASP Session Management: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+- OWASP Password Storage: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+- OWASP Cryptographic Storage: https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+- OWASP OAuth2: https://cheatsheetseries.owasp.org/cheatsheets/OAuth2_Cheat_Sheet.html
+- OWASP GraphQL: https://cheatsheetseries.owasp.org/cheatsheets/GraphQL_Cheat_Sheet.html
+- OWASP Secrets Management: https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html
+- OWASP Software Supply Chain Security: https://cheatsheetseries.owasp.org/cheatsheets/Software_Supply_Chain_Security_Cheat_Sheet.html
+- OWASP GitHub Actions Security: https://cheatsheetseries.owasp.org/cheatsheets/GitHub_Actions_Security_Cheat_Sheet.html
+- Android TLS and certificate pinning: https://developer.android.com/privacy-and-security/security-ssl
+- Android Network Security Config and Certificate Transparency: https://developer.android.com/privacy-and-security/security-config
+- Android cryptography and Keystore: https://developer.android.com/privacy-and-security/cryptography
+- Android `EncryptedSharedPreferences` (deprecated): https://developer.android.com/reference/androidx/security/crypto/EncryptedSharedPreferences
+- OAuth 2.0 Security Best Current Practice, RFC 9700: https://www.rfc-editor.org/rfc/rfc9700
+- JWT Best Current Practices, RFC 8725: https://www.rfc-editor.org/rfc/rfc8725
+- Web Origin, RFC 6454: https://www.rfc-editor.org/rfc/rfc6454
+- OAuth 2.0 Token Introspection, RFC 7662: https://www.rfc-editor.org/rfc/rfc7662
+- ChaCha20-Poly1305, RFC 8439: https://www.rfc-editor.org/rfc/rfc8439
+- GitHub Actions: use full-length commit SHA: https://docs.github.com/en/actions/reference/security/secure-use
+- GitHub artifact attestations: https://docs.github.com/en/actions/how-tos/secure-your-work/use-artifact-attestations/use-artifact-attestations
 - Apple Platform Security Guide: https://support.apple.com/guide/security/
 - Microsoft Security Development Lifecycle (SDL): https://www.microsoft.com/sdl
