@@ -9,148 +9,215 @@ last-reviewed: "2026-08-08"
 
 # Clean Code for AI Agents
 
-> Translation and adaptation of the tips from the article "Clean Code for AI Agents" by Fabio Akita (akitaonrails.com), organized as practical instructions to guide AI agents (Claude Code, Cursor, Copilot, etc.) to write higher-quality code.
-
-> **Related documents**: for language-specific testing frameworks/tools, see [`test-code-eng.md`](./test-code-eng.md). For security best practices, see [`sec-code-eng.md`](./sec-code-eng.md). For visual/UX guidelines, see [`design-code-eng.md`](./design-code-eng.md). For HTML-based video and motion, see [HyperFrames](https://hyperframes.heygen.com). This file focuses on code quality and structure; it does not repeat the detailed content of the others.
-
+> Original operational synthesis influenced by Fabio Akita's "Clean Code for AI Agents" article. It is not a translation, reproduction, or work officially associated with the author.
+>
+> **Related documents**: for language-specific testing frameworks and tools, see [`test-code-eng.md`](./test-code-eng.md). For security, see [`sec-code-eng.md`](./sec-code-eng.md), the canonical reference for secrets, authorization, cryptography, and sensitive-data redaction. For visual/UX guidelines, see [`design-code-eng.md`](./design-code-eng.md). For HTML-based video and motion, see [HyperFrames](https://hyperframes.heygen.com). This guide focuses on code quality, structure, and operation.
+>
 > **Tooling policy**: identify the stack, the stage, and the applicable checks; prefer an already available equivalent that produces compatible evidence. Ask for authorization before installing a tool or changing the environment. If no safe equivalent exists, record the required check as blocked and never claim that it passed. Do not install merely optional resources.
 
 ## Context
 
-In 2008, Robert C. Martin (Uncle Bob) published the book *Clean Code*, establishing that code should be written to be read by humans. In 2026, the primary "reader" of code became an AI agent. This changes the relative importance of several practices: some have become even more critical, others have changed in weight, and new requirements have emerged that Uncle Bob could not have anticipated.
+Clean code is infrastructure for people and AI agents. In both cases, the reader needs to locate intent, validate a change, and understand consequences without relying on tacit knowledge. The practices below favor cohesive units, explicit boundaries, execution evidence, and safe operation.
 
 ## Real constraints of AI agents
 
-- **File truncation**: agents read files in limited chunks (e.g., ~2000 lines at a time). Large files do not fit in a single read.
-- **Attention degrades with context**: even with large context windows, information retrieval quality drops well before the technical limit.
-- **Grep is cheaper than a complete read**: agents prefer searching for patterns (`rg`, `grep`) to loading entire files. Unique and specific names make this search effective.
-- **Each tool call costs tokens**: short files, concise logs, and lean test output keep the agent productive and inexpensive.
-- **Latency matters**: large files that are slow to process create noticeable friction during the session.
-- **Visual inconsistency harms search**: mixed indentation, varied brace styles, etc. cost extra tokens for the agent to "understand" the mess.
+- **Partial reads**: agents read files in chunks; extensive or multi-purpose files make context retrieval less reliable.
+- **Attention and latency**: larger context does not eliminate attention degradation; concise test output and logs reduce cost and ambiguity.
+- **Name-driven search**: specific, consistent names make `rg` and equivalent tools useful for locating the right unit.
+- **Operational evidence**: predictable commands, automated tests, and structured observability make it possible to verify hypotheses rather than fill gaps by assumption.
 
-## Ranking of practices (from most to least important)
+## Priority practices
 
-### 1. Small functions and files
-Functions should do **one thing only**, and do it well. Ideal size: 4 to 20 lines. Files should stay below 500 lines, ideally 200-300. This allows the agent to load the complete unit of meaning in a single tool call, avoiding truncation and fragmented reasoning.
+### 1. Cohesive functions and files
 
-### 2. Single Responsibility Principle (SRP)
-Each module should have a single responsibility and a single reason to change. This allows the agent to isolate the code unit, run focused tests, and edit without fear of side effects. An 800-line class doing three things is worse than three 250-line classes.
+Make a function express one understandable responsibility and keep the file navigable. Ranges such as 4–20 lines for functions, 200–300 lines for files, and 500 lines as a ceiling are **review signals**, not mechanical rules. Split when cohesion, domain vocabulary, or reading improve; keep a documented exception when splitting would harm those criteria.
 
-### 3. Meaningful and unique names
-Names should reveal intent and, above all, be **searchable**. Generic names (`data`, `process`, `handler`, `Manager`, `Service`) generate dozens of irrelevant search results. Distinct names (`UserRegistrationValidator`, `InvoiceLineItemTotal`) take the agent directly to the target. Rule of thumb: if a grep for the name returns many irrelevant results, the name is bad for the agent.
+### 2. Single responsibility
 
-### 4. Comments with context and provenance
-Unlike the original Clean Code, which viewed comments as a sign of bad code, AI agents **like and benefit from comments**. The agent already understands syntax perfectly, but does not know the "why": why this approach was chosen, which bug motivated this strange logic, which business constraint forces this specific order, or which issue/commit is related. Docstrings with intent and usage examples help greatly.
-**Do not remove comments written by the agent itself** during reviews — they carry context that the agent itself will want to reread later. Only remove redundant and obvious comments (see item 13).
+Each module should have a clear reason to change. Separate business rules, use-case coordination, integration, and presentation so a local change does not require unnecessary reading or testing of the rest of the system.
 
-### 5. Explicit typing
-Code with explicit types (TypeScript instead of plain JavaScript, type hints in Python, RBS in Ruby) gives the agent an immediate "answer key": what goes in, what comes out, and which states are valid. Dynamic code without annotations forces the agent to infer types from usage, which costs reasoning and generates errors.
+### 3. Meaningful and searchable names
 
-### 6. DRY (Don't Repeat Yourself)
-Duplication is worse for agents than for humans: when a change is needed, the agent may update one copy and forget the others, since there is no "natural gravity" of attention pulling it toward the scattered copies. Factoring repeated logic into a reusable function/module is safety for automated refactoring.
+Prefer names that reveal intent and belong to the domain vocabulary. `InvoiceLineItemTotal` communicates more than `process`; if a search for a name returns many irrelevant results, treat that as a review signal, not as an absolute numerical target.
+
+### 4. Comments with context, not noise
+
+Record the why, an external constraint, a decision, or the provenance of non-obvious behavior. Update or remove stale comments: preserving a comment merely because it exists propagates incorrect context. Avoid describing syntax that the code already makes clear.
+
+### 5. Explicit types and contracts
+
+Types, schemas, and preconditions make inputs, outputs, and invalid states visible. Make contracts explicit at boundaries and validate external data; do not use annotations merely to satisfy a tool when they obscure the domain.
+
+### 6. Intentional DRY
+
+Extract truly repeated logic when the copies share the same rule and will evolve together. Do not join snippets merely because they look similar: a premature abstraction can hide important domain differences.
 
 ### 7. Tests the agent can run
-Tests should follow F.I.R.S.T. (Fast, Independent, Repeatable, Self-validating, Timely) and, in addition, **run without manual intervention**: an execution command documented in the README/CLAUDE.md, output in a predictable format, without depending on manual database seeding or secret credentials outside the repository. TDD is no longer a philosophy and has become a technical requirement: the agent writes code, runs tests, reads the output, adjusts, and repeats. Without tests, the agent delivers plausible code that silently breaks things.
 
-### 8. Predictable directory structure
-Strong framework conventions (Rails, Django, Next.js, Laravel) help the agent anticipate file paths without having to list directories. Projects without conventions make the agent waste time exploring with `find`.
+Keep a documented, repeatable, self-contained command. Every behavior change needs tests appropriate to its risk: unit tests for rules, integration tests for boundaries, and regression tests for real failures. See [`test-code-eng.md`](./test-code-eng.md) for language-specific choices.
 
-### 9. Dependency injection and testability
-Code with injected dependencies (rather than instantiated internally) is easier to test in isolation. The agent can replace a real dependency with a fake in a test without touching the logic. Configuration isolation (e.g., centralizing the LLM model name in a single constant) prevents a simple change from requiring edits to dozens of files.
+### 8. Predictable structure
 
-### 10. Avoid deep nesting
-Each indentation level requires more attention from the model to track state. Prefer early returns, guard clauses, and flattened logic over `if` inside `for` inside `if` inside `try`.
+Use stack conventions when they make responsibilities easier to locate, but do not force a framework structure on a project that does not use it. Predictability should serve navigation and boundaries, not the appearance of compliance.
 
-### 11. Errors with context
-Vague error messages (`"invalid input"`) force the agent to spend an extra round investigating the problem. Prefer detailed messages, including the received value and the expected format (e.g., `"invalid input: received {value}, expected a non-empty string of digits"`).
+### 9. Risk-proportionate dependencies
 
-### 12. Formatting and style
-Use the language's standard/most popular formatter (`cargo fmt`, `gofmt`, `prettier`, `black`/`ruff`, `rubocop -A`) and configure it to run automatically (pre-commit, on save). Do not waste time discussing style manually — let the tool decide.
+Introduce project-owned interfaces or wrappers for I/O, volatile SDKs, expensive integrations, side-effecting dependencies, or when a fake makes the test clearer. Direct imports are acceptable for stable, pure, well-understood libraries. Do not create an abstraction without a consumer or an explicit decision.
 
-### 13. Comments that describe the obvious
-They are still bad, and now even worse: they cost tokens (money) without adding value. Avoid comments such as `// increment i by 1` above `i++`.
+### 10. Simple flow
 
-## What Uncle Bob could not have anticipated
+Prefer guard clauses, early returns, and decomposition when they reduce implicit states. Two indentation levels are a useful review signal, not a prohibition: keep a larger block when it makes the business rule more readable.
 
-- **Meta-documentation files for agents** (`CLAUDE.md`, `AGENTS.md`, `.cursor/rules`, `.github/copilot-instructions.md`): read by the agent before any action, they should be short, direct, imperative, and action-focused — without philosophical prose.
-- **README with high-level architecture**: simple diagrams (ASCII or Mermaid) help the agent quickly understand the shape of the project.
-- **Structured logging**: JSON logs with named fields are much more useful to the agent than free-form text logs because they can be parsed and filtered easily.
-- **Accessible observability commands**: `pnpm test`, `make lint`, `cargo check`, etc. — predictable commands that the agent can invoke to validate changes.
-- **Idempotent setup scripts**: the agent needs to be able to run `bin/setup` or `scripts/bootstrap.sh` on a clean machine and reach a functional state without relying on someone's tacit knowledge.
+### 11. Safe, actionable errors
 
-## Debugging: increase the log before giving up
+Use stable codes for programmatic handling and include only safe diagnostic context. Never include raw values, secrets, passwords, tokens, PII, card numbers, or complete payloads in error messages, traces, or logs. Follow [`sec-code-eng.md`](./sec-code-eng.md) for classification, retention, access, and redaction.
 
-When a runtime error occurs or the user reports a bug and the root cause is not obvious from the available error/stack trace, the agent should not guess or try speculative fixes for no reason. The correct next step is to **temporarily increase the log/debug level in the relevant section of code** (e.g., change `LOG_LEVEL` to `debug`/`trace`, add targeted `console.log`/`print`/`logger.debug` calls for the variables and suspected flow, enable the tool's verbose mode), reproduce the error, read the output, and only then formulate a hypothesis about the cause. After identifying and fixing the root cause, remove the temporary logs added solely for investigation (keep only permanently useful structured logging).
+### 12. Automatic formatting
 
-This avoids two common failures of AI agents: (1) applying a plausible "fix" without confirming the real cause, creating rework; (2) giving up or asking the user for more information when the application itself could reveal the cause with more instrumentation.
+Use the formatter accepted by the stack and apply it consistently. The tool resolves repetitive style; human and agent reviews should focus on intent, security, behavior, and contracts.
 
-## Instruction template to include in CLAUDE.md / AGENTS.md
+### 13. Obvious comments are debt
 
-No AI model follows these practices by default — they must be **explicitly instructed**. Use the template below as a starting point (adapt it to the language and project):
+Remove comments that merely repeat the code and rewrite comments that have lost validity. A short, correct comment about a decision is worth more than a long, inaccurate history.
 
+## Architecture and boundaries
+
+Separate the system into three clear roles:
+
+- **Domain** contains rules, types, and invariants that do not depend on network, disk, clock, or SDKs.
+- **Application** coordinates use cases, transactions, flow authorization, and required ports.
+- **Infrastructure** implements I/O, persistence, messaging, clock, SDKs, and adapters at the edges.
+
+Keep I/O at the edges and make the domain depend on contracts rather than infrastructure details. Test contracts at both ends of a boundary and record relevant architecture decisions — context, decision, alternatives, and consequence — in an ADR or equivalent record. Tailor the separation to the system's size; the goal is to make dependencies and effects observable, not to impose a fashionable architecture.
+
+## Async, concurrency, and external effects
+
+- Propagate cancellation to every operation that can block and define an explicit timeout for every external call.
+- Retry only transient failures, with a limited number of attempts, backoff, and jitter. Do not retry non-idempotent operations without an idempotency key or strategy.
+- Limit concurrency to protect dependencies and local resources; clean up files, connections, tasks, and locks on success, failure, and cancellation.
+- Define what can be repeated without changing the outcome and persist the evidence needed to detect duplicates.
+- Test timeout, cancellation, cleanup, and race conditions with a controllable clock, scheduler, or dependencies; do not rely on arbitrary waits.
+
+## Safe observability
+
+Emit structured events with, at minimum, `event`, `level`, `request_id` or correlation ID, duration, result, and already-redacted fields. Establish stable names for events and results so alerts and queries do not depend on free text.
+
+- Use **logs** for discrete events and safe diagnostic context.
+- Use **metrics** for aggregated volume, latency, errors, and capacity.
+- Use **traces** to follow a request across boundaries and dependencies.
+- Define retention, access, and disposal according to operational need, cost, and security policy; shorter retention does not replace redaction.
+
+Never treat logs, metrics, or traces as a place for sensitive data. The canonical reference for redaction and handling of this data is [`sec-code-eng.md`](./sec-code-eng.md).
+
+## Evidence-driven debugging
+
+If the root cause is not clear, formulate a hypothesis and add minimal temporary instrumentation in a controlled, non-production environment. Apply redaction/masking before emitting any data, reproduce the problem, compare the evidence with the hypothesis, and only then change behavior. Confirm removal of temporary instrumentation after the investigation; retain only structured events that are permanently useful.
+
+## Framework-independent examples
+
+### Safe error with a stable code
+
+```text
+return error(
+  code = "ACCOUNT_ID_INVALID",
+  message = "account identifier is invalid",
+  safe_context = { field = "account_id" }
+)
 ```
-## Code style
 
-- Functions: 4-20 lines. Split if larger.
-- Files: fewer than 500 lines. Split by responsibility.
-- One thing per function, one responsibility per module (SRP).
-- Names: specific and unique. Avoid `data`, `handler`, `Manager`.
-  Prefer names that return fewer than 5 grep results in the project.
-- Types: explicit. No `any`, no generic `Dict`, no untyped functions.
-- No code duplication. Extract shared logic into a function/module.
-- Prefer early returns to nested ifs. Maximum of 2 indentation levels.
-- Exception messages must include the problematic value and the expected format.
+The client can react to `ACCOUNT_ID_INVALID`; the internal detail belongs in a protected, already-redacted channel, not in the returned text.
 
-## Comments
+### Structured event with redacted fields
 
-- Keep the comments you write yourself — do not remove them during refactorings.
-  They carry intent and context.
-- Write the WHY, not the WHAT. Avoid `// increment the counter` above `i++`.
-- Docstrings in public functions: intent + a usage example.
-- Reference issue numbers / commits when a line exists because
-  of a specific bug or external constraint.
-
-## Tests
-
-- See detailed framework/tool rules per language in [`test-code-eng.md`](./test-code-eng.md).
-- Minimum rule here: tests run with a single documented command, and every
-  new function and every bug fix receives a corresponding test.
-
-## Dependencies
-
-- Inject dependencies via constructor/parameter, not via import/global.
-- Encapsulate third-party libraries behind a thin interface owned by the project.
-
-## Structure
-
-- Follow the framework convention (Rails, Django, Next.js, etc.).
-- Prefer small, focused modules over "god" files.
-- Predictable paths: controller/model/view, src/lib/test, etc.
-
-## Formatting
-
-- Use the language's standard formatter (`cargo fmt`, `gofmt`, `prettier`,
-  `black`, `rubocop -A`). Do not discuss style beyond this.
-
-## Logging
-
-- Structured JSON for debugging/observability logs.
-- Plain text only for CLI output intended for the end user.
-
-## Debugging
-
-- If a runtime error or bug reported by the user has no clear root cause
-  from the current log/stack trace, DO NOT guess the fix.
-  First increase the log/debug level (log level env var, targeted prints/logger.debug
-  calls for the variables and suspected flow, the tool's verbose mode),
-  reproduce the error, read the output, and only then fix it.
-- Remove temporary investigation logs after fixing the problem.
+```json
+{
+  "event": "invoice.fetch.completed",
+  "level": "info",
+  "request_id": "req-7f3c",
+  "duration_ms": 84,
+  "result": "success",
+  "customer_reference": "[REDACTED]"
+}
 ```
+
+The event preserves correlation and outcome without recording payload, token, card, or PII in plain text.
+
+### Propagated timeout and cancellation
+
+```text
+result = fetch_invoice(
+  invoice_id,
+  timeout = 1500ms,
+  cancellation = request.cancellation
+)
+```
+
+The caller treats timeout and cancellation as expected results, releases resources, and does not begin a blind retry.
+
+### Injectable dependency for an I/O edge
+
+```text
+interface InvoiceStore:
+  load(invoice_id, cancellation) -> Invoice
+
+class InvoiceService(store: InvoiceStore):
+  get(invoice_id, cancellation) -> Invoice:
+    return store.load(invoice_id, cancellation)
+```
+
+`InvoiceStore` is a justified port because it represents I/O; a pure mathematical function can be imported directly.
+
+### Limited idempotent retry
+
+```text
+retry(
+  operation = send_receipt(idempotency_key),
+  attempts = 3,
+  backoff = exponential_with_jitter
+)
+```
+
+The retry is limited and is safe only because the operation receives a verifiable idempotency key.
+
+## Template for `CLAUDE.md` / `AGENTS.md`
+
+Adapt this block to the repository and language:
+
+```text
+## Code and architecture
+
+- Use cohesive functions and files; treat size and indentation limits as review signals.
+- Keep domain, application, and infrastructure separate; I/O stays at the edges.
+- Create wrappers for I/O, volatile SDKs, expensive integrations, or useful fakes; import stable, pure libraries directly.
+- Update or remove stale comments. Document cohesion exceptions or relevant architecture decisions.
+
+## Errors, async, and observability
+
+- Use stable error codes and safe context. Never log raw values, secrets, tokens, PII, cards, or complete payloads.
+- Propagate cancellation, configure timeouts, limit retries with backoff and jitter, and preserve idempotency before repeating external effects.
+- Emit structured events with event, level, request_id, duration, result, and redacted fields.
+- Use logs for safe diagnosis, metrics for aggregates, and traces to cross boundaries. Define retention and access.
+
+## Debugging and tests
+
+- Investigate through hypothesis and evidence in a controlled non-production environment; apply redaction and confirm removal of temporary instrumentation.
+- Test rules, contracts, timeout, cancellation, cleanup, and race conditions according to risk.
+```
+
+## Definition of Done
+
+- [ ] Functions, files, and abstractions were reviewed for cohesion, readability, and domain vocabulary; relevant exceptions are documented.
+- [ ] Domain, application, and infrastructure have explicit boundaries; I/O is at the edges and integration contracts were tested.
+- [ ] Errors expose a stable code and safe context; messages, logs, and traces contain no raw values, secrets, tokens, PII, cards, or complete payloads.
+- [ ] External calls have a timeout, propagate cancellation, clean up resources, and use limited backoff/jitter retries only when idempotency permits.
+- [ ] Concurrency limits and duplication risks were defined and tested, including relevant timeout, cancellation, and race conditions.
+- [ ] Structured events include `event`, `level`, `request_id`, duration, result, and redacted fields; logs, metrics, traces, access, and retention have a defined purpose.
+- [ ] Temporary investigation occurred only in a controlled environment, produced redacted evidence, and had its instrumentation removed or intentionally promoted.
 
 ## Summary
 
-Clean code was never a fad — it has become infrastructure. Most practices from the original Clean Code still apply, but some recommendations that used to be opinions ("a file should have N lines") have become measurable technical constraints ("a file with X lines makes the agent perform worse"). Those who write clean code with the agent in mind save money on tokens, session time, and reduce hallucinations in the output.
+Clean code for agents reveals intent, bounds effects, and produces safe evidence. Size metrics help start a review conversation, but cohesion and clarity decide; observability, cancellation, and boundaries make the system verifiable in operation.
 
 ---
 
-Original source: https://akitaonrails.com/en/2026/04/20/clean-code-for-ai-agents/
+Influence source: [Clean Code for AI Agents, Fabio Akita](https://akitaonrails.com/en/2026/04/20/clean-code-for-ai-agents/).
