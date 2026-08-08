@@ -10,9 +10,7 @@ last-reviewed: "2026-08-08"
 # Acessibilidade como Linha de Base (A11Y)
 
 > Instruções de acessibilidade adaptadas do projeto [A11Y.md](https://github.com/fecarrico/A11Y.md) (Felipe A. Carriço, licença MIT) — um protocolo de validação e contexto persistente para desenvolver software acessível desde a primeira linha de código, alinhado a **WCAG 2.2 AA**, **ISO 9241-171**, **ADA** e **EAA**.
-
 > **Documentos relacionados**: para direção visual/UX (paletas, tipografia, motion), ver [`design-code-pt.md`](./design-code-pt.md). Para ferramentas de teste automatizado (axe-core, Lighthouse, regressão visual), ver [`test-code-pt.md`](./test-code-pt.md). Para qualidade/estrutura de código, ver [`clean-code-pt.md`](./clean-code-pt.md). Para vídeo e motion HTML, ver também o [HyperFrames](https://hyperframes.heygen.com). Este arquivo é a referência canônica de **regras de acessibilidade** (WCAG, ARIA, teclado, foco, leitores de tela) — não repete o conteúdo dos demais.
-
 > **Política de ferramentas**: identifique a stack, a etapa e os checks aplicáveis; prefira um equivalente já disponível que produza evidência compatível. Antes de instalar uma ferramenta ou alterar o ambiente, peça autorização. Se não houver equivalente seguro, registre o check necessário como bloqueado e nunca afirme que ele passou. Não instale recursos meramente opcionais.
 
 ## 0. Princípio Zero: acessibilidade como pré-condição
@@ -23,7 +21,7 @@ last-reviewed: "2026-08-08"
 
 ## 0.1. Perfis de conformidade
 
-O padrão deste documento é **Standard (AA)**. Ao gerar ou revisar código de interface, o agente **deve perguntar** qual perfil aplicar, caso não tenha sido especificado:
+O alvo de implementação padrão deste documento é **Standard (AA)**. Ele apoia uma implementação orientada à WCAG; não certifica um produto nem determina conformidade legal automática. Certificação e obrigações legais dependem de avaliação com escopo definido, evidências e jurisdição aplicável. Ao gerar ou revisar código de interface, o agente **deve perguntar** qual perfil aplicar, caso não tenha sido especificado:
 
 | Perfil | Alvo | Contraste (texto / UI) | Fonte mín.† | Alvo mín. | Caso de uso |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -67,8 +65,8 @@ Para garantir integridade técnica, qualquer IA interagindo com o projeto **DEVE
 
 - **Contraste (SC 1.4.3, 1.4.11):** texto **DEVE** ter 4.5:1; componentes de UI e gráficos significativos **DEVEM** ter 3:1. Priorizar **diferença de luminância** real (claro vs escuro) além do matiz.
 - **Texto alternativo (SC 1.1.1):** imagens informativas **DEVEM** ter descrição funcional em `alt`; imagens decorativas usam `alt=""` ou `aria-hidden="true"`.
-- **Redundância semântica:** **NÃO** transmitir estado apenas pela cor. O uso de **ícone + texto + cor** (ex.: 🔴 Erro) é o padrão obrigatório.
-- **Padrões visuais:** gráficos e dashboards **DEVEM** usar texturas ou estilos de linha diferenciados para garantir distinção sem cor.
+- **Canais além da cor (SC 1.4.1):** **NÃO** transmitir estado, ação, resposta ou informação apenas pela cor. Escolher o canal adicional adequado ao significado — texto visível, ícone, padrão ou semântica programática — sem impor a mesma redundância visual a todos os casos.
+- **Padrões visuais:** quando a distinção em gráficos ou dashboards depender de cor, **DEVEM** ser usados padrões, rótulos, texturas ou estilos de linha que permitam distinguir as séries sem cor.
 
 ### Operável (Operable)
 
@@ -77,13 +75,17 @@ Para garantir integridade técnica, qualquer IA interagindo com o projeto **DEVE
 - **Roteamento SPA:** após mudanças de rota client-side, o foco **DEVE** ser gerenciado e resetado apropriadamente (ex.: enviar foco ao topo ou a um `h1`). Evitar foco perdido na tela.
 - **Alvos (SC 2.5.8):** elementos interativos **DEVEM** ter tamanho mínimo de **24×24 pixels CSS** — o piso normativo da WCAG 2.2 AA — exceto quando existe alvo equivalente maior, o espaçamento ao redor evita ativação acidental, ou o alvo está inline no texto.
   **Regra da Casa†:** projetar para **44×44px** (48×48 no Shield), o piso ergonômico compartilhado por Apple HIG e Material Design. No Shield, 44×44 é normativo (SC 2.5.5 AAA).
+- **Arrastar (SC 2.5.7, AA):** toda funcionalidade operada por arrastar **DEVE** ter alternativa de ponteiro simples sem arrastar, salvo quando arrastar for essencial ou o comportamento for do agente de usuário e não tiver sido modificado pelo autor. A alternativa não pode depender apenas de gesto baseado em trajeto.
 - **Movimento (SC 2.3.3 AAA — aplicada como Regra da Casa† em todos os perfis):** **DEVE-SE** respeitar a media query `@media (prefers-reduced-motion)`. Evitar animações pesadas de estado durante transições cruciais se a preferência estiver ativa.
 
 ### Compreensível (Understandable)
 
 - **Rótulos (SC 1.3.1, 3.3.2):** formulários **DEVEM** ter rótulos explícitos conectados via `id`/`for` ou por envelopamento de tag. Evitar reinvenções que quebrem eventos nativos do navegador.
 - **Previsibilidade:** o comportamento de navegação **DEVE** ser consistente; interações não devem causar mudanças estruturais repentinas não anunciadas.
-- **Feedback dinâmico (SC 4.1.3):** eventos dinâmicos baseados em estado (toasts, loading, sucesso de formulário via AJAX/fetch) **DEVEM** ser anunciados ativamente por regiões `aria-live` ou equivalentes modernos (`role="status"`, `role="alert"`).
+- **Ajuda consistente (SC 3.2.6, A):** se um mecanismo de ajuda — contato humano, autoajuda ou contato automatizado — for repetido em múltiplas páginas de um conjunto, ele **DEVE** aparecer na mesma ordem relativa ao restante do conteúdo, salvo mudança iniciada pelo usuário. O critério não obriga oferecer ajuda.
+- **Entrada redundante (SC 3.3.7, A):** dados que o usuário forneceu antes no mesmo processo e precisa informar de novo **DEVEM** ser autopreenchidos ou disponibilizados para seleção, salvo quando a reinserção for essencial, necessária à segurança ou os dados não forem mais válidos.
+- **Autenticação acessível — mínimo (SC 3.3.8, AA):** não exigir teste de função cognitiva para concluir nenhuma etapa de autenticação sem alternativa que não o use ou mecanismo que ajude a concluí-lo. Permitir gerenciadores de senha e colar reduz memória e transcrição; tratar como exceções previstas apenas reconhecimento de objetos ou conteúdo pessoal não textual.
+- **Feedback dinâmico (SC 4.1.3):** inserir a região de anúncios no DOM antes de atualizar a mensagem. Usar `role="status"` ou `aria-live="polite"` para informações não urgentes e reservar `role="alert"` para erros urgentes; testar o anúncio nas combinações de navegador e tecnologia assistiva suportadas.
 
 ### Robusto (Robust)
 
@@ -92,9 +94,9 @@ Para garantir integridade técnica, qualquer IA interagindo com o projeto **DEVE
 
 ## 4. Diretrizes visuais (critérios rígidos de UI)
 
-Para garantir certificação, estas diretrizes visuais são inegociáveis:
+Estas diretrizes combinam requisitos WCAG quando identificados e recomendações ergonômicas deste guia. Elas apoiam a implementação, mas não asseguram certificação nem conformidade legal.
 
-- **Indicador de foco (Regra da Casa† — inspirada no SC 2.4.13 AAA):** o anel de foco **DEVE** ter espessura mínima de 2px e contraste de pelo menos 3:1 contra o fundo. (O piso AA: foco visível — SC 2.4.7 — e não totalmente encoberto por conteúdo do autor — SC 2.4.11.)
+- **Indicador de foco (SC 2.4.13, AAA):** quando este critério for aplicado, a área do indicador visível **DEVE** ser ao menos equivalente ao perímetro de 2 pixels CSS de espessura do componente ou subcomponente sem foco e ter contraste mínimo de 3:1 entre os mesmos pixels nos estados com e sem foco. O contraste não textual aplicável (SC 1.4.11) permanece exigido. Um contorno sólido de 2px é uma forma simples de atender à área, não a única. (O piso AA é foco visível — SC 2.4.7 — e não totalmente encoberto por conteúdo do autor — SC 2.4.11.)
 - **Tipografia (Regra da Casa† — a WCAG não define fonte mínima em nenhum nível):** o texto **NÃO DEVE** ser menor que a fonte mínima do perfil ativo (Seção 0.1); 12px no padrão Standard (AA).
   - *Exceção de densidade:* em dashboards complexos ou metadados secundários (badges), permite-se **mín. 10px**, desde que o contraste seja elevado para **7:1** como mitigação — trade-off definido pela política deste padrão, não pela WCAG — e a flexibilização seja documentada em `EXCEPTIONS.md`.
 - **Espaçamento e área de clique:** ver *Seção 3 — Alvos* para a regra de tamanho mínimo e exceções. Em UIs densas (ex.: tabelas), se o tamanho visual for menor que 44px, a **hit area** (área clicável invisível) **DEVE** ser expandida via CSS/padding. Alvos adjacentes **DEVERIAM** ter 8px de espaçamento.
@@ -110,7 +112,7 @@ Ao identificar um componente não mapeado ou de alta complexidade (ex.: gráfico
 
 ## 6. Antipadrões (NÃO fazer)
 
-- **Divs clicáveis:** **NÃO** usar `div` ou `span` para ações de clique. Preferir botões nativos. Se forçado a usar, replicar manualmente o comportamento de um `<button>` (`role`, `tabindex="0"`, listeners de Enter e Space).
+- **Ações que são botões:** usar `<button>` para ações, salvo impossibilidade técnica documentada. Nesse caso, implementar o padrão de botão do APG por completo: papel e nome acessível, estado `disabled` apropriado, `aria-pressed` para toggle quando aplicável, ativação por Enter e Espaço, gerenciamento de foco após ativação e teste manual com tecnologia assistiva nas combinações suportadas.
 - **Focus traps vazados:** **NÃO** criar modais sem gerenciar o foco. Quando um modal estiver aberto:
   - o foco **DEVE** ser movido para dentro do modal;
   - o foco **DEVE** ficar preso (trapped) dentro do modal;
@@ -118,15 +120,21 @@ Ao identificar um componente não mapeado ou de alta complexidade (ex.: gráfico
   - o conteúdo de fundo **NÃO DEVE** ser interativo nem alcançável via teclado.
 - **Placeholder como rótulo:** **NÃO** usar `placeholder` como única forma de rótulo. Instruções cruciais (como formatos de data) **DEVEM** estar visíveis fora do campo para não desaparecer durante o preenchimento.
 - **Sopa de ARIA:** **NÃO** adicionar ARIA onde o HTML nativo já fornece a semântica — nenhum ARIA é melhor que ARIA ruim. Proibido por padrão: roles redundantes (`role="button"` num `<button>`), `aria-label` duplicando texto visível (inofensivo hoje, mas vira falha da SC 2.5.3 quando o texto muda) e estados ARIA estáticos nunca atualizados (`aria-expanded` fixo no código — falha da SC 4.1.2). ARIA é o fallback para lacunas da semântica nativa ([Primeira Regra do Uso de ARIA](https://www.w3.org/TR/using-aria/#rule1)), não um tempero. A quantidade de atributos ARIA não é evidência de acessibilidade: valide comportamento, semântica e suporte assistivo.
+- **Decoração sem papel acessível:** **NÃO** adicionar `aria-label` a conteúdo puramente decorativo sem papel acessível. Expor nome acessível somente para um controle, imagem informativa ou outra semântica que realmente precise ser anunciada.
 - **Reinventar a roda complexa:** para componentes complexos (selects com autocomplete, treeviews, datepickers), é fortemente recomendado usar bibliotecas robustas e acessíveis (ex.: Headless UI) em vez de criar lógica proprietária do zero.
 
 ## 7. Fluxo de verificação (Definition of Done)
 
 - [ ] **Checagem técnica:** código limpo, testável via linter integrado (`eslint-plugin-jsx-a11y` ou similar) e passando sem violações críticas por motores como `Axe` (ver [`test-code-pt.md`](./test-code-pt.md) para setup das ferramentas).
 - [ ] **Ordem de Tab:** caminho da tecla `Tab` validado manualmente (garante ausência de becos sem saída no frontend).
-- [ ] **Fluxo do usuário:** interações dinâmicas (SPAs) testadas quanto a feedbacks via `aria-live` em cenários de erro e sucesso, sem uso do mouse.
+- [ ] **Foco (SC 2.4.13, AAA quando aplicável):** medir a área equivalente ao perímetro de 2px CSS e o contraste de 3:1 entre os mesmos pixels nos estados com e sem foco; verificar também o contraste não textual aplicável.
+- [ ] **Arrastar (SC 2.5.7, AA):** testar cada operação de arrastar com alternativa de ponteiro simples sem arrastar; documentar a exceção de essencialidade ou do agente de usuário, se houver.
+- [ ] **Ajuda consistente (SC 3.2.6, A):** comparar páginas do mesmo conjunto e confirmar que mecanismos de ajuda repetidos mantêm a mesma ordem relativa, salvo alteração iniciada pelo usuário.
+- [ ] **Entrada redundante (SC 3.3.7, A):** executar processos em múltiplas etapas e confirmar autopreenchimento ou seleção de dados já fornecidos, ou registrar a exceção aplicável.
+- [ ] **Autenticação (SC 3.3.8, AA):** testar todo o fluxo, inclusive MFA, sem exigir memorização, resolução ou transcrição sem alternativa ou mecanismo; confirmar gerenciador de senhas e colar quando forem o mecanismo escolhido.
+- [ ] **Fluxo do usuário e anúncios:** testar manualmente interações dinâmicas sem mouse. Confirmar que regiões existentes no DOM anunciam mensagens não urgentes com `role="status"` ou `aria-live="polite"`, reservam `role="alert"` para erros urgentes e funcionam nas combinações suportadas de navegador e tecnologia assistiva.
 - [ ] **Zoom e reflow:** texto redimensiona até 200% sem perda de conteúdo ou função (SC 1.4.4); conteúdo refaz o fluxo a 320 CSS px de largura — equivalente a 400% de zoom num viewport de 1280px — sem rolagem bidimensional (SC 1.4.10). Preservar flexibilidade com unidades relativas (rem/em).
-- [ ] **Cor e percepção:** sem perda funcional ao perder o uso exclusivo de cores (simuladores de deficiência de visão).
+- [ ] **Cor e percepção:** sem perda funcional quando a cor não estiver disponível; confirmar o canal adicional adequado ao significado, sem exigir redundância visual universal.
 - [ ] **Auditoria de exceções:** `EXCEPTIONS.md` revisado — toda entrada ativa tem dono do risco, aprovador, issue de rastreio e validade; nenhuma entrada vencida sem tratamento.
 
 ---
@@ -135,6 +143,13 @@ Ao identificar um componente não mapeado ou de alta complexidade (ex.: gráfico
 
 - Projeto original: https://github.com/fecarrico/A11Y.md (licença MIT — Felipe A. Carriço)
 - WAI-ARIA Authoring Practices Guide (APG): https://www.w3.org/WAI/ARIA/apg/
+- WAI: Understanding SC 2.4.13 Focus Appearance: https://www.w3.org/WAI/WCAG22/Understanding/focus-appearance.html
+- WAI: Understanding SC 2.5.7 Dragging Movements: https://www.w3.org/WAI/WCAG22/Understanding/dragging-movements.html
+- WAI: Understanding SC 3.2.6 Consistent Help: https://www.w3.org/WAI/WCAG22/Understanding/consistent-help.html
+- WAI: Understanding SC 3.3.7 Redundant Entry: https://www.w3.org/WAI/WCAG22/Understanding/redundant-entry.html
+- WAI: Understanding SC 3.3.8 Accessible Authentication (Minimum): https://www.w3.org/WAI/WCAG22/Understanding/accessible-authentication-minimum.html
+- WAI: técnica ARIA22 para `role="status"`: https://www.w3.org/WAI/WCAG21/Techniques/aria/ARIA22.html
+- WAI: técnica ARIA19 para `role="alert"`: https://www.w3.org/WAI/WCAG21/Techniques/aria/ARIA19.html
 - eBay MIND Patterns: https://ebay.github.io/mindpatterns/
 - Deque Axe Core: https://github.com/dequelabs/axe-core
 - WCAG 2.2: https://www.w3.org/TR/WCAG22/
