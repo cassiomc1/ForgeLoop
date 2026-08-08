@@ -335,6 +335,17 @@ browser cookie.
 - Compare redirect URIs with the registered allowlist by exact string; do not
   use wildcards, prefixes, or open redirectors (`v5.0.0-10.4.1`). Validate the
   expected issuer and protect multi-issuer clients against mix-up.
+- At the authorization server, issue short-lived, single-use authorization
+  codes. Reject a second exchange of the same code and revoke tokens already
+  issued from it; limit lifetime to at most 10 minutes at L1/L2 and 1 minute at
+  L3 (`v5.0.0-10.4.2`, `v5.0.0-10.4.3`).
+- Authenticate every confidential client on backchannel requests to the
+  authorization server, including the token endpoint, PAR, and revocation
+  (`v5.0.0-10.4.10`, L2). PKCE binds the transaction to the `code_verifier`,
+  but it **does not replace** confidential-client authentication.
+- Identify and link an OIDC account only by the stable (`iss`, `sub`) pair;
+  validate that `sub` is valid in that issuer's context. Never use email or an
+  isolated `sub` as an identity key across issuers (`v5.0.0-10.5.2`, L2).
 - Do not use the implicit grant (`response_type=token`) or Resource Owner
   Password Credentials/password grant. Tokens leave through the token
   endpoint, never through a front-channel URL. Restrict scopes and audiences
@@ -342,10 +353,15 @@ browser cookie.
 
 ### JWTs, revocation, and refresh tokens
 
-- Allowlist algorithms per context and reject `none`; validate the
-  signature/MAC before claims and obtain keys only from trusted issuer
-  configuration (`v5.0.0-9.1.1` through `v5.0.0-9.1.3`). Never derive the
-  accepted algorithm solely from the received header.
+- Allowlist algorithms per context and reject `none`; prefer only symmetric
+  **or** only asymmetric algorithms in each context. If both are unavoidable,
+  explicitly separate keys, configuration, and validation paths to prevent
+  key/algorithm confusion (`v5.0.0-9.1.2`).
+- Bind every key to exactly one allowed algorithm and confirm that the received
+  `alg` matches the operation performed. Validate the signature/MAC before
+  claims and obtain keys only from trusted issuer configuration; headers such
+  as `jku`, `x5u`, and `jwk` must not select an arbitrary source or key
+  (`v5.0.0-9.1.1` through `v5.0.0-9.1.3`; RFC 8725 §3.1).
 - Validate token type and purpose, `iss`, `aud`, `exp`, and `nbf`, with minimal,
   explicit clock skew (`v5.0.0-9.2.1` through `v5.0.0-9.2.3`). Do not use an
   ID Token as an access token.
@@ -586,7 +602,10 @@ data independently of that choice.
 - Deploy CSP through Report-Only/reporting. Stage HSTS; never enable
   includeSubDomains/preload without an inventory and explicit decision.
 - OAuth/OIDC: Authorization Code + PKCE S256, state, nonce, exact redirect;
-  prohibit implicit/password. JWT validates algorithm, signature, and claims.
+  short/single-use code and confidential-client authentication. PKCE does not
+  replace it; OIDC accounts use (iss, sub), never email or isolated sub.
+- JWT: one symmetric or asymmetric family per context; every key belongs to
+  one algorithm. Separate keys/config/paths if both are unavoidable.
 - Dependencies: run vulnerability audits (npm audit, pip-audit,
   govulncheck, dotnet list package --vulnerable) and resolve high-severity
   issues; pin actions by commit and plugins/artifacts by version/digest.
@@ -621,7 +640,11 @@ data independently of that choice.
   and V7).
 - [ ] OAuth/OIDC uses Code + PKCE, `state`, `nonce`, and exact redirects; JWTs
   and refresh tokens have validation, replay, rotation, and revocation tests
-  (ASVS 5.0.0, V9/V10).
+  Short/single-use codes, confidential-client backchannel authentication, and
+  (`iss`, `sub`) OIDC accounts are verified (ASVS 5.0.0, V9/V10).
+- [ ] JWT separates symmetric/asymmetric algorithms by context and binds each
+  key to one algorithm; any exception separates keys, configuration, and
+  paths (`v5.0.0-9.1.1` through `v5.0.0-9.1.3`).
 - [ ] Secret scanning covers pre-commit, CI, and history; exposure has a
   revocation, rotation, audit, and Git remediation playbook (ASVS 5.0.0,
   V13.3).

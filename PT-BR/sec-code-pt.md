@@ -332,16 +332,33 @@ o cookie do browser.
 - Compare redirect URIs com a allowlist registrada por string exata; não use
   wildcards, prefixos ou open redirectors (`v5.0.0-10.4.1`). Valide o issuer
   esperado e defenda clientes multi-issuer contra mix-up.
+- No authorization server, emita authorization code curto e de uso único.
+  Rejeite a segunda troca do mesmo code e revogue tokens já emitidos a partir
+  dele; limite a vida a no máximo 10 minutos em L1/L2 e 1 minuto em L3
+  (`v5.0.0-10.4.2`, `v5.0.0-10.4.3`).
+- Autentique todo cliente confidencial nas requisições de backchannel ao
+  authorization server, inclusive token endpoint, PAR e revogação
+  (`v5.0.0-10.4.10`, L2). PKCE vincula a transação ao `code_verifier`, mas
+  **não substitui** a autenticação do cliente confidencial.
+- Identifique e vincule a conta OIDC somente pela associação estável
+  (`iss`, `sub`); valide que `sub` é válido no contexto daquele issuer. Nunca
+  use e-mail nem `sub` isolado como chave de identidade entre issuers
+  (`v5.0.0-10.5.2`, L2).
 - Não use implicit grant (`response_type=token`) nem Resource Owner Password
   Credentials/password grant. Tokens saem pelo token endpoint, nunca por URL
   de front channel. Restrinja scopes e audiences ao mínimo necessário.
 
 ### JWT, revogação e refresh tokens
 
-- Allowliste algoritmos por contexto e rejeite `none`; valide assinatura/MAC
-  antes das claims e obtenha chaves apenas de issuer/configuração confiável
-  (`v5.0.0-9.1.1` a `v5.0.0-9.1.3`). Nunca derive o algoritmo aceito apenas do
-  header recebido.
+- Allowliste algoritmos por contexto e rejeite `none`; prefira somente
+  algoritmos simétricos **ou** somente assimétricos em cada contexto. Se ambos
+  forem inevitáveis, separe explicitamente chaves, configurações e paths de
+  validação para impedir key/algorithm confusion (`v5.0.0-9.1.2`).
+- Vincule cada chave a exatamente um algoritmo permitido e confirme que o
+  `alg` recebido corresponde à operação executada. Valide assinatura/MAC antes
+  das claims e obtenha chaves somente de issuer/configuração confiável; headers
+  como `jku`, `x5u` e `jwk` não podem escolher fonte ou chave arbitrária
+  (`v5.0.0-9.1.1` a `v5.0.0-9.1.3`; RFC 8725 §3.1).
 - Valide tipo e finalidade do token, `iss`, `aud`, `exp` e `nbf`, com
   tolerância de relógio mínima e explícita (`v5.0.0-9.2.1` a
   `v5.0.0-9.2.3`). Não use ID Token como access token.
@@ -581,7 +598,10 @@ público exigir e proteja dados independentemente dessa escolha.
 - Implantar CSP com Report-Only/reporting. HSTS em estágios; nunca ativar
   includeSubDomains/preload sem inventário e decisão explícita.
 - OAuth/OIDC: Authorization Code + PKCE S256, state, nonce e redirect exato;
-  proibir implicit/password. JWT valida algoritmo, assinatura e claims.
+  code curto/single-use e autenticação do cliente confidencial. PKCE não a
+  substitui; conta OIDC usa (iss, sub), nunca e-mail ou sub isolado.
+- JWT: uma família simétrica ou assimétrica por contexto; cada chave pertence
+  a um algoritmo. Separar chaves/config/paths se ambas forem inevitáveis.
 - Dependências: rodar audit de vulnerabilidades (npm audit, pip-audit,
   govulncheck, dotnet list package --vulnerable) e resolver criticidades
   altas; fixar actions por commit e plugins/artefatos por versão/digest.
@@ -614,8 +634,12 @@ público exigir e proteja dados independentemente dessa escolha.
 - [ ] Cookie `__Host-` e ciclo de sessão foram testados para SameSite,
   rotação, idle/absolute timeout, logout e revogação (ASVS 5.0.0, V3.3 e V7).
 - [ ] OAuth/OIDC usa Code + PKCE, `state`, `nonce` e redirects exatos; JWT e
-  refresh tokens têm validação, replay, rotação e revogação testados (ASVS
-  5.0.0, V9/V10).
+  refresh tokens têm validação, replay, rotação e revogação testados. Code é
+  curto/single-use, cliente confidencial autentica no backchannel, e conta OIDC
+  usa (`iss`, `sub`) (ASVS 5.0.0, V9/V10).
+- [ ] JWT separa algoritmos simétricos/assimétricos por contexto e vincula cada
+  chave a um único algoritmo; qualquer exceção separa chaves, configuração e
+  paths (`v5.0.0-9.1.1` a `v5.0.0-9.1.3`).
 - [ ] Secret scanning cobre pre-commit, CI e histórico; exposição tem playbook
   de revogação, rotação, auditoria e remediação Git (ASVS 5.0.0, V13.3).
 - [ ] Dependências vêm de registry confiável; actions estão em commit completo,
