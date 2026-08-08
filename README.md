@@ -112,6 +112,9 @@ Cobre:
 - Web desktop e web mobile.
 - Safe areas, áreas de toque, CTA sticky e design responsivo.
 - Motion com GSAP/ScrollTrigger e uso criterioso de Three.js.
+- Efeitos canvas/WebGL opcionais com [Canvas UI](https://canvasui.dev/), com fallback acessível, reduced motion e atenção a compatibilidade/performance.
+- Superfícies translúcidas/Liquid Glass limitadas a controles contextuais, com fallback opaco e regras de acessibilidade/performance; referência conceitual na galeria [Liquid Glass Design](https://liquidglassdesign.com/).
+- Referências de UI e dados — [shadcn/ui](https://ui.shadcn.com/), [TanStack Charts](https://github.com/TanStack/charts), [Cuelume](https://cuelume-site.pages.dev/) — e auditoria final obrigatória da interface com [Impeccable](https://impeccable.style/).
 - Componentes premium, acessibilidade e Core Web Vitals.
 - Apps mobile nativos seguindo Apple Human Interface Guidelines e Material Design 3.
 - Apps desktop seguindo Fluent Design/WinUI no Windows e HIG no macOS.
@@ -245,6 +248,9 @@ It covers:
 - Desktop web and mobile web.
 - Safe areas, touch targets, sticky CTAs and responsive design.
 - GSAP/ScrollTrigger motion and careful Three.js usage.
+- Optional canvas/WebGL effects with [Canvas UI](https://canvasui.dev/), with accessible fallbacks, reduced-motion support, and compatibility/performance guidance.
+- Translucent/Liquid Glass surfaces limited to contextual controls, with opaque fallbacks and accessibility/performance rules; conceptual reference at the [Liquid Glass Design](https://liquidglassdesign.com/) gallery.
+- UI and data references — [shadcn/ui](https://ui.shadcn.com/), [TanStack Charts](https://github.com/TanStack/charts), [Cuelume](https://cuelume-site.pages.dev/) — plus a mandatory final interface audit with [Impeccable](https://impeccable.style/).
 - Premium components, accessibility and Core Web Vitals.
 - Native mobile apps following Apple's Human Interface Guidelines and Material Design 3.
 - Desktop apps following Fluent Design/WinUI on Windows and HIG on macOS.
