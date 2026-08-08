@@ -46,6 +46,7 @@ jobs:
           )
           required = {"name", "language", "counterpart", "description", "version", "last-reviewed"}
           names = set()
+          metadata_by_path = {}
           link_pattern = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
 
           if len(guides) != 16:
@@ -54,16 +55,51 @@ jobs:
           def balanced_fences(text, path):
               opening = None
               for line_number, line in enumerate(text.splitlines(), 1):
-                  match = re.match(r"^[ \t]{0,3}(`{3,}|~{3,})", line)
+                  match = re.match(r"^[ \t]{0,3}(`{3,}|~{3,})(.*)$", line)
                   if not match:
                       continue
                   marker = match.group(1)
                   if opening is None:
                       opening = (marker[0], len(marker), line_number)
-                  elif marker[0] == opening[0] and len(marker) >= opening[1]:
+                  elif (
+                      marker[0] == opening[0]
+                      and len(marker) >= opening[1]
+                      and not match.group(2).strip()
+                  ):
                       opening = None
               if opening is not None:
                   raise SystemExit(f"{path}: unclosed code fence opened at line {opening[2]}")
+
+          def validate_counterparts(metadata_by_path):
+              guide_paths = set(metadata_by_path)
+              counterpart_paths = []
+              for path, metadata in metadata_by_path.items():
+                  expected_directory = "ENG" if metadata["language"] == "pt-BR" else "PT-BR"
+                  expected_language = "en" if metadata["language"] == "pt-BR" else "pt-BR"
+                  counterpart = (path.parent / metadata["counterpart"]).resolve()
+                  if counterpart not in guide_paths:
+                      raise SystemExit(
+                          f"{path}: counterpart {metadata['counterpart']} is outside the 16-guide set"
+                      )
+                  counterpart_metadata = metadata_by_path[counterpart]
+                  if (
+                      counterpart.parent.name != expected_directory
+                      or counterpart_metadata["language"] != expected_language
+                  ):
+                      raise SystemExit(
+                          f"{path}: counterpart must be in {expected_directory} with language {expected_language}"
+                      )
+                  reverse = (
+                      counterpart.parent / counterpart_metadata["counterpart"]
+                  ).resolve()
+                  if reverse != path:
+                      raise SystemExit(
+                          f"{path}: counterpart relationship with {counterpart} is not reciprocal"
+                      )
+                  counterpart_paths.append(counterpart)
+
+              if len(set(counterpart_paths)) != len(guide_paths):
+                  raise SystemExit("counterpart relationships are not a bijection")
 
           for path in guides:
               text = path.read_text(encoding="utf-8")
@@ -89,10 +125,9 @@ jobs:
               if metadata["name"] in names:
                   raise SystemExit(f"{path}: duplicate name {metadata['name']}")
               names.add(metadata["name"])
+              metadata_by_path[path.resolve()] = metadata
 
-              counterpart = (path.parent / metadata["counterpart"]).resolve()
-              if not counterpart.is_file():
-                  raise SystemExit(f"{path}: missing counterpart {metadata['counterpart']}")
+          validate_counterparts(metadata_by_path)
 
           for path in markdown_files:
               text = path.read_text(encoding="utf-8")
