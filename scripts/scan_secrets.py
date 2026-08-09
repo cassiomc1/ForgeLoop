@@ -11,17 +11,25 @@ import sys
 
 
 TEXT_SUFFIXES = {
+    ".bash",
+    ".cfg",
+    ".conf",
     ".json",
     ".jsonc",
+    ".key",
     ".md",
     ".mdc",
+    ".pem",
+    ".properties",
     ".py",
+    ".sh",
     ".toml",
     ".txt",
     ".yaml",
     ".yml",
+    ".zsh",
 }
-TEXT_FILENAMES = {".gitignore"}
+TEXT_FILENAMES = {".env", ".envrc", ".gitignore"}
 EXCLUDED_PARTS = {".git", ".worktrees", "__pycache__", ".commandcode"}
 
 TOKEN_PATTERNS = (
@@ -82,7 +90,13 @@ def should_scan_path(path: Path) -> bool:
 
     if EXCLUDED_PARTS.intersection(path.parts):
         return False
-    return path.name in TEXT_FILENAMES or path.suffix.lower() in TEXT_SUFFIXES
+    name = path.name.lower()
+    is_environment_file = name == ".env" or name.startswith(".env.")
+    return (
+        is_environment_file
+        or name in TEXT_FILENAMES
+        or path.suffix.lower() in TEXT_SUFFIXES
+    )
 
 
 def is_placeholder(raw_value: str) -> bool:

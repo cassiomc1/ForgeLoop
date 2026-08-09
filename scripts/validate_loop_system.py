@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 import re
 import sys
@@ -55,6 +56,21 @@ ROUTING_SCENARIOS = {
     "documentation": "domain",
 }
 
+REQUIRED_GUIDE_FRONTMATTER = {
+    "name",
+    "language",
+    "description",
+    "version",
+    "last-reviewed",
+}
+QUOTED_GUIDE_FRONTMATTER = {"description", "version", "last-reviewed"}
+PLAIN_GUIDE_FRONTMATTER = {
+    "name": re.compile(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*"),
+    "language": re.compile(r"[a-z]{2}(?:-[A-Z]{2})?"),
+}
+GUIDE_VERSION = "2026.08"
+GUIDE_LAST_REVIEWED = "2026-08-08"
+
 
 class ValidationError(RuntimeError):
     """Raised when the loop kit violates its structural contract."""
@@ -102,6 +118,101 @@ def validate_adapters(root: Path) -> None:
                 )
 
 
+def _parse_guide_scalar(
+    key: str,
+    raw_value: str,
+    path: Path,
+    line_number: int,
+) -> str:
+    value = raw_value.strip()
+    if not value:
+        raise ValidationError(f"{path}:{line_number}: empty frontmatter value")
+
+    if key in QUOTED_GUIDE_FRONTMATTER:
+        if value.startswith('"'):
+            try:
+                parsed = json.loads(value)
+            except json.JSONDecodeError as error:
+                raise ValidationError(
+                    f"{path}:{line_number}: invalid double-quoted scalar"
+                ) from error
+            if not isinstance(parsed, str):
+                raise ValidationError(
+                    f"{path}:{line_number}: frontmatter value must be a string"
+                )
+            return parsed
+        if value.startswith("'"):
+            if len(value) < 2 or not value.endswith("'"):
+                raise ValidationError(
+                    f"{path}:{line_number}: invalid single-quoted scalar"
+                )
+            body = value[1:-1]
+            if "'" in body.replace("''", ""):
+                raise ValidationError(
+                    f"{path}:{line_number}: invalid single-quote escape"
+                )
+            return body.replace("''", "'")
+        raise ValidationError(f"{path}:{line_number}: {key} must be a quoted string")
+
+    if value.startswith(('"', "'")):
+        raise ValidationError(f"{path}:{line_number}: {key} must be a plain scalar")
+    pattern = PLAIN_GUIDE_FRONTMATTER.get(key)
+    if pattern is None or not pattern.fullmatch(value):
+        raise ValidationError(
+            f"{path}:{line_number}: unsupported plain scalar for {key}"
+        )
+    return value
+
+
+def parse_guide_frontmatter(path: Path) -> dict[str, str]:
+    lines = path.read_text(encoding="utf-8").splitlines()
+    if not lines or lines[0] != "---":
+        raise ValidationError(f"{path}: missing exact opening frontmatter delimiter")
+    try:
+        closing = lines.index("---", 1)
+    except ValueError as error:
+        raise ValidationError(
+            f"{path}: missing exact closing frontmatter delimiter"
+        ) from error
+
+    metadata: dict[str, str] = {}
+    for line_number, line in enumerate(lines[1:closing], 2):
+        match = re.fullmatch(
+            r"(name|language|description|version|last-reviewed):[ \t]+(.+)",
+            line,
+        )
+        if not match:
+            raise ValidationError(f"{path}:{line_number}: invalid frontmatter line")
+        key, raw_value = match.groups()
+        if key in metadata:
+            raise ValidationError(f"{path}:{line_number}: duplicate frontmatter key {key}")
+        metadata[key] = _parse_guide_scalar(key, raw_value, path, line_number)
+
+    if set(metadata) != REQUIRED_GUIDE_FRONTMATTER:
+        raise ValidationError(f"{path}: frontmatter keys differ from contract")
+    return metadata
+
+
+def validate_guides(root: Path) -> None:
+    names: set[str] = set()
+    for relative in GUIDES.values():
+        path = root / relative
+        metadata = parse_guide_frontmatter(path)
+        if metadata["name"] != path.stem:
+            raise ValidationError(f"{relative}: name must match filename")
+        if metadata["language"] != "en":
+            raise ValidationError(f"{relative}: language must be en")
+        if not metadata["description"]:
+            raise ValidationError(f"{relative}: description must not be empty")
+        if metadata["version"] != GUIDE_VERSION:
+            raise ValidationError(f"{relative}: unexpected version")
+        if metadata["last-reviewed"] != GUIDE_LAST_REVIEWED:
+            raise ValidationError(f"{relative}: unexpected last-reviewed date")
+        if metadata["name"] in names:
+            raise ValidationError(f"{relative}: duplicate guide name {metadata['name']}")
+        names.add(metadata["name"])
+
+
 def validate_router(root: Path) -> None:
     path = root / "GUIDE_ROUTER.md"
     text = path.read_text(encoding="utf-8")
@@ -131,6 +242,13 @@ def validate_router(root: Path) -> None:
         parsed[scenario] = guide_ids
 
     allowed = set(GUIDES) | {"domain"}
+    for scenario, guide_ids in parsed.items():
+        unknown = set(guide_ids.split(",")) - allowed
+        if unknown:
+            raise ValidationError(
+                f"GUIDE_ROUTER.md: scenario {scenario} has unknown IDs: {sorted(unknown)}"
+            )
+
     for scenario, expected_ids in ROUTING_SCENARIOS.items():
         actual = parsed.get(scenario)
         if actual is None:
@@ -138,11 +256,6 @@ def validate_router(root: Path) -> None:
         if actual != expected_ids:
             raise ValidationError(
                 f"GUIDE_ROUTER.md: scenario {scenario} expected {expected_ids}, got {actual}"
-            )
-        unknown = set(actual.split(",")) - allowed
-        if unknown:
-            raise ValidationError(
-                f"GUIDE_ROUTER.md: scenario {scenario} has unknown IDs: {sorted(unknown)}"
             )
 
 
@@ -205,6 +318,7 @@ def validate_cursor_frontmatter(root: Path) -> None:
 def validate_repository(root: Path) -> None:
     validate_required_files(root)
     validate_adapters(root)
+    validate_guides(root)
     validate_router(root)
     validate_profile(root)
     validate_cursor_frontmatter(root)
@@ -227,7 +341,18 @@ def _valid_fixture(root: Path) -> None:
         "games": "ENG/games-code-design-web-eng.md",
     }
     for guide_path in guides.values():
-        _write(root / guide_path, "# Guide\n")
+        path = root / guide_path
+        _write(
+            path,
+            "---\n"
+            f"name: {path.stem}\n"
+            "language: en\n"
+            'description: "Fixture guide."\n'
+            f'version: "{GUIDE_VERSION}"\n'
+            f'last-reviewed: "{GUIDE_LAST_REVIEWED}"\n'
+            "---\n"
+            "# Guide\n",
+        )
 
     _write(root / "LOOP_ENGINEERING.md", "# Loop\n")
     _write(root / "LOOP_SYSTEM_DESIGN.md", "# Design\n")
@@ -355,6 +480,32 @@ def run_self_tests() -> None:
         router = router.replace("<!-- route:documentation=domain -->", "")
         _write(root / "GUIDE_ROUTER.md", router)
         _expect_invalid(root, "missing routing scenario")
+        cases += 1
+
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        _valid_fixture(root)
+        router = (root / "GUIDE_ROUTER.md").read_text(encoding="utf-8")
+        _write(
+            root / "GUIDE_ROUTER.md",
+            router + "<!-- route:extra=clean,unknown-guide -->\n",
+        )
+        _expect_invalid(root, "unknown IDs")
+        cases += 1
+
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        _valid_fixture(root)
+        guide = root / "ENG/clean-code-eng.md"
+        text = guide.read_text(encoding="utf-8")
+        _write(
+            guide,
+            text.replace(
+                'description: "Fixture guide."',
+                'description: "Unclosed description.',
+            ),
+        )
+        _expect_invalid(root, "invalid double-quoted scalar")
         cases += 1
 
     with tempfile.TemporaryDirectory() as directory:

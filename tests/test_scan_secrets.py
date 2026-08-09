@@ -1,7 +1,13 @@
 from pathlib import Path
+import tempfile
 import unittest
 
-from scripts.scan_secrets import format_finding, scan_text, should_scan_path
+from scripts.scan_secrets import (
+    format_finding,
+    scan_repository,
+    scan_text,
+    should_scan_path,
+)
 
 
 class SecretScannerTests(unittest.TestCase):
@@ -92,6 +98,34 @@ class SecretScannerTests(unittest.TestCase):
         self.assertFalse(should_scan_path(Path("scripts/__pycache__/module.pyc")))
         self.assertFalse(should_scan_path(Path("assets/logo.png")))
         self.assertTrue(should_scan_path(Path("PROJECT_PROFILE.md")))
+
+    def test_scans_common_secret_file_names_and_suffixes(self) -> None:
+        for path in (
+            Path(".env"),
+            Path(".env.local"),
+            Path("config/.env.production"),
+            Path("certificates/server.pem"),
+            Path("certificates/server.key"),
+        ):
+            with self.subTest(path=path):
+                self.assertTrue(should_scan_path(path))
+
+    def test_detects_tokens_and_private_keys_in_common_secret_files(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / ".env").write_text(
+                "OPENAI_API_KEY=sk-proj-" + "A" * 32 + "\n",
+                encoding="utf-8",
+            )
+            (root / "server.pem").write_text(
+                "-----BEGIN " + "PRIVATE KEY-----\n",
+                encoding="utf-8",
+            )
+
+            rules = {finding.rule for finding in scan_repository(root)}
+
+        self.assertIn("openai-token", rules)
+        self.assertIn("private-key", rules)
 
 
 if __name__ == "__main__":

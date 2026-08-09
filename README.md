@@ -102,7 +102,6 @@ instructions. If validators were copied, run:
 ```bash
 python3 scripts/validate_loop_system.py --self-test
 python3 scripts/validate_loop_system.py
-python3 scripts/validate_english_only.py
 python3 scripts/scan_secrets.py
 ```
 
@@ -185,14 +184,13 @@ Run the repository validators with Python's standard library:
 python3 scripts/validate_loop_system.py --self-test
 python3 scripts/validate_loop_system.py
 python3 -m unittest discover -s tests -v
-python3 scripts/validate_english_only.py
 python3 scripts/scan_secrets.py
 ```
 
 The [Docs quality workflow](./.github/workflows/docs-quality.yml) also checks
 Markdown, links, frontmatter, unique names, code fences, relative links,
-adapters, the guide catalog, routing scenarios, English-only content, and
-secret-shaped values on pushes and pull requests.
+adapters, the guide catalog, routing scenarios, and secret-shaped values on
+pushes and pull requests.
 
 ## Rights and provenance
 
