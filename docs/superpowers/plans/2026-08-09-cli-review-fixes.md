@@ -22,11 +22,13 @@
 ### Task 1: Add failing CLI regression tests
 
 **Files:**
+
 - Modify: `tests/cli.test.js`
 - Modify: `tests/core.test.js`
 - Modify: `tests/package.test.js`
 
 **Interfaces:**
+
 - Tests invoke `node src/cli.js` in isolated temporary directories.
 - Tests cover top-level help, option validation, symlink containment, unmanaged adapters, existing-initialization guards, and executable package metadata.
 
@@ -36,12 +38,14 @@
 ### Task 2: Harden CLI behavior and filesystem boundaries
 
 **Files:**
+
 - Modify: `src/cli.js`
 - Modify: `src/core/filesystem.js`
 - Modify: `src/commands/init.js`
 - Modify: `src/commands/doctor.js`
 
 **Interfaces:**
+
 - `parseArgs(argv)` accepts global help and rejects options not supported by the selected command.
 - `ensureWithin(root, relativePath)` validates lexical and real filesystem containment before writes.
 - `runInit` preserves an existing manifest version and directs initialized targets to `update`.
@@ -54,12 +58,14 @@
 ### Task 3: Align packaging, CI, and release safety
 
 **Files:**
+
 - Modify: `package.json`
 - Modify: `.github/workflows/docs-quality.yml`
 - Modify: `.github/workflows/npm-publish.yml`
 - Modify: `tests/package.test.js`
 
 **Interfaces:**
+
 - Package tests verify the executable entry contract and included files.
 - Documentation CI runs Node tests and package-content checks in addition to existing validators.
 - Publication runs the complete local quality gate and validates the tag version against `package.json` before `npm publish`.
@@ -71,12 +77,14 @@
 ### Task 4: Correct user-facing documentation and license metadata
 
 **Files:**
+
 - Modify: `README.md`
 - Modify: `LOOP_SYSTEM_DESIGN.md`
 - Modify: `AGENT_COMPATIBILITY.md`
 - Modify: `package.json`
 
 **Interfaces:**
+
 - README installation commands describe the current registry state and a working local/repository fallback until publication exists.
 - Local checks include `npm test` and `npm run pack:check`.
 - Documentation distinguishes MIT CLI code, CC BY documentation, and third-party notices.
@@ -87,6 +95,7 @@
 ### Task 5: Verify, commit, publish, and merge
 
 **Files:**
+
 - All files changed by Tasks 1–4.
 
 - [x] **Step 1: Run fresh full verification**: Node tests, Python tests, loop self-test/validation, secret scan, package check, YAML parse, and `git diff --check`.
