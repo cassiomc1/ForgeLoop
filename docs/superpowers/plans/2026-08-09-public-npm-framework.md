@@ -25,10 +25,12 @@
 ### Task 1: Add package metadata and behavior-first CLI tests
 
 **Files:**
+
 - Create: `package.json`
 - Create: `tests/cli.test.js`
 
 **Interfaces:**
+
 - Tests invoke `node src/cli.js <command>` in temporary directories.
 - The package exposes `mdfiles` through the `bin` field and runs tests with `node --test tests/*.test.js`.
 
@@ -62,7 +64,7 @@
     "engines": { "node": ">=20" },
     "bin": { "mdfiles": "src/cli.js" },
     "files": ["src", "ENG", "AGENTS.md", "CLAUDE.md", "GUIDE_ROUTER.md", "LOOP_ENGINEERING.md", "LOOP_SYSTEM_DESIGN.md", "PROJECT_PROFILE.md", "THIRD_PARTY_NOTICES.md", ".cursor", ".github/copilot-instructions.md", "README.md"],
-    "scripts": { "test": "node --test tests/*.test.js", "pack:check": "npm pack --dry-run" }
+    "scripts": { "test": "node --test tests/*.test.js", "pack:check": "node --test tests/package.test.js" }
   }
   ```
 
@@ -82,12 +84,14 @@
 ### Task 2: Implement safe path, template, and manifest primitives
 
 **Files:**
+
 - Create: `src/core/filesystem.js`
 - Create: `src/core/templates.js`
 - Create: `src/core/manifest.js`
 - Test: `tests/cli.test.js`
 
 **Interfaces:**
+
 - `resolveTarget(cwd, requestedPath)` returns an existing absolute directory or throws a user-facing error.
 - `readTemplateEntries(packageRoot)` returns canonical relative paths and source bytes.
 - `sha256(bytes)` returns a lowercase hexadecimal digest.
@@ -124,11 +128,13 @@
 ### Task 3: Implement `init`
 
 **Files:**
+
 - Create: `src/commands/init.js`
 - Modify: `src/cli.js`
 - Test: `tests/cli.test.js`
 
 **Interfaces:**
+
 - `runInit({ target, dryRun, packageRoot, packageVersion })` returns `{ actions, manifest }`.
 - The command copies absent canonical files, records only files it owns, and marks `PROJECT_PROFILE.md` with `preserve: true`.
 
@@ -162,11 +168,13 @@
 ### Task 4: Implement `doctor`
 
 **Files:**
+
 - Create: `src/commands/doctor.js`
 - Modify: `src/cli.js`
 - Test: `tests/cli.test.js`
 
 **Interfaces:**
+
 - `runDoctor({ target, packageRoot, json })` returns `{ ok, findings }`.
 - Findings include stable `code`, `path`, `message`, and `severity` fields.
 
@@ -180,7 +188,7 @@
 
 - [ ] **Step 2: Implement `runDoctor`**
 
-  Validate required files, manifest JSON and hashes, tracked drift, and profile frontmatter. `--json` emits only JSON; default output uses one finding per line and a final summary. Return exit code 1 whenever an error or warning finding exists.
+  Validate required files, manifest JSON and hashes, tracked drift, and profile frontmatter. `--json` emits only JSON; default output uses one finding per line and a final summary. Return exit code 1 whenever an error finding exists; informational profile guidance and local drift warnings remain report-only.
 
 - [ ] **Step 3: Run doctor tests and verify GREEN**
 
@@ -198,11 +206,13 @@
 ### Task 5: Implement conflict-safe `update`
 
 **Files:**
+
 - Create: `src/commands/update.js`
 - Modify: `src/cli.js`
 - Test: `tests/cli.test.js`
 
 **Interfaces:**
+
 - `runUpdate({ target, dryRun, packageRoot, packageVersion })` returns `{ actions, conflicts, manifest }`.
 - A conflict never writes the destination and causes exit code 1 after all safe files are processed.
 
@@ -234,15 +244,17 @@
 ### Task 6: Add package quality gates and user documentation
 
 **Files:**
+
 - Modify: `README.md`
 - Modify: `THIRD_PARTY_NOTICES.md`
 - Create: `LICENSE`
 - Create: `LICENSE-DOCS.md`
 - Create: `.npmignore`
-- Create: `.github/workflows/npm-package.yml`
+- Create: `.github/workflows/npm-publish.yml`
 - Modify: `package.json`
 
 **Interfaces:**
+
 - `npm test` runs Node tests.
 - `npm run pack:check` proves the package allowlist contains the CLI and all templates without local tests, caches, or worktrees.
 - The README documents `npx @cassiomc1/mdfiles init`, `doctor`, `update`, the manifest behavior, Node 20+ support, and license boundaries.
