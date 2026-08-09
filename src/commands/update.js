@@ -1,4 +1,4 @@
-import { fileExists, ensureWithin, readBytes, writeFileAtomic } from "../core/filesystem.js";
+import { assertSafePath, fileExists, ensureWithin, readBytes, writeFileAtomic } from "../core/filesystem.js";
 import {
   readManifest,
   sha256,
@@ -22,6 +22,7 @@ export async function runUpdate({ target, dryRun, packageRoot, packageVersion })
 
   for (const entry of entries) {
     const destination = ensureWithin(target, entry.relativePath);
+    await assertSafePath(target, entry.relativePath);
     const sourceHash = sha256(entry.bytes);
     const record = currentManifest.files[entry.relativePath];
     const exists = await fileExists(destination);

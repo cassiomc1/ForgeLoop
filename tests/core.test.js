@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, symlink } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -42,5 +42,22 @@ test("template entries use safe relative paths", async () => {
     assert.equal(path.isAbsolute(entry.relativePath), false);
     assert.equal(entry.relativePath.startsWith(".."), false);
     assert.ok(entry.bytes.length > 0);
+  }
+});
+
+test("rejects a destination whose existing parent is a symlink", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "mdfiles-core-"));
+  const outside = await mkdtemp(path.join(os.tmpdir(), "mdfiles-outside-"));
+  try {
+    await symlink(outside, path.join(target, ".github"));
+    await assert.rejects(
+      import("../src/core/filesystem.js").then(({ assertSafePath }) =>
+        assertSafePath(target, ".github/copilot-instructions.md"),
+      ),
+      /symlink|target directory/i,
+    );
+  } finally {
+    await rm(target, { recursive: true, force: true });
+    await rm(outside, { recursive: true, force: true });
   }
 });

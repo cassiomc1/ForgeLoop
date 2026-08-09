@@ -1,4 +1,4 @@
-import { fileExists, ensureWithin, writeFileAtomic } from "../core/filesystem.js";
+import { assertSafePath, fileExists, ensureWithin, writeFileAtomic } from "../core/filesystem.js";
 import {
   createManifest,
   readManifest,
@@ -11,12 +11,16 @@ const PROFILE_PATH = "PROJECT_PROFILE.md";
 
 export async function runInit({ target, dryRun, packageRoot, packageVersion }) {
   const entries = await readTemplateEntries(packageRoot);
-  const manifest = (await readManifest(target)) ?? createManifest(packageVersion);
-  manifest.packageVersion = packageVersion;
+  const existingManifest = await readManifest(target);
+  if (existingManifest) {
+    throw new Error("Target is already initialized; run mdfiles update instead.");
+  }
+  const manifest = createManifest(packageVersion);
   const actions = [];
 
   for (const entry of entries) {
     const destination = ensureWithin(target, entry.relativePath);
+    await assertSafePath(target, entry.relativePath);
     if (await fileExists(destination)) {
       actions.push({ action: "skip", path: entry.relativePath, reason: "exists" });
       continue;

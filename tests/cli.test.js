@@ -127,3 +127,58 @@ test("init installs all templates only in the selected target", async () => {
     await rm(target, { recursive: true, force: true });
   }
 });
+test("top-level help succeeds without a command", async () => {
+  await withTarget(async (target) => {
+    const result = runCli(target, "--help");
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /Usage: mdfiles/);
+  });
+});
+
+test("rejects options that do not belong to the selected command", async () => {
+  await withTarget(async (target) => {
+    const initJson = runCli(target, "init", "--json");
+    const doctorDryRun = runCli(target, "doctor", "--dry-run");
+
+    assert.equal(initJson.status, 1);
+    assert.match(initJson.stderr, /not valid for init/i);
+    assert.equal(doctorDryRun.status, 1);
+    assert.match(doctorDryRun.stderr, /not valid for doctor/i);
+  });
+});
+
+test("reports an existing adapter that was not managed by init", async () => {
+  await withTarget(async (target) => {
+    await writeFile(path.join(target, "AGENTS.md"), "# Unrelated local instructions\n");
+    assert.equal(runCli(target, "init").status, 0);
+
+    const result = runCli(target, "doctor", "--json");
+    const report = JSON.parse(result.stdout);
+
+    assert.equal(result.status, 1);
+    assert.equal(report.ok, false);
+    assert.ok(
+      report.findings.some(
+        (finding) => finding.code === "unmanaged-file" && finding.path === "AGENTS.md",
+      ),
+    );
+  });
+});
+
+test("does not relabel an existing installation when init is rerun", async () => {
+  await withTarget(async (target) => {
+    assert.equal(runCli(target, "init").status, 0);
+    const manifestPath = path.join(target, ".mdfiles", "manifest.json");
+    const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+    manifest.packageVersion = "0.0.9";
+    await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+
+    const result = runCli(target, "init");
+    const after = JSON.parse(await readFile(manifestPath, "utf8"));
+
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /already initialized|update/i);
+    assert.equal(after.packageVersion, "0.0.9");
+  });
+});
