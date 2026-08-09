@@ -1,7 +1,6 @@
 ---
 name: test-code-eng
 language: en
-counterpart: ../PT-BR/test-code-pt.md
 description: "Risk-based testing strategy and tools for modern languages and platforms."
 version: "2026.08"
 last-reviewed: "2026-08-08"

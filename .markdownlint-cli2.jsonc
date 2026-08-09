@@ -1,19 +1,19 @@
 {
   "config": {
     "default": true,
-    // MD013: linhas operacionais, tabelas e URLs auditáveis podem ser longas.
+    // MD013: operational lines, tables, and auditable URLs may be long.
     "MD013": false,
-    // MD024: títulos iguais são aceitos apenas quando pertencem a seções distintas.
+    // MD024: duplicate headings are accepted only in separate sections.
     "MD024": {
       "siblings_only": true
     },
-    // MD033: os guias contêm exemplos HTML deliberados.
+    // MD033: the guides contain deliberate HTML examples.
     "MD033": false,
-    // MD034: listas auditáveis preservam URLs explícitas.
+    // MD034: auditable lists preserve explicit URLs.
     "MD034": false,
-    // MD036: rótulos editoriais existentes usam ênfase em vez de títulos.
+    // MD036: existing editorial labels use emphasis instead of headings.
     "MD036": false,
-    // MD040: alguns blocos reproduzem conteúdo cuja linguagem é indeterminada.
+    // MD040: some blocks reproduce content with no determinate language.
     "MD040": false
   },
   "globs": [

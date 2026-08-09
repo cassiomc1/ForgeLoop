@@ -1,15 +1,16 @@
-# Instruções do Loop Universal
+# Universal Project Loop Instructions
 
-Estas instruções valem para todo o repositório, salvo regra mais próxima e mais específica.
+These instructions apply to the entire repository unless a closer, more
+specific rule overrides them.
 
-1. Respeite primeiro as regras da plataforma, o pedido mais recente do usuário e as instruções locais aplicáveis.
-2. Leia [`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md) antes de planejar ou alterar arquivos.
-3. Inspecione [`PROJECT_PROFILE.md`](./PROJECT_PROFILE.md). Confirme fatos pela fonte; em projeto de destino, inicialize o perfil quando ainda estiver em modo `template`.
-4. Use [`GUIDE_ROUTER.md`](./GUIDE_ROUTER.md) para selecionar todos os guias relevantes e somente eles.
-5. Use apenas um idioma dos guias por execução e informe brevemente quais IDs foram ativados.
-6. Faça a menor mudança coerente, execute checks específicos e depois regressão proporcional.
-7. Se falhar, diagnostique a causa antes de corrigir; não repita a mesma tentativa sem evidência nova.
-8. Não instale, publique, exclua, migre dados ou altere sistemas externos sem autoridade aplicável.
-9. Conclua com resultado, verificações realmente executadas, limitações e estado de publicação.
+1. Follow platform rules, the user's latest request, and applicable local instructions first.
+2. Read [`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md) before planning or changing files.
+3. Inspect [`PROJECT_PROFILE.md`](./PROJECT_PROFILE.md). Confirm facts from their sources; initialize the profile in a target project when it is still in `template` mode.
+4. Use [`GUIDE_ROUTER.md`](./GUIDE_ROUTER.md) to select all relevant guides and only those guides.
+5. Briefly report the activated guide IDs.
+6. Make the smallest coherent change, run specific checks, and then run proportional regression checks.
+7. Diagnose a failure before fixing it; do not repeat the same attempt without new evidence.
+8. Do not install, publish, delete, migrate data, or change external systems without applicable authority.
+9. Finish with the result, checks actually run, limitations, and publication state.
 
-Os guias fornecem defaults técnicos; requisitos explícitos e evidências do projeto prevalecem.
+The guides provide technical defaults; explicit requirements and project evidence prevail.

@@ -42,20 +42,19 @@ jobs:
           import tempfile
 
           root = Path.cwd()
-          guides = sorted((*root.glob("PT-BR/*.md"), *root.glob("ENG/*.md")))
+          guides = sorted(root.glob("ENG/*.md"))
           markdown_files = sorted(
               path for path in root.rglob("*.md")
               if not ({".worktrees", ".superpowers"} & set(path.relative_to(root).parts))
           )
-          required = {"name", "language", "counterpart", "description", "version", "last-reviewed"}
+          required = {"name", "language", "description", "version", "last-reviewed"}
           names = set()
-          metadata_by_path = {}
 
           class ValidationError(ValueError):
               pass
 
-          if len(guides) != 16:
-              raise SystemExit(f"expected 16 guides, found {len(guides)}")
+          if len(guides) != 8:
+              raise SystemExit(f"expected 8 English guides, found {len(guides)}")
 
           def balanced_fences(text, path):
               opening = None
@@ -81,10 +80,6 @@ jobs:
           plain_frontmatter_patterns = {
               "name": re.compile(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*"),
               "language": re.compile(r"[a-z]{2}(?:-[A-Z]{2})?"),
-              "counterpart": re.compile(
-                  r"\.\./[A-Za-z0-9][A-Za-z0-9-]*/"
-                  r"[A-Za-z0-9][A-Za-z0-9.-]*\.md"
-              ),
           }
           implicit_plain_yaml = re.compile(
               r"(?ix:"
@@ -168,7 +163,7 @@ jobs:
               metadata = {}
               for line_number, line in enumerate(lines[1:closing_index], 2):
                   match = re.fullmatch(
-                      r"(name|language|counterpart|description|version|last-reviewed):[ \t]+(.+)",
+                      r"(name|language|description|version|last-reviewed):[ \t]+(.+)",
                       line,
                   )
                   if not match:
@@ -530,7 +525,6 @@ jobs:
               valid_frontmatter = """---
           name: sample
           language: en
-          counterpart: ../PT-BR/sample.md
           description: "Valid scalar with punctuation."
           version: "2026.08"
           last-reviewed: "2026-08-08"
@@ -540,7 +534,7 @@ jobs:
               parse_frontmatter(valid_frontmatter, "frontmatter-positive")
               invalid_frontmatter = {
                   "duplicate key": valid_frontmatter.replace(
-                      "language: en\n", "language: en\nlanguage: pt-BR\n"
+                      "language: en\n", "language: en\nlanguage: en\n"
                   ),
                   "flow sequence": valid_frontmatter.replace(
                       'description: "Valid scalar with punctuation."', "description: ["
@@ -684,37 +678,6 @@ jobs:
                   "repository containment; missing targets; code ignored"
               )
 
-          def validate_counterparts(metadata_by_path):
-              guide_paths = set(metadata_by_path)
-              counterpart_paths = []
-              for path, metadata in metadata_by_path.items():
-                  expected_directory = "ENG" if metadata["language"] == "pt-BR" else "PT-BR"
-                  expected_language = "en" if metadata["language"] == "pt-BR" else "pt-BR"
-                  counterpart = (path.parent / metadata["counterpart"]).resolve()
-                  if counterpart not in guide_paths:
-                      raise SystemExit(
-                          f"{path}: counterpart {metadata['counterpart']} is outside the 16-guide set"
-                      )
-                  counterpart_metadata = metadata_by_path[counterpart]
-                  if (
-                      counterpart.parent.name != expected_directory
-                      or counterpart_metadata["language"] != expected_language
-                  ):
-                      raise SystemExit(
-                          f"{path}: counterpart must be in {expected_directory} with language {expected_language}"
-                      )
-                  reverse = (
-                      counterpart.parent / counterpart_metadata["counterpart"]
-                  ).resolve()
-                  if reverse != path:
-                      raise SystemExit(
-                          f"{path}: counterpart relationship with {counterpart} is not reciprocal"
-                      )
-                  counterpart_paths.append(counterpart)
-
-              if len(set(counterpart_paths)) != len(guide_paths):
-                  raise SystemExit("counterpart relationships are not a bijection")
-
           run_self_tests()
 
           for path in guides:
@@ -725,17 +688,13 @@ jobs:
                   raise SystemExit(str(error)) from error
               if metadata["name"] != path.stem or not metadata["description"]:
                   raise SystemExit(f"{path}: invalid name or empty description")
-              expected_language = "pt-BR" if path.parent.name == "PT-BR" else "en"
-              if metadata["language"] != expected_language:
-                  raise SystemExit(f"{path}: expected language {expected_language}")
+              if path.parent.name != "ENG" or metadata["language"] != "en":
+                  raise SystemExit(f"{path}: expected English guide with language en")
               if metadata["version"] != "2026.08" or metadata["last-reviewed"] != "2026-08-08":
                   raise SystemExit(f"{path}: unexpected version or review date")
               if metadata["name"] in names:
                   raise SystemExit(f"{path}: duplicate name {metadata['name']}")
               names.add(metadata["name"])
-              metadata_by_path[path.resolve()] = metadata
-
-          validate_counterparts(metadata_by_path)
 
           for path in markdown_files:
               text = path.read_text(encoding="utf-8")
@@ -747,10 +706,16 @@ jobs:
 
           print(
               f"validated {len(guides)} guides, {len(names)} unique names, "
-              f"frontmatter and counterparts; fences and relative links in "
+              f"English frontmatter; fences and relative links in "
               f"{len(markdown_files)} Markdown files"
           )
           PY
 
       - name: Validate universal project loop
         run: python3 scripts/validate_loop_system.py --self-test && python3 scripts/validate_loop_system.py
+
+      - name: Validate English-only repository
+        run: python3 -m unittest tests.test_validate_english_only -v && python3 scripts/validate_english_only.py
+
+      - name: Scan repository for secrets
+        run: python3 -m unittest tests.test_scan_secrets -v && python3 scripts/scan_secrets.py

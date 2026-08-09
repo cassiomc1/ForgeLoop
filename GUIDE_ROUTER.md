@@ -1,241 +1,213 @@
-# Roteador de Guias
+# Guide Router
 
-> Selecione contexto técnico para o [Loop Engineering](./LOOP_ENGINEERING.md). Este arquivo decide **quais** guias consultar; cada guia decide **como** trabalhar naquele domínio.
+> Select technical context for [Loop Engineering](./LOOP_ENGINEERING.md). This file decides **which** guides to consult; each guide defines **how** to work in its domain.
 
-## Contrato de seleção
+## Selection contract
 
-1. Leia o pedido, o diff pretendido e o [perfil do projeto](./PROJECT_PROFILE.md).
-2. Escolha um idioma.
-3. Identifique as superfícies realmente afetadas.
-4. Ative o guia principal e os complementares necessários aos riscos.
-5. Localize títulos e palavras-chave antes de carregar arquivos longos.
-6. Anuncie os IDs escolhidos e uma justificativa curta.
-7. Reavalie a rota se o escopo mudar durante a execução.
+1. Read the request, the nearest repository instructions, and [PROJECT_PROFILE.md](./PROJECT_PROFILE.md).
+2. Confirm the actual stack from manifests and configuration.
+3. Identify the surfaces that will change.
+4. Activate the primary guide and every complementary guide required by the risks.
+5. Locate relevant headings and keywords before loading a long guide.
+6. Load only the sections needed for the current task.
+7. Reassess the route if the scope changes during execution.
 
-### Idioma
+Activate a guide from a combination of intent, files, and risk. A word in documentation, a lockfile, or an example does not by itself prove a stack or activate a guide.
 
-A ordem de decisão é:
+Useful questions:
 
-1. idioma explicitamente pedido pelo usuário;
-2. `language` em `PROJECT_PROFILE.md`;
-3. PT-BR como fallback.
+- What behavior or artifact will change?
+- Is there a human interface, sensitive data, critical path, or external system?
+- Which files will change?
+- Which checks will demonstrate the result?
+- Did the user explicitly request a standard or domain?
 
-Use somente a coluna selecionada do catálogo. Não carregue PT-BR e English juntos para obter “mais contexto”. A contraparte serve para outro idioma e para manutenção de paridade.
+## Canonical catalog
 
-### Evidência de ativação
+| ID | Guide | Responsibility |
+| --- | --- | --- |
+| `premium` | [Premium websites](./ENG/premium-sites-studio-eng.md) | End-to-end delivery of high-quality websites and web experiences |
+| `clean` | [Clean code](./ENG/clean-code-eng.md) | Structure, readability, observability, and maintenance |
+| `test` | [Testing](./ENG/test-code-eng.md) | Risk-driven verification strategy and tooling |
+| `security` | [Security](./ENG/sec-code-eng.md) | Web, API, mobile, desktop, data, and supply-chain security |
+| `design` | [Design](./ENG/design-code-eng.md) | Visual direction, UX, motion, and perceived performance |
+| `performance` | [Performance](./ENG/perf-code-eng.md) | Measurement, diagnosis, budgets, and optimization |
+| `accessibility` | [Accessibility](./ENG/accessibility-eng.md) | WCAG, keyboard access, focus, semantics, and assistive technology |
+| `games` | [Web games](./ENG/games-code-design-web-eng.md) | Architecture and operation of 2D, 3D, and procedural web games |
 
-Ative por combinação de intenção, arquivos e risco. Uma palavra isolada em documentação, lockfile ou exemplo não comprova uma stack nem ativa automaticamente um guia.
+## Domain rules
 
-Perguntas úteis:
+### `clean` — code and structure
 
-- Qual comportamento ou artefato será alterado?
-- Existe interface humana, dado sensível, caminho crítico ou sistema externo?
-- Quais arquivos serão modificados?
-- Quais verificações demonstrarão o resultado?
-- O usuário pediu explicitamente um padrão ou domínio?
+**Activate when:** creating or modifying code, fixing a bug, refactoring, changing architecture, reviewing quality, or producing development instructions.
 
-## Catálogo canônico
+**Do not activate merely because:** documentation contains code snippets but no software behavior changes.
 
-| ID | Português | English | Responsabilidade |
+**Usually combine with:** `test`; add `security`, `performance`, `design`, or `accessibility` according to the affected surface.
+
+Locate relevant sections first:
+
+```bash
+rg -n '^## (Style|Comments|Tests|Dependencies|Structure|Logging|Debugging)|responsibility|typing|errors' ENG/clean-code-eng.md
+```
+
+**Expected evidence:** a small readable diff, coherent interfaces, error handling, tests, and official checks.
+
+### `test` — verification strategy
+
+**Activate when:** behavior changes, a bug is fixed, an integration or release changes, executable configuration changes, or QA is requested.
+
+**Do not activate merely because:** prose names a testing framework without executing or changing software.
+
+**Usually combine with:** every guide that produces behavior; use the domain to choose test levels.
+
+```bash
+rg -n '^## |risk|regression|unit|integration|E2E|accessibility|load|CI' ENG/test-code-eng.md
+```
+
+**Expected evidence:** a RED reproduction when applicable, a GREEN targeted check, and proportional regression coverage.
+
+### `security` — trust and external surfaces
+
+**Activate when:** authentication, authorization, untrusted input, APIs, databases, uploads, secrets, dependencies, CI/CD, mobile or desktop platforms, cryptography, personal data, payments, or publication are involved.
+
+**Do not activate merely because:** a reference mentions OWASP or security without changing a trust surface.
+
+**Usually combine with:** `clean` and `test`; add `performance` when controls affect latency or availability.
+
+```bash
+rg -n '^## |authentication|authorization|upload|SSRF|CSP|OAuth|JWT|secrets|supply chain|mobile|desktop' ENG/sec-code-eng.md
+```
+
+**Expected evidence:** explicit trust boundaries, server-side validation, least privilege, no secrets in Git, and negative tests.
+
+### `performance` — measurable cost
+
+**Activate when:** the request involves latency, scale, a critical path, rendering, bundles, databases, networking, memory, battery, load, Web Vitals, FPS, or a budget.
+
+**Do not activate merely because:** every task could theoretically be faster. Avoid speculative optimization without a risk or metric.
+
+**Usually combine with:** the main domain guide and `test`.
+
+```bash
+rg -n '^## |baseline|budget|p75|p95|Web Vitals|profil|database|mobile|desktop|load' ENG/perf-code-eng.md
+```
+
+**Expected evidence:** a baseline, a hypothesis, comparable before-and-after measurement, and no functional regression.
+
+### `design` — interface and experience
+
+**Activate when:** creating, redesigning, or reviewing UI, layout, components, visual identity, motion, responsive behavior, mobile or desktop apps, or premium experiences.
+
+**Do not activate merely because:** an interface-free API uses the word "design" in architecture documentation.
+
+**Usually combine with:** `accessibility`, `test`, and `performance`; use `security` for forms, authentication, and external content.
+
+```bash
+rg -n '^## |palette|typography|layout|mobile|motion|components|checklist' ENG/design-code-eng.md
+```
+
+**Expected evidence:** complete states, coherent hierarchy, responsive behavior, visual validation, and fallbacks for optional enhancements.
+
+### `accessibility` — inclusive completion
+
+**Activate when:** work affects an interface, audiovisual content, navigation, forms, interactive components, games, mobile or desktop apps, or task completion.
+
+**Do not activate merely because:** an internal service transports normalized data and changes neither user-facing content nor a consumed contract.
+
+**Usually combine with:** `design` and `test`; add the interface domain guide.
+
+```bash
+rg -n '^## |WCAG|keyboard|focus|contrast|ARIA|screen reader|motion|Definition of Done' ENG/accessibility-eng.md
+```
+
+**Expected evidence:** semantics, keyboard operation, focus, contrast, zoom and reflow, reduced motion, and compatible manual or automated tests.
+
+### `premium` — complete website production
+
+**Activate when:** creating or comprehensively reviewing a landing page, institutional site, portfolio, campaign, or web experience that requires studio-quality delivery.
+
+**Do not activate when:** the task is an isolated component, an API, or technical maintenance without a complete website process.
+
+**Usually combine with:** `design`, `accessibility`, `clean`, `test`, `security`, and `performance`.
+
+```bash
+rg -n '^## [0-9]+\.|brief|content|direction|design system|implementation|quality|launch' ENG/premium-sites-studio-eng.md
+```
+
+**Expected evidence:** approved strategy, content, direction, production, quality, launch, and operation gates.
+
+### `games` — web game architecture and operation
+
+**Activate when:** designing, implementing, testing, or operating a 2D or 3D web game, procedural generation, game loops, assets, input, multiplayer, or game distribution.
+
+**Do not activate when:** "game" means lightweight gamification in an ordinary interface; use the UI and code guides instead.
+
+**Usually combine with:** `clean`, `test`, `security`, `performance`, and `accessibility`; add `design` for UI and visual direction.
+
+```bash
+rg -n '^## |game loop|procedural|input|assets|audio|multiplayer|WASM|PWA|CI/CD' ENG/games-code-design-web-eng.md
+```
+
+**Expected evidence:** verifiable simulation, determinism when promised, capability fallbacks, budgets, accessibility, and release gates.
+
+## Work-type matrix
+
+| Work | Primary guide | Common complements | Exclude when |
 | --- | --- | --- | --- |
-| `premium` | [Sites premium](./PT-BR/premium-sites-studio-pt.md) | [Premium websites](./ENG/premium-sites-studio-eng.md) | Processo integral de sites e experiências web de alto padrão |
-| `clean` | [Código limpo](./PT-BR/clean-code-pt.md) | [Clean code](./ENG/clean-code-eng.md) | Estrutura, legibilidade, observabilidade e manutenção |
-| `test` | [Testes](./PT-BR/test-code-pt.md) | [Testing](./ENG/test-code-eng.md) | Estratégia e ferramentas de verificação orientadas a risco |
-| `security` | [Segurança](./PT-BR/sec-code-pt.md) | [Security](./ENG/sec-code-eng.md) | Web, APIs, mobile, desktop, dados e supply chain |
-| `design` | [Design](./PT-BR/design-code-pt.md) | [Design](./ENG/design-code-eng.md) | Direção visual, UX, motion e performance percebida |
-| `performance` | [Performance](./PT-BR/perf-code-pt.md) | [Performance](./ENG/perf-code-eng.md) | Medição, diagnóstico, budgets e otimização |
-| `accessibility` | [Acessibilidade](./PT-BR/acessibilidade-code-pt.md) | [Accessibility](./ENG/accessibility-eng.md) | WCAG, teclado, foco, semântica e tecnologia assistiva |
-| `games` | [Games web](./PT-BR/games-code-design-web-pt.md) | [Web games](./ENG/games-code-design-web-eng.md) | Arquitetura e operação de games 2D, 3D e procedurais |
+| Documentation change | Relevant domain | `test` only for executable examples or commands | No software behavior exists |
+| Code or bug without UI | `clean` | `test`; risk may add `security` or `performance` | The surface is unchanged |
+| Backend, API, or data | `clean` | `test`, `security`; `performance` for a critical path | That layer does not exist |
+| Web, mobile, or desktop UI | `design` | `accessibility`, `clean`, `test`; risk defines the rest | Users cannot observe the change |
+| Complete website | `premium` | `design`, `accessibility`, `clean`, `test`, `security`, `performance` | The deliverable is not a complete site |
+| Web game | `games` | `clean`, `test`, `security`, `performance`, `accessibility`; `design` with UI | The product is not a game |
+| HTML video or motion | `design` | `accessibility`, `performance`, `test`, `security` | There is no audiovisual composition |
+| Infrastructure or CI/CD | `security` | `test`; `performance` when availability or cost changes | The change is non-executable prose |
 
-## Regras por guia
+HyperFrames is optional and may be used only when requested or already available and appropriate. A reference to it does not authorize installation.
 
-Os comandos de localização abaixo mostram o caminho PT-BR por ser o default. Quando o idioma selecionado for English, execute a mesma busca no caminho inglês correspondente do catálogo; não leia primeiro o arquivo português.
+## Verifiable scenarios
 
-### `clean` — código e estrutura
+Route comments are stable contracts for the validator. They contain IDs, not loading instructions.
 
-**Ative quando:** criar ou modificar código, corrigir bug, refatorar, alterar arquitetura, revisar qualidade ou produzir instruções de desenvolvimento.
-
-**Não ative apenas porque:** o repositório contém snippets em uma documentação sem mudança de código.
-
-**Combine normalmente com:** `test`; acrescente `security`, `performance`, `design` ou `accessibility` conforme a superfície.
-
-**Localize primeiro:**
-
-```bash
-rg -n '^## (Estilo|Comentários|Testes|Dependências|Estrutura|Logging|Debugging)|responsabilidade|tipagem|erros' PT-BR/clean-code-pt.md
-```
-
-**Evidência esperada:** diff pequeno e legível, interfaces coerentes, tratamento de erro, testes e checks oficiais.
-
-### `test` — estratégia de verificação
-
-**Ative quando:** houver comportamento novo ou alterado, correção de bug, integração, release, mudança de configuração executável ou pedido de QA.
-
-**Não ative apenas porque:** um texto cita um framework de testes sem executar ou alterar software.
-
-**Combine normalmente com:** todo guia que produza comportamento; use o domínio para decidir os níveis de teste.
-
-**Localize primeiro:**
-
-```bash
-rg -n '^## |risco|regressão|unit|integração|E2E|acessibilidade|carga|CI' PT-BR/test-code-pt.md
-```
-
-**Evidência esperada:** reprodução RED quando aplicável, check específico GREEN e regressão proporcional.
-
-### `security` — confiança e superfícies externas
-
-**Ative quando:** houver autenticação, autorização, entrada não confiável, API, banco, upload, secrets, dependências, CI/CD, mobile/desktop, criptografia, dados pessoais, pagamento ou publicação.
-
-**Não ative apenas porque:** um arquivo menciona OWASP ou segurança em uma referência sem alterar superfície de confiança.
-
-**Combine normalmente com:** `clean` e `test`; acrescente `performance` quando controles afetarem latência ou disponibilidade.
-
-**Localize primeiro:**
-
-```bash
-rg -n '^## |autenticação|autorização|upload|SSRF|CSP|OAuth|JWT|secrets|supply chain|mobile|desktop' PT-BR/sec-code-pt.md
-```
-
-**Evidência esperada:** limites de confiança explícitos, validação no servidor, least privilege, nenhum secret no Git e testes negativos.
-
-### `performance` — custo mensurável
-
-**Ative quando:** o pedido envolver lentidão, escala, caminho crítico, renderização, bundle, banco, rede, memória, bateria, carga, Web Vitals, FPS ou budget.
-
-**Não ative apenas porque:** toda tarefa poderia teoricamente ser “mais rápida”. Sem risco ou métrica, evite otimização especulativa.
-
-**Combine normalmente com:** `test`; use `design` para performance percebida e `security` para disponibilidade/abuso.
-
-**Localize primeiro:**
-
-```bash
-rg -n '^## |baseline|budget|p75|p95|Web Vitals|profil|banco|mobile|desktop|carga' PT-BR/perf-code-pt.md
-```
-
-**Evidência esperada:** baseline, hipótese, medição comparável antes/depois e ausência de regressão funcional.
-
-### `design` — interface e experiência
-
-**Ative quando:** criar, redesenhar ou revisar UI, layout, componente, identidade visual, motion, responsividade, app mobile/desktop ou experiência premium.
-
-**Não ative apenas porque:** uma API sem interface possui a palavra “design” em documentação arquitetural.
-
-**Combine normalmente com:** `accessibility`, `test` e `performance`; use `security` para formulários, autenticação e conteúdo externo.
-
-**Localize primeiro:**
-
-```bash
-rg -n '^## |paleta|tipografia|layout|mobile|motion|componentes|checklist' PT-BR/design-code-pt.md
-```
-
-**Evidência esperada:** estados completos, hierarquia coerente, responsividade, validação visual e fallback para aprimoramentos opcionais.
-
-### `accessibility` — acesso equivalente
-
-**Ative quando:** houver interface, conteúdo audiovisual, navegação, formulário, componente interativo, game, app mobile/desktop ou alteração que possa afetar conclusão de tarefa.
-
-**Não ative apenas porque:** um serviço interno sem interface transporta dados já normalizados e não muda conteúdo ou contrato consumido por usuários.
-
-**Combine normalmente com:** `design` e `test`; acrescente o guia do domínio da interface.
-
-**Localize primeiro:**
-
-```bash
-rg -n '^## |WCAG|teclado|foco|contraste|ARIA|leitor|motion|Definition of Done' PT-BR/acessibilidade-code-pt.md
-```
-
-**Evidência esperada:** semântica, teclado, foco, contraste, zoom/reflow, reduced motion e teste manual/automatizado compatível.
-
-### `premium` — produção completa de site
-
-**Ative quando:** criar ou revisar integralmente landing page, site institucional, portfólio, campanha ou experiência web que exija padrão de estúdio.
-
-**Não ative quando:** a tarefa é um componente isolado, uma API ou manutenção técnica sem processo completo de site.
-
-**Combine normalmente com:** `design`, `accessibility`, `clean`, `test`, `security` e `performance`.
-
-**Localize primeiro:**
-
-```bash
-rg -n '^## [0-9]+\.|brief|conteúdo|direção|design system|implementação|qualidade|lançamento' PT-BR/premium-sites-studio-pt.md
-```
-
-**Evidência esperada:** gates de estratégia, conteúdo, direção, produção, qualidade, lançamento e operação aprovados.
-
-### `games` — runtime e produto de game web
-
-**Ative quando:** projetar, implementar, testar ou operar game web 2D/3D, geração procedural, game loop, assets, input, multiplayer ou distribuição do jogo.
-
-**Não ative quando:** “game” aparece apenas como gamificação simples de uma interface comum; nesse caso use os guias de UI e código.
-
-**Combine normalmente com:** `clean`, `test`, `security`, `performance` e `accessibility`; acrescente `design` para UI e direção visual.
-
-**Localize primeiro:**
-
-```bash
-rg -n '^## |game loop|procedural|input|assets|áudio|multiplayer|WASM|PWA|CI/CD' PT-BR/games-code-design-web-pt.md
-```
-
-**Evidência esperada:** simulação verificável, determinismo quando prometido, fallback de capacidade, budgets, acessibilidade e gates de release.
-
-## Matriz por tipo de trabalho
-
-| Trabalho | Guia principal | Complementares normalmente necessários | Excluir quando |
-| --- | --- | --- | --- |
-| Alteração documental | Guia do domínio | `test` somente se exemplos/comandos forem executáveis | Não há comportamento de software |
-| Código ou bug sem UI | `clean` | `test`; `security` e `performance` pelo risco | Superfície não foi alterada |
-| Backend/API/dados | `clean` | `test`, `security`; `performance` para caminho crítico | Não existe aquela camada |
-| UI web/mobile/desktop | `design` | `accessibility`, `clean`, `test`; risco define os demais | Mudança não alcança usuário |
-| Site completo | `premium` | `design`, `accessibility`, `clean`, `test`, `security`, `performance` | Entrega não é um site integral |
-| Game web | `games` | `clean`, `test`, `security`, `performance`, `accessibility`; `design` com UI | Produto não é game |
-| Vídeo/motion HTML | `design` | `accessibility`, `performance`, `test`, `security` | Não há composição audiovisual |
-| Infra/CI/CD | `security` | `test`; `performance` quando disponibilidade/custo mudar | Alteração é texto não executável |
-
-HyperFrames é opcional e só deve ser usado quando solicitado ou já disponível e adequado. Sua presença em referências não autoriza instalação.
-
-## Cenários verificáveis
-
-Os comentários de rota são contratos estáveis para o validador. Eles registram IDs, não caminhos ou instruções de carregamento.
-
-### Landing page premium
+### Premium landing page
 
 <!-- route:landing-page-premium=premium,design,accessibility,clean,test,security,performance -->
 
-Verificar brief, conteúdo, UI responsiva, estados, WCAG, build, testes, Web Vitals, formulários, analytics e lançamento.
+Verify the brief, content, responsive UI, states, WCAG coverage, build, tests, Web Vitals, forms, analytics, launch, and operation.
 
-### API com autenticação
+### Authenticated API
 
 <!-- route:api-auth=clean,test,security,performance -->
 
-Verificar contratos HTTP, validação, autenticação/autorização, testes negativos, persistência, rate limiting, observabilidade e latência do caminho crítico.
+Verify HTTP contracts, input validation, authentication and authorization, negative tests, persistence, rate limiting, observability, and critical-path latency.
 
-### Bug sem interface
+### Bug without UI
 
-<!-- route:bug-sem-interface=clean,test -->
+<!-- route:bug-without-ui=clean,test -->
 
-Começar com reprodução e teste de regressão. Ativar `security` ou `performance` somente se a causa ou a correção alcançar essas superfícies.
+Start with reproduction and a regression test. Activate `security` or `performance` only if the cause or fix reaches those surfaces.
 
-### App mobile com UI
+### Mobile app with UI
 
 <!-- route:app-mobile-ui=clean,test,design,accessibility,security,performance -->
 
-Verificar plataforma nativa/cross-platform real, estados, gestos, teclado/foco, acessibilidade, armazenamento, rede, bateria, memória e testes em alvo compatível.
+Verify the actual native or cross-platform target, states, gestures, keyboard and focus behavior, accessibility, storage, networking, battery, memory, and tests on a compatible target.
 
-### Game web multiplayer
+### Multiplayer web game
 
 <!-- route:game-web-multiplayer=games,clean,test,security,performance,accessibility,design -->
 
-Verificar game loop, servidor autoritativo, reconciliação, input, assets, fallback, budgets, acessibilidade, segurança e release.
+Verify the game loop, authoritative server, reconciliation, input, assets, fallbacks, budgets, accessibility, security, and release process.
 
-### Alteração documental
+### Documentation
 
-<!-- route:documentacao=domain -->
+<!-- route:documentation=domain -->
 
-`domain` significa o único guia de domínio implicado pela alteração. Verificar Markdown, links, caminhos, comandos, exemplos e paridade quando a regra normativa mudar.
+`domain` means the single domain guide implicated by the change. Verify Markdown, links, paths, commands, and examples.
 
-## Mudança de rota
+## Route changes
 
-Se a investigação revelar nova superfície, atualize o conjunto antes de editar essa área. Registre apenas a justificativa concisa; não crie log versionado por tarefa.
+If investigation reveals a new surface, update the guide set before editing that area. Record only the concise reason; do not create a versioned task log.
 
-Se um guia aplicável estiver ausente ou inacessível, use defaults conservadores, não invente conteúdo e declare a limitação na entrega.
+If an applicable guide is missing or inaccessible, use conservative defaults, do not invent its content, and disclose the limitation in the delivery.

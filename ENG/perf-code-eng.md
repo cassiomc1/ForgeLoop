@@ -1,7 +1,6 @@
 ---
 name: perf-code-eng
 language: en
-counterpart: ../PT-BR/perf-code-pt.md
 description: "Performance measurement, diagnosis, and improvement for web, mobile, desktop, APIs, and data."
 version: "2026.08"
 last-reviewed: "2026-08-08"

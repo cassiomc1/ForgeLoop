@@ -1,242 +1,246 @@
-# Arquitetura do Loop Universal de Projeto
+# Universal Engineering Loop — System Design
 
-Status: implementado e validado em `2026-08-08`.
+**Status:** Implemented and validated on 2026-08-08.
 
-## Objetivo
+## Objective
 
-Transformar esta coleção em um kit portátil de instruções para projetos futuros. Depois de copiar o kit para um repositório, qualquer pedido recebido por um agente compatível deve entrar em um ciclo de descoberta, seleção de guias, execução, verificação e correção.
+Turn this collection into a portable instruction kit for future projects. After the kit is copied into a repository, requests handled by a compatible agent enter a cycle of discovery, guide selection, execution, verification, and correction.
 
-O sistema deve aproveitar todos os guias que forem úteis para a tarefa sem carregar documentos irrelevantes, duplicar PT-BR e inglês no mesmo contexto ou substituir instruções específicas do projeto por defaults genéricos.
+The system should use every guide that materially helps the task without loading irrelevant documents or replacing project-specific instructions with generic defaults.
 
-## Decisões principais
+## Primary decisions
 
-- O pacote será universal para Codex, Claude Code, Cursor e GitHub Copilot.
-- A implementação inicial será baseada em Markdown e nos mecanismos nativos de instrução de cada agente; não exigirá CLI, runtime ou dependência.
-- O português será o idioma operacional padrão. O perfil do projeto ou o pedido do usuário poderá selecionar inglês.
-- Somente uma variante linguística de cada guia será carregada durante uma tarefa.
-- O agente deverá usar todos os guias aplicáveis, não todos os arquivos indiscriminadamente.
-- O perfil persistente armazenará somente fatos verificáveis do projeto e nunca secrets, tokens ou credenciais.
-- O loop continuará enquanto houver progresso seguro. Repetições sem nova evidência provocarão reavaliação da hipótese ou declaração de bloqueio, não tentativas infinitas.
+- The package supports Codex, Claude Code, Cursor, and GitHub Copilot.
+- The initial implementation uses Markdown and each agent's native instruction mechanism; it requires no runtime or dependency.
+- English is the only language used by repository content and guide metadata.
+- The agent uses all applicable guides, not every file indiscriminately.
+- The persistent project profile stores only verifiable facts and never secrets, tokens, or credentials.
+- The loop continues while safe progress is possible. Repetition without new evidence triggers hypothesis reassessment or a blocked result, not infinite retries.
+- Third-party provenance and reuse boundaries remain part of every portable copy.
 
-## Alternativas consideradas
+## Alternatives considered
 
-### Arquivo único
+### One large file
 
-Unir loop, roteamento e conteúdo técnico em um arquivo grande facilitaria a cópia, mas aumentaria o consumo de contexto, duplicaria os guias e dificultaria manutenção e paridade. Não será adotado.
+Combining the loop, routing rules, and technical content would simplify copying but increase context use, duplicate guide material, and make maintenance harder. This option was rejected.
 
-### Adaptadores com roteamento seletivo
+### Thin adapters with canonical modules
 
-Manter entradas pequenas para cada agente, um loop central, um roteador e os guias especializados preserva modularidade e permite selecionar somente o contexto necessário. Esta é a abordagem escolhida.
+Small entry points for each agent, one central loop, one router, and specialized guides preserve modularity and allow the agent to load only relevant context. This is the selected architecture.
 
-### Gerador ou CLI
+### Generated configuration
 
-Uma ferramenta poderia detectar a stack e gerar instruções automaticamente, porém acrescentaria instalação, compatibilidade e manutenção antes de existir necessidade comprovada. Poderá ser uma evolução posterior, mas não integra a primeira versão.
+A tool could detect the stack and generate instructions automatically, but that would add installation, compatibility, and maintenance costs before the need is proven. It may become a later enhancement but is outside the first version.
 
-## Arquitetura
+## Architecture
 
 ```text
-Pedido do usuário
-       |
-       v
-Adaptador do agente
-       |
-       v
-LOOP_ENGINEERING.md
-       |
-       +--> PROJECT_PROFILE.md
-       |
-       +--> GUIDE_ROUTER.md
-                |
-                +--> PT-BR/*.md ou ENG/*.md
-       |
-       v
-Executar -> verificar -> diagnosticar -> corrigir
-       |
-       v
-Resultado final com evidências e limitações
+User request
+    |
+    v
+Nearest agent adapter
+    |
+    +--> LOOP_ENGINEERING.md
+    |        |
+    |        +--> PROJECT_PROFILE.md
+    |        +--> GUIDE_ROUTER.md
+    |                  |
+    |                  +--> ENG/*.md
+    |
+    +--> repository-specific instructions
+    |
+    v
+Discovery -> contract -> route -> change -> targeted check -> regression
+    ^                                                        |
+    +---------------- diagnosis and correction --------------+
+    |
+    v
+Final result with evidence and limitations
 ```
 
-## Componentes
+## Components and responsibilities
 
 ### `AGENTS.md`
 
-Entrada principal para Codex e agentes que reconhecem instruções de repositório. Deve ser curto e ordenar a leitura do loop, do perfil e do roteador antes da execução.
+Primary entry point for Codex and agents that recognize repository instructions. It stays short and requires the loop, profile, and router to be read before execution.
 
 ### `CLAUDE.md`
 
-Adaptador para Claude Code. Deve apontar para a mesma fonte canônica e não repetir as regras do loop.
+Adapter for Claude Code. It points to the same canonical source and does not repeat loop rules.
 
 ### `.github/copilot-instructions.md`
 
-Adaptador do GitHub Copilot. Deve ativar o mesmo contrato operacional e preservar instruções específicas já existentes no projeto de destino.
+GitHub Copilot adapter. It activates the same operational contract while preserving more specific instructions in the destination project.
 
 ### `.cursor/rules/project-loop.mdc`
 
-Adaptador sempre aplicável do Cursor. O conteúdo será mínimo e delegará as decisões ao loop e ao roteador.
+Always-applicable Cursor adapter. It delegates decisions to the loop and router.
 
 ### `LOOP_ENGINEERING.md`
 
-Fonte canônica do ciclo operacional, adaptada do protocolo fornecido pelo usuário. Deverá definir:
+Canonical operational cycle. It defines:
 
-- descoberta e leitura de contexto;
-- transformação do pedido em contrato de execução;
-- planejamento proporcional ao risco;
-- execução em mudanças pequenas;
-- verificação específica por tipo de entrega;
-- diagnóstico por evidência e correção da causa raiz;
-- regressão final;
-- critérios de sucesso e parada;
-- tratamento de ações destrutivas e autoridade externa;
-- formato conciso da entrega final.
+- discovery of repository state and nearby instructions;
+- conversion of the request into an execution contract;
+- risk assessment and authority boundaries;
+- guide selection;
+- small coherent changes;
+- delivery-specific verification;
+- evidence-driven diagnosis and root-cause correction;
+- final regression checks;
+- success and stop conditions;
+- handling of destructive actions and external authority.
 
 ### `GUIDE_ROUTER.md`
 
-Mapa canônico entre sinais do pedido/projeto e os guias aplicáveis. Deve registrar para cada rota:
+Canonical map between request or project signals and applicable guides. Each route records:
 
-- gatilhos;
-- guia principal;
-- guias complementares;
-- seções que normalmente devem ser consultadas;
-- verificações esperadas;
-- condições que desativam a rota.
+- activation signals;
+- exclusions;
+- normal guide combinations;
+- useful search targets;
+- expected verification evidence.
 
 ### `PROJECT_PROFILE.md`
 
-Contexto durável do projeto de destino. Será criado como template e preenchido na primeira descoberta, contendo:
+Durable context for a destination project. The template captures:
 
-- objetivo e tipo de produto;
-- stack e plataformas confirmadas;
-- comandos oficiais de desenvolvimento e qualidade;
-- arquitetura e diretórios relevantes;
-- serviços externos e superfícies de risco;
-- plataformas e navegadores suportados;
-- idioma preferido dos guias;
-- restrições, decisões e itens ainda não verificados;
-- fontes de cada fato relevante.
+- confirmed stack and versions;
+- package manager and official commands;
+- architecture and relevant directories;
+- external services and risk surfaces;
+- test, lint, build, and release commands;
+- documentation and UI conventions;
+- constraints, decisions, and unverified items;
+- a source for every durable fact.
 
-O perfil só será atualizado quando a descoberta revelar mudança real. Ele não funcionará como diário de tarefas.
+The profile changes only when discovery reveals a real project change; it is not a task diary. In this source repository, `profile-mode: template` keeps it as a reusable template. After copying it into a code repository, the first cycle may change the mode to `project` and fill only confirmed facts.
 
-No repositório-fonte, `profile-mode: template` preserva o arquivo como modelo. Ao ser copiado para um projeto com código ou manifests, o primeiro ciclo altera o modo para `project` e preenche somente os fatos confirmados.
+### `ENG/*.md`
 
-### Guias existentes
+Eight canonical guides cover:
 
-Os 8 pares atuais continuam sendo as fontes especializadas:
-
-- sites premium;
-- código limpo;
-- testes;
-- segurança;
-- design;
+- clean code;
+- testing;
+- security;
 - performance;
-- acessibilidade;
-- games web.
+- design;
+- accessibility;
+- premium website production;
+- web games.
 
-Os arquivos PT-BR serão usados por padrão. As contrapartes em inglês serão selecionadas quando o projeto ou o usuário solicitar inglês.
+Each guide has exact English frontmatter and a stable guide ID.
 
-## Roteamento inicial
+### `THIRD_PARTY_NOTICES.md`
 
-| Tipo de trabalho | Guias normalmente ativados |
+Records external provenance, trademarks, licenses, and reuse boundaries. It is required in the repository and in every portable copy.
+
+## Initial routing matrix
+
+| Work type | Guide set |
 | --- | --- |
-| Documentação | domínio relacionado e validações de documentação |
-| Código geral ou correção de bug | código limpo e testes; segurança/performance conforme a superfície alterada |
-| Backend, API, autenticação ou dados | código limpo, testes e segurança; performance para caminhos críticos |
-| Interface web, mobile ou desktop | código limpo, testes, design e acessibilidade; segurança e performance conforme o produto |
-| Site ou landing page completos | sites premium, design, acessibilidade, código limpo, testes, segurança e performance |
-| Game web | games web, código limpo, testes, segurança, performance e acessibilidade; design quando houver UI ou direção visual |
-| Vídeo ou motion HTML | design, acessibilidade, performance, testes e segurança; HyperFrames apenas quando solicitado ou disponível |
-| Infraestrutura ou CI/CD | segurança, testes e performance quando aplicável |
+| Documentation | Related domain and documentation checks |
+| General code or bug fix | `clean`, `test`; add `security` or `performance` when the surface requires it |
+| Backend, API, authentication, or data | `clean`, `test`, `security`; add `performance` for critical paths |
+| Web, mobile, or desktop interface | `clean`, `test`, `design`, `accessibility`; add `security` and `performance` according to product risk |
+| Complete site or landing page | `premium`, `design`, `accessibility`, `clean`, `test`, `security`, `performance` |
+| Web game | `games`, `clean`, `test`, `security`, `performance`, `accessibility`; add `design` for UI or visual direction |
+| HTML video or motion | `design`, `accessibility`, `performance`, `test`, `security`; use HyperFrames only when requested or already available |
+| Infrastructure or CI/CD | `security`, `test`; add `performance` when availability or cost changes |
 
-O roteador deverá usar a intenção e os arquivos realmente alterados. Uma palavra isolada no repositório não será suficiente para ativar uma stack ou um guia.
+Routing uses the request and files actually affected. A single word in the repository is not enough to activate a stack or guide.
 
-## Fluxo de execução
+## Execution flow
 
-1. Ler o adaptador do agente e as instruções mais próximas do diretório em escopo.
-2. Inspecionar manifests, configuração, documentação, testes, CI e estado do Git.
-3. Criar ou atualizar o perfil somente com fatos confirmados.
-4. Converter o pedido em objetivo, entregáveis, restrições, riscos, verificações e condição de parada.
-5. Consultar o roteador e declarar os guias selecionados e o motivo.
-6. Ler somente o idioma e as seções necessários de cada guia.
-7. Planejar de forma proporcional ao tamanho e ao risco da tarefa.
-8. Executar a menor mudança coerente com o objetivo.
-9. Rodar primeiro a verificação específica e depois a regressão proporcional.
-10. Se houver falha, coletar evidência, identificar a causa raiz e repetir com uma correção direcionada.
-11. Concluir apenas com evidências atuais, limitações explícitas e nenhuma mudança não relacionada.
+1. Read the agent adapter and the nearest instructions for the scoped directory.
+2. Inspect manifests, configuration, documentation, tests, CI, and Git state.
+3. Confirm or update the project profile with sourced facts.
+4. Convert the request into an objective, deliverables, constraints, risks, checks, and a stop condition.
+5. Select the guide set in the router.
+6. Read only the required sections of each guide.
+7. Establish a baseline and reproduce the problem when applicable.
+8. Make the smallest coherent change that satisfies the objective.
+9. Run the targeted check first, then proportional regression checks.
+10. On failure, collect evidence, identify the root cause, and repeat with a targeted correction.
+11. Finish only with current evidence, explicit limitations, and no unrelated changes.
 
-## Precedência e conflitos
+## Precedence and conflicts
 
-O sistema respeitará a seguinte ordem:
+The system respects this order:
 
-1. regras da plataforma e do agente hospedeiro;
-2. pedido explícito mais recente do usuário;
-3. instruções específicas e mais próximas do projeto/diretório;
-4. requisitos legais, de segurança e de preservação de dados aplicáveis;
-5. contrato do loop;
-6. decisão do roteador;
-7. defaults dos guias especializados.
+1. platform and safety rules;
+2. the user's latest explicit request;
+3. more specific and nearer repository or directory instructions;
+4. applicable legal, security, and data-preservation requirements;
+5. confirmed project profile facts;
+6. router decisions;
+7. general guide recommendations.
 
-Um guia nunca autoriza instalação, publicação, exclusão, migração ou mudança externa que o usuário não tenha colocado em escopo.
+A guide never authorizes installation, publication, deletion, migration, or an external change that the user did not place in scope.
 
-## Falhas e condições de parada
+## Failures and stop conditions
 
-- Ferramenta ausente: usar equivalente já disponível quando a evidência for compatível; caso contrário, solicitar autorização ou registrar a verificação como não executada.
-- Guia ausente ou link inválido: continuar somente com defaults seguros e declarar a limitação.
-- Perfil desatualizado: verificar novamente os manifests e corrigir somente os fatos afetados.
-- Instruções conflitantes: aplicar a precedência, escolher a interpretação mais conservadora e registrar a decisão material.
-- Falha repetida sem evidência nova: interromper a repetição, reavaliar a hipótese e buscar outra forma de diagnóstico.
-- Bloqueio externo: concluir como bloqueado ou parcialmente verificado, sem alegar sucesso.
+- **Missing tool:** use an available equivalent only when it provides compatible evidence; otherwise request approval or report the check as not run.
+- **Missing guide or broken link:** continue only with conservative defaults and disclose the limitation.
+- **Missing credential:** report the blocked capability without exposing or inventing a credential.
+- **Conflicting instructions:** apply precedence, choose the most conservative interpretation, and record any material decision.
+- **Repeated failure without new evidence:** stop repeating the same action, reassess the hypothesis, and use another diagnostic method.
+- **External or destructive action:** proceed only with explicit authority and an exact validated target.
 
-## Validação do próprio sistema
+## Validation of the instruction system
 
-O workflow documental deverá verificar:
+The documentation workflow verifies:
 
-- existência de todos os arquivos referenciados pelos adaptadores;
-- links relativos contidos no repositório;
-- presença dos 8 pares no roteador;
-- ausência de referências simultâneas a PT-BR e inglês em uma mesma rota operacional;
-- consistência dos nomes e contrapartes dos guias;
-- Markdown e frontmatter válidos;
-- ausência de secrets e placeholders acidentais nos templates.
+- every file referenced by an adapter exists;
+- repository-relative links resolve;
+- exactly eight canonical English guides exist;
+- guide IDs, filenames, frontmatter keys, and `language: en` match the catalog;
+- no legacy language tree or bilingual metadata remains;
+- maintained repository content is English-only;
+- all route contracts contain valid guide IDs;
+- Markdown and frontmatter are valid;
+- secrets and credential-like assignments are absent;
+- `THIRD_PARTY_NOTICES.md` is present.
 
-Também serão exercitados cenários de roteamento:
+The validator also exercises six routing scenarios:
 
-1. landing page premium;
-2. API com autenticação;
-3. correção de bug sem interface;
-4. app mobile com UI;
-5. game web multiplayer;
-6. alteração apenas documental.
+1. premium landing page;
+2. authenticated API;
+3. bug fix without UI;
+4. mobile app with UI;
+5. multiplayer web game;
+6. documentation-only change.
 
-## Distribuição
+## Distribution
 
-A primeira versão não terá instalador. O usuário poderá baixar o repositório ou um arquivo de release e copiar os adaptadores, o loop, o roteador, o perfil e as pastas de guias preservando a estrutura relativa.
+The first version has no installer. A user may download the repository or a release archive and copy these items while preserving their relative structure:
 
-O README deverá explicar:
+- the four agent adapters;
+- `LOOP_ENGINEERING.md`;
+- `GUIDE_ROUTER.md`;
+- `PROJECT_PROFILE.md`;
+- `THIRD_PARTY_NOTICES.md`;
+- the `ENG/` guide directory.
 
-- quais arquivos copiar;
-- como escolher o idioma;
-- como preencher o perfil;
-- como confirmar que o agente carregou o loop;
-- como atualizar o kit sem sobrescrever decisões específicas do projeto.
+The README explains the file set, activation behavior, first-run profile flow, local validation commands, and safe update practice. A future installer is possible only if manual copying proves materially difficult.
 
-Um instalador poderá ser criado futuramente se a cópia manual demonstrar atrito real.
+## Out of scope
 
-## Fora do escopo inicial
+- remote prompt services or databases;
+- mandatory orchestration frameworks;
+- infinite or unattended execution beyond agent limits;
+- automatic tool installation;
+- automatic modification of global computer files;
+- duplication of complete guides inside adapters;
+- versioned logs for every request.
 
-- serviço remoto ou banco de dados de prompts;
-- telemetria de tarefas;
-- execução infinita ou autônoma fora dos limites do agente;
-- instalação automática de ferramentas;
-- modificação automática de arquivos globais do computador;
-- duplicação integral dos guias dentro dos adaptadores;
-- criação de logs versionados para cada pedido.
+## Acceptance criteria
 
-## Critérios de aceitação
-
-- Um novo projeto consegue ativar o loop somente copiando os arquivos documentados.
-- Codex, Claude Code, Cursor e Copilot possuem entradas finas para a mesma fonte canônica.
-- O roteador seleciona todos os guias relevantes e exclui os irrelevantes nos seis cenários definidos.
-- Somente um idioma de cada guia é usado por execução.
-- O perfil contém fatos verificáveis, fontes e comandos reais, sem secrets.
-- O loop exige evidência antes de afirmar conclusão e possui saída segura para bloqueios.
-- As validações documentais e estruturais passam no CI.
-- O pacote não altera comandos, dependências ou comportamento do projeto de destino sem necessidade e autorização aplicável.
+- The repository and its maintained content are English-only.
+- Codex, Claude Code, Cursor, and Copilot have thin entries into one canonical loop.
+- The router selects every relevant guide and excludes irrelevant guides in the six defined scenarios.
+- The profile contains verifiable facts, sources, and real commands without secrets.
+- The loop requires evidence before completion claims and exits safely when blocked.
+- Structural, language, Markdown, link, and secret checks pass locally and in CI.
+- Portable-copy instructions always include third-party notices.
+- The package does not alter destination commands, dependencies, or behavior without need and applicable authority.

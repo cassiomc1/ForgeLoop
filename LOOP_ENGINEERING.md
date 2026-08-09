@@ -1,78 +1,87 @@
-# Loop Engineering — Protocolo Universal de Execução
+# Loop Engineering — Universal Execution Protocol
 
-> Fonte canônica do ciclo operacional deste kit. Os adaptadores dos agentes apenas apontam para este arquivo; as regras técnicas especializadas permanecem nos guias selecionados por [`GUIDE_ROUTER.md`](./GUIDE_ROUTER.md).
+> Canonical operating cycle for this kit. Agent adapters point here; specialized
+> technical rules remain in the guides selected through
+> [`GUIDE_ROUTER.md`](./GUIDE_ROUTER.md).
 
-## Princípio central
+## Core principle
 
-Nunca trate o pedido como uma instrução isolada nem considere a primeira solução plausível como conclusão.
-
-```text
-RECEBER PEDIDO
-      ↓
-DESCOBRIR CONTEXTO
-      ↓
-DEFINIR CONTRATO
-      ↓
-SELECIONAR GUIAS
-      ↓
-PLANEJAR → EXECUTAR → VERIFICAR
-                         ↓
-              ┌──────────┴──────────┐
-              │                     │
-            PASSOU                FALHOU
-              │                     │
-     REGRESSÃO PROPORCIONAL   DIAGNOSTICAR CAUSA
-              │                     │
-          CONCLUIR          CORRIGIR E VERIFICAR
-```
-
-O objetivo do loop é produzir feedback real até satisfazer critérios objetivos. Ele não autoriza execução infinita, expansão de escopo ou ações externas não solicitadas.
-
-## Contrato de execução
-
-Antes de alterar arquivos, transforme internamente o pedido em um contrato proporcional à tarefa:
+Never treat a request as an isolated instruction or the first plausible answer
+as completion.
 
 ```text
-OBJETIVO
-Estado observável que precisa existir ao final.
-
-CONTEXTO
-Arquivos, módulos, serviços, dados, dependências e regras relevantes.
-
-ENTREGÁVEIS
-Mudanças, artefatos ou respostas esperadas.
-
-RESTRIÇÕES
-O que não pode ser quebrado, removido, publicado ou assumido.
-
-RISCOS
-Regressões, segurança, dados, compatibilidade e efeitos externos.
-
-VERIFICAÇÃO
-Checks capazes de demonstrar o resultado.
-
-SUCESSO
-Condições objetivas que devem ser verdadeiras.
-
-PARADA
-Sucesso verificado ou bloqueio externo genuíno.
+RECEIVE REQUEST
+      ↓
+DISCOVER CONTEXT
+      ↓
+DEFINE CONTRACT
+      ↓
+SELECT GUIDES
+      ↓
+PLAN → EXECUTE → VERIFY
+                    ↓
+          ┌─────────┴─────────┐
+          │                   │
+        PASSED              FAILED
+          │                   │
+PROPORTIONAL REGRESSION   DIAGNOSE CAUSE
+          │                   │
+       FINISH          CORRECT AND VERIFY
 ```
 
-Não interrompa o usuário para perguntar algo que possa ser descoberto com segurança no projeto. Peça decisão quando alternativas legítimas produzirem resultados materialmente diferentes, quando faltar autoridade ou quando a ação for destrutiva.
+The loop creates real feedback until objective criteria are met. It does not
+authorize infinite execution, scope expansion, or unrequested external action.
 
-### Classifique o pedido
+## Execution contract
 
-- **Responder, explicar ou revisar:** inspecione e entregue evidências; não faça alterações implícitas.
-- **Diagnosticar:** reproduza e determine a causa; só implemente a correção quando ela estiver no escopo.
-- **Criar ou alterar:** implemente, teste e documente em proporção ao risco.
-- **Publicar ou operar sistemas externos:** confirme o alvo e a autorização antes da mudança.
-- **Excluir ou sobrescrever:** resolva exatamente o alvo, prefira alternativa recuperável e valide o resultado.
+Before changing files, translate the request into a contract proportional to
+the task:
 
-A instrução explícita mais recente do usuário substitui pedidos anteriores incompatíveis, mas não amplia silenciosamente o escopo.
+```text
+OBJECTIVE
+Observable state that must exist at the end.
 
-## Descoberta do projeto
+CONTEXT
+Relevant files, modules, services, data, dependencies, and rules.
 
-Leia primeiro as instruções mais próximas do diretório em escopo. Depois procure somente o que existir e for relevante:
+DELIVERABLES
+Expected changes, artifacts, or answers.
+
+CONSTRAINTS
+What must not be broken, removed, published, or assumed.
+
+RISKS
+Regression, security, data, compatibility, and external effects.
+
+VERIFICATION
+Checks capable of demonstrating the result.
+
+SUCCESS
+Objective conditions that must be true.
+
+STOP
+Verified success or a genuine external blocker.
+```
+
+Do not interrupt the user for information that can be discovered safely in the
+project. Request a decision when legitimate alternatives produce materially
+different outcomes, authority is missing, or the action is destructive.
+
+### Classify the request
+
+- **Answer, explain, or review:** inspect and report evidence; do not make implicit changes.
+- **Diagnose:** reproduce and determine the cause; implement only when a fix is in scope.
+- **Create or change:** implement, test, and document in proportion to risk.
+- **Publish or operate external systems:** confirm the target and authority before changing state.
+- **Delete or overwrite:** resolve the exact target, prefer recoverable methods, and verify the result.
+
+The user's latest explicit instruction replaces incompatible earlier requests
+but does not silently broaden scope.
+
+## Project discovery
+
+Read the closest instructions for the directory in scope. Then inspect only
+sources that exist and are relevant:
 
 ```text
 AGENTS.md
@@ -94,230 +103,236 @@ src/
 tests/
 ```
 
-Descubra antes de inferir:
+Discover before inferring:
 
-- produto, stack, plataformas e arquitetura;
-- comandos oficiais de desenvolvimento, lint, teste, typecheck e build;
-- CI, release, deploy e ambientes;
-- estado do Git e alterações preexistentes;
-- serviços externos, persistência e superfícies de segurança;
-- navegadores, dispositivos e requisitos de acessibilidade;
-- decisões específicas do projeto.
+- product, stack, platforms, and architecture;
+- official development, lint, test, typecheck, and build commands;
+- CI, release, deployment, and environments;
+- Git state and pre-existing changes;
+- external services, persistence, and security surfaces;
+- browsers, devices, and accessibility requirements;
+- project-specific decisions.
 
-Pesquisa textual por uma tecnologia não prova que ela está ativa. Confirme por manifests, imports, configuração, execução ou documentação autoritativa.
+A text reference to a technology does not prove it is active. Confirm it through
+manifests, imports, configuration, execution, or authoritative documentation.
 
-### Perfil persistente
+### Persistent profile
 
-Use [`PROJECT_PROFILE.md`](./PROJECT_PROFILE.md) como cache de fatos duráveis:
+Use [`PROJECT_PROFILE.md`](./PROJECT_PROFILE.md) as a cache of durable facts:
 
-1. verifique a fonte antes de registrar ou alterar um fato;
-2. mantenha fatos desconhecidos como não verificados;
-3. cite caminho, comando ou evidência;
-4. nunca grave secrets ou credenciais;
-5. não transforme o perfil em diário de tarefas;
-6. preserve decisões explícitas até evidência mais recente substituí-las.
+1. verify a source before recording or changing a fact;
+2. leave unknown facts unverified;
+3. cite a path, command, or other evidence;
+4. never record secrets or credentials;
+5. do not turn the profile into a task log;
+6. preserve explicit decisions until newer evidence replaces them.
 
-Se o perfil e o repositório divergirem, o estado verificável atual prevalece e o perfil deve ser corrigido no menor escopo possível.
+When the profile conflicts with the repository, current verifiable state wins.
+Correct only the affected profile facts.
 
-## Seleção de guias
+## Guide selection
 
-Leia [`GUIDE_ROUTER.md`](./GUIDE_ROUTER.md) depois da descoberta e antes do plano.
+Read [`GUIDE_ROUTER.md`](./GUIDE_ROUTER.md) after discovery and before planning.
 
-Regras obrigatórias:
+Required rules:
 
-- selecione todos os guias aplicáveis à intenção, às superfícies alteradas e aos riscos;
-- não carregue todos os arquivos por precaução;
-- use somente PT-BR ou somente English durante a mesma execução;
-- use o idioma pedido pelo usuário; na ausência dele, use o perfil; sem perfil verificado, use PT-BR;
-- leia primeiro títulos e seções localizadas com `rg`; carregue o documento inteiro apenas quando a tarefa realmente atravessar todo o domínio;
-- anuncie brevemente os guias selecionados e o motivo;
-- trate referências opcionais como opções, nunca como instalação automática.
+- select all guides applicable to the intent, changed surfaces, and risks;
+- do not load every guide as a precaution;
+- locate headings and relevant sections with `rg` before reading a long file;
+- read the whole guide only when the task crosses the whole domain;
+- briefly report the selected guide IDs and reason;
+- treat optional references as options, never as permission to install them.
 
-Um guia fornece defaults especializados. Ele não substitui requisitos explícitos do produto, instruções mais próximas, evidência do código ou regras superiores do agente hospedeiro.
+A guide provides specialized defaults. It does not replace explicit product
+requirements, closer instructions, code evidence, or higher-level host rules.
 
-## Planejamento proporcional
+## Proportional planning
 
-### Tarefa simples
-
-```text
-Objetivo → mudança pequena → check específico → revisão final
-```
-
-### Tarefa média
+### Simple task
 
 ```text
-Objetivo → investigação → plano curto → etapas verificáveis
-→ regressão relacionada → revisão final
+Objective → small change → specific check → final review
 ```
 
-### Tarefa complexa
+### Medium task
 
 ```text
-Objetivo → mapa do sistema → riscos e dependências → subtarefas
-→ validação por subtarefa → integração → regressão ampla
+Objective → investigation → short plan → verifiable steps
+→ related regression checks → final review
 ```
 
-Cada etapa deve produzir um resultado testável. Divida componentes por responsabilidade e mantenha interfaces explícitas. Não crie planos extensos para mudanças triviais nem esconda trabalho complexo em uma única etapa vaga.
+### Complex task
 
-## Loop de execução
+```text
+Objective → system map → risks and dependencies → subtasks
+→ per-subtask validation → integration → broad regression
+```
 
-1. Confirme o objetivo e a condição de sucesso.
-2. Colete a menor quantidade de contexto suficiente.
-3. Preserve alterações do usuário e mantenha o escopo do diff.
-4. Para bugs, reproduza a falha e capture evidência antes da correção, quando viável.
-5. Faça a menor mudança coerente que trate a causa ou entregue a capacidade.
-6. Execute o check específico.
-7. Se falhar, diagnostique antes de editar novamente.
-8. Quando o check específico passar, execute regressão proporcional.
-9. Inspecione o resultado e o diff completo.
-10. Conclua somente com evidência atual.
+Every step must produce a testable result. Split components by responsibility
+and keep interfaces explicit. Do not create extensive plans for trivial changes
+or hide complex work in one vague step.
 
-Não agrupe alterações independentes enquanto a causa ainda estiver incerta. Não refatore grandes áreas apenas porque poderiam ser melhores.
+## Execution loop
 
-## Verificação e regressão
+1. Confirm the objective and success condition.
+2. Collect the smallest sufficient context.
+3. Preserve user changes and keep the diff scoped.
+4. For bugs, reproduce the failure and capture evidence before fixing it when practical.
+5. Make the smallest coherent change that addresses the cause or delivers the capability.
+6. Run the specific check.
+7. If it fails, diagnose before editing again.
+8. After the specific check passes, run proportional regression checks.
+9. Inspect the result and the complete diff.
+10. Finish only with current evidence.
 
-Escolha verificações que correspondam ao artefato e ao risco.
+Do not bundle independent changes while the cause remains uncertain. Do not
+refactor large areas merely because they could be improved.
 
-### Código
+## Verification and regression
 
-Quando existirem no projeto:
+Choose checks that match the artifact and risk.
 
-- teste específico e teste de regressão;
-- lint e formatação;
+### Code
+
+- focused and regression tests;
+- lint and formatting;
 - typecheck;
-- build de produção;
-- imports, erros de runtime e contratos públicos;
-- compatibilidade e edge cases relevantes.
+- production build;
+- imports, runtime errors, and public contracts;
+- relevant compatibility and edge cases.
 
-### Backend, APIs e dados
+### Backend, APIs, and data
 
-- status e payloads;
-- autenticação e autorização;
-- validação, persistência e idempotência;
-- migrations, constraints, índices e rollback;
-- integrações reais ou doubles adequados ao nível do teste;
-- logs sem secrets ou dados sensíveis.
+- status codes and payloads;
+- authentication and authorization;
+- validation, persistence, and idempotency;
+- migrations, constraints, indexes, and rollback;
+- real integrations or doubles appropriate to the test level;
+- logs without secrets or sensitive data.
 
 ### Interfaces
 
-- estados normal, loading, vazio, erro e disabled;
-- responsividade e ausência de overflow;
-- teclado, foco, contraste e tecnologia assistiva aplicável;
-- console do navegador;
-- integração com APIs;
-- medição em produção e dispositivo/navegador alvo quando exigida.
+- normal, loading, empty, error, and disabled states;
+- responsiveness and lack of overflow;
+- keyboard, focus, contrast, and applicable assistive technology;
+- browser console;
+- API integration;
+- production and target-device measurement when required.
 
-### Infraestrutura e automação
+### Infrastructure and automation
 
-- sintaxe e schema;
-- permissões e variáveis;
-- plano de rollback;
+- syntax and schema;
+- permissions and variables;
+- rollback plan;
 - health checks;
-- execução equivalente à CI quando possível.
+- CI-equivalent execution when practical.
 
-### Documentação
+### Documentation
 
-- consistência com o estado real;
-- comandos e caminhos;
-- links e referências;
-- exemplos;
-- Markdown, idioma e paridade aplicável.
+- consistency with real state;
+- commands and paths;
+- links and references;
+- examples;
+- Markdown and language.
 
-A regressão deve crescer com o risco: check específico, testes relacionados e, quando razoável, suíte, build e validação de integração.
+Regression depth grows with risk: specific check, related tests, then suite,
+build, and integration validation when reasonable.
 
-## Correção orientada por evidências
-
-Quando algo falhar:
-
-```text
-FALHA
-  ↓
-COLETAR SAÍDA COMPLETA
-  ↓
-IDENTIFICAR CAUSA RAIZ
-  ↓
-FORMULAR HIPÓTESE TESTÁVEL
-  ↓
-APLICAR MENOR CORREÇÃO
-  ↓
-RODAR CHECK ESPECÍFICO
-  ↓
-RODAR REGRESSÃO
-```
-
-Evite alterações aleatórias e não esconda uma falha reduzindo a cobertura da verificação.
-
-Se a mesma hipótese falhar novamente sem evidência nova:
-
-1. pare de repetir a tentativa;
-2. revise premissas, logs e limites do ambiente;
-3. procure uma verificação independente;
-4. mude a estratégia ou declare o bloqueio real.
-
-Uma verificação indisponível não passa por ausência. Use uma ferramenta equivalente já disponível quando ela produzir evidência compatível; caso contrário, solicite autorização para instalar ou registre a limitação.
-
-## Precedência
-
-Quando houver conflito, aplique:
-
-1. regras da plataforma e do agente hospedeiro;
-2. pedido explícito mais recente do usuário;
-3. instruções específicas mais próximas do arquivo ou módulo;
-4. requisitos legais, de segurança e de preservação de dados;
-5. este contrato de loop;
-6. decisão do roteador;
-7. defaults dos guias especializados.
-
-Dentro do escopo técnico, priorize:
+## Evidence-driven correction
 
 ```text
-correção → não regressão → segurança → requisito do produto
-→ simplicidade → performance medida → elegância
+FAILURE
+  ↓
+COLLECT COMPLETE OUTPUT
+  ↓
+IDENTIFY ROOT CAUSE
+  ↓
+FORM A TESTABLE HYPOTHESIS
+  ↓
+APPLY THE SMALLEST FIX
+  ↓
+RUN THE SPECIFIC CHECK
+  ↓
+RUN REGRESSION CHECKS
 ```
 
-Um guia nunca concede autoridade para instalar, publicar, excluir, migrar dados, alterar produção, enviar mensagens ou expor informações.
+Avoid random edits and never hide a failure by weakening verification.
 
-## Condições de parada
+If the same hypothesis fails again without new evidence:
 
-O loop termina somente em uma destas condições:
+1. stop repeating the attempt;
+2. review assumptions, logs, and environment boundaries;
+3. seek an independent check;
+4. change strategy or report the genuine blocker.
 
-### Sucesso verificado
+An unavailable check does not pass by absence. Use an available equivalent when
+it produces compatible evidence; otherwise request installation authority or
+record the limitation.
 
-- requisito principal atendido;
-- checks aplicáveis executados e aprovados;
-- regressões relevantes não encontradas;
-- diff revisado e restrito ao escopo;
-- documentação atualizada quando necessária;
-- limitações residuais declaradas.
+## Precedence
 
-### Bloqueio externo genuíno
+Apply conflicts in this order:
 
-- falta uma decisão de produto material;
-- falta autorização para ação externa ou destrutiva;
-- credencial, serviço, dispositivo ou ambiente indispensável está indisponível;
-- uma verificação essencial não possui alternativa segura;
-- o ambiente impede progresso após diagnóstico e tentativas distintas.
+1. platform and host-agent rules;
+2. the user's latest explicit request;
+3. the closest project, directory, or file instructions;
+4. legal, security, and data-preservation requirements;
+5. this loop contract;
+6. the router decision;
+7. specialized guide defaults.
 
-Dificuldade, lentidão, incerteza inicial ou preferência por mais contexto não são bloqueios por si só.
-
-## Entrega final
-
-Use o menor relatório que preserve a evidência.
+Within technical scope, prioritize:
 
 ```text
-STATUS: CONCLUÍDO | PARCIALMENTE VERIFICADO | BLOQUEADO
-
-Entregue:
-- arquivos ou comportamento alterado.
-
-Verificado:
-- comandos/checks e resultados objetivos.
-
-Limitações:
-- o que não foi comprovado e por quê.
-
-Publicação:
-- estado de commit, push, PR, merge ou deploy, quando aplicável.
+correctness → no regression → security → product requirement
+→ simplicity → measured performance → elegance
 ```
 
-Nunca afirme que um teste, build, plataforma, dispositivo ou integração passou sem ter executado uma verificação compatível. A resposta final deve ser autossuficiente e distinguir implementação local de publicação externa.
+A guide never grants authority to install, publish, delete, migrate data, change
+production, send messages, or expose information.
+
+## Stop conditions
+
+### Verified success
+
+- the primary requirement is met;
+- applicable checks were run and passed;
+- no relevant regression was found;
+- the diff was reviewed and remains scoped;
+- documentation was updated when necessary;
+- residual limitations are declared.
+
+### Genuine external blocker
+
+- a material product decision is missing;
+- authority for an external or destructive action is missing;
+- an indispensable credential, service, device, or environment is unavailable;
+- an essential check has no safe alternative;
+- the environment prevents progress after diagnosis and distinct attempts.
+
+Difficulty, slowness, initial uncertainty, or a preference for more context are
+not blockers by themselves.
+
+## Final delivery
+
+Use the shortest report that preserves evidence:
+
+```text
+STATUS: COMPLETE | PARTIALLY VERIFIED | BLOCKED
+
+Delivered:
+- changed files or behavior.
+
+Verified:
+- commands, checks, and objective results.
+
+Limitations:
+- what was not proven and why.
+
+Publication:
+- commit, push, pull request, merge, or deployment state when applicable.
+```
+
+Never claim that a test, build, platform, device, or integration passed without
+a compatible check. The final response must distinguish local implementation
+from external publication.
