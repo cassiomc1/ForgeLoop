@@ -1,0 +1,30 @@
+{
+  "name": "@cassiomc1/mdfiles",
+  "version": "0.1.0",
+  "description": "Portable, verifiable instruction kit for AI agents and developers",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "mdfiles": "src/cli.js"
+  },
+  "files": [
+    "src",
+    "ENG",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "GUIDE_ROUTER.md",
+    "LOOP_ENGINEERING.md",
+    "LOOP_SYSTEM_DESIGN.md",
+    "PROJECT_PROFILE.md",
+    "THIRD_PARTY_NOTICES.md",
+    ".cursor",
+    ".github/copilot-instructions.md",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "pack:check": "npm pack --dry-run"
+  }
+}
