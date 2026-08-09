@@ -83,7 +83,7 @@ export const AGENT_SUPPORT = Object.freeze([
     name: "Freebuff",
     support: "agents-md",
     instructionFiles: ["AGENTS.md"],
-    officialDocs: "https://github.com/CodebuffAI/codebuff/blob/main/common/src/constants/knowledge.ts",
+    officialDocs: "https://github.com/CodebuffAI/freebuff/blob/main/common/src/constants/knowledge.ts",
     notes: "Recognizes AGENTS.md as a project knowledge file alongside knowledge.md and CLAUDE.md.",
   }),
 ]);

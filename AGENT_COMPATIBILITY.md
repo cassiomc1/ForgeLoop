@@ -17,7 +17,7 @@ install an agent, configure a provider, or run a live model session.
 | Hermes | `AGENTS.md` compatibility | `AGENTS.md` | [Hermes — Context files](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/context-files.md) |
 | Pi | `AGENTS.md` compatibility | `AGENTS.md` | [Pi — Coding-agent SDK and context files](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/sdk.md) |
 | Command Code | `AGENTS.md` compatibility | `AGENTS.md` | [Command Code — Memory](https://commandcode.ai/docs/core-concepts/memory) |
-| Freebuff | `AGENTS.md` compatibility | `AGENTS.md` | [Freebuff/Codebuff — Knowledge file names](https://github.com/CodebuffAI/codebuff/blob/main/common/src/constants/knowledge.ts) |
+| Freebuff | `AGENTS.md` compatibility | `AGENTS.md` | [Freebuff — Knowledge file names](https://github.com/CodebuffAI/freebuff/blob/main/common/src/constants/knowledge.ts) |
 
 ## What direct and compatibility mean
 
