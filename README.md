@@ -8,8 +8,9 @@ accessibility, design, and web games across web, mobile, and desktop projects.
 
 The files are Markdown and can be used as references, as a foundation for
 `AGENTS.md`, `CLAUDE.md`, `.cursor/rules`, and
-`.github/copilot-instructions.md`. Adopt only the guides relevant to the target
-project.
+`.github/copilot-instructions.md`. The supported-agent contract is documented
+in [`AGENT_COMPATIBILITY.md`](./AGENT_COMPATIBILITY.md). Adopt only the guides
+relevant to the target project.
 
 ## Catalog
 
@@ -43,8 +44,11 @@ Request → discovery → profile → routing → plan → execution
         → verification → correction when needed → final evidence
 ```
 
-Thin adapters support Codex-compatible agents, Claude Code, Cursor, and GitHub
-Copilot while delegating to the same canonical documents.
+Thin native adapters support Codex, Claude Code, Cursor, and GitHub Copilot.
+Antigravity, OpenCode, Hermes, Pi, Command Code, and Freebuff use the shared
+`AGENTS.md` entry point. All ten agents delegate to the same canonical
+documents; see [`AGENT_COMPATIBILITY.md`](./AGENT_COMPATIBILITY.md) for the
+official sources and precedence notes.
 
 ### Use with npm
 
@@ -57,8 +61,22 @@ npx @cassiomc1/mdfiles doctor
 npx @cassiomc1/mdfiles update
 ```
 
-Use `--path /path/to/project` to target another directory and `--dry-run` to
-preview writes. The CLI records managed files and their hashes in
+The commands above use the current directory. To install into another existing
+project directory, pass a relative or absolute `--path`:
+
+```bash
+# Existing project relative to the current directory
+npx @cassiomc1/mdfiles init --path ./my-project
+npx @cassiomc1/mdfiles doctor --path ./my-project
+npx @cassiomc1/mdfiles update --path ./my-project
+
+# Existing project at an absolute path
+npx @cassiomc1/mdfiles init --path /path/to/my-project
+```
+
+The target must already exist and be a directory; the CLI will not create or
+replace an arbitrary path. Use `--dry-run` to preview writes before `init` or
+`update`. The CLI records managed files and their hashes in
 `.mdfiles/manifest.json`; `update` leaves locally modified files and
 `PROJECT_PROFILE.md` untouched.
 
@@ -71,6 +89,7 @@ while preserving relative paths:
 ```text
 AGENTS.md
 CLAUDE.md
+AGENT_COMPATIBILITY.md
 LOOP_ENGINEERING.md
 GUIDE_ROUTER.md
 PROJECT_PROFILE.md
@@ -107,6 +126,11 @@ files yet.
 A useful response cites profile evidence, selected guide IDs, and real project
 commands. A generic response that does not mention the loop, router, or sources
 indicates that the adapter was not loaded.
+
+After installation, start the preferred agent from the target project
+directory. Use `AGENT_COMPATIBILITY.md` to confirm which file it should load and
+which native entry point is expected. A live agent session is not required for
+package installation or its automated tests.
 
 ### Update the kit
 
@@ -147,8 +171,9 @@ adoption. Local rendering requires Node.js 22+ and FFmpeg.
 
 ```text
 .
-├── AGENTS.md                       # Codex-compatible agent entry point
+├── AGENTS.md                       # shared Codex-compatible entry point
 ├── CLAUDE.md                       # Claude Code entry point
+├── AGENT_COMPATIBILITY.md          # supported agents and official sources
 ├── LOOP_ENGINEERING.md             # canonical operating cycle
 ├── GUIDE_ROUTER.md                 # contextual guide selection
 ├── PROJECT_PROFILE.md              # verified project facts

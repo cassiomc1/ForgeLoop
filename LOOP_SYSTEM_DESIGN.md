@@ -10,7 +10,10 @@ The system should use every guide that materially helps the task without loading
 
 ## Primary decisions
 
-- The package supports Codex, Claude Code, Cursor, and GitHub Copilot.
+- The package supports Codex, Claude Code, Cursor, GitHub Copilot, Antigravity,
+  OpenCode, Hermes, Pi, Command Code, and Freebuff.
+- Codex, Claude Code, Cursor, and GitHub Copilot use native entry files; the
+  other six agents consume the shared `AGENTS.md` entry point.
 - The initial implementation uses Markdown and each agent's native instruction mechanism; it requires no runtime or dependency.
 - English is the only language used by repository content and guide metadata.
 - The agent uses all applicable guides, not every file indiscriminately.
@@ -75,6 +78,12 @@ GitHub Copilot adapter. It activates the same operational contract while preserv
 ### `.cursor/rules/project-loop.mdc`
 
 Always-applicable Cursor adapter. It delegates decisions to the loop and router.
+
+### `AGENT_COMPATIBILITY.md`
+
+Human-readable support matrix for all ten agents. It explains each native entry
+file, the shared `AGENTS.md` compatibility contract, official documentation,
+precedence caveats, and the deterministic verification boundary.
 
 ### `LOOP_ENGINEERING.md`
 
@@ -212,16 +221,21 @@ The validator also exercises six routing scenarios:
 
 ## Distribution
 
-The first version has no installer. A user may download the repository or a release archive and copy these items while preserving their relative structure:
+The public npm CLI installs the kit into the current directory or an existing
+directory selected with `--path`. A user may also download the repository or a
+release archive and copy these items while preserving their relative structure:
 
-- the four agent adapters;
+- the four native agent adapters plus `AGENT_COMPATIBILITY.md`;
+- the shared `AGENTS.md` entry point for the six compatible agents;
 - `LOOP_ENGINEERING.md`;
 - `GUIDE_ROUTER.md`;
 - `PROJECT_PROFILE.md`;
 - `THIRD_PARTY_NOTICES.md`;
 - the `ENG/` guide directory.
 
-The README explains the file set, activation behavior, first-run profile flow, local validation commands, and safe update practice. A future installer is possible only if manual copying proves materially difficult.
+The README explains the file set, activation behavior, current/relative/absolute
+target installation, first-run profile flow, local validation commands, and safe
+update practice.
 
 ## Out of scope
 
@@ -236,7 +250,8 @@ The README explains the file set, activation behavior, first-run profile flow, l
 ## Acceptance criteria
 
 - The repository and its maintained content are English-only.
-- Codex, Claude Code, Cursor, and Copilot have thin entries into one canonical loop.
+- All ten supported agents have a documented entry into one canonical loop,
+  with native adapters distinguished from shared `AGENTS.md` compatibility.
 - The router selects every relevant guide and excludes irrelevant guides in the six defined scenarios.
 - The profile contains verifiable facts, sources, and real commands without secrets.
 - The loop requires evidence before completion claims and exits safely when blocked.
