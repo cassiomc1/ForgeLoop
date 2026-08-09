@@ -13,6 +13,7 @@ export const TEMPLATE_PATHS = [
   "GUIDE_ROUTER.md",
   "PROJECT_PROFILE.md",
   "LOOP_SYSTEM_DESIGN.md",
+  "AGENT_COMPATIBILITY.md",
   "THIRD_PARTY_NOTICES.md",
   "ENG/accessibility-eng.md",
   "ENG/clean-code-eng.md",

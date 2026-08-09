@@ -7,6 +7,8 @@ import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
+import { TEMPLATE_PATHS } from "../src/core/templates.js";
+
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const cliPath = path.join(repositoryRoot, "src", "cli.js");
 
@@ -19,11 +21,15 @@ async function withTarget(run) {
   }
 }
 
-function runCli(target, ...args) {
+function runCliFrom(cwd, target, ...args) {
   return spawnSync(process.execPath, [cliPath, ...args, "--path", target], {
-    cwd: repositoryRoot,
+    cwd,
     encoding: "utf8",
   });
+}
+
+function runCli(target, ...args) {
+  return runCliFrom(repositoryRoot, target, ...args);
 }
 
 test("init copies canonical files and creates a manifest", async () => {
@@ -103,4 +109,21 @@ test("init dry-run does not write files", async () => {
     assert.match(result.stdout, /would create|dry-run/i);
     assert.deepEqual(await readdir(target), []);
   });
+});
+
+test("init installs all templates only in the selected target", async () => {
+  const caller = await mkdtemp(path.join(os.tmpdir(), "mdfiles-caller-"));
+  const target = await mkdtemp(path.join(os.tmpdir(), "mdfiles-target-"));
+  try {
+    const result = runCliFrom(caller, target, "init");
+
+    assert.equal(result.status, 0, result.stderr);
+    for (const relativePath of TEMPLATE_PATHS) {
+      await readFile(path.join(target, relativePath), "utf8");
+    }
+    assert.deepEqual(await readdir(caller), []);
+  } finally {
+    await rm(caller, { recursive: true, force: true });
+    await rm(target, { recursive: true, force: true });
+  }
 });
