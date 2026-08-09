@@ -104,3 +104,15 @@ test("init dry-run does not write files", async () => {
     assert.deepEqual(await readdir(target), []);
   });
 });
+
+test("init installs the compatibility guide only in the selected target", async () => {
+  await withTarget(async (target) => {
+    const result = runCli(target, "init");
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(
+      await readFile(path.join(target, "AGENT_COMPATIBILITY.md"), "utf8"),
+      /Codex/,
+    );
+  });
+});
