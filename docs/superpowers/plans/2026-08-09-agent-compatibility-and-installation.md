@@ -23,12 +23,14 @@
 ### Task 1: Establish the failing compatibility contracts
 
 **Files:**
+
 - Create: `tests/compatibility.test.js`
 - Modify: `tests/cli.test.js`
 - Read: `src/core/templates.js`
 - Read: `docs/superpowers/specs/2026-08-09-agent-compatibility-and-installation-design.md`
 
 **Interfaces:**
+
 - The test will consume `AGENT_SUPPORT` from `src/core/agent-support.js`.
 - The test will consume `TEMPLATE_PATHS` from `src/core/templates.js`.
 - Later tasks must make the test assertions pass without weakening them.
@@ -119,12 +121,14 @@ git commit -m "test: define agent compatibility contracts"
 ### Task 2: Implement the registry and package/template wiring
 
 **Files:**
+
 - Create: `src/core/agent-support.js`
 - Modify: `src/core/templates.js`
 - Modify: `package.json`
 - Test: `tests/compatibility.test.js`
 
 **Interfaces:**
+
 - Produce `AGENT_SUPPORT`, an immutable array of records with fields `id`,
   `name`, `support`, `instructionFiles`, `officialDocs`, and `notes`.
 - Add `AGENT_COMPATIBILITY.md` to `TEMPLATE_PATHS`.
@@ -177,11 +181,13 @@ git commit -m "feat: add agent compatibility registry"
 ### Task 3: Add the installed compatibility guide
 
 **Files:**
+
 - Create: `AGENT_COMPATIBILITY.md`
 - Test: `tests/compatibility.test.js`
 - Test: `tests/cli.test.js`
 
 **Interfaces:**
+
 - The guide must use the registry names and support modes from the spec.
 - The guide must be included by `init`, `doctor`, `update`, and `npm pack` via
   the template and package allowlists from Task 2.
@@ -226,10 +232,12 @@ git commit -m "docs: document supported coding agents"
 ### Task 4: Document target installation and update system design
 
 **Files:**
+
 - Modify: `README.md`
 - Modify: `LOOP_SYSTEM_DESIGN.md`
 
 **Interfaces:**
+
 - README commands must match the existing `parseArgs` contract: `init`,
   `doctor`, `update`, `--path`, `--dry-run`, and `--json`.
 - System design support claims must match `AGENT_SUPPORT` and the guide.
@@ -258,10 +266,12 @@ git commit -m "docs: explain target installation and agent support"
 ### Task 5: Run complete regression and review the diff
 
 **Files:**
+
 - Read: `docs/superpowers/specs/2026-08-09-agent-compatibility-and-installation-design.md`
 - Read: all changed files from Tasks 1–4
 
 **Interfaces:**
+
 - No additional production interface; this task verifies the acceptance
   criteria and records any limitation without weakening tests.
 
