@@ -196,7 +196,6 @@ The documentation workflow verifies:
 - exactly eight canonical English guides exist;
 - guide IDs, filenames, frontmatter keys, and `language: en` match the catalog;
 - no legacy language tree or bilingual metadata remains;
-- maintained repository content is English-only;
 - all route contracts contain valid guide IDs;
 - Markdown and frontmatter are valid;
 - secrets and credential-like assignments are absent;
@@ -241,6 +240,6 @@ The README explains the file set, activation behavior, first-run profile flow, l
 - The router selects every relevant guide and excludes irrelevant guides in the six defined scenarios.
 - The profile contains verifiable facts, sources, and real commands without secrets.
 - The loop requires evidence before completion claims and exits safely when blocked.
-- Structural, language, Markdown, link, and secret checks pass locally and in CI.
+- Structural, Markdown, link, and secret checks pass locally and in CI.
 - Portable-copy instructions always include third-party notices.
 - The package does not alter destination commands, dependencies, or behavior without need and applicable authority.

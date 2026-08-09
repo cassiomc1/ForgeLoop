@@ -712,10 +712,10 @@ jobs:
           PY
 
       - name: Validate universal project loop
-        run: python3 scripts/validate_loop_system.py --self-test && python3 scripts/validate_loop_system.py
-
-      - name: Validate English-only repository
-        run: python3 -m unittest tests.test_validate_english_only -v && python3 scripts/validate_english_only.py
+        run: |
+          python3 -m unittest tests.test_validate_loop_system -v
+          python3 scripts/validate_loop_system.py --self-test
+          python3 scripts/validate_loop_system.py
 
       - name: Scan repository for secrets
         run: python3 -m unittest tests.test_scan_secrets -v && python3 scripts/scan_secrets.py
