@@ -127,7 +127,6 @@ test("init installs all templates only in the selected target", async () => {
     await rm(target, { recursive: true, force: true });
   }
 });
-
 test("top-level help succeeds without a command", async () => {
   await withTarget(async (target) => {
     const result = runCli(target, "--help");
