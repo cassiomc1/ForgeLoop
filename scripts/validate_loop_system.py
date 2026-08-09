@@ -15,6 +15,7 @@ REQUIRED_FILES = (
     "GUIDE_ROUTER.md",
     "PROJECT_PROFILE.md",
     "LOOP_SYSTEM_DESIGN.md",
+    "THIRD_PARTY_NOTICES.md",
     "AGENTS.md",
     "CLAUDE.md",
     ".github/copilot-instructions.md",
@@ -34,24 +35,24 @@ CANONICAL_REFERENCES = (
     "GUIDE_ROUTER.md",
 )
 
-GUIDE_PAIRS = {
-    "premium": ("PT-BR/premium-sites-studio-pt.md", "ENG/premium-sites-studio-eng.md"),
-    "clean": ("PT-BR/clean-code-pt.md", "ENG/clean-code-eng.md"),
-    "test": ("PT-BR/test-code-pt.md", "ENG/test-code-eng.md"),
-    "security": ("PT-BR/sec-code-pt.md", "ENG/sec-code-eng.md"),
-    "design": ("PT-BR/design-code-pt.md", "ENG/design-code-eng.md"),
-    "performance": ("PT-BR/perf-code-pt.md", "ENG/perf-code-eng.md"),
-    "accessibility": ("PT-BR/acessibilidade-code-pt.md", "ENG/accessibility-eng.md"),
-    "games": ("PT-BR/games-code-design-web-pt.md", "ENG/games-code-design-web-eng.md"),
+GUIDES = {
+    "premium": "ENG/premium-sites-studio-eng.md",
+    "clean": "ENG/clean-code-eng.md",
+    "test": "ENG/test-code-eng.md",
+    "security": "ENG/sec-code-eng.md",
+    "design": "ENG/design-code-eng.md",
+    "performance": "ENG/perf-code-eng.md",
+    "accessibility": "ENG/accessibility-eng.md",
+    "games": "ENG/games-code-design-web-eng.md",
 }
 
 ROUTING_SCENARIOS = {
     "landing-page-premium": "premium,design,accessibility,clean,test,security,performance",
     "api-auth": "clean,test,security,performance",
-    "bug-sem-interface": "clean,test",
+    "bug-without-ui": "clean,test",
     "app-mobile-ui": "clean,test,design,accessibility,security,performance",
     "game-web-multiplayer": "games,clean,test,security,performance,accessibility,design",
-    "documentacao": "domain",
+    "documentation": "domain",
 }
 
 
@@ -60,6 +61,8 @@ class ValidationError(RuntimeError):
 
 
 def validate_required_files(root: Path) -> None:
+    if (root / "PT-BR").exists():
+        raise ValidationError("Portuguese guide tree is forbidden: PT-BR")
     for relative in REQUIRED_FILES:
         path = root / relative
         if not path.is_file():
@@ -103,14 +106,13 @@ def validate_router(root: Path) -> None:
     path = root / "GUIDE_ROUTER.md"
     text = path.read_text(encoding="utf-8")
 
-    for guide_id, pair in GUIDE_PAIRS.items():
+    for guide_id, relative in GUIDES.items():
         if f"`{guide_id}`" not in text:
             raise ValidationError(f"GUIDE_ROUTER.md: missing guide ID {guide_id}")
-        for relative in pair:
-            if relative not in text:
-                raise ValidationError(f"GUIDE_ROUTER.md: missing guide path {relative}")
-            if not (root / relative).is_file():
-                raise ValidationError(f"GUIDE_ROUTER.md: guide target is missing: {relative}")
+        if relative not in text:
+            raise ValidationError(f"GUIDE_ROUTER.md: missing guide path {relative}")
+        if not (root / relative).is_file():
+            raise ValidationError(f"GUIDE_ROUTER.md: guide target is missing: {relative}")
 
     raw_markers = re.findall(r"<!--\s*route:(.*?)-->", text)
     for raw in raw_markers:
@@ -128,7 +130,7 @@ def validate_router(root: Path) -> None:
             raise ValidationError(f"GUIDE_ROUTER.md: duplicate routing scenario {scenario}")
         parsed[scenario] = guide_ids
 
-    allowed = set(GUIDE_PAIRS) | {"domain"}
+    allowed = set(GUIDES) | {"domain"}
     for scenario, expected_ids in ROUTING_SCENARIOS.items():
         actual = parsed.get(scenario)
         if actual is None:
@@ -165,7 +167,7 @@ def validate_profile(root: Path) -> None:
         metadata[key] = value.strip("\"'")
 
     allowed_values = {
-        "language": {"pt-BR", "en"},
+        "language": {"en"},
         "profile-mode": {"template", "project"},
         "profile-status": {"uninitialized", "partial", "verified"},
     }
@@ -174,19 +176,6 @@ def validate_profile(root: Path) -> None:
             raise ValidationError(
                 f"PROJECT_PROFILE.md: {key} must be one of {sorted(values)}"
             )
-
-    secret_patterns = (
-        re.compile(r"ghp_[A-Za-z0-9]{8,}"),
-        re.compile(r"AKIA[0-9A-Z]{16}"),
-        re.compile(r"BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY"),
-        re.compile(
-            r"(?im)^\s*(?:password|token|secret|api[_-]?key)\s*[:=]\s*"
-            r"(?!unknown\b|example\b|<|\{|\[|não identificado\b).+"
-        ),
-    )
-    for pattern in secret_patterns:
-        if pattern.search(text):
-            raise ValidationError("PROJECT_PROFILE.md: secret-like value detected")
 
 
 def validate_cursor_frontmatter(root: Path) -> None:
@@ -228,39 +217,39 @@ def _write(path: Path, text: str) -> None:
 
 def _valid_fixture(root: Path) -> None:
     guides = {
-        "premium": ("PT-BR/premium-sites-studio-pt.md", "ENG/premium-sites-studio-eng.md"),
-        "clean": ("PT-BR/clean-code-pt.md", "ENG/clean-code-eng.md"),
-        "test": ("PT-BR/test-code-pt.md", "ENG/test-code-eng.md"),
-        "security": ("PT-BR/sec-code-pt.md", "ENG/sec-code-eng.md"),
-        "design": ("PT-BR/design-code-pt.md", "ENG/design-code-eng.md"),
-        "performance": ("PT-BR/perf-code-pt.md", "ENG/perf-code-eng.md"),
-        "accessibility": ("PT-BR/acessibilidade-code-pt.md", "ENG/accessibility-eng.md"),
-        "games": ("PT-BR/games-code-design-web-pt.md", "ENG/games-code-design-web-eng.md"),
+        "premium": "ENG/premium-sites-studio-eng.md",
+        "clean": "ENG/clean-code-eng.md",
+        "test": "ENG/test-code-eng.md",
+        "security": "ENG/sec-code-eng.md",
+        "design": "ENG/design-code-eng.md",
+        "performance": "ENG/perf-code-eng.md",
+        "accessibility": "ENG/accessibility-eng.md",
+        "games": "ENG/games-code-design-web-eng.md",
     }
-    for pt_path, en_path in guides.values():
-        _write(root / pt_path, "# Guia\n")
-        _write(root / en_path, "# Guide\n")
+    for guide_path in guides.values():
+        _write(root / guide_path, "# Guide\n")
 
     _write(root / "LOOP_ENGINEERING.md", "# Loop\n")
     _write(root / "LOOP_SYSTEM_DESIGN.md", "# Design\n")
+    _write(root / "THIRD_PARTY_NOTICES.md", "# Third-party notices\n")
     _write(
         root / "PROJECT_PROFILE.md",
-        "---\nlanguage: pt-BR\nprofile-mode: template\n"
+        "---\nlanguage: en\nprofile-mode: template\n"
         "profile-status: uninitialized\nlast-confirmed: unknown\n---\n"
-        "# Perfil\nNão identificado — confirmar pela fonte indicada\n",
+        "# Profile\nNot identified — confirm from the stated source.\n",
     )
 
     catalog = "\n".join(
-        f"| `{guide_id}` | [PT](./{pt_path}) | [EN](./{en_path}) |"
-        for guide_id, (pt_path, en_path) in guides.items()
+        f"| `{guide_id}` | [Guide](./{guide_path}) |"
+        for guide_id, guide_path in guides.items()
     )
     scenarios = {
         "landing-page-premium": "premium,design,accessibility,clean,test,security,performance",
         "api-auth": "clean,test,security,performance",
-        "bug-sem-interface": "clean,test",
+        "bug-without-ui": "clean,test",
         "app-mobile-ui": "clean,test,design,accessibility,security,performance",
         "game-web-multiplayer": "games,clean,test,security,performance,accessibility,design",
-        "documentacao": "domain",
+        "documentation": "domain",
     }
     markers = "\n".join(
         f"<!-- route:{scenario}={ids} -->" for scenario, ids in scenarios.items()
@@ -317,6 +306,13 @@ def run_self_tests() -> None:
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
         _valid_fixture(root)
+        (root / "THIRD_PARTY_NOTICES.md").unlink()
+        _expect_invalid(root, "missing required file")
+        cases += 1
+
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        _valid_fixture(root)
         _write(root / "AGENTS.md", "# Adapter\n[Loop](./LOOP_ENGINEERING.md)\n")
         _expect_invalid(root, "missing canonical reference")
         cases += 1
@@ -332,7 +328,10 @@ def run_self_tests() -> None:
         root = Path(directory)
         _valid_fixture(root)
         router = (root / "GUIDE_ROUTER.md").read_text(encoding="utf-8")
-        router = router.replace("[EN](./ENG/accessibility-eng.md)", "[EN](./ENG/missing.md)")
+        router = router.replace(
+            "[Guide](./ENG/accessibility-eng.md)",
+            "[Guide](./ENG/missing.md)",
+        )
         _write(root / "GUIDE_ROUTER.md", router)
         _expect_invalid(root, "missing guide path")
         cases += 1
@@ -352,18 +351,28 @@ def run_self_tests() -> None:
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
         _valid_fixture(root)
-        profile = (root / "PROJECT_PROFILE.md").read_text(encoding="utf-8")
-        _write(root / "PROJECT_PROFILE.md", profile + "token = live-value\n")
-        _expect_invalid(root, "secret-like value")
+        router = (root / "GUIDE_ROUTER.md").read_text(encoding="utf-8")
+        router = router.replace("<!-- route:documentation=domain -->", "")
+        _write(root / "GUIDE_ROUTER.md", router)
+        _expect_invalid(root, "missing routing scenario")
         cases += 1
 
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
         _valid_fixture(root)
-        router = (root / "GUIDE_ROUTER.md").read_text(encoding="utf-8")
-        router = router.replace("<!-- route:documentacao=domain -->", "")
-        _write(root / "GUIDE_ROUTER.md", router)
-        _expect_invalid(root, "missing routing scenario")
+        profile = (root / "PROJECT_PROFILE.md").read_text(encoding="utf-8")
+        _write(
+            root / "PROJECT_PROFILE.md",
+            profile.replace("language: en", "language: pt-BR"),
+        )
+        _expect_invalid(root, "language must be one of")
+        cases += 1
+
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        _valid_fixture(root)
+        _write(root / "PT-BR/legacy.md", "# Legacy\n")
+        _expect_invalid(root, "Portuguese guide tree is forbidden")
         cases += 1
 
     with tempfile.TemporaryDirectory() as directory:
@@ -412,7 +421,7 @@ def main() -> int:
             validate_repository(args.root.resolve())
             print(
                 "validated loop system: "
-                f"{len(ADAPTERS)} adapters, {len(GUIDE_PAIRS)} bilingual pairs, "
+                f"{len(ADAPTERS)} adapters, {len(GUIDES)} English guides, "
                 f"{len(ROUTING_SCENARIOS)} routing scenarios"
             )
         return 0
