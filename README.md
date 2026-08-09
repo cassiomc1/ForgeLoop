@@ -6,10 +6,10 @@ An English-only collection of operational guides for AI agents and developers.
 It covers product strategy, code, testing, security, performance,
 accessibility, design, and web games across web, mobile, and desktop projects.
 
-The files are Markdown and can be used as references or as a foundation for
+The files are Markdown and can be used as references, as a foundation for
 `AGENTS.md`, `CLAUDE.md`, `.cursor/rules`, and
 `.github/copilot-instructions.md`. Adopt only the guides relevant to the target
-project; this collection is not a dependency bundle.
+project.
 
 ## Catalog
 
@@ -46,11 +46,27 @@ Request → discovery → profile → routing → plan → execution
 Thin adapters support Codex-compatible agents, Claude Code, Cursor, and GitHub
 Copilot while delegating to the same canonical documents.
 
+### Use with npm
+
+The public CLI supports Node.js 20 or newer and installs the kit into an
+existing project without overwriting local instructions:
+
+```bash
+npx @cassiomc1/mdfiles init
+npx @cassiomc1/mdfiles doctor
+npx @cassiomc1/mdfiles update
+```
+
+Use `--path /path/to/project` to target another directory and `--dry-run` to
+preview writes. The CLI records managed files and their hashes in
+`.mdfiles/manifest.json`; `update` leaves locally modified files and
+`PROJECT_PROFILE.md` untouched.
+
 ### Install in a target project
 
-Download this private repository as a ZIP or clone it into a temporary
-directory. Copy this structure to the target project's root while preserving
-relative paths:
+If npm is unavailable, download this public repository as a ZIP or clone it
+into a temporary directory. Copy this structure to the target project's root
+while preserving relative paths:
 
 ```text
 AGENTS.md
@@ -138,12 +154,15 @@ adoption. Local rendering requires Node.js 22+ and FFmpeg.
 ├── PROJECT_PROFILE.md              # verified project facts
 ├── LOOP_SYSTEM_DESIGN.md           # architecture and boundaries
 ├── THIRD_PARTY_NOTICES.md          # provenance and rights
+├── LICENSE                         # CLI and validator code license
+├── LICENSE-DOCS.md                 # original documentation license boundary
 ├── ENG/                            # eight English guides
 ├── .cursor/rules/                  # always-active Cursor rule
 ├── .github/copilot-instructions.md # GitHub Copilot entry point
 ├── .github/workflows/              # quality automation
 ├── scripts/                        # structural, language, and secret checks
 ├── tests/                          # validator regression tests
+├── src/                            # npm CLI implementation
 ├── .gitignore                      # ignored local files
 ├── .lychee.toml                    # link-check configuration
 ├── .markdownlint-cli2.jsonc        # Markdown rules
