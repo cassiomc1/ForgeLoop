@@ -294,6 +294,7 @@
 ### Task 7: Run proportional regression and local smoke test
 
 **Files:**
+
 - No source changes expected; inspect the complete diff and generated package list.
 
 - [ ] **Step 1: Run the repository validators**
