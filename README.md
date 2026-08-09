@@ -52,13 +52,24 @@ official sources and precedence notes.
 
 ### Use with npm
 
-The public CLI supports Node.js 20 or newer and installs the kit into an
-existing project without overwriting local instructions:
+The npm CLI targets Node.js 20 or newer and installs the kit into an existing
+project without overwriting local instructions. The package is published when
+the release workflow has completed; until the registry entry is available, use
+the repository checkout fallback below.
 
 ```bash
 npx @cassiomc1/mdfiles init
 npx @cassiomc1/mdfiles doctor
 npx @cassiomc1/mdfiles update
+```
+
+From a repository checkout before npm publication, run the same commands with
+Node directly:
+
+```bash
+node src/cli.js init
+node src/cli.js doctor
+node src/cli.js update
 ```
 
 The commands above use the current directory. To install into another existing
@@ -78,9 +89,12 @@ npx @cassiomc1/mdfiles update --path /path/to/my-project
 
 The target must already exist and be a directory; the CLI will not create or
 replace an arbitrary path. Use `--dry-run` to preview writes before `init` or
-`update`. The CLI records managed files and their hashes in
-`.mdfiles/manifest.json`; `update` leaves locally modified files and
-`PROJECT_PROFILE.md` untouched.
+`update`. `--json` is supported by `doctor` only. The CLI records managed files
+and their hashes in `.mdfiles/manifest.json`; `update` leaves locally modified
+files and `PROJECT_PROFILE.md` untouched. If a target already has a manifest,
+rerun `update` instead of `init`. Symlinked targets or template parents are
+rejected, and `doctor` reports pre-existing adapters that still need a manual
+merge with the loop reference.
 
 ### Install in a target project
 
@@ -145,6 +159,13 @@ instructions. If validators were copied, run:
 python3 scripts/validate_loop_system.py --self-test
 python3 scripts/validate_loop_system.py
 python3 scripts/scan_secrets.py
+```
+
+Run the npm package checks as well:
+
+```bash
+npm test
+npm run pack:check
 ```
 
 Architecture and boundaries are documented in
@@ -240,6 +261,8 @@ pushes and pull requests.
 
 ## Rights and provenance
 
-This collection does not declare a global license. Reuse depends on permission
-from the applicable rights holder and on the conditions recorded in
-[`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md).
+The CLI and validator code use the MIT text in [`LICENSE`](./LICENSE). Original
+documentation uses CC BY 4.0 as described in [`LICENSE-DOCS.md`](./LICENSE-DOCS.md),
+and adapted or externally sourced material remains subject to the conditions in
+[`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md). The npm `license` field
+points to the code license; it does not relicense the bundled documentation.

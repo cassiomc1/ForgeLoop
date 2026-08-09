@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -22,6 +23,9 @@ export function parseArgs(argv) {
   const [command, ...rest] = argv;
   const options = { path: ".", dryRun: false, json: false, help: false };
 
+  if (command === "--help" || command === "-h") {
+    return { command: null, options: { ...options, help: true } };
+  }
   if (!command) return { command: null, options };
   for (let index = 0; index < rest.length; index += 1) {
     const argument = rest[index];
@@ -33,11 +37,21 @@ export function parseArgs(argv) {
       options.json = true;
     } else if (argument === "--path") {
       options.path = rest[index + 1];
-      if (!options.path) throw new Error("--path requires a directory");
+      if (!options.path || options.path.startsWith("-")) throw new Error("--path requires a directory");
       index += 1;
     } else {
       throw new Error(`Unknown option: ${argument}`);
     }
+  }
+
+  if (command === "init" && options.json) {
+    throw new Error("Option --json is not valid for init");
+  }
+  if (command === "update" && options.json) {
+    throw new Error("Option --json is not valid for update");
+  }
+  if (command === "doctor" && options.dryRun) {
+    throw new Error("Option --dry-run is not valid for doctor");
   }
   return { command, options };
 }
@@ -61,7 +75,7 @@ export async function main(argv = process.argv.slice(2)) {
     const { command, options } = parseArgs(argv);
     if (!command || options.help) {
       console.log(usage());
-      return command ? 0 : 1;
+      return options.help ? 0 : 1;
     }
     if (!["init", "doctor", "update"].includes(command)) {
       throw new Error(`Unknown command: ${command}`);

@@ -1,8 +1,7 @@
 import { createHash } from "node:crypto";
-import { mkdir, readFile } from "node:fs/promises";
-import path from "node:path";
+import { readFile } from "node:fs/promises";
 
-import { ensureWithin, fileExists, writeFileAtomic } from "./filesystem.js";
+import { assertSafePath, ensureWithin, fileExists, writeFileAtomic } from "./filesystem.js";
 
 export const MANIFEST_SCHEMA_VERSION = 1;
 const MANIFEST_PATH = ".mdfiles/manifest.json";
@@ -47,6 +46,7 @@ function validateManifest(manifest) {
 }
 
 export async function readManifest(target) {
+  await assertSafePath(target, MANIFEST_PATH);
   const manifestPath = ensureWithin(target, MANIFEST_PATH);
   if (!(await fileExists(manifestPath))) return null;
   let raw;
@@ -60,8 +60,8 @@ export async function readManifest(target) {
 
 export async function writeManifest(target, manifest, { dryRun = false } = {}) {
   validateManifest(manifest);
+  await assertSafePath(target, MANIFEST_PATH);
   const manifestPath = ensureWithin(target, MANIFEST_PATH);
-  if (!dryRun) await mkdir(path.dirname(manifestPath), { recursive: true });
   await writeFileAtomic(
     manifestPath,
     `${JSON.stringify(manifest, null, 2)}\n`,

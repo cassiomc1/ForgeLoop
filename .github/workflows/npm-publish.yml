@@ -22,9 +22,29 @@ jobs:
         with:
           node-version: 22.14.0
           registry-url: https://registry.npmjs.org
+      - name: Verify tag matches package version
+        run: |
+          expected="${GITHUB_REF_NAME#v}"
+          actual="$(node -p "JSON.parse(require('fs').readFileSync('package.json', 'utf8')).version")"
+          test "$expected" = "$actual"
+      - name: Lint Markdown
+        uses: DavidAnson/markdownlint-cli2-action@21c1be1b93ad9ed58fa840aacc3f279cde2a72ff # v24.2.0
+      - name: Check links
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          args: --config .lychee.toml './**/*.md'
+          fail: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Run package tests
         run: npm test
       - name: Verify package contents
         run: npm run pack:check
+      - name: Run repository validators
+        run: |
+          python3 -m unittest discover -s tests -v
+          python3 scripts/validate_loop_system.py --self-test
+          python3 scripts/validate_loop_system.py
+          python3 scripts/scan_secrets.py
       - name: Publish with provenance
         run: npm publish --access public --provenance

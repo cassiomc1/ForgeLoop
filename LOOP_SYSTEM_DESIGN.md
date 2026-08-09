@@ -221,9 +221,11 @@ The validator also exercises six routing scenarios:
 
 ## Distribution
 
-The public npm CLI installs the kit into the current directory or an existing
-directory selected with `--path`. A user may also download the repository or a
-release archive and copy these items while preserving their relative structure:
+The npm CLI installs the kit into the current directory or an existing
+directory selected with `--path` once the package is published. Before that
+release, the same commands can run as `node src/cli.js ...` from a repository
+checkout. A user may also download the repository or a release archive and copy
+these items while preserving their relative structure:
 
 - the four native agent adapters plus `AGENT_COMPATIBILITY.md`;
 - the shared `AGENTS.md` entry point for the six compatible agents;
