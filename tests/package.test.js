@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { test } from "node:test";
 
+import { TEMPLATE_PATHS } from "../src/core/templates.js";
+
 test("npm tarball contains the CLI, templates, and license notices only", () => {
   const output = execFileSync("npm", ["pack", "--dry-run", "--json"], {
     encoding: "utf8",
@@ -10,8 +12,8 @@ test("npm tarball contains the CLI, templates, and license notices only", () => 
 
   for (const expected of [
     "src/cli.js",
-    "ENG/sec-code-eng.md",
-    "AGENTS.md",
+    "src/core/agent-support.js",
+    ...TEMPLATE_PATHS,
     "LICENSE",
     "LICENSE-DOCS.md",
   ]) {

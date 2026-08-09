@@ -199,7 +199,7 @@ documentation. Link each row to the verified official source:
 
 - Codex: `https://developers.openai.com/codex/guides/agents-md`
 - Claude Code: `https://code.claude.com/docs/en/memory`
-- Cursor: `https://docs.cursor.com/context/rules-for-ai`
+- Cursor: `https://cursor.com/docs/rules`
 - GitHub Copilot: `https://docs.github.com/en/copilot/how-tos/configure-custom-instructions-in-your-ide/add-repository-instructions-in-your-ide`
 - Antigravity: `https://antigravity.google/docs/cli/best-practices`
 - OpenCode: `https://opencode.ai/docs/rules/`

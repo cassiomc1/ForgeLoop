@@ -6,18 +6,80 @@ import { test } from "node:test";
 import { AGENT_SUPPORT } from "../src/core/agent-support.js";
 import { TEMPLATE_PATHS } from "../src/core/templates.js";
 
-const expectedIds = [
-  "codex",
-  "claude-code",
-  "cursor",
-  "github-copilot",
-  "antigravity",
-  "opencode",
-  "hermes",
-  "pi",
-  "command-code",
-  "freebuff",
+const expectedAgents = [
+  {
+    id: "codex",
+    name: "Codex",
+    support: "direct",
+    instructionFiles: ["AGENTS.md"],
+    officialDocs: "https://developers.openai.com/codex/guides/agents-md",
+  },
+  {
+    id: "claude-code",
+    name: "Claude Code",
+    support: "direct",
+    instructionFiles: ["CLAUDE.md"],
+    officialDocs: "https://code.claude.com/docs/en/memory",
+  },
+  {
+    id: "cursor",
+    name: "Cursor",
+    support: "direct",
+    instructionFiles: ["AGENTS.md", ".cursor/rules/project-loop.mdc"],
+    officialDocs: "https://cursor.com/docs/rules",
+  },
+  {
+    id: "github-copilot",
+    name: "GitHub Copilot",
+    support: "direct",
+    instructionFiles: [".github/copilot-instructions.md"],
+    officialDocs: "https://docs.github.com/en/copilot/how-tos/configure-custom-instructions-in-your-ide/add-repository-instructions-in-your-ide",
+  },
+  {
+    id: "antigravity",
+    name: "Antigravity",
+    support: "agents-md",
+    instructionFiles: ["AGENTS.md"],
+    officialDocs: "https://antigravity.google/docs/cli/best-practices",
+  },
+  {
+    id: "opencode",
+    name: "OpenCode",
+    support: "agents-md",
+    instructionFiles: ["AGENTS.md"],
+    officialDocs: "https://opencode.ai/docs/rules/",
+  },
+  {
+    id: "hermes",
+    name: "Hermes",
+    support: "agents-md",
+    instructionFiles: ["AGENTS.md"],
+    officialDocs: "https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/context-files.md",
+  },
+  {
+    id: "pi",
+    name: "Pi",
+    support: "agents-md",
+    instructionFiles: ["AGENTS.md"],
+    officialDocs: "https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/sdk.md",
+  },
+  {
+    id: "command-code",
+    name: "Command Code",
+    support: "agents-md",
+    instructionFiles: ["AGENTS.md"],
+    officialDocs: "https://commandcode.ai/docs/core-concepts/memory",
+  },
+  {
+    id: "freebuff",
+    name: "Freebuff",
+    support: "agents-md",
+    instructionFiles: ["AGENTS.md"],
+    officialDocs: "https://github.com/CodebuffAI/freebuff/blob/main/common/src/constants/knowledge.ts",
+  },
 ];
+
+const expectedIds = expectedAgents.map((agent) => agent.id);
 
 test("agent registry covers every supported agent exactly once", () => {
   assert.deepEqual(AGENT_SUPPORT.map((agent) => agent.id), expectedIds);
@@ -26,19 +88,39 @@ test("agent registry covers every supported agent exactly once", () => {
 
 test("agent registry uses valid support records and packaged instruction files", () => {
   for (const agent of AGENT_SUPPORT) {
+    const expected = expectedAgents.find((candidate) => candidate.id === agent.id);
+
     assert.match(agent.name, /\S/);
     assert.ok(["direct", "agents-md"].includes(agent.support));
     assert.ok(agent.instructionFiles.length > 0);
     assert.ok(agent.instructionFiles.every((file) => TEMPLATE_PATHS.includes(file)));
     assert.match(agent.officialDocs, /^https:\/\//);
+    assert.deepEqual(agent.instructionFiles, expected.instructionFiles);
+    assert.equal(agent.name, expected.name);
+    assert.equal(agent.support, expected.support);
+    assert.equal(agent.officialDocs, expected.officialDocs);
   }
 });
 
 test("compatibility guide mirrors every registry entry", async () => {
   const guide = await readFile("AGENT_COMPATIBILITY.md", "utf8");
   for (const agent of AGENT_SUPPORT) {
-    assert.match(guide, new RegExp(`\\| ${agent.name} \\|`));
-    assert.match(guide, new RegExp(`\\| ${agent.name} \\| [^|]+ \\|`));
+    const row = guide
+      .split("\n")
+      .find((line) => line.startsWith(`| ${agent.name} |`));
+    const cells = row?.split("|").slice(1, -1).map((cell) => cell.trim());
+
+    assert.ok(cells, `missing guide row for ${agent.name}`);
+    assert.equal(cells[0], agent.name);
+    assert.equal(
+      cells[1],
+      agent.support === "direct" ? "Direct adapter" : "`AGENTS.md` compatibility",
+    );
+    assert.equal(
+      cells[2],
+      agent.instructionFiles.map((file) => `\`${file}\``).join(", "),
+    );
+    assert.match(cells[3], new RegExp(agent.officialDocs.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
 });
 

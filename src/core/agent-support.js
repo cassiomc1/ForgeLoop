@@ -27,7 +27,7 @@ export const AGENT_SUPPORT = Object.freeze([
     name: "Cursor",
     support: "direct",
     instructionFiles: ["AGENTS.md", ".cursor/rules/project-loop.mdc"],
-    officialDocs: "https://docs.cursor.com/context/rules-for-ai",
+    officialDocs: "https://cursor.com/docs/rules",
     notes: "Uses the always-applicable MDC rule and also supports a root AGENTS.md.",
   }),
   agent({

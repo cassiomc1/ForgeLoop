@@ -10,7 +10,7 @@ install an agent, configure a provider, or run a live model session.
 | --- | --- | --- | --- |
 | Codex | Direct adapter | `AGENTS.md` | [OpenAI — Custom instructions with AGENTS.md](https://developers.openai.com/codex/guides/agents-md) |
 | Claude Code | Direct adapter | `CLAUDE.md` | [Anthropic — How Claude remembers your project](https://code.claude.com/docs/en/memory) |
-| Cursor | Direct adapter | `AGENTS.md`, `.cursor/rules/project-loop.mdc` | [Cursor — Rules](https://docs.cursor.com/context/rules-for-ai) |
+| Cursor | Direct adapter | `AGENTS.md`, `.cursor/rules/project-loop.mdc` | [Cursor — Rules](https://cursor.com/docs/rules) |
 | GitHub Copilot | Direct adapter | `.github/copilot-instructions.md` | [GitHub — Repository custom instructions](https://docs.github.com/en/copilot/how-tos/configure-custom-instructions-in-your-ide/add-repository-instructions-in-your-ide) |
 | Antigravity | `AGENTS.md` compatibility | `AGENTS.md` | [Antigravity — CLI best practices](https://antigravity.google/docs/cli/best-practices) |
 | OpenCode | `AGENTS.md` compatibility | `AGENTS.md` | [OpenCode — Rules](https://opencode.ai/docs/rules/) |

@@ -72,6 +72,8 @@ npx @cassiomc1/mdfiles update --path ./my-project
 
 # Existing project at an absolute path
 npx @cassiomc1/mdfiles init --path /path/to/my-project
+npx @cassiomc1/mdfiles doctor --path /path/to/my-project
+npx @cassiomc1/mdfiles update --path /path/to/my-project
 ```
 
 The target must already exist and be a directory; the CLI will not create or
