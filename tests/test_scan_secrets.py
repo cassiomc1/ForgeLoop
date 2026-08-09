@@ -82,6 +82,9 @@ class SecretScannerTests(unittest.TestCase):
         text = "- OWASP Password Storage: https://example.com/password-storage"
         self.assertEqual([], scan_text(text, Path("fixture.md")))
 
+    def test_accepts_github_actions_id_token_permission(self) -> None:
+        self.assertEqual([], scan_text("id-token: write", Path(".github/workflows/publish.yml")))
+
     def test_diagnostic_does_not_reveal_candidate(self) -> None:
         candidate = "sk" + "-proj-" + "Z" * 32
         finding = scan_text(candidate, Path("docs/example.md"))[0]

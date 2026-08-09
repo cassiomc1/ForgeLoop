@@ -64,6 +64,7 @@ ENVIRONMENT_REFERENCE = re.compile(
     r"^(?:\$[A-Za-z_][A-Za-z0-9_]*|\$\{[^{}]+\}|\$\{\{[^{}]+\}\}|"
     r"%[A-Za-z_][A-Za-z0-9_]*%)$"
 )
+GITHUB_ACTIONS_PERMISSION = re.compile(r"^\.github[\\/]workflows[\\/]")
 SAFE_PLACEHOLDERS = {
     "example",
     "masked",
@@ -117,6 +118,16 @@ def is_placeholder(raw_value: str) -> bool:
     return False
 
 
+def is_github_actions_permission(label: str, value: str, path: Path) -> bool:
+    """Return whether a token-looking YAML permission is non-secret metadata."""
+
+    return (
+        label.strip().casefold() == "id-token"
+        and value.strip().casefold() in {"read", "write", "none"}
+        and bool(GITHUB_ACTIONS_PERMISSION.match(path.as_posix()))
+    )
+
+
 def _add_finding(
     findings: list[Finding],
     seen: set[tuple[str, int]],
@@ -144,6 +155,10 @@ def scan_text(text: str, path: Path) -> list[Finding]:
     for line_number, line in enumerate(text.splitlines(), 1):
         assignment = ASSIGNMENT.fullmatch(line)
         if assignment and SENSITIVE_LABEL.search(assignment.group("label")):
+            if is_github_actions_permission(
+                assignment.group("label"), assignment.group("value"), path
+            ):
+                continue
             if not is_placeholder(assignment.group("value")):
                 _add_finding(
                     findings,

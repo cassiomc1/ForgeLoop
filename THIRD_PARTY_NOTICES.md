@@ -6,11 +6,12 @@ that apply to each resource.
 
 ## Collection license
 
-The collection does not declare a global license. The presence of content in
-this repository does not by itself grant permission to copy, redistribute,
-translate, publish, or commercially exploit the material. Obtain permission
-from the applicable rights holder before reuse unless an identified license
-expressly permits the intended use.
+The CLI and validator code are licensed under the MIT License in `LICENSE`.
+Original documentation is offered under CC BY 4.0 as described in
+`LICENSE-DOCS.md`. Those notices do not relicense adapted or externally sourced
+material: every such component remains subject to the applicable terms and
+attribution recorded below. Review this file before redistributing a guide or
+including it in a commercial product.
 
 ## Identified sources and projects
 

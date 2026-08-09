@@ -2,6 +2,15 @@
   "name": "@cassiomc1/mdfiles",
   "version": "0.1.0",
   "description": "Portable, verifiable instruction kit for AI agents and developers",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cassiomc1/mdfiles.git"
+  },
+  "homepage": "https://github.com/cassiomc1/mdfiles#readme",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "engines": {
     "node": ">=20"
@@ -19,12 +28,14 @@
     "LOOP_SYSTEM_DESIGN.md",
     "PROJECT_PROFILE.md",
     "THIRD_PARTY_NOTICES.md",
+    "LICENSE",
+    "LICENSE-DOCS.md",
     ".cursor",
     ".github/copilot-instructions.md",
     "README.md"
   ],
   "scripts": {
     "test": "node --test tests/*.test.js",
-    "pack:check": "npm pack --dry-run"
+    "pack:check": "node --test tests/package.test.js"
   }
 }
