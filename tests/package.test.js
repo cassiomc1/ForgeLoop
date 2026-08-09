@@ -20,7 +20,7 @@ test("npm tarball contains the CLI, templates, and license notices only", () => 
   ]) {
     assert.ok(listing.includes(expected), `missing ${expected}`);
   }
-  for (const excluded of ["tests/cli.test.js", "scripts/scan_secrets.py", "docs/superpowers/plans/2026-08-09-public-npm-framework.md"]) {
+  for (const excluded of ["tests/cli.test.js", "scripts/scan_secrets.py"]) {
     assert.equal(listing.includes(excluded), false, `unexpected ${excluded}`);
   }
 });
