@@ -1,118 +1,124 @@
 ---
-language: pt-BR
+language: en
 profile-mode: template
 profile-status: uninitialized
 last-confirmed: unknown
 ---
 
-# Perfil do Projeto
+# Project Profile
 
-> Contexto durável para o [Loop Engineering](./LOOP_ENGINEERING.md). Preencha somente com evidência do projeto de destino.
+> Durable context for [Loop Engineering](./LOOP_ENGINEERING.md). Fill it only
+> with evidence from the target project.
 
-## Regras de manutenção
+## Maintenance rules
 
-- Atualize somente após inspecionar arquivos, comandos ou fontes autoritativas.
-- Preserve `profile-mode: template` ao manter o repositório-fonte deste kit. Em um projeto de destino com manifests ou código do produto, altere-o para `project` na primeira descoberta.
-- Registre a fonte de cada fato material.
-- Nunca armazene secrets, tokens, senhas, chaves privadas ou credenciais brutas.
-- Preserve decisões explícitas do projeto até evidência mais recente substituí-las.
-- Altere `profile-status` para `verified` somente quando stack, arquitetura essencial e comandos críticos tiverem evidência.
-- Use `language: pt-BR` ou `language: en` para selecionar uma única variante dos guias.
-- Não use este arquivo como diário de tarefas.
+- Update a fact only after inspecting authoritative files, commands, or sources.
+- Preserve `profile-mode: template` while maintaining this source kit. In a target project with product code or manifests, change it to `project` during the first discovery cycle.
+- Record the source for every material fact.
+- Never store secrets, tokens, passwords, private keys, or raw credentials.
+- Preserve explicit project decisions until newer evidence replaces them.
+- Set `profile-status` to `verified` only when the stack, essential architecture, and critical commands have evidence.
+- Keep `language: en`; this kit has no alternate language variant.
+- Do not use this file as a task diary.
 
-## Produto e objetivo
+## Product and objective
 
-| Campo | Estado atual | Fonte |
+| Field | Current state | Source |
 | --- | --- | --- |
-| Produto | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Usuários | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Resultado principal | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Fora de escopo durável | Não identificado — confirmar pela fonte indicada | Não identificada |
+| Product | Not identified — confirm from the stated source | Source not identified |
+| Users | Not identified — confirm from the stated source | Source not identified |
+| Primary outcome | Not identified — confirm from the stated source | Source not identified |
+| Durable exclusions | Not identified — confirm from the stated source | Source not identified |
 
-## Stack confirmada
+## Confirmed stack
 
-| Camada | Tecnologia e versão | Fonte |
+| Layer | Technology and version | Source |
 | --- | --- | --- |
-| Frontend | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Backend | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Mobile | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Desktop | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Dados | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Infraestrutura | Não identificado — confirmar pela fonte indicada | Não identificada |
+| Frontend | Not identified — confirm from the stated source | Source not identified |
+| Backend | Not identified — confirm from the stated source | Source not identified |
+| Mobile | Not identified — confirm from the stated source | Source not identified |
+| Desktop | Not identified — confirm from the stated source | Source not identified |
+| Data | Not identified — confirm from the stated source | Source not identified |
+| Infrastructure | Not identified — confirm from the stated source | Source not identified |
 
-Ausência de manifest ou configuração deve ser registrada como ausência verificada, não preenchida por menções encontradas em documentação.
+Record a missing manifest or configuration as verified absence. Do not infer a
+stack from technology names found only in documentation or examples.
 
-## Comandos oficiais
+## Official commands
 
-| Finalidade | Comando confirmado | Fonte |
+| Purpose | Confirmed command | Source |
 | --- | --- | --- |
-| Instalação | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Desenvolvimento | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Teste específico | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Testes completos | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Lint/formatação | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Typecheck | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Build | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Validação adicional | Não identificado — confirmar pela fonte indicada | Não identificada |
+| Installation | Not identified — confirm from the stated source | Source not identified |
+| Development | Not identified — confirm from the stated source | Source not identified |
+| Specific test | Not identified — confirm from the stated source | Source not identified |
+| Full test suite | Not identified — confirm from the stated source | Source not identified |
+| Lint and formatting | Not identified — confirm from the stated source | Source not identified |
+| Typecheck | Not identified — confirm from the stated source | Source not identified |
+| Build | Not identified — confirm from the stated source | Source not identified |
+| Additional validation | Not identified — confirm from the stated source | Source not identified |
 
-Nunca invente um comando quando o projeto já declara scripts ou automação oficial.
+Never invent a command when the project already declares official scripts or
+automation.
 
-## Arquitetura e diretórios
+## Architecture and directories
 
-| Área | Caminho ou responsabilidade | Fonte |
+| Area | Path or responsibility | Source |
 | --- | --- | --- |
-| Entrada principal | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Domínio | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Interfaces | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Persistência | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Testes | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Documentação | Não identificado — confirmar pela fonte indicada | Não identificada |
-| CI/CD | Não identificado — confirmar pela fonte indicada | Não identificada |
+| Primary entry point | Not identified — confirm from the stated source | Source not identified |
+| Domain | Not identified — confirm from the stated source | Source not identified |
+| Interfaces | Not identified — confirm from the stated source | Source not identified |
+| Persistence | Not identified — confirm from the stated source | Source not identified |
+| Tests | Not identified — confirm from the stated source | Source not identified |
+| Documentation | Not identified — confirm from the stated source | Source not identified |
+| CI/CD | Not identified — confirm from the stated source | Source not identified |
 
-## Plataformas suportadas
+## Supported platforms
 
-| Superfície | Alvos confirmados | Evidência |
+| Surface | Confirmed targets | Evidence |
 | --- | --- | --- |
-| Web | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Mobile | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Desktop | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Navegadores/dispositivos | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Requisitos de acessibilidade | Não identificado — confirmar pela fonte indicada | Não identificada |
+| Web | Not identified — confirm from the stated source | Source not identified |
+| Mobile | Not identified — confirm from the stated source | Source not identified |
+| Desktop | Not identified — confirm from the stated source | Source not identified |
+| Browsers and devices | Not identified — confirm from the stated source | Source not identified |
+| Accessibility requirements | Not identified — confirm from the stated source | Source not identified |
 
-## Serviços e superfícies de risco
+## Services and risk surfaces
 
-| Item | Uso e risco | Fonte segura |
+| Item | Use and risk | Safe source |
 | --- | --- | --- |
-| Autenticação/autorização | Não identificado — confirmar pela fonte indicada | Não identificada |
-| APIs externas | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Dados pessoais/sensíveis | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Uploads/arquivos | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Pagamentos | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Filas/webhooks/jobs | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Deploy/produção | Não identificado — confirmar pela fonte indicada | Não identificada |
+| Authentication and authorization | Not identified — confirm from the stated source | Source not identified |
+| External APIs | Not identified — confirm from the stated source | Source not identified |
+| Personal or sensitive data | Not identified — confirm from the stated source | Source not identified |
+| Uploads and files | Not identified — confirm from the stated source | Source not identified |
+| Payments | Not identified — confirm from the stated source | Source not identified |
+| Queues, webhooks, and jobs | Not identified — confirm from the stated source | Source not identified |
+| Deployment and production | Not identified — confirm from the stated source | Source not identified |
 
-Registre apenas o mecanismo e a localização segura da configuração. Não copie valores de credenciais.
+Record only the mechanism and safe configuration location. Never copy credential
+values.
 
-## Restrições e decisões
+## Constraints and decisions
 
-| Decisão ou restrição | Estado | Fonte |
+| Decision or constraint | State | Source |
 | --- | --- | --- |
-| Convenções obrigatórias | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Compatibilidade | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Orçamentos de performance | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Restrições legais/licenças | Não identificado — confirmar pela fonte indicada | Não identificada |
-| Operações que exigem aprovação | Não identificado — confirmar pela fonte indicada | Não identificada |
+| Required conventions | Not identified — confirm from the stated source | Source not identified |
+| Compatibility | Not identified — confirm from the stated source | Source not identified |
+| Performance budgets | Not identified — confirm from the stated source | Source not identified |
+| Legal and license constraints | Not identified — confirm from the stated source | Source not identified |
+| Operations requiring approval | Not identified — confirm from the stated source | Source not identified |
 
-## Itens não verificados
+## Unverified items
 
-- Não identificado — confirmar pela fonte indicada.
+- Not identified — confirm from the stated source.
 
-Itens deixam esta seção somente depois de receber evidência e destino adequado nas seções anteriores.
+Remove an item from this section only after adding evidence and moving it to the
+appropriate section.
 
-## Evidências
+## Evidence
 
-| Data | Fato confirmado | Fonte ou comando | Escopo |
+| Date | Confirmed fact | Source or command | Scope |
 | --- | --- | --- | --- |
-| Não identificada | Não identificado — confirmar pela fonte indicada | Não identificada | Não identificado |
+| Not identified | Not identified — confirm from the stated source | Source not identified | Not identified |
 
-Mantenha evidências concisas. Saídas extensas, logs temporários e histórico de cada tarefa não pertencem a este arquivo.
+Keep evidence concise. Long outputs, temporary logs, and per-task history do not
+belong in this file.

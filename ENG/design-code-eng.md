@@ -1,7 +1,6 @@
 ---
 name: design-code-eng
 language: en
-counterpart: ../PT-BR/design-code-pt.md
 description: "Visual direction, UX, motion, and perceived performance for premium digital experiences."
 version: "2026.08"
 last-reviewed: "2026-08-08"
@@ -237,7 +236,7 @@ Motion rules:
 
 ```js
 if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-  // inicializar animações
+  // initialize animations
 }
 ```
 

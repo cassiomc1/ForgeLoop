@@ -1,46 +1,56 @@
-# Guias de Instruções para Agentes de IA
+# Instruction Guides for AI Agents
 
 [![Docs quality](https://github.com/cassiomc1/mdfiles/actions/workflows/docs-quality.yml/badge.svg?branch=main)](https://github.com/cassiomc1/mdfiles/actions/workflows/docs-quality.yml)
 
-Coleção bilíngue de guias operacionais para agentes de IA e desenvolvedores. O conteúdo cobre estratégia de produto, código, testes, segurança, performance, acessibilidade, design e games web em projetos web, mobile e desktop.
+An English-only collection of operational guides for AI agents and developers.
+It covers product strategy, code, testing, security, performance,
+accessibility, design, and web games across web, mobile, and desktop projects.
 
-Bilingual collection of operational guides for AI agents and developers. It covers product strategy, code, testing, security, performance, accessibility, design, and web games across web, mobile, and desktop projects.
+The files are Markdown and can be used as references or as a foundation for
+`AGENTS.md`, `CLAUDE.md`, `.cursor/rules`, and
+`.github/copilot-instructions.md`. Adopt only the guides relevant to the target
+project; this collection is not a dependency bundle.
 
-Os arquivos são Markdown e podem ser usados como referência ou como base para `AGENTS.md`, `CLAUDE.md`, `.cursor/rules` e `.github/copilot-instructions.md`. Adote somente os guias relevantes ao projeto; esta coleção não é um pacote de dependências.
+## Catalog
 
-The files are Markdown and can be used as references or as a foundation for `AGENTS.md`, `CLAUDE.md`, `.cursor/rules`, and `.github/copilot-instructions.md`. Adopt only the guides relevant to the project; this collection is not a dependency bundle.
+| Topic | When to use it | Guide |
+| --- | --- | --- |
+| Premium websites | End-to-end process from strategy to launch | [`premium-sites-studio-eng.md`](./ENG/premium-sites-studio-eng.md) |
+| Clean code | Readable, observable, secure, and operable code | [`clean-code-eng.md`](./ENG/clean-code-eng.md) |
+| Testing | Risk-based testing strategy | [`test-code-eng.md`](./ENG/test-code-eng.md) |
+| Security | Web, mobile, desktop, APIs, and supply chain | [`sec-code-eng.md`](./ENG/sec-code-eng.md) |
+| Design | Visual direction, UX, motion, and perceived performance | [`design-code-eng.md`](./ENG/design-code-eng.md) |
+| Performance | Measurement, diagnosis, budgets, and optimization | [`perf-code-eng.md`](./ENG/perf-code-eng.md) |
+| Accessibility | WCAG 2.2-oriented protocol for interfaces | [`accessibility-eng.md`](./ENG/accessibility-eng.md) |
+| Web games | Architecture, design, and operation of 2D, 3D, and procedural games | [`games-code-design-web-eng.md`](./ENG/games-code-design-web-eng.md) |
 
-## Catálogo / Catalog
+Each guide declares its name, `language: en`, description, version, and last
+review date in frontmatter. The eight guides use version `2026.08` and review
+date `2026-08-08`.
 
-| Tema / Topic | Quando usar / When to use | Português | English |
-| --- | --- | --- | --- |
-| Sites premium / Premium websites | Processo completo de estratégia ao lançamento / End-to-end process from strategy to launch | [`premium-sites-studio-pt.md`](./PT-BR/premium-sites-studio-pt.md) | [`premium-sites-studio-eng.md`](./ENG/premium-sites-studio-eng.md) |
-| Código limpo / Clean code | Código legível, observável, seguro e operável / Readable, observable, secure, and operable code | [`clean-code-pt.md`](./PT-BR/clean-code-pt.md) | [`clean-code-eng.md`](./ENG/clean-code-eng.md) |
-| Testes / Testing | Estratégia de testes orientada a risco / Risk-based testing strategy | [`test-code-pt.md`](./PT-BR/test-code-pt.md) | [`test-code-eng.md`](./ENG/test-code-eng.md) |
-| Segurança / Security | Web, mobile, desktop, APIs e supply chain / Web, mobile, desktop, APIs, and supply chain | [`sec-code-pt.md`](./PT-BR/sec-code-pt.md) | [`sec-code-eng.md`](./ENG/sec-code-eng.md) |
-| Design | Direção visual, UX, motion e performance percebida / Visual direction, UX, motion, and perceived performance | [`design-code-pt.md`](./PT-BR/design-code-pt.md) | [`design-code-eng.md`](./ENG/design-code-eng.md) |
-| Performance | Medição, diagnóstico, budgets e otimização / Measurement, diagnosis, budgets, and optimization | [`perf-code-pt.md`](./PT-BR/perf-code-pt.md) | [`perf-code-eng.md`](./ENG/perf-code-eng.md) |
-| Acessibilidade / Accessibility | Protocolo orientado à WCAG 2.2 para interfaces / WCAG 2.2-oriented protocol for interfaces | [`acessibilidade-code-pt.md`](./PT-BR/acessibilidade-code-pt.md) | [`accessibility-eng.md`](./ENG/accessibility-eng.md) |
-| Games web / Web games | Arquitetura, design e operação de games 2D, 3D e procedurais / Architecture, design, and operation of 2D, 3D, and procedural games | [`games-code-design-web-pt.md`](./PT-BR/games-code-design-web-pt.md) | [`games-code-design-web-eng.md`](./ENG/games-code-design-web-eng.md) |
+## Universal project loop
 
-Cada guia declara no frontmatter o idioma, a contraparte, a versão e a data da última revisão. Os 8 pares estão alinhados na versão `2026.08`, revisada em `2026-08-08`.
-
-Each guide declares its language, counterpart, version, and last review date in frontmatter. All 8 pairs are aligned at version `2026.08`, reviewed on `2026-08-08`.
-
-## Loop universal / Universal loop
-
-O kit transforma cada pedido em um ciclo verificável: descobrir o projeto, definir um contrato, selecionar os guias aplicáveis, executar, verificar, diagnosticar e corrigir até atingir o sucesso ou um bloqueio externo real. O [`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md) é a fonte operacional; o [`GUIDE_ROUTER.md`](./GUIDE_ROUTER.md) evita carregar documentos irrelevantes; e o [`PROJECT_PROFILE.md`](./PROJECT_PROFILE.md) preserva somente fatos duráveis e comprovados do projeto.
-
-The kit turns every request into a verifiable cycle: discover the project, define the execution contract, select applicable guides, execute, verify, diagnose, and correct until success or a genuine external blocker. Thin adapters support Codex, Claude Code, Cursor, and GitHub Copilot while delegating to the same canonical files.
+The kit turns each request into a verifiable cycle: discover the project,
+define an execution contract, select applicable guides, execute, verify,
+diagnose, and correct until success or a genuine external blocker.
+[`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md) is the operational source;
+[`GUIDE_ROUTER.md`](./GUIDE_ROUTER.md) prevents irrelevant context from being
+loaded; and [`PROJECT_PROFILE.md`](./PROJECT_PROFILE.md) preserves only durable,
+proven project facts.
 
 ```text
-Pedido → descoberta → perfil → roteamento → plano → execução
-       → verificação → correção, se necessária → evidências finais
+Request → discovery → profile → routing → plan → execution
+        → verification → correction when needed → final evidence
 ```
 
-### Instalação em um projeto
+Thin adapters support Codex-compatible agents, Claude Code, Cursor, and GitHub
+Copilot while delegating to the same canonical documents.
 
-Baixe o repositório privado como ZIP ou clone-o em um diretório temporário. Copie esta estrutura para a raiz do projeto de destino, preservando os caminhos:
+### Install in a target project
+
+Download this private repository as a ZIP or clone it into a temporary
+directory. Copy this structure to the target project's root while preserving
+relative paths:
 
 ```text
 AGENTS.md
@@ -49,98 +59,143 @@ LOOP_ENGINEERING.md
 GUIDE_ROUTER.md
 PROJECT_PROFILE.md
 LOOP_SYSTEM_DESIGN.md
+THIRD_PARTY_NOTICES.md
 .github/copilot-instructions.md
 .cursor/rules/project-loop.mdc
-PT-BR/
 ENG/
 ```
 
-Se o projeto já possuir `AGENTS.md`, `CLAUDE.md`, instruções do Copilot ou regras do Cursor, incorpore apenas o bloco que aponta para o loop; não sobrescreva regras específicas existentes. As pastas `scripts/`, `.github/workflows/` e os arquivos de qualidade são opcionais para quem apenas consome o kit, mas necessários para manter ou validar a coleção.
+If the target already has `AGENTS.md`, `CLAUDE.md`, Copilot instructions, or
+Cursor rules, merge only the adapter block that points to the loop. Never
+overwrite specific local instructions. The `scripts/`, `.github/workflows/`,
+and quality configuration files are optional for kit consumers but required to
+maintain and validate this source repository.
 
-### Primeira execução
+### First run
 
-Na primeira tarefa em um projeto com código ou manifests, o agente deve trocar `profile-mode` de `template` para `project`, descobrir a stack e preencher somente fatos confirmados em `PROJECT_PROFILE.md`. O português é o idioma padrão; use `language: en` para selecionar as contrapartes inglesas.
+On the first task in a target project with code or manifests, change
+`profile-mode` from `template` to `project`, discover the stack, and record only
+confirmed facts in `PROJECT_PROFILE.md`. Keep `language: en`.
 
-O perfil não guarda tokens, senhas, chaves ou logs de tarefas. Comandos desconhecidos continuam marcados como não verificados até aparecer uma fonte real no projeto.
+The profile must not store tokens, passwords, keys, credentials, or task logs.
+Unknown commands remain unverified until a real source identifies them.
 
-### Confirmar ativação
-
-Envie este pedido ao agente antes da primeira implementação:
+To confirm activation before the first implementation, ask the agent:
 
 ```text
-Antes de implementar, informe qual perfil do projeto foi confirmado, quais guias foram selecionados pelo GUIDE_ROUTER.md e quais verificações serão usadas. Não altere arquivos ainda.
+Before implementing, report the confirmed project profile, the guide IDs
+selected through GUIDE_ROUTER.md, and the checks you will use. Do not change
+files yet.
 ```
 
-A resposta deve citar evidências do perfil, um único idioma, os IDs dos guias selecionados e comandos reais do projeto. Uma resposta genérica que não mencione o loop, o roteador ou as fontes indica que o adaptador não foi carregado.
+A useful response cites profile evidence, selected guide IDs, and real project
+commands. A generic response that does not mention the loop, router, or sources
+indicates that the adapter was not loaded.
 
-### Atualizar o kit
+### Update the kit
 
-Ao baixar uma versão nova, preserve os fatos específicos do `PROJECT_PROFILE.md` do projeto de destino. Compare adaptadores antes de substituí-los, atualize loop, roteador e guias como um conjunto coerente e não apague instruções locais. Se o validador tiver sido copiado, execute:
+When adopting a newer version, preserve target-specific facts from
+`PROJECT_PROFILE.md`. Compare adapters before replacing them, update the loop,
+router, notices, and guides as one coherent set, and never erase local
+instructions. If validators were copied, run:
 
 ```bash
 python3 scripts/validate_loop_system.py --self-test
 python3 scripts/validate_loop_system.py
+python3 scripts/validate_english_only.py
+python3 scripts/scan_secrets.py
 ```
 
-O racional e os limites da arquitetura estão em [`LOOP_SYSTEM_DESIGN.md`](./LOOP_SYSTEM_DESIGN.md).
+Architecture and boundaries are documented in
+[`LOOP_SYSTEM_DESIGN.md`](./LOOP_SYSTEM_DESIGN.md).
 
-## Política de ferramentas / Tooling policy
+## Tool approval policy
 
-**Português:** identifique a stack, a etapa do trabalho e os checks aplicáveis. Prefira uma ferramenta equivalente já disponível quando ela produzir evidência compatível. Peça autorização antes de instalar software ou alterar o ambiente. Se uma verificação necessária não puder ser executada e não houver alternativa segura, registre o bloqueio e não afirme que o check passou. Referências opcionais não devem ser instaladas automaticamente.
+Identify the stack, current stage, and applicable checks. Prefer an equivalent
+tool already available when it produces compatible evidence. Ask for approval
+before installing software or changing the environment. If a required check
+cannot run and no safe alternative exists, record the blocker and do not claim
+that the check passed. Optional references must never be installed
+automatically.
 
-**English:** identify the stack, the current stage, and the applicable checks. Prefer an equivalent tool already available when it produces compatible evidence. Ask for authorization before installing software or changing the environment. If a required check cannot run and no safe alternative exists, record the blocker and do not claim that the check passed. Optional references must not be installed automatically.
+## HyperFrames for video and motion
 
-## HyperFrames para vídeo e motion / HyperFrames for video and motion
+[HyperFrames](https://hyperframes.heygen.com) is an option for deterministic
+HTML, CSS, and JavaScript-based trailers, demos, presentations, and motion
+graphics. It complements the design, accessibility, performance, and testing
+guides; it does not replace those checks. Review the
+[quickstart](https://hyperframes.heygen.com/quickstart) and
+[CLI documentation](https://hyperframes.heygen.com/packages/cli) before
+adoption. Local rendering requires Node.js 22+ and FFmpeg.
 
-[HyperFrames](https://hyperframes.heygen.com) é uma opção para trailers, demonstrações, apresentações e motion graphics determinísticos baseados em HTML, CSS e JavaScript. Ele complementa os guias de design, acessibilidade, performance e testes; não substitui essas validações. Consulte o [quickstart](https://hyperframes.heygen.com/quickstart) e a [CLI](https://hyperframes.heygen.com/packages/cli) antes da adoção. O render local requer Node.js 22+ e FFmpeg.
-
-[HyperFrames](https://hyperframes.heygen.com) is an option for deterministic HTML, CSS, and JavaScript-based trailers, demos, presentations, and motion graphics. It complements the design, accessibility, performance, and testing guides; it does not replace those validations. Review the [quickstart](https://hyperframes.heygen.com/quickstart) and [CLI documentation](https://hyperframes.heygen.com/packages/cli) before adoption. Local rendering requires Node.js 22+ and FFmpeg.
-
-## Estrutura / Structure
+## Structure
 
 ```text
 .
-├── AGENTS.md                      # entrada Codex e agentes compatíveis
-├── CLAUDE.md                      # entrada Claude Code
-├── LOOP_ENGINEERING.md            # ciclo operacional canônico
-├── GUIDE_ROUTER.md                # seleção contextual dos guias
-├── PROJECT_PROFILE.md             # fatos verificados do projeto
-├── LOOP_SYSTEM_DESIGN.md          # arquitetura e limites
-├── PT-BR/                         # 8 guias em português
-├── ENG/                           # 8 English guides
-├── .cursor/rules/                 # regra sempre ativa do Cursor
-├── .github/copilot-instructions.md # entrada GitHub Copilot
-├── .github/workflows/             # automação de qualidade
-├── scripts/                       # validação estrutural do kit
-├── .gitignore                     # arquivos locais ignorados pelo Git
-├── .lychee.toml                   # verificação de links
-├── .markdownlint-cli2.jsonc       # regras de Markdown
-├── THIRD_PARTY_NOTICES.md         # proveniência e direitos
+├── AGENTS.md                       # Codex-compatible agent entry point
+├── CLAUDE.md                       # Claude Code entry point
+├── LOOP_ENGINEERING.md             # canonical operating cycle
+├── GUIDE_ROUTER.md                 # contextual guide selection
+├── PROJECT_PROFILE.md              # verified project facts
+├── LOOP_SYSTEM_DESIGN.md           # architecture and boundaries
+├── THIRD_PARTY_NOTICES.md          # provenance and rights
+├── ENG/                            # eight English guides
+├── .cursor/rules/                  # always-active Cursor rule
+├── .github/copilot-instructions.md # GitHub Copilot entry point
+├── .github/workflows/              # quality automation
+├── scripts/                        # structural, language, and secret checks
+├── tests/                          # validator regression tests
+├── .gitignore                      # ignored local files
+├── .lychee.toml                    # link-check configuration
+├── .markdownlint-cli2.jsonc        # Markdown rules
 └── README.md
 ```
 
-## Manutenção / Maintenance
+## Maintenance
 
-- Atualize as duas contrapartes quando uma regra normativa mudar. / Update both counterparts when a normative rule changes.
-- Preserve a paridade de requisitos, exceções, números, exemplos e referências. / Preserve parity for requirements, exceptions, numbers, examples, and references.
-- Atualize `version` e `last-reviewed` no frontmatter quando aplicável. / Update `version` and `last-reviewed` in frontmatter when applicable.
-- Use ponto decimal em inglês e vírgula decimal em português fora de código e URLs. / Use decimal points in English and decimal commas in Portuguese outside code and URLs.
-- Verifique se os links relativos continuam dentro do repositório. / Verify that relative links remain inside the repository.
+- Preserve guide requirements, exceptions, numbers, examples, and references when editing.
+- Update `version` and `last-reviewed` when a guide's normative content changes.
+- Verify that relative links remain inside the repository.
+- Keep root instructions, comments, examples, fixtures, and guide content in English.
+- Keep `THIRD_PARTY_NOTICES.md` with every distributed copy of the kit.
 
-Lint local / Local lint:
+### Local checks
+
+First check whether the Markdown linter is already installed:
+
+```bash
+command -v markdownlint-cli2
+```
+
+When it is available, run it directly without downloading anything:
+
+```bash
+markdownlint-cli2
+```
+
+If it is missing, request approval before running this pinned one-off download:
 
 ```bash
 npx --yes markdownlint-cli2@0.23.2
-python3 scripts/validate_loop_system.py --self-test
-python3 scripts/validate_loop_system.py
 ```
 
-O workflow [Docs quality](./.github/workflows/docs-quality.yml) também verifica links, frontmatter, nomes únicos, contrapartes, fences de código, links relativos, adaptadores, pares do roteador e cenários de seleção em pushes e pull requests.
+Run the repository validators with Python's standard library:
 
-The [Docs quality](./.github/workflows/docs-quality.yml) workflow also checks links, frontmatter, unique names, counterparts, code fences, relative links, adapters, router pairs, and selection scenarios on pushes and pull requests.
+```bash
+python3 scripts/validate_loop_system.py --self-test
+python3 scripts/validate_loop_system.py
+python3 -m unittest discover -s tests -v
+python3 scripts/validate_english_only.py
+python3 scripts/scan_secrets.py
+```
 
-## Direitos e proveniência / Rights and provenance
+The [Docs quality workflow](./.github/workflows/docs-quality.yml) also checks
+Markdown, links, frontmatter, unique names, code fences, relative links,
+adapters, the guide catalog, routing scenarios, English-only content, and
+secret-shaped values on pushes and pull requests.
 
-Esta coleção não declara uma licença global. Qualquer reutilização depende da autorização do titular aplicável e das condições registradas em [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md).
+## Rights and provenance
 
-This collection does not declare a global license. Any reuse depends on permission from the applicable rights holder and on the conditions recorded in [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md).
+This collection does not declare a global license. Reuse depends on permission
+from the applicable rights holder and on the conditions recorded in
+[`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md).

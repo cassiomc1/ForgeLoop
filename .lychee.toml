@@ -1,19 +1,19 @@
-# Execução determinística e limitada para documentação local e CI.
+# Deterministic, bounded execution for local documentation and CI.
 cache = true
 max_cache_age = "1d"
-# Evita fan-out agressivo contra centenas de destinos no runner compartilhado.
+# Avoid aggressive fan-out against hundreds of targets on a shared runner.
 max_concurrency = 14
 max_retries = 3
 retry_wait_time = 2
 timeout = 30
 no_progress = true
 
-# Exemplos locais e endereços de loopback não são destinos publicáveis.
+# Local examples and loopback addresses are not publishable targets.
 exclude_loopback = true
 exclude = [
   '^https?://(?:www\.)?example\.(?:com|org|net)(?:/|$)',
-  # Phaser responde 403 a automação; links mais específicos continuam verificados.
+  # Phaser returns 403 to automation; more specific links remain checked.
   '^https://phaser\.io/$',
-  # O artigo responde no navegador, mas expira de forma intermitente no runner.
+  # The article works in browsers but intermittently times out on the runner.
   '^https://akitaonrails\.com/en/2026/04/20/clean-code-for-ai-agents/$',
 ]

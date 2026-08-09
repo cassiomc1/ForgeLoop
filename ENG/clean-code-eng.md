@@ -1,7 +1,6 @@
 ---
 name: clean-code-eng
 language: en
-counterpart: ../PT-BR/clean-code-pt.md
 description: "Practices for readable, observable, secure code operated by AI agents."
 version: "2026.08"
 last-reviewed: "2026-08-08"

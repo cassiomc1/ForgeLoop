@@ -1,7 +1,6 @@
 ---
 name: sec-code-eng
 language: en
-counterpart: ../PT-BR/sec-code-pt.md
 description: "Verifiable security guidance for web, mobile, desktop, APIs, and the software supply chain."
 version: "2026.08"
 last-reviewed: "2026-08-08"

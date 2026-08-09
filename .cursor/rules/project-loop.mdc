@@ -3,16 +3,16 @@ description: Universal verified project loop
 alwaysApply: true
 ---
 
-# Cursor — Loop Universal
+# Cursor — Universal Project Loop
 
-1. Leia [`LOOP_ENGINEERING.md`](../../LOOP_ENGINEERING.md) antes de planejar ou editar.
-2. Confirme [`PROJECT_PROFILE.md`](../../PROJECT_PROFILE.md) por fontes reais; inicialize-o em projetos de destino quando estiver em modo `template`.
-3. Use [`GUIDE_ROUTER.md`](../../GUIDE_ROUTER.md) para ativar todos e somente os guias relevantes.
-4. Carregue apenas um idioma e informe os IDs selecionados.
-5. Respeite instruções superiores, locais e o pedido mais recente.
-6. Execute mudança mínima, check específico e regressão proporcional.
-7. Diagnostique falhas antes de corrigir e não repita sem evidência nova.
-8. Peça autoridade para ações externas, destrutivas, instalações e publicações.
-9. Relate somente resultados e verificações comprovados.
+1. Read [`LOOP_ENGINEERING.md`](../../LOOP_ENGINEERING.md) before planning or editing.
+2. Confirm [`PROJECT_PROFILE.md`](../../PROJECT_PROFILE.md) from real sources; initialize it in target projects when it remains in `template` mode.
+3. Use [`GUIDE_ROUTER.md`](../../GUIDE_ROUTER.md) to activate all relevant guides and only those guides.
+4. Report the selected guide IDs.
+5. Respect higher-level and local instructions and the latest request.
+6. Make the minimum change, run a specific check, and then run proportional regression checks.
+7. Diagnose failures before fixing them and do not repeat an attempt without new evidence.
+8. Request authority for external or destructive actions, installations, and publications.
+9. Report only demonstrated results and checks.
 
-O loop e o roteador são fontes canônicas; não duplique regras de domínio.
+The loop and router are canonical sources; do not duplicate domain rules.

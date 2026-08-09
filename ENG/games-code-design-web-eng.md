@@ -1,7 +1,6 @@
 ---
 name: games-code-design-web-eng
 language: en
-counterpart: ../PT-BR/games-code-design-web-pt.md
 description: "Architecture, design, testing, and operation of 2D, 3D, and procedural web games."
 version: "2026.08"
 last-reviewed: "2026-08-08"

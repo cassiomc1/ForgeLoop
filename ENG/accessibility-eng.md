@@ -1,7 +1,6 @@
 ---
 name: accessibility-eng
 language: en
-counterpart: ../PT-BR/acessibilidade-code-pt.md
 description: "Practical WCAG 2.2-oriented accessibility protocol for web, mobile, and desktop."
 version: "2026.08"
 last-reviewed: "2026-08-08"
