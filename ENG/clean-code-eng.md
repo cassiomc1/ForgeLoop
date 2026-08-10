@@ -2,8 +2,8 @@
 name: clean-code-eng
 language: en
 description: "Practices for readable, observable, secure code operated by AI agents."
-version: "2026.08"
-last-reviewed: "2026-08-08"
+version: "2026.09"
+last-reviewed: "2026-08-10"
 ---
 
 # Clean Code for AI Agents

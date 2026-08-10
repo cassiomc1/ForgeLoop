@@ -2,8 +2,8 @@
 name: premium-sites-studio-eng
 language: en
 description: "Complete process for building premium websites at major design-studio quality."
-version: "2026.08"
-last-reviewed: "2026-08-08"
+version: "2026.09"
+last-reviewed: "2026-08-10"
 ---
 
 # Premium Websites at Studio Level — Complete Process
