@@ -27,7 +27,7 @@ A website is ready only when it meets all of these criteria at the same time:
 
 ## 2. How to use this guide
 
-Follow the gates in order. Do not jump to code before the previous decision is closed.
+Follow the gates in order. Within each gate, use the canonical [Loop Engineering](../LOOP_ENGINEERING.md) cycle; do not start costly implementation before the previous gate has a verifiable output or recorded uncertainty.
 
 1. **Brief and strategy:** objective, audience, positioning, offer, constraints, and metrics.
 2. **Content and architecture:** content inventory, sitemap, navigation, journeys, and data model.
