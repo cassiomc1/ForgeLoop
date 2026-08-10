@@ -261,7 +261,7 @@ Canvas, WebGL, SVG displacement, and Liquid Glass effects follow the **normative
 - Padding: `14px 28px` (mobile `12px 24px`)
 - Border-radius: equal to the radius chosen in the project
 - Font-weight: 500–600, font-size `1rem`
-- Transition: `background-color 0.2s ease, transform 0.2s ease` (background color + slight `translateY(-1px)` on hover)
+- Transition: `transform 0.2s ease` (change the background color immediately; use a slight `translateY(-1px)` on hover)
 - Minimum touch area: `44x44px`
 - Focus state: visible outline (`2px solid`, primary color, offset `2px`) — never `outline: none` without a replacement.
 
