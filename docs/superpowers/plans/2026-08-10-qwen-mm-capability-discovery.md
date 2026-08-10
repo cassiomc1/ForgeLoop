@@ -322,7 +322,7 @@ npm run pack:check
 git diff --check
 ```
 
-Expected: every command exits 0; the Python suite reports 29 tests after the
+Expected: every command exits 0; the Python suite reports 28 tests after the
 new focused test is added, the Node suite remains green, and package checks
 contain no Qwen runtime dependency or unexpected file.
 
