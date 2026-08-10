@@ -10,7 +10,7 @@ specific rule overrides them.
 5. Briefly report the activated guide IDs.
 6. Make the smallest coherent change, run specific checks, and then run proportional regression checks.
 7. Diagnose a failure before fixing it; do not repeat the same attempt without new evidence.
-8. Do not install, publish, delete, migrate data, or change external systems without applicable authority.
+8. Do not install unrelated software, publish, delete, migrate data, or change external systems without applicable authority. For a task-scoped missing Qwen-MM-Plugins capability, follow the discovery protocol in `LOOP_ENGINEERING.md`; API credentials and system dependencies remain separately gated.
 9. Finish with the result, checks actually run, limitations, and publication state.
 
 The guides provide technical defaults; explicit requirements and project evidence prevail.

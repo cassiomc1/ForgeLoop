@@ -10,7 +10,7 @@ directory or file rules.
 - Respect the latest request, scope, and higher-level instructions.
 - Make the smallest coherent change and validate it with a specific check followed by proportional regression checks.
 - Diagnose the cause before fixing a failure; do not make random attempts.
-- Do not install, publish, delete, migrate, or alter external state without authority.
+- Do not install unrelated software, publish, delete, migrate, or alter external state without authority. For a task-scoped missing Qwen-MM-Plugins capability, follow `LOOP_ENGINEERING.md`; API credentials and system dependencies remain separately gated.
 - Report the result, checks actually run, limitations, and publication state.
 
 The loop and router are canonical; do not replicate domain rules here.
