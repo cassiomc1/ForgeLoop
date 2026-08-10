@@ -23,10 +23,12 @@
 ### Task 1: Add a documentation regression contract
 
 **Files:**
+
 - Create: `tests/test_qwen_capability_policy.py`
 - Read: `LOOP_ENGINEERING.md`, `README.md`, `AGENT_COMPATIBILITY.md`, `LOOP_SYSTEM_DESIGN.md`, `THIRD_PARTY_NOTICES.md`
 
 **Interfaces:**
+
 - Consumes: the approved design specification and the repository's Markdown/secret-validation conventions.
 - Produces: a focused unittest that fails until the canonical Qwen capability policy, API boundary, and provenance notice are present, while rejecting inline API-key assignments.
 
@@ -113,6 +115,7 @@ fake credentials or network calls to the test.
 ### Task 2: Implement the canonical capability-discovery contract
 
 **Files:**
+
 - Modify: `LOOP_ENGINEERING.md`
 - Modify: `AGENT_COMPATIBILITY.md`
 - Modify: `LOOP_SYSTEM_DESIGN.md`
@@ -122,6 +125,7 @@ fake credentials or network calls to the test.
 - Modify: `.github/copilot-instructions.md`
 
 **Interfaces:**
+
 - Consumes: Task 1's failing documentation contract and the approved design.
 - Produces: a shared instruction that every supported agent can follow to inspect native capability, install the smallest missing Qwen capability, verify registration, and stop safely when API or system prerequisites are absent.
 
@@ -208,10 +212,12 @@ git commit -m "docs: add qwen capability discovery contract"
 ### Task 3: Document setup, API prerequisites, and provenance
 
 **Files:**
+
 - Modify: `README.md`
 - Modify: `THIRD_PARTY_NOTICES.md`
 
 **Interfaces:**
+
 - Consumes: Task 2's canonical policy and the official Qwen README and detailed installation guide.
 - Produces: adopter-facing documentation that defaults to keyless use, names every optional credential/service prerequisite, and records that the upstream project is linked rather than bundled.
 
@@ -278,12 +284,14 @@ git commit -m "docs: add qwen multimodal setup guidance"
 ### Task 4: Run proportional regression checks and review the final diff
 
 **Files:**
+
 - Read: all changed files and the approved design/plan
 - Modify if the baseline scanner reproduces the ignored-artifact false positive: `scripts/scan_secrets.py`
 - Test if the scanner fix is required: `tests/test_scan_secrets.py`
 - Verify: repository validators, package tests, and package contents
 
 **Interfaces:**
+
 - Consumes: Tasks 1–3's committed changes.
 - Produces: evidence that the documentation contract is present, package behavior is unchanged, no secrets were introduced, and the final diff is scoped.
 
