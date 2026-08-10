@@ -17,3 +17,9 @@ exclude = [
   # The article works in browsers but intermittently times out on the runner.
   '^https://akitaonrails\.com/en/2026/04/20/clean-code-for-ai-agents/$',
 ]
+
+# Blogspot rate-limits shared CI runners; keep the reference checked while
+# serializing and spacing requests to this host.
+[hosts."gradientsaas.blogspot.com"]
+concurrency = 1
+request_interval = "5s"
