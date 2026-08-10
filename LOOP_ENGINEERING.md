@@ -182,6 +182,92 @@ Required rules:
 A guide provides specialized defaults. It does not replace explicit product
 requirements, closer instructions, code evidence, or higher-level host rules.
 
+## Design and implementation gates
+
+### Design gate
+
+Before behavior, feature, architecture, or instruction changes, do proportional
+design after discovery. Work through one unresolved decision question at a
+time, surface meaningful alternatives with tradeoffs, and obtain approval
+before implementation. For small documentation maintenance, keep the treatment
+compact while still confirming the objective, boundaries, and verification.
+
+Use the [Execution contract](#execution-contract), [Project discovery](#project-discovery),
+[Guide selection](#guide-selection), and [Proportional planning](#proportional-planning)
+sections as the canonical sources for context, routing, and plan depth.
+
+### Plan contract and task briefs
+
+Every implementation plan or task brief must be self-contained for its scope
+and state the objective, architecture, technology, global constraints, exact
+files or interfaces, verification, and commit boundaries. Independent tasks
+must stay independently executable without hidden dependencies on unpublished
+conversation context.
+
+For long or multi-task work, keep an ignored ledger scoped to the plan. Use
+`DONE`, `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, and `BLOCKED` to support
+recovery and resume for completed work, concerns, missing context, and
+blockers rather than turning the ledger into a task log.
+
+Use the [Execution contract](#execution-contract) for the required fields, the
+[Project discovery](#project-discovery) and [Guide selection](#guide-selection)
+sections for evidence and routing, and [Stop conditions](#stop-conditions) for
+genuine blockers.
+
+### Test-first implementation
+
+For behavior changes, use RED → expected failure → minimal GREEN → refactor,
+with the testing strategy and risk depth anchored in
+[`ENG/test-code-eng.md`](./ENG/test-code-eng.md) and the
+[Verification and regression](#verification-and-regression) plus
+[Evidence-driven correction](#evidence-driven-correction) sections. Explicit
+exceptions are documentation-only work, generated output, or throwaway
+exploration that will not become maintained production behavior.
+
+### Review and recovery
+
+self-review is required but is not independent review. For multi-task work,
+specification compliance before code quality: first verify that the result
+matches the approved contract, then evaluate implementation quality. Handle one
+finding at a time, stop after at most five review-fix rounds, and treat any
+unresolved load-bearing finding as blocked until the contract or implementation
+changes.
+
+Use [Evidence-driven correction](#evidence-driven-correction) for diagnosis,
+[Verification and regression](#verification-and-regression) for re-checking,
+and [Stop conditions](#stop-conditions) when a blocker remains genuine.
+
+### Worktree and capability degradation
+
+Prefer native isolation when the harness provides it; otherwise use an approved
+ignored local worktree and require explicit consent before working directly on
+the main branch. When optional subagent, todo, web, or isolation capabilities
+are missing, fall back inline or to a plan file, report the degraded mode, and
+never invent a tool call.
+
+Use [Capability discovery and on-demand extensions](#capability-discovery-and-on-demand-extensions)
+for callable-tool proof, [Execution loop](#execution-loop) for scoped progress,
+and [Stop conditions](#stop-conditions) when the missing capability removes a
+required verification path.
+
+## Instruction and adapter hygiene
+
+Write canonical rules once in this file and make adapters delegate to
+`LOOP_ENGINEERING.md`, `PROJECT_PROFILE.md`, and `GUIDE_ROUTER.md` rather than
+copying process bodies. Adapter descriptions are trigger and reference text,
+not duplicate policy. Mechanical contracts belong in tests. New harness
+adapters should use the harness's native installation and context-loading path
+without editing global configuration, and actual bootstrap or context loading
+should be proven with a unique marker where possible.
+
+Keep capability rules in [Capability discovery and on-demand extensions](#capability-discovery-and-on-demand-extensions),
+routing in [Guide selection](#guide-selection), planning in
+[Proportional planning](#proportional-planning), execution in
+[Execution loop](#execution-loop), verification in
+[Verification and regression](#verification-and-regression), correction in
+[Evidence-driven correction](#evidence-driven-correction), and exit handling in
+[Stop conditions](#stop-conditions).
+
 ## Proportional planning
 
 ### Simple task

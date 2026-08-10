@@ -48,6 +48,14 @@ inclusion does not install, bundle, or declare any project as a dependency of
 this collection. Check the specific project's current license, terms,
 dependencies, version, and distribution conditions before adoption.
 
+### Superpowers
+
+- Project: [Superpowers](https://github.com/obra/superpowers).
+- License declared by the upstream project: [MIT](https://github.com/obra/superpowers/blob/main/LICENSE).
+- Use in this collection: an editorial and process reference for approved
+  workflow boundaries and public discoverability only.
+- Boundary: this repository links to Superpowers as a reference; it is not a dependency of `mdfiles`, and `mdfiles` does not copy, bundle, install, or vendor any Superpowers source, skill, hook, plugin, runtime, dependency, credential, or provider.
+
 ## Visual, gradient, and gallery references
 
 ### Canvas UI and Liquid Glass Design
