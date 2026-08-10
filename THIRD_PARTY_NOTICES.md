@@ -1,67 +1,105 @@
 # Third-Party Notices
 
-This file records known provenance and reuse boundaries for sources and tools
-cited by the collection. It does not replace reviewing the licenses and terms
-that apply to each resource.
+This file records provenance and reuse boundaries for the external URLs cited
+by the README and guides. A citation is a reference, not a declaration that a
+resource is a dependency, bundled material, or available for reuse.
 
 ## Collection license
 
 The CLI and validator code are licensed under the MIT License in `LICENSE`.
 Original documentation is offered under CC BY 4.0 as described in
-`LICENSE-DOCS.md`. Those notices do not relicense adapted or externally sourced
-material: every such component remains subject to the applicable terms and
-attribution recorded below. Review this file before redistributing a guide or
-including it in a commercial product.
+`LICENSE-DOCS.md`. Those notices do not apply to adapted or external material;
+review the applicable source terms before redistributing such material.
 
-## Identified sources and projects
+## Adapted and editorial sources
 
 ### A11Y.md
 
 - Project: [fecarrico/A11Y.md](https://github.com/fecarrico/A11Y.md).
 - Identified author: Felipe A. Carriço.
-- License declared by the upstream project: MIT.
-- Use in this collection: an adapted source for the accessibility guide, with attribution preserved. Review the original repository for the current license text and conditions; its license is not reproduced here in full.
+- License identified by the upstream project: MIT.
+- Use in this collection: adapted accessibility guidance with attribution
+  preserved. Consult the upstream repository for its current license text and
+  conditions.
 
 ### Clean Code for AI Agents
 
 - Source: [Fabio Akita's article](https://akitaonrails.com/en/2026/04/20/clean-code-for-ai-agents/).
-- Use in this collection: editorial influence for an original operational synthesis about clean code for AI agents.
-- Boundary: the collection does not claim that its guide is an authorized translation, an authorized reproduction, or an official work associated with the article's author.
+- Use in this collection: editorial influence for an original operational
+  synthesis about clean code for AI agents.
+- Boundary: consult the source before reusing its text or other material.
+
+## External standards and public documentation
+
+The guides cite standards and public technical documentation, including
+[W3C](https://www.w3.org/TR/), Apple, Android, Microsoft, MDN, WHATWG, IETF,
+OWASP, and Google documentation. They are technical references for
+accessibility, platform behavior, security, performance, testing, and web
+standards; their specifications, examples, names, and marks remain governed by
+the applicable source.
+
+## Software, package, and tool references
+
+The guides also cite external software, package, framework, registry, and tool
+documentation, including [HyperFrames](https://hyperframes.heygen.com/) and
+the projects referenced by the design, game, performance, security, and testing
+guides. These URLs support evaluation or implementation decisions only. Their
+inclusion does not install, bundle, or declare any project as a dependency of
+this collection. Check the specific project's current license, terms,
+dependencies, version, and distribution conditions before adoption.
+
+## Visual, gradient, and gallery references
 
 ### Canvas UI and Liquid Glass Design
 
-- References: [Canvas UI](https://canvasui.dev/) and [Liquid Glass Design](https://liquidglassdesign.com/).
-- Use in this collection: references for study, visual direction, and responsible adaptation.
-- Boundary: before reusing code, assets, text, images, prompts, or works, verify authorship, provenance, license, attribution, and other obligations for the specific resource. Indexing or citation in this repository does not transfer rights.
-
-### Apple, W3C, and OWASP
-
-- References: [Apple Developer Documentation](https://developer.apple.com/documentation/), [W3C Standards](https://www.w3.org/TR/), and [OWASP](https://owasp.org/).
-- Use in this collection: normative or technical documentation for compatibility, accessibility, security, and platform behavior.
-- Boundary: trademarks, specifications, text, and examples remain subject to their respective owners' terms and rights. A reference does not imply affiliation, endorsement, or license transfer.
-
-### HyperFrames and other software projects
-
-- Primary references: [HyperFrames](https://hyperframes.heygen.com/) and the other external projects cited by the guides.
-- Use in this collection: documentation of workflows, selection criteria, and integration; this repository does not relicense external software.
-- Boundary: each project remains subject to its own license, terms, dependencies, trademark policies, and service costs when applicable. Verify the current version and conditions before installing, incorporating, or redistributing software.
+- References: [Canvas UI](https://canvasui.dev/) and
+  [Liquid Glass Design](https://liquidglassdesign.com/).
+- Use in this collection: visual-direction references.
+- Boundary: check the provenance, author, license, attribution, and other
+  conditions of a specific asset, image, prompt, text, code sample, or indexed
+  work before reuse.
 
 ### Gradient Studio
 
-- Source: [Gradient Studio](https://gradientsaas.blogspot.com/), by Amit Gajare.
-- Use in this collection: an external reference for procedural CSS, Tailwind, and SCSS gradient exploration.
-- Boundary: the page states that exported gradient code may be used in personal and commercial projects, but it does not provide a formal license or general terms document. Verify the current page, provenance, and any asset-specific rights before reusing more than generated code.
+- Source: [Gradient Studio](https://gradientsaas.blogspot.com/), identified in
+  the guide as a project by Amit Gajare.
+- Use in this collection: a reference for procedural CSS, Tailwind, and SCSS
+  gradient exploration.
+- Boundary: confirm the current source terms and the provenance of any output
+  or asset before reuse.
 
 ## Design reference sites
 
-- [21st.dev](https://21st.dev/): community components, registries, authors, templates, and any premium material remain separately governed.
-- [React Bits](https://reactbits.dev/): distinguish the public/free material from React Bits Pro and inspect each source/dependency license.
-- [Fancy Components](https://www.fancycomponents.dev/): retain the site's current claim for its own material without relicensing Motion, Tailwind, shadcn, or other dependencies.
-- [Motion Primitives](https://motion-primitives.com/): distinguish documented open-source material from the separate Pro offering and verify component/dependency terms.
-- [Component Gallery](https://component.gallery/): treat it as a comparison catalog; the original design systems and examples retain their own terms.
-- [NumberFlow](https://number-flow.barvian.me/): record the upstream project as a software reference and verify its current repository license and dependency terms before adoption.
-- [Cursify](https://cursify.ui-layouts.com/): verify the current component/source terms and any underlying UI-layouts or Motion dependencies.
-- [UNCUT](https://uncut.wtf/): a catalog listing is not a font license; verify the exact creator, source, weights, and hosting/redistribution rights.
-- [cables.gl](https://cables.gl/): verify the tool, exported patches/operators, code, and third-party assets independently before distribution.
+The following nine sites are references in the design guide. None is a
+dependency of this collection or a blanket permission to reuse code, assets,
+fonts, templates, or other material.
 
-URL inclusion does not imply endorsement, affiliation, license transfer, or redistribution permission.
+- [21st.dev](https://21st.dev/): component and template registry; check the
+  terms for the specific author, community contribution, or paid material.
+- [React Bits](https://reactbits.dev/): component and motion reference; keep
+  public/free material, React Bits Pro, and dependency terms separate.
+- [Fancy Components](https://www.fancycomponents.dev/): component reference;
+  verify the linked source license and each dependency before reuse.
+- [Motion Primitives](https://motion-primitives.com/): motion reference; keep
+  documented open-source material, the Pro offering, and dependency terms
+  separate.
+- [Component Gallery](https://component.gallery/): comparison catalog; the
+  design systems and examples it indexes retain their own terms.
+- [NumberFlow](https://number-flow.barvian.me/): external software reference;
+  verify the upstream license and dependency terms before adoption.
+- [Cursify](https://cursify.ui-layouts.com/): pointer-enhancement reference;
+  verify the component, source, and dependency terms before adoption.
+- [UNCUT](https://uncut.wtf/): typography-discovery catalog; a listing is not a
+  font license, so check the exact author, files, weights, hosting, and
+  redistribution rights.
+- [cables.gl](https://cables.gl/): creative-coding and WebGL reference; check
+  the tool, exported patches or operators, code, and third-party assets
+  separately before distribution.
+
+## Fonts, assets, and premium content
+
+Fonts named in the design guide are examples only and are not bundled by this
+collection. Do not host, redistribute, or infer rights for a font, image,
+template, prompt, audio asset, or other premium material from a citation or
+catalog listing. Verify the exact resource's author, license, attribution,
+hosting, and current terms before use.
