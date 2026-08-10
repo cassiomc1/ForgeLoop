@@ -104,6 +104,7 @@ class SecretScannerTests(unittest.TestCase):
 
     def test_skips_cache_and_binary_paths(self) -> None:
         self.assertFalse(should_scan_path(Path(".git/config")))
+        self.assertFalse(should_scan_path(Path(".superpowers/sdd/task-report.md")))
         self.assertFalse(should_scan_path(Path(".worktrees/feature/README.md")))
         self.assertFalse(should_scan_path(Path("scripts/__pycache__/module.pyc")))
         self.assertFalse(should_scan_path(Path("assets/logo.png")))

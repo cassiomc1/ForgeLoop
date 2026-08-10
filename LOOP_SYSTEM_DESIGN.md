@@ -20,6 +20,7 @@ The system should use every guide that materially helps the task without loading
 - The persistent project profile stores only verifiable facts and never secrets, tokens, or credentials.
 - The loop continues while safe progress is possible. Repetition without new evidence triggers hypothesis reassessment or a blocked result, not infinite retries.
 - Third-party provenance and reuse boundaries remain part of every portable copy.
+- Qwen-MM-Plugins is an optional, task-scoped capability extension: the agent checks native support first, installs the smallest missing capability when needed, and verifies it before use; it is not a package or runtime dependency.
 
 ## Alternatives considered
 
@@ -90,6 +91,7 @@ precedence caveats, and the deterministic verification boundary.
 Canonical operational cycle. It defines:
 
 - discovery of repository state and nearby instructions;
+- capability discovery and task-scoped Qwen-MM-Plugins installation;
 - conversion of the request into an execution contract;
 - risk assessment and authority boundaries;
 - guide selection;
@@ -99,6 +101,17 @@ Canonical operational cycle. It defines:
 - final regression checks;
 - success and stop conditions;
 - handling of destructive actions and external authority.
+
+### Capability extensions
+
+The capability protocol is a narrow extension of the canonical loop. It asks
+the agent to inspect native model and harness support, reuse an existing
+callable tool, install only the smallest missing Qwen-MM-Plugins capability
+when the task requires it, check API and system prerequisites, verify
+registration, and then use the tool. Keyless multimodal reading is the default;
+API-backed operations remain disabled until their documented credentials or
+service endpoints are configured. The kit links to the upstream project but
+does not bundle its source, MCP server, model, or dependencies.
 
 ### `GUIDE_ROUTER.md`
 
@@ -246,7 +259,9 @@ update practice.
 - remote prompt services or databases;
 - mandatory orchestration frameworks;
 - infinite or unattended execution beyond agent limits;
-- automatic tool installation;
+- automatic installation of unrelated tools or provider runtimes; task-scoped
+  Qwen-MM-Plugins capability installation remains governed by the canonical
+  capability protocol and host approval controls;
 - automatic modification of global computer files;
 - duplication of complete guides inside adapters;
 - versioned logs for every request.

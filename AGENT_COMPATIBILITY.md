@@ -4,6 +4,18 @@
 native entry point required by each supported agent. The package does not
 install an agent, configure a provider, or run a live model session.
 
+## Optional capability extensions
+
+The installed loop can direct the active agent to inspect its native model and
+harness capabilities. When a task requires a missing multimodal capability,
+the agent may install the smallest task-scoped `Qwen-MM-Plugins` capability
+through the harness's native mechanism or the official upstream installer,
+then verify that the skill/MCP tool is callable before using it. This does not
+turn the package into a model runtime or provider configuration tool: API keys,
+system dependencies, and unrelated environment changes remain separately
+gated. Live model sessions and external plugin installation are outside the
+reproducible `npm test` boundary.
+
 ## Support matrix
 
 | Agent | Support | Reads in the installed project | Official documentation |

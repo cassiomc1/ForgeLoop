@@ -184,11 +184,47 @@ Architecture and boundaries are documented in
 ## Tool approval policy
 
 Identify the stack, current stage, and applicable checks. Prefer an equivalent
-tool already available when it produces compatible evidence. Ask for approval
-before installing software or changing the environment. If a required check
-cannot run and no safe alternative exists, record the blocker and do not claim
-that the check passed. Optional references must never be installed
-automatically.
+tool already available when it produces compatible evidence. The task-scoped
+Qwen-MM-Plugins installation described below is the narrow capability exception
+when a required capability is missing; system tools, credentials, and unrelated
+environment changes remain subject to their normal host controls. If a required
+check cannot run and no safe alternative exists, record the blocker and do not
+claim that the check passed. Unrelated optional references must never be
+installed automatically.
+
+## Optional multimodal capabilities
+
+[Qwen-MM-Plugins](https://github.com/QwenLM/Qwen-MM-Plugins) can extend a
+supported agent harness with skills and optional MCP servers. Before using a
+multimodal or media operation, the agent checks the model and harness for a
+callable native capability. If the task requires a missing keyless capability,
+the agent installs only the smallest matching `qwen-mm-plugins-<cap>` capability
+and verifies that it is callable before continuing; it does not install every
+capability at startup.
+
+No API key is used by default for native image, video, or document reading.
+Optional provider-backed operations follow this boundary:
+
+| Capability or operation | Configuration required |
+| --- | --- |
+| Native image, video, and document reading | No API key; video/audio workflows may need `ffmpeg` and other documented system tools |
+| Vision chat, OCR, grounding, audio transcription, Omni audio-video understanding, generation, and video-memory construction | `DASHSCOPE_API_KEY` |
+| Web search, web extraction, and image search | `SERPER_API_KEY` |
+| Segmentation through a SAM3 service | `SAM3_SERVER_URL` |
+| Blender, FreeCAD, Office, browser-backed visualization, and `edu-agent` workflows | The selected application's system dependencies and upstream configuration; `edu-agent` TTS requires `DASHSCOPE_API_KEY` |
+
+Provide optional credentials through the process environment or the official
+Qwen configuration file at `~/.qwen-mm-plugins/config` (or its documented
+override). Never put keys in Git, `PROJECT_PROFILE.md`, or copied instruction
+files. The agent must leave an API-backed capability disabled when its key or
+service endpoint is absent, and report missing system dependencies instead of
+claiming that the feature is available.
+
+Use the upstream [installation guide](https://github.com/QwenLM/Qwen-MM-Plugins/blob/main/docs/en/installation.md)
+for the active harness's current install and verification commands, supported
+capabilities, system dependencies, and Windows/WSL2 constraints. This project
+does not vendor Qwen code, add it to the npm package, or install it through
+`mdfiles init`, `update`, or `doctor`.
 
 ## HyperFrames for video and motion
 

@@ -96,6 +96,13 @@ fonts, templates, or other material.
   the tool, exported patches or operators, code, and third-party assets
   separately before distribution.
 
+### Qwen-MM-Plugins
+
+- Project: [QwenLM/Qwen-MM-Plugins](https://github.com/QwenLM/Qwen-MM-Plugins).
+- License declared by the upstream project: [Apache-2.0](https://github.com/QwenLM/Qwen-MM-Plugins/blob/main/LICENSE).
+- Use in this collection: an optional reference for task-scoped multimodal capabilities that an active agent may install through its supported harness when a task requires them.
+- Boundary: this repository links to the project but does not copy, vendor, or relicense its source, skills, MCP servers, models, or dependencies. Verify current upstream terms, dependencies, service costs, and harness instructions before installing or redistributing anything.
+
 ## Fonts, assets, and premium content
 
 Fonts named in the design guide are examples only and are not bundled by this

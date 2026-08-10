@@ -36,7 +36,7 @@ TEXT_SUFFIXES = {
     ".zsh",
 }
 TEXT_FILENAMES = {".env", ".envrc", ".gitignore", ".npmrc"}
-EXCLUDED_PARTS = {".git", ".worktrees", "__pycache__", ".commandcode"}
+EXCLUDED_PARTS = {".git", ".worktrees", ".superpowers", "__pycache__", ".commandcode"}
 
 TOKEN_PATTERNS = (
     ("private-key", re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----")),
