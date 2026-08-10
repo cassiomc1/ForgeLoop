@@ -51,3 +51,17 @@ including it in a commercial product.
 - Source: [Gradient Studio](https://gradientsaas.blogspot.com/), by Amit Gajare.
 - Use in this collection: an external reference for procedural CSS, Tailwind, and SCSS gradient exploration.
 - Boundary: the page states that exported gradient code may be used in personal and commercial projects, but it does not provide a formal license or general terms document. Verify the current page, provenance, and any asset-specific rights before reusing more than generated code.
+
+## Design reference sites
+
+- [21st.dev](https://21st.dev/): community components, registries, authors, templates, and any premium material remain separately governed.
+- [React Bits](https://reactbits.dev/): distinguish the public/free material from React Bits Pro and inspect each source/dependency license.
+- [Fancy Components](https://www.fancycomponents.dev/): retain the site's current claim for its own material without relicensing Motion, Tailwind, shadcn, or other dependencies.
+- [Motion Primitives](https://motion-primitives.com/): distinguish documented open-source material from the separate Pro offering and verify component/dependency terms.
+- [Component Gallery](https://component.gallery/): treat it as a comparison catalog; the original design systems and examples retain their own terms.
+- [NumberFlow](https://number-flow.barvian.me/): record the upstream project as a software reference and verify its current repository license and dependency terms before adoption.
+- [Cursify](https://cursify.ui-layouts.com/): verify the current component/source terms and any underlying UI-layouts or Motion dependencies.
+- [UNCUT](https://uncut.wtf/): a catalog listing is not a font license; verify the exact creator, source, weights, and hosting/redistribution rights.
+- [cables.gl](https://cables.gl/): verify the tool, exported patches/operators, code, and third-party assets independently before distribution.
+
+URL inclusion does not imply endorsement, affiliation, license transfer, or redistribution permission.

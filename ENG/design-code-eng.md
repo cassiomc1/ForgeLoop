@@ -2,8 +2,8 @@
 name: design-code-eng
 language: en
 description: "Visual direction, UX, motion, and perceived performance for premium digital experiences."
-version: "2026.08"
-last-reviewed: "2026-08-08"
+version: "2026.09"
+last-reviewed: "2026-08-10"
 ---
 
 # Web Design Premium v2 — Practical Guidelines
@@ -302,6 +302,17 @@ Canvas, WebGL, SVG displacement, and Liquid Glass effects follow the **normative
 - For charts and data visualization, consult [TanStack Charts](https://github.com/TanStack/charts); preserve responsiveness, contrast, keyboard readability, and never rely on color alone to communicate series or states.
 - For subtle interaction sounds, consult [Cuelume](https://cuelume-site.pages.dev/); provide volume/mute controls and never rely on audio to communicate essential information.
 
+## External design-reference map
+
+Select references for a product problem; they do not override project tokens or semantics. Check every adoption for keyboard and focus access, contrast, reduced motion, touch behavior, bundle/runtime cost, and fallback behavior. Cursor, canvas, 3D, audio, and decorative motion are progressive enhancement only. Do not copy source or assets; check the license and current terms for each exact resource, and treat a catalog listing as no transfer of rights.
+
+- **Component source and interaction inspiration**: [21st.dev](https://21st.dev/), [React Bits](https://reactbits.dev/), [Fancy Components](https://www.fancycomponents.dev/), and [Motion Primitives](https://motion-primitives.com/) can inform components and interactions. Inspect source and dependencies, and separate free from premium material before adoption.
+- **Component and design-system research**: use [Component Gallery](https://component.gallery/) for comparison, not for license assumptions.
+- **Numeric feedback**: reserve [NumberFlow](https://number-flow.barvian.me/) for changing metrics, with locale-aware formatting and static or reduced-motion behavior.
+- **Pointer enhancement**: activate [Cursify](https://cursify.ui-layouts.com/) only when `(hover: hover) and (pointer: fine)`; retain native controls and default cursor behavior, with equivalent tap interaction for touch/coarse pointers.
+- **Typography discovery**: verify each [UNCUT](https://uncut.wtf/) font's author, license, weights, and hosting rights.
+- **Creative coding and WebGL**: [cables.gl](https://cables.gl/) requires a semantic fallback, pause/offscreen behavior, a performance budget, and asset/operator provenance.
+
 ---
 
 ## UX, Accessibility, and Quality
@@ -481,6 +492,12 @@ Canvas, WebGL, SVG displacement, and Liquid Glass effects follow the **normative
 - TanStack Charts (data visualization): https://github.com/TanStack/charts
 - Cuelume (web interaction sounds): https://cuelume-site.pages.dev/
 - Canvas UI (adaptable canvas/WebGL reference; confirm provenance, license, and credits before any reuse): https://canvasui.dev/
+- Component source and interaction inspiration (inspect source/dependencies; separate free from premium material): https://21st.dev/ | https://reactbits.dev/ | https://www.fancycomponents.dev/ | https://motion-primitives.com/
+- Component and design-system research (comparison, not license assumptions): https://component.gallery/
+- Numeric feedback (changing metrics with locale-aware formatting and static/reduced-motion behavior): https://number-flow.barvian.me/
+- Pointer enhancement (only when `(hover: hover) and (pointer: fine)`; retain native controls/default cursor and equivalent tap interaction for touch/coarse pointers): https://cursify.ui-layouts.com/
+- Typography discovery (verify each font's author, license, weights, and hosting rights): https://uncut.wtf/
+- Creative coding and WebGL (semantic fallback, pause/offscreen behavior, performance budget, and asset/operator provenance): https://cables.gl/
 - Impeccable (interface auditing and polish): https://impeccable.style/
 - Gradient Studio (external procedural gradient exploration with CSS, Tailwind, and SCSS export by Amit Gajare; validate current provenance, reuse terms, output contrast, and performance budgets before adoption): https://gradientsaas.blogspot.com/
 - Liquid Glass Design (an independent inspiration gallery, not affiliated with Apple; not a specification or asset library): https://liquidglassdesign.com/

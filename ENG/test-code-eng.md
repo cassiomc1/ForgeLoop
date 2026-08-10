@@ -2,8 +2,8 @@
 name: test-code-eng
 language: en
 description: "Risk-based testing strategy and tools for modern languages and platforms."
-version: "2026.08"
-last-reviewed: "2026-08-08"
+version: "2026.09"
+last-reviewed: "2026-08-10"
 ---
 
 # Risk-Based Testing Guide by Language and Technology

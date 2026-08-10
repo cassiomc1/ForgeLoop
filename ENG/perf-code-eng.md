@@ -2,8 +2,8 @@
 name: perf-code-eng
 language: en
 description: "Performance measurement, diagnosis, and improvement for web, mobile, desktop, APIs, and data."
-version: "2026.08"
-last-reviewed: "2026-08-08"
+version: "2026.09"
+last-reviewed: "2026-08-10"
 ---
 
 # Performance Guide for Web, Mobile, Desktop, and Database Development

@@ -2,8 +2,8 @@
 name: accessibility-eng
 language: en
 description: "Practical WCAG 2.2-oriented accessibility protocol for web, mobile, and desktop."
-version: "2026.08"
-last-reviewed: "2026-08-08"
+version: "2026.09"
+last-reviewed: "2026-08-10"
 ---
 
 # Accessibility as a Baseline (A11Y)
