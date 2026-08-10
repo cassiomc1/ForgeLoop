@@ -629,8 +629,11 @@ data independently of that choice.
 
 - [ ] Scope, ASVS 5.0.0 level (L1 or L2), exceptions, and evidence are
   recorded; the Top 10 was not used as a replacement checklist.
-- [ ] Input and authorization are enforced server-side; SQL is parameterized
-  (`v5.0.0-2.2.2`, `v5.0.0-8.3.1`, `v5.0.0-1.2.4`).
+- [ ] Untrusted input is validated and authorization is enforced at the
+  appropriate trusted boundary: a server/service for remote or service-backed
+  authority, or the documented OS/process/container/storage boundary for
+  local/offline authority; SQL is parameterized (`v5.0.0-2.2.2`,
+  `v5.0.0-8.3.1`, `v5.0.0-1.2.4`).
 - [ ] SSRF cases cover allowlists, non-global/metadata IPs, DNS rebinding,
   redirects, timeouts, and limits (`v5.0.0-1.3.6`).
 - [ ] Uploads cover generated names, type/content, post-decompression limits,
