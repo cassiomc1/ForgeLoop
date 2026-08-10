@@ -15,6 +15,8 @@ export const TEMPLATE_PATHS = [
   "LOOP_SYSTEM_DESIGN.md",
   "AGENT_COMPATIBILITY.md",
   "THIRD_PARTY_NOTICES.md",
+  "LICENSE",
+  "LICENSE-DOCS.md",
   "ENG/accessibility-eng.md",
   "ENG/clean-code-eng.md",
   "ENG/design-code-eng.md",

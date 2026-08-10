@@ -1,5 +1,5 @@
 import { assertSafePath, fileExists, ensureWithin, readBytes } from "../core/filesystem.js";
-import { readManifest, sha256 } from "../core/manifest.js";
+import { readManifest, sha256, writeManifest } from "../core/manifest.js";
 import { readTemplateEntries } from "../core/templates.js";
 
 function finding(code, severity, relativePath, message) {
@@ -18,7 +18,57 @@ const ADAPTER_PATHS = new Set([
   ".github/copilot-instructions.md",
 ]);
 
-export async function runDoctor({ target, packageRoot }) {
+async function adoptAdapters({ target, manifest, adoptPaths, findings }) {
+  if (!manifest || adoptPaths.length === 0) return manifest;
+
+  const nextManifest = structuredClone(manifest);
+  let changed = false;
+
+  for (const relativePath of adoptPaths) {
+    if (!ADAPTER_PATHS.has(relativePath)) {
+      findings.push(
+        finding(
+          "adopt-invalid-path",
+          "error",
+          relativePath,
+          "Only supported adapter paths can be adopted.",
+        ),
+      );
+      continue;
+    }
+
+    const destination = ensureWithin(target, relativePath);
+    try {
+      await assertSafePath(target, relativePath);
+    } catch (error) {
+      findings.push(finding("unsafe-path", "error", relativePath, error.message));
+      continue;
+    }
+    if (!(await fileExists(destination))) {
+      findings.push(finding("adopt-file-missing", "error", relativePath, "Adapter file is missing."));
+      continue;
+    }
+
+    nextManifest.files[relativePath] = {
+      sha256: sha256(await readBytes(destination)),
+      preserve: true,
+    };
+    findings.push(
+      finding(
+        "file-adopted",
+        "info",
+        relativePath,
+        "Existing adapter is now recorded as preserved by mdfiles.",
+      ),
+    );
+    changed = true;
+  }
+
+  if (changed) await writeManifest(target, nextManifest);
+  return nextManifest;
+}
+
+export async function runDoctor({ target, packageRoot, adoptPaths = [], strict = false }) {
   const findings = [];
   let manifest = null;
   try {
@@ -30,6 +80,7 @@ export async function runDoctor({ target, packageRoot }) {
     findings.push(finding("manifest-invalid", "error", ".mdfiles/manifest.json", error.message));
   }
 
+  manifest = await adoptAdapters({ target, manifest, adoptPaths, findings });
   const entries = await readTemplateEntries(packageRoot);
   for (const entry of entries) {
     const destination = ensureWithin(target, entry.relativePath);
@@ -71,6 +122,21 @@ export async function runDoctor({ target, packageRoot }) {
     }
   }
 
-  const ok = findings.every((item) => item.severity !== "error");
+  const shippedPaths = new Set(entries.map((entry) => entry.relativePath));
+  for (const relativePath of Object.keys(manifest?.files ?? {})) {
+    if (!shippedPaths.has(relativePath)) {
+      findings.push(
+        finding(
+          "manifest-orphan",
+          "warning",
+          relativePath,
+          "Manifest entry no longer corresponds to a shipped template.",
+        ),
+      );
+    }
+  }
+
+  const ok = findings.every((item) => item.severity !== "error")
+    && (!strict || findings.every((item) => item.severity !== "warning"));
   return { ok, findings };
 }

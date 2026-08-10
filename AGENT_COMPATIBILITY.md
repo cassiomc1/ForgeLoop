@@ -74,10 +74,12 @@ GUIDE_ROUTER.md
 PROJECT_PROFILE.md
 LOOP_SYSTEM_DESIGN.md
 THIRD_PARTY_NOTICES.md
+LICENSE
+LICENSE-DOCS.md
 .cursor/rules/project-loop.mdc
 .github/copilot-instructions.md
 ENG/
 ```
 
-See the main [README](./README.md) for the complete `npx` installation,
+See the main [README](https://github.com/cassiomc1/mdfiles#readme) for the complete `npx` installation,
 diagnostic, first-run, and update workflow.

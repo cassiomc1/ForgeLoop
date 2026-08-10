@@ -482,7 +482,7 @@ Canvas, WebGL, SVG displacement, and Liquid Glass effects follow the **normative
 - Cuelume (web interaction sounds): https://cuelume-site.pages.dev/
 - Canvas UI (adaptable canvas/WebGL reference; confirm provenance, license, and credits before any reuse): https://canvasui.dev/
 - Impeccable (interface auditing and polish): https://impeccable.style/
-- Gradient Studio (procedural gradient exploration with CSS, Tailwind, and SCSS export; validate output against project contrast and performance budgets): https://gradientsaas.blogspot.com/
+- Gradient Studio (external procedural gradient exploration with CSS, Tailwind, and SCSS export by Amit Gajare; validate current provenance, reuse terms, output contrast, and performance budgets before adoption): https://gradientsaas.blogspot.com/
 - Liquid Glass Design (an independent inspiration gallery, not affiliated with Apple; not a specification or asset library): https://liquidglassdesign.com/
   - Guide to the material, glassmorphism, and web implementation: https://liquidglassdesign.com/what-is-liquid-glass
   - Design and development resources: https://liquidglassdesign.com/resources

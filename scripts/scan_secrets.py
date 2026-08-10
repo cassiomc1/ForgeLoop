@@ -12,24 +12,30 @@ import sys
 
 TEXT_SUFFIXES = {
     ".bash",
+    ".cjs",
     ".cfg",
     ".conf",
     ".json",
     ".jsonc",
+    ".js",
+    ".jsx",
     ".key",
     ".md",
     ".mdc",
+    ".mjs",
     ".pem",
     ".properties",
     ".py",
     ".sh",
     ".toml",
     ".txt",
+    ".ts",
+    ".tsx",
     ".yaml",
     ".yml",
     ".zsh",
 }
-TEXT_FILENAMES = {".env", ".envrc", ".gitignore"}
+TEXT_FILENAMES = {".env", ".envrc", ".gitignore", ".npmrc"}
 EXCLUDED_PARTS = {".git", ".worktrees", "__pycache__", ".commandcode"}
 
 TOKEN_PATTERNS = (
@@ -65,6 +71,9 @@ ENVIRONMENT_REFERENCE = re.compile(
     r"%[A-Za-z_][A-Za-z0-9_]*%)$"
 )
 GITHUB_ACTIONS_PERMISSION = re.compile(r"^\.github[\\/]workflows[\\/]")
+NPM_AUTH_ASSIGNMENT = re.compile(
+    r"^\s*//[^=\s]+:\s*_authToken\s*=\s*(?P<value>.+?)\s*$"
+)
 SAFE_PLACEHOLDERS = {
     "example",
     "masked",
@@ -153,6 +162,10 @@ def scan_text(text: str, path: Path) -> list[Finding]:
             _add_finding(findings, seen, rule, path, line)
 
     for line_number, line in enumerate(text.splitlines(), 1):
+        npm_auth = NPM_AUTH_ASSIGNMENT.fullmatch(line)
+        if npm_auth and not is_placeholder(npm_auth.group("value")):
+            _add_finding(findings, seen, "npm-auth-token", path, line_number)
+
         assignment = ASSIGNMENT.fullmatch(line)
         if assignment and SENSITIVE_LABEL.search(assignment.group("label")):
             if is_github_actions_permission(

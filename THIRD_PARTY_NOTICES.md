@@ -45,3 +45,9 @@ including it in a commercial product.
 - Primary references: [HyperFrames](https://hyperframes.heygen.com/) and the other external projects cited by the guides.
 - Use in this collection: documentation of workflows, selection criteria, and integration; this repository does not relicense external software.
 - Boundary: each project remains subject to its own license, terms, dependencies, trademark policies, and service costs when applicable. Verify the current version and conditions before installing, incorporating, or redistributing software.
+
+### Gradient Studio
+
+- Source: [Gradient Studio](https://gradientsaas.blogspot.com/), by Amit Gajare.
+- Use in this collection: an external reference for procedural CSS, Tailwind, and SCSS gradient exploration.
+- Boundary: the page states that exported gradient code may be used in personal and commercial projects, but it does not provide a formal license or general terms document. Verify the current page, provenance, and any asset-specific rights before reusing more than generated code.

@@ -10,7 +10,7 @@ import {
   readManifest,
   writeManifest,
 } from "../src/core/manifest.js";
-import { readTemplateEntries } from "../src/core/templates.js";
+import { readTemplateEntries, TEMPLATE_PATHS } from "../src/core/templates.js";
 
 test("rejects a target path that escapes the requested root", async () => {
   const target = await mkdtemp(path.join(os.tmpdir(), "mdfiles-core-"));
@@ -37,7 +37,10 @@ test("round-trips a versioned manifest", async () => {
 
 test("template entries use safe relative paths", async () => {
   const entries = await readTemplateEntries();
-  assert.ok(entries.length >= 12);
+  assert.equal(entries.length, TEMPLATE_PATHS.length);
+  assert.equal(TEMPLATE_PATHS.length, 20);
+  assert.ok(entries.some((entry) => entry.relativePath === "LICENSE"));
+  assert.ok(entries.some((entry) => entry.relativePath === "LICENSE-DOCS.md"));
   for (const entry of entries) {
     assert.equal(path.isAbsolute(entry.relativePath), false);
     assert.equal(entry.relativePath.startsWith(".."), false);
