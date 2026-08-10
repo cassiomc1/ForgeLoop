@@ -31,8 +31,8 @@ it passed. Do not install merely optional resources.
 
 - **Secure by design**: think about security during the design phase, not as a "review" at the end. Perform threat modeling for sensitive features (login, payment, file upload).
 - **Least privilege**: users, processes, API keys, and database credentials must have only the permissions strictly necessary.
-- **Defense in depth**: never rely on a single layer of protection (e.g., validation only on the frontend). Every critical validation/authorization must be repeated in the backend.
-- **Never trust the client**: data coming from the browser, mobile app, or desktop app can be manipulated. Every security decision (authentication, authorization, price, permission) is made on the server.
+- **Defense in depth**: never rely on a single layer of protection (e.g., validation only on the frontend). Every critical validation/authorization decision must be enforced at a trusted server-side or serverless boundary.
+- **Never trust the client**: data coming from the browser, mobile app, or desktop app can be manipulated. Authoritative decisions about remote authentication, authorization, price, or permission belong at a trusted service boundary; client-side checks are only defense in depth.
 - **Fail secure / secure by default**: in case of an error or missing configuration, the system must deny access by default, never grant it.
 - **Secrets never in source code**: API keys, passwords, tokens, and certificates belong in environment variables or secret management services (Vault, AWS Secrets Manager, Azure Key Vault, GCP Secret Manager) — never committed to git.
 - **Compositions and media are inputs too**: validate generated HTML/JS, manifests, URLs, formats, sizes, and media origins; pin dependencies where possible and never embed secrets in a composition or video bundle.
@@ -592,8 +592,8 @@ data independently of that choice.
   size, stay outside the webroot, and are downloaded only after authorization.
 - Every database query uses parameters/prepared statements or an ORM.
   Never concatenate SQL strings.
-- Every authorization decision is made on the server. Never trust
-  roles/permissions sent by the client.
+- Enforce every authorization decision at a trusted service boundary. Never
+  trust roles/permissions sent by the client.
 - Passwords: calibrated Argon2id; scrypt fallback, bcrypt legacy, PBKDF2/FIPS.
   Data: AEAD AES-GCM/ChaCha20-Poly1305 through a high-level library.
 - Cookies: __Host- + Path=/ + HttpOnly + Secure + SameSite=Lax/Strict;
