@@ -45,6 +45,24 @@ Codex, Cursor, and GitHub Copilot may also discover `AGENTS.md` on some
 surfaces. The dedicated files remain useful because they make the behavior
 explicit and cover each product's native entry point.
 
+## Harness capability and bootstrap boundary
+
+An adapter proves that the package installed a supported instruction or context
+entry point. It is not proof of a callable optional tool, isolation feature,
+review primitive, or bootstrap hook in the active harness, even when the
+canonical loop can use one when available.
+
+When a harness supports native context bootstrap or startup verification, prefer
+an explicit unique marker to confirm that the expected instruction path is
+active. When that proof is unavailable, treat the adapter file and repository
+checks as installation evidence only.
+
+Optional capability gaps use the loop fallback rules instead of invented
+commands or assumed integrations. Agents should never invent a tool call to
+simulate missing harness support. Global configuration, provider credentials,
+system packages, and other machine-level setup remain outside the installed
+package boundary.
+
 ## Precedence and existing instructions
 
 `mdfiles init` never overwrites an existing instruction file. If the target

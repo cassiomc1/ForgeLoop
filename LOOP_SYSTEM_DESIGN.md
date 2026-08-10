@@ -17,6 +17,7 @@ The system should use every guide that materially helps the task without loading
 - The initial implementation uses Markdown and each agent's native instruction mechanism; it requires no runtime or dependency.
 - English is the only language used by repository content and guide metadata.
 - The agent uses all applicable guides, not every file indiscriminately.
+- Design, planning, test-first, and review process gates live in the canonical loop and scale with task risk instead of becoming unconditional boilerplate in every adapter or architecture note.
 - The persistent project profile stores only verifiable facts and never secrets, tokens, or credentials.
 - The loop continues while safe progress is possible. Repetition without new evidence triggers hypothesis reassessment or a blocked result, not infinite retries.
 - Third-party provenance and reuse boundaries remain part of every portable copy.
@@ -54,13 +55,21 @@ Nearest agent adapter
     +--> repository-specific instructions
     |
     v
-Discovery -> contract -> route -> change -> targeted check -> regression
-    ^                                                        |
-    +---------------- diagnosis and correction --------------+
+Discovery -> contract -> route
+                              |
+                              v
+          proportional design -> plan -> change -> targeted check -> regression -> review
+                              ^                                                   |
+                              +--------------- diagnosis and correction ----------+
     |
     v
 Final result with evidence and limitations
 ```
+
+The canonical loop keeps proportional design, planning, implementation,
+testing, and review visible between routing and delivery. Architecture names
+the order of those stages without duplicating the detailed operating rules that
+belong in `LOOP_ENGINEERING.md`.
 
 ## Components and responsibilities
 
@@ -95,12 +104,19 @@ Canonical operational cycle. It defines:
 - conversion of the request into an execution contract;
 - risk assessment and authority boundaries;
 - guide selection;
+- proportional design, planning, test-first, and review gates for behavior,
+  architecture, and instruction changes;
 - small coherent changes;
 - delivery-specific verification;
 - evidence-driven diagnosis and root-cause correction;
 - final regression checks;
 - success and stop conditions;
 - handling of destructive actions and external authority.
+
+The loop is also the only place that defines harness-conditional behavior such
+as native isolation, independent review, and capability fallback rules. The
+system design references those boundaries but does not restate their detailed
+criteria.
 
 ### Capability extensions
 
@@ -180,11 +196,13 @@ Routing uses the request and files actually affected. A single word in the repos
 4. Convert the request into an objective, deliverables, constraints, risks, checks, and a stop condition.
 5. Select the guide set in the router.
 6. Read only the required sections of each guide.
-7. Establish a baseline and reproduce the problem when applicable.
-8. Make the smallest coherent change that satisfies the objective.
-9. Run the targeted check first, then proportional regression checks.
-10. On failure, collect evidence, identify the root cause, and repeat with a targeted correction.
-11. Finish only with current evidence, explicit limitations, and no unrelated changes.
+7. Apply proportional design and plan gates before behavior, architecture, or instruction changes.
+8. Establish a baseline and reproduce the problem when applicable.
+9. Make the smallest coherent change that satisfies the objective.
+10. Run the targeted check first, then proportional regression checks.
+11. Use the loop's review gate after regression when the task or harness calls for self-review or independent review.
+12. On failure, collect evidence, identify the root cause, and repeat with a targeted correction.
+13. Finish only with current evidence, explicit limitations, and no unrelated changes.
 
 ## Precedence and conflicts
 

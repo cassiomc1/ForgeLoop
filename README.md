@@ -271,6 +271,12 @@ adoption. Local rendering requires Node.js 22+ and FFmpeg.
 - Keep root instructions, comments, examples, fixtures, and guide content in English.
 - Keep `THIRD_PARTY_NOTICES.md` with every distributed copy of the kit.
 
+### Workflow quality gates
+
+For non-trivial behavior changes, use the proportional design, plan, test, and
+review gates in [`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md). Keep adapters
+and entry-point instructions thin so the canonical workflow stays in one place.
+
 ### Local checks
 
 First check whether the Markdown linter is already installed:
