@@ -23,3 +23,8 @@ exclude = [
 [hosts."gradientsaas.blogspot.com"]
 concurrency = 1
 request_interval = "5s"
+
+# Motion Primitives rate-limits shared CI runners; serialize requests.
+[hosts."motion-primitives.com"]
+concurrency = 1
+request_interval = "5s"
