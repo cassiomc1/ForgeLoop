@@ -691,7 +691,11 @@ Use a release artifact with hashed assets, a versioned manifest, source-map hand
 
 - [ ] Transport choice is justified: WebSockets for authoritative server state, WebRTC only with signaling/STUN/TURN and an explicit trust model.
 - [ ] Protocol versions, sequencing, reconnect, duplication, loss, jitter, prediction, reconciliation, and server authority are tested.
-- [ ] Browser feature detection and capability tiers cover WebGPU/WebGL, Web Audio, Pointer Lock, Gamepad, WebAssembly, PWA, WebSockets, and WebRTC.
+- [ ] Browser feature detection and capability tiers cover only capabilities
+  that the documented support contract includes or the project uses (for
+  example WebGPU/WebGL, Web Audio, Pointer Lock, Gamepad, WebAssembly, PWA,
+  WebSockets, and WebRTC); each supported capability has a documented fallback
+  or an explicit support-boundary decision.
 - [ ] Release builds have evidence for every documented browser/device target;
   cross-browser games include desktop Chromium/Firefox/Safari, Android,
   iOS/iPadOS, modest devices, touch/gamepad, different DPR/orientations, and
