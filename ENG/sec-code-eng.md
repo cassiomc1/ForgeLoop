@@ -2,8 +2,8 @@
 name: sec-code-eng
 language: en
 description: "Verifiable security guidance for web, mobile, desktop, APIs, and the software supply chain."
-version: "2026.08"
-last-reviewed: "2026-08-08"
+version: "2026.09"
+last-reviewed: "2026-08-10"
 ---
 
 # Security Guide for Web, Mobile, and Desktop Development
@@ -31,8 +31,8 @@ it passed. Do not install merely optional resources.
 
 - **Secure by design**: think about security during the design phase, not as a "review" at the end. Perform threat modeling for sensitive features (login, payment, file upload).
 - **Least privilege**: users, processes, API keys, and database credentials must have only the permissions strictly necessary.
-- **Defense in depth**: never rely on a single layer of protection (e.g., validation only on the frontend). Every critical validation/authorization must be repeated in the backend.
-- **Never trust the client**: data coming from the browser, mobile app, or desktop app can be manipulated. Every security decision (authentication, authorization, price, permission) is made on the server.
+- **Defense in depth**: never rely on a single layer of protection (e.g., validation only on the frontend). Every critical validation/authorization decision must be enforced at a trusted boundary: a server-side or serverless service for remote authority, or a documented OS, process, or container boundary for local/offline authority.
+- **Never trust the client**: data coming from the browser, mobile app, or desktop app can be manipulated. Authoritative decisions about remote authentication, authorization, price, or permission belong at a trusted service boundary. For local/offline authority, protect the documented OS/process/container boundary and protected local storage, Keychain, or credential vault with integrity, confidentiality, and capability checks. Input crossing either boundary remains untrusted; client-side checks are only defense in depth.
 - **Fail secure / secure by default**: in case of an error or missing configuration, the system must deny access by default, never grant it.
 - **Secrets never in source code**: API keys, passwords, tokens, and certificates belong in environment variables or secret management services (Vault, AWS Secrets Manager, Azure Key Vault, GCP Secret Manager) — never committed to git.
 - **Compositions and media are inputs too**: validate generated HTML/JS, manifests, URLs, formats, sizes, and media origins; pin dependencies where possible and never embed secrets in a composition or video bundle.
@@ -488,8 +488,8 @@ data independently of that choice.
 
 1. **M1 – Improper Credential Usage**: never hardcode API keys/secrets in the app binary (they can be extracted through reverse engineering); use the backend as a proxy for calls that require a secret.
 2. **M2 – Inadequate Supply Chain Security**: audit third-party SDKs (analytics, ads) for permissions and collected data; pin dependency versions (lockfiles).
-3. **M3 – Insecure Authentication/Authorization**: every authorization decision belongs in the backend; tokens with short expiration; biometrics (Face ID/Touch ID, BiometricPrompt) only as a *convenience* for accessing an already protected secret, never as the sole authentication factor for the backend.
-4. **M4 – Insufficient Input/Output Validation**: validate all input (deep links, intents, forms) both in the app and in the backend.
+3. **M3 – Insecure Authentication/Authorization**: for remote or service-backed features, every authorization decision belongs at the backend/trusted service boundary; for local/offline authority, enforce the documented OS/process/container capability boundary. Use tokens with short expiration; biometrics (Face ID/Touch ID, BiometricPrompt) only as a *convenience* for accessing an already protected secret, never as the sole authentication factor for a backend.
+4. **M4 – Insufficient Input/Output Validation**: validate all input (deep links, intents, forms) in the app and again at the applicable trusted service or local boundary.
 5. **M5 – Insecure Communication**: HTTPS is mandatory (App Transport Security
    on iOS, `usesCleartextTraffic=false` on Android); use platform TLS
    validation. Pinning requires a threat model and operational plan.
@@ -571,7 +571,7 @@ data independently of that choice.
 - **Electron**: keep `nodeIntegration: false` and `contextIsolation: true` in `BrowserWindow`; use `preload` scripts with explicitly exposed APIs (`contextBridge`); update Electron/Chromium frequently (browser vulnerabilities affect the entire app).
 - **React Native**: follow the same secure-storage rules as native mobile (use `react-native-keychain`, not plain `AsyncStorage` for secrets); validate deep links.
 - **Flutter**: use `flutter_secure_storage` (which uses Keychain/Keystore underneath) instead of `shared_preferences` for sensitive data.
-- In all cases: sensitive business logic and API secrets must never live only on the client — always have a backend performing validation/authorization.
+- In all cases: sensitive business logic and API secrets must never live only on the client. Remote or service-backed authority requires a trusted server-side or serverless enforcement boundary; local/offline authority requires the documented OS/process/container boundary, protected local storage/Keychain/credential vault, and integrity, confidentiality, and capability controls.
 
 ---
 
@@ -584,15 +584,19 @@ data independently of that choice.
   Record the requirement, evidence, and exception, not only a scanner result.
 - Never commit secrets (keys, passwords, tokens, certificates). Use a secret
   manager and short-lived identity. Scan pre-commit, CI, and history.
-- All user input is untrusted: validate and sanitize in the backend,
-  even if it has already been validated in the frontend/app.
+- All client and externally supplied input is untrusted: validate and sanitize
+  it at the trusted service boundary or, for local/offline paths, at the
+  documented OS/process/container/storage boundary, even if the frontend/app
+  already validated it.
 - Every outbound URL uses an exact allowlist, blocks non-global/metadata
   networks and DNS rebinding, and revalidates redirects; set timeouts/limits.
 - Uploads use generated names, validate type/content and post-decompression
   size, stay outside the webroot, and are downloaded only after authorization.
 - Every database query uses parameters/prepared statements or an ORM.
   Never concatenate SQL strings.
-- Every authorization decision is made on the server. Never trust
+- Enforce every authorization decision at the appropriate trusted boundary: a
+  service boundary for remote authority or a documented OS/process/container
+  capability boundary for local/offline authority. Never trust
   roles/permissions sent by the client.
 - Passwords: calibrated Argon2id; scrypt fallback, bcrypt legacy, PBKDF2/FIPS.
   Data: AEAD AES-GCM/ChaCha20-Poly1305 through a high-level library.
@@ -625,8 +629,11 @@ data independently of that choice.
 
 - [ ] Scope, ASVS 5.0.0 level (L1 or L2), exceptions, and evidence are
   recorded; the Top 10 was not used as a replacement checklist.
-- [ ] Input and authorization are enforced server-side; SQL is parameterized
-  (`v5.0.0-2.2.2`, `v5.0.0-8.3.1`, `v5.0.0-1.2.4`).
+- [ ] Untrusted input is validated and authorization is enforced at the
+  appropriate trusted boundary: a server/service for remote or service-backed
+  authority, or the documented OS/process/container/storage boundary for
+  local/offline authority; SQL is parameterized (`v5.0.0-2.2.2`,
+  `v5.0.0-8.3.1`, `v5.0.0-1.2.4`).
 - [ ] SSRF cases cover allowlists, non-global/metadata IPs, DNS rebinding,
   redirects, timeouts, and limits (`v5.0.0-1.3.6`).
 - [ ] Uploads cover generated names, type/content, post-decompression limits,

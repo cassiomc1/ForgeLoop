@@ -68,8 +68,8 @@ PLAIN_GUIDE_FRONTMATTER = {
     "name": re.compile(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*"),
     "language": re.compile(r"[a-z]{2}(?:-[A-Z]{2})?"),
 }
-GUIDE_VERSION = "2026.08"
-GUIDE_LAST_REVIEWED = "2026-08-08"
+GUIDE_VERSION = "2026.09"
+GUIDE_LAST_REVIEWED = "2026-08-10"
 
 
 class ValidationError(RuntimeError):

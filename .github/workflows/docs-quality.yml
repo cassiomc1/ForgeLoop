@@ -2,6 +2,8 @@ name: Docs quality
 
 on:
   push:
+    branches:
+      - main
   pull_request:
 
 permissions:
@@ -37,6 +39,9 @@ jobs:
         uses: DavidAnson/markdownlint-cli2-action@21c1be1b93ad9ed58fa840aacc3f279cde2a72ff # v24.2.0
 
       - name: Check links
+        # Link checking is independent of the Node matrix; avoid three
+        # simultaneous requests to rate-limited reference hosts.
+        if: matrix.node-version == 24
         uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
         with:
           args: --config .lychee.toml './**/*.md'

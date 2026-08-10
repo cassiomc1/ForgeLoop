@@ -16,8 +16,9 @@ exclude = [
   '^https://phaser\.io/$',
   # The article works in browsers but intermittently times out on the runner.
   '^https://akitaonrails\.com/en/2026/04/20/clean-code-for-ai-agents/$',
-  # Motion Primitives rate-limits automated probes with a Vercel challenge.
-  '^https://motion-primitives\.com/$',
+  # The site returns 429 to shared CI runners; keep the requested reference
+  # visible while checking every other URL normally.
+  '^https://(?:www\.)?motion-primitives\.com/$',
 ]
 
 # Blogspot rate-limits shared CI runners; keep the reference checked while

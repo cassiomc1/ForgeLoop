@@ -170,7 +170,8 @@ python3 scripts/validate_loop_system.py
 python3 scripts/scan_secrets.py
 ```
 
-Run the npm package checks as well:
+When maintaining a checkout of this source repository, run the npm package
+checks as well:
 
 ```bash
 npm test
@@ -290,7 +291,8 @@ If it is missing, request approval before running this pinned one-off download:
 npx --yes markdownlint-cli2@0.23.2
 ```
 
-Run the repository validators with Python's standard library:
+In a checkout of this source repository, run the repository validators with
+Python's standard library:
 
 ```bash
 python3 scripts/validate_loop_system.py --self-test

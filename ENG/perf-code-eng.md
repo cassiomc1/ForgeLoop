@@ -2,8 +2,8 @@
 name: perf-code-eng
 language: en
 description: "Performance measurement, diagnosis, and improvement for web, mobile, desktop, APIs, and data."
-version: "2026.08"
-last-reviewed: "2026-08-08"
+version: "2026.09"
+last-reviewed: "2026-08-10"
 ---
 
 # Performance Guide for Web, Mobile, Desktop, and Database Development
@@ -367,9 +367,11 @@ Lighthouse is a lab diagnostic tool: reproduce and investigate issues in it, but
   Never treat cache as the single source of truth.
 - Configure timeouts, cancellation, concurrency limits, backpressure, and
   retries with backoff/jitter. Do not retry indefinitely.
-- Web: monitor LCP ≤ 2.5 s, INP ≤ 200 ms, and CLS ≤ 0.1 at the p75 of RUM/CrUX,
-  segmented by mobile/desktop and URL/group; use Lighthouse for diagnosis,
-  responsive images with a fallback, code splitting, and a proven CDN.
+- Web: use LCP ≤ 2.5 s, INP ≤ 200 ms, and CLS ≤ 0.1 at the p75 of
+  RUM/CrUX as initial targets—not binding release gates unless the product
+  documents them—segmented by mobile/desktop and URL/group; use Lighthouse
+  for diagnosis, responsive images with a fallback, code splitting, and a
+  proven CDN.
 - Mobile: measure startup, jank, ANR/hangs, memory, and battery on real devices;
   defer initialization and keep the UI thread free.
 - Desktop: measure cold/warm startup, first interactive window, CPU/memory, and
