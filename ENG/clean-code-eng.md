@@ -53,7 +53,7 @@ Extract truly repeated logic when the copies share the same rule and will evolve
 
 ### 7. Tests the agent can run
 
-Keep a documented, repeatable, self-contained command. Every behavior change needs tests appropriate to its risk: unit tests for rules, integration tests for boundaries, and regression tests for real failures. See [`test-code-eng.md`](./test-code-eng.md) for language-specific choices.
+Keep a documented, repeatable, self-contained command when the project provides one. Do not invent a command or install a tool merely to make a check runnable; record a required unavailable check as blocked. Every behavior change needs tests appropriate to its risk: unit tests for rules, integration tests for boundaries, and regression tests for real failures. See [`test-code-eng.md`](./test-code-eng.md) for language-specific choices.
 
 ### 8. Predictable structure
 

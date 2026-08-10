@@ -221,15 +221,15 @@ A broad suite need not run in full on every PR when its cost reduces feedback wi
 - [ ] The risk and protected journey are named, with an owner and oracle.
 - [ ] Tool selection considers stack, compatibility, maintenance, runtime, existing project, and CI.
 - [ ] Coverage uses repository/change/branch/critical-path baselines, without a universal percentage.
-- [ ] Mutation testing was run or rejected with a cost/risk rationale.
+- [ ] For changed critical modules, mutation testing was run or rejected with a cost/risk rationale.
 - [ ] PR smoke and scheduled broad suites have separate commands and evidence.
 - [ ] SLOs/budgets include p95/p99, throughput, error rate, warm-up, and soak/spike where applicable.
 - [ ] Every applicable domain/framework has a recorded risk, approach, tool, and operational gate.
 - [ ] Journeys cover degraded/offline network, permissions, and background/foreground where relevant.
 - [ ] The OS/device matrix includes real hardware where an emulator does not prove the risk.
-- [ ] Automated accessibility was complemented by keyboard, AT, zoom/reflow, focus, contrast, and native mobile.
-- [ ] Windows uses Appium Windows Driver; direct WinAppDriver use is recorded as legacy.
-- [ ] Tauri E2E uses `@wdio/tauri-service`/`tauri-driver`, not Playwright attached to the window.
+- [ ] For affected user interfaces, automated accessibility was complemented by keyboard, AT, zoom/reflow, focus, contrast, and native-mobile checks where applicable.
+- [ ] For Windows desktop applications, Appium Windows Driver was used; direct WinAppDriver use is recorded as legacy.
+- [ ] For Tauri packaged-app E2E, use `@wdio/tauri-service`/`tauri-driver`, not Playwright attached to the window.
 - [ ] Cassettes were redacted and scanned; CSS snapshots are not the primary oracle.
 - [ ] Quarantine has an issue, owner, deadline, and substitute evidence; retries do not mask failures.
 - [ ] Migrations follow expand-migrate-contract, roll-forward, compatibility, and restore; `down` is truly reversible.

@@ -8,7 +8,7 @@ last-reviewed: "2026-08-10"
 
 # Accessibility as a Baseline (A11Y)
 
-> Accessibility instructions adapted from the [A11Y.md](https://github.com/fecarrico/A11Y.md) project (Felipe A. Carriço, MIT license) — a validation protocol and persistent context system for building accessible software from the very first line of code, aligned with **WCAG 2.2 AA**, **ISO 9241-171**, **ADA**, and **EAA**.
+> Accessibility instructions adapted from the [A11Y.md](https://github.com/fecarrico/A11Y.md) project (Felipe A. Carriço, MIT license) — a validation protocol and persistent context system for building accessible software from the very first line of code, informed by **WCAG 2.2** and **ISO 9241-171**. It can support evidence for applicable **ADA** or **EAA** obligations, but does not itself determine legal compliance.
 > **Related documents**: for visual/UX direction (palettes, typography, motion), see [`design-code-eng.md`](./design-code-eng.md). For automated testing tools (axe-core, Lighthouse, visual regression), see [`test-code-eng.md`](./test-code-eng.md). For code quality/structure, see [`clean-code-eng.md`](./clean-code-eng.md). For HTML-based video and motion, also see [HyperFrames](https://hyperframes.heygen.com). This file is the canonical reference for **accessibility rules** (WCAG, ARIA, keyboard, focus, screen readers) — it does not repeat the content of the others.
 > **Tooling policy**: identify the stack, the stage, and the applicable checks; prefer an already available equivalent that produces compatible evidence. Ask for authorization before installing a tool or changing the environment. If no safe equivalent exists, record the required check as blocked and never claim that it passed. Do not install merely optional resources.
 
@@ -32,7 +32,7 @@ This document's default implementation target is **Standard (AA)**. It supports 
 
 *The Launchpad profile additionally requires explicit `EXCEPTIONS.md` documentation for each criterion relaxed below AA.*
 
-> ⚠️ The **Launchpad (A)** profile does NOT relax CRITICAL rules (Section 1). Keyboard operability, focus management, and semantic HTML remain mandatory at ALL levels — these are Level A requirements.
+> ⚠️ The **Launchpad (A)** profile does NOT relax CRITICAL rules (Section 1). Keyboard operability remains a Level A WCAG requirement; semantic HTML and focus management remain mandatory baseline requirements of this guide at every profile.
 
 ## 1. Severity and impact model
 
@@ -69,13 +69,13 @@ To ensure technical integrity, any AI interacting with the project **MUST**:
 
 ### Operable
 
-- **Keyboard (SC 2.1.1):** 100% of functionalities **MUST** be operable without a mouse. Avoid purely pointer-based listeners without keyboard event equivalents (`onKeyDown`).
+- **Keyboard (SC 2.1.1):** all functionality **MUST** be operable without a mouse. Where the function depends on the path of movement rather than only its endpoints, document why the WCAG exception applies and provide a practical alternative when possible. Avoid purely pointer-based listeners without keyboard event equivalents (`onKeyDown`).
 - **Focus (SC 2.4.7, 2.4.11):** focus **MUST** be visible, never entirely obscured by author content (e.g., sticky headers/footers), persistent, and never suppressed via CSS (`outline: none` without fallback is forbidden).
 - **SPA routing:** after client-side routing changes, focus **MUST** be managed and properly reset (e.g., sending focus to the top or an `h1`). Avoid lost focus on the screen.
 - **Targets (SC 2.5.8):** interactive elements MUST have a minimum size of **24×24 CSS pixels** — the WCAG 2.2 AA floor — except when an equivalent larger target exists, sufficient spacing prevents accidental activation, or the target sits inline in text.
   **House Rule†:** design to **44×44px** (48×48 under Shield), the ergonomic floor shared by Apple HIG and Material Design. Under Shield, 44×44 is normative (SC 2.5.5 AAA).
 - **Dragging (SC 2.5.7, AA):** all functionality operated by dragging MUST have a simple pointer alternative that does not require dragging, unless dragging is essential or the behavior is provided by the user agent and has not been modified by the author. The alternative cannot rely only on a path-based gesture.
-- **Motion (SC 2.3.3 AAA — enforced as a House Rule† at every profile):** **MUST** respect the CSS media query `@media (prefers-reduced-motion)`. Avoid heavy state animations during crucial transitions if the preference is active.
+- **Motion (SC 2.3.3 AAA — enforced as a House Rule† at every profile):** on the web, **MUST** respect `@media (prefers-reduced-motion)`; on native platforms, honor the equivalent system setting or provide a control to reduce non-essential interaction-triggered motion. Avoid heavy state animations during crucial transitions when that preference is active.
 
 ### Understandable
 
@@ -124,7 +124,7 @@ When identifying an unmapped or highly complex component (e.g., charts, dynamic 
 
 ## 7. Verification workflow (Definition of Done)
 
-- [ ] **Technical check:** clean code, testable via integrated linter (`eslint-plugin-jsx-a11y` or similar), and passing without critical violations through engines like `Axe` (see [`test-code-eng.md`](./test-code-eng.md) for tool setup).
+- [ ] **Technical check:** run the project's already configured static accessibility checks and engines such as `Axe` where applicable (see [`test-code-eng.md`](./test-code-eng.md) for tool selection). Do not install a tool solely to satisfy this item; record a required unavailable check as blocked.
 - [ ] **Tab order:** `Tab` key path manually validated (ensures absence of frontend dead-ends).
 - [ ] **Focus (SC 2.4.13, AAA when applicable):** measure the area equivalent to a 2 CSS pixel perimeter and 3:1 contrast between the same pixels in focused and unfocused states; also verify applicable non-text contrast.
 - [ ] **Dragging (SC 2.5.7, AA):** test every drag operation with a simple pointer alternative that does not require dragging; document the essentiality or user-agent exception, if any.
