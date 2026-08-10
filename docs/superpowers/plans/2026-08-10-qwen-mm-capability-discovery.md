@@ -279,13 +279,36 @@ git commit -m "docs: add qwen multimodal setup guidance"
 
 **Files:**
 - Read: all changed files and the approved design/plan
+- Modify if the baseline scanner reproduces the ignored-artifact false positive: `scripts/scan_secrets.py`
+- Test if the scanner fix is required: `tests/test_scan_secrets.py`
 - Verify: repository validators, package tests, and package contents
 
 **Interfaces:**
 - Consumes: Tasks 1–3's committed changes.
 - Produces: evidence that the documentation contract is present, package behavior is unchanged, no secrets were introduced, and the final diff is scoped.
 
-- [ ] **Step 1: Run the full repository checks**
+- [ ] **Step 1: Keep secret scanning scoped to maintained files**
+
+If the repository-wide scanner reports a finding only inside the ignored
+`.superpowers/` task-artifact tree, add this regression to
+`tests/test_scan_secrets.py` before changing the scanner:
+
+```python
+def test_skips_internal_superpowers_artifacts(self) -> None:
+    self.assertFalse(should_scan_path(Path(".superpowers/sdd/task-report.md")))
+```
+
+Run:
+
+```bash
+python3 -m unittest tests.test_scan_secrets.SecretScannerTests.test_skips_internal_superpowers_artifacts -v
+```
+
+Expected RED: the test fails because `.superpowers` is not yet in
+`EXCLUDED_PARTS`. Add only `.superpowers` to that set, rerun the same test, and
+expect GREEN. Do not delete or rewrite ignored task artifacts.
+
+- [ ] **Step 2: Run the full repository checks**
 
 ```bash
 python3 scripts/validate_loop_system.py --self-test
@@ -299,11 +322,11 @@ npm run pack:check
 git diff --check
 ```
 
-Expected: every command exits 0; the Python suite reports 28 tests after the
+Expected: every command exits 0; the Python suite reports 29 tests after the
 new focused test is added, the Node suite remains green, and package checks
 contain no Qwen runtime dependency or unexpected file.
 
-- [ ] **Step 2: Inspect the complete diff and package boundary**
+- [ ] **Step 3: Inspect the complete diff and package boundary**
 
 ```bash
 git status --short --branch
@@ -317,7 +340,7 @@ documentation/test changes are present, that adapters and CLI behavior remain
 unchanged, and that API names appear only as configuration names without
 secret values.
 
-- [ ] **Step 3: Record the final local state**
+- [ ] **Step 4: Record the final local state**
 
 Report changed files, exact checks and counts, any unavailable optional link
 or live-harness verification, and publication state. Do not push, open a PR,
