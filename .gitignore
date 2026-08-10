@@ -2,4 +2,5 @@
 .worktrees/
 .commandcode/
 __pycache__/
+.mdfiles/
 *.py[cod]

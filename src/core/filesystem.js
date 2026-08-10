@@ -6,6 +6,7 @@ import {
   readFile,
   realpath,
   rename,
+  unlink,
   writeFile,
 } from "node:fs/promises";
 import path from "node:path";
@@ -112,7 +113,7 @@ export async function writeFileAtomic(filePath, bytes, { dryRun = false } = {}) 
     await rename(temporaryPath, filePath);
   } catch (error) {
     try {
-      await import("node:fs/promises").then(({ unlink }) => unlink(temporaryPath));
+      await unlink(temporaryPath);
     } catch {
       // Preserve the original filesystem error.
     }

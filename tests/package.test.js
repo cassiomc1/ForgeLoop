@@ -31,3 +31,22 @@ test("CLI package entry is executable by Node-compatible shells", async () => {
   assert.match(cli, /^#!\/usr\/bin\/env node\n/);
   assert.notEqual(metadata.mode & 0o111, 0);
 });
+
+test("release workflow uses a compatible OIDC publishing toolchain", async () => {
+  const workflow = await readFile(".github/workflows/npm-publish.yml", "utf8");
+
+  assert.match(workflow, /setup-node@820762786026740c76f36085b0efc47a31fe5020/);
+  assert.match(workflow, /node-version: 24/);
+  assert.match(workflow, /npm publish --access public\n/);
+  assert.match(workflow, /scripts\/validate_markdown.py --self-test/);
+  assert.match(workflow, /scripts\/validate_markdown.py\n/);
+  assert.doesNotMatch(workflow, /--provenance/);
+});
+
+test("supported Node engine versions are exercised in docs CI", async () => {
+  const packageJson = JSON.parse(await readFile("package.json", "utf8"));
+  const workflow = await readFile(".github/workflows/docs-quality.yml", "utf8");
+
+  assert.equal(packageJson.engines.node, ">=20");
+  assert.match(workflow, /node-version: \[20, 22, 24\]/);
+});

@@ -16,9 +16,21 @@ export async function runUpdate({ target, dryRun, packageRoot, packageVersion })
 
   const entries = await readTemplateEntries(packageRoot);
   const nextManifest = structuredClone(currentManifest);
-  nextManifest.packageVersion = packageVersion;
   const actions = [];
   const conflicts = [];
+  const plans = [];
+  const pruneActions = [];
+  const shippedPaths = new Set(entries.map((entry) => entry.relativePath));
+
+  for (const relativePath of Object.keys(nextManifest.files)) {
+    if (!shippedPaths.has(relativePath)) {
+      pruneActions.push({
+        action: dryRun ? "would-prune" : "pruned",
+        path: relativePath,
+        reason: "template-removed",
+      });
+    }
+  }
 
   for (const entry of entries) {
     const destination = ensureWithin(target, entry.relativePath);
@@ -28,12 +40,15 @@ export async function runUpdate({ target, dryRun, packageRoot, packageVersion })
     const exists = await fileExists(destination);
 
     if (!exists) {
-      actions.push({ action: dryRun ? "would-create" : "created", path: entry.relativePath });
-      await writeFileAtomic(destination, entry.bytes, { dryRun });
-      nextManifest.files[entry.relativePath] = {
-        sha256: sourceHash,
-        preserve: entry.relativePath === PROFILE_PATH,
-      };
+      plans.push({
+        action: dryRun ? "would-create" : "created",
+        destination,
+        entry,
+        record: {
+          sha256: sourceHash,
+          preserve: entry.relativePath === PROFILE_PATH,
+        },
+      });
       continue;
     }
 
@@ -60,15 +75,33 @@ export async function runUpdate({ target, dryRun, packageRoot, packageVersion })
 
     if (currentHash === sourceHash) {
       actions.push({ action: "skip", path: entry.relativePath, reason: "current" });
-      nextManifest.files[entry.relativePath] = { ...record, sha256: sourceHash };
       continue;
     }
 
-    actions.push({ action: dryRun ? "would-update" : "updated", path: entry.relativePath });
-    await writeFileAtomic(destination, entry.bytes, { dryRun });
-    nextManifest.files[entry.relativePath] = { ...record, sha256: sourceHash };
+    plans.push({
+      action: dryRun ? "would-update" : "updated",
+      destination,
+      entry,
+      record: { ...record, sha256: sourceHash },
+    });
   }
 
+  if (conflicts.length > 0) {
+    return { actions, conflicts, manifest: currentManifest };
+  }
+
+  for (const relativePath of Object.keys(nextManifest.files)) {
+    if (!shippedPaths.has(relativePath)) delete nextManifest.files[relativePath];
+  }
+  actions.push(...pruneActions);
+
+  for (const plan of plans) {
+    actions.push({ action: plan.action, path: plan.entry.relativePath });
+    await writeFileAtomic(plan.destination, plan.entry.bytes, { dryRun });
+    nextManifest.files[plan.entry.relativePath] = plan.record;
+  }
+
+  nextManifest.packageVersion = packageVersion;
   await writeManifest(target, nextManifest, { dryRun });
   return { actions, conflicts, manifest: nextManifest };
 }

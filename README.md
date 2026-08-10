@@ -25,9 +25,9 @@ relevant to the target project.
 | Accessibility | WCAG 2.2-oriented protocol for interfaces | [`accessibility-eng.md`](./ENG/accessibility-eng.md) |
 | Web games | Architecture, design, and operation of 2D, 3D, and procedural games | [`games-code-design-web-eng.md`](./ENG/games-code-design-web-eng.md) |
 
-Each guide declares its name, `language: en`, description, version, and last
-review date in frontmatter. The eight guides use version `2026.08` and review
-date `2026-08-08`.
+Each guide declares its name, `language: en`, description, version, and review
+date in frontmatter. The repository validator checks that the guide metadata
+and catalog remain synchronized.
 
 ## Universal project loop
 
@@ -53,9 +53,9 @@ official sources and precedence notes.
 ### Use with npm
 
 The npm CLI targets Node.js 20 or newer and installs the kit into an existing
-project without overwriting local instructions. The package is published when
-the release workflow has completed; until the registry entry is available, use
-the repository checkout fallback below.
+project without overwriting local instructions. When the package is available
+in the npm registry, use the commands below; otherwise use the repository
+checkout fallback.
 
 ```bash
 npx @cassiomc1/mdfiles init
@@ -71,6 +71,12 @@ node src/cli.js init
 node src/cli.js doctor
 node src/cli.js update
 ```
+
+The release workflow uses [npm trusted publishing](https://docs.npmjs.com/trusted-publishers)
+through GitHub Actions OIDC. Before the first release, register this repository
+and workflow as the package's trusted publisher in npm; each `vX.Y.Z` tag must
+match `package.json`. After publishing, verify the package version and its npm
+provenance record.
 
 The commands above use the current directory. To install into another existing
 project directory, pass a relative or absolute `--path`:
@@ -89,12 +95,13 @@ npx @cassiomc1/mdfiles update --path /path/to/my-project
 
 The target must already exist and be a directory; the CLI will not create or
 replace an arbitrary path. Use `--dry-run` to preview writes before `init` or
-`update`. `--json` is supported by `doctor` only. The CLI records managed files
-and their hashes in `.mdfiles/manifest.json`; `update` leaves locally modified
-files and `PROJECT_PROFILE.md` untouched. If a target already has a manifest,
-rerun `update` instead of `init`. Symlinked targets or template parents are
-rejected, and `doctor` reports pre-existing adapters that still need a manual
-merge with the loop reference.
+`update`. `--json`, `--strict`, and `--adopt <path>` are supported by `doctor`;
+adoption is limited to a supported adapter that has been reviewed locally. The
+CLI records managed files and their hashes in `.mdfiles/manifest.json`; `update`
+leaves locally modified files and `PROJECT_PROFILE.md` untouched. If a target
+already has a manifest, rerun `update` instead of `init`. Symlinked targets or
+template parents are rejected, and unadopted pre-existing adapters are reported
+for manual merge with the loop reference.
 
 ### Install in a target project
 
@@ -111,6 +118,8 @@ GUIDE_ROUTER.md
 PROJECT_PROFILE.md
 LOOP_SYSTEM_DESIGN.md
 THIRD_PARTY_NOTICES.md
+LICENSE
+LICENSE-DOCS.md
 .github/copilot-instructions.md
 .cursor/rules/project-loop.mdc
 ENG/
@@ -250,6 +259,8 @@ Run the repository validators with Python's standard library:
 ```bash
 python3 scripts/validate_loop_system.py --self-test
 python3 scripts/validate_loop_system.py
+python3 scripts/validate_markdown.py --self-test
+python3 scripts/validate_markdown.py
 python3 -m unittest discover -s tests -v
 python3 scripts/scan_secrets.py
 ```

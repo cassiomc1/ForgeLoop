@@ -1,6 +1,6 @@
 # Universal Engineering Loop — System Design
 
-**Status:** Implemented and validated on 2026-08-09.
+**Status:** Implemented; repository checks validate the system contract.
 
 ## Objective
 
@@ -222,10 +222,11 @@ The validator also exercises six routing scenarios:
 ## Distribution
 
 The npm CLI installs the kit into the current directory or an existing
-directory selected with `--path` once the package is published. Before that
-release, the same commands can run as `node src/cli.js ...` from a repository
-checkout. A user may also download the repository or a release archive and copy
-these items while preserving their relative structure:
+directory selected with `--path` when the package is available in the npm
+registry. If it is not available yet, the same commands can run as
+`node src/cli.js ...` from a repository checkout. A user may also download the
+repository or a release archive and copy these items while preserving their
+relative structure:
 
 - the four native agent adapters plus `AGENT_COMPATIBILITY.md`;
 - the shared `AGENTS.md` entry point for the six compatible agents;
@@ -233,6 +234,7 @@ these items while preserving their relative structure:
 - `GUIDE_ROUTER.md`;
 - `PROJECT_PROFILE.md`;
 - `THIRD_PARTY_NOTICES.md`;
+- `LICENSE` and `LICENSE-DOCS.md`;
 - the `ENG/` guide directory.
 
 The README explains the file set, activation behavior, current/relative/absolute
