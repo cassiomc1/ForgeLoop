@@ -3,4 +3,5 @@
 .commandcode/
 __pycache__/
 .forgeloop/
+docs/superpowers/
 *.py[cod]
