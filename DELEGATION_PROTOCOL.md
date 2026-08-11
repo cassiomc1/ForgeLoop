@@ -1,0 +1,75 @@
+# Delegation protocol
+
+`mdfiles` defines coordination contracts but does not schedule agents or
+provide a multi-agent runtime. A compatible harness may execute a validated
+brief through native subagents; a harness without that capability executes the
+same brief inline and reports the degraded mode.
+
+## Task brief
+
+A delegated task is self-contained and versioned:
+
+```json
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "taskId": "child-1",
+  "parentTaskId": "parent-1",
+  "objective": "One independently verifiable objective.",
+  "allowedPaths": ["src/feature.js"],
+  "readOnlyPaths": ["README.md"],
+  "dependencies": [],
+  "constraints": [],
+  "requiredGuides": ["clean", "test"],
+  "verification": ["npm test"],
+  "authority": ["write only allowed paths"],
+  "deliverables": ["code and test result"],
+  "executionMode": "delegated"
+}
+```
+
+`allowedPaths` are write ownership. `readOnlyPaths` may be inspected but not
+changed. Absolute paths, traversal, duplicate paths, and allowed/read-only
+overlap are invalid. Two briefs with exact or parent/child write overlap must
+be serialized or assigned to one integration owner. Dependencies are explicit
+and cycles are rejected.
+
+Parallel work is eligible only when shared files, shared state, ordering
+dependencies, and external resources have been checked. A database migration
+and code that depends on its new shape are not independent tasks.
+
+## Result normalization
+
+Every delegated result uses:
+
+```text
+STATUS
+CHANGES
+VERIFICATION
+OPEN FINDINGS
+LIMITATIONS
+```
+
+Valid statuses are `complete`, `complete-with-concerns`, `needs-context`, and
+`blocked`. Results are serializable, secret-free, and validated against
+`schemas/delegated-result.schema.json`.
+
+## Review and integration
+
+An independent reviewer receives the approved brief, resulting diff,
+verification evidence, and known risks. A review is independent only when the
+reviewer identity differs from the implementer and the result explicitly uses
+`reviewType: "independent"`; a second pass by the same identity is self-review.
+
+The parent agent integrates in dependency order:
+
+1. validate each result against its brief;
+2. detect overlapping changes and unresolved findings;
+3. integrate non-overlapping results in dependency order;
+4. run targeted checks and combined regression;
+5. perform final specification and quality review.
+
+If subagents, worktrees, or parallel tools are unavailable, use
+`executionMode: "inline"`. This preserves the task contract but cannot claim
+parallelism or independent review. Missing capabilities are limitations, not
+silent successes.

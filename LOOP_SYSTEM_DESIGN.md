@@ -154,6 +154,12 @@ Durable context for a destination project. The template captures:
 
 The profile changes only when discovery reveals a real project change; it is not a task diary. In this source repository, `profile-mode: template` keeps it as a reusable template. After copying it into a code repository, the first cycle may change the mode to `project` and fill only confirmed facts.
 
+### `DELEGATION_PROTOCOL.md`
+
+The delegation document defines serializable task briefs, write ownership,
+dependencies, normalized results, reviewer independence, and inline fallback.
+It does not add agent personas, a scheduler, or a provider runtime.
+
 ### `ENG/*.md`
 
 Eight canonical guides cover:
