@@ -104,6 +104,19 @@ capability as a limitation. Inline execution is not independent review, a
 non-Git target cannot provide branch/HEAD drift evidence, and a missing remote
 service is a blocker rather than a simulated success.
 
+The degraded-mode contract is explicit:
+
+| Missing capability | Required behavior |
+| --- | --- |
+| Subagents | Execute the same brief inline; do not claim delegation or independent review. |
+| Worktrees or isolation | Keep ownership boundaries in the brief and serialize conflicting work. |
+| Web or MCP | Use a local equivalent only when it provides compatible evidence; otherwise mark the check not verified or blocked. |
+| Persistent state | Keep the handoff in the current session and report that resume across sessions is unavailable. |
+| Git checkout | Continue with local file evidence, but report that branch/HEAD drift cannot be verified. |
+
+These are limitations of the active harness, not reasons to invent a command,
+provider, remote service, or successful check.
+
 ## Installed files
 
 Every initialized project receives this guide plus the canonical documents:

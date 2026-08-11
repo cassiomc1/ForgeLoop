@@ -78,6 +78,9 @@ npx @cassiomc1/mdfiles validate-receipt --file ./execution-receipt.json --json
 state; they do not execute commands from the target profile.
 All protocol-support commands are local and offline-capable by default; the
 package sends no telemetry and has no central trace service.
+Capability gaps and inline/non-Git degraded mode are defined in
+[`AGENT_COMPATIBILITY.md`](./AGENT_COMPATIBILITY.md); they are reported as
+limitations rather than treated as silent successes.
 
 ### Protocol compatibility
 
