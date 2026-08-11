@@ -16,6 +16,8 @@ import { getPackageRoot } from "./templates.js";
 import { currentRepositoryFingerprint } from "./repository.js";
 import { createEvidence } from "./evidence.js";
 import { assertJsonBytes } from "./json-safety.js";
+import { assertCoverageList } from "./coverage.js";
+import { canonicalFingerprint } from "./artifacts.js";
 
 export const WORK_STATE_PATH = ".forgeloop/work-state.json";
 
@@ -27,20 +29,8 @@ export class WorkStateError extends Error {
   }
 }
 
-function canonicalize(value) {
-  if (Array.isArray(value)) return value.map(canonicalize);
-  if (value && typeof value === "object") {
-    return Object.fromEntries(
-      Object.keys(value).sort().map((key) => [key, canonicalize(value[key])]),
-    );
-  }
-  return value;
-}
-
 export function contractFingerprint(contract) {
-  return createHash("sha256")
-    .update(JSON.stringify(canonicalize(contract)))
-    .digest("hex");
+  return canonicalFingerprint(contract);
 }
 
 function assertFingerprint(value, label) {
@@ -101,6 +91,7 @@ export function assertWorkStateSemantics(state) {
     throw new WorkStateError("Work state taskId is required");
   }
   assertFingerprint(state.contractFingerprint, "contractFingerprint");
+  if (state.routeFingerprint !== undefined) assertFingerprint(state.routeFingerprint, "routeFingerprint");
   if (!state.repositoryFingerprint || typeof state.repositoryFingerprint !== "object" || Array.isArray(state.repositoryFingerprint)) {
     throw new WorkStateError("repositoryFingerprint is required");
   }
@@ -117,6 +108,34 @@ export function assertWorkStateSemantics(state) {
   if (new Set(state.selectedGuides).size !== state.selectedGuides.length) {
     throw new WorkStateError("selectedGuides must not contain duplicates");
   }
+  for (const key of ["requiredGates", "satisfiedGates"]) {
+    if (state[key] !== undefined) {
+      assertStringArray(state[key], key);
+      if (new Set(state[key]).size !== state[key].length) {
+        throw new WorkStateError(`${key} must not contain duplicates`);
+      }
+    }
+  }
+  if (state.satisfiedGates?.some((gate) => !state.requiredGates?.includes(gate))) {
+    throw new WorkStateError("satisfiedGates must be a subset of requiredGates");
+  }
+  if (state.complianceMode !== undefined && !["advisory", "standard", "strict"].includes(state.complianceMode)) {
+    throw new WorkStateError(`Unknown compliance mode: ${state.complianceMode}`);
+  }
+  if (state.publicationStatus !== undefined
+    && !["not-published", "local-only", "committed", "pushed", "published", "deployed"].includes(state.publicationStatus)) {
+    throw new WorkStateError(`Unknown publication status: ${state.publicationStatus}`);
+  }
+  if (state.evidenceCoverage !== undefined && !Array.isArray(state.evidenceCoverage)) {
+    throw new WorkStateError("evidenceCoverage must be an array");
+  }
+  if (state.evidenceCoverage !== undefined) {
+    try {
+      assertCoverageList(state.evidenceCoverage);
+    } catch (error) {
+      throw new WorkStateError(error.message);
+    }
+  }
   assertStringArray(state.completedSteps, "completedSteps");
   assertStringArray(state.pendingSteps, "pendingSteps");
   normalizeRequiredArtifacts(state.requiredArtifacts);
@@ -125,6 +144,9 @@ export function assertWorkStateSemantics(state) {
   }
   if (state.phase === "COMPLETE" && state.verificationEvidence.length === 0) {
     throw new WorkStateError("COMPLETE requires verification evidence");
+  }
+  if (state.phase === "COMPLETE" && state.evidenceCoverage?.some((item) => item.status !== "COVERED")) {
+    throw new WorkStateError("COMPLETE requires covered evidence for every recorded criterion");
   }
   if (state.phase === "BLOCKED" && state.blockers.length === 0) {
     throw new WorkStateError("BLOCKED requires a blocker");
@@ -151,9 +173,15 @@ export function createWorkState(input) {
     protocolVersion: PROTOCOL_VERSION,
     taskId: input.taskId,
     contractFingerprint: input.contractFingerprint,
+    ...(input.routeFingerprint !== undefined ? { routeFingerprint: input.routeFingerprint } : {}),
     repositoryFingerprint: input.repositoryFingerprint ?? { branch: null, head: null },
     phase: input.phase,
     selectedGuides: [...(input.selectedGuides ?? [])],
+    ...(input.requiredGates !== undefined ? { requiredGates: [...input.requiredGates] } : {}),
+    ...(input.satisfiedGates !== undefined ? { satisfiedGates: [...input.satisfiedGates] } : {}),
+    ...(input.complianceMode !== undefined ? { complianceMode: input.complianceMode } : {}),
+    ...(input.evidenceCoverage !== undefined ? { evidenceCoverage: [...input.evidenceCoverage] } : {}),
+    ...(input.publicationStatus !== undefined ? { publicationStatus: input.publicationStatus } : {}),
     completedSteps: [...(input.completedSteps ?? [])],
     pendingSteps: [...(input.pendingSteps ?? [])],
     requiredArtifacts: normalizeRequiredArtifacts(input.requiredArtifacts),

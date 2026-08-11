@@ -1,5 +1,6 @@
 import { PROTOCOL_VERSION } from "./protocol.js";
 import { createEvidence } from "./evidence.js";
+import { canonicalFingerprint } from "./artifacts.js";
 
 function error(code, message, artifacts = []) {
   return { code, message, artifacts };
@@ -50,6 +51,12 @@ export function validateTaskArtifactSet({
   }
   if (route && state && JSON.stringify(route.guides) !== JSON.stringify(state.selectedGuides)) {
     errors.push(error("ROUTE_STATE_GUIDES_MISMATCH", "work-state.selectedGuides must equal routing-result.guides", ["route", "state"]));
+  }
+  if (route && state && state.routeFingerprint !== undefined && state.routeFingerprint !== canonicalFingerprint(route)) {
+    errors.push(error("ROUTE_STATE_FINGERPRINT_MISMATCH", "work-state.routeFingerprint must match routing-result", ["route", "state"]));
+  }
+  if (route && receipt && receipt.routeFingerprint !== undefined && receipt.routeFingerprint !== canonicalFingerprint(route)) {
+    errors.push(error("STATE_RECEIPT_ROUTE_MISMATCH", "execution-receipt.routeFingerprint must match routing-result", ["route", "receipt"]));
   }
   if (state && receipt && JSON.stringify(state.selectedGuides) !== JSON.stringify(receipt.selectedGuides)) {
     errors.push(error("STATE_RECEIPT_GUIDES_MISMATCH", "execution-receipt.selectedGuides must equal work-state.selectedGuides", ["state", "receipt"]));

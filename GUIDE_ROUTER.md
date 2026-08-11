@@ -24,6 +24,22 @@ Useful questions:
 
 ## Canonical catalog
 
+Guide frontmatter may declare protocol metadata in addition to its human
+description:
+
+```yaml
+guide-id: premium
+requires-gates:
+  - design
+completion-evidence:
+  - build
+```
+
+`requires-gates` contributes to `forgeloop preflight`; each
+`completion-evidence` identifier contributes to completion coverage. Metadata
+is descriptive and local: it does not authorize tools, remote services, or
+project commands.
+
 | ID | Guide | Responsibility |
 | --- | --- | --- |
 | `premium` | [Premium websites](./ENG/premium-sites-studio-eng.md) | End-to-end delivery of high-quality websites and web experiences |

@@ -47,7 +47,9 @@ quoted_frontmatter_keys = {"description", "version", "last-reviewed"}
 plain_frontmatter_patterns = {
     "name": re.compile(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*"),
     "language": re.compile(r"[a-z]{2}(?:-[A-Z]{2})?"),
+    "guide-id": re.compile(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*"),
 }
+list_frontmatter_keys = {"requires-gates", "completion-evidence"}
 implicit_plain_yaml = re.compile(
     r"(?ix:"
     r"~|null|true|false|yes|no|on|off|"
@@ -128,9 +130,36 @@ def parse_frontmatter(text, path):
         ) from error
 
     metadata = {}
-    for line_number, line in enumerate(lines[1:closing_index], 2):
+    index = 1
+    while index < closing_index:
+        line_number = index + 1
+        line = lines[index]
+        list_match = re.fullmatch(r"(requires-gates|completion-evidence):[ \t]*", line)
+        if list_match:
+            key = list_match.group(1)
+            if key in metadata:
+                raise ValidationError(
+                    f"{path}:{line_number}: duplicate frontmatter key {key}"
+                )
+            values = []
+            index += 1
+            while index < closing_index:
+                item_match = re.fullmatch(r"[ \t]+-[ \t]+(.+)", lines[index])
+                if not item_match:
+                    break
+                item_line = index + 1
+                item = item_match.group(1).strip()
+                if not re.fullmatch(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*", item):
+                    raise ValidationError(
+                        f"{path}:{item_line}: invalid {key} item"
+                    )
+                values.append(item)
+                index += 1
+            metadata[key] = values
+            continue
+
         match = re.fullmatch(
-            r"(name|language|description|version|last-reviewed):[ \t]+(.+)",
+            r"(name|language|description|version|last-reviewed|guide-id):[ \t]+(.+)",
             line,
         )
         if not match:
@@ -143,8 +172,9 @@ def parse_frontmatter(text, path):
                 f"{path}:{line_number}: duplicate frontmatter key {key}"
             )
         metadata[key] = parse_scalar(key, raw_value, path, line_number)
+        index += 1
 
-    if set(metadata) != required:
+    if not required.issubset(metadata):
         raise ValidationError(f"{path}: frontmatter keys differ from contract")
     return metadata
 
@@ -496,6 +526,11 @@ language: en
 description: "Valid scalar with punctuation."
 version: "{GUIDE_VERSION}"
 last-reviewed: "{GUIDE_LAST_REVIEWED}"
+guide-id: sample
+requires-gates:
+  - design
+completion-evidence:
+  - build
 ---
 # Sample
 """

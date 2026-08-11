@@ -1,0 +1,7 @@
+{
+  "workType": "bug",
+  "surfaces": [],
+  "risks": [],
+  "platforms": [],
+  "guides": ["clean", "test"]
+}

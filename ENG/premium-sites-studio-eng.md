@@ -4,6 +4,15 @@ language: en
 description: "Complete process for building premium websites at major design-studio quality."
 version: "2026.09"
 last-reviewed: "2026-08-10"
+guide-id: premium
+requires-gates:
+  - design
+  - quality
+completion-evidence:
+  - responsive-validation
+  - accessibility-validation
+  - build
+  - visual-validation
 ---
 
 # Premium Websites at Studio Level — Complete Process

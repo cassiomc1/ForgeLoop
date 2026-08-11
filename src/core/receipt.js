@@ -2,6 +2,8 @@ import { GUIDE_IDS, PROTOCOL_VERSION } from "./protocol.js";
 import { assertSchema, readSchema } from "./schema-validation.js";
 import { assertEvidenceList, evidenceMatches } from "./evidence.js";
 import { assertJsonLimits } from "./json-safety.js";
+import { assertCheck, assertCheckList } from "./checks.js";
+import { assertCoverageList } from "./coverage.js";
 
 const RECEIPT_SCHEMA_VERSION = 1;
 const SECRET_WORDS = new Set(["token", "password", "secret", "credential"]);
@@ -59,6 +61,10 @@ export function assertReceiptSemantics(receipt) {
   assertEvidenceList(evidence, "receipt.evidence");
 
   for (const [index, check] of receipt.checks.entries()) {
+    if (check?.schemaVersion !== undefined || check?.id !== undefined || check?.evidenceKind !== undefined) {
+      assertCheck(check, `receipt.checks[${index}]`);
+      continue;
+    }
     if (check?.status === "passed") {
       const hasCommandOrResult = [check.command, check.result, check.name]
         .some((value) => typeof value === "string" && value.trim().length > 0);
@@ -66,6 +72,10 @@ export function assertReceiptSemantics(receipt) {
         throw new Error(`receipt.checks[${index}] passed check requires a command or result`);
       }
     }
+  }
+
+  if (receipt.evidenceCoverage !== undefined) {
+    assertCoverageList(receipt.evidenceCoverage, "receipt.evidenceCoverage");
   }
 
   if (receipt.status === "complete") {
@@ -82,8 +92,30 @@ export function assertReceiptSemantics(receipt) {
   ];
   for (const [claimed, terms, field, label] of publicationEvidence) {
     if (claimed && !evidenceMatches(evidence, terms)) {
-      throw new Error(`publication.${field} requires ${label} evidence`);
+      const error = new Error(`publication.${field} requires ${label} evidence`);
+      error.code = "E_PUBLICATION_CLAIM_UNVERIFIED";
+      throw error;
     }
+  }
+
+  if (["committed", "pushed", "published", "deployed"].includes(receipt.publicationStatus)) {
+    const requiredTerms = receipt.publicationStatus === "committed"
+      ? ["commit", "committed"]
+      : receipt.publicationStatus === "pushed"
+        ? ["git push", "pushed"]
+        : receipt.publicationStatus === "deployed"
+          ? ["deploy", "deployed", "deployment"]
+          : ["publish", "published", "release"];
+    if (!evidenceMatches(evidence, requiredTerms)) {
+      const error = new Error(`publicationStatus ${receipt.publicationStatus} requires publication evidence`);
+      error.code = "E_PUBLICATION_CLAIM_UNVERIFIED";
+      throw error;
+    }
+  }
+  if (receipt.productionReadiness === "ready" && !evidenceMatches(evidence, ["production readiness", "production validation", "deployment"])) {
+    const error = new Error("productionReadiness ready requires production evidence");
+    error.code = "E_PRODUCTION_READINESS_UNVERIFIED";
+    throw error;
   }
 
   if (receipt.review.independent === true) {

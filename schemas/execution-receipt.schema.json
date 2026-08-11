@@ -9,7 +9,13 @@
     "protocolVersion": { "const": 1 },
     "taskId": { "type": "string", "minLength": 1 },
     "contractFingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "routeFingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "stateFingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
     "status": { "enum": ["in-progress", "complete", "blocked", "complete-with-concerns"] },
+    "taskStatus": { "enum": ["in-progress", "complete", "blocked", "incomplete"] },
+    "verificationStatus": { "enum": ["valid", "invalid", "not-verified", "blocked"] },
+    "publicationStatus": { "enum": ["not-published", "local-only", "committed", "pushed", "published", "deployed"] },
+    "productionReadiness": { "enum": ["ready", "not-verified", "blocked"] },
     "selectedGuides": { "type": "array", "items": { "type": "string" } },
     "changedPaths": { "type": "array", "items": { "type": "string" } },
     "checks": { "type": "array", "items": { "type": "object" } },
@@ -27,6 +33,10 @@
         },
         "additionalProperties": false
       }
+    },
+    "evidenceCoverage": {
+      "type": "array",
+      "items": { "type": "object" }
     },
     "review": { "type": "object" },
     "limitations": { "type": "array", "items": { "type": "string" } },

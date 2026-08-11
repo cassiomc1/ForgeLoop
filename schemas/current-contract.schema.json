@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "forgeloop://schemas/current-contract.schema.json",
+  "title": "ForgeLoop current execution contract",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "protocolVersion",
+    "taskId",
+    "objective",
+    "deliverables",
+    "constraints",
+    "risks",
+    "verification",
+    "successCriteria",
+    "stopConditions",
+    "unresolvedDecisions",
+    "sourceRefs"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "protocolVersion": { "const": 1 },
+    "taskId": { "type": "string", "minLength": 1 },
+    "objective": { "type": "string", "minLength": 1 },
+    "deliverables": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "constraints": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "risks": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "verification": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "successCriteria": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "stopConditions": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "unresolvedDecisions": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "sourceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+  },
+  "additionalProperties": false
+}

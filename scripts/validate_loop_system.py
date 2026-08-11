@@ -69,6 +69,17 @@ SCHEMA_FILES = (
     "task-brief.schema.json",
     "delegated-result.schema.json",
     "evidence.schema.json",
+    "current-contract.schema.json",
+    "gate.schema.json",
+    "source-registry.schema.json",
+    "config.schema.json",
+    "preflight.schema.json",
+    "check.schema.json",
+    "evidence-coverage.schema.json",
+    "event.schema.json",
+    "activation.schema.json",
+    "policy.schema.json",
+    "task-bundle.schema.json",
 )
 
 FAILURE_CLASSES = (
@@ -97,6 +108,18 @@ LOOP_INVARIANTS = (
     "no unrelated refactor during uncertain diagnosis;",
     "no secret in the profile, work state, receipt, or delegation artifacts;",
     "no independent-agent claim when only self-review occurred.",
+    "no EXECUTING phase without a valid current contract.",
+    "no EXECUTING phase without a valid route when routing is required.",
+    "no EXECUTING phase while a mandatory pre-implementation gate is unsatisfied.",
+    "no COMPLETE phase without evidence coverage for every required success criterion.",
+    "no COMPLETE phase with stale contract, route, gate, state, or receipt fingerprints.",
+    "selected guides must match across route, work state, and receipt.",
+    "an agent decision cannot be recorded as a user fact.",
+    "a required OBSERVED check cannot be satisfied by INFERRED evidence.",
+    "BLOCKED evidence cannot be represented as PASSED.",
+    "completion must be validated by the protocol, not only declared by the agent.",
+    "protocol chronology must not permit execution before mandatory preflight events.",
+    "publication status and production readiness must remain independent from local task completion.",
 )
 
 ADAPTERS = (
@@ -143,7 +166,9 @@ QUOTED_GUIDE_FRONTMATTER = {"description", "version", "last-reviewed"}
 PLAIN_GUIDE_FRONTMATTER = {
     "name": re.compile(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*"),
     "language": re.compile(r"[a-z]{2}(?:-[A-Z]{2})?"),
+    "guide-id": re.compile(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*"),
 }
+LIST_GUIDE_FRONTMATTER = {"requires-gates", "completion-evidence"}
 GUIDE_VERSION = "2026.09"
 GUIDE_LAST_REVIEWED = "2026-08-10"
 
@@ -240,7 +265,7 @@ def _parse_guide_scalar(
     return value
 
 
-def parse_guide_frontmatter(path: Path) -> dict[str, str]:
+def parse_guide_frontmatter(path: Path) -> dict[str, object]:
     lines = path.read_text(encoding="utf-8").splitlines()
     if not lines or lines[0] != "---":
         raise ValidationError(f"{path}: missing exact opening frontmatter delimiter")
@@ -251,11 +276,33 @@ def parse_guide_frontmatter(path: Path) -> dict[str, str]:
             f"{path}: missing exact closing frontmatter delimiter"
         ) from error
 
-    metadata: dict[str, str] = {}
-    for line_number, line in enumerate(lines[1:closing], 2):
+    metadata: dict[str, object] = {}
+    index = 1
+    while index < closing:
+        line_number = index + 1
+        list_match = re.fullmatch(r"(requires-gates|completion-evidence):[ \t]*", lines[index])
+        if list_match:
+            key = list_match.group(1)
+            if key in metadata:
+                raise ValidationError(f"{path}:{line_number}: duplicate frontmatter key {key}")
+            values: list[str] = []
+            index += 1
+            while index < closing:
+                item_match = re.fullmatch(r"[ \t]+-[ \t]+(.+)", lines[index])
+                if not item_match:
+                    break
+                item_line = index + 1
+                item = item_match.group(1).strip()
+                if not re.fullmatch(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*", item):
+                    raise ValidationError(f"{path}:{item_line}: invalid {key} item")
+                values.append(item)
+                index += 1
+            metadata[key] = values
+            continue
+
         match = re.fullmatch(
-            r"(name|language|description|version|last-reviewed):[ \t]+(.+)",
-            line,
+            r"(name|language|description|version|last-reviewed|guide-id):[ \t]+(.+)",
+            lines[index],
         )
         if not match:
             raise ValidationError(f"{path}:{line_number}: invalid frontmatter line")
@@ -263,8 +310,9 @@ def parse_guide_frontmatter(path: Path) -> dict[str, str]:
         if key in metadata:
             raise ValidationError(f"{path}:{line_number}: duplicate frontmatter key {key}")
         metadata[key] = _parse_guide_scalar(key, raw_value, path, line_number)
+        index += 1
 
-    if set(metadata) != REQUIRED_GUIDE_FRONTMATTER:
+    if not REQUIRED_GUIDE_FRONTMATTER.issubset(metadata):
         raise ValidationError(f"{path}: frontmatter keys differ from contract")
     return metadata
 

@@ -1,0 +1,113 @@
+import { readdir } from "node:fs/promises";
+
+import { ARTIFACT_PATHS, readJsonArtifact, writeJsonArtifact } from "./artifacts.js";
+import { assertSafePath, ensureWithin, fileExists, readBytes, writeFileAtomic } from "./filesystem.js";
+import { PROTOCOL_VERSION } from "./protocol.js";
+
+export const BUNDLE_SCHEMA_VERSION = 1;
+const BUNDLE_ROOT = ".forgeloop/tasks";
+
+function safeTaskId(taskId) {
+  if (typeof taskId !== "string" || !/^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(taskId)) {
+    const error = new Error(`Invalid task ID for bundle: ${taskId}`);
+    error.code = "E_BUNDLE_PATH_INVALID";
+    throw error;
+  }
+  return taskId;
+}
+
+function bundleDirectory(taskId) {
+  return `${BUNDLE_ROOT}/${safeTaskId(taskId)}`;
+}
+
+async function copyJson(target, sourcePath, destinationPath, schemaName, packageRoot, artifacts, relativeName) {
+  try {
+    const value = await readJsonArtifact(target, sourcePath, schemaName, packageRoot);
+    await writeJsonArtifact(target, destinationPath, value.value, schemaName, packageRoot);
+    artifacts.push(relativeName);
+    return value;
+  } catch (error) {
+    if (error.code === "ARTIFACT_MISSING") return null;
+    throw error;
+  }
+}
+
+export async function exportTaskBundle(target, taskId, packageRoot) {
+  safeTaskId(taskId);
+  const directory = bundleDirectory(taskId);
+  const artifacts = [];
+  const required = [
+    [ARTIFACT_PATHS.contract, "contract.json", "current-contract"],
+    [ARTIFACT_PATHS.route, "route.json", "routing-result"],
+    [ARTIFACT_PATHS.state, "state.json", "work-state"],
+  ];
+  for (const [sourcePath, destinationName, schemaName] of required) {
+    const source = await readJsonArtifact(target, sourcePath, schemaName, packageRoot);
+    if (source.value.taskId !== undefined && source.value.taskId !== taskId) {
+      const error = new Error(`${sourcePath} belongs to ${source.value.taskId}, not ${taskId}`);
+      error.code = "E_BUNDLE_TASK_MISMATCH";
+      throw error;
+    }
+    await writeJsonArtifact(target, `${directory}/${destinationName}`, source.value, schemaName, packageRoot);
+    artifacts.push(destinationName);
+  }
+  const optional = [
+    [ARTIFACT_PATHS.preflight, "preflight.json", "preflight"],
+    [ARTIFACT_PATHS.receipt, "receipt.json", "execution-receipt"],
+    [ARTIFACT_PATHS.sources, "sources.json", "source-registry"],
+    [ARTIFACT_PATHS.config, "config.json", "config"],
+  ];
+  for (const [sourcePath, destinationName, schemaName] of optional) {
+    const copied = await copyJson(target, sourcePath, `${directory}/${destinationName}`, schemaName, packageRoot, artifacts, destinationName);
+    if (copied && !artifacts.includes(destinationName)) artifacts.push(destinationName);
+  }
+  const eventsPath = ensureWithin(target, ARTIFACT_PATHS.events);
+  if (await fileExists(eventsPath)) {
+    await assertSafePath(target, `${directory}/events.ndjson`);
+    await writeFileAtomic(ensureWithin(target, `${directory}/events.ndjson`), await readBytes(eventsPath));
+    artifacts.push("events.ndjson");
+  }
+  const gateDirectory = ensureWithin(target, ARTIFACT_PATHS.gates);
+  if (await fileExists(gateDirectory)) {
+    const entries = await readdir(gateDirectory, { withFileTypes: true });
+    for (const entry of entries.filter((item) => item.isFile() && item.name.endsWith(".json")).sort((left, right) => left.name.localeCompare(right.name))) {
+      const gateName = entry.name.slice(0, -5);
+      const sourcePath = `${ARTIFACT_PATHS.gates}/${entry.name}`;
+      const destinationPath = `${directory}/gates/${entry.name}`;
+      const gate = await readJsonArtifact(target, sourcePath, "gate", packageRoot);
+      if (gate.value.taskId !== taskId) continue;
+      await writeJsonArtifact(target, destinationPath, gate.value, "gate", packageRoot);
+      artifacts.push(`gates/${gateName}.json`);
+    }
+  }
+  artifacts.sort();
+  const manifest = {
+    schemaVersion: BUNDLE_SCHEMA_VERSION,
+    protocolVersion: PROTOCOL_VERSION,
+    taskId,
+    artifacts,
+  };
+  await writeJsonArtifact(target, `${directory}/bundle.json`, manifest, "task-bundle", packageRoot);
+  return { ...manifest, path: `${directory}/bundle.json` };
+}
+
+export async function readTaskBundle(target, taskId, packageRoot) {
+  const directory = bundleDirectory(taskId);
+  const manifest = await readJsonArtifact(target, `${directory}/bundle.json`, "task-bundle", packageRoot);
+  const loaded = {};
+  const mappings = {
+    "contract.json": ["contract", "current-contract"],
+    "route.json": ["route", "routing-result"],
+    "state.json": ["state", "work-state"],
+    "preflight.json": ["preflight", "preflight"],
+    "receipt.json": ["receipt", "execution-receipt"],
+    "sources.json": ["sources", "source-registry"],
+    "config.json": ["config", "config"],
+  };
+  for (const artifact of manifest.value.artifacts) {
+    const mapping = mappings[artifact];
+    if (!mapping) continue;
+    loaded[mapping[0]] = (await readJsonArtifact(target, `${directory}/${artifact}`, mapping[1], packageRoot)).value;
+  }
+  return { manifest: manifest.value, artifacts: loaded };
+}

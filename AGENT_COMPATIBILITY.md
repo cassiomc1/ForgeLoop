@@ -4,6 +4,19 @@
 native entry point required by each supported agent. The package does not
 install an agent, configure a provider, or run a live model session.
 
+Compatibility has three distinct levels:
+
+- `ADAPTER_COMPATIBLE`: the harness recognizes the installed instruction entry
+  file.
+- `PROTOCOL_CAPABLE`: the harness can create the local contract, route, gates,
+  state, evidence, and receipt artifacts and run the validators.
+- `CONFORMANCE_VERIFIED`: a live run passed one of the scenarios under
+  `conformance/` for that harness/model combination.
+
+Reading `AGENTS.md` proves only instruction compatibility. It does not prove
+that an active session followed preflight, legal phase chronology, or completion
+validation.
+
 ## Optional capability extensions
 
 The installed loop can direct the active agent to inspect its native model and

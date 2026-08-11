@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "forgeloop://schemas/config.schema.json",
+  "title": "ForgeLoop configuration",
+  "type": "object",
+  "required": ["schemaVersion", "protocolVersion", "complianceMode"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "protocolVersion": { "const": 1 },
+    "complianceMode": { "enum": ["advisory", "standard", "strict"] },
+    "policy": { "type": "string", "minLength": 1 },
+    "requiredGates": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "requiredEvidence": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+  },
+  "additionalProperties": false
+}

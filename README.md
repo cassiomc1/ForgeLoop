@@ -135,6 +135,14 @@ Protocol-support commands are local and do not invoke an agent or model:
 
 ```bash
 npx @cassiomc1/forgeloop route --work complete-website --surface ui --risk untrusted-input
+npx @cassiomc1/forgeloop activate
+npx @cassiomc1/forgeloop preflight --json
+npx @cassiomc1/forgeloop advance --to EXECUTING
+npx @cassiomc1/forgeloop audit --strict --json
+npx @cassiomc1/forgeloop complete --json
+npx @cassiomc1/forgeloop report
+npx @cassiomc1/forgeloop policy web-premium
+npx @cassiomc1/forgeloop bundle --task website-001 --json
 npx @cassiomc1/forgeloop inspect --json
 npx @cassiomc1/forgeloop status --json
 npx @cassiomc1/forgeloop status --contract-file .forgeloop/current-contract.json --json
@@ -144,6 +152,17 @@ npx @cassiomc1/forgeloop validate-protocol --route-file ./routing-result.json --
 ```
 
 `route` expands declared signals into deterministic guide IDs and reason codes.
+`activate` records a session marker without storing prompts or hidden reasoning.
+Before implementation, write the canonical contract, persist the route, create
+required gate artifacts under `.forgeloop/gates/`, and require `preflight` to
+return `READY`. `advance` enforces legal phase transitions; it never runs the
+project's commands.
+`audit` is a read-only consistency check. `complete` validates the final
+contract, route, gates, phase ledger, structured evidence, coverage, receipt,
+and freshness before it can return `VALID`. `report` renders the same result as
+independent task, verification, publication, and production-readiness
+dimensions. `policy` selects a local strictness pack and `bundle` exports
+canonical protocol artifacts for handoff or review.
 `inspect`, `status`, and `validate-state` explain installation and resumable
 state; they do not execute commands from the target profile.
 `inspect` and `status` parse the target-local schemas and report `valid`,

@@ -23,6 +23,17 @@ const schemaNames = [
   "task-brief",
   "delegated-result",
   "evidence",
+  "current-contract",
+  "gate",
+  "source-registry",
+  "config",
+  "preflight",
+  "check",
+  "evidence-coverage",
+  "event",
+  "activation",
+  "policy",
+  "task-bundle",
 ];
 
 test("protocol exposes stable versions, failure classes, phases, and guides", () => {

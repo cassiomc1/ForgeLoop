@@ -76,6 +76,15 @@ The following JSON Schemas define the boundaries a host may implement:
 - `schemas/task-brief.schema.json` and
   `schemas/delegated-result.schema.json` define optional delegation.
 - `schemas/evidence.schema.json` defines the shared evidence vocabulary.
+- `schemas/current-contract.schema.json`, `schemas/gate.schema.json`,
+  `schemas/preflight.schema.json`, and `schemas/source-registry.schema.json`
+  define preparation and provenance artifacts.
+- `schemas/check.schema.json` and `schemas/evidence-coverage.schema.json`
+  define observed verification and load-bearing success coverage.
+- `schemas/event.schema.json`, `schemas/activation.schema.json`,
+  `schemas/config.schema.json`, `schemas/policy.schema.json`, and
+  `schemas/task-bundle.schema.json` define chronology, mode, policy, and
+  handoff boundaries.
 
 `src/core/conformance.js` validates relationships that individual schemas
 cannot express: route/state protocol versions, route/state guide sets,
@@ -83,6 +92,12 @@ state/receipt contract fingerprints, and delegated-result/task-brief IDs. Its
 statuses are `VALID`, `INCOMPLETE`, `STALE`, `INCONSISTENT`, and `INVALID`.
 `forgeloop validate-protocol` is read-only and reports the exact failed
 invariant.
+
+The preparation and completion commands are also local validators:
+`preflight` must be `READY` before executable work, `audit` is a consistency
+report, and `complete` returns `VALID` only after current evidence, coverage,
+receipt relationships, and ledger chronology pass. None of these commands
+execute a project command or a model.
 
 Every artifact is JSON-compatible, carries `schemaVersion: 1` and
 `protocolVersion: 1`, and contains no executable callbacks, provider-specific

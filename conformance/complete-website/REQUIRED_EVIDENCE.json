@@ -1,0 +1,3 @@
+{
+  "required": ["responsive-validation", "accessibility-validation", "build", "visual-validation"]
+}
