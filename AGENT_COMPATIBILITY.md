@@ -1,6 +1,6 @@
 # Agent Compatibility
 
-`@cassiomc1/mdfiles` installs one canonical engineering loop and the smallest
+`@cassiomc1/forgeloop` installs one canonical engineering loop and the smallest
 native entry point required by each supported agent. The package does not
 install an agent, configure a provider, or run a live model session.
 
@@ -65,7 +65,7 @@ package boundary.
 
 ## Precedence and existing instructions
 
-`mdfiles init` never overwrites an existing instruction file. If the target
+`forgeloop init` never overwrites an existing instruction file. If the target
 already contains a more specific or higher-priority file, that agent may use
 it instead of the installed entry point:
 
@@ -96,7 +96,7 @@ reproducible package test suite.
 The CLI can deterministically evaluate declared routing signals, inspect target
 health, validate local receipts and work state, and report resumable status. It
 does not call an LLM, schedule agents, execute commands from
-`PROJECT_PROFILE.md`, or provide `mdfiles run`/orchestration commands.
+`PROJECT_PROFILE.md`, or provide `forgeloop run`/orchestration commands.
 
 If a harness has no subagents, worktrees, web access, MCP, persistent state, or
 Git checkout, the compatible agent continues inline and reports the missing

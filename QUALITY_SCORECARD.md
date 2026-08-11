@@ -1,4 +1,4 @@
-# mdfiles quality scorecard
+# ForgeLoop quality scorecard
 
 This scorecard measures evidence-backed protocol quality. A dimension reaches
 10/10 only when its documented contract, deterministic structure, positive and
@@ -47,7 +47,7 @@ are both present:
 | Portability | `ORCHESTRATOR_INTEGRATION.md`, adapter compatibility, and OS smoke workflow | `tests/portability.test.js`, package checks |
 | Graph readiness | Serializable phase/transition mapping in `ORCHESTRATOR_INTEGRATION.md` | Python semantic validator and workflow-policy tests |
 | Security boundary | realpath containment, bounded JSON, `THREAT_MODEL.md`, secret-free artifacts, authority and no-runtime rules | `tests/security-limits.test.js`, Markdown/loop validators, and `scripts/scan_secrets.py` |
-| Cross-artifact conformance | `src/core/conformance.js`, `classifyLoadedWorkState`, and `mdfiles validate-protocol --contract-file` | `tests/conformance.test.js`, `tests/validate-protocol-cli.test.js`, and protocol fixtures covering precedence and stale evidence |
+| Cross-artifact conformance | `src/core/conformance.js`, `classifyLoadedWorkState`, and `forgeloop validate-protocol --contract-file` | `tests/conformance.test.js`, `tests/validate-protocol-cli.test.js`, and protocol fixtures covering precedence and stale evidence |
 
 The implementation references above are local observations. OS runners,
 remote links, provider sessions, publication, and deployment remain `Not

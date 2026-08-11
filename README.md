@@ -1,4 +1,4 @@
-# Instruction Guides for AI Agents
+# ForgeLoop — Instruction Guides for AI Agents
 
 [![Docs quality](https://github.com/cassiomc1/mdfiles/actions/workflows/docs-quality.yml/badge.svg?branch=main)](https://github.com/cassiomc1/mdfiles/actions/workflows/docs-quality.yml)
 
@@ -11,6 +11,10 @@ The files are Markdown and can be used as references, as a foundation for
 `.github/copilot-instructions.md`. The supported-agent contract is documented
 in [`AGENT_COMPATIBILITY.md`](./AGENT_COMPATIBILITY.md). Adopt only the guides
 relevant to the target project.
+
+ForgeLoop is the portable, evidence-first loop that connects deterministic
+routing, checkpointed state, observable evidence, conformance, and delegation
+for compatible agent harnesses.
 
 ## Catalog
 
@@ -39,6 +43,9 @@ diagnose, and correct until success or a genuine external blocker.
 loaded; and [`PROJECT_PROFILE.md`](./PROJECT_PROFILE.md) preserves only durable,
 proven project facts.
 
+The canonical system map, including the routing/state/evidence architecture, is
+in [`LOOP_SYSTEM_DESIGN.md`](./LOOP_SYSTEM_DESIGN.md).
+
 ```text
 Request → discovery → profile → routing → plan → execution
         → verification → correction when needed → final evidence
@@ -58,21 +65,21 @@ in the npm registry, use the commands below; otherwise use the repository
 checkout fallback.
 
 ```bash
-npx @cassiomc1/mdfiles init
-npx @cassiomc1/mdfiles doctor
-npx @cassiomc1/mdfiles update
+npx @cassiomc1/forgeloop init
+npx @cassiomc1/forgeloop doctor
+npx @cassiomc1/forgeloop update
 ```
 
 Protocol-support commands are local and do not invoke an agent or model:
 
 ```bash
-npx @cassiomc1/mdfiles route --work complete-website --surface ui --risk untrusted-input
-npx @cassiomc1/mdfiles inspect --json
-npx @cassiomc1/mdfiles status --json
-npx @cassiomc1/mdfiles status --contract-file .mdfiles/current-contract.json --json
-npx @cassiomc1/mdfiles validate-state --json
-npx @cassiomc1/mdfiles validate-receipt --file ./execution-receipt.json --json
-npx @cassiomc1/mdfiles validate-protocol --route-file ./routing-result.json --state-file .mdfiles/work-state.json --receipt-file ./execution-receipt.json --contract-file .mdfiles/current-contract.json --json
+npx @cassiomc1/forgeloop route --work complete-website --surface ui --risk untrusted-input
+npx @cassiomc1/forgeloop inspect --json
+npx @cassiomc1/forgeloop status --json
+npx @cassiomc1/forgeloop status --contract-file .forgeloop/current-contract.json --json
+npx @cassiomc1/forgeloop validate-state --json
+npx @cassiomc1/forgeloop validate-receipt --file ./execution-receipt.json --json
+npx @cassiomc1/forgeloop validate-protocol --route-file ./routing-result.json --state-file .forgeloop/work-state.json --receipt-file ./execution-receipt.json --contract-file .forgeloop/current-contract.json --json
 ```
 
 `route` expands declared signals into deterministic guide IDs and reason codes.
@@ -88,7 +95,7 @@ contract fingerprint with the current contract; omitting it leaves contract
 freshness as `NOT_VERIFIED` and a complete artifact set requires revalidation.
 It returns `VALID`, `INCOMPLETE`, `STALE`, `INCONSISTENT`, or `INVALID` with
 exact invariant codes and derived stale reasons. The persisted
-`.mdfiles/work-state.json` schema is unchanged: `status`, `stale`, and `fresh`
+`.forgeloop/work-state.json` schema is unchanged: `status`, `stale`, and `fresh`
 are never stored in that file. Status precedence is `INVALID` > `INCONSISTENT`
 > `STALE` > `INCOMPLETE` > `VALID`.
 All protocol-support commands are local and offline-capable by default; the
@@ -161,25 +168,39 @@ project directory, pass a relative or absolute `--path`:
 
 ```bash
 # Existing project relative to the current directory
-npx @cassiomc1/mdfiles init --path ./my-project
-npx @cassiomc1/mdfiles doctor --path ./my-project
-npx @cassiomc1/mdfiles update --path ./my-project
+npx @cassiomc1/forgeloop init --path ./my-project
+npx @cassiomc1/forgeloop doctor --path ./my-project
+npx @cassiomc1/forgeloop update --path ./my-project
 
 # Existing project at an absolute path
-npx @cassiomc1/mdfiles init --path /path/to/my-project
-npx @cassiomc1/mdfiles doctor --path /path/to/my-project
-npx @cassiomc1/mdfiles update --path /path/to/my-project
+npx @cassiomc1/forgeloop init --path /path/to/my-project
+npx @cassiomc1/forgeloop doctor --path /path/to/my-project
+npx @cassiomc1/forgeloop update --path /path/to/my-project
 ```
 
 The target must already exist and be a directory; the CLI will not create or
 replace an arbitrary path. Use `--dry-run` to preview writes before `init` or
 `update`. `--json`, `--strict`, and `--adopt <path>` are supported by `doctor`;
 adoption is limited to a supported adapter that has been reviewed locally. The
-CLI records managed files and their hashes in `.mdfiles/manifest.json`; `update`
+CLI records managed files and their hashes in `.forgeloop/manifest.json`; `update`
 leaves locally modified files and `PROJECT_PROFILE.md` untouched. If a target
 already has a manifest, rerun `update` instead of `init`. Symlinked targets or
 template parents are rejected, and unadopted pre-existing adapters are reported
 for manual merge with the loop reference.
+
+### Migrate an existing mdfiles installation
+
+The ForgeLoop rename changes the target metadata namespace. From the existing
+project root, move the directory manually and refresh its manifest:
+
+```bash
+mv .mdfiles .forgeloop
+npx @cassiomc1/forgeloop update
+```
+
+ForgeLoop does not automatically migrate, dual-write, or delete a legacy
+`.mdfiles` directory. The serialized contract remains `schemaVersion: 1` and
+`protocolVersion: 1`; only the package, CLI, and target namespace change.
 
 ### Install in a target project
 
@@ -205,7 +226,7 @@ CONTRACT_COVERAGE.md
 THIRD_PARTY_NOTICES.md
 LICENSE
 LICENSE-DOCS.md
-.mdfiles/.gitignore
+.forgeloop/.gitignore
 .github/copilot-instructions.md
 .cursor/rules/project-loop.mdc
 ENG/
@@ -311,7 +332,7 @@ Use the upstream [installation guide](https://github.com/QwenLM/Qwen-MM-Plugins/
 for the active harness's current install and verification commands, supported
 capabilities, system dependencies, and Windows/WSL2 constraints. This project
 does not vendor Qwen code, add it to the npm package, or install it through
-`mdfiles init`, `update`, or `doctor`.
+`forgeloop init`, `update`, or `doctor`.
 
 ## HyperFrames for video and motion
 

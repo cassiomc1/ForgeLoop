@@ -1,6 +1,6 @@
 # Delegation protocol
 
-`mdfiles` defines coordination contracts but does not schedule agents or
+`ForgeLoop` defines coordination contracts but does not schedule agents or
 provide a multi-agent runtime. A compatible harness may execute a validated
 brief through native subagents; a harness without that capability executes the
 same brief inline and reports the degraded mode.

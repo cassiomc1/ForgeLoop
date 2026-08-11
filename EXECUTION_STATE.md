@@ -3,7 +3,7 @@
 Compatible agents may persist a handoff checkpoint at:
 
 ```text
-.mdfiles/work-state.json
+.forgeloop/work-state.json
 ```
 
 The file is local, ignored by Git, schema-versioned, and never a replacement
@@ -60,7 +60,7 @@ but a completed destructive or publication action is never rerun automatically.
 The current contract is compared only when its JSON file is supplied:
 
 ```bash
-mdfiles status --contract-file .mdfiles/current-contract.json --json
+forgeloop status --contract-file .forgeloop/current-contract.json --json
 ```
 
 Without that file, contract comparison is `NOT_VERIFIED`; the status does not
@@ -72,11 +72,11 @@ An optional age threshold may recommend cheap verification with
 classifier. Protocol validation can be run against the complete artifact set:
 
 ```bash
-mdfiles validate-protocol \
+forgeloop validate-protocol \
   --route-file ./routing-result.json \
-  --state-file .mdfiles/work-state.json \
+  --state-file .forgeloop/work-state.json \
   --receipt-file ./execution-receipt.json \
-  --contract-file .mdfiles/current-contract.json \
+  --contract-file .forgeloop/current-contract.json \
   --json
 ```
 
@@ -93,15 +93,15 @@ is never resumed silently.
 ## Commands
 
 ```bash
-mdfiles status
-mdfiles status --json
-mdfiles validate-state
-mdfiles validate-state --json
-mdfiles clear-state
+forgeloop status
+forgeloop status --json
+forgeloop validate-state
+forgeloop validate-state --json
+forgeloop clear-state
 ```
 
 `status` explains whether state is absent, fresh, or requires revalidation.
 `validate-state` performs schema and semantic checks without mutation.
-`clear-state` affects only `.mdfiles/work-state.json` and prints the exact
+`clear-state` affects only `.forgeloop/work-state.json` and prints the exact
 relative path it removed; it never deletes the directory, manifest, or project
 files.
