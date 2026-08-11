@@ -30,7 +30,7 @@ function findSecretLikeValues(value, location, violations) {
   }
 }
 
-function assertSecretFree(value) {
+export function assertSecretFree(value) {
   const violations = [];
   findSecretLikeValues(value, "$", violations);
   if (violations.length > 0) throw new Error(violations.join("; "));

@@ -27,6 +27,7 @@
     "blockers": { "type": "array", "items": { "type": "object" } },
     "lastUpdated": { "type": "string", "minLength": 1 },
     "previousPhase": { "type": "string" },
+    "diagnosedHypothesis": { "type": "string", "minLength": 1 },
     "verificationEvidence": { "type": "array", "items": { "type": "object" } }
   },
   "additionalProperties": false
