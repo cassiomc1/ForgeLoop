@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -45,6 +46,30 @@ class LoopSystemValidationTests(unittest.TestCase):
         )
 
         with self.assertRaisesRegex(ValidationError, "invalid double-quoted scalar"):
+            validate_repository(self.root)
+
+    def test_requires_protocol_assets(self) -> None:
+        (self.root / "QUALITY_SCORECARD.md").unlink()
+        with self.assertRaisesRegex(ValidationError, "QUALITY_SCORECARD.md: missing required file"):
+            validate_repository(self.root)
+
+    def test_rejects_schema_without_version_property(self) -> None:
+        schema = self.root / "schemas/routing-input.schema.json"
+        data = json.loads(schema.read_text(encoding="utf-8"))
+        del data["properties"]["schemaVersion"]
+        schema.write_text(json.dumps(data), encoding="utf-8")
+
+        with self.assertRaisesRegex(ValidationError, "schemaVersion"):
+            validate_repository(self.root)
+
+    def test_rejects_missing_loop_invariant_marker(self) -> None:
+        loop = self.root / "LOOP_ENGINEERING.md"
+        loop.write_text(
+            loop.read_text(encoding="utf-8").replace("no route without a reason code;", "", 1),
+            encoding="utf-8",
+        )
+
+        with self.assertRaisesRegex(ValidationError, "loop invariant"):
             validate_repository(self.root)
 
 

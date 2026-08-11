@@ -32,6 +32,84 @@ PROPORTIONAL REGRESSION   DIAGNOSE CAUSE
 The loop creates real feedback until objective criteria are met. It does not
 authorize infinite execution, scope expansion, or unrequested external action.
 
+## Protocol version and evidence contract
+
+The portable protocol currently uses `protocol-version: 1`. This version is
+independent of the npm package version and is carried by structured routing,
+state, receipt, and delegation artifacts.
+
+Every result separates:
+
+```text
+Observed       current command, file, hash, or test evidence
+Inferred       conclusion derived from observed evidence
+Not verified   check not run or target outside the environment
+Blocked        genuine external condition preventing safe progress
+```
+
+Do not present an inference, an unrun check, or a local result as observed
+proof. Local success never implies publication, deployment, or remote-check
+success.
+
+## Failure taxonomy, retry, and loop invariants
+
+The protocol uses these stable failure classes:
+
+```text
+CONTRACT_FAILURE
+DISCOVERY_FAILURE
+ROUTING_FAILURE
+IMPLEMENTATION_FAILURE
+VERIFICATION_FAILURE
+REGRESSION_FAILURE
+REVIEW_FAILURE
+CAPABILITY_FAILURE
+AUTHORITY_FAILURE
+ENVIRONMENT_FAILURE
+EXTERNAL_SERVICE_FAILURE
+STALE_STATE_FAILURE
+```
+
+For every failure, record the class, hypothesis, evidence, and next safe
+action. A retry is allowed only when new diagnostic evidence or a changed
+hypothesis exists. The same hypothesis with the same evidence is not an
+immediate retry. Repeated review/fix cycles are bounded by the task contract;
+an unavailable external dependency becomes a blocker rather than a spin loop.
+
+The loop invariants are:
+
+1. no completion claim without current verification evidence;
+2. no route without a reason code;
+3. no retry without new evidence or a changed hypothesis;
+4. no destructive action without validated authority and target;
+5. no project-profile fact without a source;
+6. no external publication implied by local success;
+7. no skipped failed check silently treated as passed;
+8. no unrelated refactor during uncertain diagnosis;
+9. no secret in the profile, work state, receipt, or delegation artifacts;
+10. no independent-agent claim when only self-review occurred.
+
+## Workflow state semantics
+
+The canonical phases are `RECEIVED`, `DISCOVERING`, `CONTRACT_READY`,
+`ROUTED`, `DESIGNING`, `PLANNED`, `EXECUTING`, `VERIFYING`, `DIAGNOSING`,
+`CORRECTING`, `REVIEWING`, `COMPLETE`, and `BLOCKED`. A task may skip
+proportional phases, but:
+
+- `COMPLETE` requires verification evidence;
+- `BLOCKED` requires a blocker category and evidence;
+- `CORRECTING` requires a diagnosed hypothesis;
+- `ROUTED` requires at least one route reason, even if no technical guide is
+  selected for documentation-only work;
+- `REVIEWING` cannot claim independent review when reviewer and implementer
+  identities are equal.
+
+Resume rules are conservative: revalidate branch, HEAD, contract fingerprint,
+protocol version, and required artifacts before continuing; never rerun a
+completed destructive or publication action automatically; rerun cheap
+verification when state is stale; and clear only `.mdfiles/work-state.json`
+when abandoned state must be removed.
+
 ## Execution contract
 
 Before changing files, translate the request into a contract proportional to

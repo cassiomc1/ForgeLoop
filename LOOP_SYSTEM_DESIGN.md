@@ -204,6 +204,45 @@ Routing uses the request and files actually affected. A single word in the repos
 12. On failure, collect evidence, identify the root cause, and repeat with a targeted correction.
 13. Finish only with current evidence, explicit limitations, and no unrelated changes.
 
+## Canonical workflow state model
+
+The protocol represents the engineering loop with serializable conceptual
+states rather than an executable graph:
+
+```text
+RECEIVED → DISCOVERING → CONTRACT_READY → ROUTED
+                                      ├→ DESIGNING → PLANNED
+                                      └→ PLANNED
+PLANNED → EXECUTING → VERIFYING
+VERIFYING ├→ DIAGNOSING → CORRECTING → VERIFYING
+          └→ REVIEWING → COMPLETE
+Any non-terminal state → BLOCKED when a genuine blocker is evidenced
+```
+
+| From | Condition | To |
+| --- | --- | --- |
+| `RECEIVED` | context is required | `DISCOVERING` |
+| `DISCOVERING` | sufficient sourced context | `CONTRACT_READY` |
+| `CONTRACT_READY` | route is resolved | `ROUTED` |
+| `ROUTED` | design decision is required | `DESIGNING` |
+| `ROUTED` | no design gate is required | `PLANNED` |
+| `DESIGNING` | design is approved | `PLANNED` |
+| `PLANNED` | task work begins | `EXECUTING` |
+| `EXECUTING` | targeted check is ready | `VERIFYING` |
+| `VERIFYING` | a check fails | `DIAGNOSING` |
+| `DIAGNOSING` | a fix hypothesis exists | `CORRECTING` |
+| `CORRECTING` | the fix is applied | `VERIFYING` |
+| `VERIFYING` | checks pass | `REVIEWING` |
+| `REVIEWING` | contract and quality are accepted | `COMPLETE` |
+| any non-terminal state | a genuine external blocker is evidenced | `BLOCKED` |
+
+State invariants are machine-validatable: `COMPLETE` requires verification
+evidence, `BLOCKED` requires a blocker category, `CORRECTING` requires a
+diagnosed hypothesis, and `REVIEWING` cannot claim independent review from the
+same identity as the implementer. Simple documentation tasks may skip design,
+delegation, and full regression when the contract records why those states are
+not applicable.
+
 ## Precedence and conflicts
 
 The system respects this order:

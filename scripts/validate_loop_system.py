@@ -21,6 +21,45 @@ REQUIRED_FILES = (
     "CLAUDE.md",
     ".github/copilot-instructions.md",
     ".cursor/rules/project-loop.mdc",
+    "QUALITY_SCORECARD.md",
+    "TERMINOLOGY.md",
+)
+
+SCHEMA_FILES = (
+    "routing-input.schema.json",
+    "routing-result.schema.json",
+    "work-state.schema.json",
+    "execution-receipt.schema.json",
+    "task-brief.schema.json",
+    "delegated-result.schema.json",
+)
+
+FAILURE_CLASSES = (
+    "CONTRACT_FAILURE",
+    "DISCOVERY_FAILURE",
+    "ROUTING_FAILURE",
+    "IMPLEMENTATION_FAILURE",
+    "VERIFICATION_FAILURE",
+    "REGRESSION_FAILURE",
+    "REVIEW_FAILURE",
+    "CAPABILITY_FAILURE",
+    "AUTHORITY_FAILURE",
+    "ENVIRONMENT_FAILURE",
+    "EXTERNAL_SERVICE_FAILURE",
+    "STALE_STATE_FAILURE",
+)
+
+LOOP_INVARIANTS = (
+    "no completion claim without current verification evidence;",
+    "no route without a reason code;",
+    "no retry without new evidence or a changed hypothesis;",
+    "no destructive action without validated authority and target;",
+    "no project-profile fact without a source;",
+    "no external publication implied by local success;",
+    "no skipped failed check silently treated as passed;",
+    "no unrelated refactor during uncertain diagnosis;",
+    "no secret in the profile, work state, receipt, or delegation artifacts;",
+    "no independent-agent claim when only self-review occurred.",
 )
 
 ADAPTERS = (
@@ -259,6 +298,46 @@ def validate_router(root: Path) -> None:
             )
 
 
+def validate_protocol_assets(root: Path) -> None:
+    loop = (root / "LOOP_ENGINEERING.md").read_text(encoding="utf-8")
+    scorecard = (root / "QUALITY_SCORECARD.md").read_text(encoding="utf-8")
+    terminology = (root / "TERMINOLOGY.md").read_text(encoding="utf-8")
+
+    if "protocol-version: 1" not in loop:
+        raise ValidationError("LOOP_ENGINEERING.md: protocol version marker is missing")
+    for failure_class in FAILURE_CLASSES:
+        if failure_class not in loop:
+            raise ValidationError(
+                f"LOOP_ENGINEERING.md: failure taxonomy is missing {failure_class}"
+            )
+    for invariant in LOOP_INVARIANTS:
+        if invariant not in loop:
+            raise ValidationError(
+                f"LOOP_ENGINEERING.md: loop invariant is missing: {invariant}"
+            )
+    if "10/10 evidence" not in scorecard:
+        raise ValidationError("QUALITY_SCORECARD.md: evidence criteria are missing")
+    if "| Term | Meaning |" not in terminology:
+        raise ValidationError("TERMINOLOGY.md: terminology table is missing")
+
+    for relative in SCHEMA_FILES:
+        path = root / "schemas" / relative
+        if not path.is_file():
+            raise ValidationError(f"schemas/{relative}: missing required schema")
+        try:
+            schema = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as error:
+            raise ValidationError(f"schemas/{relative}: invalid JSON") from error
+        if schema.get("type") != "object":
+            raise ValidationError(f"schemas/{relative}: top-level type must be object")
+        properties = schema.get("properties")
+        if not isinstance(properties, dict) or properties.get("schemaVersion", {}).get("const") != 1:
+            raise ValidationError(f"schemas/{relative}: schemaVersion const 1 is required")
+        required = schema.get("required")
+        if not isinstance(required, list) or "schemaVersion" not in required:
+            raise ValidationError(f"schemas/{relative}: schemaVersion must be required")
+
+
 def validate_profile(root: Path) -> None:
     path = root / "PROJECT_PROFILE.md"
     text = path.read_text(encoding="utf-8")
@@ -320,6 +399,7 @@ def validate_repository(root: Path) -> None:
     validate_adapters(root)
     validate_guides(root)
     validate_router(root)
+    validate_protocol_assets(root)
     validate_profile(root)
     validate_cursor_frontmatter(root)
 
@@ -354,9 +434,28 @@ def _valid_fixture(root: Path) -> None:
             "# Guide\n",
         )
 
-    _write(root / "LOOP_ENGINEERING.md", "# Loop\n")
+    failure_text = "\n".join(FAILURE_CLASSES)
+    invariant_text = "\n".join(f"- {invariant}" for invariant in LOOP_INVARIANTS)
+    _write(
+        root / "LOOP_ENGINEERING.md",
+        "# Loop\nprotocol-version: 1\n"
+        f"{failure_text}\n{invariant_text}\n",
+    )
     _write(root / "LOOP_SYSTEM_DESIGN.md", "# Design\n")
     _write(root / "THIRD_PARTY_NOTICES.md", "# Third-party notices\n")
+    _write(root / "QUALITY_SCORECARD.md", "# Scorecard\n10/10 evidence\n")
+    _write(root / "TERMINOLOGY.md", "# Terminology\n| Term | Meaning |\n")
+    for schema_name in SCHEMA_FILES:
+        _write(
+            root / "schemas" / schema_name,
+            json.dumps(
+                {
+                    "type": "object",
+                    "required": ["schemaVersion"],
+                    "properties": {"schemaVersion": {"const": 1}},
+                }
+            ),
+        )
     _write(
         root / "PROJECT_PROFILE.md",
         "---\nlanguage: en\nprofile-mode: template\n"

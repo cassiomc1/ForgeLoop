@@ -1,0 +1,121 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+
+import { getPackageRoot } from "./templates.js";
+
+export class SchemaValidationError extends Error {
+  constructor(errors, label = "value") {
+    const normalized = errors.length > 0 ? errors : [`${label}: schema validation failed`];
+    super(normalized.join("; "));
+    this.name = "SchemaValidationError";
+    this.errors = normalized;
+  }
+}
+
+function typeMatches(value, type) {
+  if (type === "object") return value !== null && typeof value === "object" && !Array.isArray(value);
+  if (type === "array") return Array.isArray(value);
+  if (type === "integer") return Number.isInteger(value);
+  if (type === "number") return typeof value === "number" && Number.isFinite(value);
+  if (type === "null") return value === null;
+  return typeof value === type;
+}
+
+function display(value) {
+  return typeof value === "string" ? JSON.stringify(value) : String(value);
+}
+
+function validate(value, schema, location, errors) {
+  if (schema.const !== undefined && value !== schema.const) {
+    errors.push(`${location}: expected ${display(schema.const)}`);
+    return;
+  }
+
+  if (schema.enum && !schema.enum.some((candidate) => Object.is(candidate, value))) {
+    errors.push(`${location}: expected one of ${schema.enum.map(display).join(", ")}`);
+    return;
+  }
+
+  if (schema.oneOf) {
+    const matches = schema.oneOf.filter((candidate) => {
+      const candidateErrors = [];
+      validate(value, candidate, location, candidateErrors);
+      return candidateErrors.length === 0;
+    });
+    if (matches.length !== 1) errors.push(`${location}: expected exactly one matching schema`);
+    return;
+  }
+
+  if (schema.type && !typeMatches(value, schema.type)) {
+    errors.push(`${location}: expected type ${schema.type}`);
+    return;
+  }
+
+  if (typeof value === "string") {
+    if (schema.minLength !== undefined && value.length < schema.minLength) {
+      errors.push(`${location}: must contain at least ${schema.minLength} characters`);
+    }
+    if (schema.pattern && !new RegExp(schema.pattern).test(value)) {
+      errors.push(`${location}: does not match the required pattern`);
+    }
+  }
+
+  if (Array.isArray(value)) {
+    if (schema.minItems !== undefined && value.length < schema.minItems) {
+      errors.push(`${location}: must contain at least ${schema.minItems} items`);
+    }
+    if (schema.maxItems !== undefined && value.length > schema.maxItems) {
+      errors.push(`${location}: must contain at most ${schema.maxItems} items`);
+    }
+    if (schema.items) {
+      value.forEach((item, index) => validate(item, schema.items, `${location}[${index}]`, errors));
+    }
+  }
+
+  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    for (const key of schema.required ?? []) {
+      if (!Object.prototype.hasOwnProperty.call(value, key)) {
+        errors.push(`${location}.${key}: is required`);
+      }
+    }
+
+    const properties = schema.properties ?? {};
+    for (const [key, child] of Object.entries(properties)) {
+      if (Object.prototype.hasOwnProperty.call(value, key)) {
+        validate(value[key], child, `${location}.${key}`, errors);
+      }
+    }
+
+    if (schema.additionalProperties === false) {
+      for (const key of Object.keys(value)) {
+        if (!Object.prototype.hasOwnProperty.call(properties, key)) {
+          errors.push(`${location}.${key}: additional property is not allowed`);
+        }
+      }
+    } else if (schema.additionalProperties && typeof schema.additionalProperties === "object") {
+      for (const key of Object.keys(value)) {
+        if (!Object.prototype.hasOwnProperty.call(properties, key)) {
+          validate(value[key], schema.additionalProperties, `${location}.${key}`, errors);
+        }
+      }
+    }
+  }
+}
+
+export function validateSchema(value, schema, { label = "$" } = {}) {
+  const errors = [];
+  validate(value, schema, label, errors);
+  return errors;
+}
+
+export function assertSchema(value, schema, label = "value") {
+  const errors = validateSchema(value, schema, { label });
+  if (errors.length > 0) throw new SchemaValidationError(errors, label);
+  return value;
+}
+
+export async function readSchema(name, packageRoot = getPackageRoot()) {
+  const filename = name.endsWith(".schema.json") ? name : `${name}.schema.json`;
+  const schemaPath = path.join(packageRoot, "schemas", filename);
+  return JSON.parse(await readFile(schemaPath, "utf8"));
+}
