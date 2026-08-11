@@ -259,31 +259,39 @@ export function evaluateRoute(input = {}) {
 }
 
 export function assertRouteInvariants(result) {
+  const invariantError = (code, message) => {
+    const error = new RouteInputError(message);
+    error.code = code;
+    return error;
+  };
   if (!result || typeof result !== "object" || Array.isArray(result)) {
-    throw new RouteInputError("Route result must be an object");
+    throw invariantError("E_ROUTE_INVALID", "Route result must be an object");
   }
   if (!Array.isArray(result.guides) || new Set(result.guides).size !== result.guides.length) {
-    throw new RouteInputError("Route result contains duplicate guides");
+    throw invariantError("E_ROUTE_INVALID", "Route result contains duplicate guides");
+  }
+  if (result.contractFingerprint !== undefined && !/^[a-f0-9]{64}$/.test(result.contractFingerprint)) {
+    throw invariantError("E_ROUTE_INVALID", "Route contractFingerprint must be a lowercase SHA-256 fingerprint");
   }
   for (const guide of result.guides) {
-    if (!GUIDE_IDS.includes(guide)) throw new RouteInputError(`Route result contains unknown guide: ${guide}`);
+    if (!GUIDE_IDS.includes(guide)) throw invariantError("E_ROUTE_INVALID", `Route result contains unknown guide: ${guide}`);
     if (!Array.isArray(result.reasons?.[guide]) || result.reasons[guide].length === 0) {
-      throw new RouteInputError(`Selected guide has no reason: ${guide}`);
+      throw invariantError("E_ROUTE_REASON_MISSING", `Selected guide has no reason: ${guide}`);
     }
   }
   for (const [guide, reasons] of Object.entries(result.excluded ?? {})) {
     if (guide !== "documentation" && !GUIDE_IDS.includes(guide)) {
-      throw new RouteInputError(`Route result contains unknown excluded guide: ${guide}`);
+      throw invariantError("E_ROUTE_INVALID", `Route result contains unknown excluded guide: ${guide}`);
     }
     if (result.guides.includes(guide)) {
-      throw new RouteInputError(`Guide cannot be selected and excluded: ${guide}`);
+      throw invariantError("E_ROUTE_INVALID", `Guide cannot be selected and excluded: ${guide}`);
     }
     if (!Array.isArray(reasons) || reasons.length === 0) {
-      throw new RouteInputError(`Excluded guide has no exclusion reason: ${guide}`);
+      throw invariantError("E_ROUTE_REASON_MISSING", `Excluded guide has no exclusion reason: ${guide}`);
     }
   }
   if (result.primary !== null && !result.guides.includes(result.primary)) {
-    throw new RouteInputError("Primary guide must be null or selected");
+    throw invariantError("E_ROUTE_INVALID", "Primary guide must be null or selected");
   }
   return result;
 }

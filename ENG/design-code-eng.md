@@ -4,6 +4,11 @@ language: en
 description: "Visual direction, UX, motion, and perceived performance for premium digital experiences."
 version: "2026.09"
 last-reviewed: "2026-08-10"
+guide-id: design
+requires-gates:
+  - design
+completion-evidence:
+  - visual-validation
 ---
 
 # Web Design Premium v2 — Practical Guidelines

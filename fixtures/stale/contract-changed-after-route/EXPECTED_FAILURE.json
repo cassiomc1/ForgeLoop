@@ -1,0 +1,4 @@
+{
+  "status": "STALE",
+  "errors": ["E_ROUTE_STALE", "E_CONTRACT_STALE"]
+}

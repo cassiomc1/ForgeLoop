@@ -4,6 +4,64 @@
 > technical rules remain in the guides selected through
 > [`GUIDE_ROUTER.md`](./GUIDE_ROUTER.md).
 
+## Serialized protocol preparation
+
+ForgeLoop keeps the agent responsible for implementation while making the
+pre-implementation contract observable. Before executable changes, the target
+should contain a schema-valid `.forgeloop/current-contract.json` and a persisted
+`.forgeloop/routing-result.json`. Guide metadata can declare mandatory gates;
+those gates are recorded under `.forgeloop/gates/` and are checked by:
+
+```text
+forgeloop preflight
+```
+
+`preflight` validates local ForgeLoop artifacts only. It does not invoke the
+model, run project commands, or treat a prose declaration as evidence. A
+`READY` result is required before `EXECUTING` in standard and strict workflows.
+
+## Completion validation and chronology
+
+`COMPLETE` is a validator result, not a string an agent may assign by itself.
+The local `events.ndjson` ledger records protocol milestones and hash links,
+without prompts, hidden reasoning, credentials, or arbitrary command output.
+The final validator checks the contract, route, state, gates, structured checks,
+evidence coverage, receipt consistency, freshness, and chronology:
+
+```text
+forgeloop audit --strict
+forgeloop complete
+```
+
+Every load-bearing success criterion must have `COVERED` evidence. A required
+`OBSERVED` check cannot be satisfied by `INFERRED`, `NOT_VERIFIED`, or
+`BLOCKED` evidence. If the validator cannot be run, use
+`COMPLETE (FORGELOOP COMPLETION NOT VERIFIED)` rather than claiming protocol
+validity.
+
+## Independent completion dimensions
+
+Local task completion, verification, publication, and production readiness are
+separate dimensions. A valid local result can therefore be reported as:
+
+```text
+TASK: COMPLETE
+VERIFICATION: VALID
+PUBLICATION: LOCAL_ONLY
+PRODUCTION_READINESS: NOT_VERIFIED
+```
+
+ForgeLoop does not execute commands from profiles, contracts, receipts, state,
+or policy artifacts. Publication and deployment require their own authority and
+observed evidence.
+
+Validators expose stable repair-oriented codes such as
+`E_CONTRACT_MISSING`, `E_ROUTE_STALE`, `E_GATE_UNVERIFIED`,
+`E_PHASE_CHRONOLOGY_INVALID`, `E_EVIDENCE_COVERAGE_PARTIAL`,
+`E_PROFILE_SOURCE_UNKNOWN`, `E_RECEIPT_ROUTE_MISMATCH`, and
+`E_PUBLICATION_CLAIM_UNVERIFIED`. Integrations should consume the code and
+artifact paths rather than parse human-readable prose.
+
 ## Core principle
 
 Never treat a request as an isolated instruction or the first plausible answer
@@ -92,6 +150,18 @@ The loop invariants are:
 8. no unrelated refactor during uncertain diagnosis;
 9. no secret in the profile, work state, receipt, or delegation artifacts;
 10. no independent-agent claim when only self-review occurred.
+11. no EXECUTING phase without a valid current contract.
+12. no EXECUTING phase without a valid route when routing is required.
+13. no EXECUTING phase while a mandatory pre-implementation gate is unsatisfied.
+14. no COMPLETE phase without evidence coverage for every required success criterion.
+15. no COMPLETE phase with stale contract, route, gate, state, or receipt fingerprints.
+16. selected guides must match across route, work state, and receipt.
+17. an agent decision cannot be recorded as a user fact.
+18. a required OBSERVED check cannot be satisfied by INFERRED evidence.
+19. BLOCKED evidence cannot be represented as PASSED.
+20. completion must be validated by the protocol, not only declared by the agent.
+21. protocol chronology must not permit execution before mandatory preflight events.
+22. publication status and production readiness must remain independent from local task completion.
 
 The serializable phase and transition contract is maintained in
 [`ORCHESTRATOR_INTEGRATION.md`](./ORCHESTRATOR_INTEGRATION.md). It is a host

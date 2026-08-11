@@ -7,6 +7,7 @@
   "properties": {
     "schemaVersion": { "const": 1 },
     "protocolVersion": { "const": 1 },
+    "contractFingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
     "input": { "type": "object" },
     "primary": { "oneOf": [{ "type": "string" }, { "type": "null" }] },
     "guides": { "type": "array", "items": { "type": "string" } },

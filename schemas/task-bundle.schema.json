@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "forgeloop://schemas/task-bundle.schema.json",
+  "title": "ForgeLoop portable task bundle manifest",
+  "type": "object",
+  "required": ["schemaVersion", "protocolVersion", "taskId", "artifacts"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "protocolVersion": { "const": 1 },
+    "taskId": { "type": "string", "minLength": 1 },
+    "artifacts": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+  },
+  "additionalProperties": false
+}

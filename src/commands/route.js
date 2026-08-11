@@ -1,7 +1,9 @@
 import { evaluateRoute } from "../core/router.js";
+import { persistRoute } from "../core/route-artifact.js";
+import { readContract } from "../core/contract.js";
 
-export function runRoute({ workType, surfaces, risks, platforms, behaviorChange, executableChange }) {
-  return evaluateRoute({
+export async function runRoute({ target, packageRoot, workType, surfaces, risks, platforms, behaviorChange, executableChange }) {
+  const route = evaluateRoute({
     workType,
     surfaces,
     risks,
@@ -9,6 +11,16 @@ export function runRoute({ workType, surfaces, risks, platforms, behaviorChange,
     behaviorChange,
     executableChange,
   });
+  if (target && packageRoot) {
+    let contractFingerprint;
+    try {
+      contractFingerprint = (await readContract(target, packageRoot)).fingerprint;
+    } catch {
+      contractFingerprint = undefined;
+    }
+    await persistRoute(target, route, packageRoot, { contractFingerprint });
+  }
+  return route;
 }
 
 export function formatRouteResult(result) {

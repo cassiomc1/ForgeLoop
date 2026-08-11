@@ -44,6 +44,17 @@ export const TEMPLATE_PATHS = [
   "schemas/task-brief.schema.json",
   "schemas/delegated-result.schema.json",
   "schemas/evidence.schema.json",
+  "schemas/current-contract.schema.json",
+  "schemas/gate.schema.json",
+  "schemas/source-registry.schema.json",
+  "schemas/config.schema.json",
+  "schemas/preflight.schema.json",
+  "schemas/check.schema.json",
+  "schemas/evidence-coverage.schema.json",
+  "schemas/event.schema.json",
+  "schemas/activation.schema.json",
+  "schemas/policy.schema.json",
+  "schemas/task-bundle.schema.json",
 ];
 
 export function getPackageRoot() {

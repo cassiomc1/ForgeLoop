@@ -14,11 +14,20 @@ import { formatRouteResult, runRoute } from "./commands/route.js";
 import { runValidateReceipt } from "./commands/validate-receipt.js";
 import { formatValidateProtocolResult, runValidateProtocol } from "./commands/validate-protocol.js";
 import { runUpdate } from "./commands/update.js";
+import { formatActivateResult, runActivate } from "./commands/activate.js";
+import { formatAdvanceResult, runAdvance } from "./commands/advance.js";
+import { formatPreflightResult, runPreflight } from "./commands/preflight.js";
+import { formatCompleteResult, runComplete } from "./commands/complete.js";
+import { formatAuditResult, runAudit } from "./commands/audit.js";
+import { formatReportResult, runReport } from "./commands/report.js";
+import { formatPolicyResult, runPolicy } from "./commands/policy.js";
+import { formatBundleResult, runBundle } from "./commands/bundle.js";
 import { resolveTarget } from "./core/filesystem.js";
 import { getPackageRoot } from "./core/templates.js";
+import { ARTIFACT_PATHS } from "./core/artifacts.js";
 
 function usage(command = null) {
-  const commands = "init|doctor|update|route|inspect|status|validate-state|clear-state|validate-receipt|validate-protocol";
+  const commands = "init|doctor|update|activate|route|preflight|advance|complete|audit|report|policy|bundle|inspect|status|validate-state|clear-state|validate-receipt|validate-protocol";
   const options = ["  --path <directory>  target project directory (default: current directory)"];
   if (!command || command === "init" || command === "update") {
     options.push("  --dry-run           show planned writes without changing files");
@@ -37,8 +46,20 @@ function usage(command = null) {
     options.push("  --executable-change declare executable/configuration change");
     options.push("  --json              emit route result as JSON");
   }
-  if (!command || ["inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"].includes(command)) {
+  if (!command || command === "advance") {
+    options.push("  --to <phase>        destination workflow phase");
+  }
+  if (!command || ["activate", "advance", "preflight", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"].includes(command)) {
     options.push("  --json              emit structured output as JSON");
+  }
+  if (!command || ["preflight", "complete", "audit", "report"].includes(command)) {
+    options.push("  --strict            require strict protocol compliance");
+  }
+  if (!command || command === "policy") {
+    options.push("  <name>              policy pack name");
+  }
+  if (!command || command === "bundle") {
+    options.push("  --task <id>         task ID to export as a portable bundle");
   }
   if (!command || ["status", "inspect", "validate-protocol"].includes(command)) {
     options.push("  --contract-file <path>  current JSON contract used for freshness comparison");
@@ -72,6 +93,7 @@ export function parseArgs(argv) {
     platforms: [],
     behaviorChange: false,
     executableChange: false,
+    to: null,
     file: null,
     contractFile: null,
     routeFile: null,
@@ -79,6 +101,8 @@ export function parseArgs(argv) {
     receiptFile: null,
     taskBriefFiles: [],
     delegatedResultFiles: [],
+    policy: null,
+    task: null,
     help: false,
     version: false,
   };
@@ -86,7 +110,7 @@ export function parseArgs(argv) {
 
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
-    if (["init", "doctor", "update", "route", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"].includes(argument)) {
+    if (["init", "doctor", "update", "activate", "route", "preflight", "advance", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"].includes(argument)) {
       if (command) throw new Error(`Multiple commands are not supported: ${argument}`);
       command = argument;
     } else if (argument === "--help" || argument === "-h") {
@@ -126,6 +150,16 @@ export function parseArgs(argv) {
       options.behaviorChange = true;
     } else if (argument === "--executable-change") {
       options.executableChange = true;
+    } else if (argument === "--to") {
+      const phase = argv[index + 1];
+      if (!phase || phase.startsWith("-")) throw new Error("--to requires a phase");
+      options.to = phase;
+      index += 1;
+    } else if (argument === "--task") {
+      const task = argv[index + 1];
+      if (!task || task.startsWith("-")) throw new Error("--task requires an ID");
+      options.task = task;
+      index += 1;
     } else if (argument === "--file") {
       const file = argv[index + 1];
       if (!file || file.startsWith("-")) throw new Error("--file requires a path");
@@ -162,6 +196,8 @@ export function parseArgs(argv) {
       if (!options.path || options.path.startsWith("-")) throw new Error("--path requires a directory");
     } else if (argument === "--version" || argument === "-v") {
       options.version = true;
+    } else if (!argument.startsWith("-") && command === "policy" && !options.policy) {
+      options.policy = argument;
     } else if (!argument.startsWith("-") && !command) {
       command = argument;
     } else {
@@ -171,7 +207,7 @@ export function parseArgs(argv) {
 
   if (!command) return { command: null, options };
 
-  const jsonCommands = ["doctor", "route", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"];
+  const jsonCommands = ["doctor", "route", "activate", "advance", "preflight", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"];
   if (!jsonCommands.includes(command) && options.json) {
     throw new Error(`Option --json is not valid for ${command}`);
   }
@@ -181,7 +217,7 @@ export function parseArgs(argv) {
   ].includes(command) && options.dryRun) {
     throw new Error(`Option --dry-run is not valid for ${command}`);
   }
-  if (command !== "doctor" && options.strict) {
+  if (!["doctor", "preflight", "complete", "audit", "report"].includes(command) && options.strict) {
     throw new Error(`Option --strict is not valid for ${command}`);
   }
   if (command !== "doctor" && options.adopt.length > 0) {
@@ -189,6 +225,21 @@ export function parseArgs(argv) {
   }
   if (command !== "route" && (options.work || options.surfaces.length || options.risks.length || options.platforms.length || options.behaviorChange || options.executableChange)) {
     throw new Error(`Route options are not valid for ${command}`);
+  }
+  if (command !== "advance" && options.to) {
+    throw new Error(`Option --to is not valid for ${command}`);
+  }
+  if (command === "policy" && !options.policy) {
+    throw new Error("policy requires a name");
+  }
+  if (command !== "policy" && options.policy) {
+    throw new Error(`Policy name is not valid for ${command}`);
+  }
+  if (command === "bundle" && !options.task) {
+    throw new Error("bundle requires --task");
+  }
+  if (command !== "bundle" && options.task) {
+    throw new Error(`--task is not valid for ${command}`);
   }
   if (command !== "validate-receipt" && options.file) {
     throw new Error(`Option --file is not valid for ${command}`);
@@ -257,7 +308,9 @@ export async function main(argv = process.argv.slice(2)) {
     }
 
     if (command === "route") {
-      const result = runRoute({
+      const result = await runRoute({
+        target,
+        packageRoot,
         workType: options.work,
         surfaces: options.surfaces,
         risks: options.risks,
@@ -266,6 +319,54 @@ export async function main(argv = process.argv.slice(2)) {
         executableChange: options.executableChange,
       });
       console.log(options.json ? JSON.stringify(result, null, 2) : formatRouteResult(result));
+      return 0;
+    }
+
+    if (command === "activate") {
+      const result = await runActivate({ target, packageRoot });
+      console.log(options.json ? JSON.stringify(result, null, 2) : formatActivateResult(result));
+      return 0;
+    }
+
+    if (command === "preflight") {
+      const result = await runPreflight({ target, packageRoot, strict: options.strict });
+      console.log(options.json ? JSON.stringify(result, null, 2) : formatPreflightResult(result));
+      return result.status === "READY" ? 0 : 1;
+    }
+
+    if (command === "advance") {
+      const result = await runAdvance({ target, packageRoot, to: options.to });
+      console.log(options.json ? JSON.stringify(result, null, 2) : formatAdvanceResult(result));
+      return 0;
+    }
+
+    if (command === "complete") {
+      const result = await runComplete({ target, packageRoot, strict: options.strict });
+      console.log(options.json ? JSON.stringify(result, null, 2) : formatCompleteResult(result));
+      return result.status === "VALID" ? 0 : 1;
+    }
+
+    if (command === "audit") {
+      const result = await runAudit({ target, packageRoot, strict: options.strict });
+      console.log(options.json ? JSON.stringify(result, null, 2) : formatAuditResult(result));
+      return result.status === "VALID" ? 0 : 1;
+    }
+
+    if (command === "report") {
+      const result = await runReport({ target, packageRoot, strict: options.strict });
+      console.log(options.json ? JSON.stringify(result, null, 2) : formatReportResult(result));
+      return result.verdict === "VALID" ? 0 : 1;
+    }
+
+    if (command === "policy") {
+      const result = await runPolicy({ target, packageRoot, name: options.policy });
+      console.log(options.json ? JSON.stringify(result, null, 2) : formatPolicyResult(result));
+      return 0;
+    }
+
+    if (command === "bundle") {
+      const result = await runBundle({ target, packageRoot, taskId: options.task });
+      console.log(options.json ? JSON.stringify(result, null, 2) : formatBundleResult(result));
       return 0;
     }
 
@@ -285,9 +386,9 @@ export async function main(argv = process.argv.slice(2)) {
       const result = await runValidateProtocol({
         target,
         packageRoot,
-        routeFile: options.routeFile,
-        stateFile: options.stateFile,
-        receiptFile: options.receiptFile,
+        stateFile: options.stateFile ?? ARTIFACT_PATHS.state,
+        receiptFile: options.receiptFile ?? ARTIFACT_PATHS.receipt,
+        routeFile: options.routeFile ?? ARTIFACT_PATHS.route,
         contractFile: options.contractFile,
         taskBriefFiles: options.taskBriefFiles,
         delegatedResultFiles: options.delegatedResultFiles,

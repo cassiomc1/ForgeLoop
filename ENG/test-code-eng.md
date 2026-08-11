@@ -4,6 +4,9 @@ language: en
 description: "Risk-based testing strategy and tools for modern languages and platforms."
 version: "2026.09"
 last-reviewed: "2026-08-10"
+guide-id: test
+completion-evidence:
+  - tests
 ---
 
 # Risk-Based Testing Guide by Language and Technology

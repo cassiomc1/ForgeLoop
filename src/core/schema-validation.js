@@ -13,6 +13,17 @@ export const SHIPPED_SCHEMA_NAMES = Object.freeze([
   "task-brief",
   "delegated-result",
   "evidence",
+  "current-contract",
+  "gate",
+  "source-registry",
+  "config",
+  "preflight",
+  "check",
+  "evidence-coverage",
+  "event",
+  "activation",
+  "policy",
+  "task-bundle",
 ]);
 
 export class SchemaValidationError extends Error {

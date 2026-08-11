@@ -14,6 +14,7 @@ policy are all present.
 | Graph readiness | Serializable state/transition contracts and `ORCHESTRATOR_INTEGRATION.md`; no runtime required. |
 | Portability | Node 20/22/24 Linux depth, OS smoke coverage, path/line-ending fixtures, and adapter compatibility evidence. |
 | Observability | `inspect`/`status`/`validate-protocol` shared derived state classification, real schema health, shared evidence, rich doctor findings, receipts, and no telemetry. |
+| Completion enforcement | Canonical contract, persisted route, guide-declared gates, preflight, phase ledger, structured checks, evidence coverage, `audit`, `report`, and `complete` validators. |
 | Resume/checkpoint | Atomic local state, contract/HEAD/artifact freshness, age warning, schema/secret validation, status, safe validation, and bounded clearing without persisting derived freshness fields. |
 | Multi-agent coordination | Self-contained briefs, write/write and write/read ownership checks, dependency-set validation, reviewer independence, normalized results, and inline fallback. |
 | Security boundaries | Realpath containment, bounded untrusted JSON, threat model, nested secret scanning, publication evidence, and explicit authority rules. |
@@ -48,6 +49,7 @@ are both present:
 | Graph readiness | Serializable phase/transition mapping in `ORCHESTRATOR_INTEGRATION.md` | Python semantic validator and workflow-policy tests |
 | Security boundary | realpath containment, bounded JSON, `THREAT_MODEL.md`, secret-free artifacts, authority and no-runtime rules | `tests/security-limits.test.js`, Markdown/loop validators, and `scripts/scan_secrets.py` |
 | Cross-artifact conformance | `src/core/conformance.js`, `classifyLoadedWorkState`, and `forgeloop validate-protocol --contract-file` | `tests/conformance.test.js`, `tests/validate-protocol-cli.test.js`, and protocol fixtures covering precedence and stale evidence |
+| Protocol preparation and completion | `src/core/preflight.js`, `src/core/completion.js`, `src/core/events.js`, policy packs, and portable bundles | `tests/preflight.test.js`, `tests/completion.test.js`, `tests/lifecycle.test.js`, `tests/policy.test.js`, and `tests/bundle.test.js` |
 
 The implementation references above are local observations. OS runners,
 remote links, provider sessions, publication, and deployment remain `Not

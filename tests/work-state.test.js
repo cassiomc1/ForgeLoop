@@ -60,6 +60,22 @@ test("work state creation adds protocol metadata and validates guides", () => {
   assert.match(state.lastUpdated, /^\d{4}-\d{2}-\d{2}T/);
 });
 
+test("work state carries optional protocol fingerprints, gates, and compliance mode", () => {
+  const state = createWorkState(input({
+    routeFingerprint: "a".repeat(64),
+    requiredGates: ["design"],
+    satisfiedGates: [],
+    complianceMode: "strict",
+    evidenceCoverage: [],
+    publicationStatus: "not-published",
+  }));
+
+  assert.equal(state.routeFingerprint, "a".repeat(64));
+  assert.deepEqual(state.requiredGates, ["design"]);
+  assert.equal(state.complianceMode, "strict");
+  assert.equal(state.publicationStatus, "not-published");
+});
+
 test("changed HEAD requires state revalidation", () => {
   const state = createWorkState(input());
   const result = classifyWorkState(state, { branch: "main", head: "new-head" });

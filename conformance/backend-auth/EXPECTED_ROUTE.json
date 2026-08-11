@@ -1,0 +1,7 @@
+{
+  "workType": "api-auth",
+  "surfaces": ["api", "auth"],
+  "risks": ["untrusted-input"],
+  "platforms": ["server"],
+  "guides": ["clean", "test", "security", "performance"]
+}

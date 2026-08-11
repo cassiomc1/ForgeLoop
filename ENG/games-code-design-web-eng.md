@@ -4,6 +4,12 @@ language: en
 description: "Architecture, design, testing, and operation of 2D, 3D, and procedural web games."
 version: "2026.09"
 last-reviewed: "2026-08-10"
+guide-id: games
+requires-gates:
+  - simulation
+completion-evidence:
+  - game-loop
+  - accessibility-validation
 ---
 
 # Web Game Development Guide — 2D, 3D, and Procedural Systems

@@ -4,6 +4,11 @@ language: en
 description: "Verifiable security guidance for web, mobile, desktop, APIs, and the software supply chain."
 version: "2026.09"
 last-reviewed: "2026-08-10"
+guide-id: security
+requires-gates:
+  - threat-boundary
+completion-evidence:
+  - security-validation
 ---
 
 # Security Guide for Web, Mobile, and Desktop Development
