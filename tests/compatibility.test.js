@@ -9,6 +9,8 @@ import { validateReceipt } from "../src/core/receipt.js";
 import { assertSchema, readSchema } from "../src/core/schema-validation.js";
 import { getPackageRoot, TEMPLATE_PATHS } from "../src/core/templates.js";
 
+const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
+
 const expectedAgents = [
   {
     id: "codex",
@@ -128,7 +130,7 @@ test("compatibility guide mirrors every registry entry", async () => {
 });
 
 test("npm package contains the registry and compatibility guide", () => {
-  const output = execFileSync("npm", ["pack", "--dry-run", "--json"], {
+  const output = execFileSync(npmCommand, ["pack", "--dry-run", "--json"], {
     encoding: "utf8",
   });
   const paths = JSON.parse(output)[0].files.map((entry) => entry.path);

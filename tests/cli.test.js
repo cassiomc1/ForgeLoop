@@ -304,12 +304,23 @@ test("importing the CLI module has no command-line side effect", () => {
 
 test("CLI runs when invoked through an npm-style symlink", async () => {
   const binDirectory = await mkdtemp(path.join(os.tmpdir(), "mdfiles-bin-"));
-  const linkedCli = path.join(binDirectory, "mdfiles");
+  const linkedCli = path.join(
+    binDirectory,
+    process.platform === "win32" ? "mdfiles.cmd" : "mdfiles",
+  );
   try {
-    await symlink(cliPath, linkedCli);
+    if (process.platform === "win32") {
+      await writeFile(
+        linkedCli,
+        `@echo off\r\n"${process.execPath}" "${cliPath}" %*\r\n`,
+      );
+    } else {
+      await symlink(cliPath, linkedCli);
+    }
     const result = spawnSync(linkedCli, ["--version"], {
       cwd: repositoryRoot,
       encoding: "utf8",
+      shell: process.platform === "win32",
     });
 
     assert.equal(result.status, 0, result.stderr);

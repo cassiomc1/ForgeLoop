@@ -5,8 +5,10 @@ import { test } from "node:test";
 
 import { TEMPLATE_PATHS } from "../src/core/templates.js";
 
+const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
+
 test("npm tarball contains the CLI, templates, and license notices only", () => {
-  const output = execFileSync("npm", ["pack", "--dry-run", "--json"], {
+  const output = execFileSync(npmCommand, ["pack", "--dry-run", "--json"], {
     encoding: "utf8",
   });
   const listing = JSON.parse(output)[0].files.map((entry) => entry.path);
@@ -43,14 +45,17 @@ test("npm tarball contains the CLI, templates, and license notices only", () => 
 });
 
 test("CLI package entry is executable by Node-compatible shells", async () => {
-  const cli = await readFile("src/cli.js", "utf8");
+  const cli = (await readFile("src/cli.js", "utf8")).replace(/\r\n/g, "\n");
   const metadata = await stat("src/cli.js");
   assert.match(cli, /^#!\/usr\/bin\/env node\n/);
   assert.notEqual(metadata.mode & 0o111, 0);
 });
 
 test("release workflow uses a compatible OIDC publishing toolchain", async () => {
-  const workflow = await readFile(".github/workflows/npm-publish.yml", "utf8");
+  const workflow = (await readFile(".github/workflows/npm-publish.yml", "utf8")).replace(
+    /\r\n/g,
+    "\n",
+  );
 
   assert.match(workflow, /setup-node@820762786026740c76f36085b0efc47a31fe5020/);
   assert.match(workflow, /node-version: 24/);
@@ -62,7 +67,10 @@ test("release workflow uses a compatible OIDC publishing toolchain", async () =>
 
 test("supported Node engine versions are exercised in docs CI", async () => {
   const packageJson = JSON.parse(await readFile("package.json", "utf8"));
-  const workflow = await readFile(".github/workflows/docs-quality.yml", "utf8");
+  const workflow = (await readFile(".github/workflows/docs-quality.yml", "utf8")).replace(
+    /\r\n/g,
+    "\n",
+  );
 
   assert.equal(packageJson.engines.node, ">=20");
   assert.equal(packageJson.scripts.test, "node scripts/run-tests.js");
