@@ -166,6 +166,50 @@ rg -n '^## |game loop|procedural|input|assets|audio|multiplayer|WASM|PWA|CI/CD' 
 
 HyperFrames is optional and may be used only when requested or already available and appropriate. A reference to it does not authorize installation.
 
+## Deterministic route contract
+
+The active agent may classify natural language, but it must pass declared
+signals to the deterministic evaluator in `src/core/router.js`. The evaluator
+does not parse natural language, call a model, or infer a stack from a word in
+the repository.
+
+The first routing contract is versioned as `schemaVersion: 1`. It accepts:
+
+- `workType`: `documentation`, `code`, `bug`, `refactor`, `backend`, `api`,
+  `api-auth`, `complete-website`, `mobile-ui`, `web-game`, `html-video`,
+  `infrastructure`, `security-review`, `performance`, `accessibility`,
+  `test-only`, `dependency-update`, or `release`;
+- `surfaces`: `ui`, `forms`, `api`, `auth`, `data`, `database`, `mobile`,
+  `desktop`, `game`, `video`, `ci`, `config`, or `critical-path`;
+- `risks`: `untrusted-input`, `personal-data`, `secrets`, `external-service`,
+  `publication`, `critical-path`, `performance`, or `accessibility`;
+- `platforms`: `web`, `mobile`, `desktop`, `server`, `ci`, or
+  `cross-platform`;
+- optional boolean `behaviorChange` and `executableChange` signals.
+
+Rule precedence is deterministic: the work type establishes the primary
+closure; affected surfaces add mandatory complements; risks add security,
+performance, or accessibility; executable/behavior changes add clean and
+test; required rules win over optional exclusions; and the evaluator preserves
+canonical insertion order. Unknown or duplicate signals fail with a routing
+error.
+
+Every selected guide has stable reason codes such as
+`WORK_COMPLETE_WEBSITE`, `SURFACE_UI`, `RISK_UNTRUSTED_INPUT`, and
+`CHANGE_EXECUTABLE_CONFIG`. Exclusions use stable codes such as
+`NO_TRUST_BOUNDARY` and `NO_MEASURABLE_PERFORMANCE_RISK`. Documentation-only
+input records `DOCUMENTATION_DOMAIN_GUIDE_REQUIRED` instead of activating
+technical guides automatically.
+
+Negative routing guarantees:
+
+- a documentation mention of OAuth does not activate `security`;
+- a backend refactor does not activate `design` or `accessibility`;
+- static UI copy does not activate `security` without a trust-boundary signal;
+- a package file alone does not prove that Node is an affected task surface;
+- an explicit executable-change signal adds `clean` and `test` even when the
+  semantic work type is documentation.
+
 ## Verifiable scenarios
 
 Route comments are stable contracts for the validator. They contain IDs, not loading instructions.

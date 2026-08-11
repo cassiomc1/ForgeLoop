@@ -1,0 +1,10 @@
+{
+  "input": {
+    "workType": "complete-website",
+    "surfaces": ["ui", "forms"],
+    "risks": ["untrusted-input", "critical-path"],
+    "platforms": ["web"]
+  },
+  "guides": ["premium", "design", "accessibility", "clean", "test", "security", "performance"],
+  "primary": "premium"
+}
