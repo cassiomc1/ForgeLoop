@@ -4,6 +4,10 @@ import { fileURLToPath } from "node:url";
 
 const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
+const TEMPLATE_SOURCE_PATHS = Object.freeze({
+  ".forgeloop/.gitignore": ".forgeloop/forgeloop.gitignore",
+});
+
 export const TEMPLATE_PATHS = [
   ".forgeloop/.gitignore",
   "AGENTS.md",
@@ -48,9 +52,12 @@ export function getPackageRoot() {
 
 export async function readTemplateEntries(packageRoot = PACKAGE_ROOT) {
   return Promise.all(
-    TEMPLATE_PATHS.map(async (relativePath) => ({
-      relativePath,
-      bytes: await readFile(path.join(packageRoot, relativePath)),
-    })),
+    TEMPLATE_PATHS.map(async (relativePath) => {
+      const sourcePath = TEMPLATE_SOURCE_PATHS[relativePath] ?? relativePath;
+      return {
+        relativePath,
+        bytes: await readFile(path.join(packageRoot, sourcePath)),
+      };
+    }),
   );
 }

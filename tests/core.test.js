@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, symlink } from "node:fs/promises";
+import { cp, mkdtemp, readFile, rm, symlink } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -10,7 +10,7 @@ import {
   readManifest,
   writeManifest,
 } from "../src/core/manifest.js";
-import { readTemplateEntries, TEMPLATE_PATHS } from "../src/core/templates.js";
+import { getPackageRoot, readTemplateEntries, TEMPLATE_PATHS } from "../src/core/templates.js";
 
 test("rejects a target path that escapes the requested root", async () => {
   const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-core-"));
@@ -45,6 +45,23 @@ test("template entries use safe relative paths", async () => {
     assert.equal(path.isAbsolute(entry.relativePath), false);
     assert.equal(entry.relativePath.startsWith(".."), false);
     assert.ok(entry.bytes.length > 0);
+  }
+});
+
+test("template entries use an npm-safe source for the .gitignore target", async () => {
+  const packageRoot = await mkdtemp(path.join(os.tmpdir(), "forgeloop-npm-package-"));
+  try {
+    await cp(getPackageRoot(), packageRoot, { recursive: true });
+
+    const entries = await readTemplateEntries(packageRoot);
+    const ignoredTemplate = entries.find(
+      (entry) => entry.relativePath === ".forgeloop/.gitignore",
+    );
+
+    assert.ok(ignoredTemplate);
+    assert.match(ignoredTemplate.bytes.toString("utf8"), /work-state\.json/);
+  } finally {
+    await rm(packageRoot, { recursive: true, force: true });
   }
 });
 

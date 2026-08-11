@@ -17,8 +17,8 @@ test("npm tarball contains the CLI, templates, and license notices only", () => 
   for (const expected of [
     "src/cli.js",
     "src/core/agent-support.js",
-    ...TEMPLATE_PATHS,
-    ".forgeloop/.gitignore",
+    ...TEMPLATE_PATHS.filter((relativePath) => relativePath !== ".forgeloop/.gitignore"),
+    ".forgeloop/forgeloop.gitignore",
     "QUALITY_SCORECARD.md",
     "TERMINOLOGY.md",
     "EXECUTION_STATE.md",
