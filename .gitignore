@@ -2,5 +2,5 @@
 .worktrees/
 .commandcode/
 __pycache__/
-.mdfiles/
+.forgeloop/
 *.py[cod]

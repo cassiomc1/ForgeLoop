@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
 export const TEMPLATE_PATHS = [
-  ".mdfiles/.gitignore",
+  ".forgeloop/.gitignore",
   "AGENTS.md",
   "CLAUDE.md",
   ".cursor/rules/project-loop.mdc",

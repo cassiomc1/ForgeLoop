@@ -56,7 +56,7 @@ function usage(command = null) {
   options.push("  --version           show the installed package version");
   options.push("  --help              show this help");
 
-  return `Usage: mdfiles <${command ?? commands}> [options]\n\nOptions:\n${options.join("\n")}\n`;
+  return `Usage: forgeloop <${command ?? commands}> [options]\n\nOptions:\n${options.join("\n")}\n`;
 }
 
 export function parseArgs(argv) {
