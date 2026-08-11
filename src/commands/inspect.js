@@ -11,7 +11,7 @@ export function formatInspectResult(report) {
     `State: ${report.state.status}`,
     `Adapters: ${report.adapters.detected.length} detected`,
     `Findings: ${report.findings.length}`,
-    report.ok ? "healthy: mdfiles target is ready" : "unhealthy: mdfiles target needs attention",
+    report.ok ? "healthy: ForgeLoop target is ready" : "unhealthy: ForgeLoop target needs attention",
   ];
   return `${lines.join("\n")}\n`;
 }

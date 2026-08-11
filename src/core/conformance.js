@@ -126,7 +126,7 @@ export function validateTaskArtifactSet({
     stale,
     evidence: [createEvidence({
       kind: evidenceKind,
-      source: "mdfiles protocol conformance",
+      source: "ForgeLoop protocol conformance",
       result: status,
     })],
   };

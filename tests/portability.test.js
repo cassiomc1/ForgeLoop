@@ -28,14 +28,14 @@ function isWithinWindows(root, candidate) {
 }
 
 test("CLI handles target paths with spaces and Unicode", async () => {
-  const parent = await mkdtemp(path.join(os.tmpdir(), "mdfiles-portable-"));
+  const parent = await mkdtemp(path.join(os.tmpdir(), "forgeloop-portable-"));
   const target = path.join(parent, "projeto com espaço — 测试");
   await mkdir(target);
 
   try {
     const initialized = runCli(target, "init");
     assert.equal(initialized.status, 0, initialized.stderr);
-    await readFile(path.join(target, ".mdfiles", ".gitignore"), "utf8");
+    await readFile(path.join(target, ".forgeloop", ".gitignore"), "utf8");
     await readFile(path.join(target, "ORCHESTRATOR_INTEGRATION.md"), "utf8");
     await readFile(path.join(target, "schemas", "work-state.schema.json"), "utf8");
 
@@ -50,7 +50,7 @@ test("CLI handles target paths with spaces and Unicode", async () => {
 });
 
 test("state APIs preserve a CRLF target file and validate a checkpoint on a portable path", async () => {
-  const parent = await mkdtemp(path.join(os.tmpdir(), "mdfiles-portable-state-"));
+  const parent = await mkdtemp(path.join(os.tmpdir(), "forgeloop-portable-state-"));
   const target = path.join(parent, "project with spaces — état");
   await mkdir(target);
 

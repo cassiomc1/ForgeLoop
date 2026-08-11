@@ -8,7 +8,7 @@ function finding(code, severity, relativePath, message, remediation = null, evid
     ? evidence
     : createEvidence({
       kind: "OBSERVED",
-      source: `mdfiles doctor:${relativePath}`,
+      source: `ForgeLoop doctor:${relativePath}`,
       result: evidence ?? message,
     });
   return {
@@ -73,7 +73,7 @@ async function adoptAdapters({ target, manifest, adoptPaths, findings }) {
         "file-adopted",
         "info",
         relativePath,
-        "Existing adapter is now recorded as preserved by mdfiles.",
+        "Existing adapter is now recorded as preserved by ForgeLoop.",
       ),
     );
     changed = true;
@@ -89,10 +89,10 @@ export async function runDoctor({ target, packageRoot, adoptPaths = [], strict =
   try {
     manifest = await readManifest(target);
     if (!manifest) {
-      findings.push(finding("manifest-missing", "error", ".mdfiles/manifest.json", "Run mdfiles init first."));
+      findings.push(finding("manifest-missing", "error", ".forgeloop/manifest.json", "Run forgeloop init first."));
     }
   } catch (error) {
-    findings.push(finding("manifest-invalid", "error", ".mdfiles/manifest.json", error.message));
+    findings.push(finding("manifest-invalid", "error", ".forgeloop/manifest.json", error.message));
   }
 
   manifest = await adoptAdapters({ target, manifest, adoptPaths, findings });
@@ -125,7 +125,7 @@ export async function runDoctor({ target, packageRoot, adoptPaths = [], strict =
             "unmanaged-file",
             "error",
             entry.relativePath,
-            "Existing adapter is not managed by mdfiles; merge the loop reference and rerun doctor.",
+            "Existing adapter is not managed by ForgeLoop; merge the loop reference and rerun doctor.",
           ),
         );
       }
@@ -158,7 +158,7 @@ export async function runDoctor({ target, packageRoot, adoptPaths = [], strict =
     findings,
     evidence: [createEvidence({
       kind: "OBSERVED",
-      source: "mdfiles doctor",
+      source: "ForgeLoop doctor",
       result: `${findings.length} findings; ${ok ? "healthy" : "needs attention"}`,
     })],
   };

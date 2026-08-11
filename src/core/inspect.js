@@ -3,12 +3,11 @@ import { AGENT_SUPPORT } from "./agent-support.js";
 import { readManifest } from "./manifest.js";
 import { PROTOCOL_VERSION } from "./protocol.js";
 import { inspectSchemaHealth } from "./schema-validation.js";
-import { readAndClassifyWorkState } from "./work-state.js";
+import { readAndClassifyWorkState, WORK_STATE_PATH } from "./work-state.js";
 import { createEvidence } from "./evidence.js";
 import { runDoctor } from "../commands/doctor.js";
 
 const PROFILE_PATH = "PROJECT_PROFILE.md";
-const STATE_PATH = ".mdfiles/work-state.json";
 function profileMetadata(bytes) {
   const text = bytes.toString("utf8");
   return {
@@ -30,7 +29,7 @@ export async function inspectTarget({ target, packageRoot, contractFile = null }
   const profile = (await fileExists(profilePath))
     ? profileMetadata(await readBytes(profilePath))
     : { mode: null, status: null };
-  const statePath = ensureWithin(target, STATE_PATH);
+  const statePath = ensureWithin(target, WORK_STATE_PATH);
   const statePresent = await fileExists(statePath);
   const state = await readAndClassifyWorkState({ target, packageRoot, contractFile });
   const schemaHealth = await inspectSchemaHealth(target);
@@ -66,16 +65,16 @@ export async function inspectTarget({ target, packageRoot, contractFile = null }
     findings.push({
       code: "state-invalid",
       severity: "error",
-      path: STATE_PATH,
+      path: WORK_STATE_PATH,
       message: state.error ?? "Work state is invalid.",
       remediation: "Repair or clear the checkpoint after reviewing the parse error.",
-      evidence: createEvidence({ kind: "BLOCKED", source: STATE_PATH, result: "invalid" }),
+      evidence: createEvidence({ kind: "BLOCKED", source: WORK_STATE_PATH, result: "invalid" }),
     });
   }
 
   const protocolEvidence = schemaHealth.evidence ?? [createEvidence({
     kind: schemaHealth.status === "valid" ? "OBSERVED" : "NOT_VERIFIED",
-    source: "mdfiles schema health",
+    source: "ForgeLoop schema health",
     result: schemaHealth.status,
   })];
   const evidence = [
@@ -102,7 +101,7 @@ export async function inspectTarget({ target, packageRoot, contractFile = null }
       schemas: schemaHealth.schemas,
       evidence: protocolEvidence,
     },
-    state: { ...state, path: STATE_PATH, present: statePresent },
+    state: { ...state, path: WORK_STATE_PATH, present: statePresent },
     compatibility: {
       agents: AGENT_SUPPORT.map((record) => record.id),
     },

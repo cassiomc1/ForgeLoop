@@ -17,7 +17,7 @@ function run(target, ...args) {
 }
 
 test("structured CLI commands produce deterministic JSON contracts", async () => {
-  const target = await mkdtemp(path.join(os.tmpdir(), "mdfiles-json-"));
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-json-"));
   try {
     assert.equal(run(target, "init").status, 0);
     await writeFile(path.join(target, "receipt.json"), `${JSON.stringify({

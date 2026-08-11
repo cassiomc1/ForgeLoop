@@ -11,7 +11,7 @@ const PROFILE_PATH = "PROJECT_PROFILE.md";
 export async function runUpdate({ target, dryRun, packageRoot, packageVersion }) {
   const currentManifest = await readManifest(target);
   if (!currentManifest) {
-    throw new Error("No .mdfiles/manifest.json found; run mdfiles init first.");
+    throw new Error("No .forgeloop/manifest.json found; run forgeloop init first.");
   }
 
   const entries = await readTemplateEntries(packageRoot);
