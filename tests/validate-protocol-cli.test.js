@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { evaluateRoute } from "../src/core/router.js";
+import { sha256 } from "../src/core/manifest.js";
 import { contractFingerprint, createWorkState } from "../src/core/work-state.js";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -77,6 +78,7 @@ test("validate-protocol validates a read-only coherent artifact set", async () =
     for (const [name, value] of Object.entries({ route, state, receipt, brief, delegated })) {
       await writeFile(path.join(target, `${name}.json`), `${JSON.stringify(value)}\n`);
     }
+    await writeFile(path.join(target, "contract.json"), `${JSON.stringify(contract)}\n`);
 
     const result = runCli(
       target,
@@ -86,6 +88,7 @@ test("validate-protocol validates a read-only coherent artifact set", async () =
       "--receipt-file", "receipt.json",
       "--task-brief-file", "brief.json",
       "--delegated-result-file", "delegated.json",
+      "--contract-file", "contract.json",
       "--json",
     );
     assert.equal(result.status, 0, result.stderr);
@@ -109,6 +112,229 @@ test("validate-protocol reports inconsistencies and rejects unsafe paths", async
     const unsafe = runCli(target, "validate-protocol", "--route-file", "../route.json", "--json");
     assert.equal(unsafe.status, 1);
     assert.match(unsafe.stderr, /inside target|escapes target/i);
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
+async function writeConformanceFixture(target, {
+  stateContract = { objective: "cli conformance" },
+  currentContract = stateContract,
+  repositoryFingerprint = { branch: null, head: null },
+  requiredArtifacts = [],
+} = {}) {
+  const route = evaluateRoute({ workType: "api", surfaces: ["api"], platforms: [] });
+  const state = createWorkState({
+    taskId: "parent",
+    contractFingerprint: contractFingerprint(stateContract),
+    repositoryFingerprint,
+    phase: "ROUTED",
+    selectedGuides: route.guides,
+    completedSteps: [],
+    pendingSteps: ["implementation"],
+    requiredArtifacts,
+    checks: [],
+    failures: [],
+    blockers: [],
+    verificationEvidence: [],
+  });
+  const receipt = {
+    schemaVersion: 1,
+    protocolVersion: 1,
+    taskId: "parent",
+    contractFingerprint: state.contractFingerprint,
+    selectedGuides: route.guides,
+    changedPaths: [],
+    checks: [],
+    review: { status: "not-run", independent: false },
+    limitations: [],
+    publication: { committed: false, pushed: false, pullRequest: null, deployed: false },
+  };
+  const brief = {
+    schemaVersion: 1,
+    protocolVersion: 1,
+    taskId: "child",
+    parentTaskId: "parent",
+    objective: "child",
+    allowedPaths: ["src/child.js"],
+    readOnlyPaths: [],
+    dependencies: [],
+    constraints: [],
+    requiredGuides: ["clean"],
+    verification: ["npm test"],
+    authority: ["write src/child.js"],
+    deliverables: ["src/child.js"],
+  };
+  const delegated = {
+    schemaVersion: 1,
+    protocolVersion: 1,
+    taskId: "child",
+    status: "complete-with-concerns",
+    changes: [],
+    verification: ["npm test"],
+    openFindings: [],
+    limitations: [],
+  };
+  for (const [name, value] of Object.entries({ route, state, receipt, brief, delegated })) {
+    await writeFile(path.join(target, `${name}.json`), `${JSON.stringify(value)}\n`);
+  }
+  await writeFile(path.join(target, "contract.json"), `${JSON.stringify(currentContract)}\n`);
+  return { state };
+}
+
+function runConformance(target, ...extraArgs) {
+  return runCli(
+    target,
+    "validate-protocol",
+    "--route-file", "route.json",
+    "--state-file", "state.json",
+    "--receipt-file", "receipt.json",
+    "--task-brief-file", "brief.json",
+    "--delegated-result-file", "delegated.json",
+    ...extraArgs,
+    "--json",
+  );
+}
+
+test("validate-protocol derives STALE when the current contract changed", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "mdfiles-conformance-cli-"));
+  try {
+    await writeConformanceFixture(target, {
+      stateContract: { objective: "old contract" },
+      currentContract: { objective: "new contract" },
+    });
+    const result = runConformance(target, "--contract-file", "contract.json");
+    assert.equal(result.status, 1, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.status, "STALE");
+    assert.ok(report.stale.reasons.includes("CONTRACT_CHANGED"));
+    assert.equal(report.stale.contractComparison, "MISMATCH");
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
+test("validate-protocol derives STALE when the current contract is not supplied", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "mdfiles-conformance-cli-"));
+  try {
+    await writeConformanceFixture(target);
+    const result = runConformance(target);
+    assert.equal(result.status, 1, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.status, "STALE");
+    assert.ok(report.stale.reasons.includes("CONTRACT_NOT_VERIFIED"));
+    assert.equal(report.stale.contractComparison, "NOT_VERIFIED");
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
+test("validate-protocol derives STALE when the repository fingerprint changed", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "mdfiles-conformance-cli-"));
+  try {
+    await writeConformanceFixture(target, {
+      repositoryFingerprint: { branch: "main", head: "old-head" },
+    });
+    const result = runConformance(target, "--contract-file", "contract.json");
+    assert.equal(result.status, 1, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.status, "STALE");
+    assert.ok(report.stale.reasons.includes("REPOSITORY_CHANGED"));
+    assert.equal(report.stale.repositoryComparison, "MISMATCH");
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
+test("validate-protocol derives STALE when a required artifact changed or is missing", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "mdfiles-conformance-cli-"));
+  try {
+    await mkdir(path.join(target, "src"), { recursive: true });
+    const artifactPath = "src/material.js";
+    const original = "export const value = 1;\n";
+    await writeFile(path.join(target, artifactPath), original);
+    await writeConformanceFixture(target, {
+      requiredArtifacts: [{ path: artifactPath, sha256: sha256(Buffer.from(original)) }],
+    });
+    await writeFile(path.join(target, artifactPath), "export const value = 2;\n");
+    let result = runConformance(target, "--contract-file", "contract.json");
+    let report = JSON.parse(result.stdout);
+    assert.equal(report.status, "STALE");
+    assert.ok(report.stale.reasons.includes("REQUIRED_ARTIFACT_CHANGED"));
+
+    await rm(path.join(target, artifactPath));
+    result = runConformance(target, "--contract-file", "contract.json");
+    report = JSON.parse(result.stdout);
+    assert.equal(report.status, "STALE");
+    assert.ok(report.stale.reasons.includes("REQUIRED_ARTIFACT_MISSING"));
+    assert.equal(report.stale.artifactComparison, "MISSING");
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
+test("validate-protocol returns VALID when freshness and artifacts match", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "mdfiles-conformance-cli-"));
+  try {
+    const artifactPath = "material.js";
+    const contents = "export const value = 1;\n";
+    await writeFile(path.join(target, artifactPath), contents);
+    await writeConformanceFixture(target, {
+      requiredArtifacts: [{ path: artifactPath, sha256: sha256(Buffer.from(contents)) }],
+    });
+    const result = runConformance(target, "--contract-file", "contract.json");
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.status, "VALID");
+    assert.equal(report.stale, null);
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
+test("validate-protocol human output explains stale freshness evidence", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "mdfiles-conformance-cli-"));
+  try {
+    await writeConformanceFixture(target, {
+      stateContract: { objective: "old contract" },
+      currentContract: { objective: "new contract" },
+    });
+    const result = runCli(
+      target,
+      "validate-protocol",
+      "--route-file", "route.json",
+      "--state-file", "state.json",
+      "--receipt-file", "receipt.json",
+      "--task-brief-file", "brief.json",
+      "--delegated-result-file", "delegated.json",
+      "--contract-file", "contract.json",
+    );
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(result.stdout, /Protocol: STALE/);
+    assert.match(result.stdout, /Contract: MISMATCH/);
+    assert.match(result.stdout, /CONTRACT_CHANGED/);
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
+test("validate-protocol preserves INVALID precedence over stale freshness", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "mdfiles-conformance-cli-"));
+  try {
+    await writeConformanceFixture(target, {
+      stateContract: { objective: "old contract" },
+      currentContract: { objective: "new contract" },
+    });
+    await writeFile(path.join(target, "route.json"), JSON.stringify({
+      schemaVersion: 1,
+      protocolVersion: 99,
+      guides: [],
+    }));
+    const result = runConformance(target, "--contract-file", "contract.json");
+    assert.equal(result.status, 1, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.status, "INVALID");
+    assert.equal(report.stale, null);
   } finally {
     await rm(target, { recursive: true, force: true });
   }

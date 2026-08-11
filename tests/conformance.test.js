@@ -87,6 +87,35 @@ test("cross-artifact conformance reports exact relationship failures", () => {
 
 test("cross-artifact conformance distinguishes incomplete, stale, and incompatible sets", () => {
   assert.equal(validateTaskArtifactSet({ route, state, receipt }).status, "INCOMPLETE");
-  assert.equal(validateTaskArtifactSet({ route, state: { ...state, status: "REVALIDATION_REQUIRED" }, receipt }).status, "STALE");
-  assert.equal(validateTaskArtifactSet({ route: { ...route, protocolVersion: 99 }, state, receipt }).status, "INVALID");
+  const stateClassification = {
+    status: "REVALIDATION_REQUIRED",
+    reasons: ["CONTRACT_CHANGED"],
+    warnings: [],
+    repositoryComparison: "MATCH",
+    contractComparison: "MISMATCH",
+    artifactComparison: "NOT_APPLICABLE",
+  };
+  const stale = validateTaskArtifactSet({ route, state, stateClassification, receipt });
+  assert.equal(stale.status, "STALE");
+  assert.deepEqual(stale.stale, {
+    reasons: ["CONTRACT_CHANGED"],
+    warnings: [],
+    repositoryComparison: "MATCH",
+    contractComparison: "MISMATCH",
+    artifactComparison: "NOT_APPLICABLE",
+  });
+  const inconsistent = validateTaskArtifactSet({
+    route: { ...route, guides: [] },
+    state,
+    stateClassification,
+    receipt,
+  });
+  assert.equal(inconsistent.status, "INCONSISTENT");
+  assert.equal(inconsistent.stale, null);
+  assert.equal(validateTaskArtifactSet({
+    route: { ...route, protocolVersion: 99 },
+    state,
+    stateClassification,
+    receipt,
+  }).status, "INVALID");
 });

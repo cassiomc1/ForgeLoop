@@ -68,6 +68,24 @@ claim full freshness. Required artifact hashes report missing or changed files.
 An optional age threshold may recommend cheap verification with
 `CHECKPOINT_OLD` without changing a fresh result.
 
+`inspect`, `status`, and `validate-protocol` use the same derived freshness
+classifier. Protocol validation can be run against the complete artifact set:
+
+```bash
+mdfiles validate-protocol \
+  --route-file ./routing-result.json \
+  --state-file .mdfiles/work-state.json \
+  --receipt-file ./execution-receipt.json \
+  --contract-file .mdfiles/current-contract.json \
+  --json
+```
+
+`validate-protocol` reports `STALE` when the current repository fingerprint,
+contract, or required-artifact fingerprints require revalidation. Its JSON
+result exposes the comparison values, reasons, and warnings; the human output
+shows the same evidence. The persisted work-state file remains schema-compatible
+and never stores derived `status`, `stale`, or `fresh` fields.
+
 State reports use the shared evidence kinds `OBSERVED`, `INFERRED`,
 `NOT_VERIFIED`, and `BLOCKED`. A parse failure is structured as `INVALID` and
 is never resumed silently.

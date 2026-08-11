@@ -40,7 +40,7 @@ function usage(command = null) {
   if (!command || ["inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"].includes(command)) {
     options.push("  --json              emit structured output as JSON");
   }
-  if (!command || command === "status" || command === "inspect") {
+  if (!command || ["status", "inspect", "validate-protocol"].includes(command)) {
     options.push("  --contract-file <path>  current JSON contract used for freshness comparison");
   }
   if (!command || command === "validate-protocol") {
@@ -193,7 +193,7 @@ export function parseArgs(argv) {
   if (command !== "validate-receipt" && options.file) {
     throw new Error(`Option --file is not valid for ${command}`);
   }
-  if (!["status", "inspect"].includes(command) && options.contractFile) {
+  if (!["status", "inspect", "validate-protocol"].includes(command) && options.contractFile) {
     throw new Error(`Option --contract-file is not valid for ${command}`);
   }
   if (command !== "validate-protocol" && (options.routeFile || options.stateFile || options.receiptFile || options.taskBriefFiles.length > 0 || options.delegatedResultFiles.length > 0)) {
@@ -288,6 +288,7 @@ export async function main(argv = process.argv.slice(2)) {
         routeFile: options.routeFile,
         stateFile: options.stateFile,
         receiptFile: options.receiptFile,
+        contractFile: options.contractFile,
         taskBriefFiles: options.taskBriefFiles,
         delegatedResultFiles: options.delegatedResultFiles,
       });

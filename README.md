@@ -72,7 +72,7 @@ npx @cassiomc1/mdfiles status --json
 npx @cassiomc1/mdfiles status --contract-file .mdfiles/current-contract.json --json
 npx @cassiomc1/mdfiles validate-state --json
 npx @cassiomc1/mdfiles validate-receipt --file ./execution-receipt.json --json
-npx @cassiomc1/mdfiles validate-protocol --route-file ./routing-result.json --state-file .mdfiles/work-state.json --receipt-file ./execution-receipt.json --json
+npx @cassiomc1/mdfiles validate-protocol --route-file ./routing-result.json --state-file .mdfiles/work-state.json --receipt-file ./execution-receipt.json --contract-file .mdfiles/current-contract.json --json
 ```
 
 `route` expands declared signals into deterministic guide IDs and reason codes.
@@ -82,8 +82,15 @@ state; they do not execute commands from the target profile.
 `missing`, `invalid`, or `unsupported-version` health. A status without a
 current contract file reports contract comparison as `NOT_VERIFIED` and does
 not claim full freshness. `validate-protocol` is read-only and checks
-cross-artifact relationships, returning `VALID`, `INCOMPLETE`, `STALE`,
-`INCONSISTENT`, or `INVALID` with exact invariant codes.
+cross-artifact relationships plus the same derived freshness classification
+used by `inspect` and `status`. Supply `--contract-file` to compare the saved
+contract fingerprint with the current contract; omitting it leaves contract
+freshness as `NOT_VERIFIED` and a complete artifact set requires revalidation.
+It returns `VALID`, `INCOMPLETE`, `STALE`, `INCONSISTENT`, or `INVALID` with
+exact invariant codes and derived stale reasons. The persisted
+`.mdfiles/work-state.json` schema is unchanged: `status`, `stale`, and `fresh`
+are never stored in that file. Status precedence is `INVALID` > `INCONSISTENT`
+> `STALE` > `INCOMPLETE` > `VALID`.
 All protocol-support commands are local and offline-capable by default; the
 package sends no telemetry and has no central trace service.
 Capability gaps and inline/non-Git degraded mode are defined in

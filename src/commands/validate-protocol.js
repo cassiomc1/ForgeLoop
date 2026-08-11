@@ -3,7 +3,7 @@ import { assertJsonBytes, assertJsonLimits } from "../core/json-safety.js";
 import { validateTaskArtifactSet } from "../core/conformance.js";
 import { assertSchema, readSchema } from "../core/schema-validation.js";
 import { assertRouteInvariants } from "../core/router.js";
-import { assertWorkStateSemantics } from "../core/work-state.js";
+import { assertWorkStateSemantics, classifyLoadedWorkState } from "../core/work-state.js";
 import { validateReceipt } from "../core/receipt.js";
 import { validateTaskBrief, validateDelegatedResult } from "../core/delegation.js";
 
@@ -43,6 +43,7 @@ export async function runValidateProtocol({
   routeFile = null,
   stateFile = null,
   receiptFile = null,
+  contractFile = null,
   taskBriefFiles = [],
   delegatedResultFiles = [],
 }) {
@@ -89,7 +90,18 @@ export async function runValidateProtocol({
   for (const item of loaded.filter((candidate) => candidate.label.startsWith("delegated result:"))) {
     await validateLoaded(item, "delegated-result", async (value) => validateDelegatedResult(value, packageRoot));
   }
-  const result = validateTaskArtifactSet({ route, state, receipt, taskBriefs, delegatedResults });
+  const stateValidationError = schemaErrors.some((error) => error.artifacts.includes(stateFile));
+  const stateClassification = state && readErrors.length === 0 && !stateValidationError
+    ? await classifyLoadedWorkState({ target, state, contractFile })
+    : null;
+  const result = validateTaskArtifactSet({
+    route,
+    state,
+    stateClassification,
+    receipt,
+    taskBriefs,
+    delegatedResults,
+  });
   if (readErrors.length > 0 || schemaErrors.length > 0) {
     return {
       ...result,
@@ -102,6 +114,19 @@ export async function runValidateProtocol({
 
 export function formatValidateProtocolResult(result) {
   const lines = [`Protocol: ${result.status}`];
+  if (result.stale) {
+    lines.push(`Repository: ${result.stale.repositoryComparison}`);
+    lines.push(`Contract: ${result.stale.contractComparison}`);
+    lines.push(`Required artifacts: ${result.stale.artifactComparison}`);
+    if (result.stale.reasons.length > 0) {
+      lines.push("Reasons:");
+      for (const reason of result.stale.reasons) lines.push(`- ${reason}`);
+    }
+    if (result.stale.warnings.length > 0) {
+      lines.push("Warnings:");
+      for (const warning of result.stale.warnings) lines.push(`- ${warning}`);
+    }
+  }
   for (const item of result.errors) lines.push(`- ${item.code}: ${item.message}`);
   for (const item of result.incomplete) lines.push(`- INCOMPLETE: ${item}`);
   return `${lines.join("\n")}\n`;
