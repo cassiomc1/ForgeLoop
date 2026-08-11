@@ -43,7 +43,7 @@
     "README.md"
   ],
   "scripts": {
-    "test": "node --test \"tests/*.test.js\"",
+    "test": "node scripts/run-tests.js",
     "pack:check": "node --test tests/package.test.js"
   }
 }
