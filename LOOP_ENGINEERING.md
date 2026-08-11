@@ -130,6 +130,40 @@ Use [`PROJECT_PROFILE.md`](./PROJECT_PROFILE.md) as a cache of durable facts:
 When the profile conflicts with the repository, current verifiable state wins.
 Correct only the affected profile facts.
 
+## Capability discovery and on-demand extensions
+
+When a task may require image, video, document, audio, OCR, grounding,
+segmentation, web search, generation, editing, long-video memory, or 3D
+tooling, the agent must verify the capability boundary before using it:
+
+1. Classify the operation and identify whether it needs a model capability, a
+   skill, an MCP server, an API-backed provider, or a system dependency.
+2. Inspect the active model and harness for native support, registered skills,
+   MCP servers, and callable tools. A prompt, package name, or documentation
+   reference is not evidence that the current session can call a tool.
+3. Reuse an existing callable capability when it is sufficient for the task.
+4. If the required capability is missing and a keyless Qwen path exists,
+   install only the smallest matching capability, normally
+   `qwen-mm-plugins-core` for multimodal reading. Use the active harness's
+   native installation mechanism or the official
+   [Qwen-MM-Plugins](https://github.com/QwenLM/Qwen-MM-Plugins) instructions.
+5. If the operation is API-backed, check the required environment variable or
+   configured service endpoint before enabling it. Without that prerequisite,
+   keep the optional capability disabled and continue with a keyless path or
+   report exactly what must be configured.
+6. Verify registration and dependencies with the harness capability listing
+   and the upstream plugin's supported verification/check command.
+7. Invoke the callable tool for the task and report missing system tools,
+   unavailable credentials, or model/harness limitations. Do not claim a
+   capability based only on a downloaded package or an unsuccessful fallback.
+
+This installation is task-scoped and capability-scoped, not a startup-wide
+installation of every plugin. The agent must never create, guess, persist, or
+expose an API key. System-level package installation, global configuration,
+network access, and credentials remain subject to host controls. If the active
+harness cannot register skills or MCP tools, the agent must state that the
+capability is unavailable rather than pretending to use it.
+
 ## Guide selection
 
 Read [`GUIDE_ROUTER.md`](./GUIDE_ROUTER.md) after discovery and before planning.
@@ -141,10 +175,98 @@ Required rules:
 - locate headings and relevant sections with `rg` before reading a long file;
 - read the whole guide only when the task crosses the whole domain;
 - briefly report the selected guide IDs and reason;
-- treat optional references as options, never as permission to install them.
+- treat optional references as options; only the task-scoped Qwen capability
+  policy above permits its matching installation, while unrelated resources
+  remain gated.
 
 A guide provides specialized defaults. It does not replace explicit product
 requirements, closer instructions, code evidence, or higher-level host rules.
+
+## Design and implementation gates
+
+### Design gate
+
+Before behavior, feature, architecture, or instruction changes, do proportional
+design after discovery. Work through one unresolved decision question at a
+time, surface meaningful alternatives with tradeoffs, and obtain approval
+before implementation. For small documentation maintenance, keep the treatment
+compact while still confirming the objective, boundaries, and verification.
+
+Use the [Execution contract](#execution-contract), [Project discovery](#project-discovery),
+[Guide selection](#guide-selection), and [Proportional planning](#proportional-planning)
+sections as the canonical sources for context, routing, and plan depth.
+
+### Plan contract and task briefs
+
+Every implementation plan or task brief must be self-contained for its scope
+and state the objective, architecture, technology, global constraints, exact
+files or interfaces, verification, and commit boundaries. Independent tasks
+must stay independently executable without hidden dependencies on unpublished
+conversation context.
+
+For long or multi-task work, keep an ignored ledger scoped to the plan. Use
+`DONE`, `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, and `BLOCKED` to support
+recovery and resume for completed work, concerns, missing context, and
+blockers rather than turning the ledger into a task log.
+
+Use the [Execution contract](#execution-contract) for the required fields, the
+[Project discovery](#project-discovery) and [Guide selection](#guide-selection)
+sections for evidence and routing, and [Stop conditions](#stop-conditions) for
+genuine blockers.
+
+### Test-first implementation
+
+For behavior changes, use RED → expected failure → minimal GREEN → refactor,
+with the testing strategy and risk depth anchored in
+[`ENG/test-code-eng.md`](./ENG/test-code-eng.md) and the
+[Verification and regression](#verification-and-regression) plus
+[Evidence-driven correction](#evidence-driven-correction) sections. Explicit
+exceptions are documentation-only work, generated output, or throwaway
+exploration that will not become maintained production behavior.
+
+### Review and recovery
+
+self-review is required but is not independent review. For multi-task work,
+specification compliance before code quality: first verify that the result
+matches the approved contract, then evaluate implementation quality. Handle one
+finding at a time, stop after at most five review-fix rounds, and treat any
+unresolved load-bearing finding as blocked until the contract or implementation
+changes.
+
+Use [Evidence-driven correction](#evidence-driven-correction) for diagnosis,
+[Verification and regression](#verification-and-regression) for re-checking,
+and [Stop conditions](#stop-conditions) when a blocker remains genuine.
+
+### Worktree and capability degradation
+
+Prefer native isolation when the harness provides it; otherwise use an approved
+ignored local worktree and require explicit consent before working directly on
+the main branch. When optional subagent, todo, web, or isolation capabilities
+are missing, fall back inline or to a plan file, report the degraded mode, and
+never invent a tool call.
+
+Use [Capability discovery and on-demand extensions](#capability-discovery-and-on-demand-extensions)
+for callable-tool proof, [Execution loop](#execution-loop) for scoped progress,
+and [Stop conditions](#stop-conditions) when the missing capability removes a
+required verification path.
+
+## Instruction and adapter hygiene
+
+Write canonical rules once in this file and make adapters delegate to
+`LOOP_ENGINEERING.md`, `PROJECT_PROFILE.md`, and `GUIDE_ROUTER.md` rather than
+copying process bodies. Adapter descriptions are trigger and reference text,
+not duplicate policy. Mechanical contracts belong in tests. New harness
+adapters should use the harness's native installation and context-loading path
+without editing global configuration, and actual bootstrap or context loading
+should be proven with a unique marker where possible.
+
+Keep capability rules in [Capability discovery and on-demand extensions](#capability-discovery-and-on-demand-extensions),
+routing in [Guide selection](#guide-selection), planning in
+[Proportional planning](#proportional-planning), execution in
+[Execution loop](#execution-loop), verification in
+[Verification and regression](#verification-and-regression), correction in
+[Evidence-driven correction](#evidence-driven-correction), and exit handling in
+[Stop conditions](#stop-conditions).
 
 ## Proportional planning
 
@@ -288,8 +410,11 @@ correctness → no regression → security → product requirement
 → simplicity → measured performance → elegance
 ```
 
-A guide never grants authority to install, publish, delete, migrate data, change
-production, send messages, or expose information.
+A guide never authorizes unrelated installation, publication, deletion,
+migration, production changes, messages, or information exposure. The
+task-scoped Qwen capability policy is the narrow exception for installing the
+smallest missing capability when the current task requires it; host approval
+controls and the API-credential boundary still apply.
 
 ## Stop conditions
 

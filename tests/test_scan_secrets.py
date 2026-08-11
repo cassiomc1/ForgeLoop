@@ -58,6 +58,13 @@ class SecretScannerTests(unittest.TestCase):
             "sensitive-assignment",
         )
 
+    def test_detects_npm_auth_token(self) -> None:
+        candidate = "npm_" + "A" * 36
+        self.assert_detected(
+            "//registry.npmjs.org/:_authToken=" + candidate,
+            "npm-auth-token",
+        )
+
     def test_detects_sensitive_markdown_table_value(self) -> None:
         table_row = "| API " + "token | live-value-that-must-not-be-committed | vault |"
         self.assert_detected(
@@ -97,6 +104,7 @@ class SecretScannerTests(unittest.TestCase):
 
     def test_skips_cache_and_binary_paths(self) -> None:
         self.assertFalse(should_scan_path(Path(".git/config")))
+        self.assertFalse(should_scan_path(Path(".superpowers/sdd/task-report.md")))
         self.assertFalse(should_scan_path(Path(".worktrees/feature/README.md")))
         self.assertFalse(should_scan_path(Path("scripts/__pycache__/module.pyc")))
         self.assertFalse(should_scan_path(Path("assets/logo.png")))
@@ -109,6 +117,13 @@ class SecretScannerTests(unittest.TestCase):
             Path("config/.env.production"),
             Path("certificates/server.pem"),
             Path("certificates/server.key"),
+            Path(".npmrc"),
+            Path("src/module.js"),
+            Path("src/module.mjs"),
+            Path("src/module.cjs"),
+            Path("src/module.ts"),
+            Path("src/module.tsx"),
+            Path("src/module.jsx"),
         ):
             with self.subTest(path=path):
                 self.assertTrue(should_scan_path(path))
@@ -124,11 +139,17 @@ class SecretScannerTests(unittest.TestCase):
                 "-----BEGIN " + "PRIVATE KEY-----\n",
                 encoding="utf-8",
             )
+            (root / "src").mkdir()
+            (root / "src/leak.js").write_text(
+                "const accessKey = '" + "AKIA" + "IOSFODNN7EXAMPLE" + "';\n",
+                encoding="utf-8",
+            )
 
             rules = {finding.rule for finding in scan_repository(root)}
 
         self.assertIn("openai-token", rules)
         self.assertIn("private-key", rules)
+        self.assertIn("aws-access-key", rules)
 
 
 if __name__ == "__main__":

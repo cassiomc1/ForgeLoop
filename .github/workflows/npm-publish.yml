@@ -8,9 +8,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: npm-publish
+  cancel-in-progress: false
+
 jobs:
   publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       id-token: write
@@ -18,13 +23,36 @@ jobs:
       - name: Check out source
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Set up Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 22.14.0
+          node-version: 24
           registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - name: Verify tag matches package version
+        run: |
+          expected="${GITHUB_REF_NAME#v}"
+          actual="$(node -p "JSON.parse(require('fs').readFileSync('package.json', 'utf8')).version")"
+          test "$expected" = "$actual"
+      - name: Lint Markdown
+        uses: DavidAnson/markdownlint-cli2-action@21c1be1b93ad9ed58fa840aacc3f279cde2a72ff # v24.2.0
+      - name: Check links
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          args: --config .lychee.toml './**/*.md'
+          fail: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Run package tests
         run: npm test
       - name: Verify package contents
         run: npm run pack:check
-      - name: Publish with provenance
-        run: npm publish --access public --provenance
+      - name: Run repository validators
+        run: |
+          python3 -m unittest discover -s tests -v
+          python3 scripts/validate_markdown.py --self-test
+          python3 scripts/validate_markdown.py
+          python3 scripts/validate_loop_system.py --self-test
+          python3 scripts/validate_loop_system.py
+          python3 scripts/scan_secrets.py
+      - name: Publish with trusted publishing
+        run: npm publish --access public

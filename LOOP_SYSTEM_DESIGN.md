@@ -1,6 +1,6 @@
 # Universal Engineering Loop — System Design
 
-**Status:** Implemented and validated on 2026-08-08.
+**Status:** Implemented; repository checks validate the system contract.
 
 ## Objective
 
@@ -10,13 +10,18 @@ The system should use every guide that materially helps the task without loading
 
 ## Primary decisions
 
-- The package supports Codex, Claude Code, Cursor, and GitHub Copilot.
+- The package supports Codex, Claude Code, Cursor, GitHub Copilot, Antigravity,
+  OpenCode, Hermes, Pi, Command Code, and Freebuff.
+- Codex, Claude Code, Cursor, and GitHub Copilot use native entry files; the
+  other six agents consume the shared `AGENTS.md` entry point.
 - The initial implementation uses Markdown and each agent's native instruction mechanism; it requires no runtime or dependency.
 - English is the only language used by repository content and guide metadata.
 - The agent uses all applicable guides, not every file indiscriminately.
+- Design, planning, test-first, and review process gates live in the canonical loop and scale with task risk instead of becoming unconditional boilerplate in every adapter or architecture note.
 - The persistent project profile stores only verifiable facts and never secrets, tokens, or credentials.
 - The loop continues while safe progress is possible. Repetition without new evidence triggers hypothesis reassessment or a blocked result, not infinite retries.
 - Third-party provenance and reuse boundaries remain part of every portable copy.
+- Qwen-MM-Plugins is an optional, task-scoped capability extension: the agent checks native support first, installs the smallest missing capability when needed, and verifies it before use; it is not a package or runtime dependency.
 
 ## Alternatives considered
 
@@ -50,13 +55,21 @@ Nearest agent adapter
     +--> repository-specific instructions
     |
     v
-Discovery -> contract -> route -> change -> targeted check -> regression
-    ^                                                        |
-    +---------------- diagnosis and correction --------------+
+Discovery -> contract -> route
+                              |
+                              v
+          proportional design -> plan -> change -> targeted check -> regression -> review
+                              ^                                                   |
+                              +--------------- diagnosis and correction ----------+
     |
     v
 Final result with evidence and limitations
 ```
+
+The canonical loop keeps proportional design, planning, implementation,
+testing, and review visible between routing and delivery. Architecture names
+the order of those stages without duplicating the detailed operating rules that
+belong in `LOOP_ENGINEERING.md`.
 
 ## Components and responsibilities
 
@@ -76,20 +89,45 @@ GitHub Copilot adapter. It activates the same operational contract while preserv
 
 Always-applicable Cursor adapter. It delegates decisions to the loop and router.
 
+### `AGENT_COMPATIBILITY.md`
+
+Human-readable support matrix for all ten agents. It explains each native entry
+file, the shared `AGENTS.md` compatibility contract, official documentation,
+precedence caveats, and the deterministic verification boundary.
+
 ### `LOOP_ENGINEERING.md`
 
 Canonical operational cycle. It defines:
 
 - discovery of repository state and nearby instructions;
+- capability discovery and task-scoped Qwen-MM-Plugins installation;
 - conversion of the request into an execution contract;
 - risk assessment and authority boundaries;
 - guide selection;
+- proportional design, planning, test-first, and review gates for behavior,
+  architecture, and instruction changes;
 - small coherent changes;
 - delivery-specific verification;
 - evidence-driven diagnosis and root-cause correction;
 - final regression checks;
 - success and stop conditions;
 - handling of destructive actions and external authority.
+
+The loop is also the only place that defines harness-conditional behavior such
+as native isolation, independent review, and capability fallback rules. The
+system design references those boundaries but does not restate their detailed
+criteria.
+
+### Capability extensions
+
+The capability protocol is a narrow extension of the canonical loop. It asks
+the agent to inspect native model and harness support, reuse an existing
+callable tool, install only the smallest missing Qwen-MM-Plugins capability
+when the task requires it, check API and system prerequisites, verify
+registration, and then use the tool. Keyless multimodal reading is the default;
+API-backed operations remain disabled until their documented credentials or
+service endpoints are configured. The kit links to the upstream project but
+does not bundle its source, MCP server, model, or dependencies.
 
 ### `GUIDE_ROUTER.md`
 
@@ -158,11 +196,13 @@ Routing uses the request and files actually affected. A single word in the repos
 4. Convert the request into an objective, deliverables, constraints, risks, checks, and a stop condition.
 5. Select the guide set in the router.
 6. Read only the required sections of each guide.
-7. Establish a baseline and reproduce the problem when applicable.
-8. Make the smallest coherent change that satisfies the objective.
-9. Run the targeted check first, then proportional regression checks.
-10. On failure, collect evidence, identify the root cause, and repeat with a targeted correction.
-11. Finish only with current evidence, explicit limitations, and no unrelated changes.
+7. Apply proportional design and plan gates before behavior, architecture, or instruction changes.
+8. Establish a baseline and reproduce the problem when applicable.
+9. Make the smallest coherent change that satisfies the objective.
+10. Run the targeted check first, then proportional regression checks.
+11. Use the loop's review gate after regression when the task or harness calls for self-review or independent review.
+12. On failure, collect evidence, identify the root cause, and repeat with a targeted correction.
+13. Finish only with current evidence, explicit limitations, and no unrelated changes.
 
 ## Precedence and conflicts
 
@@ -212,23 +252,34 @@ The validator also exercises six routing scenarios:
 
 ## Distribution
 
-The first version has no installer. A user may download the repository or a release archive and copy these items while preserving their relative structure:
+The npm CLI installs the kit into the current directory or an existing
+directory selected with `--path` when the package is available in the npm
+registry. If it is not available yet, the same commands can run as
+`node src/cli.js ...` from a repository checkout. A user may also download the
+repository or a release archive and copy these items while preserving their
+relative structure:
 
-- the four agent adapters;
+- the four native agent adapters plus `AGENT_COMPATIBILITY.md`;
+- the shared `AGENTS.md` entry point for the six compatible agents;
 - `LOOP_ENGINEERING.md`;
 - `GUIDE_ROUTER.md`;
 - `PROJECT_PROFILE.md`;
 - `THIRD_PARTY_NOTICES.md`;
+- `LICENSE` and `LICENSE-DOCS.md`;
 - the `ENG/` guide directory.
 
-The README explains the file set, activation behavior, first-run profile flow, local validation commands, and safe update practice. A future installer is possible only if manual copying proves materially difficult.
+The README explains the file set, activation behavior, current/relative/absolute
+target installation, first-run profile flow, local validation commands, and safe
+update practice.
 
 ## Out of scope
 
 - remote prompt services or databases;
 - mandatory orchestration frameworks;
 - infinite or unattended execution beyond agent limits;
-- automatic tool installation;
+- automatic installation of unrelated tools or provider runtimes; task-scoped
+  Qwen-MM-Plugins capability installation remains governed by the canonical
+  capability protocol and host approval controls;
 - automatic modification of global computer files;
 - duplication of complete guides inside adapters;
 - versioned logs for every request.
@@ -236,7 +287,8 @@ The README explains the file set, activation behavior, first-run profile flow, l
 ## Acceptance criteria
 
 - The repository and its maintained content are English-only.
-- Codex, Claude Code, Cursor, and Copilot have thin entries into one canonical loop.
+- All ten supported agents have a documented entry into one canonical loop,
+  with native adapters distinguished from shared `AGENTS.md` compatibility.
 - The router selects every relevant guide and excludes irrelevant guides in the six defined scenarios.
 - The profile contains verifiable facts, sources, and real commands without secrets.
 - The loop requires evidence before completion claims and exits safely when blocked.

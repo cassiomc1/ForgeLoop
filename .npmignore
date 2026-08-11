@@ -1,7 +1,0 @@
-.git/
-.worktrees/
-docs/
-scripts/
-tests/
-*.log
-.DS_Store

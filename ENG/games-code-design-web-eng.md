@@ -2,8 +2,8 @@
 name: games-code-design-web-eng
 language: en
 description: "Architecture, design, testing, and operation of 2D, 3D, and procedural web games."
-version: "2026.08"
-last-reviewed: "2026-08-08"
+version: "2026.09"
+last-reviewed: "2026-08-10"
 ---
 
 # Web Game Development Guide — 2D, 3D, and Procedural Systems
@@ -502,7 +502,8 @@ Use Chrome DevTools Performance/Memory, Firefox Performance, Safari Web Inspecto
 
 ### Browser and device matrix
 
-At minimum, test the actual release build on:
+Test the actual release build on every browser and device in the documented
+support contract. For a cross-browser game, begin with this default matrix:
 
 - Chromium-based desktop and Android browser.
 - Firefox desktop/Android where supported.
@@ -633,7 +634,10 @@ Use a release artifact with hashed assets, a versioned manifest, source-map hand
 
 - Required checks: `npm ci`, typecheck, `npm run lint`, `npm run format -- --check`, unit/property tests, asset validation, `npm run build`, Playwright smoke tests, accessibility checks, SCA/SAST/secrets/license/WASM-native scans, and performance/bundle budgets.
 - Use Vitest, fast-check, and Playwright for TypeScript/Vite projects unless the repository documents an equivalent.
-- Test release builds on Chromium, Firefox, Safari, Android, iOS/iPadOS, modest hardware, different DPR/orientations, reduced motion, low power, offline/poor networks, and renderer fallback paths.
+- Test release builds on every documented browser/device target; for a
+  cross-browser game, include Chromium, Firefox, Safari, Android, iOS/iPadOS,
+  modest hardware, different DPR/orientations, reduced motion, low power,
+  offline/poor networks, and renderer fallback paths.
 - For PWA/CDN deployments, version service-worker caches and manifests together; cache immutable hashed assets, never cache secrets, test updates/rollback/offline recovery, use versioned/migrated/quota-aware saves with export/import and a storage fallback instead of `localStorage` for large, critical, or sensitive data, configure CORS/SRI/COOP/COEP deliberately, and deploy HTML/manifests/assets atomically.
 - Measure frame time, long tasks, startup, memory, network, and battery before claiming a performance improvement.
 ```
@@ -687,8 +691,15 @@ Use a release artifact with hashed assets, a versioned manifest, source-map hand
 
 - [ ] Transport choice is justified: WebSockets for authoritative server state, WebRTC only with signaling/STUN/TURN and an explicit trust model.
 - [ ] Protocol versions, sequencing, reconnect, duplication, loss, jitter, prediction, reconciliation, and server authority are tested.
-- [ ] Browser feature detection and capability tiers cover WebGPU/WebGL, Web Audio, Pointer Lock, Gamepad, WebAssembly, PWA, WebSockets, and WebRTC.
-- [ ] Release builds are tested on desktop Chromium/Firefox/Safari, Android, iOS/iPadOS, modest devices, touch/gamepad, different DPR/orientations, and low-power conditions.
+- [ ] Browser feature detection and capability tiers cover only capabilities
+  that the documented support contract includes or the project uses (for
+  example WebGPU/WebGL, Web Audio, Pointer Lock, Gamepad, WebAssembly, PWA,
+  WebSockets, and WebRTC); each supported capability has a documented fallback
+  or an explicit support-boundary decision.
+- [ ] Release builds have evidence for every documented browser/device target;
+  cross-browser games include desktop Chromium/Firefox/Safari, Android,
+  iOS/iPadOS, modest devices, touch/gamepad, different DPR/orientations, and
+  low-power conditions.
 
 ### Performance, testing, CI, and deployment
 

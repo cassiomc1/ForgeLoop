@@ -2,8 +2,8 @@
 name: design-code-eng
 language: en
 description: "Visual direction, UX, motion, and perceived performance for premium digital experiences."
-version: "2026.08"
-last-reviewed: "2026-08-08"
+version: "2026.09"
+last-reviewed: "2026-08-10"
 ---
 
 # Web Design Premium v2 — Practical Guidelines
@@ -261,7 +261,7 @@ Canvas, WebGL, SVG displacement, and Liquid Glass effects follow the **normative
 - Padding: `14px 28px` (mobile `12px 24px`)
 - Border-radius: equal to the radius chosen in the project
 - Font-weight: 500–600, font-size `1rem`
-- Transition: `all 0.2s ease` (background color + slight `translateY(-1px)` on hover)
+- Transition: `transform 0.2s ease` (change the background color immediately; use a slight `translateY(-1px)` on hover)
 - Minimum touch area: `44x44px`
 - Focus state: visible outline (`2px solid`, primary color, offset `2px`) — never `outline: none` without a replacement.
 
@@ -270,13 +270,13 @@ Canvas, WebGL, SVG displacement, and Liquid Glass effects follow the **normative
 - Internal padding: `32px` (mobile `24px`)
 - Border: `1px solid` palette border color, OR subtle shadow — choose 1 of the two, not both.
 - Radius: equal to the project standard.
-- Hover (if clickable): subtle elevation (elevated shadow) + `translateY(-2px)`, transition `0.25s ease`.
+- Hover (if clickable): subtle elevation with `translateY(-2px)`; transition only `transform` for `0.25s ease`.
 
 **Navigation**
 
 - Height: `72–88px` desktop, `64px` mobile.
 - Active item: subtle underline or primary color — never a fully colored background.
-- Mobile menu: fullscreen overlay, fade+slide transition `0.3s`.
+- Mobile menu: fullscreen overlay, fade+slide transition `0.3s`, with an instant/static alternative when reduced motion is active.
 
 **Images**
 
@@ -302,6 +302,20 @@ Canvas, WebGL, SVG displacement, and Liquid Glass effects follow the **normative
 - For charts and data visualization, consult [TanStack Charts](https://github.com/TanStack/charts); preserve responsiveness, contrast, keyboard readability, and never rely on color alone to communicate series or states.
 - For subtle interaction sounds, consult [Cuelume](https://cuelume-site.pages.dev/); provide volume/mute controls and never rely on audio to communicate essential information.
 
+## External design-reference map
+
+Select references for a product problem; they do not override project tokens or semantics. Check every adoption for keyboard and focus access, contrast, reduced motion, touch behavior, bundle/runtime cost, and fallback behavior. Cursor, canvas, 3D, audio, and decorative motion are progressive enhancement only. Do not copy source or assets; check the license and current terms for each exact resource, and treat a catalog listing as no transfer of rights.
+
+- **Component source and interaction inspiration**: use [21st.dev](https://21st.dev/) to study components and interactions; inspect each source, dependency, community contribution, and premium-material term before adoption.
+- **Component and motion inspiration**: use [React Bits](https://reactbits.dev/) to study component and motion behavior; distinguish public/free material from React Bits Pro and inspect each source/dependency license.
+- **Component inspiration**: use [Fancy Components](https://www.fancycomponents.dev/) to study component composition; verify its terms separately from Motion, Tailwind, shadcn, or other dependencies.
+- **Motion primitives**: use [Motion Primitives](https://motion-primitives.com/) to study discrete interaction patterns; distinguish documented open-source material from its Pro offering and verify component/dependency terms.
+- **Component and design-system research**: use [Component Gallery](https://component.gallery/) for comparison, not for license assumptions.
+- **Numeric feedback**: reserve [NumberFlow](https://number-flow.barvian.me/) for changing metrics, with locale-aware formatting and static or reduced-motion behavior.
+- **Pointer enhancement**: activate [Cursify](https://cursify.ui-layouts.com/) only when `(hover: hover) and (pointer: fine)`; retain native controls and default cursor behavior, with equivalent tap interaction for touch/coarse pointers.
+- **Typography discovery**: verify each [UNCUT](https://uncut.wtf/) font's author, license, weights, and hosting rights.
+- **Creative coding and WebGL**: [cables.gl](https://cables.gl/) requires a semantic fallback, pause/offscreen behavior, a performance budget, and asset/operator provenance.
+
 ---
 
 ## UX, Accessibility, and Quality
@@ -309,7 +323,7 @@ Canvas, WebGL, SVG displacement, and Liquid Glass effects follow the **normative
 - 100% functional keyboard navigation, focus always visible, no interaction traps.
 - Minimum AA contrast (see Color section).
 - Never communicate state through color alone (add an icon, text, or pattern).
-- Test at 200% zoom and on screens 360px wide.
+- Test at 200% zoom and reflow at 320 CSS px wide.
 - Every `<img>` with descriptive `alt`; decorative icons with `aria-hidden="true"`.
 - When the platform exposes contrast or transparency preferences, including `prefers-contrast` and `forced-colors` where applicable, provide an opaque or less-transparent variant. Where no reliable media query exists, provide an equivalent in-product control.
 
@@ -364,7 +378,7 @@ Canvas, WebGL, SVG displacement, and Liquid Glass effects follow the **normative
 - [ ] No more than two translucent layers compete on the same screen, and each has a clear contextual function.
 - [ ] Where the platform exposes contrast/transparency preferences, including `prefers-contrast` or `forced-colors` when applicable, the opaque/less-transparent variant works; without a reliable media query, there is an equivalent in-product control.
 - [ ] No item from the "Blacklist" is present.
-- [ ] Tested on mobile (360px) and desktop (1440px).
+- [ ] Tested at 320 CSS px reflow and desktop (1440px).
 - [ ] Ran `/impeccable audit` and `/impeccable polish` across the entire interface and addressed applicable findings.
 
 ---
@@ -481,7 +495,14 @@ Canvas, WebGL, SVG displacement, and Liquid Glass effects follow the **normative
 - TanStack Charts (data visualization): https://github.com/TanStack/charts
 - Cuelume (web interaction sounds): https://cuelume-site.pages.dev/
 - Canvas UI (adaptable canvas/WebGL reference; confirm provenance, license, and credits before any reuse): https://canvasui.dev/
+- Component source and interaction inspiration (inspect source/dependencies; separate free from premium material): https://21st.dev/ | https://reactbits.dev/ | https://www.fancycomponents.dev/ | https://motion-primitives.com/
+- Component and design-system research (comparison, not license assumptions): https://component.gallery/
+- Numeric feedback (changing metrics with locale-aware formatting and static/reduced-motion behavior): https://number-flow.barvian.me/
+- Pointer enhancement (only when `(hover: hover) and (pointer: fine)`; retain native controls/default cursor and equivalent tap interaction for touch/coarse pointers): https://cursify.ui-layouts.com/
+- Typography discovery (verify each font's author, license, weights, and hosting rights): https://uncut.wtf/
+- Creative coding and WebGL (semantic fallback, pause/offscreen behavior, performance budget, and asset/operator provenance): https://cables.gl/
 - Impeccable (interface auditing and polish): https://impeccable.style/
+- Gradient Studio (external procedural gradient exploration with CSS, Tailwind, and SCSS export by Amit Gajare; validate current provenance, reuse terms, output contrast, and performance budgets before adoption): https://gradientsaas.blogspot.com/
 - Liquid Glass Design (an independent inspiration gallery, not affiliated with Apple; not a specification or asset library): https://liquidglassdesign.com/
   - Guide to the material, glassmorphism, and web implementation: https://liquidglassdesign.com/what-is-liquid-glass
   - Design and development resources: https://liquidglassdesign.com/resources

@@ -7,7 +7,7 @@
     "url": "https://github.com/cassiomc1/mdfiles.git"
   },
   "homepage": "https://github.com/cassiomc1/mdfiles#readme",
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE",
   "publishConfig": {
     "access": "public"
   },
@@ -26,6 +26,7 @@
     "GUIDE_ROUTER.md",
     "LOOP_ENGINEERING.md",
     "LOOP_SYSTEM_DESIGN.md",
+    "AGENT_COMPATIBILITY.md",
     "PROJECT_PROFILE.md",
     "THIRD_PARTY_NOTICES.md",
     "LICENSE",

@@ -8,8 +8,9 @@ accessibility, design, and web games across web, mobile, and desktop projects.
 
 The files are Markdown and can be used as references, as a foundation for
 `AGENTS.md`, `CLAUDE.md`, `.cursor/rules`, and
-`.github/copilot-instructions.md`. Adopt only the guides relevant to the target
-project.
+`.github/copilot-instructions.md`. The supported-agent contract is documented
+in [`AGENT_COMPATIBILITY.md`](./AGENT_COMPATIBILITY.md). Adopt only the guides
+relevant to the target project.
 
 ## Catalog
 
@@ -24,9 +25,9 @@ project.
 | Accessibility | WCAG 2.2-oriented protocol for interfaces | [`accessibility-eng.md`](./ENG/accessibility-eng.md) |
 | Web games | Architecture, design, and operation of 2D, 3D, and procedural games | [`games-code-design-web-eng.md`](./ENG/games-code-design-web-eng.md) |
 
-Each guide declares its name, `language: en`, description, version, and last
-review date in frontmatter. The eight guides use version `2026.08` and review
-date `2026-08-08`.
+Each guide declares its name, `language: en`, description, version, and review
+date in frontmatter. The repository validator checks that the guide metadata
+and catalog remain synchronized.
 
 ## Universal project loop
 
@@ -43,13 +44,18 @@ Request → discovery → profile → routing → plan → execution
         → verification → correction when needed → final evidence
 ```
 
-Thin adapters support Codex-compatible agents, Claude Code, Cursor, and GitHub
-Copilot while delegating to the same canonical documents.
+Thin native adapters support Codex, Claude Code, Cursor, and GitHub Copilot.
+Antigravity, OpenCode, Hermes, Pi, Command Code, and Freebuff use the shared
+`AGENTS.md` entry point. All ten agents delegate to the same canonical
+documents; see [`AGENT_COMPATIBILITY.md`](./AGENT_COMPATIBILITY.md) for the
+official sources and precedence notes.
 
 ### Use with npm
 
-The public CLI supports Node.js 20 or newer and installs the kit into an
-existing project without overwriting local instructions:
+The npm CLI targets Node.js 20 or newer and installs the kit into an existing
+project without overwriting local instructions. When the package is available
+in the npm registry, use the commands below; otherwise use the repository
+checkout fallback.
 
 ```bash
 npx @cassiomc1/mdfiles init
@@ -57,10 +63,45 @@ npx @cassiomc1/mdfiles doctor
 npx @cassiomc1/mdfiles update
 ```
 
-Use `--path /path/to/project` to target another directory and `--dry-run` to
-preview writes. The CLI records managed files and their hashes in
-`.mdfiles/manifest.json`; `update` leaves locally modified files and
-`PROJECT_PROFILE.md` untouched.
+From a repository checkout before npm publication, run the same commands with
+Node directly:
+
+```bash
+node src/cli.js init
+node src/cli.js doctor
+node src/cli.js update
+```
+
+The release workflow uses [npm trusted publishing](https://docs.npmjs.com/trusted-publishers)
+through GitHub Actions OIDC. Before the first release, register this repository
+and workflow as the package's trusted publisher in npm; each `vX.Y.Z` tag must
+match `package.json`. After publishing, verify the package version and its npm
+provenance record.
+
+The commands above use the current directory. To install into another existing
+project directory, pass a relative or absolute `--path`:
+
+```bash
+# Existing project relative to the current directory
+npx @cassiomc1/mdfiles init --path ./my-project
+npx @cassiomc1/mdfiles doctor --path ./my-project
+npx @cassiomc1/mdfiles update --path ./my-project
+
+# Existing project at an absolute path
+npx @cassiomc1/mdfiles init --path /path/to/my-project
+npx @cassiomc1/mdfiles doctor --path /path/to/my-project
+npx @cassiomc1/mdfiles update --path /path/to/my-project
+```
+
+The target must already exist and be a directory; the CLI will not create or
+replace an arbitrary path. Use `--dry-run` to preview writes before `init` or
+`update`. `--json`, `--strict`, and `--adopt <path>` are supported by `doctor`;
+adoption is limited to a supported adapter that has been reviewed locally. The
+CLI records managed files and their hashes in `.mdfiles/manifest.json`; `update`
+leaves locally modified files and `PROJECT_PROFILE.md` untouched. If a target
+already has a manifest, rerun `update` instead of `init`. Symlinked targets or
+template parents are rejected, and unadopted pre-existing adapters are reported
+for manual merge with the loop reference.
 
 ### Install in a target project
 
@@ -71,11 +112,14 @@ while preserving relative paths:
 ```text
 AGENTS.md
 CLAUDE.md
+AGENT_COMPATIBILITY.md
 LOOP_ENGINEERING.md
 GUIDE_ROUTER.md
 PROJECT_PROFILE.md
 LOOP_SYSTEM_DESIGN.md
 THIRD_PARTY_NOTICES.md
+LICENSE
+LICENSE-DOCS.md
 .github/copilot-instructions.md
 .cursor/rules/project-loop.mdc
 ENG/
@@ -108,6 +152,11 @@ A useful response cites profile evidence, selected guide IDs, and real project
 commands. A generic response that does not mention the loop, router, or sources
 indicates that the adapter was not loaded.
 
+After installation, start the preferred agent from the target project
+directory. Use `AGENT_COMPATIBILITY.md` to confirm which file it should load and
+which native entry point is expected. A live agent session is not required for
+package installation or its automated tests.
+
 ### Update the kit
 
 When adopting a newer version, preserve target-specific facts from
@@ -121,17 +170,61 @@ python3 scripts/validate_loop_system.py
 python3 scripts/scan_secrets.py
 ```
 
+When maintaining a checkout of this source repository, run the npm package
+checks as well:
+
+```bash
+npm test
+npm run pack:check
+```
+
 Architecture and boundaries are documented in
 [`LOOP_SYSTEM_DESIGN.md`](./LOOP_SYSTEM_DESIGN.md).
 
 ## Tool approval policy
 
 Identify the stack, current stage, and applicable checks. Prefer an equivalent
-tool already available when it produces compatible evidence. Ask for approval
-before installing software or changing the environment. If a required check
-cannot run and no safe alternative exists, record the blocker and do not claim
-that the check passed. Optional references must never be installed
-automatically.
+tool already available when it produces compatible evidence. The task-scoped
+Qwen-MM-Plugins installation described below is the narrow capability exception
+when a required capability is missing; system tools, credentials, and unrelated
+environment changes remain subject to their normal host controls. If a required
+check cannot run and no safe alternative exists, record the blocker and do not
+claim that the check passed. Unrelated optional references must never be
+installed automatically.
+
+## Optional multimodal capabilities
+
+[Qwen-MM-Plugins](https://github.com/QwenLM/Qwen-MM-Plugins) can extend a
+supported agent harness with skills and optional MCP servers. Before using a
+multimodal or media operation, the agent checks the model and harness for a
+callable native capability. If the task requires a missing keyless capability,
+the agent installs only the smallest matching `qwen-mm-plugins-<cap>` capability
+and verifies that it is callable before continuing; it does not install every
+capability at startup.
+
+No API key is used by default for native image, video, or document reading.
+Optional provider-backed operations follow this boundary:
+
+| Capability or operation | Configuration required |
+| --- | --- |
+| Native image, video, and document reading | No API key; video/audio workflows may need `ffmpeg` and other documented system tools |
+| Vision chat, OCR, grounding, audio transcription, Omni audio-video understanding, generation, and video-memory construction | `DASHSCOPE_API_KEY` |
+| Web search, web extraction, and image search | `SERPER_API_KEY` |
+| Segmentation through a SAM3 service | `SAM3_SERVER_URL` |
+| Blender, FreeCAD, Office, browser-backed visualization, and `edu-agent` workflows | The selected application's system dependencies and upstream configuration; `edu-agent` TTS requires `DASHSCOPE_API_KEY` |
+
+Provide optional credentials through the process environment or the official
+Qwen configuration file at `~/.qwen-mm-plugins/config` (or its documented
+override). Never put keys in Git, `PROJECT_PROFILE.md`, or copied instruction
+files. The agent must leave an API-backed capability disabled when its key or
+service endpoint is absent, and report missing system dependencies instead of
+claiming that the feature is available.
+
+Use the upstream [installation guide](https://github.com/QwenLM/Qwen-MM-Plugins/blob/main/docs/en/installation.md)
+for the active harness's current install and verification commands, supported
+capabilities, system dependencies, and Windows/WSL2 constraints. This project
+does not vendor Qwen code, add it to the npm package, or install it through
+`mdfiles init`, `update`, or `doctor`.
 
 ## HyperFrames for video and motion
 
@@ -147,8 +240,9 @@ adoption. Local rendering requires Node.js 22+ and FFmpeg.
 
 ```text
 .
-├── AGENTS.md                       # Codex-compatible agent entry point
+├── AGENTS.md                       # shared Codex-compatible entry point
 ├── CLAUDE.md                       # Claude Code entry point
+├── AGENT_COMPATIBILITY.md          # supported agents and official sources
 ├── LOOP_ENGINEERING.md             # canonical operating cycle
 ├── GUIDE_ROUTER.md                 # contextual guide selection
 ├── PROJECT_PROFILE.md              # verified project facts
@@ -177,6 +271,12 @@ adoption. Local rendering requires Node.js 22+ and FFmpeg.
 - Keep root instructions, comments, examples, fixtures, and guide content in English.
 - Keep `THIRD_PARTY_NOTICES.md` with every distributed copy of the kit.
 
+### Workflow quality gates
+
+For non-trivial behavior changes, use the proportional design, plan, test, and
+review gates in [`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md). Keep adapters
+and entry-point instructions thin so the canonical workflow stays in one place.
+
 ### Local checks
 
 First check whether the Markdown linter is already installed:
@@ -197,11 +297,14 @@ If it is missing, request approval before running this pinned one-off download:
 npx --yes markdownlint-cli2@0.23.2
 ```
 
-Run the repository validators with Python's standard library:
+In a checkout of this source repository, run the repository validators with
+Python's standard library:
 
 ```bash
 python3 scripts/validate_loop_system.py --self-test
 python3 scripts/validate_loop_system.py
+python3 scripts/validate_markdown.py --self-test
+python3 scripts/validate_markdown.py
 python3 -m unittest discover -s tests -v
 python3 scripts/scan_secrets.py
 ```
@@ -213,6 +316,8 @@ pushes and pull requests.
 
 ## Rights and provenance
 
-This collection does not declare a global license. Reuse depends on permission
-from the applicable rights holder and on the conditions recorded in
-[`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md).
+The CLI and validator code use the MIT text in [`LICENSE`](./LICENSE). Original
+documentation uses CC BY 4.0 as described in [`LICENSE-DOCS.md`](./LICENSE-DOCS.md),
+and adapted or externally sourced material remains subject to the conditions in
+[`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md). The npm `license` field
+points to the code license; it does not relicense the bundled documentation.
