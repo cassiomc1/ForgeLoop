@@ -1,5 +1,6 @@
 import { assertSafePath, fileExists, ensureWithin, readBytes, writeFileAtomic } from "../core/filesystem.js";
 import {
+  PACKAGE_NAME,
   readManifest,
   sha256,
   writeManifest,
@@ -101,6 +102,7 @@ export async function runUpdate({ target, dryRun, packageRoot, packageVersion })
     nextManifest.files[plan.entry.relativePath] = plan.record;
   }
 
+  nextManifest.packageName = PACKAGE_NAME;
   nextManifest.packageVersion = packageVersion;
   await writeManifest(target, nextManifest, { dryRun });
   return { actions, conflicts, manifest: nextManifest };

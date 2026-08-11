@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rename, rm, symlink, writeFile } from "node:fs/promises";
 import { readdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -155,6 +155,25 @@ test("update always preserves the project profile", async () => {
 
     assert.equal(result.status, 0, result.stderr);
     assert.equal(await readFile(profilePath, "utf8"), `${profile}\n# Project-specific note\n`);
+  });
+});
+
+test("update refreshes package identity after a manual legacy directory move", async () => {
+  await withTarget(async (target) => {
+    assert.equal(runCli(target, "init").status, 0);
+    const manifestPath = path.join(target, ".forgeloop", "manifest.json");
+    const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+    manifest.packageName = "@cassiomc1/mdfiles";
+    await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+
+    await rename(path.join(target, ".forgeloop"), path.join(target, ".mdfiles"));
+    await rename(path.join(target, ".mdfiles"), path.join(target, ".forgeloop"));
+
+    const result = runCli(target, "update");
+    const after = JSON.parse(await readFile(manifestPath, "utf8"));
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(after.packageName, "@cassiomc1/forgeloop");
   });
 });
 

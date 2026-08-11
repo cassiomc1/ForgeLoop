@@ -34,3 +34,25 @@ test("CLI help presents the ForgeLoop executable", () => {
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /^Usage: forgeloop/m);
 });
+
+test("architecture diagram is canonical and discoverable", async () => {
+  const design = await readFile(new URL("LOOP_SYSTEM_DESIGN.md", repoRoot), "utf8");
+  const readme = await readFile(new URL("README.md", repoRoot), "utf8");
+
+  for (const marker of [
+    "FORGELOOP",
+    "ROUTING",
+    "STATE",
+    "EVIDENCE",
+    "repository",
+    "contract",
+    "freshness",
+    "CONFORMANCE",
+    "DELEGATION",
+    "VALID / STALE / INVALID",
+    "compatible harness",
+  ]) {
+    assert.match(design, new RegExp(marker.replaceAll("/", "\\/")));
+  }
+  assert.match(readme, /LOOP_SYSTEM_DESIGN\.md/);
+});
