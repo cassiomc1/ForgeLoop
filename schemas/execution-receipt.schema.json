@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mdfiles://schemas/execution-receipt.schema.json",
+  "title": "mdfiles execution receipt",
+  "type": "object",
+  "required": ["schemaVersion", "protocolVersion", "taskId", "contractFingerprint", "selectedGuides", "changedPaths", "checks", "review", "limitations", "publication"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "protocolVersion": { "const": 1 },
+    "taskId": { "type": "string", "minLength": 1 },
+    "contractFingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "selectedGuides": { "type": "array", "items": { "type": "string" } },
+    "changedPaths": { "type": "array", "items": { "type": "string" } },
+    "checks": { "type": "array", "items": { "type": "object" } },
+    "review": { "type": "object" },
+    "limitations": { "type": "array", "items": { "type": "string" } },
+    "publication": {
+      "type": "object",
+      "required": ["committed", "pushed", "pullRequest", "deployed"],
+      "properties": {
+        "committed": { "type": "boolean" },
+        "pushed": { "type": "boolean" },
+        "pullRequest": { "oneOf": [{ "type": "string" }, { "type": "null" }] },
+        "deployed": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

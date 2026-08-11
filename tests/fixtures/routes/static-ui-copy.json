@@ -1,0 +1,12 @@
+{
+  "input": {
+    "workType": "documentation",
+    "surfaces": ["ui"],
+    "risks": [],
+    "platforms": ["web"],
+    "behaviorChange": false
+  },
+  "guides": ["design", "accessibility"],
+  "forbidden": ["security", "performance"],
+  "primary": null
+}

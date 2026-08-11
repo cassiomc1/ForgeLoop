@@ -5,15 +5,20 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { runDoctor } from "./commands/doctor.js";
+import { formatStatusResult, runStatus } from "./commands/status.js";
+import { formatValidateStateResult, runValidateState } from "./commands/validate-state.js";
+import { formatClearStateResult, runClearState } from "./commands/clear-state.js";
+import { formatInspectResult, inspectTarget } from "./commands/inspect.js";
 import { runInit } from "./commands/init.js";
+import { formatRouteResult, runRoute } from "./commands/route.js";
+import { runValidateReceipt } from "./commands/validate-receipt.js";
 import { runUpdate } from "./commands/update.js";
 import { resolveTarget } from "./core/filesystem.js";
 import { getPackageRoot } from "./core/templates.js";
 
 function usage(command = null) {
-  const options = [
-    "  --path <directory>  target project directory (default: current directory)",
-  ];
+  const commands = "init|doctor|update|route|inspect|status|validate-state|clear-state|validate-receipt";
+  const options = ["  --path <directory>  target project directory (default: current directory)"];
   if (!command || command === "init" || command === "update") {
     options.push("  --dry-run           show planned writes without changing files");
   }
@@ -22,10 +27,25 @@ function usage(command = null) {
     options.push("  --strict            treat warnings as unhealthy");
     options.push("  --adopt <path>      preserve an existing adapter in the manifest");
   }
+  if (!command || command === "route") {
+    options.push("  --work <type>       declared work type");
+    options.push("  --surface <value>   affected surface (repeatable)");
+    options.push("  --risk <value>      task risk (repeatable)");
+    options.push("  --platform <value>  affected platform (repeatable)");
+    options.push("  --behavior-change   declare behavior change");
+    options.push("  --executable-change declare executable/configuration change");
+    options.push("  --json              emit route result as JSON");
+  }
+  if (!command || ["inspect", "status", "validate-state", "clear-state", "validate-receipt"].includes(command)) {
+    options.push("  --json              emit structured output as JSON");
+  }
+  if (!command || command === "validate-receipt") {
+    options.push("  --file <path>       receipt file relative to target");
+  }
   options.push("  --version           show the installed package version");
   options.push("  --help              show this help");
 
-  return `Usage: mdfiles <init|doctor|update> [options]\n\nOptions:\n${options.join("\n")}\n`;
+  return `Usage: mdfiles <${command ?? commands}> [options]\n\nOptions:\n${options.join("\n")}\n`;
 }
 
 export function parseArgs(argv) {
@@ -35,6 +55,13 @@ export function parseArgs(argv) {
     json: false,
     strict: false,
     adopt: [],
+    work: null,
+    surfaces: [],
+    risks: [],
+    platforms: [],
+    behaviorChange: false,
+    executableChange: false,
+    file: null,
     help: false,
     version: false,
   };
@@ -42,7 +69,7 @@ export function parseArgs(argv) {
 
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
-    if (["init", "doctor", "update"].includes(argument)) {
+    if (["init", "doctor", "update", "route", "inspect", "status", "validate-state", "clear-state", "validate-receipt"].includes(argument)) {
       if (command) throw new Error(`Multiple commands are not supported: ${argument}`);
       command = argument;
     } else if (argument === "--help" || argument === "-h") {
@@ -57,6 +84,35 @@ export function parseArgs(argv) {
       const relativePath = argv[index + 1];
       if (!relativePath || relativePath.startsWith("-")) throw new Error("--adopt requires a path");
       options.adopt.push(relativePath);
+      index += 1;
+    } else if (argument === "--work") {
+      const workType = argv[index + 1];
+      if (!workType || workType.startsWith("-")) throw new Error("--work requires a type");
+      options.work = workType;
+      index += 1;
+    } else if (argument === "--surface") {
+      const surface = argv[index + 1];
+      if (!surface || surface.startsWith("-")) throw new Error("--surface requires a value");
+      options.surfaces.push(surface);
+      index += 1;
+    } else if (argument === "--risk") {
+      const risk = argv[index + 1];
+      if (!risk || risk.startsWith("-")) throw new Error("--risk requires a value");
+      options.risks.push(risk);
+      index += 1;
+    } else if (argument === "--platform") {
+      const platform = argv[index + 1];
+      if (!platform || platform.startsWith("-")) throw new Error("--platform requires a value");
+      options.platforms.push(platform);
+      index += 1;
+    } else if (argument === "--behavior-change") {
+      options.behaviorChange = true;
+    } else if (argument === "--executable-change") {
+      options.executableChange = true;
+    } else if (argument === "--file") {
+      const file = argv[index + 1];
+      if (!file || file.startsWith("-")) throw new Error("--file requires a path");
+      options.file = file;
       index += 1;
     } else if (argument === "--path") {
       options.path = argv[index + 1];
@@ -76,20 +132,27 @@ export function parseArgs(argv) {
 
   if (!command) return { command: null, options };
 
-  if (command === "init" && options.json) {
-    throw new Error("Option --json is not valid for init");
+  const jsonCommands = ["doctor", "route", "inspect", "status", "validate-state", "clear-state", "validate-receipt"];
+  if (!jsonCommands.includes(command) && options.json) {
+    throw new Error(`Option --json is not valid for ${command}`);
   }
-  if (command === "update" && options.json) {
-    throw new Error("Option --json is not valid for update");
-  }
-  if (command === "doctor" && options.dryRun) {
-    throw new Error("Option --dry-run is not valid for doctor");
+  if (![
+    "init",
+    "update",
+  ].includes(command) && options.dryRun) {
+    throw new Error(`Option --dry-run is not valid for ${command}`);
   }
   if (command !== "doctor" && options.strict) {
     throw new Error(`Option --strict is not valid for ${command}`);
   }
   if (command !== "doctor" && options.adopt.length > 0) {
     throw new Error(`Option --adopt is not valid for ${command}`);
+  }
+  if (command !== "route" && (options.work || options.surfaces.length || options.risks.length || options.platforms.length || options.behaviorChange || options.executableChange)) {
+    throw new Error(`Route options are not valid for ${command}`);
+  }
+  if (command !== "validate-receipt" && options.file) {
+    throw new Error(`Option --file is not valid for ${command}`);
   }
   return { command, options };
 }
@@ -119,9 +182,6 @@ export async function main(argv = process.argv.slice(2)) {
       console.log(usage(command));
       return options.help ? 0 : 1;
     }
-    if (!["init", "doctor", "update"].includes(command)) {
-      throw new Error(`Unknown command: ${command}`);
-    }
 
     const target = await resolveTarget(process.cwd(), options.path);
     const packageRoot = getPackageRoot();
@@ -149,6 +209,49 @@ export async function main(argv = process.argv.slice(2)) {
         console.log(result.ok ? "healthy: mdfiles target is ready" : "unhealthy: mdfiles target needs attention");
       }
       return result.ok ? 0 : 1;
+    }
+
+    if (command === "route") {
+      const result = runRoute({
+        workType: options.work,
+        surfaces: options.surfaces,
+        risks: options.risks,
+        platforms: options.platforms,
+        behaviorChange: options.behaviorChange,
+        executableChange: options.executableChange,
+      });
+      console.log(options.json ? JSON.stringify(result, null, 2) : formatRouteResult(result));
+      return 0;
+    }
+
+    if (command === "inspect") {
+      const result = await inspectTarget({ target, packageRoot });
+      console.log(options.json ? JSON.stringify(result, null, 2) : formatInspectResult(result));
+      return result.ok ? 0 : 1;
+    }
+
+    if (command === "validate-receipt") {
+      const result = await runValidateReceipt({ target, packageRoot, file: options.file });
+      console.log(options.json ? JSON.stringify(result, null, 2) : "valid: execution receipt");
+      return 0;
+    }
+
+    if (command === "status") {
+      const result = await runStatus({ target, packageRoot });
+      console.log(options.json ? JSON.stringify(result, null, 2) : formatStatusResult(result));
+      return 0;
+    }
+
+    if (command === "validate-state") {
+      const result = await runValidateState({ target, packageRoot });
+      console.log(options.json ? JSON.stringify(result, null, 2) : formatValidateStateResult(result));
+      return result.ok ? 0 : 1;
+    }
+
+    if (command === "clear-state") {
+      const result = await runClearState({ target });
+      console.log(options.json ? JSON.stringify(result, null, 2) : formatClearStateResult(result));
+      return 0;
     }
 
     const result = await runUpdate({ target, dryRun: options.dryRun, packageRoot, packageVersion: version });

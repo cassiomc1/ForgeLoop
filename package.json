@@ -21,11 +21,18 @@
   "files": [
     "src",
     "ENG",
+    "schemas",
+    ".mdfiles/.gitignore",
     "AGENTS.md",
     "CLAUDE.md",
     "GUIDE_ROUTER.md",
     "LOOP_ENGINEERING.md",
     "LOOP_SYSTEM_DESIGN.md",
+    "QUALITY_SCORECARD.md",
+    "TERMINOLOGY.md",
+    "EXECUTION_STATE.md",
+    "DELEGATION_PROTOCOL.md",
+    "ORCHESTRATOR_INTEGRATION.md",
     "AGENT_COMPATIBILITY.md",
     "PROJECT_PROFILE.md",
     "THIRD_PARTY_NOTICES.md",
@@ -36,7 +43,7 @@
     "README.md"
   ],
   "scripts": {
-    "test": "node --test tests/*.test.js",
+    "test": "node scripts/run-tests.js",
     "pack:check": "node --test tests/package.test.js"
   }
 }

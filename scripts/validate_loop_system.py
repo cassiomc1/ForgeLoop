@@ -21,6 +21,79 @@ REQUIRED_FILES = (
     "CLAUDE.md",
     ".github/copilot-instructions.md",
     ".cursor/rules/project-loop.mdc",
+    "QUALITY_SCORECARD.md",
+    "TERMINOLOGY.md",
+    "ORCHESTRATOR_INTEGRATION.md",
+)
+
+WORK_PHASES = (
+    "RECEIVED",
+    "DISCOVERING",
+    "CONTRACT_READY",
+    "ROUTED",
+    "DESIGNING",
+    "PLANNED",
+    "EXECUTING",
+    "VERIFYING",
+    "DIAGNOSING",
+    "CORRECTING",
+    "REVIEWING",
+    "COMPLETE",
+    "BLOCKED",
+)
+
+WORK_TRANSITIONS = (
+    ("RECEIVED", "DISCOVERING"),
+    ("DISCOVERING", "CONTRACT_READY"),
+    ("CONTRACT_READY", "ROUTED"),
+    ("ROUTED", "DESIGNING"),
+    ("ROUTED", "PLANNED"),
+    ("DESIGNING", "PLANNED"),
+    ("PLANNED", "EXECUTING"),
+    ("EXECUTING", "VERIFYING"),
+    ("VERIFYING", "DIAGNOSING"),
+    ("DIAGNOSING", "CORRECTING"),
+    ("CORRECTING", "VERIFYING"),
+    ("VERIFYING", "REVIEWING"),
+    ("REVIEWING", "COMPLETE"),
+    ("Any non-terminal state", "BLOCKED"),
+)
+
+SCHEMA_FILES = (
+    "routing-input.schema.json",
+    "routing-result.schema.json",
+    "work-state.schema.json",
+    "execution-receipt.schema.json",
+    "task-brief.schema.json",
+    "delegated-result.schema.json",
+)
+
+FAILURE_CLASSES = (
+    "CONTRACT_FAILURE",
+    "DISCOVERY_FAILURE",
+    "ROUTING_FAILURE",
+    "IMPLEMENTATION_FAILURE",
+    "VERIFICATION_FAILURE",
+    "REGRESSION_FAILURE",
+    "REVIEW_FAILURE",
+    "CAPABILITY_FAILURE",
+    "AUTHORITY_FAILURE",
+    "ENVIRONMENT_FAILURE",
+    "EXTERNAL_SERVICE_FAILURE",
+    "STALE_STATE_FAILURE",
+)
+
+LOOP_INVARIANTS = (
+    "no completion claim without current verification evidence;",
+    "no route without a reason code;",
+    "no retry without new evidence or a changed hypothesis;",
+    "no destructive action without validated authority and target;",
+    "no project-profile fact without a source;",
+    "no external publication implied by local success;",
+    "no skipped failed check silently treated as passed;",
+    "no unrelated refactor during uncertain diagnosis;",
+    "no secret in the profile, work state, receipt, or delegation artifacts;",
+    "no independent-agent claim when only self-review occurred.",
 )
 
 ADAPTERS = (
@@ -259,6 +332,152 @@ def validate_router(root: Path) -> None:
             )
 
 
+def validate_protocol_assets(root: Path) -> None:
+    loop = (root / "LOOP_ENGINEERING.md").read_text(encoding="utf-8")
+    scorecard = (root / "QUALITY_SCORECARD.md").read_text(encoding="utf-8")
+    terminology = (root / "TERMINOLOGY.md").read_text(encoding="utf-8")
+
+    if "protocol-version: 1" not in loop:
+        raise ValidationError("LOOP_ENGINEERING.md: protocol version marker is missing")
+    for failure_class in FAILURE_CLASSES:
+        if failure_class not in loop:
+            raise ValidationError(
+                f"LOOP_ENGINEERING.md: failure taxonomy is missing {failure_class}"
+            )
+    for invariant in LOOP_INVARIANTS:
+        if invariant not in loop:
+            raise ValidationError(
+                f"LOOP_ENGINEERING.md: loop invariant is missing: {invariant}"
+            )
+    if "10/10 evidence" not in scorecard:
+        raise ValidationError("QUALITY_SCORECARD.md: evidence criteria are missing")
+    if "| Term | Meaning |" not in terminology:
+        raise ValidationError("TERMINOLOGY.md: terminology table is missing")
+
+    for relative in SCHEMA_FILES:
+        path = root / "schemas" / relative
+        if not path.is_file():
+            raise ValidationError(f"schemas/{relative}: missing required schema")
+        try:
+            schema = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as error:
+            raise ValidationError(f"schemas/{relative}: invalid JSON") from error
+        if schema.get("type") != "object":
+            raise ValidationError(f"schemas/{relative}: top-level type must be object")
+        properties = schema.get("properties")
+        if not isinstance(properties, dict) or properties.get("schemaVersion", {}).get("const") != 1:
+            raise ValidationError(f"schemas/{relative}: schemaVersion const 1 is required")
+        required = schema.get("required")
+        if not isinstance(required, list) or "schemaVersion" not in required:
+            raise ValidationError(f"schemas/{relative}: schemaVersion must be required")
+
+
+def _has_transition(text: str, source: str, target: str) -> bool:
+    pattern = re.compile(
+        rf"\|\s*`{re.escape(source)}`\s*\|.*\|\s*`{re.escape(target)}`\s*\|"
+    )
+    return pattern.search(text) is not None
+
+
+def _section(text: str, heading: str) -> str:
+    match = re.search(
+        rf"^{re.escape(heading)}\s*$([\s\S]*?)(?=^##\s|\Z)",
+        text,
+        re.MULTILINE,
+    )
+    return match.group(1) if match else ""
+
+
+def validate_graph_readiness(root: Path) -> None:
+    integration = (root / "ORCHESTRATOR_INTEGRATION.md").read_text(encoding="utf-8")
+    design = (root / "LOOP_SYSTEM_DESIGN.md").read_text(encoding="utf-8")
+    router = (root / "GUIDE_ROUTER.md").read_text(encoding="utf-8")
+    scorecard = (root / "QUALITY_SCORECARD.md").read_text(encoding="utf-8")
+
+    if integration.count("## Canonical workflow diagram") != 1:
+        raise ValidationError(
+            "ORCHESTRATOR_INTEGRATION.md: exactly one canonical workflow diagram is required"
+        )
+    if "```text" not in integration:
+        raise ValidationError(
+            "ORCHESTRATOR_INTEGRATION.md: canonical workflow diagram must be text-serializable"
+        )
+    if "## Phase names" not in integration:
+        raise ValidationError("ORCHESTRATOR_INTEGRATION.md: phase names section is missing")
+    phase_section = _section(integration, "## Phase names")
+    for phase in WORK_PHASES:
+        if f"`{phase}`" not in phase_section:
+            raise ValidationError(
+                f"ORCHESTRATOR_INTEGRATION.md: workflow phase name is missing: {phase}"
+            )
+
+    if "## Canonical transition table" not in integration:
+        raise ValidationError(
+            "ORCHESTRATOR_INTEGRATION.md: canonical transition table is missing"
+        )
+    transition_section = _section(integration, "## Canonical transition table")
+    for source, target in WORK_TRANSITIONS:
+        if not _has_transition(transition_section, source, target):
+            raise ValidationError(
+                f"ORCHESTRATOR_INTEGRATION.md: transition row is missing: {source} -> {target}"
+            )
+
+    if "## State invariants" not in integration:
+        raise ValidationError("ORCHESTRATOR_INTEGRATION.md: state invariants section is missing")
+    invariant_patterns = (
+        ("COMPLETE requires verification evidence", r"`?COMPLETE`?\s+requires verification evidence"),
+        ("BLOCKED requires blocker evidence", r"`?BLOCKED`?\s+requires blocker evidence"),
+        ("CORRECTING requires a diagnosed hypothesis", r"`?CORRECTING`?\s+requires a diagnosed hypothesis"),
+    )
+    for invariant, pattern in invariant_patterns:
+        if re.search(pattern, integration) is None:
+            raise ValidationError(
+                f"ORCHESTRATOR_INTEGRATION.md: state invariant is missing: {invariant}"
+            )
+
+    for marker in (
+        "schemaVersion: 1",
+        "protocolVersion: 1",
+        "JSON-compatible",
+        "does not provide a graph runtime",
+        "does not provide a provider adapter",
+        "does not provide a scheduler",
+        "no runtime required",
+    ):
+        if marker.casefold() not in integration.casefold():
+            raise ValidationError(
+                f"ORCHESTRATOR_INTEGRATION.md: integration boundary marker is missing: {marker}"
+            )
+
+    if "reason code" not in router.casefold():
+        raise ValidationError(
+            "GUIDE_ROUTER.md: route contract must document reason code language"
+        )
+
+    for evidence_reference in (
+        "src/core/router.js",
+        "src/core/receipt.js",
+        "src/core/work-state.js",
+        "src/core/delegation.js",
+        "ORCHESTRATOR_INTEGRATION.md",
+        "tests/router.test.js",
+        "tests/observability.test.js",
+        "tests/work-state.test.js",
+        "tests/delegation.test.js",
+        "tests/portability.test.js",
+    ):
+        if evidence_reference not in scorecard:
+            raise ValidationError(
+                f"QUALITY_SCORECARD.md: evidence reference is missing: {evidence_reference}"
+            )
+
+    for forbidden in ("src/graph/", "src/llm/", "mdfiles run"):
+        if forbidden in design or forbidden in integration:
+            raise ValidationError(
+                f"product architecture contract contains prohibited runtime term: {forbidden}"
+            )
+
+
 def validate_profile(root: Path) -> None:
     path = root / "PROJECT_PROFILE.md"
     text = path.read_text(encoding="utf-8")
@@ -320,6 +539,8 @@ def validate_repository(root: Path) -> None:
     validate_adapters(root)
     validate_guides(root)
     validate_router(root)
+    validate_protocol_assets(root)
+    validate_graph_readiness(root)
     validate_profile(root)
     validate_cursor_frontmatter(root)
 
@@ -354,9 +575,38 @@ def _valid_fixture(root: Path) -> None:
             "# Guide\n",
         )
 
-    _write(root / "LOOP_ENGINEERING.md", "# Loop\n")
-    _write(root / "LOOP_SYSTEM_DESIGN.md", "# Design\n")
+    failure_text = "\n".join(FAILURE_CLASSES)
+    invariant_text = "\n".join(f"- {invariant}" for invariant in LOOP_INVARIANTS)
+    _write(
+        root / "LOOP_ENGINEERING.md",
+        "# Loop\nprotocol-version: 1\n"
+        f"{failure_text}\n{invariant_text}\n",
+    )
+    _write(
+        root / "LOOP_SYSTEM_DESIGN.md",
+        "# Design\n",
+    )
     _write(root / "THIRD_PARTY_NOTICES.md", "# Third-party notices\n")
+    _write(
+        root / "QUALITY_SCORECARD.md",
+        "# Scorecard\n10/10 evidence\n"
+        "src/core/router.js src/core/receipt.js src/core/work-state.js "
+        "src/core/delegation.js ORCHESTRATOR_INTEGRATION.md\n"
+        "tests/router.test.js tests/observability.test.js tests/work-state.test.js "
+        "tests/delegation.test.js tests/portability.test.js\n",
+    )
+    _write(root / "TERMINOLOGY.md", "# Terminology\n| Term | Meaning |\n")
+    for schema_name in SCHEMA_FILES:
+        _write(
+            root / "schemas" / schema_name,
+            json.dumps(
+                {
+                    "type": "object",
+                    "required": ["schemaVersion"],
+                    "properties": {"schemaVersion": {"const": 1}},
+                }
+            ),
+        )
     _write(
         root / "PROJECT_PROFILE.md",
         "---\nlanguage: en\nprofile-mode: template\n"
@@ -379,7 +629,37 @@ def _valid_fixture(root: Path) -> None:
     markers = "\n".join(
         f"<!-- route:{scenario}={ids} -->" for scenario, ids in scenarios.items()
     )
-    _write(root / "GUIDE_ROUTER.md", f"# Router\n{catalog}\n{markers}\n")
+    _write(
+        root / "GUIDE_ROUTER.md",
+        f"# Router\n{catalog}\nReason codes are stable outputs.\n{markers}\n",
+    )
+
+    phase_lines = "\n".join(f"- `{phase}`" for phase in WORK_PHASES)
+    transition_rows = "\n".join(
+        f"| `{source}` | transition condition | `{target}` |"
+        for source, target in WORK_TRANSITIONS
+    )
+    _write(
+        root / "ORCHESTRATOR_INTEGRATION.md",
+        "# Orchestrator integration\n"
+        "## Canonical workflow diagram\n"
+        "```text\nRECEIVED -> DISCOVERING -> CONTRACT_READY -> ROUTED\n```\n"
+        "## Phase names\n"
+        f"{phase_lines}\n"
+        "## Canonical transition table\n"
+        "| From | Condition | To |\n| --- | --- | --- |\n"
+        f"{transition_rows}\n"
+        "## State invariants\n"
+        "COMPLETE requires verification evidence.\n"
+        "BLOCKED requires blocker evidence.\n"
+        "CORRECTING requires a diagnosed hypothesis.\n"
+        "## No-runtime boundary\n"
+        "schemaVersion: 1 and protocolVersion: 1 are JSON-compatible.\n"
+        "The protocol does not provide a graph runtime.\n"
+        "The protocol does not provide a provider adapter.\n"
+        "The protocol does not provide a scheduler.\n"
+        "No runtime required.\n",
+    )
 
     root_adapter = (
         "# Adapter\n[Loop](./LOOP_ENGINEERING.md)\n"

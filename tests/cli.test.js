@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { readdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -9,6 +9,11 @@ import { fileURLToPath } from "node:url";
 
 import { sha256 } from "../src/core/manifest.js";
 import { TEMPLATE_PATHS } from "../src/core/templates.js";
+import {
+  contractFingerprint,
+  createWorkState,
+  writeWorkState,
+} from "../src/core/work-state.js";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const cliPath = path.join(repositoryRoot, "src", "cli.js");
@@ -299,12 +304,23 @@ test("importing the CLI module has no command-line side effect", () => {
 
 test("CLI runs when invoked through an npm-style symlink", async () => {
   const binDirectory = await mkdtemp(path.join(os.tmpdir(), "mdfiles-bin-"));
-  const linkedCli = path.join(binDirectory, "mdfiles");
+  const linkedCli = path.join(
+    binDirectory,
+    process.platform === "win32" ? "mdfiles.cmd" : "mdfiles",
+  );
   try {
-    await symlink(cliPath, linkedCli);
+    if (process.platform === "win32") {
+      await writeFile(
+        linkedCli,
+        `@echo off\r\n"${process.execPath}" "${cliPath}" %*\r\n`,
+      );
+    } else {
+      await symlink(cliPath, linkedCli);
+    }
     const result = spawnSync(linkedCli, ["--version"], {
       cwd: repositoryRoot,
       encoding: "utf8",
+      shell: process.platform === "win32",
     });
 
     assert.equal(result.status, 0, result.stderr);
@@ -350,6 +366,182 @@ test("reports an existing adapter that was not managed by init", async () => {
         (finding) => finding.code === "unmanaged-file" && finding.path === "AGENTS.md",
       ),
     );
+  });
+});
+
+test("route emits stable JSON and reason codes", () => {
+  const result = runCliDirect(
+    repositoryRoot,
+    "route",
+    "--work",
+    "api-auth",
+    "--surface",
+    "api",
+    "--surface",
+    "auth",
+    "--json",
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  const report = JSON.parse(result.stdout);
+  assert.deepEqual(report.guides, ["clean", "test", "security", "performance"]);
+  assert.ok(report.reasons.security.includes("WORK_API_AUTH"));
+});
+
+test("route human output explains selected guides", () => {
+  const result = runCliDirect(
+    repositoryRoot,
+    "route",
+    "--work",
+    "complete-website",
+    "--surface",
+    "ui",
+    "--risk",
+    "untrusted-input",
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Selected:/);
+  assert.match(result.stdout, /premium/);
+  assert.match(result.stdout, /RISK_UNTRUSTED_INPUT/);
+});
+
+test("route rejects invalid signal values and unrelated flags", () => {
+  const unknown = runCliDirect(repositoryRoot, "route", "--work", "unknown");
+  const dryRun = runCliDirect(repositoryRoot, "route", "--work", "code", "--dry-run");
+
+  assert.equal(unknown.status, 1);
+  assert.match(unknown.stderr, /unknown work type/i);
+  assert.equal(dryRun.status, 1);
+  assert.match(dryRun.stderr, /not valid for route/i);
+});
+
+test("route help exposes only routing options", () => {
+  const result = runCliDirect(repositoryRoot, "route", "--help");
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /--work <type>/);
+  assert.match(result.stdout, /--surface <value>/);
+  assert.match(result.stdout, /--risk <value>/);
+  assert.doesNotMatch(result.stdout, /--adopt <path>/);
+});
+
+test("inspect emits structured target health", async () => {
+  await withTarget(async (target) => {
+    assert.equal(runCli(target, "init").status, 0);
+    const result = runCli(target, "inspect", "--json");
+
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.protocol.version, 1);
+    assert.equal(report.state.status, "absent");
+    assert.ok(Array.isArray(report.findings));
+  });
+});
+
+test("validate-receipt validates a target-local receipt without executing it", async () => {
+  await withTarget(async (target) => {
+    const receiptPath = path.join(target, "receipt.json");
+    await writeFile(
+      receiptPath,
+      `${JSON.stringify({
+        schemaVersion: 1,
+        protocolVersion: 1,
+        taskId: "cli-receipt",
+        contractFingerprint: "a".repeat(64),
+        selectedGuides: ["clean"],
+        changedPaths: [],
+        checks: [],
+        review: { status: "not-run", independent: false },
+        limitations: [],
+        publication: { committed: false, pushed: false, pullRequest: null, deployed: false },
+      })}\n`,
+    );
+
+    const result = runCli(target, "validate-receipt", "--file", "receipt.json", "--json");
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(JSON.parse(result.stdout).taskId, "cli-receipt");
+  });
+});
+
+test("validate-receipt rejects a path outside the target", async () => {
+  await withTarget(async (target) => {
+    const result = runCli(target, "validate-receipt", "--file", "../receipt.json");
+
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /escapes target|inside target/i);
+  });
+});
+
+function makeState(overrides = {}) {
+  return createWorkState({
+    taskId: "cli-state",
+    contractFingerprint: contractFingerprint({ objective: "cli state" }),
+    repositoryFingerprint: { branch: null, head: null },
+    phase: "VERIFYING",
+    selectedGuides: ["clean", "test"],
+    completedSteps: ["implementation"],
+    pendingSteps: ["verification"],
+    checks: [],
+    failures: [],
+    blockers: [],
+    verificationEvidence: [],
+    ...overrides,
+  });
+}
+
+test("status reports absent and fresh work state", async () => {
+  await withTarget(async (target) => {
+    assert.equal(runCli(target, "init").status, 0);
+    const absent = runCli(target, "status", "--json");
+    assert.equal(absent.status, 0, absent.stderr);
+    assert.equal(JSON.parse(absent.stdout).status, "ABSENT");
+
+    await writeWorkState(target, makeState());
+    const fresh = runCli(target, "status", "--json");
+    assert.equal(fresh.status, 0, fresh.stderr);
+    assert.equal(JSON.parse(fresh.stdout).status, "FRESH");
+  });
+});
+
+test("status reports repository revalidation when checkpoint fingerprint drifts", async () => {
+  await withTarget(async (target) => {
+    await writeWorkState(target, makeState({ repositoryFingerprint: { branch: "main", head: "old" } }));
+    const result = runCli(target, "status", "--json");
+    const report = JSON.parse(result.stdout);
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(report.status, "REVALIDATION_REQUIRED");
+    assert.ok(report.reasons.includes("REPOSITORY_CHANGED"));
+  });
+});
+
+test("validate-state validates without mutation and clear-state removes only checkpoint", async () => {
+  await withTarget(async (target) => {
+    assert.equal(runCli(target, "init").status, 0);
+    await writeWorkState(target, makeState());
+
+    const valid = runCli(target, "validate-state", "--json");
+    assert.equal(valid.status, 0, valid.stderr);
+    assert.equal(JSON.parse(valid.stdout).ok, true);
+
+    const cleared = runCli(target, "clear-state", "--json");
+    assert.equal(cleared.status, 0, cleared.stderr);
+    assert.equal(JSON.parse(cleared.stdout).removed, true);
+    await readFile(path.join(target, ".mdfiles", "manifest.json"), "utf8");
+    await assert.rejects(() => readFile(path.join(target, ".mdfiles", "work-state.json"), "utf8"));
+  });
+});
+
+test("validate-state rejects truncated checkpoint data", async () => {
+  await withTarget(async (target) => {
+    await mkdir(path.join(target, ".mdfiles"), { recursive: true });
+    await writeFile(path.join(target, ".mdfiles", "work-state.json"), "{\"schemaVersion\":");
+    const result = runCli(target, "validate-state", "--json");
+
+    assert.equal(result.status, 1);
+    assert.match(result.stdout, /parse|invalid|error/i);
   });
 });
 

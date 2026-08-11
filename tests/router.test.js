@@ -1,0 +1,73 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { test } from "node:test";
+import { fileURLToPath } from "node:url";
+
+import { evaluateRoute } from "../src/core/router.js";
+import { assertSchema } from "../src/core/schema-validation.js";
+
+const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+async function fixture(name) {
+  return JSON.parse(
+    await readFile(path.join(repositoryRoot, "tests", "fixtures", "routes", `${name}.json`), "utf8"),
+  );
+}
+
+async function routeSchema() {
+  return JSON.parse(
+    await readFile(path.join(repositoryRoot, "schemas", "routing-result.schema.json"), "utf8"),
+  );
+}
+
+for (const name of ["complete-website", "api-auth", "backend-refactor", "static-ui-copy", "documentation"]) {
+  test(`route fixture ${name} has deterministic guide output`, async () => {
+    const expected = await fixture(name);
+    const result = evaluateRoute(expected.input);
+
+    assert.deepEqual(result.guides, expected.guides);
+    assert.equal(result.primary, expected.primary);
+    assert.equal(new Set(result.guides).size, result.guides.length);
+    for (const guide of result.guides) {
+      assert.ok(result.reasons[guide]?.length > 0, `${guide} has no reason code`);
+    }
+    for (const guide of expected.forbidden ?? []) {
+      assert.equal(result.guides.includes(guide), false, `${guide} was selected unexpectedly`);
+    }
+    assertSchema(result, await routeSchema(), "route result");
+  });
+}
+
+test("unknown routing signals fail before evaluation", async () => {
+  const expected = await fixture("invalid-signal");
+  assert.throws(
+    () => evaluateRoute(expected.input),
+    new RegExp(expected.error, "i"),
+  );
+});
+
+test("explicit executable change adds clean and test to documentation work", () => {
+  const result = evaluateRoute({
+    workType: "documentation",
+    executableChange: true,
+    surfaces: [],
+    risks: [],
+    platforms: [],
+  });
+
+  assert.deepEqual(result.guides, ["clean", "test"]);
+  assert.deepEqual(result.reasons.clean, ["CHANGE_EXECUTABLE_CONFIG"]);
+  assert.deepEqual(result.reasons.test, ["CHANGE_EXECUTABLE_CONFIG"]);
+});
+
+test("duplicate signals and non-boolean change flags are rejected", () => {
+  assert.throws(
+    () => evaluateRoute({ workType: "code", surfaces: ["ui", "ui"] }),
+    /duplicate surface/i,
+  );
+  assert.throws(
+    () => evaluateRoute({ workType: "code", behaviorChange: "yes" }),
+    /behaviorChange must be boolean/i,
+  );
+});

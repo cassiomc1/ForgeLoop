@@ -85,6 +85,19 @@ class WorkflowPolicyTests(unittest.TestCase):
         self.assertIn("not a dependency", notices)
         self.assertNotIn("superpowers", templates.lower())
 
+    def test_graph_readiness_contract_has_one_non_runtime_boundary(self) -> None:
+        integration = self.read("ORCHESTRATOR_INTEGRATION.md")
+        design = self.read("LOOP_SYSTEM_DESIGN.md")
+
+        self.assertEqual(integration.count("## Canonical workflow diagram"), 1)
+        self.assertIn("## Phase names", integration)
+        self.assertIn("## Canonical transition table", integration)
+        self.assertIn("## State invariants", integration)
+        self.assertIn("does not provide a graph runtime", integration)
+        self.assertNotIn("src/graph/", design)
+        self.assertNotIn("src/llm/", design)
+        self.assertNotIn("mdfiles run", integration)
+
 
 if __name__ == "__main__":
     unittest.main()

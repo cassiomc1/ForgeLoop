@@ -1,0 +1,107 @@
+import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { test } from "node:test";
+import { fileURLToPath } from "node:url";
+
+import { validateTaskBrief } from "../src/core/delegation.js";
+import { readWorkState, writeWorkState, createWorkState, contractFingerprint } from "../src/core/work-state.js";
+
+const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const cliPath = path.join(repositoryRoot, "src", "cli.js");
+
+function runCli(target, ...args) {
+  return spawnSync(process.execPath, [cliPath, ...args, "--path", target], {
+    cwd: repositoryRoot,
+    encoding: "utf8",
+  });
+}
+
+function isWithinWindows(root, candidate) {
+  const relative = path.win32.relative(root, candidate);
+  return relative === ""
+    || (relative !== ".."
+      && !relative.startsWith(`..${path.win32.sep}`)
+      && !path.win32.isAbsolute(relative));
+}
+
+test("CLI handles target paths with spaces and Unicode", async () => {
+  const parent = await mkdtemp(path.join(os.tmpdir(), "mdfiles-portable-"));
+  const target = path.join(parent, "projeto com espaço — 测试");
+  await mkdir(target);
+
+  try {
+    const initialized = runCli(target, "init");
+    assert.equal(initialized.status, 0, initialized.stderr);
+    await readFile(path.join(target, ".mdfiles", ".gitignore"), "utf8");
+    await readFile(path.join(target, "ORCHESTRATOR_INTEGRATION.md"), "utf8");
+    await readFile(path.join(target, "schemas", "work-state.schema.json"), "utf8");
+
+    const status = runCli(target, "status", "--json");
+    assert.equal(status.status, 0, status.stderr);
+    const report = JSON.parse(status.stdout);
+    assert.equal(report.status, "ABSENT");
+    assert.deepEqual(report.repository, { branch: null, head: null });
+  } finally {
+    await rm(parent, { recursive: true, force: true });
+  }
+});
+
+test("state APIs preserve a CRLF target file and validate a checkpoint on a portable path", async () => {
+  const parent = await mkdtemp(path.join(os.tmpdir(), "mdfiles-portable-state-"));
+  const target = path.join(parent, "project with spaces — état");
+  await mkdir(target);
+
+  try {
+    const state = createWorkState({
+      taskId: "portable-state",
+      contractFingerprint: contractFingerprint({ objective: "portable" }),
+      repositoryFingerprint: { branch: null, head: null },
+      phase: "VERIFYING",
+      selectedGuides: ["clean", "test"],
+      completedSteps: ["implementation"],
+      pendingSteps: ["verification"],
+      checks: [],
+      failures: [],
+      blockers: [],
+      verificationEvidence: [],
+    });
+    await writeWorkState(target, state);
+    assert.deepEqual(await readWorkState(target), state);
+
+    const profilePath = path.join(target, "profile-crlf.txt");
+    const crlf = "profile-mode: project\r\nlanguage: en\r\n";
+    await writeFile(profilePath, crlf, "utf8");
+    assert.equal(await readFile(profilePath, "utf8"), crlf);
+
+    const validation = runCli(target, "validate-state", "--json");
+    assert.equal(validation.status, 0, validation.stderr);
+    assert.equal(JSON.parse(validation.stdout).ok, true);
+  } finally {
+    await rm(parent, { recursive: true, force: true });
+  }
+});
+
+test("delegation paths normalize Windows separators without platform assumptions", async () => {
+  const brief = await validateTaskBrief({
+    taskId: "portable-child",
+    parentTaskId: "portable-parent",
+    objective: "Check portable path handling.",
+    allowedPaths: ["src\\components\\card.js"],
+    readOnlyPaths: ["README.md"],
+    dependencies: [],
+    constraints: [],
+    requiredGuides: ["clean", "test"],
+    verification: ["npm test"],
+    authority: ["write only the allowed path"],
+    deliverables: ["normalized brief"],
+  });
+
+  assert.deepEqual(brief.allowedPaths, ["src/components/card.js"]);
+  const root = "C:\\workspace\\project";
+  assert.equal(isWithinWindows(root, "C:\\workspace\\project\\src\\file.js"), true);
+  assert.equal(isWithinWindows(root, "C:\\workspace\\other\\file.js"), false);
+  assert.equal(isWithinWindows(root, "D:\\other\\file.js"), false);
+});

@@ -91,6 +91,32 @@ does not launch Codex, Claude Code, or another provider during `npm test`; live
 sessions require external authentication and are intentionally outside the
 reproducible package test suite.
 
+## Protocol-support commands and degraded mode
+
+The CLI can deterministically evaluate declared routing signals, inspect target
+health, validate local receipts and work state, and report resumable status. It
+does not call an LLM, schedule agents, execute commands from
+`PROJECT_PROFILE.md`, or provide `mdfiles run`/orchestration commands.
+
+If a harness has no subagents, worktrees, web access, MCP, persistent state, or
+Git checkout, the compatible agent continues inline and reports the missing
+capability as a limitation. Inline execution is not independent review, a
+non-Git target cannot provide branch/HEAD drift evidence, and a missing remote
+service is a blocker rather than a simulated success.
+
+The degraded-mode contract is explicit:
+
+| Missing capability | Required behavior |
+| --- | --- |
+| Subagents | Execute the same brief inline; do not claim delegation or independent review. |
+| Worktrees or isolation | Keep ownership boundaries in the brief and serialize conflicting work. |
+| Web or MCP | Use a local equivalent only when it provides compatible evidence; otherwise mark the check not verified or blocked. |
+| Persistent state | Keep the handoff in the current session and report that resume across sessions is unavailable. |
+| Git checkout | Continue with local file evidence, but report that branch/HEAD drift cannot be verified. |
+
+These are limitations of the active harness, not reasons to invent a command,
+provider, remote service, or successful check.
+
 ## Installed files
 
 Every initialized project receives this guide plus the canonical documents:
@@ -103,12 +129,18 @@ LOOP_ENGINEERING.md
 GUIDE_ROUTER.md
 PROJECT_PROFILE.md
 LOOP_SYSTEM_DESIGN.md
+QUALITY_SCORECARD.md
+TERMINOLOGY.md
+EXECUTION_STATE.md
+DELEGATION_PROTOCOL.md
+ORCHESTRATOR_INTEGRATION.md
 THIRD_PARTY_NOTICES.md
 LICENSE
 LICENSE-DOCS.md
 .cursor/rules/project-loop.mdc
 .github/copilot-instructions.md
 ENG/
+schemas/
 ```
 
 See the main [README](https://github.com/cassiomc1/mdfiles#readme) for the complete `npx` installation,

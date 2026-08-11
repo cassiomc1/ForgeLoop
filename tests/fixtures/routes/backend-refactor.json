@@ -1,0 +1,11 @@
+{
+  "input": {
+    "workType": "backend",
+    "surfaces": ["data"],
+    "risks": [],
+    "platforms": ["server"]
+  },
+  "guides": ["clean", "test"],
+  "forbidden": ["design", "accessibility", "security", "performance"],
+  "primary": "clean"
+}

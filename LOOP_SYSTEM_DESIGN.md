@@ -154,6 +154,20 @@ Durable context for a destination project. The template captures:
 
 The profile changes only when discovery reveals a real project change; it is not a task diary. In this source repository, `profile-mode: template` keeps it as a reusable template. After copying it into a code repository, the first cycle may change the mode to `project` and fill only confirmed facts.
 
+### `DELEGATION_PROTOCOL.md`
+
+The delegation document defines serializable task briefs, write ownership,
+dependencies, normalized results, reviewer independence, and inline fallback.
+It does not add agent personas, a scheduler, or a provider runtime.
+
+### `ORCHESTRATOR_INTEGRATION.md`
+
+The integration contract is the graph-readiness boundary. It names the
+serializable phases, transitions, invariants, artifact schemas, host
+responsibilities, and inline fallback in one canonical document. It does not
+implement a graph runtime or duplicate the detailed operational rules in
+`LOOP_ENGINEERING.md`.
+
 ### `ENG/*.md`
 
 Eight canonical guides cover:
@@ -204,6 +218,45 @@ Routing uses the request and files actually affected. A single word in the repos
 12. On failure, collect evidence, identify the root cause, and repeat with a targeted correction.
 13. Finish only with current evidence, explicit limitations, and no unrelated changes.
 
+## Canonical workflow state model
+
+The protocol represents the engineering loop with serializable conceptual
+states rather than an executable graph:
+
+```text
+RECEIVED → DISCOVERING → CONTRACT_READY → ROUTED
+                                      ├→ DESIGNING → PLANNED
+                                      └→ PLANNED
+PLANNED → EXECUTING → VERIFYING
+VERIFYING ├→ DIAGNOSING → CORRECTING → VERIFYING
+          └→ REVIEWING → COMPLETE
+Any non-terminal state → BLOCKED when a genuine blocker is evidenced
+```
+
+| From | Condition | To |
+| --- | --- | --- |
+| `RECEIVED` | context is required | `DISCOVERING` |
+| `DISCOVERING` | sufficient sourced context | `CONTRACT_READY` |
+| `CONTRACT_READY` | route is resolved | `ROUTED` |
+| `ROUTED` | design decision is required | `DESIGNING` |
+| `ROUTED` | no design gate is required | `PLANNED` |
+| `DESIGNING` | design is approved | `PLANNED` |
+| `PLANNED` | task work begins | `EXECUTING` |
+| `EXECUTING` | targeted check is ready | `VERIFYING` |
+| `VERIFYING` | a check fails | `DIAGNOSING` |
+| `DIAGNOSING` | a fix hypothesis exists | `CORRECTING` |
+| `CORRECTING` | the fix is applied | `VERIFYING` |
+| `VERIFYING` | checks pass | `REVIEWING` |
+| `REVIEWING` | contract and quality are accepted | `COMPLETE` |
+| any non-terminal state | a genuine external blocker is evidenced | `BLOCKED` |
+
+State invariants are machine-validatable: `COMPLETE` requires verification
+evidence, `BLOCKED` requires a blocker category, `CORRECTING` requires a
+diagnosed hypothesis, and `REVIEWING` cannot claim independent review from the
+same identity as the implementer. Simple documentation tasks may skip design,
+delegation, and full regression when the contract records why those states are
+not applicable.
+
 ## Precedence and conflicts
 
 The system respects this order:
@@ -237,6 +290,8 @@ The documentation workflow verifies:
 - guide IDs, filenames, frontmatter keys, and `language: en` match the catalog;
 - no legacy language tree or bilingual metadata remains;
 - all route contracts contain valid guide IDs;
+- the canonical phase list, transition rows, state invariants, reason-code
+  language, graph-readiness evidence, and no-runtime boundary are present;
 - Markdown and frontmatter are valid;
 - secrets and credential-like assignments are absent;
 - `THIRD_PARTY_NOTICES.md` is present.

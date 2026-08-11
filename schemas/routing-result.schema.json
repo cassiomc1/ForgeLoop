@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mdfiles://schemas/routing-result.schema.json",
+  "title": "mdfiles routing result",
+  "type": "object",
+  "required": ["schemaVersion", "protocolVersion", "input", "primary", "guides", "reasons", "excluded"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "protocolVersion": { "const": 1 },
+    "input": { "type": "object" },
+    "primary": { "oneOf": [{ "type": "string" }, { "type": "null" }] },
+    "guides": { "type": "array", "items": { "type": "string" } },
+    "reasons": { "type": "object", "additionalProperties": { "type": "array", "items": { "type": "string" } } },
+    "excluded": { "type": "object", "additionalProperties": { "type": "array", "items": { "type": "string" } } }
+  },
+  "additionalProperties": false
+}
