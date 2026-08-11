@@ -5,6 +5,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { runDoctor } from "./commands/doctor.js";
+import { formatStatusResult, runStatus } from "./commands/status.js";
+import { formatValidateStateResult, runValidateState } from "./commands/validate-state.js";
+import { formatClearStateResult, runClearState } from "./commands/clear-state.js";
 import { formatInspectResult, inspectTarget } from "./commands/inspect.js";
 import { runInit } from "./commands/init.js";
 import { formatRouteResult, runRoute } from "./commands/route.js";
@@ -233,8 +236,22 @@ export async function main(argv = process.argv.slice(2)) {
       return 0;
     }
 
-    if (["status", "validate-state", "clear-state"].includes(command)) {
-      throw new Error(`${command} command is not implemented yet`);
+    if (command === "status") {
+      const result = await runStatus({ target, packageRoot });
+      console.log(options.json ? JSON.stringify(result, null, 2) : formatStatusResult(result));
+      return 0;
+    }
+
+    if (command === "validate-state") {
+      const result = await runValidateState({ target, packageRoot });
+      console.log(options.json ? JSON.stringify(result, null, 2) : formatValidateStateResult(result));
+      return result.ok ? 0 : 1;
+    }
+
+    if (command === "clear-state") {
+      const result = await runClearState({ target });
+      console.log(options.json ? JSON.stringify(result, null, 2) : formatClearStateResult(result));
+      return 0;
     }
 
     const result = await runUpdate({ target, dryRun: options.dryRun, packageRoot, packageVersion: version });

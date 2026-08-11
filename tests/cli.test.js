@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { readdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -9,6 +9,11 @@ import { fileURLToPath } from "node:url";
 
 import { sha256 } from "../src/core/manifest.js";
 import { TEMPLATE_PATHS } from "../src/core/templates.js";
+import {
+  contractFingerprint,
+  createWorkState,
+  writeWorkState,
+} from "../src/core/work-state.js";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const cliPath = path.join(repositoryRoot, "src", "cli.js");
@@ -455,6 +460,77 @@ test("validate-receipt rejects a path outside the target", async () => {
 
     assert.equal(result.status, 1);
     assert.match(result.stderr, /escapes target|inside target/i);
+  });
+});
+
+function makeState(overrides = {}) {
+  return createWorkState({
+    taskId: "cli-state",
+    contractFingerprint: contractFingerprint({ objective: "cli state" }),
+    repositoryFingerprint: { branch: null, head: null },
+    phase: "VERIFYING",
+    selectedGuides: ["clean", "test"],
+    completedSteps: ["implementation"],
+    pendingSteps: ["verification"],
+    checks: [],
+    failures: [],
+    blockers: [],
+    verificationEvidence: [],
+    ...overrides,
+  });
+}
+
+test("status reports absent and fresh work state", async () => {
+  await withTarget(async (target) => {
+    assert.equal(runCli(target, "init").status, 0);
+    const absent = runCli(target, "status", "--json");
+    assert.equal(absent.status, 0, absent.stderr);
+    assert.equal(JSON.parse(absent.stdout).status, "ABSENT");
+
+    await writeWorkState(target, makeState());
+    const fresh = runCli(target, "status", "--json");
+    assert.equal(fresh.status, 0, fresh.stderr);
+    assert.equal(JSON.parse(fresh.stdout).status, "FRESH");
+  });
+});
+
+test("status reports repository revalidation when checkpoint fingerprint drifts", async () => {
+  await withTarget(async (target) => {
+    await writeWorkState(target, makeState({ repositoryFingerprint: { branch: "main", head: "old" } }));
+    const result = runCli(target, "status", "--json");
+    const report = JSON.parse(result.stdout);
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(report.status, "REVALIDATION_REQUIRED");
+    assert.ok(report.reasons.includes("REPOSITORY_CHANGED"));
+  });
+});
+
+test("validate-state validates without mutation and clear-state removes only checkpoint", async () => {
+  await withTarget(async (target) => {
+    assert.equal(runCli(target, "init").status, 0);
+    await writeWorkState(target, makeState());
+
+    const valid = runCli(target, "validate-state", "--json");
+    assert.equal(valid.status, 0, valid.stderr);
+    assert.equal(JSON.parse(valid.stdout).ok, true);
+
+    const cleared = runCli(target, "clear-state", "--json");
+    assert.equal(cleared.status, 0, cleared.stderr);
+    assert.equal(JSON.parse(cleared.stdout).removed, true);
+    await readFile(path.join(target, ".mdfiles", "manifest.json"), "utf8");
+    await assert.rejects(() => readFile(path.join(target, ".mdfiles", "work-state.json"), "utf8"));
+  });
+});
+
+test("validate-state rejects truncated checkpoint data", async () => {
+  await withTarget(async (target) => {
+    await mkdir(path.join(target, ".mdfiles"), { recursive: true });
+    await writeFile(path.join(target, ".mdfiles", "work-state.json"), "{\"schemaVersion\":");
+    const result = runCli(target, "validate-state", "--json");
+
+    assert.equal(result.status, 1);
+    assert.match(result.stdout, /parse|invalid|error/i);
   });
 });
 
