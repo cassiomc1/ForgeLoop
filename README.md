@@ -63,6 +63,19 @@ npx @cassiomc1/mdfiles doctor
 npx @cassiomc1/mdfiles update
 ```
 
+Protocol-support commands are local and do not invoke an agent or model:
+
+```bash
+npx @cassiomc1/mdfiles route --work complete-website --surface ui --risk untrusted-input
+npx @cassiomc1/mdfiles inspect --json
+npx @cassiomc1/mdfiles status --json
+npx @cassiomc1/mdfiles validate-state --json
+```
+
+`route` expands declared signals into deterministic guide IDs and reason codes.
+`inspect`, `status`, and `validate-state` explain installation and resumable
+state; they do not execute commands from the target profile.
+
 From a repository checkout before npm publication, run the same commands with
 Node directly:
 
@@ -117,12 +130,19 @@ LOOP_ENGINEERING.md
 GUIDE_ROUTER.md
 PROJECT_PROFILE.md
 LOOP_SYSTEM_DESIGN.md
+QUALITY_SCORECARD.md
+TERMINOLOGY.md
+EXECUTION_STATE.md
+DELEGATION_PROTOCOL.md
+ORCHESTRATOR_INTEGRATION.md
 THIRD_PARTY_NOTICES.md
 LICENSE
 LICENSE-DOCS.md
+.mdfiles/.gitignore
 .github/copilot-instructions.md
 .cursor/rules/project-loop.mdc
 ENG/
+schemas/
 ```
 
 If the target already has `AGENTS.md`, `CLAUDE.md`, Copilot instructions, or

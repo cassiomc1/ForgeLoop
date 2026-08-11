@@ -353,6 +353,63 @@ test("reports an existing adapter that was not managed by init", async () => {
   });
 });
 
+test("route emits stable JSON and reason codes", () => {
+  const result = runCliDirect(
+    repositoryRoot,
+    "route",
+    "--work",
+    "api-auth",
+    "--surface",
+    "api",
+    "--surface",
+    "auth",
+    "--json",
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  const report = JSON.parse(result.stdout);
+  assert.deepEqual(report.guides, ["clean", "test", "security", "performance"]);
+  assert.ok(report.reasons.security.includes("WORK_API_AUTH"));
+});
+
+test("route human output explains selected guides", () => {
+  const result = runCliDirect(
+    repositoryRoot,
+    "route",
+    "--work",
+    "complete-website",
+    "--surface",
+    "ui",
+    "--risk",
+    "untrusted-input",
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Selected:/);
+  assert.match(result.stdout, /premium/);
+  assert.match(result.stdout, /RISK_UNTRUSTED_INPUT/);
+});
+
+test("route rejects invalid signal values and unrelated flags", () => {
+  const unknown = runCliDirect(repositoryRoot, "route", "--work", "unknown");
+  const dryRun = runCliDirect(repositoryRoot, "route", "--work", "code", "--dry-run");
+
+  assert.equal(unknown.status, 1);
+  assert.match(unknown.stderr, /unknown work type/i);
+  assert.equal(dryRun.status, 1);
+  assert.match(dryRun.stderr, /not valid for route/i);
+});
+
+test("route help exposes only routing options", () => {
+  const result = runCliDirect(repositoryRoot, "route", "--help");
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /--work <type>/);
+  assert.match(result.stdout, /--surface <value>/);
+  assert.match(result.stdout, /--risk <value>/);
+  assert.doesNotMatch(result.stdout, /--adopt <path>/);
+});
+
 test("does not relabel an existing installation when init is rerun", async () => {
   await withTarget(async (target) => {
     assert.equal(runCli(target, "init").status, 0);
