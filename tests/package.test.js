@@ -10,6 +10,7 @@ const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
 test("npm tarball contains the CLI, templates, and license notices only", () => {
   const output = execFileSync(npmCommand, ["pack", "--dry-run", "--json"], {
     encoding: "utf8",
+    shell: process.platform === "win32",
   });
   const listing = JSON.parse(output)[0].files.map((entry) => entry.path);
 
@@ -48,7 +49,10 @@ test("CLI package entry is executable by Node-compatible shells", async () => {
   const cli = (await readFile("src/cli.js", "utf8")).replace(/\r\n/g, "\n");
   const metadata = await stat("src/cli.js");
   assert.match(cli, /^#!\/usr\/bin\/env node\n/);
-  assert.notEqual(metadata.mode & 0o111, 0);
+  assert.ok(metadata.isFile());
+  if (process.platform !== "win32") {
+    assert.notEqual(metadata.mode & 0o111, 0);
+  }
 });
 
 test("release workflow uses a compatible OIDC publishing toolchain", async () => {

@@ -132,6 +132,7 @@ test("compatibility guide mirrors every registry entry", async () => {
 test("npm package contains the registry and compatibility guide", () => {
   const output = execFileSync(npmCommand, ["pack", "--dry-run", "--json"], {
     encoding: "utf8",
+    shell: process.platform === "win32",
   });
   const paths = JSON.parse(output)[0].files.map((entry) => entry.path);
   assert.ok(paths.includes("src/core/agent-support.js"));
