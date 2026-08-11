@@ -65,6 +65,7 @@ test("supported Node engine versions are exercised in docs CI", async () => {
   const workflow = await readFile(".github/workflows/docs-quality.yml", "utf8");
 
   assert.equal(packageJson.engines.node, ">=20");
+  assert.equal(packageJson.scripts.test, 'node --test "tests/*.test.js"');
   assert.match(workflow, /node-version: \[20, 22, 24\]/);
   assert.match(
     workflow,
