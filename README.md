@@ -46,6 +46,67 @@ proven project facts.
 The canonical system map, including the routing/state/evidence architecture, is
 in [`LOOP_SYSTEM_DESIGN.md`](./LOOP_SYSTEM_DESIGN.md).
 
+```mermaid
+flowchart TB
+  root["FORGELOOP"]
+
+  subgraph surfaces["CONTROL SURFACES"]
+    direction LR
+    routing["ROUTING"] --> routingFacts["deterministic<br/>decisions"]
+    state["STATE"] --> checkpoint["checkpoint<br/>facts"]
+    evidence["EVIDENCE"] --> claims["observable<br/>claims"]
+
+    checkpoint --> repository["repository"]
+    checkpoint --> contract["contract"]
+    repository --> freshness["freshness"]
+    contract --> freshness
+  end
+
+  root --> routing
+  root --> state
+  root --> evidence
+
+  routingFacts --> conformance["CONFORMANCE"]
+  routingFacts --> delegation["DELEGATION"]
+  freshness --> conformance
+  freshness --> delegation
+  claims --> conformance
+  claims --> delegation
+
+  conformance --> verdict["VALID / STALE / INVALID"]
+  delegation --> verdict
+  verdict --> harness["compatible harness"]
+
+  classDef root fill:#08090C,stroke:#6E6AF5,stroke-width:3px,color:#EDEEF0;
+  classDef routing fill:#4F46E5,stroke:#A5B4FC,stroke-width:2px,color:#FFFFFF;
+  classDef state fill:#373A46,stroke:#A1A1AA,stroke-width:2px,color:#FFFFFF;
+  classDef evidence fill:#3EDBB8,stroke:#99F6E4,stroke-width:2px,color:#08090C;
+  classDef fact fill:#181B24,stroke:#6E6AF5,stroke-width:1px,color:#EDEEF0;
+  classDef support fill:#181B24,stroke:#8A8F98,stroke-width:1px,color:#EDEEF0;
+  classDef gate fill:#3730A3,stroke:#A5B4FC,stroke-width:2px,color:#FFFFFF;
+  classDef result fill:#C9A876,stroke:#F5D9A6,stroke-width:2px,color:#08090C;
+  classDef harness fill:#101218,stroke:#3EDBB8,stroke-width:2px,color:#EDEEF0;
+
+  class root root;
+  class routing,routingFacts routing;
+  class state,checkpoint state;
+  class evidence,claims evidence;
+  class repository,contract,freshness fact;
+  class conformance,delegation gate;
+  class verdict result;
+  class harness harness;
+  style surfaces fill:#101218,stroke:#2D3340,stroke-width:1px,color:#EDEEF0;
+  linkStyle default stroke:#8A8F98,stroke-width:1.5px;
+```
+
+Equivalent reading for text-only environments: ForgeLoop turns routing into
+deterministic decisions, state into checkpoint facts, and evidence into
+observable claims. Repository and contract facts establish freshness; all
+three control surfaces feed conformance and delegation, which produce a
+`VALID`, `STALE`, or `INVALID` result for the compatible harness.
+
+The operational request loop remains:
+
 ```text
 Request → discovery → profile → routing → plan → execution
         → verification → correction when needed → final evidence
