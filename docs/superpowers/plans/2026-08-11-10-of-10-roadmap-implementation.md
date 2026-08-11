@@ -61,6 +61,7 @@
 ### Task 1: Add protocol constants, schema validation, and measurable quality contracts
 
 **Files:**
+
 - Create: `src/core/protocol.js`
 - Create: `src/core/schema-validation.js`
 - Create: `schemas/routing-input.schema.json`
@@ -78,6 +79,7 @@
 - Test: `tests/test_validate_loop_system.py`
 
 **Interfaces:**
+
 - `protocol.js` exports `PROTOCOL_VERSION`, `FAILURE_CLASSES`, `WORK_PHASES`, `GUIDE_IDS`, `GUIDE_ORDER`, `isValidTransition(from, to)`, and `assertFailureClass(value)`.
 - `schema-validation.js` exports `SchemaValidationError`, `validateSchema(value, schema, options)`, `assertSchema(value, schema, label)`, and `readSchema(name, packageRoot)`.
 - Every schema uses `schemaVersion: 1` in its artifact contract and rejects unknown enum values, malformed required fields, and secret-like protocol properties.
@@ -128,6 +130,7 @@ git commit -m "feat: add versioned protocol foundations"
 ### Task 2: Implement deterministic routing and route schemas
 
 **Files:**
+
 - Create: `src/core/router.js`
 - Modify: `schemas/routing-input.schema.json`
 - Modify: `schemas/routing-result.schema.json`
@@ -141,6 +144,7 @@ git commit -m "feat: add versioned protocol foundations"
 - Modify: `GUIDE_ROUTER.md`
 
 **Interfaces:**
+
 - `normalizeRouteInput(input)` returns `{ workType, surfaces, risks, platforms, behaviorChange, executableChange }` with sorted unique arrays.
 - `evaluateRoute(input)` returns `{ schemaVersion, protocolVersion, input, primary, guides, reasons, excluded }`.
 - Known work types are `documentation`, `code`, `bug`, `refactor`, `backend`, `api`, `api-auth`, `complete-website`, `mobile-ui`, `web-game`, `html-video`, `infrastructure`, `security-review`, `performance`, `accessibility`, `test-only`, `dependency-update`, and `release`.
@@ -192,6 +196,7 @@ git commit -m "feat: add deterministic guide routing"
 ### Task 3: Add `mdfiles route` and route explainability
 
 **Files:**
+
 - Create: `src/commands/route.js`
 - Modify: `src/cli.js`
 - Modify: `tests/cli.test.js`
@@ -199,6 +204,7 @@ git commit -m "feat: add deterministic guide routing"
 - Modify: `AGENT_COMPATIBILITY.md`
 
 **Interfaces:**
+
 - `parseArgs` accepts `route` with repeated `--surface`, `--risk`, and `--platform`, scalar `--work`, boolean `--behavior-change` and `--executable-change`, and `--json`.
 - `runRoute({ input })` returns the `evaluateRoute` result.
 - Human output prints each selected guide with its reason codes and each exclusion when requested; JSON output prints the stable result object.
@@ -237,6 +243,7 @@ git commit -m "feat: expose route explanation command"
 ### Task 4: Add rich findings, receipts, inspection, and no-telemetry guarantees
 
 **Files:**
+
 - Create: `src/core/receipt.js`
 - Create: `src/core/inspect.js`
 - Create: `src/commands/inspect.js`
@@ -249,6 +256,7 @@ git commit -m "feat: expose route explanation command"
 - Modify: `LOOP_ENGINEERING.md`
 
 **Interfaces:**
+
 - `createReceipt(input)` returns a normalized receipt with `schemaVersion: 1`, `protocolVersion: 1`, explicit publication booleans/nulls, and no secret-like fields.
 - `validateReceipt(receipt)` returns the receipt or throws `SchemaValidationError`.
 - `inspectTarget({ target, packageRoot })` returns `{ target, manifest, profile, adapters, protocol, state, compatibility, findings, ok }`.
@@ -284,6 +292,7 @@ git commit -m "feat: add explainable inspection and receipts"
 ### Task 5: Implement atomic work state, fingerprints, and stale detection
 
 **Files:**
+
 - Create: `src/core/repository.js`
 - Create: `src/core/work-state.js`
 - Modify: `src/core/filesystem.js`
@@ -294,6 +303,7 @@ git commit -m "feat: add explainable inspection and receipts"
 - Create: `EXECUTION_STATE.md`
 
 **Interfaces:**
+
 - `contractFingerprint(contract)` returns a lowercase SHA-256 of canonical JSON with sorted object keys.
 - `currentRepositoryFingerprint(target)` returns `{ branch, head }`, using fixed-argument Git calls and `{ branch: null, head: null }` when the target is not a Git checkout.
 - `createWorkState(input)` returns a schema-valid state with `schemaVersion: 1` and `protocolVersion: 1`.
@@ -346,6 +356,7 @@ git commit -m "feat: add atomic resumable work state"
 ### Task 6: Add status, validate-state, and clear-state commands
 
 **Files:**
+
 - Create: `src/commands/status.js`
 - Create: `src/commands/validate-state.js`
 - Create: `src/commands/clear-state.js`
@@ -355,6 +366,7 @@ git commit -m "feat: add atomic resumable work state"
 - Modify: `README.md`
 
 **Interfaces:**
+
 - `runStatus({ target })` returns `{ state, status, reasons, completed, pending, repository }`.
 - `runValidateState({ target })` returns `{ ok, state, errors, warnings }` without mutation.
 - `runClearState({ target })` returns `{ removed, path }` and never accepts a broader deletion target.
@@ -385,6 +397,7 @@ git commit -m "feat: add work-state inspection commands"
 ### Task 7: Implement the framework-neutral delegation protocol
 
 **Files:**
+
 - Create: `src/core/delegation.js`
 - Modify: `schemas/task-brief.schema.json`
 - Modify: `schemas/delegated-result.schema.json`
@@ -394,6 +407,7 @@ git commit -m "feat: add work-state inspection commands"
 - Modify: `LOOP_SYSTEM_DESIGN.md`
 
 **Interfaces:**
+
 - `validateTaskBrief(brief)` returns a normalized brief or throws `SchemaValidationError`.
 - `validateDelegatedResult(result)` returns a normalized result or throws `SchemaValidationError`.
 - `findOwnershipConflicts(briefs)` returns `{ conflicts: [{ path, taskIds }] }` for overlapping allowed write paths, including parent/child path overlap.
@@ -427,6 +441,7 @@ git commit -m "feat: add framework-neutral delegation contracts"
 ### Task 8: Integrate distribution, package contents, security documentation, and compatibility fixtures
 
 **Files:**
+
 - Modify: `src/core/templates.js`
 - Modify: `package.json`
 - Modify: `tests/package.test.js`
@@ -440,6 +455,7 @@ git commit -m "feat: add framework-neutral delegation contracts"
 - Create: `tests/fixtures/compatibility/protocol-v1.json`
 
 **Interfaces:**
+
 - `TEMPLATE_PATHS` includes the new canonical documents, `.mdfiles/.gitignore`, and all six schemas in stable order.
 - `package.json.files` includes `schemas`, the new root protocol documents, and `.mdfiles/.gitignore`; it excludes local work state and internal planning/spec files.
 
@@ -467,12 +483,14 @@ git commit -m "chore: ship versioned protocol assets safely"
 ### Task 9: Add portability fixtures and CI OS smoke coverage
 
 **Files:**
+
 - Create: `tests/portability.test.js`
 - Modify: `.github/workflows/docs-quality.yml`
 - Modify: `README.md`
 - Modify: `AGENT_COMPATIBILITY.md`
 
 **Interfaces:**
+
 - Portability tests use the same CLI and core APIs as consumers; no platform-specific dependency or shell command is required.
 - CI keeps the existing Node 20/22/24 Linux depth and adds an `cli-portability` job for `ubuntu-latest`, `macos-latest`, and `windows-latest` at Node 20.
 
@@ -500,6 +518,7 @@ git commit -m "ci: add cross-platform CLI smoke coverage"
 ### Task 10: Complete graph-readiness documentation and final semantic validators
 
 **Files:**
+
 - Create: `ORCHESTRATOR_INTEGRATION.md`
 - Modify: `LOOP_SYSTEM_DESIGN.md`
 - Modify: `LOOP_ENGINEERING.md`
@@ -511,6 +530,7 @@ git commit -m "ci: add cross-platform CLI smoke coverage"
 - Modify: `README.md`
 
 **Interfaces:**
+
 - `ORCHESTRATOR_INTEGRATION.md` maps serializable phase names, route input/result, state, receipts, and delegation contracts to a future host without naming a required framework.
 - The structural validator checks one canonical workflow diagram, all phase names, transition/invariant sections, no-runtime boundary markers, and scorecard evidence references.
 
@@ -538,6 +558,7 @@ git commit -m "docs: complete graph-readiness and quality evidence"
 ### Task 11: Run the complete regression gate and perform evidence-based correction
 
 **Files:**
+
 - Modify only files implicated by a failing check; do not broaden scope.
 
 - [ ] **Step 1: Run targeted JavaScript tests.**

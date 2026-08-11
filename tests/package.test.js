@@ -66,4 +66,8 @@ test("supported Node engine versions are exercised in docs CI", async () => {
 
   assert.equal(packageJson.engines.node, ">=20");
   assert.match(workflow, /node-version: \[20, 22, 24\]/);
+  assert.match(
+    workflow,
+    /actions\/setup-node@820762786026740c76f36085b0efc47a31fe5020/,
+  );
 });
