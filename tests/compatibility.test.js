@@ -4,7 +4,10 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
 import { AGENT_SUPPORT } from "../src/core/agent-support.js";
-import { TEMPLATE_PATHS } from "../src/core/templates.js";
+import { assertWorkStateSemantics } from "../src/core/work-state.js";
+import { validateReceipt } from "../src/core/receipt.js";
+import { assertSchema, readSchema } from "../src/core/schema-validation.js";
+import { getPackageRoot, TEMPLATE_PATHS } from "../src/core/templates.js";
 
 const expectedAgents = [
   {
@@ -131,4 +134,43 @@ test("npm package contains the registry and compatibility guide", () => {
   const paths = JSON.parse(output)[0].files.map((entry) => entry.path);
   assert.ok(paths.includes("src/core/agent-support.js"));
   assert.ok(paths.includes("AGENT_COMPATIBILITY.md"));
+});
+
+test("protocol v1 fixtures remain schema-valid and serializable", async () => {
+  const state = JSON.parse(await readFile("tests/fixtures/states/valid.json", "utf8"));
+  const receipt = JSON.parse(await readFile("tests/fixtures/receipts/valid.json", "utf8"));
+  const protocol = JSON.parse(
+    await readFile("tests/fixtures/compatibility/protocol-v1.json", "utf8"),
+  );
+
+  assertSchema(state, await readSchema("work-state", getPackageRoot()), "fixture state");
+  assert.doesNotThrow(() => assertWorkStateSemantics(state));
+  await assert.doesNotReject(() => validateReceipt(receipt, getPackageRoot()));
+  assert.deepEqual(protocol, {
+    schemaVersion: 1,
+    protocolVersion: 1,
+    artifactType: "execution-receipt",
+    compatibility: "v1",
+  });
+});
+
+test("truncated and secret-bearing fixtures are rejected without execution", async () => {
+  const truncated = await readFile("tests/fixtures/states/truncated.json", "utf8");
+  const invalidReceipt = JSON.parse(
+    await readFile("tests/fixtures/receipts/secret.json", "utf8"),
+  );
+
+  assert.throws(() => JSON.parse(truncated), SyntaxError);
+  await assert.rejects(
+    () => validateReceipt(invalidReceipt, getPackageRoot()),
+    /secret-like field/i,
+  );
+});
+
+test("README documents package and protocol compatibility guarantees", async () => {
+  const readme = await readFile("README.md", "utf8");
+  assert.match(readme, /Patch releases preserve the v1 schemas/i);
+  assert.match(readme, /Minor releases preserve existing v1 artifacts/i);
+  assert.match(readme, /Major releases may change required fields/i);
+  assert.match(readme, /npm package version is independent of protocol version/i);
 });

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "taskId": "fixture-receipt",
+  "contractFingerprint": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "selectedGuides": ["clean", "test"],
+  "changedPaths": ["src/example.js"],
+  "checks": [
+    { "name": "unit", "status": "passed" }
+  ],
+  "review": {
+    "status": "not-run",
+    "independent": false
+  },
+  "limitations": ["publication was not requested"],
+  "publication": {
+    "committed": false,
+    "pushed": false,
+    "pullRequest": null,
+    "deployed": false
+  }
+}

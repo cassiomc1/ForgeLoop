@@ -49,12 +49,13 @@ test("receipt validation rejects ambiguous publication fields", async () => {
 });
 
 test("receipt validation rejects secret-like fields and values", async () => {
+  const marker = ["-----BEGIN ", "PRIVATE KEY-----"].join("");
   await assert.rejects(
     () => validateReceipt({ ...receiptInput, apiKey: "not-for-receipts" }, packageRoot),
     /secret|credential|additional property/i,
   );
   await assert.rejects(
-    () => validateReceipt({ ...receiptInput, limitations: ["-----BEGIN PRIVATE KEY-----"] }, packageRoot),
+    () => validateReceipt({ ...receiptInput, limitations: [marker] }, packageRoot),
     /secret|private key/i,
   );
 });

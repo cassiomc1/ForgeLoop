@@ -79,6 +79,47 @@ state; they do not execute commands from the target profile.
 All protocol-support commands are local and offline-capable by default; the
 package sends no telemetry and has no central trace service.
 
+### Protocol compatibility
+
+The npm package version is independent of protocol version. The current
+serializable artifact contract is `schemaVersion: 1` and `protocolVersion: 1`.
+
+- Patch releases preserve the v1 schemas, enums, transitions, and existing
+  command contracts while correcting implementation defects.
+- Minor releases preserve existing v1 artifacts and commands; they may add
+  documentation, new commands, new guide IDs, or a new explicitly named
+  schema. Existing consumers must still reject unknown fields rather than
+  silently treating an unrecognized artifact as valid.
+- Major releases may change required fields, enums, transitions, or safety
+  semantics and must document migration requirements together with a protocol
+  version change.
+
+The compatibility fixture in
+[`tests/fixtures/compatibility/protocol-v1.json`](./tests/fixtures/compatibility/protocol-v1.json)
+is a small conformance marker, not a runtime configuration file.
+
+### CLI security and trust boundaries
+
+The CLI is a local validator and installer. It does not execute instructions,
+profile commands, receipt data, state data, or hidden prompts supplied by a
+target project. Its main threat boundaries are:
+
+| Threat | Mitigation or accepted limit |
+| --- | --- |
+| Path traversal and symlink escape | Target and managed paths use safe-path and realpath containment checks; a symlinked target or escaped child is rejected. |
+| Manifest tampering | Managed-file hashes and manifest shape are checked by `doctor`; discrepancies become findings rather than silent overwrites. |
+| Untrusted state or profile data | JSON schemas, semantic checks, secret-like field checks, and non-execution rules apply before state or profile data is used. |
+| Command injection | Git inspection uses fixed arguments without a shell; the CLI never treats project text as a command. |
+| Data exposure | Receipts and checkpoints reject secret-like keys and values; examples use placeholders, and the repository secret scanner runs in CI. |
+| Unsafe update overwrite | `update` preserves locally modified files and `PROJECT_PROFILE.md`; adoption and writes remain bounded to the selected target. |
+| Dependency supply chain | Runtime code uses Node built-ins only; the package does not install agents, providers, plugins, or remote services. |
+| Stale replay | Work state records contract and repository fingerprints; drift requires revalidation and never reruns destructive or publication actions automatically. |
+| Unverified publication | Receipts carry explicit publication booleans; local success never implies a push, pull request, merge, release, or deployment. |
+
+The CLI cannot protect a target from a separately privileged or hostile process
+that changes the filesystem after validation. Consumers must still review
+permissions, package provenance, and external actions before granting authority.
+
 From a repository checkout before npm publication, run the same commands with
 Node directly:
 

@@ -15,12 +15,29 @@ test("npm tarball contains the CLI, templates, and license notices only", () => 
     "src/cli.js",
     "src/core/agent-support.js",
     ...TEMPLATE_PATHS,
+    ".mdfiles/.gitignore",
+    "QUALITY_SCORECARD.md",
+    "TERMINOLOGY.md",
+    "EXECUTION_STATE.md",
+    "DELEGATION_PROTOCOL.md",
+    "ORCHESTRATOR_INTEGRATION.md",
+    "schemas/routing-input.schema.json",
+    "schemas/routing-result.schema.json",
+    "schemas/work-state.schema.json",
+    "schemas/execution-receipt.schema.json",
+    "schemas/task-brief.schema.json",
+    "schemas/delegated-result.schema.json",
     "LICENSE",
     "LICENSE-DOCS.md",
   ]) {
     assert.ok(listing.includes(expected), `missing ${expected}`);
   }
-  for (const excluded of ["tests/cli.test.js", "scripts/scan_secrets.py"]) {
+  for (const excluded of [
+    "tests/cli.test.js",
+    "scripts/scan_secrets.py",
+    ".mdfiles/work-state.json",
+    "docs/superpowers/plans/2026-08-11-10-of-10-roadmap-implementation.md",
+  ]) {
     assert.equal(listing.includes(excluded), false, `unexpected ${excluded}`);
   }
 });

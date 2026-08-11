@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
 export const TEMPLATE_PATHS = [
+  ".mdfiles/.gitignore",
   "AGENTS.md",
   "CLAUDE.md",
   ".cursor/rules/project-loop.mdc",
@@ -13,6 +14,11 @@ export const TEMPLATE_PATHS = [
   "GUIDE_ROUTER.md",
   "PROJECT_PROFILE.md",
   "LOOP_SYSTEM_DESIGN.md",
+  "QUALITY_SCORECARD.md",
+  "TERMINOLOGY.md",
+  "EXECUTION_STATE.md",
+  "DELEGATION_PROTOCOL.md",
+  "ORCHESTRATOR_INTEGRATION.md",
   "AGENT_COMPATIBILITY.md",
   "THIRD_PARTY_NOTICES.md",
   "LICENSE",
@@ -25,6 +31,12 @@ export const TEMPLATE_PATHS = [
   "ENG/premium-sites-studio-eng.md",
   "ENG/sec-code-eng.md",
   "ENG/test-code-eng.md",
+  "schemas/routing-input.schema.json",
+  "schemas/routing-result.schema.json",
+  "schemas/work-state.schema.json",
+  "schemas/execution-receipt.schema.json",
+  "schemas/task-brief.schema.json",
+  "schemas/delegated-result.schema.json",
 ];
 
 export function getPackageRoot() {
