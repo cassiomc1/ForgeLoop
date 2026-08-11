@@ -251,7 +251,7 @@ export async function main(argv = process.argv.slice(2)) {
         for (const item of result.findings) {
           console.log(`${item.severity}: ${item.code}: ${item.path} - ${item.message}`);
         }
-        console.log(result.ok ? "healthy: mdfiles target is ready" : "unhealthy: mdfiles target needs attention");
+        console.log(result.ok ? "healthy: ForgeLoop target is ready" : "unhealthy: ForgeLoop target needs attention");
       }
       return result.ok ? 0 : 1;
     }
