@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rename, rm, symlink, writeFile } from "node:fs/promises";
 import { readdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -19,7 +19,7 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 const cliPath = path.join(repositoryRoot, "src", "cli.js");
 
 async function withTarget(run) {
-  const target = await mkdtemp(path.join(os.tmpdir(), "mdfiles-cli-"));
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-cli-"));
   try {
     await run(target);
   } finally {
@@ -54,7 +54,7 @@ test("init copies canonical files and creates a manifest", async () => {
     assert.match(await readFile(path.join(target, "AGENTS.md"), "utf8"), /LOOP_ENGINEERING/);
 
     const manifest = JSON.parse(
-      await readFile(path.join(target, ".mdfiles", "manifest.json"), "utf8"),
+      await readFile(path.join(target, ".forgeloop", "manifest.json"), "utf8"),
     );
     assert.equal(manifest.schemaVersion, 1);
     assert.equal(manifest.packageVersion, "0.1.0");
@@ -109,7 +109,7 @@ test("update reports a local conflict without changing the file", async () => {
 test("update keeps the previous package version when a conflict remains", async () => {
   await withTarget(async (target) => {
     assert.equal(runCli(target, "init").status, 0);
-    const manifestPath = path.join(target, ".mdfiles", "manifest.json");
+    const manifestPath = path.join(target, ".forgeloop", "manifest.json");
     const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
     manifest.packageVersion = "0.0.9";
     await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
@@ -127,7 +127,7 @@ test("update keeps the previous package version when a conflict remains", async 
 test("update does not partially apply safe files when another file conflicts", async () => {
   await withTarget(async (target) => {
     assert.equal(runCli(target, "init").status, 0);
-    const manifestPath = path.join(target, ".mdfiles", "manifest.json");
+    const manifestPath = path.join(target, ".forgeloop", "manifest.json");
     const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
     const oldAgents = "# Previous managed version\n";
     await writeFile(path.join(target, "AGENTS.md"), oldAgents);
@@ -158,6 +158,25 @@ test("update always preserves the project profile", async () => {
   });
 });
 
+test("update refreshes package identity after a manual legacy directory move", async () => {
+  await withTarget(async (target) => {
+    assert.equal(runCli(target, "init").status, 0);
+    const manifestPath = path.join(target, ".forgeloop", "manifest.json");
+    const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+    manifest.packageName = "@cassiomc1/mdfiles";
+    await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+
+    await rename(path.join(target, ".forgeloop"), path.join(target, ".mdfiles"));
+    await rename(path.join(target, ".mdfiles"), path.join(target, ".forgeloop"));
+
+    const result = runCli(target, "update");
+    const after = JSON.parse(await readFile(manifestPath, "utf8"));
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(after.packageName, "@cassiomc1/forgeloop");
+  });
+});
+
 test("init dry-run does not write files", async () => {
   await withTarget(async (target) => {
     const result = runCli(target, "init", "--dry-run");
@@ -169,8 +188,8 @@ test("init dry-run does not write files", async () => {
 });
 
 test("init installs all templates only in the selected target", async () => {
-  const caller = await mkdtemp(path.join(os.tmpdir(), "mdfiles-caller-"));
-  const target = await mkdtemp(path.join(os.tmpdir(), "mdfiles-target-"));
+  const caller = await mkdtemp(path.join(os.tmpdir(), "forgeloop-caller-"));
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-target-"));
   try {
     const result = runCliFrom(caller, target, "init");
 
@@ -206,7 +225,7 @@ test("doctor adopts a pre-existing adapter as preserved", async () => {
     const result = runCli(target, "doctor", "--adopt", "AGENTS.md", "--json");
     const report = JSON.parse(result.stdout);
     const manifest = JSON.parse(
-      await readFile(path.join(target, ".mdfiles", "manifest.json"), "utf8"),
+      await readFile(path.join(target, ".forgeloop", "manifest.json"), "utf8"),
     );
 
     assert.equal(result.status, 0, result.stderr);
@@ -219,7 +238,7 @@ test("doctor adopts a pre-existing adapter as preserved", async () => {
 test("doctor reports manifest entries for templates that are no longer shipped", async () => {
   await withTarget(async (target) => {
     assert.equal(runCli(target, "init").status, 0);
-    const manifestPath = path.join(target, ".mdfiles", "manifest.json");
+    const manifestPath = path.join(target, ".forgeloop", "manifest.json");
     const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
     manifest.files["obsolete-guide.md"] = { sha256: "a".repeat(64), preserve: false };
     await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
@@ -240,7 +259,7 @@ test("doctor reports manifest entries for templates that are no longer shipped",
 test("update prunes removed template entries without deleting target files", async () => {
   await withTarget(async (target) => {
     assert.equal(runCli(target, "init").status, 0);
-    const manifestPath = path.join(target, ".mdfiles", "manifest.json");
+    const manifestPath = path.join(target, ".forgeloop", "manifest.json");
     const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
     manifest.files["obsolete-guide.md"] = { sha256: "a".repeat(64), preserve: false };
     await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
@@ -261,7 +280,7 @@ test("top-level help succeeds without a command", async () => {
     const result = runCli(target, "--help");
 
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /Usage: mdfiles/);
+    assert.match(result.stdout, /Usage: forgeloop/);
   });
 });
 
@@ -303,10 +322,10 @@ test("importing the CLI module has no command-line side effect", () => {
 });
 
 test("CLI runs when invoked through an npm-style symlink", async () => {
-  const binDirectory = await mkdtemp(path.join(os.tmpdir(), "mdfiles-bin-"));
+  const binDirectory = await mkdtemp(path.join(os.tmpdir(), "forgeloop-bin-"));
   const linkedCli = path.join(
     binDirectory,
-    process.platform === "win32" ? "mdfiles.cmd" : "mdfiles",
+    process.platform === "win32" ? "forgeloop.cmd" : "forgeloop",
   );
   try {
     if (process.platform === "win32") {
@@ -500,10 +519,10 @@ test("status reports absent and fresh work state", async () => {
 
     await writeWorkState(target, makeState());
     await writeFile(
-      path.join(target, ".mdfiles", "current-contract.json"),
+      path.join(target, ".forgeloop", "current-contract.json"),
       `${JSON.stringify({ objective: "cli state" })}\n`,
     );
-    const fresh = runCli(target, "status", "--contract-file", ".mdfiles/current-contract.json", "--json");
+    const fresh = runCli(target, "status", "--contract-file", ".forgeloop/current-contract.json", "--json");
     assert.equal(fresh.status, 0, fresh.stderr);
     const report = JSON.parse(fresh.stdout);
     assert.equal(report.status, "FRESH");
@@ -540,6 +559,8 @@ test("validate-state validates without mutation and clear-state removes only che
   await withTarget(async (target) => {
     assert.equal(runCli(target, "init").status, 0);
     await writeWorkState(target, makeState());
+    await mkdir(path.join(target, ".mdfiles"), { recursive: true });
+    await writeFile(path.join(target, ".mdfiles", "legacy-marker.txt"), "preserve legacy data\n");
 
     const valid = runCli(target, "validate-state", "--json");
     assert.equal(valid.status, 0, valid.stderr);
@@ -548,15 +569,19 @@ test("validate-state validates without mutation and clear-state removes only che
     const cleared = runCli(target, "clear-state", "--json");
     assert.equal(cleared.status, 0, cleared.stderr);
     assert.equal(JSON.parse(cleared.stdout).removed, true);
-    await readFile(path.join(target, ".mdfiles", "manifest.json"), "utf8");
-    await assert.rejects(() => readFile(path.join(target, ".mdfiles", "work-state.json"), "utf8"));
+    await readFile(path.join(target, ".forgeloop", "manifest.json"), "utf8");
+    await assert.rejects(() => readFile(path.join(target, ".forgeloop", "work-state.json"), "utf8"));
+    assert.equal(
+      await readFile(path.join(target, ".mdfiles", "legacy-marker.txt"), "utf8"),
+      "preserve legacy data\n",
+    );
   });
 });
 
 test("validate-state rejects truncated checkpoint data", async () => {
   await withTarget(async (target) => {
-    await mkdir(path.join(target, ".mdfiles"), { recursive: true });
-    await writeFile(path.join(target, ".mdfiles", "work-state.json"), "{\"schemaVersion\":");
+    await mkdir(path.join(target, ".forgeloop"), { recursive: true });
+    await writeFile(path.join(target, ".forgeloop", "work-state.json"), "{\"schemaVersion\":");
     const result = runCli(target, "validate-state", "--json");
 
     assert.equal(result.status, 1);
@@ -567,7 +592,7 @@ test("validate-state rejects truncated checkpoint data", async () => {
 test("does not relabel an existing installation when init is rerun", async () => {
   await withTarget(async (target) => {
     assert.equal(runCli(target, "init").status, 0);
-    const manifestPath = path.join(target, ".mdfiles", "manifest.json");
+    const manifestPath = path.join(target, ".forgeloop", "manifest.json");
     const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
     manifest.packageVersion = "0.0.9";
     await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);

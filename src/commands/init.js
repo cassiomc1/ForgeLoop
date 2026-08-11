@@ -13,7 +13,7 @@ export async function runInit({ target, dryRun, packageRoot, packageVersion }) {
   const entries = await readTemplateEntries(packageRoot);
   const existingManifest = await readManifest(target);
   if (existingManifest) {
-    throw new Error("Target is already initialized; run mdfiles update instead.");
+    throw new Error("Target is already initialized; run forgeloop update instead.");
   }
   const manifest = createManifest(packageVersion);
   const actions = [];

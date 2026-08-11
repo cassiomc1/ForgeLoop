@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "mdfiles://schemas/routing-result.schema.json",
-  "title": "mdfiles routing result",
+  "$id": "forgeloop://schemas/routing-result.schema.json",
+  "title": "ForgeLoop routing result",
   "type": "object",
   "required": ["schemaVersion", "protocolVersion", "input", "primary", "guides", "reasons", "excluded"],
   "properties": {

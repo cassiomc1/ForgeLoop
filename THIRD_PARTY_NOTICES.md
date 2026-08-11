@@ -54,14 +54,14 @@ dependencies, version, and distribution conditions before adoption.
 - License declared by the upstream project: [MIT](https://github.com/obra/superpowers/blob/main/LICENSE).
 - Use in this collection: an editorial and process reference for approved
   workflow boundaries and public discoverability only.
-- Boundary: this repository links to Superpowers as a reference; it is not a dependency of `mdfiles`, and `mdfiles` does not copy, bundle, install, or vendor any Superpowers source, skill, hook, plugin, runtime, dependency, credential, or provider.
+- Boundary: this repository links to Superpowers as a reference; it is not a dependency of `ForgeLoop`, and `ForgeLoop` does not copy, bundle, install, or vendor any Superpowers source, skill, hook, plugin, runtime, dependency, credential, or provider.
 
 ### Runtime and validator boundary
 
 The distributed CLI and repository validators use Node.js and Python standard
 libraries plus the JSON Schema documents shipped in this repository. No
 third-party runtime package, agent, provider, plugin, remote trace service, or
-model is bundled or installed by `mdfiles`. A future host that adds one of
+model is bundled or installed by `ForgeLoop`. A future host that adds one of
 those capabilities must review its own license, dependency tree, credentials,
 network behavior, and distribution terms separately.
 

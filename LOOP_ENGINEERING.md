@@ -117,7 +117,7 @@ proportional phases, but:
 Resume rules are conservative: revalidate branch, HEAD, contract fingerprint,
 protocol version, and required artifacts before continuing; never rerun a
 completed destructive or publication action automatically; rerun cheap
-verification when state is stale; and clear only `.mdfiles/work-state.json`
+verification when state is stale; and clear only `.forgeloop/work-state.json`
 when abandoned state must be removed.
 
 ## Execution contract

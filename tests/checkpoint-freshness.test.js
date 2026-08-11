@@ -57,7 +57,7 @@ test("contract comparison is required for a fresh checkpoint", () => {
 });
 
 test("required artifact hashes detect missing and changed material files", async () => {
-  const target = await mkdtemp(path.join(os.tmpdir(), "mdfiles-freshness-"));
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-freshness-"));
   try {
     const relativePath = "src/material.js";
     const contents = "export const value = 1;\n";

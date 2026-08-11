@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "mdfiles://schemas/routing-input.schema.json",
-  "title": "mdfiles routing input",
+  "$id": "forgeloop://schemas/routing-input.schema.json",
+  "title": "ForgeLoop routing input",
   "type": "object",
   "required": ["schemaVersion", "workType", "surfaces", "risks", "platforms"],
   "properties": {

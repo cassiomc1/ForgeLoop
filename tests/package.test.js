@@ -18,7 +18,7 @@ test("npm tarball contains the CLI, templates, and license notices only", () => 
     "src/cli.js",
     "src/core/agent-support.js",
     ...TEMPLATE_PATHS,
-    ".mdfiles/.gitignore",
+    ".forgeloop/.gitignore",
     "QUALITY_SCORECARD.md",
     "TERMINOLOGY.md",
     "EXECUTION_STATE.md",
@@ -41,7 +41,7 @@ test("npm tarball contains the CLI, templates, and license notices only", () => 
   for (const excluded of [
     "tests/cli.test.js",
     "scripts/scan_secrets.py",
-    ".mdfiles/work-state.json",
+    ".forgeloop/work-state.json",
     "docs/superpowers/plans/2026-08-11-10-of-10-roadmap-implementation.md",
   ]) {
     assert.equal(listing.includes(excluded), false, `unexpected ${excluded}`);

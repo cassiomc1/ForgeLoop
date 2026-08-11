@@ -1,5 +1,5 @@
 {
-  "name": "@cassiomc1/mdfiles",
+  "name": "@cassiomc1/forgeloop",
   "version": "0.1.0",
   "description": "Portable, verifiable instruction kit for AI agents and developers",
   "repository": {
@@ -16,13 +16,13 @@
     "node": ">=20"
   },
   "bin": {
-    "mdfiles": "src/cli.js"
+    "forgeloop": "src/cli.js"
   },
   "files": [
     "src",
     "ENG",
     "schemas",
-    ".mdfiles/.gitignore",
+    ".forgeloop/.gitignore",
     "AGENTS.md",
     "CLAUDE.md",
     "GUIDE_ROUTER.md",

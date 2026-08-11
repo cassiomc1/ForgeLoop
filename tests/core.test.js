@@ -13,7 +13,7 @@ import {
 import { readTemplateEntries, TEMPLATE_PATHS } from "../src/core/templates.js";
 
 test("rejects a target path that escapes the requested root", async () => {
-  const target = await mkdtemp(path.join(os.tmpdir(), "mdfiles-core-"));
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-core-"));
   try {
     await assert.rejects(resolveTarget(target, "../outside"), /inside|directory|not found/i);
     assert.throws(() => ensureWithin(target, "../outside"), /outside|escape/i);
@@ -23,13 +23,13 @@ test("rejects a target path that escapes the requested root", async () => {
 });
 
 test("round-trips a versioned manifest", async () => {
-  const target = await mkdtemp(path.join(os.tmpdir(), "mdfiles-core-"));
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-core-"));
   try {
     const manifest = createManifest("0.1.0");
     manifest.files["AGENTS.md"] = { sha256: "a".repeat(64), preserve: false };
     await writeManifest(target, manifest);
     assert.deepEqual(await readManifest(target), manifest);
-    assert.match(await readFile(path.join(target, ".mdfiles", "manifest.json"), "utf8"), /schemaVersion/);
+    assert.match(await readFile(path.join(target, ".forgeloop", "manifest.json"), "utf8"), /schemaVersion/);
   } finally {
     await rm(target, { recursive: true, force: true });
   }
@@ -49,8 +49,8 @@ test("template entries use safe relative paths", async () => {
 });
 
 test("rejects a destination whose existing parent is a symlink", async () => {
-  const target = await mkdtemp(path.join(os.tmpdir(), "mdfiles-core-"));
-  const outside = await mkdtemp(path.join(os.tmpdir(), "mdfiles-outside-"));
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-core-"));
+  const outside = await mkdtemp(path.join(os.tmpdir(), "forgeloop-outside-"));
   try {
     await symlink(outside, path.join(target, ".github"));
     await assert.rejects(

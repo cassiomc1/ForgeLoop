@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "mdfiles://schemas/execution-receipt.schema.json",
-  "title": "mdfiles execution receipt",
+  "$id": "forgeloop://schemas/execution-receipt.schema.json",
+  "title": "ForgeLoop execution receipt",
   "type": "object",
   "required": ["schemaVersion", "protocolVersion", "taskId", "contractFingerprint", "selectedGuides", "changedPaths", "checks", "review", "limitations", "publication"],
   "properties": {

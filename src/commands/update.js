@@ -1,5 +1,6 @@
 import { assertSafePath, fileExists, ensureWithin, readBytes, writeFileAtomic } from "../core/filesystem.js";
 import {
+  PACKAGE_NAME,
   readManifest,
   sha256,
   writeManifest,
@@ -11,7 +12,7 @@ const PROFILE_PATH = "PROJECT_PROFILE.md";
 export async function runUpdate({ target, dryRun, packageRoot, packageVersion }) {
   const currentManifest = await readManifest(target);
   if (!currentManifest) {
-    throw new Error("No .mdfiles/manifest.json found; run mdfiles init first.");
+    throw new Error("No .forgeloop/manifest.json found; run forgeloop init first.");
   }
 
   const entries = await readTemplateEntries(packageRoot);
@@ -101,6 +102,7 @@ export async function runUpdate({ target, dryRun, packageRoot, packageVersion })
     nextManifest.files[plan.entry.relativePath] = plan.record;
   }
 
+  nextManifest.packageName = PACKAGE_NAME;
   nextManifest.packageVersion = packageVersion;
   await writeManifest(target, nextManifest, { dryRun });
   return { actions, conflicts, manifest: nextManifest };

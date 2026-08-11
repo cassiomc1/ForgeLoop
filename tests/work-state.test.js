@@ -32,7 +32,7 @@ function input(overrides = {}) {
 }
 
 async function withTarget(run) {
-  const target = await mkdtemp(path.join(os.tmpdir(), "mdfiles-state-"));
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-state-"));
   try {
     await run(target);
   } finally {
@@ -90,7 +90,7 @@ test("invalid or secret-like state is rejected on read and write", async () => {
       /secret|credential/i,
     );
 
-    const statePath = path.join(target, ".mdfiles", "work-state.json");
+    const statePath = path.join(target, ".forgeloop", "work-state.json");
     await mkdir(path.dirname(statePath), { recursive: true });
     await writeFile(statePath, "{\"schemaVersion\":", "utf8");
     await assert.rejects(() => readWorkState(target), /parse|JSON|invalid/i);
@@ -101,15 +101,15 @@ test("state writes are atomic and clear preserves sibling files", async () => {
   await withTarget(async (target) => {
     const state = createWorkState(input());
     await writeWorkState(target, state);
-    await writeFile(path.join(target, ".mdfiles", "manifest.json"), "{}\n");
+    await writeFile(path.join(target, ".forgeloop", "manifest.json"), "{}\n");
 
-    const stored = JSON.parse(await readFile(path.join(target, ".mdfiles", "work-state.json"), "utf8"));
+    const stored = JSON.parse(await readFile(path.join(target, ".forgeloop", "work-state.json"), "utf8"));
     assert.deepEqual(stored, state);
-    assert.deepEqual((await readdir(path.join(target, ".mdfiles"))).sort(), ["manifest.json", "work-state.json"]);
+    assert.deepEqual((await readdir(path.join(target, ".forgeloop"))).sort(), ["manifest.json", "work-state.json"]);
 
     const result = await clearWorkState(target);
     assert.equal(result.removed, true);
-    assert.equal(await readFile(path.join(target, ".mdfiles", "manifest.json"), "utf8"), "{}\n");
+    assert.equal(await readFile(path.join(target, ".forgeloop", "manifest.json"), "utf8"), "{}\n");
     assert.equal((await clearWorkState(target)).removed, false);
   });
 });

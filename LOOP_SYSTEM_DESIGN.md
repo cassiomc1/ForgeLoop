@@ -39,6 +39,42 @@ A tool could detect the stack and generate instructions automatically, but that 
 
 ## Architecture
 
+The ForgeLoop system is organized around three observable control surfaces:
+deterministic routing, checkpointed state, and evidence that can be inspected by
+the compatible harness.
+
+```text
+                            FORGELOOP
+                                │
+                  ┌─────────────┼─────────────┐
+                  │             │             │
+               ROUTING        STATE        EVIDENCE
+                  │             │             │
+                  ▼             ▼             ▼
+            deterministic   checkpoint    observable
+              decisions       facts         claims
+                  │             │             │
+                  │       ┌─────┴─────┐       │
+                  │       │           │       │
+                  │   repository   contract   │
+                  │       │           │       │
+                  │       └─────┬─────┘       │
+                  │             │             │
+                  │          freshness        │
+                  │             │             │
+                  └───────┬─────┴─────┬───────┘
+                          │           │
+                          ▼           ▼
+                    CONFORMANCE   DELEGATION
+                          │           │
+                          └─────┬─────┘
+                                ▼
+                    VALID / STALE / INVALID
+                                │
+                                ▼
+                        compatible harness
+```
+
 ```text
 User request
     |

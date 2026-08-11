@@ -1,6 +1,6 @@
 # Orchestrator integration contract
 
-`mdfiles` is a portable protocol, not an orchestrator. A compatible harness
+`ForgeLoop` is a portable protocol, not an orchestrator. A compatible harness
 may map these serializable contracts to its own state machine, worker pool, or
 review primitive without adding that framework to the package.
 
@@ -81,7 +81,7 @@ The following JSON Schemas define the boundaries a host may implement:
 cannot express: route/state protocol versions, route/state guide sets,
 state/receipt contract fingerprints, and delegated-result/task-brief IDs. Its
 statuses are `VALID`, `INCOMPLETE`, `STALE`, `INCONSISTENT`, and `INVALID`.
-`mdfiles validate-protocol` is read-only and reports the exact failed
+`forgeloop validate-protocol` is read-only and reports the exact failed
 invariant.
 
 Every artifact is JSON-compatible, carries `schemaVersion: 1` and

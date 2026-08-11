@@ -5,7 +5,8 @@ import { assertSafePath, ensureWithin, fileExists, writeFileAtomic } from "./fil
 import { assertJsonBytes, assertJsonLimits } from "./json-safety.js";
 
 export const MANIFEST_SCHEMA_VERSION = 1;
-const MANIFEST_PATH = ".mdfiles/manifest.json";
+export const MANIFEST_PATH = ".forgeloop/manifest.json";
+export const PACKAGE_NAME = "@cassiomc1/forgeloop";
 
 export function sha256(bytes) {
   return createHash("sha256").update(bytes).digest("hex");
@@ -14,7 +15,7 @@ export function sha256(bytes) {
 export function createManifest(packageVersion) {
   return {
     schemaVersion: MANIFEST_SCHEMA_VERSION,
-    packageName: "@cassiomc1/mdfiles",
+    packageName: PACKAGE_NAME,
     packageVersion,
     files: {},
   };

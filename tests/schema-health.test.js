@@ -18,7 +18,7 @@ test("schema health parses every shipped schema and reports valid status", async
 });
 
 test("schema health distinguishes invalid and unsupported schema versions", async () => {
-  const packageRoot = await mkdtemp(path.join(os.tmpdir(), "mdfiles-schema-"));
+  const packageRoot = await mkdtemp(path.join(os.tmpdir(), "forgeloop-schema-"));
   try {
     await cp(path.join(getPackageRoot(), "schemas"), path.join(packageRoot, "schemas"), { recursive: true });
     await writeFile(path.join(packageRoot, "schemas", "routing-input.schema.json"), "{\n", "utf8");

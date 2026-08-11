@@ -17,7 +17,7 @@ import { currentRepositoryFingerprint } from "./repository.js";
 import { createEvidence } from "./evidence.js";
 import { assertJsonBytes } from "./json-safety.js";
 
-export const WORK_STATE_PATH = ".mdfiles/work-state.json";
+export const WORK_STATE_PATH = ".forgeloop/work-state.json";
 
 export class WorkStateError extends Error {
   constructor(message) {

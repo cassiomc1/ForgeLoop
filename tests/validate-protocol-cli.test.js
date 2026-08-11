@@ -21,7 +21,7 @@ function runCli(target, ...args) {
 }
 
 test("validate-protocol validates a read-only coherent artifact set", async () => {
-  const target = await mkdtemp(path.join(os.tmpdir(), "mdfiles-conformance-cli-"));
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-conformance-cli-"));
   try {
     const route = evaluateRoute({ workType: "api", surfaces: ["api"], platforms: [] });
     const contract = { objective: "cli conformance" };
@@ -99,7 +99,7 @@ test("validate-protocol validates a read-only coherent artifact set", async () =
 });
 
 test("validate-protocol reports inconsistencies and rejects unsafe paths", async () => {
-  const target = await mkdtemp(path.join(os.tmpdir(), "mdfiles-conformance-cli-"));
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-conformance-cli-"));
   try {
     await writeFile(path.join(target, "route.json"), JSON.stringify({ schemaVersion: 1, protocolVersion: 1, guides: [] }));
     await writeFile(path.join(target, "state.json"), JSON.stringify({ schemaVersion: 1, protocolVersion: 1, taskId: "p", selectedGuides: ["clean"] }));
@@ -197,7 +197,7 @@ function runConformance(target, ...extraArgs) {
 }
 
 test("validate-protocol derives STALE when the current contract changed", async () => {
-  const target = await mkdtemp(path.join(os.tmpdir(), "mdfiles-conformance-cli-"));
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-conformance-cli-"));
   try {
     await writeConformanceFixture(target, {
       stateContract: { objective: "old contract" },
@@ -215,7 +215,7 @@ test("validate-protocol derives STALE when the current contract changed", async 
 });
 
 test("validate-protocol derives STALE when the current contract is not supplied", async () => {
-  const target = await mkdtemp(path.join(os.tmpdir(), "mdfiles-conformance-cli-"));
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-conformance-cli-"));
   try {
     await writeConformanceFixture(target);
     const result = runConformance(target);
@@ -230,7 +230,7 @@ test("validate-protocol derives STALE when the current contract is not supplied"
 });
 
 test("validate-protocol derives STALE when the repository fingerprint changed", async () => {
-  const target = await mkdtemp(path.join(os.tmpdir(), "mdfiles-conformance-cli-"));
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-conformance-cli-"));
   try {
     await writeConformanceFixture(target, {
       repositoryFingerprint: { branch: "main", head: "old-head" },
@@ -247,7 +247,7 @@ test("validate-protocol derives STALE when the repository fingerprint changed", 
 });
 
 test("validate-protocol derives STALE when a required artifact changed or is missing", async () => {
-  const target = await mkdtemp(path.join(os.tmpdir(), "mdfiles-conformance-cli-"));
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-conformance-cli-"));
   try {
     await mkdir(path.join(target, "src"), { recursive: true });
     const artifactPath = "src/material.js";
@@ -274,7 +274,7 @@ test("validate-protocol derives STALE when a required artifact changed or is mis
 });
 
 test("validate-protocol returns VALID when freshness and artifacts match", async () => {
-  const target = await mkdtemp(path.join(os.tmpdir(), "mdfiles-conformance-cli-"));
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-conformance-cli-"));
   try {
     const artifactPath = "material.js";
     const contents = "export const value = 1;\n";
@@ -293,7 +293,7 @@ test("validate-protocol returns VALID when freshness and artifacts match", async
 });
 
 test("validate-protocol human output explains stale freshness evidence", async () => {
-  const target = await mkdtemp(path.join(os.tmpdir(), "mdfiles-conformance-cli-"));
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-conformance-cli-"));
   try {
     await writeConformanceFixture(target, {
       stateContract: { objective: "old contract" },
@@ -319,7 +319,7 @@ test("validate-protocol human output explains stale freshness evidence", async (
 });
 
 test("validate-protocol preserves INVALID precedence over stale freshness", async () => {
-  const target = await mkdtemp(path.join(os.tmpdir(), "mdfiles-conformance-cli-"));
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-conformance-cli-"));
   try {
     await writeConformanceFixture(target, {
       stateContract: { objective: "old contract" },

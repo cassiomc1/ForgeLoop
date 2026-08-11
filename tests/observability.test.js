@@ -24,7 +24,7 @@ const receiptInput = {
 };
 
 async function withTarget(run) {
-  const target = await mkdtemp(path.join(os.tmpdir(), "mdfiles-observe-"));
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-observe-"));
   try {
     await run(target);
   } finally {
