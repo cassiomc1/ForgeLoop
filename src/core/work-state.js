@@ -337,54 +337,8 @@ export function classifyWorkState(state, currentInput = {}) {
   };
 }
 
-export async function readAndClassifyWorkState({ target, packageRoot = getPackageRoot(), contractFile = null, maxAgeMs } = {}) {
-  let state = null;
-  try {
-    state = await readWorkState(target, packageRoot);
-  } catch (error) {
-    return {
-      path: WORK_STATE_PATH,
-      present: true,
-      status: "INVALID",
-      reasons: ["STATE_INVALID"],
-      warnings: [],
-      error: error.message,
-      state: null,
-      phase: null,
-      completed: [],
-      pending: [],
-      repository: await currentRepositoryFingerprint(target),
-      contractComparison: "NOT_VERIFIED",
-      artifactComparison: "NOT_VERIFIED",
-      contract: { path: contractFile, status: "NOT_VERIFIED" },
-      evidence: [createEvidence({ kind: "BLOCKED", source: WORK_STATE_PATH, result: error.message })],
-    };
-  }
-
+export async function classifyLoadedWorkState({ target, state, contractFile = null, maxAgeMs } = {}) {
   const repository = await currentRepositoryFingerprint(target);
-  if (!state) {
-    return {
-      path: WORK_STATE_PATH,
-      present: false,
-      status: "ABSENT",
-      reasons: ["NO_CHECKPOINT"],
-      warnings: [],
-      error: null,
-      state: null,
-      phase: null,
-      completed: [],
-      pending: [],
-      repository,
-      contractComparison: "NOT_VERIFIED",
-      artifactComparison: "NOT_APPLICABLE",
-      contract: { path: contractFile, status: contractFile ? "NOT_USED" : "NOT_VERIFIED" },
-      evidence: [createEvidence({
-        kind: "NOT_VERIFIED",
-        source: WORK_STATE_PATH,
-        result: "No work-state checkpoint is present",
-      })],
-    };
-  }
 
   let contract = null;
   let contractError = null;
@@ -425,12 +379,7 @@ export async function readAndClassifyWorkState({ target, packageRoot = getPackag
   }
   classification.reasons = [...new Set(classification.reasons)];
   return {
-    path: WORK_STATE_PATH,
-    present: true,
     ...classification,
-    phase: state.phase,
-    completed: state.completedSteps,
-    pending: state.pendingSteps,
     repository,
     error: contractError ?? artifactError,
     contract: {
@@ -456,6 +405,66 @@ export async function readAndClassifyWorkState({ target, packageRoot = getPackag
         })]
         : []),
     ],
+  };
+}
+
+export async function readAndClassifyWorkState({ target, packageRoot = getPackageRoot(), contractFile = null, maxAgeMs } = {}) {
+  let state = null;
+  try {
+    state = await readWorkState(target, packageRoot);
+  } catch (error) {
+    return {
+      path: WORK_STATE_PATH,
+      present: true,
+      status: "INVALID",
+      reasons: ["STATE_INVALID"],
+      warnings: [],
+      error: error.message,
+      state: null,
+      phase: null,
+      completed: [],
+      pending: [],
+      repository: await currentRepositoryFingerprint(target),
+      contractComparison: "NOT_VERIFIED",
+      artifactComparison: "NOT_VERIFIED",
+      contract: { path: contractFile, status: "NOT_VERIFIED" },
+      evidence: [createEvidence({ kind: "BLOCKED", source: WORK_STATE_PATH, result: error.message })],
+    };
+  }
+
+  if (!state) {
+    const repository = await currentRepositoryFingerprint(target);
+    return {
+      path: WORK_STATE_PATH,
+      present: false,
+      status: "ABSENT",
+      reasons: ["NO_CHECKPOINT"],
+      warnings: [],
+      error: null,
+      state: null,
+      phase: null,
+      completed: [],
+      pending: [],
+      repository,
+      contractComparison: "NOT_VERIFIED",
+      artifactComparison: "NOT_APPLICABLE",
+      contract: { path: contractFile, status: contractFile ? "NOT_USED" : "NOT_VERIFIED" },
+      evidence: [createEvidence({
+        kind: "NOT_VERIFIED",
+        source: WORK_STATE_PATH,
+        result: "No work-state checkpoint is present",
+      })],
+    };
+  }
+
+  const classification = await classifyLoadedWorkState({ target, state, contractFile, maxAgeMs });
+  return {
+    path: WORK_STATE_PATH,
+    present: true,
+    ...classification,
+    phase: state.phase,
+    completed: state.completedSteps,
+    pending: state.pendingSteps,
   };
 }
 

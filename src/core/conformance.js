@@ -25,6 +25,7 @@ function sortErrors(errors) {
 export function validateTaskArtifactSet({
   route = null,
   state = null,
+  stateClassification = null,
   receipt = null,
   taskBriefs = [],
   delegatedResults = [],
@@ -93,11 +94,21 @@ export function validateTaskArtifactSet({
     status = "INVALID";
   } else if (sortedErrors.length > 0) {
     status = "INCONSISTENT";
-  } else if (state?.status === "REVALIDATION_REQUIRED") {
+  } else if (stateClassification?.status === "REVALIDATION_REQUIRED") {
     status = "STALE";
   } else if (incomplete.length > 0) {
     status = "INCOMPLETE";
   }
+
+  const stale = status === "STALE"
+    ? {
+      reasons: [...(stateClassification?.reasons ?? [])],
+      warnings: [...(stateClassification?.warnings ?? [])],
+      repositoryComparison: stateClassification?.repositoryComparison ?? "NOT_VERIFIED",
+      contractComparison: stateClassification?.contractComparison ?? "NOT_VERIFIED",
+      artifactComparison: stateClassification?.artifactComparison ?? "NOT_APPLICABLE",
+    }
+    : null;
 
   const evidenceKind = status === "VALID"
     ? "OBSERVED"
@@ -112,6 +123,7 @@ export function validateTaskArtifactSet({
     status,
     errors: sortedErrors,
     incomplete: [...new Set(incomplete)].sort(),
+    stale,
     evidence: [createEvidence({
       kind: evidenceKind,
       source: "mdfiles protocol conformance",
