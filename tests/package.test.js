@@ -30,6 +30,9 @@ test("npm tarball contains the CLI, templates, and license notices only", () => 
     "schemas/execution-receipt.schema.json",
     "schemas/task-brief.schema.json",
     "schemas/delegated-result.schema.json",
+    "schemas/evidence.schema.json",
+    "THREAT_MODEL.md",
+    "CONTRACT_COVERAGE.md",
     "LICENSE",
     "LICENSE-DOCS.md",
   ]) {

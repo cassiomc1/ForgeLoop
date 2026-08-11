@@ -1,0 +1,7 @@
+{
+  "input": { "workType": "code", "surfaces": [], "risks": [], "platforms": [] },
+  "guides": ["clean", "test"],
+  "forbidden": [],
+  "primary": "clean",
+  "expectedReasons": { "clean": ["WORK_CODE"], "test": ["WORK_CODE"] }
+}

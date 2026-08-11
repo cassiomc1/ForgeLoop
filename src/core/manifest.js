@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
 import { assertSafePath, ensureWithin, fileExists, writeFileAtomic } from "./filesystem.js";
+import { assertJsonBytes, assertJsonLimits } from "./json-safety.js";
 
 export const MANIFEST_SCHEMA_VERSION = 1;
 const MANIFEST_PATH = ".mdfiles/manifest.json";
@@ -51,7 +52,10 @@ export async function readManifest(target) {
   if (!(await fileExists(manifestPath))) return null;
   let raw;
   try {
-    raw = JSON.parse(await readFile(manifestPath, "utf8"));
+    const bytes = await readFile(manifestPath);
+    assertJsonBytes(bytes, MANIFEST_PATH);
+    raw = JSON.parse(bytes.toString("utf8"));
+    assertJsonLimits(raw, MANIFEST_PATH);
   } catch (error) {
     throw new Error(`Unable to parse ${MANIFEST_PATH}: ${error.message}`);
   }

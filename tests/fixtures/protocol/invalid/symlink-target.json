@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "path": "link/target.json",
+  "expected": "symlink target must be rejected by safe-path validation"
+}

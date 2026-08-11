@@ -12,12 +12,13 @@ import { formatInspectResult, inspectTarget } from "./commands/inspect.js";
 import { runInit } from "./commands/init.js";
 import { formatRouteResult, runRoute } from "./commands/route.js";
 import { runValidateReceipt } from "./commands/validate-receipt.js";
+import { formatValidateProtocolResult, runValidateProtocol } from "./commands/validate-protocol.js";
 import { runUpdate } from "./commands/update.js";
 import { resolveTarget } from "./core/filesystem.js";
 import { getPackageRoot } from "./core/templates.js";
 
 function usage(command = null) {
-  const commands = "init|doctor|update|route|inspect|status|validate-state|clear-state|validate-receipt";
+  const commands = "init|doctor|update|route|inspect|status|validate-state|clear-state|validate-receipt|validate-protocol";
   const options = ["  --path <directory>  target project directory (default: current directory)"];
   if (!command || command === "init" || command === "update") {
     options.push("  --dry-run           show planned writes without changing files");
@@ -36,8 +37,18 @@ function usage(command = null) {
     options.push("  --executable-change declare executable/configuration change");
     options.push("  --json              emit route result as JSON");
   }
-  if (!command || ["inspect", "status", "validate-state", "clear-state", "validate-receipt"].includes(command)) {
+  if (!command || ["inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"].includes(command)) {
     options.push("  --json              emit structured output as JSON");
+  }
+  if (!command || command === "status" || command === "inspect") {
+    options.push("  --contract-file <path>  current JSON contract used for freshness comparison");
+  }
+  if (!command || command === "validate-protocol") {
+    options.push("  --route-file <path>  routing-result JSON relative to target");
+    options.push("  --state-file <path>  work-state JSON relative to target");
+    options.push("  --receipt-file <path>  execution-receipt JSON relative to target");
+    options.push("  --task-brief-file <path>  task brief JSON (repeatable)");
+    options.push("  --delegated-result-file <path>  delegated result JSON (repeatable)");
   }
   if (!command || command === "validate-receipt") {
     options.push("  --file <path>       receipt file relative to target");
@@ -62,6 +73,12 @@ export function parseArgs(argv) {
     behaviorChange: false,
     executableChange: false,
     file: null,
+    contractFile: null,
+    routeFile: null,
+    stateFile: null,
+    receiptFile: null,
+    taskBriefFiles: [],
+    delegatedResultFiles: [],
     help: false,
     version: false,
   };
@@ -69,7 +86,7 @@ export function parseArgs(argv) {
 
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
-    if (["init", "doctor", "update", "route", "inspect", "status", "validate-state", "clear-state", "validate-receipt"].includes(argument)) {
+    if (["init", "doctor", "update", "route", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"].includes(argument)) {
       if (command) throw new Error(`Multiple commands are not supported: ${argument}`);
       command = argument;
     } else if (argument === "--help" || argument === "-h") {
@@ -114,6 +131,28 @@ export function parseArgs(argv) {
       if (!file || file.startsWith("-")) throw new Error("--file requires a path");
       options.file = file;
       index += 1;
+    } else if (argument === "--contract-file") {
+      const contractFile = argv[index + 1];
+      if (!contractFile || contractFile.startsWith("-")) throw new Error("--contract-file requires a path");
+      options.contractFile = contractFile;
+      index += 1;
+    } else if (["--route-file", "--state-file", "--receipt-file"].includes(argument)) {
+      const file = argv[index + 1];
+      if (!file || file.startsWith("-")) throw new Error(`${argument} requires a path`);
+      if (argument === "--route-file") options.routeFile = file;
+      if (argument === "--state-file") options.stateFile = file;
+      if (argument === "--receipt-file") options.receiptFile = file;
+      index += 1;
+    } else if (argument === "--task-brief-file") {
+      const file = argv[index + 1];
+      if (!file || file.startsWith("-")) throw new Error("--task-brief-file requires a path");
+      options.taskBriefFiles.push(file);
+      index += 1;
+    } else if (argument === "--delegated-result-file") {
+      const file = argv[index + 1];
+      if (!file || file.startsWith("-")) throw new Error("--delegated-result-file requires a path");
+      options.delegatedResultFiles.push(file);
+      index += 1;
     } else if (argument === "--path") {
       options.path = argv[index + 1];
       if (!options.path || options.path.startsWith("-")) throw new Error("--path requires a directory");
@@ -132,7 +171,7 @@ export function parseArgs(argv) {
 
   if (!command) return { command: null, options };
 
-  const jsonCommands = ["doctor", "route", "inspect", "status", "validate-state", "clear-state", "validate-receipt"];
+  const jsonCommands = ["doctor", "route", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"];
   if (!jsonCommands.includes(command) && options.json) {
     throw new Error(`Option --json is not valid for ${command}`);
   }
@@ -153,6 +192,12 @@ export function parseArgs(argv) {
   }
   if (command !== "validate-receipt" && options.file) {
     throw new Error(`Option --file is not valid for ${command}`);
+  }
+  if (!["status", "inspect"].includes(command) && options.contractFile) {
+    throw new Error(`Option --contract-file is not valid for ${command}`);
+  }
+  if (command !== "validate-protocol" && (options.routeFile || options.stateFile || options.receiptFile || options.taskBriefFiles.length > 0 || options.delegatedResultFiles.length > 0)) {
+    throw new Error(`Protocol artifact options are not valid for ${command}`);
   }
   return { command, options };
 }
@@ -225,7 +270,7 @@ export async function main(argv = process.argv.slice(2)) {
     }
 
     if (command === "inspect") {
-      const result = await inspectTarget({ target, packageRoot });
+      const result = await inspectTarget({ target, packageRoot, contractFile: options.contractFile });
       console.log(options.json ? JSON.stringify(result, null, 2) : formatInspectResult(result));
       return result.ok ? 0 : 1;
     }
@@ -236,8 +281,22 @@ export async function main(argv = process.argv.slice(2)) {
       return 0;
     }
 
+    if (command === "validate-protocol") {
+      const result = await runValidateProtocol({
+        target,
+        packageRoot,
+        routeFile: options.routeFile,
+        stateFile: options.stateFile,
+        receiptFile: options.receiptFile,
+        taskBriefFiles: options.taskBriefFiles,
+        delegatedResultFiles: options.delegatedResultFiles,
+      });
+      console.log(options.json ? JSON.stringify(result, null, 2) : formatValidateProtocolResult(result));
+      return result.status === "VALID" ? 0 : 1;
+    }
+
     if (command === "status") {
-      const result = await runStatus({ target, packageRoot });
+      const result = await runStatus({ target, packageRoot, contractFile: options.contractFile });
       console.log(options.json ? JSON.stringify(result, null, 2) : formatStatusResult(result));
       return 0;
     }

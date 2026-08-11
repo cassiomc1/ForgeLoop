@@ -6,5 +6,12 @@
     "platforms": ["server"]
   },
   "guides": ["clean", "test", "security", "performance"],
-  "primary": "clean"
+  "primary": "clean",
+  "forbidden": [],
+  "expectedReasons": {
+    "clean": ["WORK_API_AUTH"],
+    "test": ["WORK_API_AUTH", "PLATFORM_SERVER"],
+    "security": ["WORK_API_AUTH", "SURFACE_AUTH", "PLATFORM_SERVER"],
+    "performance": ["WORK_API_AUTH"]
+  }
 }

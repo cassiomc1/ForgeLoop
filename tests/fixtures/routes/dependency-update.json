@@ -1,0 +1,7 @@
+{
+  "input": { "workType": "dependency-update", "surfaces": [], "risks": [], "platforms": [] },
+  "guides": ["clean", "test"],
+  "forbidden": [],
+  "primary": "clean",
+  "expectedReasons": { "clean": ["WORK_DEPENDENCY_UPDATE"], "test": ["WORK_DEPENDENCY_UPDATE"] }
+}

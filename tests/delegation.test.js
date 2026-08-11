@@ -10,6 +10,7 @@ import {
   validateDelegatedResult,
   validateTaskBrief,
 } from "../src/core/delegation.js";
+import { createEvidence } from "../src/core/evidence.js";
 
 const validBrief = {
   schemaVersion: 1,
@@ -85,9 +86,24 @@ test("delegated results normalize stable fields and validate status", async () =
   });
 
   assert.equal(result.status, "complete-with-concerns");
+  assert.deepEqual(result.evidence, []);
   await assert.doesNotReject(() => validateDelegatedResult(result));
   await assert.rejects(
     () => validateDelegatedResult({ ...result, status: "done" }),
     /status|one of/i,
   );
+});
+
+test("complete delegated results require structured verification evidence", async () => {
+  const result = normalizeDelegatedResult({
+    taskId: "child-1",
+    status: "complete",
+    changes: [],
+    verification: ["npm test"],
+    openFindings: [],
+    limitations: [],
+  });
+  await assert.rejects(() => validateDelegatedResult(result), /evidence|complete/i);
+  result.evidence = [createEvidence({ kind: "OBSERVED", source: "npm test", result: "exit 0" })];
+  await assert.doesNotReject(() => validateDelegatedResult(result));
 });

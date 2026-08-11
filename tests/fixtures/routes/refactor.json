@@ -1,0 +1,7 @@
+{
+  "input": { "workType": "refactor", "surfaces": [], "risks": [], "platforms": [] },
+  "guides": ["clean", "test"],
+  "forbidden": [],
+  "primary": "clean",
+  "expectedReasons": { "clean": ["WORK_REFACTOR"], "test": ["WORK_REFACTOR"] }
+}

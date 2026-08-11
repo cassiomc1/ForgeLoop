@@ -1,42 +1,13 @@
-import {
-  classifyWorkState,
-  currentRepositoryFingerprint,
-  readWorkState,
-  WORK_STATE_PATH,
-} from "../core/work-state.js";
+import { readAndClassifyWorkState } from "../core/work-state.js";
+import { inspectSchemaHealth } from "../core/schema-validation.js";
 
-export async function runStatus({ target, packageRoot }) {
-  let state = null;
-  let error = null;
-  try {
-    state = await readWorkState(target, packageRoot);
-  } catch (caught) {
-    error = caught.message;
-  }
-  if (error) {
-    return {
-      path: WORK_STATE_PATH,
-      status: "INVALID",
-      reasons: ["STATE_INVALID"],
-      error,
-      state: null,
-      completed: [],
-      pending: [],
-      repository: await currentRepositoryFingerprint(target),
-    };
-  }
-
-  const repository = await currentRepositoryFingerprint(target);
-  const classification = classifyWorkState(state, repository);
+export async function runStatus({ target, packageRoot, contractFile = null }) {
+  const state = await readAndClassifyWorkState({ target, packageRoot, contractFile });
+  const protocol = await inspectSchemaHealth(target);
   return {
-    path: WORK_STATE_PATH,
-    status: classification.status,
-    reasons: classification.reasons,
-    state,
-    phase: state?.phase ?? null,
-    completed: state?.completedSteps ?? [],
-    pending: state?.pendingSteps ?? [],
-    repository,
+    ...state,
+    protocol,
+    evidence: [...(state.evidence ?? []), ...(protocol.evidence ?? [])],
   };
 }
 
@@ -49,6 +20,10 @@ export function formatStatusResult(result) {
     `Pending: ${result.pending.join(", ") || "none"}`,
   ];
   if (result.reasons.length > 0) lines.push(`Reasons: ${result.reasons.join(", ")}`);
+  if (result.warnings?.length > 0) lines.push(`Warnings: ${result.warnings.join(", ")}`);
+  if (result.contractComparison) lines.push(`Contract: ${result.contractComparison}`);
+  if (result.artifactComparison) lines.push(`Artifacts: ${result.artifactComparison}`);
+  if (result.protocol) lines.push(`Schemas: ${result.protocol.status}`);
   if (result.error) lines.push(`Error: ${result.error}`);
   return `${lines.join("\n")}\n`;
 }

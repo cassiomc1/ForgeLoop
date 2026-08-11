@@ -1,0 +1,7 @@
+{
+  "input": { "workType": "release", "surfaces": [], "risks": [], "platforms": [] },
+  "guides": ["clean", "test"],
+  "forbidden": [],
+  "primary": "clean",
+  "expectedReasons": { "clean": ["WORK_RELEASE"], "test": ["WORK_RELEASE"] }
+}

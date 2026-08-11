@@ -19,6 +19,8 @@ export const TEMPLATE_PATHS = [
   "EXECUTION_STATE.md",
   "DELEGATION_PROTOCOL.md",
   "ORCHESTRATOR_INTEGRATION.md",
+  "THREAT_MODEL.md",
+  "CONTRACT_COVERAGE.md",
   "AGENT_COMPATIBILITY.md",
   "THIRD_PARTY_NOTICES.md",
   "LICENSE",
@@ -37,6 +39,7 @@ export const TEMPLATE_PATHS = [
   "schemas/execution-receipt.schema.json",
   "schemas/task-brief.schema.json",
   "schemas/delegated-result.schema.json",
+  "schemas/evidence.schema.json",
 ];
 
 export function getPackageRoot() {

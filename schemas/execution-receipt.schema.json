@@ -9,9 +9,25 @@
     "protocolVersion": { "const": 1 },
     "taskId": { "type": "string", "minLength": 1 },
     "contractFingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "status": { "enum": ["in-progress", "complete", "blocked", "complete-with-concerns"] },
     "selectedGuides": { "type": "array", "items": { "type": "string" } },
     "changedPaths": { "type": "array", "items": { "type": "string" } },
     "checks": { "type": "array", "items": { "type": "object" } },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "source", "result"],
+        "properties": {
+          "schemaVersion": { "const": 1 },
+          "kind": { "enum": ["OBSERVED", "INFERRED", "NOT_VERIFIED", "BLOCKED"] },
+          "source": { "type": "string", "minLength": 1 },
+          "result": { "type": "string", "minLength": 1 },
+          "details": { "type": "object" }
+        },
+        "additionalProperties": false
+      }
+    },
     "review": { "type": "object" },
     "limitations": { "type": "array", "items": { "type": "string" } },
     "publication": {

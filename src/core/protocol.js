@@ -44,7 +44,7 @@ export const GUIDE_IDS = Object.freeze([
 
 export const GUIDE_ORDER = GUIDE_IDS;
 
-const TRANSITIONS = Object.freeze({
+export const WORK_TRANSITIONS = Object.freeze({
   RECEIVED: ["DISCOVERING"],
   DISCOVERING: ["CONTRACT_READY"],
   CONTRACT_READY: ["ROUTED"],
@@ -63,7 +63,7 @@ const TRANSITIONS = Object.freeze({
 export function isValidTransition(from, to) {
   if (!WORK_PHASES.includes(from) || !WORK_PHASES.includes(to)) return false;
   if (to === "BLOCKED" && from !== "COMPLETE" && from !== "BLOCKED") return true;
-  return TRANSITIONS[from].includes(to);
+  return WORK_TRANSITIONS[from].includes(to);
 }
 
 export function assertFailureClass(value) {

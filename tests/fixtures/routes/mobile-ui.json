@@ -1,0 +1,14 @@
+{
+  "input": { "workType": "mobile-ui", "surfaces": [], "risks": [], "platforms": [] },
+  "guides": ["clean", "test", "design", "accessibility", "security", "performance"],
+  "forbidden": [],
+  "primary": "clean",
+  "expectedReasons": {
+    "clean": ["WORK_MOBILE_UI"],
+    "test": ["WORK_MOBILE_UI"],
+    "design": ["WORK_MOBILE_UI"],
+    "accessibility": ["WORK_MOBILE_UI"],
+    "security": ["WORK_MOBILE_UI"],
+    "performance": ["WORK_MOBILE_UI"]
+  }
+}

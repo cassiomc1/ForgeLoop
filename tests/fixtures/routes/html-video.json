@@ -1,0 +1,13 @@
+{
+  "input": { "workType": "html-video", "surfaces": [], "risks": [], "platforms": [] },
+  "guides": ["design", "accessibility", "performance", "test", "security"],
+  "forbidden": [],
+  "primary": "design",
+  "expectedReasons": {
+    "design": ["WORK_HTML_VIDEO"],
+    "accessibility": ["WORK_HTML_VIDEO"],
+    "performance": ["WORK_HTML_VIDEO"],
+    "test": ["WORK_HTML_VIDEO"],
+    "security": ["WORK_HTML_VIDEO"]
+  }
+}

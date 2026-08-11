@@ -6,5 +6,15 @@
     "platforms": ["web"]
   },
   "guides": ["premium", "design", "accessibility", "clean", "test", "security", "performance"],
-  "primary": "premium"
+  "primary": "premium",
+  "forbidden": [],
+  "expectedReasons": {
+    "premium": ["WORK_COMPLETE_WEBSITE"],
+    "design": ["WORK_COMPLETE_WEBSITE", "SURFACE_UI"],
+    "accessibility": ["WORK_COMPLETE_WEBSITE", "SURFACE_FORMS"],
+    "clean": ["WORK_COMPLETE_WEBSITE"],
+    "test": ["WORK_COMPLETE_WEBSITE"],
+    "security": ["WORK_COMPLETE_WEBSITE", "RISK_UNTRUSTED_INPUT"],
+    "performance": ["WORK_COMPLETE_WEBSITE", "RISK_CRITICAL_PATH"]
+  }
 }

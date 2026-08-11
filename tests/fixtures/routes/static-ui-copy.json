@@ -8,5 +8,9 @@
   },
   "guides": ["design", "accessibility"],
   "forbidden": ["security", "performance"],
-  "primary": null
+  "primary": null,
+  "expectedReasons": {
+    "design": ["SURFACE_UI"],
+    "accessibility": ["SURFACE_UI"]
+  }
 }

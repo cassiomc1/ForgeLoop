@@ -75,6 +75,14 @@ The following JSON Schemas define the boundaries a host may implement:
   explicit publication state.
 - `schemas/task-brief.schema.json` and
   `schemas/delegated-result.schema.json` define optional delegation.
+- `schemas/evidence.schema.json` defines the shared evidence vocabulary.
+
+`src/core/conformance.js` validates relationships that individual schemas
+cannot express: route/state protocol versions, route/state guide sets,
+state/receipt contract fingerprints, and delegated-result/task-brief IDs. Its
+statuses are `VALID`, `INCOMPLETE`, `STALE`, `INCONSISTENT`, and `INVALID`.
+`mdfiles validate-protocol` is read-only and reports the exact failed
+invariant.
 
 Every artifact is JSON-compatible, carries `schemaVersion: 1` and
 `protocolVersion: 1`, and contains no executable callbacks, provider-specific

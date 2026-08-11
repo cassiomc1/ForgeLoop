@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "taskId": "path-traversal",
+  "parentTaskId": "parent",
+  "objective": "unsafe path fixture",
+  "allowedPaths": ["../outside"],
+  "readOnlyPaths": [],
+  "dependencies": [],
+  "constraints": [],
+  "requiredGuides": ["clean"],
+  "verification": ["npm test"],
+  "authority": ["write outside"],
+  "deliverables": ["outside"]
+}

@@ -1,0 +1,14 @@
+{
+  "input": { "workType": "web-game", "surfaces": [], "risks": [], "platforms": [] },
+  "guides": ["games", "clean", "test", "security", "performance", "accessibility"],
+  "forbidden": [],
+  "primary": "games",
+  "expectedReasons": {
+    "games": ["WORK_WEB_GAME"],
+    "clean": ["WORK_WEB_GAME"],
+    "test": ["WORK_WEB_GAME"],
+    "security": ["WORK_WEB_GAME"],
+    "performance": ["WORK_WEB_GAME"],
+    "accessibility": ["WORK_WEB_GAME"]
+  }
+}

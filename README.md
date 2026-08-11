@@ -69,13 +69,21 @@ Protocol-support commands are local and do not invoke an agent or model:
 npx @cassiomc1/mdfiles route --work complete-website --surface ui --risk untrusted-input
 npx @cassiomc1/mdfiles inspect --json
 npx @cassiomc1/mdfiles status --json
+npx @cassiomc1/mdfiles status --contract-file .mdfiles/current-contract.json --json
 npx @cassiomc1/mdfiles validate-state --json
 npx @cassiomc1/mdfiles validate-receipt --file ./execution-receipt.json --json
+npx @cassiomc1/mdfiles validate-protocol --route-file ./routing-result.json --state-file .mdfiles/work-state.json --receipt-file ./execution-receipt.json --json
 ```
 
 `route` expands declared signals into deterministic guide IDs and reason codes.
 `inspect`, `status`, and `validate-state` explain installation and resumable
 state; they do not execute commands from the target profile.
+`inspect` and `status` parse the target-local schemas and report `valid`,
+`missing`, `invalid`, or `unsupported-version` health. A status without a
+current contract file reports contract comparison as `NOT_VERIFIED` and does
+not claim full freshness. `validate-protocol` is read-only and checks
+cross-artifact relationships, returning `VALID`, `INCOMPLETE`, `STALE`,
+`INCONSISTENT`, or `INVALID` with exact invariant codes.
 All protocol-support commands are local and offline-capable by default; the
 package sends no telemetry and has no central trace service.
 Capability gaps and inline/non-Git degraded mode are defined in
@@ -118,6 +126,9 @@ target project. Its main threat boundaries are:
 | Dependency supply chain | Runtime code uses Node built-ins only; the package does not install agents, providers, plugins, or remote services. |
 | Stale replay | Work state records contract and repository fingerprints; drift requires revalidation and never reruns destructive or publication actions automatically. |
 | Unverified publication | Receipts carry explicit publication booleans; local success never implies a push, pull request, merge, release, or deployment. |
+
+The full boundary inventory, residual limitations, and executable evidence are
+in [`THREAT_MODEL.md`](./THREAT_MODEL.md).
 
 The CLI cannot protect a target from a separately privileged or hostile process
 that changes the filesystem after validation. Consumers must still review
@@ -182,6 +193,8 @@ TERMINOLOGY.md
 EXECUTION_STATE.md
 DELEGATION_PROTOCOL.md
 ORCHESTRATOR_INTEGRATION.md
+THREAT_MODEL.md
+CONTRACT_COVERAGE.md
 THIRD_PARTY_NOTICES.md
 LICENSE
 LICENSE-DOCS.md

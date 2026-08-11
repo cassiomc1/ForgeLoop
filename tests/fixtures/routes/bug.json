@@ -1,0 +1,7 @@
+{
+  "input": { "workType": "bug", "surfaces": [], "risks": [], "platforms": [] },
+  "guides": ["clean", "test"],
+  "forbidden": [],
+  "primary": "clean",
+  "expectedReasons": { "clean": ["WORK_BUG"], "test": ["WORK_BUG"] }
+}
