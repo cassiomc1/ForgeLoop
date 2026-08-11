@@ -3,5 +3,7 @@
 .commandcode/
 __pycache__/
 .forgeloop/
+!.forgeloop/
+!.forgeloop/forgeloop.gitignore
 docs/superpowers/
 *.py[cod]

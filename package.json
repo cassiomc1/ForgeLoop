@@ -1,10 +1,10 @@
 {
   "name": "@cassiomc1/forgeloop",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Portable, verifiable instruction kit for AI agents and developers",
   "repository": {
     "type": "git",
-    "url": "https://github.com/cassiomc1/mdfiles.git"
+    "url": "git+https://github.com/cassiomc1/mdfiles.git"
   },
   "homepage": "https://github.com/cassiomc1/mdfiles#readme",
   "license": "SEE LICENSE IN LICENSE",
@@ -22,7 +22,7 @@
     "src",
     "ENG",
     "schemas",
-    ".forgeloop/.gitignore",
+    ".forgeloop/forgeloop.gitignore",
     "AGENTS.md",
     "CLAUDE.md",
     "GUIDE_ROUTER.md",
