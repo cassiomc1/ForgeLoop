@@ -7,5 +7,9 @@
   },
   "guides": ["clean", "test"],
   "forbidden": ["design", "accessibility", "security", "performance"],
-  "primary": "clean"
+  "primary": "clean",
+  "expectedReasons": {
+    "clean": ["WORK_BACKEND"],
+    "test": ["WORK_BACKEND"]
+  }
 }

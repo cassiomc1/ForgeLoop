@@ -1,0 +1,7 @@
+{
+  "input": { "workType": "security-review", "surfaces": [], "risks": [], "platforms": [] },
+  "guides": ["security"],
+  "forbidden": [],
+  "primary": "security",
+  "expectedReasons": { "security": ["WORK_SECURITY_REVIEW"] }
+}

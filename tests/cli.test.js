@@ -434,7 +434,7 @@ test("inspect emits structured target health", async () => {
     assert.equal(result.status, 0, result.stderr);
     const report = JSON.parse(result.stdout);
     assert.equal(report.protocol.version, 1);
-    assert.equal(report.state.status, "absent");
+    assert.equal(report.state.status, "ABSENT");
     assert.ok(Array.isArray(report.findings));
   });
 });
@@ -499,9 +499,28 @@ test("status reports absent and fresh work state", async () => {
     assert.equal(JSON.parse(absent.stdout).status, "ABSENT");
 
     await writeWorkState(target, makeState());
-    const fresh = runCli(target, "status", "--json");
+    await writeFile(
+      path.join(target, ".mdfiles", "current-contract.json"),
+      `${JSON.stringify({ objective: "cli state" })}\n`,
+    );
+    const fresh = runCli(target, "status", "--contract-file", ".mdfiles/current-contract.json", "--json");
     assert.equal(fresh.status, 0, fresh.stderr);
-    assert.equal(JSON.parse(fresh.stdout).status, "FRESH");
+    const report = JSON.parse(fresh.stdout);
+    assert.equal(report.status, "FRESH");
+    assert.equal(report.contractComparison, "MATCH");
+  });
+});
+
+test("status refuses to claim freshness when the current contract is not verified", async () => {
+  await withTarget(async (target) => {
+    await writeWorkState(target, makeState());
+    const result = runCli(target, "status", "--json");
+    const report = JSON.parse(result.stdout);
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(report.status, "REVALIDATION_REQUIRED");
+    assert.equal(report.contractComparison, "NOT_VERIFIED");
+    assert.ok(report.reasons.includes("CONTRACT_NOT_VERIFIED"));
   });
 });
 

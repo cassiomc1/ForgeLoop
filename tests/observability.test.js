@@ -68,8 +68,11 @@ test("doctor findings include remediation and evidence", async () => {
     assert.ok(result.findings.length > 0);
     for (const finding of result.findings) {
       assert.equal(typeof finding.remediation, "string");
-      assert.equal(typeof finding.evidence, "string");
+      assert.equal(finding.evidence.kind, "OBSERVED");
+      assert.equal(typeof finding.evidence.source, "string");
+      assert.equal(typeof finding.evidence.result, "string");
     }
+    assert.equal(result.evidence[0].kind, "OBSERVED");
   });
 });
 
@@ -80,6 +83,8 @@ test("inspect exposes target, protocol, compatibility, state, and findings", asy
 
     assert.equal(report.target.path, target);
     assert.equal(report.protocol.version, 1);
+    assert.equal(report.protocol.schemaStatus, "valid");
+    assert.ok(report.protocol.schemas.every((schema) => schema.status === "valid"));
     assert.equal(Array.isArray(report.compatibility.agents), true);
     assert.equal(typeof report.state.status, "string");
     assert.equal(Array.isArray(report.findings), true);

@@ -1,8 +1,10 @@
 import { GUIDE_IDS, PROTOCOL_VERSION } from "./protocol.js";
 import { assertSchema, readSchema } from "./schema-validation.js";
+import { assertEvidenceList, evidenceMatches } from "./evidence.js";
+import { assertJsonLimits } from "./json-safety.js";
 
 const RECEIPT_SCHEMA_VERSION = 1;
-const SECRET_KEY_PATTERN = /(api[_-]?key|token|password|secret|credential|private[_-]?key)/i;
+const SECRET_WORDS = new Set(["token", "password", "secret", "credential"]);
 const SECRET_VALUE_PATTERNS = [
   /-----BEGIN [A-Z ]*PRIVATE KEY-----/i,
   /(?:^|\s)(?:sk|ghp|glpat|xox[baprs])-[-_a-z0-9]{8,}/i,
@@ -23,7 +25,16 @@ function findSecretLikeValues(value, location, violations) {
 
   for (const [key, child] of Object.entries(value)) {
     const childLocation = `${location}.${key}`;
-    if (SECRET_KEY_PATTERN.test(key)) {
+    const pathLikeDocumentation = /\.(?:md|txt|json)$/i.test(key);
+    const words = key.split(/(?=[A-Z])|[_\-\s]+/).filter(Boolean).map((word) => word.toLowerCase());
+    const compact = key.replaceAll(/[^a-z0-9]/gi, "").toLowerCase();
+    const containsSensitiveWord = !pathLikeDocumentation && (
+      words.some((word) => SECRET_WORDS.has(word))
+      || ["apikey", "privatekey", "accesskey", "secretkey"].some((term) => compact.includes(term))
+      || words.some((word, index) => ["api", "private", "access", "secret"].includes(word)
+        && ["key", "token"].includes(words[index + 1]))
+    );
+    if (containsSensitiveWord) {
       violations.push(`${childLocation}: secret-like field is not allowed`);
     }
     findSecretLikeValues(child, childLocation, violations);
@@ -31,6 +42,7 @@ function findSecretLikeValues(value, location, violations) {
 }
 
 export function assertSecretFree(value) {
+  assertJsonLimits(value, "secret-free artifact");
   const violations = [];
   findSecretLikeValues(value, "$", violations);
   if (violations.length > 0) throw new Error(violations.join("; "));
@@ -42,12 +54,54 @@ function assertKnownGuides(guides) {
   if (new Set(guides).size !== guides.length) throw new Error("Receipt selectedGuides must not contain duplicates");
 }
 
+export function assertReceiptSemantics(receipt) {
+  const evidence = receipt.evidence ?? [];
+  assertEvidenceList(evidence, "receipt.evidence");
+
+  for (const [index, check] of receipt.checks.entries()) {
+    if (check?.status === "passed") {
+      const hasCommandOrResult = [check.command, check.result, check.name]
+        .some((value) => typeof value === "string" && value.trim().length > 0);
+      if (!hasCommandOrResult) {
+        throw new Error(`receipt.checks[${index}] passed check requires a command or result`);
+      }
+    }
+  }
+
+  if (receipt.status === "complete") {
+    const verificationEvidence = evidence.filter((item) => ["OBSERVED", "INFERRED"].includes(item.kind));
+    if (verificationEvidence.length === 0) {
+      throw new Error("COMPLETE receipt requires verification evidence");
+    }
+  }
+
+  const publicationEvidence = [
+    [receipt.publication.committed, ["commit", "committed"], "committed", "commit"],
+    [receipt.publication.pushed, ["git push", "pushed"], "pushed", "push"],
+    [receipt.publication.deployed, ["deploy", "deployed", "deployment"], "deployed", "deployment"],
+  ];
+  for (const [claimed, terms, field, label] of publicationEvidence) {
+    if (claimed && !evidenceMatches(evidence, terms)) {
+      throw new Error(`publication.${field} requires ${label} evidence`);
+    }
+  }
+
+  if (receipt.review.independent === true) {
+    const implementer = receipt.review.implementerId;
+    const reviewer = receipt.review.reviewerId;
+    if (typeof implementer !== "string" || typeof reviewer !== "string" || implementer === reviewer) {
+      throw new Error("independent review requires distinct implementer and reviewer identities");
+    }
+  }
+  return receipt;
+}
+
 export async function validateReceipt(receipt, packageRoot) {
   assertSecretFree(receipt);
   const schema = await readSchema("execution-receipt", packageRoot);
   assertSchema(receipt, schema, "execution receipt");
   assertKnownGuides(receipt.selectedGuides);
-  return receipt;
+  return assertReceiptSemantics(receipt);
 }
 
 export async function createReceipt(input, packageRoot) {
@@ -57,9 +111,11 @@ export async function createReceipt(input, packageRoot) {
     protocolVersion: PROTOCOL_VERSION,
     taskId: input.taskId,
     contractFingerprint: input.contractFingerprint,
+    status: input.status ?? "in-progress",
     selectedGuides: [...(input.selectedGuides ?? [])],
     changedPaths: [...(input.changedPaths ?? [])],
     checks: [...(input.checks ?? [])],
+    evidence: [...(input.evidence ?? [])],
     review: input.review ?? { status: "not-run", independent: false },
     limitations: [...(input.limitations ?? [])],
     publication: input.publication ?? {

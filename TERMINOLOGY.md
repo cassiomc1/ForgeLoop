@@ -16,3 +16,6 @@
 | Publication | Push, pull request, merge, release, or deployment; none is implied by local success. |
 | Portable protocol | A serializable, framework-neutral contract that compatible agents can execute in their own harness. |
 | Runtime | A process that owns execution, scheduling, model calls, or persistence; `mdfiles` intentionally does not provide one. |
+| Evidence kind | One of `OBSERVED`, `INFERRED`, `NOT_VERIFIED`, or `BLOCKED`; evidence never upgrades an unverified claim by itself. |
+| Required artifact | A checkpoint-recorded relative path and SHA-256 hash that must still match before resume. |
+| Conformance | Relationship validation across route, state, receipt, task brief, and delegated-result artifacts. |

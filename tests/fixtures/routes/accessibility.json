@@ -1,0 +1,7 @@
+{
+  "input": { "workType": "accessibility", "surfaces": [], "risks": [], "platforms": [] },
+  "guides": ["accessibility", "test"],
+  "forbidden": [],
+  "primary": "accessibility",
+  "expectedReasons": { "accessibility": ["WORK_ACCESSIBILITY"], "test": ["WORK_ACCESSIBILITY"] }
+}

@@ -201,6 +201,23 @@ Every selected guide has stable reason codes such as
 input records `DOCUMENTATION_DOMAIN_GUIDE_REQUIRED` instead of activating
 technical guides automatically.
 
+Platform signals are contextual, not automatic guide activators:
+
+| Platform | Semantic effect | Stable reason |
+| --- | --- | --- |
+| `mobile` | With an existing UI surface, reinforces design/accessibility and adds performance constraints. | `PLATFORM_MOBILE` |
+| `desktop` | With an existing UI surface, reinforces design/accessibility. | `PLATFORM_DESKTOP` |
+| `server` | With `auth`, reinforces the trust boundary and adds testing. | `PLATFORM_SERVER` |
+| `ci` | With `executableChange: true`, adds security to the existing change checks. | `PLATFORM_CI` |
+| `web` | Informational-only; surface and risk signals remain authoritative. | — |
+| `cross-platform` | Informational-only; it never selects a guide by itself. | — |
+
+Equivalent normalized signal arrays produce identical JSON. A valid route has
+no duplicate guides, a reason for every selected guide, an exclusion reason
+for every excluded guide, no selected/excluded overlap, and a primary that is
+either null or selected. The local `validate-protocol` command checks
+cross-artifact relationships without executing task data.
+
 Negative routing guarantees:
 
 - a documentation mention of OAuth does not activate `security`;

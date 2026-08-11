@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "taskId": "missing-arrays",
+  "contractFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "repositoryFingerprint": { "branch": null, "head": null },
+  "phase": "ROUTED"
+}

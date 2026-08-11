@@ -23,6 +23,9 @@ untrusted on read.
   "selectedGuides": ["clean", "test"],
   "completedSteps": ["discovery", "implementation"],
   "pendingSteps": ["verification", "review"],
+  "requiredArtifacts": [
+    { "path": "src/api/auth.js", "sha256": "lowercase-sha256" }
+  ],
   "checks": [],
   "failures": [],
   "blockers": [],
@@ -53,6 +56,21 @@ Before resuming, compare:
 Any material difference produces `REVALIDATION_REQUIRED`. A non-Git target
 reports that branch/HEAD drift is not verifiable. Cheap checks may be rerun,
 but a completed destructive or publication action is never rerun automatically.
+
+The current contract is compared only when its JSON file is supplied:
+
+```bash
+mdfiles status --contract-file .mdfiles/current-contract.json --json
+```
+
+Without that file, contract comparison is `NOT_VERIFIED`; the status does not
+claim full freshness. Required artifact hashes report missing or changed files.
+An optional age threshold may recommend cheap verification with
+`CHECKPOINT_OLD` without changing a fresh result.
+
+State reports use the shared evidence kinds `OBSERVED`, `INFERRED`,
+`NOT_VERIFIED`, and `BLOCKED`. A parse failure is structured as `INVALID` and
+is never resumed silently.
 
 ## Commands
 

@@ -24,6 +24,8 @@ REQUIRED_FILES = (
     "QUALITY_SCORECARD.md",
     "TERMINOLOGY.md",
     "ORCHESTRATOR_INTEGRATION.md",
+    "THREAT_MODEL.md",
+    "CONTRACT_COVERAGE.md",
 )
 
 WORK_PHASES = (
@@ -66,6 +68,7 @@ SCHEMA_FILES = (
     "execution-receipt.schema.json",
     "task-brief.schema.json",
     "delegated-result.schema.json",
+    "evidence.schema.json",
 )
 
 FAILURE_CLASSES = (
@@ -587,6 +590,8 @@ def _valid_fixture(root: Path) -> None:
         "# Design\n",
     )
     _write(root / "THIRD_PARTY_NOTICES.md", "# Third-party notices\n")
+    _write(root / "THREAT_MODEL.md", "# Threat model\n")
+    _write(root / "CONTRACT_COVERAGE.md", "# Coverage\n")
     _write(
         root / "QUALITY_SCORECARD.md",
         "# Scorecard\n10/10 evidence\n"

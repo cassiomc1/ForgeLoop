@@ -6,5 +6,7 @@
     "platforms": []
   },
   "guides": [],
-  "primary": null
+  "primary": null,
+  "forbidden": [],
+  "expectedReasons": {}
 }

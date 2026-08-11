@@ -1,0 +1,7 @@
+{
+  "input": { "workType": "test-only", "surfaces": [], "risks": [], "platforms": [] },
+  "guides": ["test"],
+  "forbidden": [],
+  "primary": "test",
+  "expectedReasons": { "test": ["WORK_TEST_ONLY"] }
+}

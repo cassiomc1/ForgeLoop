@@ -52,6 +52,37 @@ const SIGNALS = Object.freeze({
   platforms: new Set(["web", "mobile", "desktop", "server", "ci", "cross-platform"]),
 });
 
+export const PLATFORM_SEMANTICS = Object.freeze({
+  web: Object.freeze({
+    mode: "informational-only",
+    description: "Web is recorded as context; surface, risk, and work signals select guides.",
+  }),
+  mobile: Object.freeze({
+    mode: "contextual",
+    reason: "PLATFORM_MOBILE",
+    description: "Mobile UI context adds performance guidance and reinforces design/accessibility.",
+  }),
+  desktop: Object.freeze({
+    mode: "contextual",
+    reason: "PLATFORM_DESKTOP",
+    description: "Desktop UI context reinforces design and accessibility guidance.",
+  }),
+  server: Object.freeze({
+    mode: "contextual",
+    reason: "PLATFORM_SERVER",
+    description: "Server authentication context adds testing and reinforces the trust boundary.",
+  }),
+  ci: Object.freeze({
+    mode: "contextual",
+    reason: "PLATFORM_CI",
+    description: "Executable CI changes add security review to the existing change checks.",
+  }),
+  "cross-platform": Object.freeze({
+    mode: "informational-only",
+    description: "Cross-platform is recorded as context; it does not select a guide by itself.",
+  }),
+});
+
 const WORK_GUIDES = Object.freeze({
   "complete-website": ["premium", "design", "accessibility", "clean", "test", "security", "performance"],
   "api-auth": ["clean", "test", "security", "performance"],
@@ -181,6 +212,24 @@ export function evaluateRoute(input = {}) {
     add("test", "CHANGE_EXECUTABLE_CONFIG");
   }
 
+  const hasUiContext = normalized.surfaces.some((surface) => ["ui", "forms", "mobile", "desktop"].includes(surface));
+  if (normalized.platforms.includes("mobile") && hasUiContext) {
+    add("design", "PLATFORM_MOBILE");
+    add("accessibility", "PLATFORM_MOBILE");
+    add("performance", "PLATFORM_MOBILE");
+  }
+  if (normalized.platforms.includes("desktop") && hasUiContext) {
+    add("design", "PLATFORM_DESKTOP");
+    add("accessibility", "PLATFORM_DESKTOP");
+  }
+  if (normalized.platforms.includes("server") && normalized.surfaces.includes("auth")) {
+    add("security", "PLATFORM_SERVER");
+    add("test", "PLATFORM_SERVER");
+  }
+  if (normalized.platforms.includes("ci") && normalized.executableChange) {
+    add("security", "PLATFORM_CI");
+  }
+
   if (normalized.workType === "documentation" && selected.size === 0) {
     excluded.documentation = ["DOCUMENTATION_DOMAIN_GUIDE_REQUIRED"];
   }
@@ -195,7 +244,7 @@ export function evaluateRoute(input = {}) {
   }
 
   const guides = [...selected.keys()];
-  return {
+  const result = {
     schemaVersion: ROUTING_SCHEMA_VERSION,
     protocolVersion: PROTOCOL_VERSION,
     input: normalized,
@@ -206,6 +255,37 @@ export function evaluateRoute(input = {}) {
     reasons: Object.fromEntries(guides.map((guide) => [guide, selected.get(guide)])),
     excluded,
   };
+  return assertRouteInvariants(result);
+}
+
+export function assertRouteInvariants(result) {
+  if (!result || typeof result !== "object" || Array.isArray(result)) {
+    throw new RouteInputError("Route result must be an object");
+  }
+  if (!Array.isArray(result.guides) || new Set(result.guides).size !== result.guides.length) {
+    throw new RouteInputError("Route result contains duplicate guides");
+  }
+  for (const guide of result.guides) {
+    if (!GUIDE_IDS.includes(guide)) throw new RouteInputError(`Route result contains unknown guide: ${guide}`);
+    if (!Array.isArray(result.reasons?.[guide]) || result.reasons[guide].length === 0) {
+      throw new RouteInputError(`Selected guide has no reason: ${guide}`);
+    }
+  }
+  for (const [guide, reasons] of Object.entries(result.excluded ?? {})) {
+    if (guide !== "documentation" && !GUIDE_IDS.includes(guide)) {
+      throw new RouteInputError(`Route result contains unknown excluded guide: ${guide}`);
+    }
+    if (result.guides.includes(guide)) {
+      throw new RouteInputError(`Guide cannot be selected and excluded: ${guide}`);
+    }
+    if (!Array.isArray(reasons) || reasons.length === 0) {
+      throw new RouteInputError(`Excluded guide has no exclusion reason: ${guide}`);
+    }
+  }
+  if (result.primary !== null && !result.guides.includes(result.primary)) {
+    throw new RouteInputError("Primary guide must be null or selected");
+  }
+  return result;
 }
 
 export const ROUTING_SIGNALS = Object.freeze({

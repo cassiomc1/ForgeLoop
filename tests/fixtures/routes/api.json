@@ -1,0 +1,7 @@
+{
+  "input": { "workType": "api", "surfaces": [], "risks": [], "platforms": [] },
+  "guides": ["clean", "test"],
+  "forbidden": [],
+  "primary": "clean",
+  "expectedReasons": { "clean": ["WORK_API"], "test": ["WORK_API"] }
+}

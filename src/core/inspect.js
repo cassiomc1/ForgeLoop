@@ -2,19 +2,13 @@ import { fileExists, ensureWithin, readBytes } from "./filesystem.js";
 import { AGENT_SUPPORT } from "./agent-support.js";
 import { readManifest } from "./manifest.js";
 import { PROTOCOL_VERSION } from "./protocol.js";
+import { inspectSchemaHealth } from "./schema-validation.js";
+import { readAndClassifyWorkState } from "./work-state.js";
+import { createEvidence } from "./evidence.js";
 import { runDoctor } from "../commands/doctor.js";
 
 const PROFILE_PATH = "PROJECT_PROFILE.md";
 const STATE_PATH = ".mdfiles/work-state.json";
-const SCHEMA_NAMES = [
-  "routing-input",
-  "routing-result",
-  "work-state",
-  "execution-receipt",
-  "task-brief",
-  "delegated-result",
-];
-
 function profileMetadata(bytes) {
   const text = bytes.toString("utf8");
   return {
@@ -23,7 +17,7 @@ function profileMetadata(bytes) {
   };
 }
 
-export async function inspectTarget({ target, packageRoot }) {
+export async function inspectTarget({ target, packageRoot, contractFile = null }) {
   let manifest = null;
   let manifestError = null;
   try {
@@ -38,6 +32,8 @@ export async function inspectTarget({ target, packageRoot }) {
     : { mode: null, status: null };
   const statePath = ensureWithin(target, STATE_PATH);
   const statePresent = await fileExists(statePath);
+  const state = await readAndClassifyWorkState({ target, packageRoot, contractFile });
+  const schemaHealth = await inspectSchemaHealth(target);
   const doctor = await runDoctor({ target, packageRoot });
   const agents = await Promise.all(AGENT_SUPPORT.map(async (record) => ({
     id: record.id,
@@ -49,6 +45,44 @@ export async function inspectTarget({ target, packageRoot }) {
     )).some(Boolean),
   })));
 
+  const findings = [...doctor.findings];
+  for (const schema of schemaHealth.schemas) {
+    if (schema.status !== "valid") {
+      findings.push({
+        code: `schema-${schema.status}`,
+        severity: "error",
+        path: `schemas/${schema.name}.schema.json`,
+        message: schema.error ?? `Schema is ${schema.status}.`,
+        remediation: "Restore the shipped schema and rerun inspect.",
+        evidence: createEvidence({
+          kind: schema.status === "missing" ? "NOT_VERIFIED" : "OBSERVED",
+          source: `schemas/${schema.name}.schema.json`,
+          result: schema.status,
+        }),
+      });
+    }
+  }
+  if (state.status === "INVALID") {
+    findings.push({
+      code: "state-invalid",
+      severity: "error",
+      path: STATE_PATH,
+      message: state.error ?? "Work state is invalid.",
+      remediation: "Repair or clear the checkpoint after reviewing the parse error.",
+      evidence: createEvidence({ kind: "BLOCKED", source: STATE_PATH, result: "invalid" }),
+    });
+  }
+
+  const protocolEvidence = schemaHealth.evidence ?? [createEvidence({
+    kind: schemaHealth.status === "valid" ? "OBSERVED" : "NOT_VERIFIED",
+    source: "mdfiles schema health",
+    result: schemaHealth.status,
+  })];
+  const evidence = [
+    ...(doctor.evidence ?? []),
+    ...(state.evidence ?? []),
+    ...protocolEvidence,
+  ];
   return {
     target: { path: target },
     manifest: {
@@ -64,18 +98,19 @@ export async function inspectTarget({ target, packageRoot }) {
     },
     protocol: {
       version: PROTOCOL_VERSION,
-      schemaStatus: "available",
-      schemas: SCHEMA_NAMES,
+      schemaStatus: schemaHealth.status,
+      schemas: schemaHealth.schemas,
+      evidence: protocolEvidence,
     },
-    state: {
-      path: STATE_PATH,
-      present: statePresent,
-      status: statePresent ? "present" : "absent",
-    },
+    state: { ...state, path: STATE_PATH, present: statePresent },
     compatibility: {
       agents: AGENT_SUPPORT.map((record) => record.id),
     },
-    findings: doctor.findings,
-    ok: doctor.ok && !manifestError,
+    findings,
+    evidence,
+    ok: doctor.ok
+      && !manifestError
+      && schemaHealth.status === "valid"
+      && !["INVALID", "REVALIDATION_REQUIRED"].includes(state.status),
   };
 }

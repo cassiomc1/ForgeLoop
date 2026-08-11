@@ -1,0 +1,7 @@
+{
+  "input": { "workType": "performance", "surfaces": [], "risks": [], "platforms": [] },
+  "guides": ["performance", "test"],
+  "forbidden": [],
+  "primary": "performance",
+  "expectedReasons": { "performance": ["WORK_PERFORMANCE"], "test": ["WORK_PERFORMANCE"] }
+}

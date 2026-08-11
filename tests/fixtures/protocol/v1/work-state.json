@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "taskId": "fixture-parent",
+  "contractFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "repositoryFingerprint": { "branch": null, "head": null },
+  "phase": "ROUTED",
+  "selectedGuides": ["clean", "test"],
+  "completedSteps": [],
+  "pendingSteps": ["implementation"],
+  "checks": [],
+  "failures": [],
+  "blockers": [],
+  "verificationEvidence": [],
+  "lastUpdated": "2026-08-11T12:00:00.000Z"
+}

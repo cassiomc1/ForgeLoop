@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "taskId": "fixture-parent",
+  "contractFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "selectedGuides": ["clean", "test"],
+  "changedPaths": [],
+  "checks": [],
+  "review": { "status": "not-run", "independent": false },
+  "limitations": [],
+  "publication": { "committed": false, "pushed": false, "pullRequest": null, "deployed": false }
+}

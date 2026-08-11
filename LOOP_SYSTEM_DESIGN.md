@@ -14,7 +14,7 @@ The system should use every guide that materially helps the task without loading
   OpenCode, Hermes, Pi, Command Code, and Freebuff.
 - Codex, Claude Code, Cursor, and GitHub Copilot use native entry files; the
   other six agents consume the shared `AGENTS.md` entry point.
-- The initial implementation uses Markdown and each agent's native instruction mechanism; it requires no runtime or dependency.
+- The portable instruction layer uses Markdown and each agent's native instruction mechanism; the optional local Node CLI validates and installs the kit without an agent runtime or third-party dependency.
 - English is the only language used by repository content and guide metadata.
 - The agent uses all applicable guides, not every file indiscriminately.
 - Design, planning, test-first, and review process gates live in the canonical loop and scale with task risk instead of becoming unconditional boilerplate in every adapter or architecture note.
@@ -167,6 +167,12 @@ serializable phases, transitions, invariants, artifact schemas, host
 responsibilities, and inline fallback in one canonical document. It does not
 implement a graph runtime or duplicate the detailed operational rules in
 `LOOP_ENGINEERING.md`.
+
+### `THREAT_MODEL.md`
+
+The threat model records path, symlink, artifact, secret, stale-state,
+publication, schema, dependency, and resource-limit boundaries with their
+mitigations, residual limitations, and executable evidence.
 
 ### `ENG/*.md`
 

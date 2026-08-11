@@ -2,6 +2,18 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { getPackageRoot } from "./templates.js";
+import { assertJsonBytes, assertJsonLimits } from "./json-safety.js";
+import { createEvidence } from "./evidence.js";
+
+export const SHIPPED_SCHEMA_NAMES = Object.freeze([
+  "routing-input",
+  "routing-result",
+  "work-state",
+  "execution-receipt",
+  "task-brief",
+  "delegated-result",
+  "evidence",
+]);
 
 export class SchemaValidationError extends Error {
   constructor(errors, label = "value") {
@@ -103,6 +115,7 @@ function validate(value, schema, location, errors) {
 }
 
 export function validateSchema(value, schema, { label = "$" } = {}) {
+  assertJsonLimits(value, label);
   const errors = [];
   validate(value, schema, label, errors);
   return errors;
@@ -118,4 +131,49 @@ export async function readSchema(name, packageRoot = getPackageRoot()) {
   const filename = name.endsWith(".schema.json") ? name : `${name}.schema.json`;
   const schemaPath = path.join(packageRoot, "schemas", filename);
   return JSON.parse(await readFile(schemaPath, "utf8"));
+}
+
+export async function inspectSchemaHealth(packageRoot = getPackageRoot()) {
+  const schemas = [];
+  for (const name of SHIPPED_SCHEMA_NAMES) {
+    const filename = `${name}.schema.json`;
+    const schemaPath = path.join(packageRoot, "schemas", filename);
+    try {
+      const bytes = await readFile(schemaPath);
+      assertJsonBytes(bytes, filename);
+      const schema = JSON.parse(bytes.toString("utf8"));
+      assertJsonLimits(schema, filename);
+      const version = schema?.properties?.schemaVersion?.const ?? null;
+      let status = "valid";
+      let error = null;
+      if (!schema || typeof schema !== "object" || Array.isArray(schema)) {
+        status = "invalid";
+        error = "schema root must be an object";
+      } else if (version !== 1) {
+        status = "unsupported-version";
+        error = `schemaVersion ${version ?? "missing"} is not supported`;
+      }
+      schemas.push({ name, version, status, error });
+    } catch (caught) {
+      const status = caught.code === "ENOENT" ? "missing" : "invalid";
+      schemas.push({ name, version: null, status, error: caught.message });
+    }
+  }
+  const status = schemas.some((schema) => schema.status === "invalid")
+    ? "invalid"
+    : schemas.some((schema) => schema.status === "missing")
+      ? "missing"
+      : schemas.some((schema) => schema.status === "unsupported-version")
+        ? "unsupported-version"
+        : "valid";
+  return {
+    version: 1,
+    status,
+    schemas,
+    evidence: [createEvidence({
+      kind: status === "valid" ? "OBSERVED" : status === "missing" ? "NOT_VERIFIED" : "BLOCKED",
+      source: "shipped target schemas",
+      result: status,
+    })],
+  };
 }

@@ -11,6 +11,21 @@
     "status": { "enum": ["complete", "blocked", "needs-context", "complete-with-concerns"] },
     "changes": { "type": "array", "items": { "type": "string" } },
     "verification": { "type": "array", "items": { "type": "string" } },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "source", "result"],
+        "properties": {
+          "schemaVersion": { "const": 1 },
+          "kind": { "enum": ["OBSERVED", "INFERRED", "NOT_VERIFIED", "BLOCKED"] },
+          "source": { "type": "string", "minLength": 1 },
+          "result": { "type": "string", "minLength": 1 },
+          "details": { "type": "object" }
+        },
+        "additionalProperties": false
+      }
+    },
     "openFindings": { "type": "array", "items": { "type": "string" } },
     "limitations": { "type": "array", "items": { "type": "string" } }
   },

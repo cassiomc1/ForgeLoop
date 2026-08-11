@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "input": { "schemaVersion": 1, "workType": "api", "surfaces": [], "risks": [], "platforms": [] },
+  "primary": "clean",
+  "guides": ["clean", "test"],
+  "reasons": { "clean": ["WORK_API"], "test": ["WORK_API"] },
+  "excluded": {}
+}

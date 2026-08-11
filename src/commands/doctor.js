@@ -1,15 +1,23 @@
 import { assertSafePath, fileExists, ensureWithin, readBytes } from "../core/filesystem.js";
 import { readManifest, sha256, writeManifest } from "../core/manifest.js";
 import { readTemplateEntries } from "../core/templates.js";
+import { createEvidence } from "../core/evidence.js";
 
 function finding(code, severity, relativePath, message, remediation = null, evidence = null) {
+  const evidenceRecord = evidence && typeof evidence === "object"
+    ? evidence
+    : createEvidence({
+      kind: "OBSERVED",
+      source: `mdfiles doctor:${relativePath}`,
+      result: evidence ?? message,
+    });
   return {
     code,
     severity,
     path: relativePath,
     message,
     remediation: remediation ?? (severity === "info" ? "No action required." : "Review the target path and apply the suggested correction."),
-    evidence: evidence ?? `Observed target path: ${relativePath}`,
+    evidence: evidenceRecord,
   };
 }
 
@@ -145,5 +153,13 @@ export async function runDoctor({ target, packageRoot, adoptPaths = [], strict =
 
   const ok = findings.every((item) => item.severity !== "error")
     && (!strict || findings.every((item) => item.severity !== "warning"));
-  return { ok, findings };
+  return {
+    ok,
+    findings,
+    evidence: [createEvidence({
+      kind: "OBSERVED",
+      source: "mdfiles doctor",
+      result: `${findings.length} findings; ${ok ? "healthy" : "needs attention"}`,
+    })],
+  };
 }

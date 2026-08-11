@@ -22,6 +22,18 @@
     "selectedGuides": { "type": "array", "items": { "type": "string" } },
     "completedSteps": { "type": "array", "items": { "type": "string" } },
     "pendingSteps": { "type": "array", "items": { "type": "string" } },
+    "requiredArtifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "sha256"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+        },
+        "additionalProperties": false
+      }
+    },
     "checks": { "type": "array", "items": { "type": "object" } },
     "failures": { "type": "array", "items": { "type": "object" } },
     "blockers": { "type": "array", "items": { "type": "object" } },

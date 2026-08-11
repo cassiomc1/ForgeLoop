@@ -22,6 +22,7 @@ const schemaNames = [
   "execution-receipt",
   "task-brief",
   "delegated-result",
+  "evidence",
 ];
 
 test("protocol exposes stable versions, failure classes, phases, and guides", () => {

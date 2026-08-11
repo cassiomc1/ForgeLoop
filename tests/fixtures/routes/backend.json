@@ -1,0 +1,7 @@
+{
+  "input": { "workType": "backend", "surfaces": [], "risks": [], "platforms": [] },
+  "guides": ["clean", "test"],
+  "forbidden": [],
+  "primary": "clean",
+  "expectedReasons": { "clean": ["WORK_BACKEND"], "test": ["WORK_BACKEND"] }
+}

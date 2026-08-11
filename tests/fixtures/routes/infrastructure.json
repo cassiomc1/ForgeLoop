@@ -1,0 +1,7 @@
+{
+  "input": { "workType": "infrastructure", "surfaces": [], "risks": [], "platforms": [] },
+  "guides": ["security", "test"],
+  "forbidden": [],
+  "primary": "security",
+  "expectedReasons": { "security": ["WORK_INFRASTRUCTURE"], "test": ["WORK_INFRASTRUCTURE"] }
+}

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "taskId": "windows-drive",
+  "parentTaskId": "parent",
+  "objective": "unsafe Windows path fixture",
+  "allowedPaths": ["C:/outside"],
+  "readOnlyPaths": [],
+  "dependencies": [],
+  "constraints": [],
+  "requiredGuides": ["clean"],
+  "verification": ["npm test"],
+  "authority": ["write outside"],
+  "deliverables": ["outside"]
+}

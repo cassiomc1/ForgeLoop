@@ -34,6 +34,20 @@ overlap are invalid. Two briefs with exact or parent/child write overlap must
 be serialized or assigned to one integration owner. Dependencies are explicit
 and cycles are rejected.
 
+Resource access is classified explicitly:
+
+```text
+WRITE / WRITE → conflict
+WRITE / READ  → SERIAL_REQUIRED
+READ  / READ  → safe
+```
+
+The parent task owns integration. `validateDelegationSet` rejects duplicate
+task IDs, self-dependencies, unknown dependency references, cycles, invalid
+guide/path boundaries, missing verification, missing authority, and secret
+material. It returns `PARALLEL_SAFE`, `SERIAL_REQUIRED`, or `INVALID` with
+stable conflict/error records.
+
 Parallel work is eligible only when shared files, shared state, ordering
 dependencies, and external resources have been checked. A database migration
 and code that depends on its new shape are not independent tasks.
@@ -53,6 +67,8 @@ LIMITATIONS
 Valid statuses are `complete`, `complete-with-concerns`, `needs-context`, and
 `blocked`. Results are serializable, secret-free, and validated against
 `schemas/delegated-result.schema.json`.
+Complete results also require structured observed or inferred verification
+evidence.
 
 ## Review and integration
 
