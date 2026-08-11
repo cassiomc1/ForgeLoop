@@ -126,7 +126,7 @@ class LoopSystemValidationTests(unittest.TestCase):
 
     def test_rejects_prohibited_runtime_terms_in_architecture_contract(self) -> None:
         design = self.root / "LOOP_SYSTEM_DESIGN.md"
-        for term in ("src/graph/", "src/llm/", "mdfiles run"):
+        for term in ("src/graph/", "src/llm/", "forgeloop run"):
             with self.subTest(term=term):
                 design.write_text(f"# Design\n{term}\n", encoding="utf-8")
                 with self.assertRaisesRegex(ValidationError, "prohibited runtime"):

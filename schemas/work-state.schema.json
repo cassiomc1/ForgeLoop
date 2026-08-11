@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "mdfiles://schemas/work-state.schema.json",
-  "title": "mdfiles work state",
+  "$id": "forgeloop://schemas/work-state.schema.json",
+  "title": "ForgeLoop work state",
   "type": "object",
   "required": ["schemaVersion", "protocolVersion", "taskId", "contractFingerprint", "repositoryFingerprint", "phase", "selectedGuides", "completedSteps", "pendingSteps", "checks", "failures", "blockers", "lastUpdated"],
   "properties": {

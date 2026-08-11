@@ -96,7 +96,7 @@ class WorkflowPolicyTests(unittest.TestCase):
         self.assertIn("does not provide a graph runtime", integration)
         self.assertNotIn("src/graph/", design)
         self.assertNotIn("src/llm/", design)
-        self.assertNotIn("mdfiles run", integration)
+        self.assertNotIn("forgeloop run", integration)
 
 
 if __name__ == "__main__":

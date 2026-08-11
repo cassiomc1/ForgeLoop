@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "mdfiles://schemas/evidence.schema.json",
-  "title": "mdfiles evidence record",
+  "$id": "forgeloop://schemas/evidence.schema.json",
+  "title": "ForgeLoop evidence record",
   "type": "object",
   "required": ["schemaVersion", "kind", "source", "result"],
   "properties": {

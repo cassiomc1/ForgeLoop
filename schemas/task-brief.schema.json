@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "mdfiles://schemas/task-brief.schema.json",
-  "title": "mdfiles delegation task brief",
+  "$id": "forgeloop://schemas/task-brief.schema.json",
+  "title": "ForgeLoop delegation task brief",
   "type": "object",
   "required": ["schemaVersion", "protocolVersion", "taskId", "parentTaskId", "objective", "allowedPaths", "readOnlyPaths", "dependencies", "constraints", "requiredGuides", "verification", "authority", "deliverables"],
   "properties": {

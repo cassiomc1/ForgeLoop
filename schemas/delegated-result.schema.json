@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "mdfiles://schemas/delegated-result.schema.json",
-  "title": "mdfiles delegated result",
+  "$id": "forgeloop://schemas/delegated-result.schema.json",
+  "title": "ForgeLoop delegated result",
   "type": "object",
   "required": ["schemaVersion", "protocolVersion", "taskId", "status", "changes", "verification", "openFindings", "limitations"],
   "properties": {

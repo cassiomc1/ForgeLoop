@@ -1,11 +1,30 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import { test } from "node:test";
 import { TEMPLATE_PATHS } from "../src/core/templates.js";
 import { WORK_STATE_PATH } from "../src/core/work-state.js";
 
 const repoRoot = new URL("../", import.meta.url);
+const HISTORICAL_ROOT = "docs/superpowers/";
+
+async function filesUnder(relativeRoot) {
+  const files = [];
+
+  async function visit(directory, prefix) {
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      const relativePath = `${prefix}${entry.name}`;
+      if (entry.isDirectory()) {
+        await visit(new URL(`${entry.name}/`, directory), `${relativePath}/`);
+      } else {
+        files.push(relativePath);
+      }
+    }
+  }
+
+  await visit(new URL(`${relativeRoot}/`, repoRoot), "");
+  return files;
+}
 
 async function readPackage() {
   return JSON.parse(await readFile(new URL("package.json", repoRoot), "utf8"));
@@ -55,4 +74,31 @@ test("architecture diagram is canonical and discoverable", async () => {
     assert.match(design, new RegExp(marker.replaceAll("/", "\\/")));
   }
   assert.match(readme, /LOOP_SYSTEM_DESIGN\.md/);
+});
+
+test("active shipped surfaces use the ForgeLoop identity", async () => {
+  const runtimeFiles = await filesUnder("src");
+  const files = [
+    "package.json",
+    "README.md",
+    ...TEMPLATE_PATHS,
+    ...runtimeFiles.map((relativePath) => `src/${relativePath}`),
+  ];
+
+  assert.equal(files.some((relativePath) => relativePath.startsWith(HISTORICAL_ROOT)), false);
+
+  for (const relativePath of new Set(files)) {
+    const text = (await readFile(new URL(relativePath, repoRoot), "utf8"))
+      .replaceAll("https://github.com/cassiomc1/mdfiles", "REMOTE_GITHUB_COORDINATE");
+    for (const line of text.split("\n")) {
+      const intentionalMigration = relativePath === "README.md"
+        && (line.includes("mv .mdfiles .forgeloop") || line.includes("`.mdfiles` directory"));
+      if (intentionalMigration) continue;
+      assert.doesNotMatch(
+        line,
+        /@cassiomc1\/mdfiles|mdfiles:\/\/|["']title["']:\s*["']mdfiles\b|\.mdfiles(?:[\/]|`|$)|\bmdfiles\s+(?:init|doctor|update|route|inspect|status|validate|clear)/i,
+        `${relativePath}: ${line}`,
+      );
+    }
+  }
 });

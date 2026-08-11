@@ -474,7 +474,7 @@ def validate_graph_readiness(root: Path) -> None:
                 f"QUALITY_SCORECARD.md: evidence reference is missing: {evidence_reference}"
             )
 
-    for forbidden in ("src/graph/", "src/llm/", "mdfiles run"):
+    for forbidden in ("src/graph/", "src/llm/", "forgeloop run"):
         if forbidden in design or forbidden in integration:
             raise ValidationError(
                 f"product architecture contract contains prohibited runtime term: {forbidden}"
