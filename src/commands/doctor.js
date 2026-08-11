@@ -2,8 +2,15 @@ import { assertSafePath, fileExists, ensureWithin, readBytes } from "../core/fil
 import { readManifest, sha256, writeManifest } from "../core/manifest.js";
 import { readTemplateEntries } from "../core/templates.js";
 
-function finding(code, severity, relativePath, message) {
-  return { code, severity, path: relativePath, message };
+function finding(code, severity, relativePath, message, remediation = null, evidence = null) {
+  return {
+    code,
+    severity,
+    path: relativePath,
+    message,
+    remediation: remediation ?? (severity === "info" ? "No action required." : "Review the target path and apply the suggested correction."),
+    evidence: evidence ?? `Observed target path: ${relativePath}`,
+  };
 }
 
 function readProfileMode(bytes) {

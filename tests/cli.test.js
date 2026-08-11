@@ -410,6 +410,54 @@ test("route help exposes only routing options", () => {
   assert.doesNotMatch(result.stdout, /--adopt <path>/);
 });
 
+test("inspect emits structured target health", async () => {
+  await withTarget(async (target) => {
+    assert.equal(runCli(target, "init").status, 0);
+    const result = runCli(target, "inspect", "--json");
+
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.protocol.version, 1);
+    assert.equal(report.state.status, "absent");
+    assert.ok(Array.isArray(report.findings));
+  });
+});
+
+test("validate-receipt validates a target-local receipt without executing it", async () => {
+  await withTarget(async (target) => {
+    const receiptPath = path.join(target, "receipt.json");
+    await writeFile(
+      receiptPath,
+      `${JSON.stringify({
+        schemaVersion: 1,
+        protocolVersion: 1,
+        taskId: "cli-receipt",
+        contractFingerprint: "a".repeat(64),
+        selectedGuides: ["clean"],
+        changedPaths: [],
+        checks: [],
+        review: { status: "not-run", independent: false },
+        limitations: [],
+        publication: { committed: false, pushed: false, pullRequest: null, deployed: false },
+      })}\n`,
+    );
+
+    const result = runCli(target, "validate-receipt", "--file", "receipt.json", "--json");
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(JSON.parse(result.stdout).taskId, "cli-receipt");
+  });
+});
+
+test("validate-receipt rejects a path outside the target", async () => {
+  await withTarget(async (target) => {
+    const result = runCli(target, "validate-receipt", "--file", "../receipt.json");
+
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /escapes target|inside target/i);
+  });
+});
+
 test("does not relabel an existing installation when init is rerun", async () => {
   await withTarget(async (target) => {
     assert.equal(runCli(target, "init").status, 0);

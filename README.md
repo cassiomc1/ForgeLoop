@@ -70,11 +70,14 @@ npx @cassiomc1/mdfiles route --work complete-website --surface ui --risk untrust
 npx @cassiomc1/mdfiles inspect --json
 npx @cassiomc1/mdfiles status --json
 npx @cassiomc1/mdfiles validate-state --json
+npx @cassiomc1/mdfiles validate-receipt --file ./execution-receipt.json --json
 ```
 
 `route` expands declared signals into deterministic guide IDs and reason codes.
 `inspect`, `status`, and `validate-state` explain installation and resumable
 state; they do not execute commands from the target profile.
+All protocol-support commands are local and offline-capable by default; the
+package sends no telemetry and has no central trace service.
 
 From a repository checkout before npm publication, run the same commands with
 Node directly:

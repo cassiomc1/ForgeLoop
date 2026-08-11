@@ -51,6 +51,10 @@ Do not present an inference, an unrun check, or a local result as observed
 proof. Local success never implies publication, deployment, or remote-check
 success.
 
+The protocol-support CLI is local and offline-capable by default. It sends no
+telemetry, does not require a central trace server, and never executes commands
+found in untrusted profile, receipt, or state data.
+
 ## Failure taxonomy, retry, and loop invariants
 
 The protocol uses these stable failure classes:

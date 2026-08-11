@@ -5,8 +5,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { runDoctor } from "./commands/doctor.js";
+import { formatInspectResult, inspectTarget } from "./commands/inspect.js";
 import { runInit } from "./commands/init.js";
 import { formatRouteResult, runRoute } from "./commands/route.js";
+import { runValidateReceipt } from "./commands/validate-receipt.js";
 import { runUpdate } from "./commands/update.js";
 import { resolveTarget } from "./core/filesystem.js";
 import { getPackageRoot } from "./core/templates.js";
@@ -219,7 +221,19 @@ export async function main(argv = process.argv.slice(2)) {
       return 0;
     }
 
-    if (["inspect", "status", "validate-state", "clear-state", "validate-receipt"].includes(command)) {
+    if (command === "inspect") {
+      const result = await inspectTarget({ target, packageRoot });
+      console.log(options.json ? JSON.stringify(result, null, 2) : formatInspectResult(result));
+      return result.ok ? 0 : 1;
+    }
+
+    if (command === "validate-receipt") {
+      const result = await runValidateReceipt({ target, packageRoot, file: options.file });
+      console.log(options.json ? JSON.stringify(result, null, 2) : "valid: execution receipt");
+      return 0;
+    }
+
+    if (["status", "validate-state", "clear-state"].includes(command)) {
       throw new Error(`${command} command is not implemented yet`);
     }
 
