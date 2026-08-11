@@ -160,6 +160,14 @@ The delegation document defines serializable task briefs, write ownership,
 dependencies, normalized results, reviewer independence, and inline fallback.
 It does not add agent personas, a scheduler, or a provider runtime.
 
+### `ORCHESTRATOR_INTEGRATION.md`
+
+The integration contract is the graph-readiness boundary. It names the
+serializable phases, transitions, invariants, artifact schemas, host
+responsibilities, and inline fallback in one canonical document. It does not
+implement a graph runtime or duplicate the detailed operational rules in
+`LOOP_ENGINEERING.md`.
+
 ### `ENG/*.md`
 
 Eight canonical guides cover:
@@ -282,6 +290,8 @@ The documentation workflow verifies:
 - guide IDs, filenames, frontmatter keys, and `language: en` match the catalog;
 - no legacy language tree or bilingual metadata remains;
 - all route contracts contain valid guide IDs;
+- the canonical phase list, transition rows, state invariants, reason-code
+  language, graph-readiness evidence, and no-runtime boundary are present;
 - Markdown and frontmatter are valid;
 - secrets and credential-like assignments are absent;
 - `THIRD_PARTY_NOTICES.md` is present.

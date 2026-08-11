@@ -93,6 +93,12 @@ The loop invariants are:
 9. no secret in the profile, work state, receipt, or delegation artifacts;
 10. no independent-agent claim when only self-review occurred.
 
+The serializable phase and transition contract is maintained in
+[`ORCHESTRATOR_INTEGRATION.md`](./ORCHESTRATOR_INTEGRATION.md). It is a host
+integration boundary, not an execution runtime; semantic validation checks that
+its phase list, transitions, invariants, schema version, and no-runtime markers
+remain aligned with this loop.
+
 ## Workflow state semantics
 
 The canonical phases are `RECEIVED`, `DISCOVERING`, `CONTRACT_READY`,

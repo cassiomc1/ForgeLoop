@@ -32,3 +32,22 @@ policy are all present.
   was merged, or a deployment succeeded.
 - Literal graph runtime and runtime multi-agent orchestration are `N/A by
   design`; compatible harnesses own those capabilities.
+
+## Evidence matrix
+
+The score is evidence-backed only when the contract and its executable proof
+are both present:
+
+| Dimension | Implementation evidence | Executable evidence |
+| --- | --- | --- |
+| Routing | `src/core/router.js`, route schemas, stable reason codes, and exclusions | `tests/router.test.js`, `tests/fixtures/routes/` |
+| Observability | `src/core/receipt.js` and `src/core/inspect.js` | `tests/observability.test.js`, CLI inspect and receipt tests |
+| Resume/checkpoint | `src/core/work-state.js`, `EXECUTION_STATE.md`, and atomic filesystem writes | `tests/work-state.test.js`, status and validate-state tests |
+| Delegation | `src/core/delegation.js` and `DELEGATION_PROTOCOL.md` | `tests/delegation.test.js` |
+| Portability | `ORCHESTRATOR_INTEGRATION.md`, adapter compatibility, and OS smoke workflow | `tests/portability.test.js`, package checks |
+| Graph readiness | Serializable phase/transition mapping in `ORCHESTRATOR_INTEGRATION.md` | Python semantic validator and workflow-policy tests |
+| Security boundary | realpath containment, secret-free artifacts, authority and no-runtime rules | Markdown/loop validators and `scripts/scan_secrets.py` |
+
+The implementation references above are local observations. OS runners,
+remote links, provider sessions, publication, and deployment remain `Not
+verified` unless their own checks produce current evidence.
