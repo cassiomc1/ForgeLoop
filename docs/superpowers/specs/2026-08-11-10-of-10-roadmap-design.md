@@ -74,7 +74,7 @@ declared agent signals
 src/core/router.js -----------------------> route result + reasons
         |
         +--> schemas and protocol versions
-        +--> src/core/receipts.js ---------> execution receipt validation
+        +--> src/core/receipt.js -----------> execution receipt validation
         +--> src/core/work-state.js --------> atomic checkpoint/status
         +--> src/core/delegation.js --------> task brief/result contracts
         |
