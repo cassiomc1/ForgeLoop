@@ -16,4 +16,9 @@ specific rule overrides them.
 11. After implementation begins, do not return a final result in `EXECUTING`: advance through `VERIFYING`, record structured evidence, reach `REVIEWING`, prepare/update the execution receipt, and require `forgeloop complete` to return `VALID`. If closure cannot be reached, report `BLOCKED` or `PARTIALLY VERIFIED` with exact findings.
 12. Finish with the result, checks actually run, limitations, and publication state.
 
+Do not stop for non-blocking missing product details. When a safe, reversible
+local default exists, record it as an agent assumption and follow the Blocking vs Non-Blocking Decisions policy in `LOOP_ENGINEERING.md`. Ask only for
+load-bearing, irreversible, externally consequential, unsafe, or real
+user/business decisions.
+
 The guides provide technical defaults; explicit requirements and project evidence prevail.
