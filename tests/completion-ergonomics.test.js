@@ -191,6 +191,40 @@ test("recordCheck rejects invalid and contradictory evidence before writing", as
   });
 });
 
+test("recordCheck rejects a stale receipt binding before writing state, receipt, or ledger", async () => {
+  await withTarget(async (target) => {
+    await setupTarget(target);
+    await prepareCompletion({ target, packageRoot });
+    const statePath = path.join(target, ARTIFACT_PATHS.state);
+    const receiptPath = path.join(target, ARTIFACT_PATHS.receipt);
+    const eventsPath = path.join(target, ARTIFACT_PATHS.events);
+    const receipt = JSON.parse(await readFile(receiptPath, "utf8"));
+    receipt.stateFingerprint = "a".repeat(64);
+    await writeFile(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`);
+    const before = await Promise.all([readFile(statePath, "utf8"), readFile(receiptPath, "utf8"), readFile(eventsPath, "utf8")]);
+
+    await assert.rejects(
+      () => recordCheck({
+        target,
+        packageRoot,
+        id: "tests",
+        kind: "command",
+        requirement: "tests",
+        status: "passed",
+        evidenceKind: "OBSERVED",
+        result: "tests passed",
+        exitCode: 0,
+      }),
+      (error) => error.code === "E_RECEIPT_STATE_MISMATCH",
+    );
+
+    assert.deepEqual(
+      await Promise.all([readFile(statePath, "utf8"), readFile(receiptPath, "utf8"), readFile(eventsPath, "utf8")]),
+      before,
+    );
+  });
+});
+
 test("recordCheck requires a prepared receipt and rejects a symlink target", async () => {
   await withTarget(async (target) => {
     const context = await setupTarget(target);

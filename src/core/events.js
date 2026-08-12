@@ -10,6 +10,16 @@ import { assertSecretFree } from "./receipt.js";
 import { PROTOCOL_VERSION } from "./protocol.js";
 
 const EVENT_SCHEMA_VERSION = 1;
+export const LIFECYCLE_MILESTONES = Object.freeze([
+  "CONTRACT_VALIDATED",
+  "ROUTE_VALIDATED",
+  "PREFLIGHT_READY",
+  "EXECUTION_STARTED",
+  "VERIFICATION_STARTED",
+  "VERIFICATION_RECORDED",
+  "COMPLETION_VALIDATED",
+]);
+const REPEATABLE_MILESTONES = new Set(["VERIFICATION_RECORDED"]);
 
 function eventHash(event) {
   const { hash, ...body } = event;
@@ -82,6 +92,8 @@ export async function validateEventLedger(target, packageRoot) {
   const errors = [];
   let taskId = null;
   const seen = new Set();
+  let lastMilestone = -1;
+  const milestoneCounts = new Map();
   for (const [index, event] of events.entries()) {
     if (event.seq !== index + 1) {
       errors.push({ code: "E_EVENT_INVALID", message: `event sequence must be ${index + 1}` });
@@ -93,6 +105,25 @@ export async function validateEventLedger(target, packageRoot) {
     }
     if (event.hash !== eventHash(event)) {
       errors.push({ code: "E_LEDGER_HASH_INVALID", message: `event ${event.seq} hash does not match its content` });
+    }
+    const milestoneIndex = LIFECYCLE_MILESTONES.indexOf(event.event);
+    if (milestoneIndex >= 0) {
+      const count = (milestoneCounts.get(event.event) ?? 0) + 1;
+      milestoneCounts.set(event.event, count);
+      if (count > 1 && !REPEATABLE_MILESTONES.has(event.event)) {
+        errors.push({ code: "E_PHASE_CHRONOLOGY_INVALID", message: `lifecycle milestone must not repeat: ${event.event}` });
+      }
+      if (milestoneIndex > lastMilestone + 1) {
+        errors.push({
+          code: "E_PHASE_CHRONOLOGY_INVALID",
+          message: `${event.event} is missing prerequisite milestone: ${LIFECYCLE_MILESTONES[lastMilestone + 1]}`,
+        });
+      } else if (milestoneIndex < lastMilestone) {
+        errors.push({ code: "E_PHASE_CHRONOLOGY_INVALID", message: `${event.event} is out of lifecycle order` });
+      } else if (milestoneIndex === lastMilestone && !REPEATABLE_MILESTONES.has(event.event)) {
+        errors.push({ code: "E_PHASE_CHRONOLOGY_INVALID", message: `lifecycle milestone must not repeat: ${event.event}` });
+      }
+      if (milestoneIndex > lastMilestone) lastMilestone = milestoneIndex;
     }
     seen.add(event.event);
     if (event.event === "EXECUTION_STARTED" && !seen.has("ROUTE_VALIDATED")) {
@@ -115,6 +146,9 @@ export async function validateEventLedger(target, packageRoot) {
           errors.push({ code: "E_PHASE_CHRONOLOGY_INVALID", message: `execution started before gate satisfaction: ${gate}` });
         }
       }
+    }
+    if (event.event === "VERIFICATION_RECORDED" && !seen.has("VERIFICATION_STARTED")) {
+      errors.push({ code: "E_PHASE_CHRONOLOGY_INVALID", message: "verification evidence recorded before verification started" });
     }
     if (event.event === "COMPLETION_VALIDATED" && !seen.has("VERIFICATION_RECORDED")) {
       errors.push({ code: "E_PHASE_CHRONOLOGY_INVALID", message: "completion validated before verification evidence" });

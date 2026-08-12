@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -7,14 +8,15 @@ import { test } from "node:test";
 import { runComplete } from "../src/commands/complete.js";
 import { createCheck } from "../src/core/checks.js";
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
-import { createCoverage } from "../src/core/coverage.js";
+import { coverageForRequirements, createCoverage } from "../src/core/coverage.js";
 import { appendProtocolEvent } from "../src/core/events.js";
 import { createGate } from "../src/core/gates.js";
 import { persistGate } from "../src/core/gate-artifact.js";
 import { evaluateRoute } from "../src/core/router.js";
 import { persistRoute } from "../src/core/route-artifact.js";
 import { createEvidence } from "../src/core/evidence.js";
-import { ARTIFACT_PATHS, writeJsonArtifact } from "../src/core/artifacts.js";
+import { ARTIFACT_PATHS, canonicalFingerprint, writeJsonArtifact } from "../src/core/artifacts.js";
+import { prepareCompletion } from "../src/core/completion-artifacts.js";
 import { createWorkState, writeWorkState } from "../src/core/work-state.js";
 import { getPackageRoot } from "../src/core/templates.js";
 
@@ -34,7 +36,7 @@ async function withTarget(run) {
   }
 }
 
-async function prepareValidTask(target, receiptOverrides = {}) {
+async function prepareValidTask(target, { receiptOverrides = {}, events } = {}) {
   const contract = createContract({
     taskId: "task-complete",
     objective: "Validate a complete task",
@@ -51,6 +53,21 @@ async function prepareValidTask(target, receiptOverrides = {}) {
   await writeContract(target, contract, packageRoot);
   const route = evaluateRoute({ workType: "api", surfaces: ["api"], platforms: [] });
   const persistedRoute = await persistRoute(target, route, packageRoot, { contractFingerprint: contractHash });
+  const check = createCheck({
+    id: "tests",
+    kind: "command",
+    requirement: "tests",
+    status: "passed",
+    evidenceKind: "OBSERVED",
+    source: "npm test",
+    exitCode: 0,
+  });
+  const evidence = createEvidence({ kind: "OBSERVED", source: "npm test", result: "exit 0" });
+  const coverage = [createCoverage({
+    requirement: "tests",
+    requiredEvidence: ["tests"],
+    observedEvidence: ["tests"],
+  })];
   const state = createWorkState({
     taskId: contract.taskId,
     contractFingerprint: contractHash,
@@ -63,10 +80,11 @@ async function prepareValidTask(target, receiptOverrides = {}) {
     satisfiedGates: [],
     completedSteps: ["contract", "route", "execution", "verification"],
     pendingSteps: [],
-    checks: [],
+    checks: [check],
     failures: [],
     blockers: [],
-    verificationEvidence: [createEvidence({ kind: "OBSERVED", source: "npm test", result: "exit 0" })],
+    verificationEvidence: [evidence],
+    evidenceCoverage: coverage,
   });
   await writeWorkState(target, state, { packageRoot });
   const receipt = {
@@ -75,6 +93,7 @@ async function prepareValidTask(target, receiptOverrides = {}) {
     taskId: contract.taskId,
     contractFingerprint: contractHash,
     routeFingerprint: persistedRoute.fingerprint,
+    stateFingerprint: canonicalFingerprint(state),
     status: "complete",
     taskStatus: "complete",
     verificationStatus: "valid",
@@ -82,38 +101,36 @@ async function prepareValidTask(target, receiptOverrides = {}) {
     productionReadiness: "not-verified",
     selectedGuides: route.guides,
     changedPaths: ["src/example.js"],
-    checks: [createCheck({
-      id: "tests",
-      kind: "command",
-      requirement: "tests",
-      status: "passed",
-      evidenceKind: "OBSERVED",
-      source: "npm test",
-      exitCode: 0,
-    })],
-    evidence: [createEvidence({ kind: "OBSERVED", source: "npm test", result: "exit 0" })],
-    evidenceCoverage: [createCoverage({
-      requirement: "tests",
-      requiredEvidence: ["tests"],
-      observedEvidence: ["tests"],
-    })],
+    checks: [check],
+    evidence: [evidence],
+    evidenceCoverage: coverage,
     review: { status: "approved", independent: false },
     limitations: [],
     publication: { committed: false, pushed: false, pullRequest: null, deployed: false },
     ...receiptOverrides,
   };
   await writeJsonArtifact(target, ARTIFACT_PATHS.receipt, receipt, "execution-receipt", packageRoot);
-  for (const event of [
+  for (const event of events ?? [
     "TASK_RECEIVED",
     "CONTRACT_VALIDATED",
     "ROUTE_VALIDATED",
     "PREFLIGHT_READY",
     "EXECUTION_STARTED",
+    "VERIFICATION_STARTED",
     "VERIFICATION_RECORDED",
   ]) {
     await appendProtocolEvent(target, { taskId: contract.taskId, event }, packageRoot);
   }
   return { contract, route, receipt };
+}
+
+async function artifactHashes(target) {
+  const hashes = {};
+  for (const relativePath of [ARTIFACT_PATHS.state, ARTIFACT_PATHS.receipt, ARTIFACT_PATHS.events]) {
+    const bytes = await readFile(path.join(target, relativePath));
+    hashes[relativePath] = createHash("sha256").update(bytes).digest("hex");
+  }
+  return hashes;
 }
 
 test("complete rejects a task without a current contract", async () => {
@@ -154,4 +171,106 @@ test("complete validates a coherent task and keeps publication independent", asy
     assert.equal(completion.publicationStatus, "local-only");
     assert.equal(result.receipt.productionReadiness, "not-verified");
   });
+});
+
+test("prepare-completion rejects a foreign receipt without rebinding its evidence", async () => {
+  await withTarget(async (target) => {
+    await prepareValidTask(target);
+    const receiptPath = path.join(target, ARTIFACT_PATHS.receipt);
+    const receipt = JSON.parse(await readFile(receiptPath, "utf8"));
+    receipt.taskId = "foreign-task";
+    await writeJsonArtifact(target, ARTIFACT_PATHS.receipt, receipt, "execution-receipt", packageRoot);
+    const before = await artifactHashes(target);
+
+    await assert.rejects(
+      () => prepareCompletion({ target, packageRoot }),
+      (error) => error.code === "E_RECEIPT_TASK_MISMATCH",
+    );
+
+    assert.deepEqual(await artifactHashes(target), before);
+  });
+});
+
+test("complete fails closed for stale receipt/state bindings and inconsistent checks", async (t) => {
+  const cases = [
+    ["missing receipt state fingerprint", async ({ receipt }) => {
+      delete receipt.stateFingerprint;
+    }, "E_RECEIPT_STATE_MISMATCH"],
+    ["stale receipt state fingerprint", async ({ receipt }) => {
+      receipt.stateFingerprint = "a".repeat(64);
+    }, "E_RECEIPT_STATE_MISMATCH"],
+    ["malformed state checks", async ({ state, receipt }) => {
+      state.checks = [{ id: "tests" }];
+      receipt.stateFingerprint = canonicalFingerprint(state);
+    }, "E_CHECK_INVALID"],
+    ["divergent receipt and state checks", async ({ state, receipt }) => {
+      state.checks = [];
+      state.evidenceCoverage = coverageForRequirements(["tests"], state.checks);
+      receipt.stateFingerprint = canonicalFingerprint(state);
+    }, "E_RECEIPT_STATE_MISMATCH"],
+  ];
+
+  for (const [name, mutate, expectedCode] of cases) {
+    await t.test(name, async () => {
+      await withTarget(async (target) => {
+        await prepareValidTask(target);
+        const statePath = path.join(target, ARTIFACT_PATHS.state);
+        const receiptPath = path.join(target, ARTIFACT_PATHS.receipt);
+        const state = JSON.parse(await readFile(statePath, "utf8"));
+        const receipt = JSON.parse(await readFile(receiptPath, "utf8"));
+        await mutate({ state, receipt });
+        await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`);
+        await writeJsonArtifact(target, ARTIFACT_PATHS.receipt, receipt, "execution-receipt", packageRoot);
+        const before = await artifactHashes(target);
+
+        const result = await runComplete({ target, packageRoot, persist: true });
+
+        assert.equal(result.status, "REJECTED");
+        assert.ok(result.errors.some((error) => error.code === expectedCode));
+        assert.deepEqual(await artifactHashes(target), before);
+      });
+    });
+  }
+});
+
+test("complete requires the ordered verification milestones before writing", async (t) => {
+  const validPrefix = [
+    "CONTRACT_VALIDATED",
+    "ROUTE_VALIDATED",
+    "PREFLIGHT_READY",
+    "EXECUTION_STARTED",
+    "VERIFICATION_STARTED",
+    "VERIFICATION_RECORDED",
+  ];
+  const cases = [
+    ["missing verification start", validPrefix.filter((event) => event !== "VERIFICATION_STARTED")],
+    ["verification recorded before execution", [
+      "CONTRACT_VALIDATED",
+      "ROUTE_VALIDATED",
+      "PREFLIGHT_READY",
+      "VERIFICATION_RECORDED",
+      "EXECUTION_STARTED",
+      "VERIFICATION_STARTED",
+    ]],
+    ...validPrefix.slice(1).map((event, index) => {
+      const order = [...validPrefix];
+      [order[index], order[index + 1]] = [order[index + 1], order[index]];
+      return [`${event} before ${validPrefix[index]}`, order];
+    }),
+  ];
+
+  for (const [name, events] of cases) {
+    await t.test(name, async () => {
+      await withTarget(async (target) => {
+        const { contract } = await prepareValidTask(target, { events });
+        const before = await artifactHashes(target);
+
+        const result = await runComplete({ target, packageRoot, persist: true });
+
+        assert.equal(result.status, "REJECTED");
+        assert.ok(result.errors.some((error) => error.code === "E_PHASE_CHRONOLOGY_INVALID"));
+        assert.deepEqual(await artifactHashes(target), before);
+      });
+    });
+  }
 });

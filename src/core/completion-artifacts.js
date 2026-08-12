@@ -5,11 +5,12 @@ import {
   writeJsonArtifact,
 } from "./artifacts.js";
 import { readContract } from "./contract.js";
-import { appendProtocolEvent } from "./events.js";
+import { appendProtocolEvent, validateEventLedger } from "./events.js";
 import { completionEvidenceForGuides } from "./guide-metadata.js";
 import { createCheck } from "./checks.js";
 import { createEvidence } from "./evidence.js";
 import { coverageForRequirements } from "./coverage.js";
+import { assertCompletionRelationships } from "./completion-relationships.js";
 import { evaluatePreflight } from "./preflight.js";
 import { currentChangedPaths } from "./repository.js";
 import { readPersistedRoute } from "./route-artifact.js";
@@ -90,18 +91,26 @@ export async function prepareCompletion({ target, packageRoot }) {
     additionalEvidence: preflight.policy?.requiredEvidence ?? [],
   });
   const existingValue = existing?.value ?? {};
+  assertCompletionRelationships({
+    contract,
+    route,
+    state,
+    receipt: existingValue.taskId ? existingValue : null,
+    requiredEvidence,
+    requireReceiptStateFingerprint: false,
+    requireRequiredChecks: false,
+  });
   const changedPaths = existing
     ? [...(existingValue.changedPaths ?? [])]
     : (await currentChangedPaths(target) ?? []);
-  const checks = [...(existingValue.checks ?? [])];
+  const checks = existing ? [...existingValue.checks] : [...state.checks];
+  const evidence = existing ? [...(existingValue.evidence ?? [])] : [...state.verificationEvidence];
   const receipt = await createReceipt({
     ...existingValue,
     taskId: contract.value.taskId,
     contractFingerprint: contract.fingerprint,
     routeFingerprint: route.fingerprint,
-    ...(Object.hasOwn(existingValue, "stateFingerprint")
-      ? { stateFingerprint: canonicalFingerprint(state) }
-      : {}),
+    stateFingerprint: canonicalFingerprint(state),
     status: existingValue.status ?? "in-progress",
     taskStatus: existingValue.taskStatus ?? "in-progress",
     verificationStatus: existingValue.verificationStatus ?? "not-verified",
@@ -110,7 +119,7 @@ export async function prepareCompletion({ target, packageRoot }) {
     selectedGuides: [...route.value.guides],
     changedPaths,
     checks,
-    evidence: [...(existingValue.evidence ?? [])],
+    evidence,
     evidenceCoverage: coverageForRequirements(requiredEvidence, checks),
     review: existingValue.review ?? { status: "not-run", independent: false },
     limitations: [...(existingValue.limitations ?? [])],
@@ -234,6 +243,26 @@ export async function recordCheck({
     packageRoot,
     additionalEvidence: preflight.policy?.requiredEvidence ?? [],
   });
+  assertCompletionRelationships({
+    contract,
+    route,
+    state,
+    receipt: existingReceipt.value,
+    requiredEvidence,
+    requireRequiredChecks: false,
+  });
+  const ledger = await validateEventLedger(target, packageRoot);
+  if (!ledger.valid) {
+    const first = ledger.errors[0];
+    throw artifactError(first.code, first.message, [ARTIFACT_PATHS.events]);
+  }
+  if (!ledger.events.some((event) => event.taskId === state.taskId && event.event === "VERIFICATION_STARTED")) {
+    throw artifactError(
+      "E_PHASE_CHRONOLOGY_INVALID",
+      "record-check requires VERIFICATION_STARTED in the current task ledger",
+      [ARTIFACT_PATHS.events],
+    );
+  }
   const coverage = coverageForRequirements(requiredEvidence, checks);
   const nextState = {
     ...state,
@@ -247,10 +276,16 @@ export async function recordCheck({
     checks,
     evidence: evidenceList,
     evidenceCoverage: coverage,
-    ...(Object.hasOwn(existingReceipt.value, "stateFingerprint")
-      ? { stateFingerprint: canonicalFingerprint(nextState) }
-      : {}),
+    stateFingerprint: canonicalFingerprint(nextState),
   }, packageRoot);
+
+  assertCompletionRelationships({
+    contract,
+    route,
+    state: nextState,
+    receipt: nextReceipt,
+    requiredEvidence,
+  });
 
   await writeWorkState(target, nextState, { packageRoot });
   const written = await writeJsonArtifact(

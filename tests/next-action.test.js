@@ -169,6 +169,9 @@ async function setupTarget(target, {
   if (executionStarted) {
     await appendProtocolEvent(target, { taskId: contract.taskId, event: "EXECUTION_STARTED" }, packageRoot);
   }
+  if (["VERIFYING", "DIAGNOSING", "CORRECTING", "REVIEWING", "COMPLETE"].includes(phase)) {
+    await appendProtocolEvent(target, { taskId: contract.taskId, event: "VERIFICATION_STARTED" }, packageRoot);
+  }
 
   if (staleRoute) {
     const stale = createContract({ ...contract, objective: "Changed after route persistence" });

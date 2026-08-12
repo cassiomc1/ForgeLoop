@@ -101,6 +101,9 @@ test("entering verification reconciles only the implementation step", async () =
       completedSteps: ["contract", "route"],
       pendingSteps: ["implementation", "verification"],
     }));
+    for (const event of ["CONTRACT_VALIDATED", "ROUTE_VALIDATED", "PREFLIGHT_READY", "EXECUTION_STARTED"]) {
+      await appendProtocolEvent(target, { taskId: "task-lifecycle", event }, repositoryRoot);
+    }
 
     const next = await advanceWorkState(target, "VERIFYING", { packageRoot: repositoryRoot });
 

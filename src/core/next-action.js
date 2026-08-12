@@ -9,6 +9,7 @@ import { PROTOCOL_VERSION } from "./protocol.js";
 import { validateReceipt } from "./receipt.js";
 import { readPersistedRoute } from "./route-artifact.js";
 import { assertCheckList } from "./checks.js";
+import { completionRelationshipErrors } from "./completion-relationships.js";
 import { classifyLoadedWorkState, readWorkState } from "./work-state.js";
 
 export const NEXT_ACTIONS = Object.freeze({
@@ -545,6 +546,22 @@ export async function getNextAction({ target, packageRoot } = {}) {
       checks: state.checks,
       additionalEvidence: preflight.policy?.requiredEvidence ?? [],
     });
+    const receiptRelationships = completionRelationshipErrors({
+      contract,
+      route,
+      state,
+      receipt: receipt.value.value,
+      requiredEvidence: evidence.requirements,
+      requireRequiredChecks: false,
+    });
+    if (receiptRelationships.length > 0) {
+      return result({
+        ...context,
+        nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
+        reasons: receiptRelationships,
+        requiredArtifacts: [...requiredArtifacts, ARTIFACT_PATHS.receipt],
+      });
+    }
     if (allCoverageCovered(evidence.coverage)) {
       return decision(context, NEXT_ACTIONS.ENTER_REVIEWING, artifactError("EVIDENCE_COVERED", "All required observed verification evidence is covered"));
     }
@@ -647,6 +664,21 @@ export async function getNextAction({ target, packageRoot } = {}) {
         artifactError("E_RECEIPT_INVALID", `Repair or remove the invalid execution receipt before continuing: ${error.message}`, [ARTIFACT_PATHS.receipt]),
         [...requiredArtifacts, ARTIFACT_PATHS.receipt],
       );
+    }
+    const receiptRelationships = completionRelationshipErrors({
+      contract,
+      route,
+      state,
+      receipt: receipt.value.value,
+      requiredEvidence: evidence.requirements,
+    });
+    if (receiptRelationships.length > 0) {
+      return result({
+        ...context,
+        nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
+        reasons: receiptRelationships,
+        requiredArtifacts: [...requiredArtifacts, ARTIFACT_PATHS.receipt],
+      });
     }
     const completion = await evaluateCompletion({ target, packageRoot });
     if (completion.status !== "VALID") {
