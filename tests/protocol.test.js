@@ -5,6 +5,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import {
+  FAILURE_CODES,
   FAILURE_CLASSES,
   GUIDE_IDS,
   PROTOCOL_VERSION,
@@ -41,6 +42,10 @@ test("protocol exposes stable versions, failure classes, phases, and guides", ()
   assert.equal(new Set(FAILURE_CLASSES).size, 12);
   assert.equal(new Set(WORK_PHASES).size, 13);
   assert.equal(new Set(GUIDE_IDS).size, 8);
+});
+
+test("protocol exposes the unresolved-decision preflight failure code", () => {
+  assert.ok(FAILURE_CODES.includes("E_CONTRACT_UNRESOLVED_DECISION"));
 });
 
 test("protocol accepts valid transitions and rejects terminal regressions", () => {

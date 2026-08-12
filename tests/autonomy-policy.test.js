@@ -36,8 +36,17 @@ test("canonical policy distinguishes safe assumptions from blocking decisions", 
   assert.match(policy, /## Blocking vs Non-Blocking Decisions/);
   assert.match(policy, /NON_BLOCKING/);
   assert.match(policy, /BLOCKING/);
+  assert.match(policy, /current-contract\.assumptions\[\]/);
   assert.match(policy, /ASSUMPTION/);
+  assert.match(policy, /value.*reason.*scope.*reversible.*source/i);
   assert.match(policy, /source=agent-default/);
+  assert.match(policy, /Do not place resolved safe assumptions in unresolvedDecisions/i);
+  assert.match(policy, /unresolvedDecisions.*preflight.*BLOCKED/i);
+  assert.match(policy, /unresolved blocking decisions.*recorded in.*current-contract\.unresolvedDecisions\[\]/i);
+  assert.doesNotMatch(
+    policy,
+    /(?:unresolved(?: blocking)? decisions|remaining blocking items)[^.\n]*prevent contract creation/i,
+  );
   assert.match(policy, /SAFE \+ REVERSIBLE \+ LOCAL \+ NON-SENSITIVE/);
   for (const example of [...nonBlocking, ...blocking]) {
     assert.match(policy, new RegExp(example, "i"), example);

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -15,6 +15,8 @@ import { contractFingerprint, createContract, readContract, writeContract } from
 import { createConfig } from "../src/core/config.js";
 import { createGate } from "../src/core/gates.js";
 import { createSourceRegistry } from "../src/core/sources.js";
+import { evaluateRoute } from "../src/core/router.js";
+import { persistRoute } from "../src/core/route-artifact.js";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -85,6 +87,45 @@ test("artifact writes reject secret-like values before touching disk", async () 
         repositoryRoot,
       ),
       /secret|credential/i,
+    );
+  });
+});
+
+test("route persistence rejects a manually persisted invalid current contract", async () => {
+  await withTarget(async (target) => {
+    const sensitiveValue = "sk-" + "U".repeat(20);
+    const contract = {
+      schemaVersion: 1,
+      protocolVersion: 1,
+      taskId: "route-invalid-contract",
+      objective: "Reject invalid contract reads before routing",
+      assumptions: [{
+        value: sensitiveValue,
+        reason: "Exercise the direct route boundary",
+        scope: "local test",
+        reversible: true,
+        source: "agent-default",
+      }],
+      deliverables: [],
+      constraints: [],
+      risks: [],
+      verification: [],
+      successCriteria: [],
+      stopConditions: [],
+      unresolvedDecisions: [],
+      sourceRefs: [],
+    };
+    const contractPath = path.join(target, ARTIFACT_PATHS.contract);
+    await mkdir(path.dirname(contractPath), { recursive: true });
+    await writeFile(contractPath, `${JSON.stringify(contract, null, 2)}\n`, "utf8");
+
+    await assert.rejects(
+      () => persistRoute(target, evaluateRoute({ workType: "bug" }), repositoryRoot),
+      (error) => {
+        assert.match(error.message, /secret-like/i);
+        assert.equal(error.message.includes(sensitiveValue), false);
+        return true;
+      },
     );
   });
 });

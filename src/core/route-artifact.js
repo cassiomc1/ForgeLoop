@@ -1,12 +1,13 @@
 import { assertRouteInvariants } from "./router.js";
 import { ARTIFACT_PATHS, readJsonArtifact, writeJsonArtifact } from "./artifacts.js";
+import { readContract } from "./contract.js";
 
 export async function persistRoute(target, route, packageRoot, options = {}) {
   assertRouteInvariants(route);
   let { contractFingerprint, ...writeOptions } = options;
   if (contractFingerprint === undefined) {
     try {
-      contractFingerprint = (await readJsonArtifact(target, ARTIFACT_PATHS.contract, "current-contract", packageRoot)).fingerprint;
+      contractFingerprint = (await readContract(target, packageRoot)).fingerprint;
     } catch (error) {
       if (error.code !== "ARTIFACT_MISSING") throw error;
     }

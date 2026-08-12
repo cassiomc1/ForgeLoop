@@ -23,11 +23,7 @@ regulated claim, or another externally consequential/high-impact decision.
 
 ### Safe assumption rule
 
-When a missing product detail is non-blocking, choose the smallest reasonable
-reversible default, explicitly classify it as an agent assumption, record its
-value, reason, scope, reversible=true, and source=agent-default in the existing
-contract context, and continue. Never present an assumption as a verified user
-or business fact.
+When a missing product detail is non-blocking, choose the smallest reasonable reversible default, explicitly classify it as an agent assumption, and record it in `current-contract.assumptions[]`. Each assumption must include `value`, `reason`, `scope`, `reversible=true`, and `source=agent-default`. Do not place resolved safe assumptions in unresolvedDecisions[]. Never present an assumption as a verified user or business fact.
 
 The assumption boundary is:
 
@@ -35,8 +31,7 @@ The assumption boundary is:
 SAFE + REVERSIBLE + LOCAL + NON-SENSITIVE + NON-AUTHORITATIVE + NON-DESTRUCTIVE
 ```
 
-Record the choice with an explicit `ASSUMPTION` marker. Remaining blocking
-items stay in unresolved-decision context and prevent contract creation.
+Record the choice with an explicit `ASSUMPTION` marker. Unresolved blocking decisions must be recorded in `current-contract.unresolvedDecisions[]`; they prevent `preflight` from returning `READY` and block `EXECUTING` until resolved, but do not prevent contract serialization.
 
 ## Serialized protocol preparation
 
@@ -50,9 +45,7 @@ those gates are recorded under `.forgeloop/gates/` and are checked by:
 forgeloop preflight
 ```
 
-`preflight` validates local ForgeLoop artifacts only. It does not invoke the
-model, run project commands, or treat a prose declaration as evidence. A
-`READY` result is required before `EXECUTING` in standard and strict workflows.
+`preflight` validates local ForgeLoop artifacts only. It does not invoke the model, run project commands, or treat a prose declaration as evidence. A `READY` result is required before `EXECUTING` in standard and strict workflows. A non-empty `current-contract.unresolvedDecisions[]` causes `forgeloop preflight` to return `BLOCKED` with `E_CONTRACT_UNRESOLVED_DECISION`; a valid `current-contract.assumptions[]` list does not block preparation.
 
 ## Completion validation and chronology
 
@@ -287,8 +280,11 @@ project. Request a decision when legitimate alternatives produce materially
 different outcomes, authority is missing, or the action is destructive.
 
 Unknown non-blocking details do not prevent contract creation. Record them as
-reversible agent assumptions and continue. Only unresolved blocking decisions,
-missing authority, or unsafe-to-infer facts prevent contract creation.
+reversible agent assumptions in `current-contract.assumptions[]` and continue.
+Unresolved blocking decisions, missing authority, and unsafe-to-infer facts
+must be serialized in `current-contract.unresolvedDecisions[]`; they prevent
+`preflight` from returning `READY` and block `EXECUTING` until resolved, not
+contract creation or serialization.
 
 ### Classify the request
 

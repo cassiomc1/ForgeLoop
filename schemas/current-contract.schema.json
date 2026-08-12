@@ -22,6 +22,21 @@
     "protocolVersion": { "const": 1 },
     "taskId": { "type": "string", "minLength": 1 },
     "objective": { "type": "string", "minLength": 1 },
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["value", "reason", "scope", "reversible", "source"],
+        "properties": {
+          "value": { "type": "string", "minLength": 1 },
+          "reason": { "type": "string", "minLength": 1 },
+          "scope": { "type": "string", "minLength": 1 },
+          "reversible": { "const": true },
+          "source": { "const": "agent-default" }
+        },
+        "additionalProperties": false
+      }
+    },
     "deliverables": { "type": "array", "items": { "type": "string", "minLength": 1 } },
     "constraints": { "type": "array", "items": { "type": "string", "minLength": 1 } },
     "risks": { "type": "array", "items": { "type": "string", "minLength": 1 } },
