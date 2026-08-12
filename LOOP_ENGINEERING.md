@@ -4,6 +4,40 @@
 > technical rules remain in the guides selected through
 > [`GUIDE_ROUTER.md`](./GUIDE_ROUTER.md).
 
+## Blocking vs Non-Blocking Decisions
+
+Classify every unresolved decision before deciding whether to ask the user.
+
+`NON_BLOCKING` applies when a safe local default exists, the choice is
+reversible, it does not change external state, it is not sensitive or
+authoritative, and it does not assert a real user or business fact. Examples
+include fictional company name, demo phone number, placeholder copy, temporary logo text,
+palette, typography, local-only fictional identity, fictional identity, demo
+contacts, visual defaults, section ordering, and local-only form behavior.
+
+`BLOCKING` applies when proceeding would require real legal business name,
+real contact details, credentials, payment data, production endpoint,
+deployment target, deployment or domain authority, destructive operation,
+irreversible architectural decision, irreversible data choice, regulated/legal claim,
+regulated claim, or another externally consequential/high-impact decision.
+
+### Safe assumption rule
+
+When a missing product detail is non-blocking, choose the smallest reasonable
+reversible default, explicitly classify it as an agent assumption, record its
+value, reason, scope, reversible=true, and source=agent-default in the existing
+contract context, and continue. Never present an assumption as a verified user
+or business fact.
+
+The assumption boundary is:
+
+```text
+SAFE + REVERSIBLE + LOCAL + NON-SENSITIVE + NON-AUTHORITATIVE + NON-DESTRUCTIVE
+```
+
+Record the choice with an explicit `ASSUMPTION` marker. Remaining blocking
+items stay in unresolved-decision context and prevent contract creation.
+
 ## Serialized protocol preparation
 
 ForgeLoop keeps the agent responsible for implementation while making the
@@ -252,6 +286,10 @@ Do not interrupt the user for information that can be discovered safely in the
 project. Request a decision when legitimate alternatives produce materially
 different outcomes, authority is missing, or the action is destructive.
 
+Unknown non-blocking details do not prevent contract creation. Record them as
+reversible agent assumptions and continue. Only unresolved blocking decisions,
+missing authority, or unsafe-to-infer facts prevent contract creation.
+
 ### Classify the request
 
 - **Answer, explain, or review:** inspect and report evidence; do not make implicit changes.
@@ -372,10 +410,14 @@ requirements, closer instructions, code evidence, or higher-level host rules.
 ### Design gate
 
 Before behavior, feature, architecture, or instruction changes, do proportional
-design after discovery. Work through one unresolved decision question at a
-time, surface meaningful alternatives with tradeoffs, and obtain approval
-before implementation. For small documentation maintenance, keep the treatment
-compact while still confirming the objective, boundaries, and verification.
+design after discovery. Classify unresolved design decisions before requesting
+approval. Require user approval only for load-bearing decisions whose
+alternatives materially change the requested product and cannot be resolved
+through a safe, reversible local default. For non-blocking prototype choices,
+choose a reasonable default, record the assumption, and continue. Retain
+approval for material alternatives and external or irreversible decisions. For
+small documentation maintenance, keep the treatment compact while still
+confirming the objective, boundaries, and verification.
 
 Use the [Execution contract](#execution-contract), [Project discovery](#project-discovery),
 [Guide selection](#guide-selection), and [Proportional planning](#proportional-planning)

@@ -8,6 +8,20 @@ import { evaluateRoute } from "../src/core/router.js";
 const root = path.resolve("conformance");
 const packageRoot = path.resolve(".");
 
+test("blind premium request remains exact and protocol-free", async () => {
+  const request = await readFile(path.join(root, "blind-premium-website", "REQUEST.md"), "utf8");
+  const lines = request.replace(/\r\n/g, "\n").split("\n");
+  assert.match(lines[0], /^#\s+\S/, "scenario metadata must satisfy Markdown heading rules");
+  const prompt = lines.slice(2).join("\n");
+  assert.equal(
+    prompt.replace(/\s+/g, " ").trim(),
+    "Create a premium website for a law firm. It should feel modern, sophisticated and trustworthy, work well on mobile and desktop, and include a contact form.",
+  );
+  for (const term of ["ForgeLoop", "contract", "routing", "gate", "preflight", "evidence", "audit", "complete", "protocol"]) {
+    assert.doesNotMatch(prompt, new RegExp("\\b" + term + "\\b", "i"), term);
+  }
+});
+
 test("live-agent conformance scenarios declare route, gates, and evidence contracts", async () => {
   const scenarios = (await readdir(root, { withFileTypes: true }))
     .filter((entry) => entry.isDirectory())
@@ -83,7 +97,8 @@ test("the second live run records the pre-implementation clarification stop", as
 
   assert.match(record, /## Environment/);
   assert.match(record, /## Observed behavior/);
-  assert.match(record, /PROTOCOL ACTIVATION \/ PRE-IMPLEMENTATION STOP/);
+  assert.match(record, /PROTOCOL ACTIVATION \/ PRE-IMPLEMENTATION CLARIFICATION STOP/);
+  assert.match(record, /Pre-contract autonomy.*FAIL/);
   assert.match(record, /current-contract\.json.*Missing/);
   assert.match(record, /Full conformance.*PARTIAL/);
 });

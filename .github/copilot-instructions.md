@@ -14,4 +14,9 @@ directory or file rules.
 - After implementation begins, do not return a final result in `EXECUTING`: follow `VERIFYING` → structured evidence → `REVIEWING` → execution receipt → validator-backed `COMPLETE`; otherwise report `BLOCKED` or `PARTIALLY VERIFIED` with exact findings.
 - Report the result, checks actually run, limitations, and publication state.
 
+Do not stop for non-blocking missing product details. When a safe, reversible
+local default exists, record it as an agent assumption and follow the Blocking vs Non-Blocking Decisions policy in `LOOP_ENGINEERING.md`. Ask only for
+load-bearing, irreversible, externally consequential, unsafe, or real
+user/business decisions.
+
 The loop and router are canonical; do not replicate domain rules here.
