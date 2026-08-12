@@ -12,6 +12,9 @@ import { assertSafePath, ensureWithin, fileExists, readBytes } from "./filesyste
 import { sha256 } from "./manifest.js";
 import { validateProfileSources } from "./profile.js";
 
+const PREVIEW_DECISION_LIMIT = 10;
+const PREVIEW_DECISION_MAX_LENGTH = 240;
+
 function issue(code, message, artifacts = [], details = {}) {
   return { code, message, artifacts, ...details };
 }
@@ -141,6 +144,22 @@ export async function evaluatePreflight({ target, packageRoot, strict = false } 
   const effectiveStrict = strict || config.complianceMode === "strict";
   if (effectiveStrict && profile.status !== "verified") {
     errors.push(issue("E_PROFILE_UNVERIFIED", "Strict preflight requires a verified project profile", ["PROJECT_PROFILE.md"]));
+  }
+  const unresolvedDecisions = contract?.value?.unresolvedDecisions ?? [];
+  if (unresolvedDecisions.length > 0) {
+    errors.push(issue(
+      "E_CONTRACT_UNRESOLVED_DECISION",
+      "The current contract contains unresolved blocking decisions.",
+      [ARTIFACT_PATHS.contract],
+      {
+        decisions: unresolvedDecisions
+          .slice(0, PREVIEW_DECISION_LIMIT)
+          .map((decision) => decision.slice(0, PREVIEW_DECISION_MAX_LENGTH)),
+        decisionCount: unresolvedDecisions.length,
+        ...(unresolvedDecisions.length > PREVIEW_DECISION_LIMIT ? { decisionsTruncated: true } : {}),
+        next: "Resolve the blocking decision with the user or applicable authority, update current-contract.json, then rerun preflight.",
+      },
+    ));
   }
 
   if (route && contract) {
