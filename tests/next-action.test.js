@@ -6,6 +6,7 @@ import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
+import { runComplete } from "../src/commands/complete.js";
 import { runPreflight } from "../src/commands/preflight.js";
 import { ARTIFACT_PATHS } from "../src/core/artifacts.js";
 import { createCheck } from "../src/core/checks.js";
@@ -189,6 +190,28 @@ async function requiredGatesForRoute(guides) {
   return requiredGatesForGuides(guides, packageRoot);
 }
 
+async function setupCompletedTarget(target) {
+  await setupTarget(target, { phase: "EXECUTING" });
+  await advanceWorkState(target, "VERIFYING", { packageRoot });
+  await prepareCompletion({ target, packageRoot });
+  await recordCheck({
+    target,
+    packageRoot,
+    id: "tests",
+    kind: "command",
+    requirement: "tests",
+    status: "passed",
+    evidenceKind: "OBSERVED",
+    result: "tests passed",
+    exitCode: 0,
+  });
+  await advanceWorkState(target, "REVIEWING", { packageRoot });
+  const completion = await runComplete({ target, packageRoot });
+  assert.equal(completion.status, "VALID");
+  assert.equal(completion.taskStatus, "COMPLETE");
+  return completion;
+}
+
 function assertStableAction(result, action) {
   assert.equal(result.nextAction, action);
   assert.ok(Object.values(NEXT_ACTIONS).includes(result.nextAction));
@@ -255,7 +278,6 @@ test("phase matrix returns the legal next action", async (t) => {
     ["executing", { phase: "EXECUTING" }, NEXT_ACTIONS.ENTER_VERIFYING],
     ["diagnosing", { phase: "DIAGNOSING" }, NEXT_ACTIONS.CORRECT],
     ["correcting", { phase: "CORRECTING" }, NEXT_ACTIONS.ENTER_VERIFYING],
-    ["complete", { phase: "COMPLETE" }, NEXT_ACTIONS.NONE],
     ["blocked", { phase: "BLOCKED" }, NEXT_ACTIONS.RESOLVE_BLOCKER],
   ];
 
@@ -270,6 +292,15 @@ test("phase matrix returns the legal next action", async (t) => {
       });
     });
   }
+
+  await t.test("validator-backed complete state is terminal", async () => {
+    await withTarget(async (target) => {
+      await setupCompletedTarget(target);
+      const result = await getNextAction({ target, packageRoot });
+      assertStableAction(result, NEXT_ACTIONS.NONE);
+      assert.equal(result.terminal, true);
+    });
+  });
 });
 
 test("verification decisions require observed evidence and surface failed checks", async (t) => {
@@ -396,8 +427,20 @@ test("unsafe artifacts return repair guidance without writes and results are det
     });
   });
 
+  await t.test("premature complete state returns repair guidance", async () => {
+    await withTarget(async (target) => {
+      await setupTarget(target, { phase: "COMPLETE" });
+      const result = await getNextAction({ target, packageRoot });
+      assertStableAction(result, NEXT_ACTIONS.RESOLVE_BLOCKER);
+      assert.notEqual(result.nextAction, NEXT_ACTIONS.NONE);
+      assert.ok(result.reasonCodes.includes("E_RECEIPT_MISSING")
+        || result.reasonCodes.includes("E_PHASE_CHRONOLOGY_INVALID"));
+    });
+  });
+
   await t.test("malformed work state resolves a blocker", async () => {
     await withTarget(async (target) => {
+      await setupTarget(target);
       await writeFile(path.join(target, ".forgeloop", "work-state.json"), "{ invalid json\n");
       const result = await getNextAction({ target, packageRoot });
       assertStableAction(result, NEXT_ACTIONS.RESOLVE_BLOCKER);
