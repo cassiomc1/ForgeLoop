@@ -43,3 +43,10 @@ test("Lychee throttles the Ansible documentation host", async () => {
   assert.match(config, /concurrency = 1/);
   assert.match(config, /request_interval = "5s"/);
 });
+
+test("Lychee fallback excludes only Ansible Molecule documentation paths", async () => {
+  const config = (await readFile(path.join(repositoryRoot, ".lychee.toml"), "utf8"))
+    .replaceAll("\r\n", "\n");
+
+  assert.ok(config.includes("  '^https://docs\\.ansible\\.com/projects/molecule(?:/.*)?$',"));
+});

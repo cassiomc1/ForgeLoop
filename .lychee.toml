@@ -23,6 +23,9 @@ exclude = [
   '^https://gradientsaas\.blogspot\.com(?:/|$)',
   # The fast-check landing page currently fails connection checks on shared CI runners; keep the reference visible.
   '^https://fast-check\.dev/$',
+  # Ansible Molecule documentation rate-limits shared CI runners.
+  # Keep the official references visible while checking other Ansible URLs normally.
+  '^https://docs\.ansible\.com/projects/molecule(?:/.*)?$',
 ]
 
 [hosts."docs.ansible.com"]
