@@ -92,3 +92,20 @@ test("advance rejects illegal transitions without changing work state", async ()
     assert.equal(stored.phase, "RECEIVED");
   });
 });
+
+test("entering verification reconciles only the implementation step", async () => {
+  await withTarget(async (target) => {
+    await writeWorkState(target, state({
+      phase: "EXECUTING",
+      previousPhase: "PLANNED",
+      completedSteps: ["contract", "route"],
+      pendingSteps: ["implementation", "verification"],
+    }));
+
+    const next = await advanceWorkState(target, "VERIFYING", { packageRoot: repositoryRoot });
+
+    assert.deepEqual(next.completedSteps, ["contract", "route", "implementation"]);
+    assert.deepEqual(next.pendingSteps, ["verification"]);
+    assert.deepEqual(next.verificationEvidence, []);
+  });
+});

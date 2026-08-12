@@ -24,6 +24,18 @@ const PHASE_EVENTS = Object.freeze({
   COMPLETE: "COMPLETION_VALIDATED",
 });
 
+function reconcileImplementationStep(state, toPhase) {
+  if (state.phase !== "EXECUTING" || toPhase !== "VERIFYING") return state;
+  if (!state.pendingSteps.includes("implementation")) return state;
+  return {
+    ...state,
+    completedSteps: state.completedSteps.includes("implementation")
+      ? [...state.completedSteps]
+      : [...state.completedSteps, "implementation"],
+    pendingSteps: state.pendingSteps.filter((step) => step !== "implementation"),
+  };
+}
+
 async function assertPhasePrerequisites(target, state, toPhase, packageRoot) {
   if (toPhase === "CONTRACT_READY" || toPhase === "ROUTED" || toPhase === "EXECUTING") {
     try {
@@ -75,8 +87,9 @@ export async function advanceWorkState(target, toPhase, { packageRoot, now = new
   if (!isValidTransition(state.phase, toPhase)) {
     throw phaseError("E_PHASE_TRANSITION_INVALID", `Invalid work-state transition: ${state.phase} -> ${toPhase}`);
   }
+  const reconciled = reconcileImplementationStep(state, toPhase);
   const next = {
-    ...state,
+    ...reconciled,
     previousPhase: state.phase,
     phase: toPhase,
     lastUpdated: now,

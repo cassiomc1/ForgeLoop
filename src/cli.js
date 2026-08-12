@@ -24,12 +24,13 @@ import { formatPolicyResult, runPolicy } from "./commands/policy.js";
 import { formatBundleResult, runBundle } from "./commands/bundle.js";
 import { formatPrepareCompletionResult, runPrepareCompletion } from "./commands/prepare-completion.js";
 import { formatRecordCheckResult, runRecordCheck } from "./commands/record-check.js";
+import { formatNextActionResult, runNext } from "./commands/next.js";
 import { resolveTarget } from "./core/filesystem.js";
 import { getPackageRoot } from "./core/templates.js";
 import { ARTIFACT_PATHS } from "./core/artifacts.js";
 
 function usage(command = null) {
-  const commands = "init|doctor|update|activate|route|preflight|advance|prepare-completion|record-check|complete|audit|report|policy|bundle|inspect|status|validate-state|clear-state|validate-receipt|validate-protocol";
+  const commands = "init|doctor|update|activate|route|preflight|advance|next|prepare-completion|record-check|complete|audit|report|policy|bundle|inspect|status|validate-state|clear-state|validate-receipt|validate-protocol";
   const options = ["  --path <directory>  target project directory (default: current directory)"];
   if (!command || command === "init" || command === "update") {
     options.push("  --dry-run           show planned writes without changing files");
@@ -51,7 +52,7 @@ function usage(command = null) {
   if (!command || command === "advance") {
     options.push("  --to <phase>        destination workflow phase");
   }
-  if (!command || ["activate", "advance", "prepare-completion", "record-check", "preflight", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"].includes(command)) {
+  if (!command || ["activate", "advance", "next", "prepare-completion", "record-check", "preflight", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"].includes(command)) {
     options.push("  --json              emit structured output as JSON");
   }
   if (!command || ["preflight", "complete", "audit", "report"].includes(command)) {
@@ -132,7 +133,7 @@ export function parseArgs(argv) {
 
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
-    if (["init", "doctor", "update", "activate", "route", "preflight", "advance", "prepare-completion", "record-check", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"].includes(argument)) {
+    if (["init", "doctor", "update", "activate", "route", "preflight", "advance", "next", "prepare-completion", "record-check", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"].includes(argument)) {
       if (command) throw new Error(`Multiple commands are not supported: ${argument}`);
       command = argument;
     } else if (argument === "--help" || argument === "-h") {
@@ -282,7 +283,7 @@ export function parseArgs(argv) {
 
   if (!command) return { command: null, options };
 
-  const jsonCommands = ["doctor", "route", "activate", "advance", "prepare-completion", "record-check", "preflight", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"];
+  const jsonCommands = ["doctor", "route", "activate", "advance", "next", "prepare-completion", "record-check", "preflight", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"];
   if (!jsonCommands.includes(command) && options.json) {
     throw new Error(`Option --json is not valid for ${command}`);
   }
@@ -433,6 +434,12 @@ export async function main(argv = process.argv.slice(2)) {
     if (command === "advance") {
       const result = await runAdvance({ target, packageRoot, to: options.to });
       console.log(options.json ? JSON.stringify(result, null, 2) : formatAdvanceResult(result));
+      return 0;
+    }
+
+    if (command === "next") {
+      const result = await runNext({ target, packageRoot });
+      console.log(options.json ? JSON.stringify(result, null, 2) : formatNextActionResult(result));
       return 0;
     }
 

@@ -14,6 +14,11 @@ import {
   createWorkState,
   writeWorkState,
 } from "../src/core/work-state.js";
+import { createContract, writeContract } from "../src/core/contract.js";
+import { appendProtocolEvent } from "../src/core/events.js";
+import { runPreflight } from "../src/commands/preflight.js";
+import { evaluateRoute } from "../src/core/router.js";
+import { persistRoute } from "../src/core/route-artifact.js";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const cliPath = path.join(repositoryRoot, "src", "cli.js");
@@ -44,6 +49,66 @@ function runCliDirect(cwd, ...args) {
     encoding: "utf8",
   });
 }
+
+async function setupExecutingTarget(target) {
+  const contract = createContract({
+    taskId: "task-cli-next",
+    objective: "Expose deterministic lifecycle navigation through the CLI",
+    deliverables: ["src/commands/next.js"],
+    constraints: ["offline"],
+    risks: [],
+    verification: ["node --test tests/cli.test.js"],
+    successCriteria: ["tests"],
+    stopConditions: ["missing protocol artifacts"],
+    unresolvedDecisions: [],
+    sourceRefs: [],
+  });
+  const fingerprint = contractFingerprint(contract);
+  await writeContract(target, contract, repositoryRoot);
+  const route = await persistRoute(
+    target,
+    evaluateRoute({ workType: "code", behaviorChange: true }),
+    repositoryRoot,
+    { contractFingerprint: fingerprint },
+  );
+  await writeWorkState(target, createWorkState({
+    taskId: contract.taskId,
+    contractFingerprint: fingerprint,
+    routeFingerprint: route.fingerprint,
+    repositoryFingerprint: { branch: null, head: null },
+    phase: "EXECUTING",
+    previousPhase: "PLANNED",
+    selectedGuides: route.value.guides,
+    requiredGates: [],
+    satisfiedGates: [],
+    completedSteps: ["contract", "route"],
+    pendingSteps: ["implementation", "verification"],
+    checks: [],
+    failures: [],
+    blockers: [],
+    verificationEvidence: [],
+  }), { packageRoot: repositoryRoot });
+  await appendProtocolEvent(target, { taskId: contract.taskId, event: "CONTRACT_VALIDATED" }, repositoryRoot);
+  await appendProtocolEvent(target, { taskId: contract.taskId, event: "ROUTE_VALIDATED" }, repositoryRoot);
+  await runPreflight({ target, packageRoot: repositoryRoot });
+  await appendProtocolEvent(target, { taskId: contract.taskId, event: "EXECUTION_STARTED" }, repositoryRoot);
+}
+
+test("next renders shared lifecycle guidance in human and JSON formats", async () => {
+  await withTarget(async (target) => {
+    assert.equal(runCli(target, "init").status, 0);
+    await setupExecutingTarget(target);
+
+    const human = runCli(target, "next");
+    assert.equal(human.status, 0, human.stderr);
+    assert.match(human.stdout, /FORGELOOP NEXT: ENTER_VERIFYING/);
+    assert.match(human.stdout, /advance --to VERIFYING/);
+
+    const json = runCli(target, "next", "--json");
+    assert.equal(json.status, 0, json.stderr);
+    assert.equal(JSON.parse(json.stdout).nextAction, "ENTER_VERIFYING");
+  });
+});
 
 test("init copies canonical files and creates a manifest", async () => {
   await withTarget(async (target) => {
