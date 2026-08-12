@@ -11,6 +11,7 @@ const packageRoot = path.resolve(".");
 test("live-agent conformance scenarios declare route, gates, and evidence contracts", async () => {
   const scenarios = (await readdir(root, { withFileTypes: true }))
     .filter((entry) => entry.isDirectory())
+    .filter((entry) => entry.name !== "runs")
     .map((entry) => entry.name)
     .sort();
   assert.deepEqual(scenarios, [
@@ -55,4 +56,34 @@ test("blind premium website stays protocol-free while matching deterministic met
   assert.deepEqual(route.guides, evaluated.guides);
   assert.deepEqual(gates.required, await requiredGatesForGuides(route.guides, packageRoot));
   assert.deepEqual(evidence.required, await completionEvidenceForGuides(route.guides, packageRoot));
+});
+
+test("the first live run is preserved as capability-level diagnostic evidence", async () => {
+  const record = await readFile(path.join(root, "runs", "2026-08-11-codex-first-live.md"), "utf8");
+
+  for (const heading of [
+    "## Environment",
+    "## User request",
+    "## Artifact evidence",
+    "## Capability-level result",
+    "## Chronology",
+    "## Final classification",
+  ]) {
+    assert.match(record, new RegExp(heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+  assert.match(record, /331e8d4019b61b1decfc063571cb7967238c8037/);
+  assert.match(record, /LIFECYCLE \/ COMPLETION TIMEOUT/);
+  assert.match(record, /The protocol prevented a false `COMPLETE`/);
+  assert.match(record, /Evidence serialization.*FAIL/);
+  assert.match(record, /Full conformance.*PARTIAL/);
+});
+
+test("the second live run records the pre-implementation clarification stop", async () => {
+  const record = await readFile(path.join(root, "runs", "2026-08-11-codex-second-live.md"), "utf8");
+
+  assert.match(record, /## Environment/);
+  assert.match(record, /## Observed behavior/);
+  assert.match(record, /PROTOCOL ACTIVATION \/ PRE-IMPLEMENTATION STOP/);
+  assert.match(record, /current-contract\.json.*Missing/);
+  assert.match(record, /Full conformance.*PARTIAL/);
 });

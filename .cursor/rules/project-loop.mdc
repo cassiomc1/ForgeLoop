@@ -13,6 +13,7 @@ alwaysApply: true
 6. Make the minimum change, run a specific check, and then run proportional regression checks.
 7. Diagnose failures before fixing them and do not repeat an attempt without new evidence.
 8. Request authority for unrelated external or destructive actions, installations, and publications. For a task-scoped missing Qwen-MM-Plugins capability, follow `LOOP_ENGINEERING.md`; API credentials and system dependencies remain separately gated.
-9. Report only demonstrated results and checks.
+9. After implementation begins, do not return a final result in `EXECUTING`: follow `VERIFYING` → structured evidence → `REVIEWING` → execution receipt → validator-backed `COMPLETE`; otherwise report `BLOCKED` or `PARTIALLY VERIFIED` with exact findings.
+10. Report only demonstrated results and checks.
 
 The loop and router are canonical sources; do not duplicate domain rules.

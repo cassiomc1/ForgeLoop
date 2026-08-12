@@ -17,3 +17,21 @@ export async function currentRepositoryFingerprint(target) {
     return { branch: null, head: null };
   }
 }
+
+export async function currentChangedPaths(target) {
+  try {
+    const { stdout } = await execFileAsync(
+      "git",
+      ["-C", target, "status", "--porcelain=v1", "--untracked-files=all"],
+      { windowsHide: true },
+    );
+    return stdout
+      .split(/\r?\n/)
+      .filter(Boolean)
+      .map((line) => line.slice(3).trim())
+      .filter((relativePath) => relativePath && !relativePath.startsWith(".forgeloop/"))
+      .sort();
+  } catch {
+    return null;
+  }
+}

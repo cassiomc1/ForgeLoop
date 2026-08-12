@@ -22,12 +22,14 @@ import { formatAuditResult, runAudit } from "./commands/audit.js";
 import { formatReportResult, runReport } from "./commands/report.js";
 import { formatPolicyResult, runPolicy } from "./commands/policy.js";
 import { formatBundleResult, runBundle } from "./commands/bundle.js";
+import { formatPrepareCompletionResult, runPrepareCompletion } from "./commands/prepare-completion.js";
+import { formatRecordCheckResult, runRecordCheck } from "./commands/record-check.js";
 import { resolveTarget } from "./core/filesystem.js";
 import { getPackageRoot } from "./core/templates.js";
 import { ARTIFACT_PATHS } from "./core/artifacts.js";
 
 function usage(command = null) {
-  const commands = "init|doctor|update|activate|route|preflight|advance|complete|audit|report|policy|bundle|inspect|status|validate-state|clear-state|validate-receipt|validate-protocol";
+  const commands = "init|doctor|update|activate|route|preflight|advance|prepare-completion|record-check|complete|audit|report|policy|bundle|inspect|status|validate-state|clear-state|validate-receipt|validate-protocol";
   const options = ["  --path <directory>  target project directory (default: current directory)"];
   if (!command || command === "init" || command === "update") {
     options.push("  --dry-run           show planned writes without changing files");
@@ -49,7 +51,7 @@ function usage(command = null) {
   if (!command || command === "advance") {
     options.push("  --to <phase>        destination workflow phase");
   }
-  if (!command || ["activate", "advance", "preflight", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"].includes(command)) {
+  if (!command || ["activate", "advance", "prepare-completion", "record-check", "preflight", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"].includes(command)) {
     options.push("  --json              emit structured output as JSON");
   }
   if (!command || ["preflight", "complete", "audit", "report"].includes(command)) {
@@ -73,6 +75,17 @@ function usage(command = null) {
   }
   if (!command || command === "validate-receipt") {
     options.push("  --file <path>       receipt file relative to target");
+  }
+  if (!command || command === "record-check") {
+    options.push("  --id <id>            stable check identifier");
+    options.push("  --kind <kind>        check kind (default: command)");
+    options.push("  --requirement <id>   completion requirement covered by the check");
+    options.push("  --status <status>    passed, failed, blocked, or not-run");
+    options.push("  --evidence-kind <kind> OBSERVED, INFERRED, NOT_VERIFIED, or BLOCKED");
+    options.push("  --command <text>     command already run by the agent (recorded only)");
+    options.push("  --result <text>      observed result supplied by the agent");
+    options.push("  --exit-code <number> observed process exit code");
+    options.push("  --details <json>     additional structured check details");
   }
   options.push("  --version           show the installed package version");
   options.push("  --help              show this help");
@@ -101,6 +114,15 @@ export function parseArgs(argv) {
     receiptFile: null,
     taskBriefFiles: [],
     delegatedResultFiles: [],
+    checkId: null,
+    checkKind: null,
+    checkRequirement: null,
+    checkStatus: null,
+    checkEvidenceKind: null,
+    checkCommand: null,
+    checkResult: null,
+    checkExitCode: null,
+    checkDetails: null,
     policy: null,
     task: null,
     help: false,
@@ -110,7 +132,7 @@ export function parseArgs(argv) {
 
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
-    if (["init", "doctor", "update", "activate", "route", "preflight", "advance", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"].includes(argument)) {
+    if (["init", "doctor", "update", "activate", "route", "preflight", "advance", "prepare-completion", "record-check", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"].includes(argument)) {
       if (command) throw new Error(`Multiple commands are not supported: ${argument}`);
       command = argument;
     } else if (argument === "--help" || argument === "-h") {
@@ -187,6 +209,59 @@ export function parseArgs(argv) {
       if (!file || file.startsWith("-")) throw new Error("--delegated-result-file requires a path");
       options.delegatedResultFiles.push(file);
       index += 1;
+    } else if (argument === "--id") {
+      const id = argv[index + 1];
+      if (!id || id.startsWith("-")) throw new Error("--id requires a check ID");
+      options.checkId = id;
+      index += 1;
+    } else if (argument === "--kind") {
+      const kind = argv[index + 1];
+      if (!kind || kind.startsWith("-")) throw new Error("--kind requires a check kind");
+      options.checkKind = kind;
+      index += 1;
+    } else if (argument === "--requirement") {
+      const requirement = argv[index + 1];
+      if (!requirement || requirement.startsWith("-")) throw new Error("--requirement requires an evidence target");
+      options.checkRequirement = requirement;
+      index += 1;
+    } else if (argument === "--status") {
+      const status = argv[index + 1];
+      if (!status || status.startsWith("-")) throw new Error("--status requires a check status");
+      options.checkStatus = status;
+      index += 1;
+    } else if (argument === "--evidence-kind") {
+      const evidenceKind = argv[index + 1];
+      if (!evidenceKind || evidenceKind.startsWith("-")) throw new Error("--evidence-kind requires an evidence kind");
+      options.checkEvidenceKind = evidenceKind;
+      index += 1;
+    } else if (argument === "--command") {
+      const commandText = argv[index + 1];
+      if (!commandText || commandText.startsWith("-")) throw new Error("--command requires recorded text");
+      options.checkCommand = commandText;
+      index += 1;
+    } else if (argument === "--result") {
+      const resultText = argv[index + 1];
+      if (!resultText || resultText.startsWith("-")) throw new Error("--result requires recorded text");
+      options.checkResult = resultText;
+      index += 1;
+    } else if (argument === "--exit-code") {
+      const exitCode = argv[index + 1];
+      if (!exitCode || exitCode.startsWith("-")) throw new Error("--exit-code requires a non-negative integer");
+      if (!/^\d+$/.test(exitCode)) throw new Error("--exit-code requires a non-negative integer");
+      options.checkExitCode = Number(exitCode);
+      index += 1;
+    } else if (argument === "--details") {
+      const details = argv[index + 1];
+      if (!details || details.startsWith("-")) throw new Error("--details requires a JSON object");
+      try {
+        options.checkDetails = JSON.parse(details);
+      } catch {
+        throw new Error("--details must be valid JSON");
+      }
+      if (!options.checkDetails || typeof options.checkDetails !== "object" || Array.isArray(options.checkDetails)) {
+        throw new Error("--details must be a JSON object");
+      }
+      index += 1;
     } else if (argument === "--path") {
       options.path = argv[index + 1];
       if (!options.path || options.path.startsWith("-")) throw new Error("--path requires a directory");
@@ -207,7 +282,7 @@ export function parseArgs(argv) {
 
   if (!command) return { command: null, options };
 
-  const jsonCommands = ["doctor", "route", "activate", "advance", "preflight", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"];
+  const jsonCommands = ["doctor", "route", "activate", "advance", "prepare-completion", "record-check", "preflight", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"];
   if (!jsonCommands.includes(command) && options.json) {
     throw new Error(`Option --json is not valid for ${command}`);
   }
@@ -249,6 +324,27 @@ export function parseArgs(argv) {
   }
   if (command !== "validate-protocol" && (options.routeFile || options.stateFile || options.receiptFile || options.taskBriefFiles.length > 0 || options.delegatedResultFiles.length > 0)) {
     throw new Error(`Protocol artifact options are not valid for ${command}`);
+  }
+  const checkOptions = [
+    options.checkId,
+    options.checkKind,
+    options.checkRequirement,
+    options.checkStatus,
+    options.checkEvidenceKind,
+    options.checkCommand,
+    options.checkResult,
+    options.checkExitCode,
+    options.checkDetails,
+  ];
+  if (command !== "record-check" && checkOptions.some((value) => value !== null)) {
+    throw new Error(`Check recording options are not valid for ${command}`);
+  }
+  if (command === "record-check" && !options.help) {
+    if (!options.checkId) throw new Error("record-check requires --id");
+    if (!options.checkRequirement) throw new Error("record-check requires --requirement");
+    if (!options.checkStatus) throw new Error("record-check requires --status");
+    if (!options.checkEvidenceKind) throw new Error("record-check requires --evidence-kind");
+    if (!options.checkCommand && !options.checkResult) throw new Error("record-check requires --command or --result");
   }
   return { command, options };
 }
@@ -337,6 +433,30 @@ export async function main(argv = process.argv.slice(2)) {
     if (command === "advance") {
       const result = await runAdvance({ target, packageRoot, to: options.to });
       console.log(options.json ? JSON.stringify(result, null, 2) : formatAdvanceResult(result));
+      return 0;
+    }
+
+    if (command === "prepare-completion") {
+      const result = await runPrepareCompletion({ target, packageRoot });
+      console.log(options.json ? JSON.stringify(result, null, 2) : formatPrepareCompletionResult(result));
+      return 0;
+    }
+
+    if (command === "record-check") {
+      const result = await runRecordCheck({
+        target,
+        packageRoot,
+        id: options.checkId,
+        kind: options.checkKind ?? "command",
+        requirement: options.checkRequirement,
+        status: options.checkStatus,
+        evidenceKind: options.checkEvidenceKind,
+        command: options.checkCommand,
+        result: options.checkResult,
+        exitCode: options.checkExitCode,
+        details: options.checkDetails ?? undefined,
+      });
+      console.log(options.json ? JSON.stringify(result, null, 2) : formatRecordCheckResult(result));
       return 0;
     }
 

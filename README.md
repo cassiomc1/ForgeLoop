@@ -138,7 +138,11 @@ npx @cassiomc1/forgeloop route --work complete-website --surface ui --risk untru
 npx @cassiomc1/forgeloop activate
 npx @cassiomc1/forgeloop preflight --json
 npx @cassiomc1/forgeloop advance --to EXECUTING
-npx @cassiomc1/forgeloop audit --strict --json
+npx @cassiomc1/forgeloop advance --to VERIFYING
+npx @cassiomc1/forgeloop prepare-completion --json
+npx @cassiomc1/forgeloop record-check --id tests --requirement tests --status passed --evidence-kind OBSERVED --command "npm test" --result "exit 0" --json
+npx @cassiomc1/forgeloop advance --to REVIEWING
+npx @cassiomc1/forgeloop audit --json
 npx @cassiomc1/forgeloop complete --json
 npx @cassiomc1/forgeloop report
 npx @cassiomc1/forgeloop policy web-premium
@@ -156,7 +160,11 @@ npx @cassiomc1/forgeloop validate-protocol --route-file ./routing-result.json --
 Before implementation, write the canonical contract, persist the route, create
 required gate artifacts under `.forgeloop/gates/`, and require `preflight` to
 return `READY`. `advance` enforces legal phase transitions; it never runs the
-project's commands.
+project's commands. After implementation, advance to `VERIFYING`, use
+`prepare-completion` to create a safe receipt skeleton, and use `record-check`
+to serialize results that the agent has already observed. `record-check` never
+executes the supplied command text. Advance to `REVIEWING` before running
+`audit` and `complete`.
 `audit` is a read-only consistency check. `complete` validates the final
 contract, route, gates, phase ledger, structured evidence, coverage, receipt,
 and freshness before it can return `VALID`. `report` renders the same result as
@@ -183,6 +191,21 @@ package sends no telemetry and has no central trace service.
 Capability gaps and inline/non-Git degraded mode are defined in
 [`AGENT_COMPATIBILITY.md`](./AGENT_COMPATIBILITY.md); they are reported as
 limitations rather than treated as silent successes.
+
+### Live conformance modes
+
+Standard blind conformance uses the same mode throughout a run:
+
+```text
+forgeloop preflight
+→ forgeloop audit
+→ forgeloop complete
+```
+
+Strict blind conformance is a separate profile. First verify the target
+`PROJECT_PROFILE.md`, then use `--strict` consistently with `preflight`,
+`audit`, and `complete`. Do not evaluate a Standard run with Strict criteria
+unless that escalation is explicitly recorded.
 
 ### Protocol compatibility
 
