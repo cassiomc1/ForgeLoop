@@ -4,11 +4,12 @@ import { requiredEvidenceForTarget } from "./completion-artifacts.js";
 import { coverageForRequirements } from "./coverage.js";
 import { readContract } from "./contract.js";
 import { validateEventLedger } from "./events.js";
-import { evaluatePreflight } from "./preflight.js";
+import { evaluatePreflight, validatePersistedPreflight } from "./preflight.js";
 import { PROTOCOL_VERSION } from "./protocol.js";
 import { validateReceipt } from "./receipt.js";
 import { readPersistedRoute } from "./route-artifact.js";
-import { readWorkState } from "./work-state.js";
+import { assertCheckList } from "./checks.js";
+import { classifyLoadedWorkState, readWorkState } from "./work-state.js";
 
 export const NEXT_ACTIONS = Object.freeze({
   DISCOVER: "DISCOVER",
@@ -137,10 +138,6 @@ function missingArtifact(error, fallback) {
     : [];
 }
 
-function savedPreflightStatus(preflightArtifact) {
-  return preflightArtifact?.value?.status === "READY" ? "READY" : "NOT_READY";
-}
-
 function allCoverageCovered(coverage) {
   return coverage.every((item) => item.status === "COVERED");
 }
@@ -176,6 +173,42 @@ function staleReasons(state, contract, route) {
     ));
   }
   return reasons;
+}
+
+function freshnessReasons(state, classification) {
+  const requiredArtifactPaths = state.requiredArtifacts?.map((artifact) => artifact.path) ?? [];
+  const reasons = [artifactError(
+    "E_STATE_REVALIDATION_REQUIRED",
+    `Work-state checkpoint requires revalidation: ${classification.reasons.join(", ")}`,
+    [ARTIFACT_PATHS.state],
+  )];
+  for (const reason of classification.reasons) {
+    const contractRelated = ["CONTRACT_CHANGED", "CONTRACT_INVALID", "CONTRACT_NOT_VERIFIED"].includes(reason);
+    const artifactRelated = reason.startsWith("REQUIRED_ARTIFACT");
+    reasons.push(artifactError(
+      contractRelated ? "E_CONTRACT_STALE" : artifactRelated ? "E_REQUIRED_ARTIFACT_STALE" : "E_REPOSITORY_CHANGED",
+      `Work-state freshness check failed: ${reason}`,
+      uniqueSorted([
+        ARTIFACT_PATHS.state,
+        ...(contractRelated ? [ARTIFACT_PATHS.contract] : []),
+        ...(artifactRelated ? requiredArtifactPaths : []),
+      ]),
+    ));
+  }
+  return reasons;
+}
+
+function checkListReasons(state) {
+  try {
+    assertCheckList(state.checks, "work-state.checks");
+    return [];
+  } catch (error) {
+    return [artifactError(
+      error.code ?? "E_CHECK_INVALID",
+      error.message,
+      [ARTIFACT_PATHS.state],
+    )];
+  }
 }
 
 function executionChronologyErrors(ledger, { stateTaskId, contractTaskId }) {
@@ -298,6 +331,32 @@ export async function getNextAction({ target, packageRoot } = {}) {
   }
 
   const contract = contractResult.value;
+  const identityErrors = completionIdentityErrors({ contract: contract.value, state });
+  if (identityErrors.length > 0) {
+    return result({
+      ...context,
+      nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
+      reasons: identityErrors,
+      requiredArtifacts: contractArtifacts,
+    });
+  }
+  const freshness = await classifyLoadedWorkState({
+    target,
+    state,
+    contractFile: ARTIFACT_PATHS.contract,
+  });
+  if (freshness.status === "REVALIDATION_REQUIRED") {
+    return result({
+      ...context,
+      nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
+      reasons: freshnessReasons(state, freshness),
+      requiredArtifacts: uniqueSorted([
+        ARTIFACT_PATHS.state,
+        ARTIFACT_PATHS.contract,
+        ...(state.requiredArtifacts?.map((artifact) => artifact.path) ?? []),
+      ]),
+    });
+  }
   if (state.phase === "CONTRACT_READY") {
     return decision(
       context,
@@ -329,15 +388,6 @@ export async function getNextAction({ target, packageRoot } = {}) {
   }
 
   const route = routeResult.value;
-  const identityErrors = completionIdentityErrors({ contract: contract.value, state });
-  if (identityErrors.length > 0) {
-    return result({
-      ...context,
-      nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
-      reasons: identityErrors,
-      requiredArtifacts,
-    });
-  }
   const stale = staleReasons(state, contract, route);
   if (stale.length > 0) {
     return result({
@@ -357,15 +407,16 @@ export async function getNextAction({ target, packageRoot } = {}) {
   const missingGates = preflight.requiredGates.filter((gate) => !preflight.satisfiedGates.includes(gate));
   const preflightArtifacts = [...requiredArtifacts, ARTIFACT_PATHS.preflight];
   const phaseNeedsChronology = PHASES_REQUIRING_EXECUTION_CHRONOLOGY.has(state.phase);
+  const persistedPreflightErrors = validatePersistedPreflight(preflightArtifact.value?.value, preflight);
 
-  if (phaseNeedsChronology && (savedPreflightStatus(preflightArtifact.value) !== "READY" || preflight.status !== "READY")) {
-    return decision(
-      context,
-      NEXT_ACTIONS.RESOLVE_BLOCKER,
-      artifactError("E_PREFLIGHT_NOT_READY", "Current phase requires a persisted READY preflight", [ARTIFACT_PATHS.preflight]),
-      preflightArtifacts,
-      preflightArtifact.missingArtifacts,
-    );
+  if (phaseNeedsChronology && persistedPreflightErrors.length > 0) {
+    return result({
+      ...context,
+      nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
+      reasons: persistedPreflightErrors,
+      requiredArtifacts: preflightArtifacts,
+      missingArtifacts: preflightArtifact.missingArtifacts,
+    });
   }
 
   if (phaseNeedsChronology) {
@@ -398,14 +449,15 @@ export async function getNextAction({ target, packageRoot } = {}) {
     });
   }
   if (state.phase === "ROUTED") {
-    if (savedPreflightStatus(preflightArtifact.value) !== "READY") {
-      return decision(
-        context,
-        NEXT_ACTIONS.RUN_PREFLIGHT,
-        artifactError("E_PREFLIGHT_NOT_READY", "A persisted READY preflight is required before planning", [ARTIFACT_PATHS.preflight]),
-        preflightArtifacts,
-        preflightArtifact.missingArtifacts,
-      );
+    if (persistedPreflightErrors.length > 0) {
+      return result({
+        ...context,
+        nextAction: NEXT_ACTIONS.RUN_PREFLIGHT,
+        reasons: persistedPreflightErrors,
+        commands: [commandFor(NEXT_ACTIONS.RUN_PREFLIGHT)],
+        requiredArtifacts: preflightArtifacts,
+        missingArtifacts: preflightArtifact.missingArtifacts,
+      });
     }
     return decision(context, NEXT_ACTIONS.PLAN, artifactError("PHASE_ROUTED", "Routing and required gates are ready for planning"));
   }
@@ -413,14 +465,15 @@ export async function getNextAction({ target, packageRoot } = {}) {
     return decision(context, NEXT_ACTIONS.PLAN, artifactError("PHASE_DESIGNING", "Required gates are ready for planning"));
   }
   if (state.phase === "PLANNED") {
-    if (savedPreflightStatus(preflightArtifact.value) !== "READY" || preflight.status !== "READY") {
-      return decision(
-        context,
-        NEXT_ACTIONS.RUN_PREFLIGHT,
-        artifactError("E_PREFLIGHT_NOT_READY", "Planning requires a fresh READY preflight before execution", [ARTIFACT_PATHS.preflight]),
-        preflightArtifacts,
-        preflightArtifact.missingArtifacts,
-      );
+    if (persistedPreflightErrors.length > 0) {
+      return result({
+        ...context,
+        nextAction: NEXT_ACTIONS.RUN_PREFLIGHT,
+        reasons: persistedPreflightErrors,
+        commands: [commandFor(NEXT_ACTIONS.RUN_PREFLIGHT)],
+        requiredArtifacts: preflightArtifacts,
+        missingArtifacts: preflightArtifact.missingArtifacts,
+      });
     }
     return decision(context, NEXT_ACTIONS.START_EXECUTION, artifactError("PHASE_PLANNED", "The persisted preflight is READY"));
   }
@@ -428,6 +481,15 @@ export async function getNextAction({ target, packageRoot } = {}) {
     return decision(context, NEXT_ACTIONS.ENTER_VERIFYING, artifactError("PHASE_EXECUTING", "Execution is complete enough to enter verification"));
   }
   if (state.phase === "VERIFYING") {
+    const invalidChecks = checkListReasons(state);
+    if (invalidChecks.length > 0) {
+      return result({
+        ...context,
+        nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
+        reasons: invalidChecks,
+        requiredArtifacts,
+      });
+    }
     const failed = state.checks.find((check) => check?.status === "failed");
     if (failed) {
       return decision(
@@ -520,6 +582,15 @@ export async function getNextAction({ target, packageRoot } = {}) {
     return decision(context, NEXT_ACTIONS.ENTER_VERIFYING, artifactError("PHASE_CORRECTING", "Correction is ready for verification"));
   }
   if (state.phase === "REVIEWING") {
+    const invalidChecks = checkListReasons(state);
+    if (invalidChecks.length > 0) {
+      return result({
+        ...context,
+        nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
+        reasons: invalidChecks,
+        requiredArtifacts,
+      });
+    }
     const evidence = await requirementsAndCoverage({
       target,
       packageRoot,

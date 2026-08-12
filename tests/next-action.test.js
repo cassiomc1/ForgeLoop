@@ -636,6 +636,151 @@ test("completion identity rejects foreign receipt or state without mutation", as
   }
 });
 
+test("freshness and persisted preflight identity cannot authorize forward lifecycle actions", async (t) => {
+  await t.test("changed repository checkpoint requires revalidation while executing", async () => {
+    await withTarget(async (target) => {
+      await setupTarget(target, { phase: "EXECUTING" });
+      const statePath = path.join(target, ARTIFACT_PATHS.state);
+      const state = JSON.parse(await readFile(statePath, "utf8"));
+      state.repositoryFingerprint = { branch: "main", head: "a".repeat(40) };
+      await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`);
+
+      const next = await getNextAction({ target, packageRoot });
+
+      assertStableAction(next, NEXT_ACTIONS.RESOLVE_BLOCKER);
+      assert.ok(next.reasonCodes.includes("E_STATE_REVALIDATION_REQUIRED"));
+      assert.ok(next.requiredArtifacts.includes(ARTIFACT_PATHS.state));
+      assert.equal(next.commands.includes("forgeloop advance --to VERIFYING"), false);
+    });
+  });
+
+  await t.test("stale planned checkpoint cannot bypass next through advance", async () => {
+    await withTarget(async (target) => {
+      await setupTarget(target, { phase: "PLANNED" });
+      const statePath = path.join(target, ARTIFACT_PATHS.state);
+      const eventsPath = path.join(target, ARTIFACT_PATHS.events);
+      const state = JSON.parse(await readFile(statePath, "utf8"));
+      state.repositoryFingerprint = { branch: "main", head: "a".repeat(40) };
+      await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`);
+      const stateBefore = await readFile(statePath, "utf8");
+      const eventsBefore = await readFile(eventsPath, "utf8");
+
+      await assert.rejects(
+        () => advanceWorkState(target, "EXECUTING", { packageRoot }),
+        (error) => error.code === "E_STATE_REVALIDATION_REQUIRED",
+      );
+      assert.equal(await readFile(statePath, "utf8"), stateBefore);
+      assert.equal(await readFile(eventsPath, "utf8"), eventsBefore);
+    });
+  });
+
+  await t.test("foreign persisted preflight cannot start execution", async () => {
+    await withTarget(async (target) => {
+      await setupTarget(target, { phase: "PLANNED" });
+      const preflightPath = path.join(target, ARTIFACT_PATHS.preflight);
+      const preflight = JSON.parse(await readFile(preflightPath, "utf8"));
+      preflight.taskId = "foreign-task";
+      await writeFile(preflightPath, `${JSON.stringify(preflight, null, 2)}\n`);
+
+      const next = await getNextAction({ target, packageRoot });
+
+      assertStableAction(next, NEXT_ACTIONS.RUN_PREFLIGHT);
+      assert.ok(next.reasonCodes.includes("E_PREFLIGHT_TASK_MISMATCH"));
+      assert.equal(next.commands.includes("forgeloop advance --to EXECUTING"), false);
+    });
+  });
+
+  for (const [name, mutate, code] of [
+    [
+      "contract fingerprint",
+      (preflight) => {
+        preflight.fingerprints.contract = "a".repeat(64);
+      },
+      "E_PREFLIGHT_CONTRACT_STALE",
+    ],
+    [
+      "routing fingerprint",
+      (preflight) => {
+        preflight.fingerprints.routing = "b".repeat(64);
+      },
+      "E_PREFLIGHT_ROUTE_STALE",
+    ],
+  ]) {
+    await t.test(`stale persisted preflight ${name} cannot start execution`, async () => {
+      await withTarget(async (target) => {
+        await setupTarget(target, { phase: "PLANNED" });
+        const preflightPath = path.join(target, ARTIFACT_PATHS.preflight);
+        const preflight = JSON.parse(await readFile(preflightPath, "utf8"));
+        mutate(preflight);
+        await writeFile(preflightPath, `${JSON.stringify(preflight, null, 2)}\n`);
+
+        const next = await getNextAction({ target, packageRoot });
+
+        assertStableAction(next, NEXT_ACTIONS.RUN_PREFLIGHT);
+        assert.ok(next.reasonCodes.includes(code));
+        assert.equal(next.commands.includes("forgeloop advance --to EXECUTING"), false);
+      });
+    });
+  }
+
+  await t.test("foreign state task ID cannot recommend or persist execution", async () => {
+    await withTarget(async (target) => {
+      await setupTarget(target, { phase: "PLANNED" });
+      const statePath = path.join(target, ARTIFACT_PATHS.state);
+      const eventsPath = path.join(target, ARTIFACT_PATHS.events);
+      const state = JSON.parse(await readFile(statePath, "utf8"));
+      state.taskId = "foreign-task";
+      await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`);
+      const stateBefore = await readFile(statePath, "utf8");
+      const eventsBefore = await readFile(eventsPath, "utf8");
+
+      const next = await getNextAction({ target, packageRoot });
+
+      assertStableAction(next, NEXT_ACTIONS.RESOLVE_BLOCKER);
+      assert.ok(next.reasonCodes.includes("E_STATE_TASK_MISMATCH"));
+      assert.equal(next.commands.includes("forgeloop advance --to EXECUTING"), false);
+      await assert.rejects(
+        () => advanceWorkState(target, "EXECUTING", { packageRoot }),
+        (error) => error.code === "E_STATE_TASK_MISMATCH",
+      );
+      assert.equal(await readFile(statePath, "utf8"), stateBefore);
+      assert.equal(await readFile(eventsPath, "utf8"), eventsBefore);
+    });
+  });
+});
+
+test("malformed checks block verifying and reviewing before evidence branching", async (t) => {
+  const invalidChecks = [
+    ["missing schema fields", { id: "tests", status: "passed", evidenceKind: "OBSERVED" }, "E_CHECK_INVALID"],
+    ["wrong protocol version", { ...checkFor(), protocolVersion: 99 }, "E_CHECK_INVALID"],
+    ["duplicate IDs", [checkFor(), checkFor()], "E_CHECK_INVALID"],
+    ["unsupported status", { ...checkFor(), status: "unknown" }, "E_CHECK_INVALID"],
+    ["unsupported evidence kind", { ...checkFor(), evidenceKind: "UNSUPPORTED" }, "E_EVIDENCE_KIND_INVALID"],
+    ["status evidence contradiction", { ...checkFor(), evidenceKind: "NOT_VERIFIED" }, "E_CHECK_STATUS_CONTRADICTION"],
+  ];
+
+  for (const phase of ["VERIFYING", "REVIEWING"]) {
+    for (const [name, invalid, code] of invalidChecks) {
+      await t.test(`${phase.toLowerCase()} rejects ${name}`, async () => {
+        await withTarget(async (target) => {
+          await setupTarget(target, { phase, checks: [checkFor()], receipt: true });
+          const statePath = path.join(target, ARTIFACT_PATHS.state);
+          const state = JSON.parse(await readFile(statePath, "utf8"));
+          state.checks = Array.isArray(invalid) ? invalid : [invalid];
+          await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`);
+
+          const next = await getNextAction({ target, packageRoot });
+
+          assertStableAction(next, NEXT_ACTIONS.RESOLVE_BLOCKER);
+          assert.ok(next.reasonCodes.includes(code));
+          assert.equal(next.commands.length, 0);
+          assert.equal(next.requiredArtifacts.includes(ARTIFACT_PATHS.state), true);
+        });
+      });
+    }
+  }
+});
+
 test("third live execution run enters verification without claiming completion", async () => {
   await withTarget(async (target) => {
     const fixture = JSON.parse(await readFile(path.join(fixtureRoot, "third-live-executing.json"), "utf8"));
@@ -652,11 +797,11 @@ test("third live execution run enters verification without claiming completion",
 });
 
 test("unsafe artifacts return repair guidance without writes and results are deterministic", async (t) => {
-  await t.test("stale route or contract resolves stale routing", async () => {
+  await t.test("stale route or contract requires checkpoint revalidation", async () => {
     await withTarget(async (target) => {
       await setupTarget(target, { staleRoute: true });
       const result = await getNextAction({ target, packageRoot });
-      assertStableAction(result, NEXT_ACTIONS.RESOLVE_STALE_ROUTE);
+      assertStableAction(result, NEXT_ACTIONS.RESOLVE_BLOCKER);
       assert.ok(result.reasonCodes.includes("E_ROUTE_STALE") || result.reasonCodes.includes("E_CONTRACT_STALE"));
     });
   });

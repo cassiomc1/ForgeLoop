@@ -4,8 +4,9 @@ import { readContract } from "./contract.js";
 import { appendProtocolEvent, validateEventLedger } from "./events.js";
 import { readPersistedRoute } from "./route-artifact.js";
 import { assertWorkPhase, isValidTransition } from "./protocol.js";
-import { readWorkState, writeWorkState } from "./work-state.js";
+import { classifyLoadedWorkState, readWorkState, writeWorkState } from "./work-state.js";
 import { evaluateCompletion } from "./completion.js";
+import { evaluatePreflight, validatePersistedPreflight } from "./preflight.js";
 
 function phaseError(code, message, artifacts = []) {
   const error = new Error(message);
@@ -52,14 +53,45 @@ async function assertPhasePrerequisites(target, state, toPhase, packageRoot) {
     }
   }
   if (toPhase === "EXECUTING") {
+    let contract;
+    let route;
+    try {
+      contract = await readContract(target, packageRoot);
+      route = await readPersistedRoute(target, packageRoot);
+    } catch (error) {
+      throw phaseError("E_PHASE_PREREQUISITE_MISSING", `EXECUTING requires validated contract and route: ${error.message}`, [ARTIFACT_PATHS.contract, ARTIFACT_PATHS.route]);
+    }
+    if (state.taskId !== contract.value.taskId) {
+      throw phaseError("E_STATE_TASK_MISMATCH", "Work state does not belong to the current contract task", [ARTIFACT_PATHS.state, ARTIFACT_PATHS.contract]);
+    }
+    const freshness = await classifyLoadedWorkState({
+      target,
+      state,
+      contractFile: ARTIFACT_PATHS.contract,
+    });
+    if (freshness.status === "REVALIDATION_REQUIRED") {
+      throw phaseError(
+        "E_STATE_REVALIDATION_REQUIRED",
+        `EXECUTING requires a fresh work-state checkpoint: ${freshness.reasons.join(", ")}`,
+        [ARTIFACT_PATHS.state, ARTIFACT_PATHS.contract, ...(state.requiredArtifacts?.map((artifact) => artifact.path) ?? [])],
+      );
+    }
+    if (route.value.contractFingerprint !== contract.fingerprint
+      || state.routeFingerprint !== route.fingerprint
+      || JSON.stringify(state.selectedGuides) !== JSON.stringify(route.value.guides)) {
+      throw phaseError("E_ROUTE_STALE", "EXECUTING requires work state and route to match the current contract", [ARTIFACT_PATHS.state, ARTIFACT_PATHS.route, ARTIFACT_PATHS.contract]);
+    }
     let preflight;
     try {
       preflight = await readJsonArtifact(target, ARTIFACT_PATHS.preflight, "preflight", packageRoot);
     } catch (error) {
       throw phaseError("E_PHASE_PREREQUISITE_MISSING", `EXECUTING requires READY ${ARTIFACT_PATHS.preflight}: ${error.message}`, [ARTIFACT_PATHS.preflight]);
     }
-    if (preflight.value.status !== "READY") {
-      throw phaseError("E_PREFLIGHT_NOT_READY", "EXECUTING requires a READY preflight", [ARTIFACT_PATHS.preflight]);
+    const evaluatedPreflight = await evaluatePreflight({ target, packageRoot });
+    const preflightErrors = validatePersistedPreflight(preflight.value, evaluatedPreflight);
+    if (preflightErrors.length > 0) {
+      const first = preflightErrors[0];
+      throw phaseError(first.code, first.message, first.artifacts);
     }
     const ledger = await validateEventLedger(target, packageRoot);
     for (const requiredEvent of ["CONTRACT_VALIDATED", "ROUTE_VALIDATED", "PREFLIGHT_READY"]) {

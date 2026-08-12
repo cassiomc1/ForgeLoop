@@ -26,6 +26,59 @@ function sortIssues(errors) {
     || left.message.localeCompare(right.message));
 }
 
+function sameStringSet(left, right) {
+  if (!Array.isArray(left) || !Array.isArray(right)) return false;
+  const leftSet = new Set(left);
+  const rightSet = new Set(right);
+  return leftSet.size === left.length
+    && rightSet.size === right.length
+    && leftSet.size === rightSet.size
+    && [...leftSet].every((value) => rightSet.has(value));
+}
+
+export function validatePersistedPreflight(persisted, current) {
+  const errors = [];
+  if (persisted?.status !== "READY") {
+    errors.push(issue("E_PREFLIGHT_NOT_READY", "A persisted READY preflight is required", [ARTIFACT_PATHS.preflight]));
+    return errors;
+  }
+  if (current?.status !== "READY") {
+    errors.push(issue("E_PREFLIGHT_NOT_READY", "The current preflight evaluation is not READY", [ARTIFACT_PATHS.preflight]));
+  }
+  if (persisted.taskId !== current?.taskId) {
+    errors.push(issue(
+      "E_PREFLIGHT_TASK_MISMATCH",
+      "Persisted preflight does not belong to the current task",
+      [ARTIFACT_PATHS.preflight, ARTIFACT_PATHS.contract],
+    ));
+  }
+  if (persisted.fingerprints?.contract !== current?.fingerprints?.contract
+    || persisted.contract?.fingerprint !== current?.contract?.fingerprint) {
+    errors.push(issue(
+      "E_PREFLIGHT_CONTRACT_STALE",
+      "Persisted preflight does not match the current contract fingerprint",
+      [ARTIFACT_PATHS.preflight, ARTIFACT_PATHS.contract],
+    ));
+  }
+  if (persisted.fingerprints?.routing !== current?.fingerprints?.routing
+    || persisted.routing?.fingerprint !== current?.routing?.fingerprint) {
+    errors.push(issue(
+      "E_PREFLIGHT_ROUTE_STALE",
+      "Persisted preflight does not match the current routing fingerprint",
+      [ARTIFACT_PATHS.preflight, ARTIFACT_PATHS.route],
+    ));
+  }
+  if (!sameStringSet(persisted.requiredGates, current?.requiredGates)
+    || !sameStringSet(persisted.satisfiedGates, current?.satisfiedGates)) {
+    errors.push(issue(
+      "E_PREFLIGHT_GATES_STALE",
+      "Persisted preflight gate sets do not match the current evaluation",
+      [ARTIFACT_PATHS.preflight, ARTIFACT_PATHS.gates],
+    ));
+  }
+  return sortIssues(errors);
+}
+
 async function readProfile(target) {
   const relativePath = "PROJECT_PROFILE.md";
   await assertSafePath(target, relativePath);
