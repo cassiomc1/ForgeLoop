@@ -102,6 +102,11 @@ function commandFor(action) {
   }[action];
 }
 
+function recordCheckCommand(requirement) {
+  const argument = JSON.stringify(requirement);
+  return `forgeloop record-check --id ${argument} --requirement ${argument} --status passed --evidence-kind OBSERVED --result "<observed result>"`;
+}
+
 function decision(input, action, reason, requiredArtifacts = [], missingArtifacts = []) {
   const command = commandFor(action);
   return result({
@@ -161,13 +166,32 @@ function staleReasons(state, contract, route) {
   return reasons;
 }
 
-function executionChronologyErrors(ledger) {
+function executionChronologyErrors(ledger, { stateTaskId, contractTaskId }) {
   const errors = [...(ledger.errors ?? [])].map((error) => artifactError(
     error.code ?? "E_PHASE_CHRONOLOGY_INVALID",
     error.message,
     [ARTIFACT_PATHS.events],
   ));
-  const events = new Set((ledger.events ?? []).map((event) => event.event));
+  const currentTaskId = stateTaskId === contractTaskId ? stateTaskId : null;
+  const ledgerEvents = ledger.events ?? [];
+  const currentEvents = currentTaskId === null
+    ? []
+    : ledgerEvents.filter((event) => event.taskId === currentTaskId);
+  if (currentTaskId === null) {
+    errors.push(artifactError(
+      "E_PHASE_CHRONOLOGY_INVALID",
+      "Work state and current contract task IDs do not match",
+      [ARTIFACT_PATHS.events],
+    ));
+  }
+  if (ledgerEvents.some((event) => event.taskId !== currentTaskId)) {
+    errors.push(artifactError(
+      "E_PHASE_CHRONOLOGY_INVALID",
+      "Protocol event ledger contains an event for a different task",
+      [ARTIFACT_PATHS.events],
+    ));
+  }
+  const events = new Set(currentEvents.map((event) => event.event));
   for (const event of EXECUTION_EVENTS) {
     if (!events.has(event)) {
       errors.push(artifactError(
@@ -288,7 +312,10 @@ export async function getNextAction({ target, packageRoot } = {}) {
   }
 
   if (phaseNeedsChronology) {
-    const chronologyErrors = executionChronologyErrors(ledger);
+    const chronologyErrors = executionChronologyErrors(ledger, {
+      stateTaskId: state.taskId,
+      contractTaskId: contract.value.taskId,
+    });
     if (chronologyErrors.length > 0) {
       return result({
         ...context,
@@ -380,11 +407,12 @@ export async function getNextAction({ target, packageRoot } = {}) {
     if (allCoverageCovered(evidence.coverage)) {
       return decision(context, NEXT_ACTIONS.ENTER_REVIEWING, artifactError("EVIDENCE_COVERED", "All required observed verification evidence is covered"));
     }
+    const uncovered = evidence.coverage.filter((item) => item.status !== "COVERED");
     return result({
       ...context,
       nextAction: NEXT_ACTIONS.RECORD_VERIFICATION,
-      reasons: evidence.coverage
-        .filter((item) => item.status !== "COVERED")
+      commands: uncovered.map((item) => recordCheckCommand(item.requirement)),
+      reasons: uncovered
         .map((item) => artifactError(
           "E_EVIDENCE_REQUIRED",
           `Run the required check and record observed evidence: ${item.requirement}`,

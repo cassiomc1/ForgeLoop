@@ -307,7 +307,13 @@ test("verification decisions require observed evidence and surface failed checks
   await t.test("no checks requests verification recording", async () => {
     await withTarget(async (target) => {
       await setupTarget(target, { phase: "VERIFYING" });
-      assertStableAction(await getNextAction({ target, packageRoot }), NEXT_ACTIONS.RECORD_VERIFICATION);
+      const result = await getNextAction({ target, packageRoot });
+      assertStableAction(result, NEXT_ACTIONS.RECORD_VERIFICATION);
+      assert.deepEqual(result.commands, [
+        'forgeloop record-check --id "tests" --requirement "tests" --status passed --evidence-kind OBSERVED --result "<observed result>"',
+      ]);
+      assert.ok(result.commands.every((command) => command.startsWith("forgeloop record-check ")));
+      assert.doesNotMatch(JSON.stringify(result.commands), /run-check|record-verification|advance --to/);
     });
   });
 
@@ -415,6 +421,28 @@ test("unsafe artifacts return repair guidance without writes and results are det
       const result = await getNextAction({ target, packageRoot });
       assertStableAction(result, NEXT_ACTIONS.RESOLVE_BLOCKER);
       assert.ok(result.reasonCodes.includes("E_PREFLIGHT_NOT_READY"));
+    });
+  });
+
+  await t.test("foreign-task execution ledger cannot authorize verification", async () => {
+    await withTarget(async (target) => {
+      await setupTarget(target, { phase: "EXECUTING" });
+      await rm(path.join(target, ARTIFACT_PATHS.events));
+      for (const event of [
+        "CONTRACT_VALIDATED",
+        "ROUTE_VALIDATED",
+        "PREFLIGHT_READY",
+        "EXECUTION_STARTED",
+      ]) {
+        await appendProtocolEvent(target, { taskId: "foreign-task", event }, packageRoot);
+      }
+
+      const result = await getNextAction({ target, packageRoot });
+
+      assertStableAction(result, NEXT_ACTIONS.RESOLVE_BLOCKER);
+      assert.ok(result.reasonCodes.includes("E_PHASE_CHRONOLOGY_INVALID"));
+      assert.ok(result.requiredArtifacts.includes(ARTIFACT_PATHS.events));
+      assert.notEqual(result.nextAction, NEXT_ACTIONS.ENTER_VERIFYING);
     });
   });
 
