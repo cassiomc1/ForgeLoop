@@ -1,6 +1,7 @@
 import { readdir } from "node:fs/promises";
 
 import { ARTIFACT_PATHS, readJsonArtifact, writeJsonArtifact } from "./artifacts.js";
+import { readContract, validateContract } from "./contract.js";
 import { assertSafePath, ensureWithin, fileExists, readBytes, writeFileAtomic } from "./filesystem.js";
 import { PROTOCOL_VERSION } from "./protocol.js";
 
@@ -42,7 +43,9 @@ export async function exportTaskBundle(target, taskId, packageRoot) {
     [ARTIFACT_PATHS.state, "state.json", "work-state"],
   ];
   for (const [sourcePath, destinationName, schemaName] of required) {
-    const source = await readJsonArtifact(target, sourcePath, schemaName, packageRoot);
+    const source = schemaName === "current-contract"
+      ? await readContract(target, packageRoot)
+      : await readJsonArtifact(target, sourcePath, schemaName, packageRoot);
     if (source.value.taskId !== undefined && source.value.taskId !== taskId) {
       const error = new Error(`${sourcePath} belongs to ${source.value.taskId}, not ${taskId}`);
       error.code = "E_BUNDLE_TASK_MISMATCH";
@@ -107,7 +110,11 @@ export async function readTaskBundle(target, taskId, packageRoot) {
   for (const artifact of manifest.value.artifacts) {
     const mapping = mappings[artifact];
     if (!mapping) continue;
-    loaded[mapping[0]] = (await readJsonArtifact(target, `${directory}/${artifact}`, mapping[1], packageRoot)).value;
+    const loadedArtifact = await readJsonArtifact(target, `${directory}/${artifact}`, mapping[1], packageRoot);
+    if (mapping[1] === "current-contract") {
+      await validateContract(loadedArtifact.value, packageRoot);
+    }
+    loaded[mapping[0]] = loadedArtifact.value;
   }
   return { manifest: manifest.value, artifacts: loaded };
 }

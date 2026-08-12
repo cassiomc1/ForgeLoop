@@ -122,7 +122,9 @@ export async function validateContract(contract, packageRoot) {
 }
 
 export async function readContract(target, packageRoot) {
-  return readJsonArtifact(target, ARTIFACT_PATHS.contract, "current-contract", packageRoot);
+  const artifact = await readJsonArtifact(target, ARTIFACT_PATHS.contract, "current-contract", packageRoot);
+  await validateContract(artifact.value, packageRoot);
+  return artifact;
 }
 
 export async function writeContract(target, contract, packageRoot, options = {}) {

@@ -31,8 +31,7 @@ The assumption boundary is:
 SAFE + REVERSIBLE + LOCAL + NON-SENSITIVE + NON-AUTHORITATIVE + NON-DESTRUCTIVE
 ```
 
-Record the choice with an explicit `ASSUMPTION` marker. Remaining blocking
-items stay in unresolved-decision context and prevent contract creation.
+Record the choice with an explicit `ASSUMPTION` marker. Unresolved blocking decisions must be recorded in `current-contract.unresolvedDecisions[]`; they prevent `preflight` from returning `READY` and block `EXECUTING` until resolved, but do not prevent contract serialization.
 
 ## Serialized protocol preparation
 
@@ -281,8 +280,11 @@ project. Request a decision when legitimate alternatives produce materially
 different outcomes, authority is missing, or the action is destructive.
 
 Unknown non-blocking details do not prevent contract creation. Record them as
-reversible agent assumptions and continue. Only unresolved blocking decisions,
-missing authority, or unsafe-to-infer facts prevent contract creation.
+reversible agent assumptions in `current-contract.assumptions[]` and continue.
+Unresolved blocking decisions, missing authority, and unsafe-to-infer facts
+must be serialized in `current-contract.unresolvedDecisions[]`; they prevent
+`preflight` from returning `READY` and block `EXECUTING` until resolved, not
+contract creation or serialization.
 
 ### Classify the request
 
