@@ -215,6 +215,10 @@ export function parseArgs(argv) {
       if (!id || id.startsWith("-")) throw new Error("--id requires a check ID");
       options.checkId = id;
       index += 1;
+    } else if (argument.startsWith("--id=")) {
+      const id = argument.slice("--id=".length);
+      if (!id || id.startsWith("-")) throw new Error("--id requires a check ID");
+      options.checkId = id;
     } else if (argument === "--kind") {
       const kind = argv[index + 1];
       if (!kind || kind.startsWith("-")) throw new Error("--kind requires a check kind");
@@ -225,6 +229,10 @@ export function parseArgs(argv) {
       if (!requirement || requirement.startsWith("-")) throw new Error("--requirement requires an evidence target");
       options.checkRequirement = requirement;
       index += 1;
+    } else if (argument.startsWith("--requirement=")) {
+      const requirement = argument.slice("--requirement=".length);
+      if (!requirement) throw new Error("--requirement requires an evidence target");
+      options.checkRequirement = requirement;
     } else if (argument === "--status") {
       const status = argv[index + 1];
       if (!status || status.startsWith("-")) throw new Error("--status requires a check status");
@@ -245,6 +253,10 @@ export function parseArgs(argv) {
       if (!resultText || resultText.startsWith("-")) throw new Error("--result requires recorded text");
       options.checkResult = resultText;
       index += 1;
+    } else if (argument.startsWith("--result=")) {
+      const resultText = argument.slice("--result=".length);
+      if (!resultText) throw new Error("--result requires recorded text");
+      options.checkResult = resultText;
     } else if (argument === "--exit-code") {
       const exitCode = argv[index + 1];
       if (!exitCode || exitCode.startsWith("-")) throw new Error("--exit-code requires a non-negative integer");
@@ -458,8 +470,8 @@ export async function main(argv = process.argv.slice(2)) {
         requirement: options.checkRequirement,
         status: options.checkStatus,
         evidenceKind: options.checkEvidenceKind,
-        command: options.checkCommand,
-        result: options.checkResult,
+        command: options.checkCommand ?? undefined,
+        result: options.checkResult ?? undefined,
         exitCode: options.checkExitCode,
         details: options.checkDetails ?? undefined,
       });

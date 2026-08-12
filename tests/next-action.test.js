@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
@@ -27,6 +28,7 @@ import { evaluateCompletion } from "../src/core/completion.js";
 import { NEXT_ACTIONS, getNextAction } from "../src/core/next-action.js";
 
 const packageRoot = getPackageRoot();
+const cliPath = path.join(packageRoot, "src", "cli.js");
 const fixtureRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "fixtures", "states");
 
 async function withTarget(run) {
@@ -388,10 +390,10 @@ test("verification decisions require observed evidence and surface failed checks
         commandId: "record-check",
         executable: "forgeloop",
         subcommand: "record-check",
-        argv: ["record-check", "--id", "tests", "--requirement", "tests", "--status", "passed", "--evidence-kind", "OBSERVED"],
+        argv: ["record-check", "--id=requirement-59830ebc3a418411", "--requirement=tests", "--status", "passed", "--evidence-kind", "OBSERVED", "--exit-code", "0"],
         requiredInputs: [{
           name: "result",
-          option: "--result",
+          option: "--result=<text>",
           description: "Observed result supplied by the agent",
         }],
       }]);
@@ -421,11 +423,24 @@ test("verification decisions require observed evidence and surface failed checks
       assert.ok(result.commandSpecs.length >= requirements.length);
       assert.match(human, /SAFE SYNOPSIS ONLY/);
       assert.match(human, /not shell syntax/i);
-      for (const requirement of requirements) {
-        assert.ok(result.commandSpecs.some((spec) => spec.argv.includes(requirement)));
+      for (const [index, requirement] of requirements.entries()) {
+        const spec = result.commandSpecs.find((item) => item.argv.includes(`--requirement=${requirement}`));
+        assert.ok(spec, `missing command spec for requirement ${index}`);
+        assert.match(spec.argv.find((argument) => argument.startsWith("--id=")), /^--id=requirement-[a-f0-9]{16}$/);
         assert.ok(result.commandSpecs.every((spec) => !spec.requiredInputs.some((input) => input.description.includes(requirement))));
         assert.ok(result.commands.every((command) => !command.includes(requirement)));
         assert.equal(human.includes(requirement), false);
+
+        const direct = spawnSync(process.execPath, [
+          cliPath,
+          ...spec.argv,
+          "--result=observed directly without a shell",
+          `--path=${target}`,
+        ], {
+          encoding: "utf8",
+          shell: false,
+        });
+        assert.equal(direct.status, 0, direct.stderr);
       }
     });
   });
@@ -572,6 +587,24 @@ test("review decisions require coverage before receipt or completion", async (t)
       assertStableAction(await getNextAction({ target, packageRoot }), NEXT_ACTIONS.RUN_COMPLETE);
     });
   });
+
+  await t.test("missing receipt recovery preserves verification and reaches completion", async () => {
+    await withTarget(async (target) => {
+      await setupReviewedTarget(target);
+      const statePath = path.join(target, ARTIFACT_PATHS.state);
+      const before = JSON.parse(await readFile(statePath, "utf8"));
+      await rm(path.join(target, ARTIFACT_PATHS.receipt));
+
+      assertStableAction(await getNextAction({ target, packageRoot }), NEXT_ACTIONS.PREPARE_COMPLETION);
+      const recovered = await prepareCompletion({ target, packageRoot });
+      assert.deepEqual(recovered.receipt.checks, before.checks);
+      assert.deepEqual(recovered.receipt.evidence, before.verificationEvidence);
+      assert.deepEqual(recovered.receipt.evidenceCoverage, before.evidenceCoverage);
+
+      assertStableAction(await getNextAction({ target, packageRoot }), NEXT_ACTIONS.RUN_COMPLETE);
+      assert.equal((await runComplete({ target, packageRoot })).status, "VALID");
+    });
+  });
 });
 
 test("completion identity rejects foreign receipt or state without mutation", async (t) => {
@@ -681,15 +714,25 @@ test("freshness and persisted preflight identity cannot authorize forward lifecy
     await withTarget(async (target) => {
       await setupTarget(target, { phase: "PLANNED" });
       const preflightPath = path.join(target, ARTIFACT_PATHS.preflight);
+      const statePath = path.join(target, ARTIFACT_PATHS.state);
+      const eventsPath = path.join(target, ARTIFACT_PATHS.events);
       const preflight = JSON.parse(await readFile(preflightPath, "utf8"));
       preflight.taskId = "foreign-task";
       await writeFile(preflightPath, `${JSON.stringify(preflight, null, 2)}\n`);
+      const beforeState = await readFile(statePath, "utf8");
+      const beforeEvents = await readFile(eventsPath, "utf8");
 
       const next = await getNextAction({ target, packageRoot });
 
       assertStableAction(next, NEXT_ACTIONS.RUN_PREFLIGHT);
       assert.ok(next.reasonCodes.includes("E_PREFLIGHT_TASK_MISMATCH"));
       assert.equal(next.commands.includes("forgeloop advance --to EXECUTING"), false);
+      await assert.rejects(
+        () => advanceWorkState(target, "EXECUTING", { packageRoot }),
+        (error) => error.code === "E_PREFLIGHT_TASK_MISMATCH",
+      );
+      assert.equal(await readFile(statePath, "utf8"), beforeState);
+      assert.equal(await readFile(eventsPath, "utf8"), beforeEvents);
     });
   });
 
@@ -713,15 +756,25 @@ test("freshness and persisted preflight identity cannot authorize forward lifecy
       await withTarget(async (target) => {
         await setupTarget(target, { phase: "PLANNED" });
         const preflightPath = path.join(target, ARTIFACT_PATHS.preflight);
+        const statePath = path.join(target, ARTIFACT_PATHS.state);
+        const eventsPath = path.join(target, ARTIFACT_PATHS.events);
         const preflight = JSON.parse(await readFile(preflightPath, "utf8"));
         mutate(preflight);
         await writeFile(preflightPath, `${JSON.stringify(preflight, null, 2)}\n`);
+        const beforeState = await readFile(statePath, "utf8");
+        const beforeEvents = await readFile(eventsPath, "utf8");
 
         const next = await getNextAction({ target, packageRoot });
 
         assertStableAction(next, NEXT_ACTIONS.RUN_PREFLIGHT);
         assert.ok(next.reasonCodes.includes(code));
         assert.equal(next.commands.includes("forgeloop advance --to EXECUTING"), false);
+        await assert.rejects(
+          () => advanceWorkState(target, "EXECUTING", { packageRoot }),
+          (error) => error.code === code,
+        );
+        assert.equal(await readFile(statePath, "utf8"), beforeState);
+        assert.equal(await readFile(eventsPath, "utf8"), beforeEvents);
       });
     });
   }
@@ -769,6 +822,54 @@ test("freshness and persisted preflight identity cannot authorize forward lifecy
       );
       assert.equal(createHash("sha256").update(await readFile(statePath)).digest("hex"), stateHashBefore);
       assert.equal(createHash("sha256").update(await readFile(eventsPath)).digest("hex"), eventsHashBefore);
+    });
+  });
+
+  await t.test("missing state route fingerprint never exposes or persists execution", async () => {
+    await withTarget(async (target) => {
+      await setupTarget(target, { phase: "PLANNED" });
+      const statePath = path.join(target, ARTIFACT_PATHS.state);
+      const eventsPath = path.join(target, ARTIFACT_PATHS.events);
+      const state = JSON.parse(await readFile(statePath, "utf8"));
+      delete state.routeFingerprint;
+      await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`);
+      const beforeState = await readFile(statePath, "utf8");
+      const beforeEvents = await readFile(eventsPath, "utf8");
+
+      const next = await getNextAction({ target, packageRoot });
+      assertStableAction(next, NEXT_ACTIONS.RESOLVE_STALE_ROUTE);
+      assert.ok(next.reasonCodes.includes("E_ROUTE_STALE"));
+      await assert.rejects(
+        () => advanceWorkState(target, "EXECUTING", { packageRoot }),
+        (error) => error.code === "E_ROUTE_STALE",
+      );
+      assert.equal(await readFile(statePath, "utf8"), beforeState);
+      assert.equal(await readFile(eventsPath, "utf8"), beforeEvents);
+    });
+  });
+
+  await t.test("invalid prerequisite ledger never exposes or persists execution", async () => {
+    await withTarget(async (target) => {
+      await setupTarget(target, { phase: "PLANNED" });
+      const statePath = path.join(target, ARTIFACT_PATHS.state);
+      const eventsPath = path.join(target, ARTIFACT_PATHS.events);
+      const lines = (await readFile(eventsPath, "utf8")).trim().split("\n");
+      const tampered = JSON.parse(lines[0]);
+      tampered.hash = "a".repeat(64);
+      lines[0] = JSON.stringify(tampered);
+      await writeFile(eventsPath, `${lines.join("\n")}\n`);
+      const beforeState = await readFile(statePath, "utf8");
+      const beforeEvents = await readFile(eventsPath, "utf8");
+
+      const next = await getNextAction({ target, packageRoot });
+      assertStableAction(next, NEXT_ACTIONS.RESOLVE_BLOCKER);
+      assert.ok(next.reasonCodes.includes("E_LEDGER_HASH_INVALID"));
+      await assert.rejects(
+        () => advanceWorkState(target, "EXECUTING", { packageRoot }),
+        (error) => error.code === "E_LEDGER_HASH_INVALID",
+      );
+      assert.equal(await readFile(statePath, "utf8"), beforeState);
+      assert.equal(await readFile(eventsPath, "utf8"), beforeEvents);
     });
   });
 });

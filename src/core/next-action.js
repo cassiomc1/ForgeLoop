@@ -11,6 +11,8 @@ import { readPersistedRoute } from "./route-artifact.js";
 import { assertCheckList } from "./checks.js";
 import { completionRelationshipErrors } from "./completion-relationships.js";
 import { classifyLoadedWorkState, readWorkState } from "./work-state.js";
+import { sha256 } from "./manifest.js";
+import { evaluateStartExecutionPrerequisites } from "./execution-prerequisites.js";
 
 export const NEXT_ACTIONS = Object.freeze({
   DISCOVER: "DISCOVER",
@@ -108,14 +110,15 @@ function commandFor(action) {
 }
 
 function recordCheckCommandSpec(requirement) {
+  const checkId = `requirement-${sha256(Buffer.from(requirement)).slice(0, 16)}`;
   return {
     commandId: "record-check",
     executable: "forgeloop",
     subcommand: "record-check",
-    argv: ["record-check", "--id", requirement, "--requirement", requirement, "--status", "passed", "--evidence-kind", "OBSERVED"],
+    argv: ["record-check", `--id=${checkId}`, `--requirement=${requirement}`, "--status", "passed", "--evidence-kind", "OBSERVED", "--exit-code", "0"],
     requiredInputs: [{
       name: "result",
-      option: "--result",
+      option: "--result=<text>",
       description: "Observed result supplied by the agent",
     }],
   };
@@ -159,7 +162,7 @@ function staleReasons(state, contract, route) {
       [ARTIFACT_PATHS.route, ARTIFACT_PATHS.contract],
     ));
   }
-  if (state.routeFingerprint !== undefined && state.routeFingerprint !== route.fingerprint) {
+  if (state.routeFingerprint !== route.fingerprint) {
     reasons.push(artifactError(
       "E_ROUTE_STALE",
       "Work state references a different routing result",
@@ -466,13 +469,25 @@ export async function getNextAction({ target, packageRoot } = {}) {
     return decision(context, NEXT_ACTIONS.PLAN, artifactError("PHASE_DESIGNING", "Required gates are ready for planning"));
   }
   if (state.phase === "PLANNED") {
-    if (persistedPreflightErrors.length > 0) {
+    const prerequisites = await evaluateStartExecutionPrerequisites({ target, state, packageRoot });
+    if (prerequisites.errors.length > 0) {
+      const preflightOnly = prerequisites.errors.every((error) => error.code.startsWith("E_PREFLIGHT_"));
+      if (preflightOnly) {
+        return result({
+          ...context,
+          nextAction: NEXT_ACTIONS.RUN_PREFLIGHT,
+          reasons: prerequisites.errors,
+          commands: [commandFor(NEXT_ACTIONS.RUN_PREFLIGHT)],
+          requiredArtifacts: prerequisites.requiredArtifacts,
+          missingArtifacts: preflightArtifact.missingArtifacts,
+        });
+      }
+      const routeOnly = prerequisites.errors.every((error) => error.code === "E_ROUTE_STALE" || error.code === "E_ROUTE_GUIDE_MISMATCH");
       return result({
         ...context,
-        nextAction: NEXT_ACTIONS.RUN_PREFLIGHT,
-        reasons: persistedPreflightErrors,
-        commands: [commandFor(NEXT_ACTIONS.RUN_PREFLIGHT)],
-        requiredArtifacts: preflightArtifacts,
+        nextAction: routeOnly ? NEXT_ACTIONS.RESOLVE_STALE_ROUTE : NEXT_ACTIONS.RESOLVE_BLOCKER,
+        reasons: prerequisites.errors,
+        requiredArtifacts: prerequisites.requiredArtifacts,
         missingArtifacts: preflightArtifact.missingArtifacts,
       });
     }

@@ -1,0 +1,154 @@
+import { ARTIFACT_PATHS, readJsonArtifact } from "./artifacts.js";
+import { readContract } from "./contract.js";
+import { validateEventLedger } from "./events.js";
+import { evaluatePreflight, validatePersistedPreflight } from "./preflight.js";
+import { readPersistedRoute } from "./route-artifact.js";
+import { stateIdentityErrors } from "./completion-relationships.js";
+import { classifyLoadedWorkState } from "./work-state.js";
+
+const START_EXECUTION_EVENTS = Object.freeze([
+  "CONTRACT_VALIDATED",
+  "ROUTE_VALIDATED",
+  "PREFLIGHT_READY",
+]);
+
+function issue(code, message, artifacts = []) {
+  return { code, message, artifacts };
+}
+
+function sameStringSet(left, right) {
+  if (!Array.isArray(left) || !Array.isArray(right)) return false;
+  return left.length === new Set(left).size
+    && right.length === new Set(right).size
+    && left.length === right.length
+    && left.every((value) => right.includes(value));
+}
+
+async function load(loadArtifact, code, message, artifacts, errors) {
+  try {
+    return await loadArtifact();
+  } catch (error) {
+    errors.push(issue(code, `${message}: ${error.message}`, artifacts));
+    return null;
+  }
+}
+
+function freshnessErrors(state, freshness) {
+  if (freshness.status !== "REVALIDATION_REQUIRED") return [];
+  return [issue(
+    "E_STATE_REVALIDATION_REQUIRED",
+    `EXECUTING requires a fresh work-state checkpoint: ${freshness.reasons.join(", ")}`,
+    [
+      ARTIFACT_PATHS.state,
+      ARTIFACT_PATHS.contract,
+      ...(state.requiredArtifacts?.map((artifact) => artifact.path) ?? []),
+    ],
+  )];
+}
+
+function prerequisiteLedgerErrors(ledger, taskId, preflight) {
+  const errors = (ledger.errors ?? []).map((error) => issue(
+    error.code ?? "E_PHASE_CHRONOLOGY_INVALID",
+    error.message,
+    [ARTIFACT_PATHS.events],
+  ));
+  const events = ledger.events ?? [];
+  if (events.some((event) => event.taskId !== taskId)) {
+    errors.push(issue(
+      "E_PHASE_CHRONOLOGY_INVALID",
+      "EXECUTING requires protocol prerequisite events to belong to the current task",
+      [ARTIFACT_PATHS.events, ARTIFACT_PATHS.state, ARTIFACT_PATHS.contract],
+    ));
+    return errors;
+  }
+  const currentEvents = events.filter((event) => event.taskId === taskId);
+  for (const requiredEvent of START_EXECUTION_EVENTS) {
+    if (!currentEvents.some((event) => event.event === requiredEvent)) {
+      errors.push(issue(
+        "E_PHASE_CHRONOLOGY_INVALID",
+        `EXECUTING requires a ${requiredEvent} protocol event`,
+        [ARTIFACT_PATHS.events],
+      ));
+    }
+  }
+  const preflightEvent = currentEvents.find((event) => event.event === "PREFLIGHT_READY");
+  if (preflightEvent && (!sameStringSet(preflightEvent.details?.requiredGates, preflight.requiredGates)
+    || !sameStringSet(preflightEvent.details?.satisfiedGates, preflight.satisfiedGates))) {
+    errors.push(issue(
+      "E_PHASE_CHRONOLOGY_INVALID",
+      "PREFLIGHT_READY event gate sets do not match the current READY preflight",
+      [ARTIFACT_PATHS.events, ARTIFACT_PATHS.preflight],
+    ));
+  }
+  return errors;
+}
+
+export async function evaluateStartExecutionPrerequisites({ target, state, packageRoot } = {}) {
+  const errors = [];
+  const requiredArtifacts = [
+    ARTIFACT_PATHS.state,
+    ARTIFACT_PATHS.contract,
+    ARTIFACT_PATHS.route,
+    ARTIFACT_PATHS.preflight,
+    ARTIFACT_PATHS.events,
+  ];
+  if (!state) {
+    return {
+      errors: [issue("E_PHASE_PREREQUISITE_MISSING", "EXECUTING requires a work state", [ARTIFACT_PATHS.state])],
+      requiredArtifacts,
+    };
+  }
+
+  const contract = await load(
+    () => readContract(target, packageRoot),
+    "E_PHASE_PREREQUISITE_MISSING",
+    `EXECUTING requires ${ARTIFACT_PATHS.contract}`,
+    [ARTIFACT_PATHS.contract],
+    errors,
+  );
+  const route = await load(
+    () => readPersistedRoute(target, packageRoot),
+    "E_PHASE_PREREQUISITE_MISSING",
+    `EXECUTING requires ${ARTIFACT_PATHS.route}`,
+    [ARTIFACT_PATHS.route],
+    errors,
+  );
+  if (!contract || !route) return { errors, requiredArtifacts, contract, route };
+
+  if (state.routeFingerprint !== route.fingerprint) {
+    errors.push(issue(
+      "E_ROUTE_STALE",
+      "EXECUTING requires work state and route to match the current contract",
+      [ARTIFACT_PATHS.state, ARTIFACT_PATHS.route, ARTIFACT_PATHS.contract],
+    ));
+  }
+  errors.push(...stateIdentityErrors({ contract, route, state }));
+
+  const freshness = await classifyLoadedWorkState({
+    target,
+    state,
+    contractFile: ARTIFACT_PATHS.contract,
+  });
+  errors.push(...freshnessErrors(state, freshness));
+
+  const preflight = await evaluatePreflight({ target, packageRoot });
+  let persistedPreflight = null;
+  try {
+    persistedPreflight = await readJsonArtifact(target, ARTIFACT_PATHS.preflight, "preflight", packageRoot);
+  } catch {
+    // validatePersistedPreflight reports the stable, actionable preflight reason.
+  }
+  errors.push(...validatePersistedPreflight(persistedPreflight?.value, preflight));
+  if (!sameStringSet(state.requiredGates, preflight.requiredGates)
+    || !sameStringSet(state.satisfiedGates, preflight.satisfiedGates)) {
+    errors.push(issue(
+      "E_PREFLIGHT_GATES_STALE",
+      "Work state gate sets do not match the current preflight evaluation",
+      [ARTIFACT_PATHS.state, ARTIFACT_PATHS.preflight, ARTIFACT_PATHS.gates],
+    ));
+  }
+
+  const ledger = await validateEventLedger(target, packageRoot);
+  errors.push(...prerequisiteLedgerErrors(ledger, contract.value.taskId, preflight));
+  return { errors, requiredArtifacts, contract, route, preflight, persistedPreflight, ledger };
+}

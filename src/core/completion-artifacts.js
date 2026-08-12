@@ -284,6 +284,7 @@ export async function recordCheck({
     state: nextState,
     receipt: nextReceipt,
     requiredEvidence,
+    requireRequiredChecks: false,
   });
 
   await writeWorkState(target, nextState, { packageRoot });
