@@ -32,3 +32,12 @@ test("shipped adapter entry points repeat the closure trigger", async () => {
     assert.match(instructions, /blocked|partial/i, relativePath);
   }
 });
+
+test("shipped instructions require querying the next lifecycle action", async () => {
+  const trigger = /After implementation work for the current task is complete, run `forgeloop next`/i;
+  for (const file of ["AGENTS.md", "CLAUDE.md", ".cursor/rules/project-loop.mdc", ".github/copilot-instructions.md"]) {
+    assert.match(await readFile(file, "utf8"), trigger, file);
+  }
+  assert.match(await readFile("LOOP_ENGINEERING.md", "utf8"), /ACT.*QUERY NEXT.*ACT/s);
+  assert.match(await readFile("README.md", "utf8"), /forgeloop next --json/);
+});

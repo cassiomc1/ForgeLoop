@@ -137,6 +137,8 @@ Protocol-support commands are local and do not invoke an agent or model:
 npx @cassiomc1/forgeloop route --work complete-website --surface ui --risk untrusted-input
 npx @cassiomc1/forgeloop activate
 npx @cassiomc1/forgeloop preflight --json
+npx @cassiomc1/forgeloop next
+npx @cassiomc1/forgeloop next --json
 npx @cassiomc1/forgeloop advance --to EXECUTING
 npx @cassiomc1/forgeloop advance --to VERIFYING
 npx @cassiomc1/forgeloop prepare-completion --json
@@ -154,6 +156,22 @@ npx @cassiomc1/forgeloop validate-state --json
 npx @cassiomc1/forgeloop validate-receipt --file ./execution-receipt.json --json
 npx @cassiomc1/forgeloop validate-protocol --route-file ./routing-result.json --state-file .forgeloop/work-state.json --receipt-file ./execution-receipt.json --contract-file .forgeloop/current-contract.json --json
 ```
+
+The query-driven post-implementation path is:
+
+```text
+implementation
+→ forgeloop next
+→ advance --to VERIFYING
+→ checks + record-check
+→ forgeloop next
+→ advance --to REVIEWING
+→ prepare-completion / forgeloop next
+→ complete
+```
+
+`forgeloop next` and `forgeloop next --json` read persisted state only. They do
+not run project checks or mutate protocol artifacts.
 
 `route` expands declared signals into deterministic guide IDs and reason codes.
 `activate` records a session marker without storing prompts or hidden reasoning.

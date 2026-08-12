@@ -12,6 +12,11 @@ directory or file rules.
 - Diagnose the cause before fixing a failure; do not make random attempts.
 - Do not install unrelated software, publish, delete, migrate, or alter external state without authority. For a task-scoped missing Qwen-MM-Plugins capability, follow `LOOP_ENGINEERING.md`; API credentials and system dependencies remain separately gated.
 - After implementation begins, do not return a final result in `EXECUTING`: follow `VERIFYING` → structured evidence → `REVIEWING` → execution receipt → validator-backed `COMPLETE`; otherwise report `BLOCKED` or `PARTIALLY VERIFIED` with exact findings.
+
+After implementation work for the current task is complete, run `forgeloop next`
+before returning a final result. Follow the returned lifecycle action until
+ForgeLoop reaches a terminal state or an explicit blocker.
+
 - Report the result, checks actually run, limitations, and publication state.
 
 Do not stop for non-blocking missing product details. When a safe, reversible

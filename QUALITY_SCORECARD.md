@@ -15,6 +15,8 @@ policy are all present.
 | Portability | Node 20/22/24 Linux depth, OS smoke coverage, path/line-ending fixtures, and adapter compatibility evidence. |
 | Observability | `inspect`/`status`/`validate-protocol` shared derived state classification, real schema health, shared evidence, rich doctor findings, receipts, and no telemetry. |
 | Completion enforcement | Canonical contract, persisted route, guide-declared gates, preflight, phase ledger, structured checks, evidence coverage, `audit`, `report`, and `complete` validators. |
+| Agent lifecycle navigation | Read-only `forgeloop next` decisions, stable action/reason output, persisted-state safety, and adapter guidance at lifecycle boundaries. |
+| Execution → Verification handoff | Legal `EXECUTING` → `VERIFYING` transition, implementation-step reconciliation, and preservation of verification evidence. |
 | Pre-contract autonomy | Blocking vs Non-Blocking Decisions policy, explicit ASSUMPTION / source=agent-default recording, safe-boundary invariant, positive and negative tests, and a blind run showing non-blocking ambiguity continues while blocking ambiguity remains user-gated. |
 | Resume/checkpoint | Atomic local state, contract/HEAD/artifact freshness, age warning, schema/secret validation, status, safe validation, and bounded clearing without persisting derived freshness fields. |
 | Multi-agent coordination | Self-contained briefs, write/write and write/read ownership checks, dependency-set validation, reviewer independence, normalized results, and inline fallback. |
@@ -34,6 +36,16 @@ policy are all present.
   was merged, or a deployment succeeded.
 - Literal graph runtime and runtime multi-agent orchestration are `N/A by
   design`; compatible harnesses own those capabilities.
+
+## Third-run conformance position
+
+| Dimension | Classification |
+| --- | --- |
+| Execution → Verification | REPRODUCED FAILURE before this fix |
+| Verification serialization | NOT_REACHED |
+| Review transition | NOT_REACHED |
+| Receipt generation | NOT_REACHED |
+| Full conformance | PARTIAL |
 
 ## Evidence matrix
 
