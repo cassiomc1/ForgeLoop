@@ -14,6 +14,25 @@ function issue(code, message, artifacts = [], details = {}) {
   return { code, message, artifacts, ...details };
 }
 
+export function completionIdentityErrors({ contract, state, receipt } = {}) {
+  const errors = [];
+  if (contract && state && contract.taskId !== state.taskId) {
+    errors.push(issue(
+      "E_STATE_TASK_MISMATCH",
+      "Work state does not belong to the current contract task",
+      [ARTIFACT_PATHS.contract, ARTIFACT_PATHS.state],
+    ));
+  }
+  if (contract && receipt && contract.taskId !== receipt.taskId) {
+    errors.push(issue(
+      "E_RECEIPT_TASK_MISMATCH",
+      "Execution receipt does not belong to the current contract task",
+      [ARTIFACT_PATHS.contract, ARTIFACT_PATHS.receipt],
+    ));
+  }
+  return errors;
+}
+
 function repairNext(error) {
   switch (error.code) {
     case "E_RECEIPT_MISSING":
@@ -157,6 +176,12 @@ export async function evaluateCompletion({ target, packageRoot, strict = false }
       errors.push(issue(error.code ?? "E_RECEIPT_INVALID", `Execution receipt is invalid: ${error.message}`, [ARTIFACT_PATHS.receipt]));
     }
   }
+
+  errors.push(...completionIdentityErrors({
+    contract: contract?.value,
+    state,
+    receipt: receipt?.value,
+  }));
 
   if (contract && route && route.value.contractFingerprint !== undefined
     && route.value.contractFingerprint !== contract.fingerprint) {

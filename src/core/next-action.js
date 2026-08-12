@@ -1,5 +1,5 @@
 import { ARTIFACT_PATHS, readJsonArtifact } from "./artifacts.js";
-import { evaluateCompletion } from "./completion.js";
+import { completionIdentityErrors, evaluateCompletion } from "./completion.js";
 import { requiredEvidenceForTarget } from "./completion-artifacts.js";
 import { coverageForRequirements } from "./coverage.js";
 import { readContract } from "./contract.js";
@@ -60,6 +60,7 @@ function result({
   nextAction,
   reasons = [],
   commands = [],
+  commandSpecs = [],
   requiredArtifacts = [],
   missingArtifacts = [],
 }) {
@@ -83,6 +84,8 @@ function result({
     reasonCodes: uniqueSorted(normalizedReasons.map((reason) => reason.code)),
     reasons: normalizedReasons,
     commands: uniqueSorted(commands),
+    commandSpecs: [...new Map(commandSpecs.map((spec) => [JSON.stringify(spec), spec])).values()]
+      .sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right))),
     requiredArtifacts: uniqueSorted(requiredArtifacts),
     missingArtifacts: uniqueSorted(missingArtifacts),
   };
@@ -102,9 +105,18 @@ function commandFor(action) {
   }[action];
 }
 
-function recordCheckCommand(requirement) {
-  const argument = JSON.stringify(requirement);
-  return `forgeloop record-check --id ${argument} --requirement ${argument} --status passed --evidence-kind OBSERVED --result "<observed result>"`;
+function recordCheckCommandSpec(requirement) {
+  return {
+    commandId: "record-check",
+    executable: "forgeloop",
+    subcommand: "record-check",
+    argv: ["record-check", "--id", requirement, "--requirement", requirement, "--status", "passed", "--evidence-kind", "OBSERVED"],
+    requiredInputs: [{
+      name: "result",
+      option: "--result",
+      description: "Observed result supplied by the agent",
+    }],
+  };
 }
 
 function decision(input, action, reason, requiredArtifacts = [], missingArtifacts = []) {
@@ -281,6 +293,15 @@ export async function getNextAction({ target, packageRoot } = {}) {
 
   const contract = contractResult.value;
   const route = routeResult.value;
+  const identityErrors = completionIdentityErrors({ contract: contract.value, state });
+  if (identityErrors.length > 0) {
+    return result({
+      ...context,
+      nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
+      reasons: identityErrors,
+      requiredArtifacts,
+    });
+  }
   const stale = staleReasons(state, contract, route);
   if (stale.length > 0) {
     return result({
@@ -411,11 +432,12 @@ export async function getNextAction({ target, packageRoot } = {}) {
     return result({
       ...context,
       nextAction: NEXT_ACTIONS.RECORD_VERIFICATION,
-      commands: uncovered.map((item) => recordCheckCommand(item.requirement)),
+      commands: ["forgeloop record-check"],
+      commandSpecs: uncovered.map((item) => recordCheckCommandSpec(item.requirement)),
       reasons: uncovered
         .map((item) => artifactError(
           "E_EVIDENCE_REQUIRED",
-          `Run the required check and record observed evidence: ${item.requirement}`,
+          "Run the required check and record observed evidence through the structured command specification.",
           [ARTIFACT_PATHS.state],
         )),
       requiredArtifacts: requiredArtifacts,

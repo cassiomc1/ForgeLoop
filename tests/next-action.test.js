@@ -7,6 +7,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { runComplete } from "../src/commands/complete.js";
+import { formatNextActionResult } from "../src/commands/next.js";
 import { runPreflight } from "../src/commands/preflight.js";
 import { ARTIFACT_PATHS } from "../src/core/artifacts.js";
 import { createCheck } from "../src/core/checks.js";
@@ -22,6 +23,7 @@ import { evaluateRoute } from "../src/core/router.js";
 import { persistRoute } from "../src/core/route-artifact.js";
 import { getPackageRoot } from "../src/core/templates.js";
 import { createWorkState, writeWorkState } from "../src/core/work-state.js";
+import { evaluateCompletion } from "../src/core/completion.js";
 import { NEXT_ACTIONS, getNextAction } from "../src/core/next-action.js";
 
 const packageRoot = getPackageRoot();
@@ -309,11 +311,50 @@ test("verification decisions require observed evidence and surface failed checks
       await setupTarget(target, { phase: "VERIFYING" });
       const result = await getNextAction({ target, packageRoot });
       assertStableAction(result, NEXT_ACTIONS.RECORD_VERIFICATION);
-      assert.deepEqual(result.commands, [
-        'forgeloop record-check --id "tests" --requirement "tests" --status passed --evidence-kind OBSERVED --result "<observed result>"',
-      ]);
-      assert.ok(result.commands.every((command) => command.startsWith("forgeloop record-check ")));
+      assert.deepEqual(result.commands, ["forgeloop record-check"]);
+      assert.deepEqual(result.commandSpecs, [{
+        commandId: "record-check",
+        executable: "forgeloop",
+        subcommand: "record-check",
+        argv: ["record-check", "--id", "tests", "--requirement", "tests", "--status", "passed", "--evidence-kind", "OBSERVED"],
+        requiredInputs: [{
+          name: "result",
+          option: "--result",
+          description: "Observed result supplied by the agent",
+        }],
+      }]);
       assert.doesNotMatch(JSON.stringify(result.commands), /run-check|record-verification|advance --to/);
+    });
+  });
+
+  await t.test("untrusted requirements are present only in direct-spawn command specifications", async () => {
+    await withTarget(async (target) => {
+      const requirements = [
+        "$(printf injected)",
+        "`printf injected`",
+        "quote ' and \\\"",
+        "line one\nline two",
+        "back\\slash",
+        "--leading-option",
+        "spaces are data",
+        "verificacao-unicode-á",
+      ];
+      await setupTarget(target, { phase: "VERIFYING", successCriteria: requirements });
+
+      const result = await getNextAction({ target, packageRoot });
+      const human = formatNextActionResult(result);
+
+      assertStableAction(result, NEXT_ACTIONS.RECORD_VERIFICATION);
+      assert.deepEqual(result.commands, ["forgeloop record-check"]);
+      assert.ok(result.commandSpecs.length >= requirements.length);
+      assert.match(human, /SAFE SYNOPSIS ONLY/);
+      assert.match(human, /not shell syntax/i);
+      for (const requirement of requirements) {
+        assert.ok(result.commandSpecs.some((spec) => spec.argv.includes(requirement)));
+        assert.ok(result.commandSpecs.every((spec) => !spec.requiredInputs.some((input) => input.description.includes(requirement))));
+        assert.ok(result.commands.every((command) => !command.includes(requirement)));
+        assert.equal(human.includes(requirement), false);
+      }
     });
   });
 
@@ -388,6 +429,71 @@ test("review decisions require coverage before receipt or completion", async (t)
       assertStableAction(await getNextAction({ target, packageRoot }), NEXT_ACTIONS.RUN_COMPLETE);
     });
   });
+});
+
+test("completion identity rejects foreign receipt or state without mutation", async (t) => {
+  async function setupReviewedTarget(target) {
+    await setupTarget(target, { phase: "VERIFYING", receipt: true });
+    await recordCheck({
+      target,
+      packageRoot,
+      id: "tests",
+      kind: "command",
+      requirement: "tests",
+      status: "passed",
+      evidenceKind: "OBSERVED",
+      result: "tests passed",
+      exitCode: 0,
+    });
+    await advanceWorkState(target, "REVIEWING", { packageRoot });
+  }
+
+  for (const [name, mutate, code] of [
+    [
+      "receipt task ID",
+      async (target) => {
+        const receiptPath = path.join(target, ARTIFACT_PATHS.receipt);
+        const receipt = JSON.parse(await readFile(receiptPath, "utf8"));
+        receipt.taskId = "foreign-task";
+        await writeFile(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`);
+      },
+      "E_RECEIPT_TASK_MISMATCH",
+    ],
+    [
+      "work-state task ID",
+      async (target) => {
+        const statePath = path.join(target, ARTIFACT_PATHS.state);
+        const state = JSON.parse(await readFile(statePath, "utf8"));
+        state.taskId = "foreign-task";
+        await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`);
+      },
+      "E_STATE_TASK_MISMATCH",
+    ],
+  ]) {
+    await t.test(name, async () => {
+      await withTarget(async (target) => {
+        await setupReviewedTarget(target);
+        await mutate(target);
+        const statePath = path.join(target, ARTIFACT_PATHS.state);
+        const eventsPath = path.join(target, ARTIFACT_PATHS.events);
+        const stateBefore = await readFile(statePath, "utf8");
+        const eventsBefore = await readFile(eventsPath, "utf8");
+
+        const next = await getNextAction({ target, packageRoot });
+        const evaluation = await evaluateCompletion({ target, packageRoot });
+        const completion = await runComplete({ target, packageRoot });
+
+        assertStableAction(next, NEXT_ACTIONS.RESOLVE_BLOCKER);
+        assert.ok(next.reasonCodes.includes(code));
+        assert.equal(evaluation.status, "REJECTED");
+        assert.ok(evaluation.errors.some((error) => error.code === code));
+        assert.equal(completion.status, "REJECTED");
+        assert.ok(completion.errors.some((error) => error.code === code));
+        assert.equal(await readFile(statePath, "utf8"), stateBefore);
+        assert.equal(await readFile(eventsPath, "utf8"), eventsBefore);
+      });
+    });
+  }
 });
 
 test("third live execution run enters verification without claiming completion", async () => {

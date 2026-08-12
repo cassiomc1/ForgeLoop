@@ -14,8 +14,11 @@ export function formatNextActionResult(result) {
     lines.push(...result.reasons.map((reason) => `- ${reason.code}: ${reason.message}`));
   }
   if (result.commands.length > 0) {
-    lines.push("COMMANDS:");
+    lines.push("COMMANDS (SAFE SYNOPSIS ONLY):");
     lines.push(...result.commands.map((command) => `- ${command}`));
+  }
+  if (result.commandSpecs.length > 0) {
+    lines.push("STRUCTURED COMMAND SPECS: Available in --json output; direct-process argv data, not shell syntax.");
   }
   if (result.missingArtifacts.length > 0) {
     lines.push("MISSING ARTIFACTS:");
