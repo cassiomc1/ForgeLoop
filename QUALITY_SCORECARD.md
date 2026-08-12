@@ -15,6 +15,7 @@ policy are all present.
 | Portability | Node 20/22/24 Linux depth, OS smoke coverage, path/line-ending fixtures, and adapter compatibility evidence. |
 | Observability | `inspect`/`status`/`validate-protocol` shared derived state classification, real schema health, shared evidence, rich doctor findings, receipts, and no telemetry. |
 | Completion enforcement | Canonical contract, persisted route, guide-declared gates, preflight, phase ledger, structured checks, evidence coverage, `audit`, `report`, and `complete` validators. |
+| Pre-contract autonomy | Blocking vs Non-Blocking Decisions policy, explicit ASSUMPTION / source=agent-default recording, safe-boundary invariant, positive and negative tests, and a blind run showing non-blocking ambiguity continues while blocking ambiguity remains user-gated. |
 | Resume/checkpoint | Atomic local state, contract/HEAD/artifact freshness, age warning, schema/secret validation, status, safe validation, and bounded clearing without persisting derived freshness fields. |
 | Multi-agent coordination | Self-contained briefs, write/write and write/read ownership checks, dependency-set validation, reviewer independence, normalized results, and inline fallback. |
 | Security boundaries | Realpath containment, bounded untrusted JSON, threat model, nested secret scanning, publication evidence, and explicit authority rules. |
@@ -50,6 +51,7 @@ are both present:
 | Security boundary | realpath containment, bounded JSON, `THREAT_MODEL.md`, secret-free artifacts, authority and no-runtime rules | `tests/security-limits.test.js`, Markdown/loop validators, and `scripts/scan_secrets.py` |
 | Cross-artifact conformance | `src/core/conformance.js`, `classifyLoadedWorkState`, and `forgeloop validate-protocol --contract-file` | `tests/conformance.test.js`, `tests/validate-protocol-cli.test.js`, and protocol fixtures covering precedence and stale evidence |
 | Protocol preparation and completion | `src/core/preflight.js`, `src/core/completion.js`, `src/core/events.js`, policy packs, and portable bundles | `tests/preflight.test.js`, `tests/completion.test.js`, `tests/lifecycle.test.js`, `tests/policy.test.js`, and `tests/bundle.test.js` |
+| Pre-contract autonomy | `LOOP_ENGINEERING.md`, `CLAUDE.md`, `AGENTS.md`, `.github/copilot-instructions.md`, `.cursor/rules/forgeloop.mdc`, and the blind conformance artifacts | `tests/autonomy-policy.test.js`, `tests/conformance-scenarios.test.js` |
 
 The implementation references above are local observations. OS runners,
 remote links, provider sessions, publication, and deployment remain `Not

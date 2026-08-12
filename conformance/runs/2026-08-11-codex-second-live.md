@@ -29,12 +29,13 @@ gates, preflight, evidence, audit, completion, or project instruction files.
 
 - Adapter compatible: `PASS` — the target adapter files were present and the agent reported reading the repository instructions
 - Protocol capable: `PARTIAL` — protocol artifacts were not created in this run
+- Pre-contract autonomy: `FAIL` — the run stopped on a non-blocking fictional-brand clarification instead of recording an agent assumption and continuing locally
 - Preflight: `NOT_REACHED`
 - Completion: `NOT_REACHED`
 - Publication: `not-published`
 - Production readiness: `not-verified`
 - Final classification: `PARTIAL`
-- Failure class: `PROTOCOL ACTIVATION / PRE-IMPLEMENTATION STOP`
+- Failure class: `PROTOCOL ACTIVATION / PRE-IMPLEMENTATION CLARIFICATION STOP`
 
 ## Artifact evidence
 
@@ -79,7 +80,8 @@ ForgeLoop lifecycle transition followed that clarification request.
 `PARTIAL`
 
 This run exposed an agent-level pre-implementation clarification stop, not a
-completion-validator defect. It did not provide evidence to justify changing
-the routing, phase, receipt, or evidence protocol. A later run should repeat
-the same prompt after resolving the non-blocking product assumption without
-adding ForgeLoop coaching.
+completion-validator defect. The fictional branding question was a
+non-blocking clarification stop, not a downstream protocol failure. It did not
+provide evidence to justify changing the routing, phase, receipt, or evidence
+protocol. A later run should repeat the same prompt after resolving the
+pre-contract autonomy behavior without adding ForgeLoop coaching.
