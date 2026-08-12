@@ -261,37 +261,73 @@ export async function getNextAction({ target, packageRoot } = {}) {
 
   const state = workState.value;
   const context = { taskId: state.taskId, currentPhase: state.phase };
+  if (state.phase === "RECEIVED") {
+    return decision(
+      context,
+      NEXT_ACTIONS.DISCOVER,
+      artifactError("PHASE_RECEIVED", "Discovery has not started"),
+      [ARTIFACT_PATHS.state],
+    );
+  }
+  if (state.phase === "DISCOVERING") {
+    return decision(
+      context,
+      NEXT_ACTIONS.CREATE_CONTRACT,
+      artifactError("PHASE_DISCOVERING", "Create and validate the task contract"),
+      [ARTIFACT_PATHS.state],
+    );
+  }
   const contractResult = await loadArtifact(
     () => readContract(target, packageRoot),
     ARTIFACT_PATHS.contract,
   );
+  const contractArtifacts = [ARTIFACT_PATHS.state, ARTIFACT_PATHS.contract];
+
+  if (contractResult.error) {
+    return result({
+      ...context,
+      nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
+      reasons: [artifactError(
+        contractResult.error.code === "ARTIFACT_MISSING" ? "E_CONTRACT_MISSING" : "E_CONTRACT_INVALID",
+        contractResult.error.message,
+        contractResult.error.artifacts ?? [],
+      )],
+      requiredArtifacts: contractArtifacts,
+      missingArtifacts: contractResult.missingArtifacts,
+    });
+  }
+
+  const contract = contractResult.value;
+  if (state.phase === "CONTRACT_READY") {
+    return decision(
+      context,
+      NEXT_ACTIONS.ROUTE,
+      artifactError("PHASE_CONTRACT_READY", "Persist deterministic routing for the validated contract"),
+      contractArtifacts,
+      [ARTIFACT_PATHS.route],
+    );
+  }
   const routeResult = await loadArtifact(
     () => readPersistedRoute(target, packageRoot),
     ARTIFACT_PATHS.route,
   );
-  const requiredArtifacts = [ARTIFACT_PATHS.state, ARTIFACT_PATHS.contract, ARTIFACT_PATHS.route];
-  const missingArtifacts = [...contractResult.missingArtifacts, ...routeResult.missingArtifacts];
+  const requiredArtifacts = [...contractArtifacts, ARTIFACT_PATHS.route];
+  const missingArtifacts = [...routeResult.missingArtifacts];
 
-  if (contractResult.error || routeResult.error) {
-    const errors = [contractResult.error, routeResult.error]
-      .filter(Boolean)
-      .map((error) => artifactError(
-        error.code === "ARTIFACT_MISSING"
-          ? (error === contractResult.error ? "E_CONTRACT_MISSING" : "E_ROUTE_MISSING")
-          : (error === contractResult.error ? "E_CONTRACT_INVALID" : "E_ROUTE_INVALID"),
-        error.message,
-        error.artifacts ?? [],
-      ));
+  if (routeResult.error) {
     return result({
       ...context,
       nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
-      reasons: errors,
+      reasons: [artifactError(
+        routeResult.error.code === "ARTIFACT_MISSING" ? "E_ROUTE_MISSING" : "E_ROUTE_INVALID",
+        routeResult.error.message,
+        routeResult.error.artifacts ?? [],
+      )],
       requiredArtifacts,
       missingArtifacts,
     });
   }
 
-  const contract = contractResult.value;
   const route = routeResult.value;
   const identityErrors = completionIdentityErrors({ contract: contract.value, state });
   if (identityErrors.length > 0) {
@@ -348,15 +384,6 @@ export async function getNextAction({ target, packageRoot } = {}) {
     }
   }
 
-  if (state.phase === "RECEIVED") {
-    return decision(context, NEXT_ACTIONS.DISCOVER, artifactError("PHASE_RECEIVED", "Discovery has not started"));
-  }
-  if (state.phase === "DISCOVERING") {
-    return decision(context, NEXT_ACTIONS.CREATE_CONTRACT, artifactError("PHASE_DISCOVERING", "Create and validate the task contract"));
-  }
-  if (state.phase === "CONTRACT_READY") {
-    return decision(context, NEXT_ACTIONS.ROUTE, artifactError("PHASE_CONTRACT_READY", "Persist deterministic routing for the validated contract"));
-  }
   if (["ROUTED", "DESIGNING", "PLANNED"].includes(state.phase) && missingGates.length > 0) {
     return result({
       ...context,
@@ -417,6 +444,37 @@ export async function getNextAction({ target, packageRoot } = {}) {
         artifactError("E_CHECK_BLOCKED", `Observed check is blocked: ${blocked.id}`, [ARTIFACT_PATHS.state]),
       );
     }
+    const receipt = await loadArtifact(
+      () => readJsonArtifact(target, ARTIFACT_PATHS.receipt, "execution-receipt", packageRoot),
+      ARTIFACT_PATHS.receipt,
+    );
+    if (receipt.error) {
+      if (receipt.error.code === "ARTIFACT_MISSING") {
+        return decision(
+          context,
+          NEXT_ACTIONS.PREPARE_COMPLETION,
+          artifactError("E_RECEIPT_MISSING", "Prepare the execution receipt before recording verification checks", [ARTIFACT_PATHS.receipt]),
+          [...requiredArtifacts, ARTIFACT_PATHS.receipt],
+          receipt.missingArtifacts,
+        );
+      }
+      return decision(
+        context,
+        NEXT_ACTIONS.RESOLVE_BLOCKER,
+        artifactError("E_RECEIPT_INVALID", `Repair or remove the invalid execution receipt before continuing: ${receipt.error.message}`, [ARTIFACT_PATHS.receipt]),
+        [...requiredArtifacts, ARTIFACT_PATHS.receipt],
+      );
+    }
+    try {
+      await validateReceipt(receipt.value.value, packageRoot);
+    } catch (error) {
+      return decision(
+        context,
+        NEXT_ACTIONS.RESOLVE_BLOCKER,
+        artifactError("E_RECEIPT_INVALID", `Repair or remove the invalid execution receipt before continuing: ${error.message}`, [ARTIFACT_PATHS.receipt]),
+        [...requiredArtifacts, ARTIFACT_PATHS.receipt],
+      );
+    }
     const evidence = await requirementsAndCoverage({
       target,
       packageRoot,
@@ -444,7 +502,19 @@ export async function getNextAction({ target, packageRoot } = {}) {
     });
   }
   if (state.phase === "DIAGNOSING") {
-    return decision(context, NEXT_ACTIONS.CORRECT, artifactError("PHASE_DIAGNOSING", "Record the correction hypothesis before returning to verification"));
+    if (typeof state.diagnosedHypothesis !== "string" || !state.diagnosedHypothesis.trim()) {
+      return decision(
+        context,
+        NEXT_ACTIONS.RESOLVE_BLOCKER,
+        artifactError(
+          "E_DIAGNOSIS_HYPOTHESIS_MISSING",
+          "Record diagnosedHypothesis in .forgeloop/work-state.json before advancing to CORRECTING",
+          [ARTIFACT_PATHS.state],
+        ),
+        requiredArtifacts,
+      );
+    }
+    return decision(context, NEXT_ACTIONS.CORRECT, artifactError("PHASE_DIAGNOSING", "The persisted diagnosis hypothesis permits correction"));
   }
   if (state.phase === "CORRECTING") {
     return decision(context, NEXT_ACTIONS.ENTER_VERIFYING, artifactError("PHASE_CORRECTING", "Correction is ready for verification"));
@@ -477,6 +547,14 @@ export async function getNextAction({ target, packageRoot } = {}) {
       ARTIFACT_PATHS.receipt,
     );
     if (receipt.error) {
+      if (receipt.error.code !== "ARTIFACT_MISSING") {
+        return decision(
+          context,
+          NEXT_ACTIONS.RESOLVE_BLOCKER,
+          artifactError("E_RECEIPT_INVALID", `Repair or remove the invalid execution receipt before continuing: ${receipt.error.message}`, [ARTIFACT_PATHS.receipt]),
+          [...requiredArtifacts, ARTIFACT_PATHS.receipt],
+        );
+      }
       return decision(
         context,
         NEXT_ACTIONS.PREPARE_COMPLETION,
@@ -494,8 +572,8 @@ export async function getNextAction({ target, packageRoot } = {}) {
     } catch (error) {
       return decision(
         context,
-        NEXT_ACTIONS.PREPARE_COMPLETION,
-        artifactError("E_RECEIPT_INVALID", error.message, [ARTIFACT_PATHS.receipt]),
+        NEXT_ACTIONS.RESOLVE_BLOCKER,
+        artifactError("E_RECEIPT_INVALID", `Repair or remove the invalid execution receipt before continuing: ${error.message}`, [ARTIFACT_PATHS.receipt]),
         [...requiredArtifacts, ARTIFACT_PATHS.receipt],
       );
     }

@@ -214,6 +214,37 @@ async function setupCompletedTarget(target) {
   return completion;
 }
 
+async function setupEarlyPhaseTarget(target, phase) {
+  const contract = createContract({
+    taskId: "task-early-phase",
+    objective: "Exercise phase-aware artifact loading",
+    deliverables: [],
+    constraints: [],
+    risks: [],
+    verification: [],
+    successCriteria: [],
+    stopConditions: [],
+    unresolvedDecisions: [],
+    sourceRefs: [],
+  });
+  const hasContract = phase === "CONTRACT_READY";
+  if (hasContract) await writeContract(target, contract, packageRoot);
+  await writeWorkState(target, createWorkState({
+    taskId: contract.taskId,
+    contractFingerprint: contractFingerprint(contract),
+    repositoryFingerprint: { branch: null, head: null },
+    phase,
+    ...(previousPhaseFor(phase) ? { previousPhase: previousPhaseFor(phase) } : {}),
+    selectedGuides: [],
+    completedSteps: [],
+    pendingSteps: [],
+    checks: [],
+    failures: [],
+    blockers: [],
+    verificationEvidence: [],
+  }), { packageRoot });
+}
+
 function assertStableAction(result, action) {
   assert.equal(result.nextAction, action);
   assert.ok(Object.values(NEXT_ACTIONS).includes(result.nextAction));
@@ -278,7 +309,7 @@ test("phase matrix returns the legal next action", async (t) => {
     ["planned without preflight", { phase: "PLANNED", preflightReady: false }, NEXT_ACTIONS.RUN_PREFLIGHT],
     ["planned with preflight", { phase: "PLANNED" }, NEXT_ACTIONS.START_EXECUTION],
     ["executing", { phase: "EXECUTING" }, NEXT_ACTIONS.ENTER_VERIFYING],
-    ["diagnosing", { phase: "DIAGNOSING" }, NEXT_ACTIONS.CORRECT],
+    ["diagnosing", { phase: "DIAGNOSING", diagnosedHypothesis: "fixture diagnosis" }, NEXT_ACTIONS.CORRECT],
     ["correcting", { phase: "CORRECTING" }, NEXT_ACTIONS.ENTER_VERIFYING],
     ["blocked", { phase: "BLOCKED" }, NEXT_ACTIONS.RESOLVE_BLOCKER],
   ];
@@ -305,10 +336,48 @@ test("phase matrix returns the legal next action", async (t) => {
   });
 });
 
+test("early phases load only artifacts that already are prerequisites", async (t) => {
+  for (const [phase, action] of [
+    ["RECEIVED", NEXT_ACTIONS.DISCOVER],
+    ["DISCOVERING", NEXT_ACTIONS.CREATE_CONTRACT],
+  ]) {
+    await t.test(`${phase.toLowerCase()} does not require future contract or route artifacts`, async () => {
+      await withTarget(async (target) => {
+        await setupEarlyPhaseTarget(target, phase);
+        const next = await getNextAction({ target, packageRoot });
+
+        assertStableAction(next, action);
+        assert.notEqual(next.nextAction, NEXT_ACTIONS.RESOLVE_BLOCKER);
+      });
+    });
+  }
+
+  await t.test("contract-ready requires only the missing route as route guidance", async () => {
+    await withTarget(async (target) => {
+      await setupEarlyPhaseTarget(target, "CONTRACT_READY");
+      const next = await getNextAction({ target, packageRoot });
+
+      assertStableAction(next, NEXT_ACTIONS.ROUTE);
+      assert.ok(next.missingArtifacts.includes(ARTIFACT_PATHS.route));
+      assert.ok(next.requiredArtifacts.includes(ARTIFACT_PATHS.contract));
+      assert.equal(next.requiredArtifacts.includes(ARTIFACT_PATHS.route), false);
+    });
+  });
+});
+
 test("verification decisions require observed evidence and surface failed checks", async (t) => {
-  await t.test("no checks requests verification recording", async () => {
+  await t.test("no receipt prepares completion before verification recording", async () => {
     await withTarget(async (target) => {
       await setupTarget(target, { phase: "VERIFYING" });
+      const result = await getNextAction({ target, packageRoot });
+      assertStableAction(result, NEXT_ACTIONS.PREPARE_COMPLETION);
+      assert.deepEqual(result.commands, ["forgeloop prepare-completion --json"]);
+    });
+  });
+
+  await t.test("valid receipt requests verification recording", async () => {
+    await withTarget(async (target) => {
+      await setupTarget(target, { phase: "VERIFYING", receipt: true });
       const result = await getNextAction({ target, packageRoot });
       assertStableAction(result, NEXT_ACTIONS.RECORD_VERIFICATION);
       assert.deepEqual(result.commands, ["forgeloop record-check"]);
@@ -339,7 +408,7 @@ test("verification decisions require observed evidence and surface failed checks
         "spaces are data",
         "verificacao-unicode-á",
       ];
-      await setupTarget(target, { phase: "VERIFYING", successCriteria: requirements });
+      await setupTarget(target, { phase: "VERIFYING", successCriteria: requirements, receipt: true });
 
       const result = await getNextAction({ target, packageRoot });
       const human = formatNextActionResult(result);
@@ -373,6 +442,7 @@ test("verification decisions require observed evidence and surface failed checks
       await setupTarget(target, {
         phase: "VERIFYING",
         checks: [checkFor({ evidenceKind: "INFERRED" })],
+        receipt: true,
       });
       assertStableAction(await getNextAction({ target, packageRoot }), NEXT_ACTIONS.RECORD_VERIFICATION);
     });
@@ -394,6 +464,76 @@ test("verification decisions require observed evidence and surface failed checks
         exitCode: 0,
       });
       assertStableAction(await getNextAction({ target, packageRoot }), NEXT_ACTIONS.ENTER_REVIEWING);
+    });
+  });
+
+  await t.test("invalid receipt returns repair guidance instead of an unusable preparation command", async () => {
+    await withTarget(async (target) => {
+      await setupTarget(target, { phase: "VERIFYING", receipt: true });
+      const receiptPath = path.join(target, ARTIFACT_PATHS.receipt);
+      const receipt = JSON.parse(await readFile(receiptPath, "utf8"));
+      receipt.schemaVersion = 99;
+      await writeFile(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`);
+
+      const result = await getNextAction({ target, packageRoot });
+      assertStableAction(result, NEXT_ACTIONS.RESOLVE_BLOCKER);
+      assert.ok(result.reasonCodes.includes("E_RECEIPT_INVALID"));
+      assert.equal(result.commands.includes("forgeloop prepare-completion --json"), false);
+      assert.ok(result.requiredArtifacts.includes(ARTIFACT_PATHS.receipt));
+    });
+  });
+});
+
+test("normal next-driven success path prepares the receipt before record-check", async () => {
+  await withTarget(async (target) => {
+    await setupTarget(target, { phase: "EXECUTING" });
+
+    assertStableAction(await getNextAction({ target, packageRoot }), NEXT_ACTIONS.ENTER_VERIFYING);
+    await advanceWorkState(target, "VERIFYING", { packageRoot });
+    assertStableAction(await getNextAction({ target, packageRoot }), NEXT_ACTIONS.PREPARE_COMPLETION);
+
+    await prepareCompletion({ target, packageRoot });
+    assertStableAction(await getNextAction({ target, packageRoot }), NEXT_ACTIONS.RECORD_VERIFICATION);
+    await recordCheck({
+      target,
+      packageRoot,
+      id: "tests",
+      kind: "command",
+      requirement: "tests",
+      status: "passed",
+      evidenceKind: "OBSERVED",
+      result: "tests passed",
+      exitCode: 0,
+    });
+    assertStableAction(await getNextAction({ target, packageRoot }), NEXT_ACTIONS.ENTER_REVIEWING);
+
+    await advanceWorkState(target, "REVIEWING", { packageRoot });
+    assertStableAction(await getNextAction({ target, packageRoot }), NEXT_ACTIONS.RUN_COMPLETE);
+    const completion = await runComplete({ target, packageRoot });
+    assert.equal(completion.status, "VALID");
+  });
+});
+
+test("diagnosis guidance is executable only after a hypothesis is persisted", async (t) => {
+  await t.test("missing hypothesis returns deterministic repair guidance", async () => {
+    await withTarget(async (target) => {
+      await setupTarget(target, { phase: "DIAGNOSING" });
+      const next = await getNextAction({ target, packageRoot });
+
+      assertStableAction(next, NEXT_ACTIONS.RESOLVE_BLOCKER);
+      assert.ok(next.reasonCodes.includes("E_DIAGNOSIS_HYPOTHESIS_MISSING"));
+      assert.equal(next.commands.includes("forgeloop advance --to CORRECTING"), false);
+      assert.ok(next.requiredArtifacts.includes(ARTIFACT_PATHS.state));
+    });
+  });
+
+  await t.test("persisted hypothesis retains the correction action and legal phase command", async () => {
+    await withTarget(async (target) => {
+      await setupTarget(target, { phase: "DIAGNOSING", diagnosedHypothesis: "fixture diagnosis" });
+      const next = await getNextAction({ target, packageRoot });
+
+      assertStableAction(next, NEXT_ACTIONS.CORRECT);
+      assert.deepEqual(next.commands, ["forgeloop advance --to CORRECTING"]);
     });
   });
 });

@@ -19,10 +19,13 @@ The expected post-implementation path is:
 implementation
 → forgeloop next
 → advance --to VERIFYING
+→ forgeloop next
+→ prepare-completion
+→ forgeloop next
 → checks + record-check
 → forgeloop next
 → advance --to REVIEWING
-→ prepare-completion / forgeloop next
+→ forgeloop next
 → complete
 ```
 
