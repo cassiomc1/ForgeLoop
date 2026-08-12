@@ -191,6 +191,24 @@ test("prepare-completion rejects a foreign receipt without rebinding its evidenc
   });
 });
 
+test("prepare-completion rejects a receipt missing its state fingerprint without rewriting it", async () => {
+  await withTarget(async (target) => {
+    await prepareValidTask(target);
+    const receiptPath = path.join(target, ARTIFACT_PATHS.receipt);
+    const receipt = JSON.parse(await readFile(receiptPath, "utf8"));
+    delete receipt.stateFingerprint;
+    await writeJsonArtifact(target, ARTIFACT_PATHS.receipt, receipt, "execution-receipt", packageRoot);
+    const before = await artifactHashes(target);
+
+    await assert.rejects(
+      () => prepareCompletion({ target, packageRoot }),
+      (error) => error.code === "E_RECEIPT_STATE_MISMATCH",
+    );
+
+    assert.deepEqual(await artifactHashes(target), before);
+  });
+});
+
 test("complete fails closed for stale receipt/state bindings and inconsistent checks", async (t) => {
   const cases = [
     ["missing receipt state fingerprint", async ({ receipt }) => {

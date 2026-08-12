@@ -19,23 +19,16 @@ function addAssertion(errors, assertion, code, artifacts) {
   }
 }
 
-export function completionRelationshipErrors({
+export function stateIdentityErrors({
   contract,
   route,
   state,
-  receipt,
-  requiredEvidence = [],
-  requireReceiptStateFingerprint = true,
-  requireRequiredChecks = true,
 } = {}) {
   const errors = [];
   const contractValue = contract?.value ?? contract;
   const contractFingerprint = contract?.fingerprint;
   if (contractValue && state && contractValue.taskId !== state.taskId) {
     errors.push(issue("E_STATE_TASK_MISMATCH", "Work state does not belong to the current contract task", [ARTIFACT_PATHS.contract, ARTIFACT_PATHS.state]));
-  }
-  if (contractValue && receipt && contractValue.taskId !== receipt.taskId) {
-    errors.push(issue("E_RECEIPT_TASK_MISMATCH", "Execution receipt does not belong to the current contract task", [ARTIFACT_PATHS.contract, ARTIFACT_PATHS.receipt]));
   }
   if (contractFingerprint && state && state.contractFingerprint !== contractFingerprint) {
     errors.push(issue("E_CONTRACT_STALE", "Work state does not match the current contract", [ARTIFACT_PATHS.contract, ARTIFACT_PATHS.state]));
@@ -45,6 +38,34 @@ export function completionRelationshipErrors({
   }
   if (route && state && (state.routeFingerprint !== route.fingerprint || !sameValue(state.selectedGuides, route.value.guides))) {
     errors.push(issue("E_ROUTE_GUIDE_MISMATCH", "Work state does not match the persisted route identity", [ARTIFACT_PATHS.route, ARTIFACT_PATHS.state]));
+  }
+  return errors;
+}
+
+export function assertStateIdentity(input) {
+  const errors = stateIdentityErrors(input);
+  if (errors.length === 0) return;
+  const first = errors[0];
+  const error = new Error(first.message);
+  error.code = first.code;
+  error.artifacts = first.artifacts;
+  throw error;
+}
+
+export function completionRelationshipErrors({
+  contract,
+  route,
+  state,
+  receipt,
+  requiredEvidence = [],
+  requireReceiptStateFingerprint = true,
+  requireRequiredChecks = true,
+} = {}) {
+  const errors = stateIdentityErrors({ contract, route, state });
+  const contractValue = contract?.value ?? contract;
+  const contractFingerprint = contract?.fingerprint;
+  if (contractValue && receipt && contractValue.taskId !== receipt.taskId) {
+    errors.push(issue("E_RECEIPT_TASK_MISMATCH", "Execution receipt does not belong to the current contract task", [ARTIFACT_PATHS.contract, ARTIFACT_PATHS.receipt]));
   }
   if (route && receipt && (receipt.routeFingerprint !== route.fingerprint || !sameValue(receipt.selectedGuides, route.value.guides))) {
     errors.push(issue("E_ROUTE_GUIDE_MISMATCH", "Execution receipt does not match the persisted route identity", [ARTIFACT_PATHS.route, ARTIFACT_PATHS.receipt]));

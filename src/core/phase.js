@@ -7,7 +7,7 @@ import { classifyLoadedWorkState, readWorkState, writeWorkState } from "./work-s
 import { evaluateCompletion } from "./completion.js";
 import { evaluatePreflight, validatePersistedPreflight } from "./preflight.js";
 import { requiredEvidenceForTarget } from "./completion-artifacts.js";
-import { assertCompletionRelationships } from "./completion-relationships.js";
+import { assertCompletionRelationships, assertStateIdentity } from "./completion-relationships.js";
 import { createReceipt, validateReceipt } from "./receipt.js";
 
 function phaseError(code, message, artifacts = []) {
@@ -26,6 +26,32 @@ const PHASE_EVENTS = Object.freeze({
   VERIFYING: "VERIFICATION_STARTED",
   COMPLETE: "COMPLETION_VALIDATED",
 });
+
+const LATE_PHASES = new Set([
+  "EXECUTING",
+  "VERIFYING",
+  "DIAGNOSING",
+  "CORRECTING",
+  "REVIEWING",
+  "COMPLETE",
+]);
+
+async function assertLatePhaseIdentity(target, state, packageRoot) {
+  if (!LATE_PHASES.has(state.phase)) return;
+  let contract;
+  let route;
+  try {
+    contract = await readContract(target, packageRoot);
+    route = await readPersistedRoute(target, packageRoot);
+  } catch (error) {
+    throw phaseError(
+      "E_PHASE_PREREQUISITE_MISSING",
+      `Late-phase transition requires current contract and route: ${error.message}`,
+      [ARTIFACT_PATHS.contract, ARTIFACT_PATHS.route],
+    );
+  }
+  assertStateIdentity({ contract, route, state });
+}
 
 function reconcileImplementationStep(state, toPhase) {
   if (state.phase !== "EXECUTING" || toPhase !== "VERIFYING") return state;
@@ -128,6 +154,7 @@ export async function advanceWorkState(target, toPhase, { packageRoot, now = new
   assertWorkPhase(toPhase);
   const state = await readWorkState(target, packageRoot);
   if (!state) throw phaseError("E_PHASE_PREREQUISITE_MISSING", "Cannot advance without work state", [ARTIFACT_PATHS.state]);
+  await assertLatePhaseIdentity(target, state, packageRoot);
   await assertPhasePrerequisites(target, state, toPhase, packageRoot);
   if (!isValidTransition(state.phase, toPhase)) {
     throw phaseError("E_PHASE_TRANSITION_INVALID", `Invalid work-state transition: ${state.phase} -> ${toPhase}`);

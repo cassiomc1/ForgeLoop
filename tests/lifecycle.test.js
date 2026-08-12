@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -9,7 +10,9 @@ import { activateSession } from "../src/core/activation.js";
 import { appendProtocolEvent, validateEventLedger } from "../src/core/events.js";
 import { advanceWorkState } from "../src/core/phase.js";
 import { ARTIFACT_PATHS } from "../src/core/artifacts.js";
-import { contractFingerprint } from "../src/core/contract.js";
+import { contractFingerprint, createContract, writeContract } from "../src/core/contract.js";
+import { evaluateRoute } from "../src/core/router.js";
+import { persistRoute } from "../src/core/route-artifact.js";
 import { createWorkState, writeWorkState } from "../src/core/work-state.js";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -38,6 +41,35 @@ function state(overrides = {}) {
     verificationEvidence: [],
     ...overrides,
   });
+}
+
+async function prepareIdentity(target, taskId = "task-lifecycle") {
+  const contract = createContract({
+    taskId,
+    objective: "Validate lifecycle identity",
+    deliverables: [],
+    constraints: [],
+    risks: [],
+    verification: [],
+    successCriteria: [],
+    stopConditions: [],
+    unresolvedDecisions: [],
+    sourceRefs: [],
+  });
+  const fingerprint = contractFingerprint(contract);
+  await writeContract(target, contract, repositoryRoot);
+  const route = evaluateRoute({ workType: "bug", surfaces: [], platforms: [] });
+  const persistedRoute = await persistRoute(target, route, repositoryRoot, { contractFingerprint: fingerprint });
+  return { contract, fingerprint, route, persistedRoute };
+}
+
+async function artifactHashes(target) {
+  const hashes = {};
+  for (const relativePath of [ARTIFACT_PATHS.state, ARTIFACT_PATHS.events]) {
+    const bytes = await readFile(path.join(target, relativePath));
+    hashes[relativePath] = createHash("sha256").update(bytes).digest("hex");
+  }
+  return hashes;
 }
 
 test("protocol events are append-only, sequenced, and hash chained", async () => {
@@ -95,7 +127,10 @@ test("advance rejects illegal transitions without changing work state", async ()
 
 test("entering verification reconciles only the implementation step", async () => {
   await withTarget(async (target) => {
+    const identity = await prepareIdentity(target);
     await writeWorkState(target, state({
+      contractFingerprint: identity.fingerprint,
+      routeFingerprint: identity.persistedRoute.fingerprint,
       phase: "EXECUTING",
       previousPhase: "PLANNED",
       completedSteps: ["contract", "route"],
@@ -110,5 +145,31 @@ test("entering verification reconciles only the implementation step", async () =
     assert.deepEqual(next.completedSteps, ["contract", "route", "implementation"]);
     assert.deepEqual(next.pendingSteps, ["verification"]);
     assert.deepEqual(next.verificationEvidence, []);
+  });
+});
+
+test("late-phase advance rejects a foreign state without a receipt before writing", async () => {
+  await withTarget(async (target) => {
+    const identity = await prepareIdentity(target, "task-current");
+    await writeWorkState(target, state({
+      taskId: "task-foreign",
+      contractFingerprint: identity.fingerprint,
+      routeFingerprint: identity.persistedRoute.fingerprint,
+      phase: "EXECUTING",
+      previousPhase: "PLANNED",
+      completedSteps: ["contract", "route"],
+      pendingSteps: ["implementation", "verification"],
+    }));
+    for (const event of ["CONTRACT_VALIDATED", "ROUTE_VALIDATED", "PREFLIGHT_READY", "EXECUTION_STARTED"]) {
+      await appendProtocolEvent(target, { taskId: "task-foreign", event }, repositoryRoot);
+    }
+    const before = await artifactHashes(target);
+
+    await assert.rejects(
+      () => advanceWorkState(target, "VERIFYING", { packageRoot: repositoryRoot }),
+      (error) => error.code === "E_STATE_TASK_MISMATCH",
+    );
+
+    assert.deepEqual(await artifactHashes(target), before);
   });
 });

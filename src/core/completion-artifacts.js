@@ -97,7 +97,6 @@ export async function prepareCompletion({ target, packageRoot }) {
     state,
     receipt: existingValue.taskId ? existingValue : null,
     requiredEvidence,
-    requireReceiptStateFingerprint: false,
     requireRequiredChecks: false,
   });
   const changedPaths = existing
