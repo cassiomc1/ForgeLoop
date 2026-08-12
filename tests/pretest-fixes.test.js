@@ -34,3 +34,12 @@ test("Lychee excludes only documented unavailable references", async () => {
   assert.ok(config.includes("  '^https://fast-check\\.dev/$',"));
   assert.ok(config.includes("  '^https://gradientsaas\\.blogspot\\.com(?:/|$)',"));
 });
+
+test("Lychee throttles the Ansible documentation host", async () => {
+  const config = (await readFile(path.join(repositoryRoot, ".lychee.toml"), "utf8"))
+    .replaceAll("\r\n", "\n");
+
+  assert.match(config, /\[hosts\."docs\.ansible\.com"\]/);
+  assert.match(config, /concurrency = 1/);
+  assert.match(config, /request_interval = "5s"/);
+});

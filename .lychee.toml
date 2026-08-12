@@ -24,3 +24,7 @@ exclude = [
   # The fast-check landing page currently fails connection checks on shared CI runners; keep the reference visible.
   '^https://fast-check\.dev/$',
 ]
+
+[hosts."docs.ansible.com"]
+concurrency = 1
+request_interval = "5s"
