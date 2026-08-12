@@ -51,7 +51,7 @@ are both present:
 | Security boundary | realpath containment, bounded JSON, `THREAT_MODEL.md`, secret-free artifacts, authority and no-runtime rules | `tests/security-limits.test.js`, Markdown/loop validators, and `scripts/scan_secrets.py` |
 | Cross-artifact conformance | `src/core/conformance.js`, `classifyLoadedWorkState`, and `forgeloop validate-protocol --contract-file` | `tests/conformance.test.js`, `tests/validate-protocol-cli.test.js`, and protocol fixtures covering precedence and stale evidence |
 | Protocol preparation and completion | `src/core/preflight.js`, `src/core/completion.js`, `src/core/events.js`, policy packs, and portable bundles | `tests/preflight.test.js`, `tests/completion.test.js`, `tests/lifecycle.test.js`, `tests/policy.test.js`, and `tests/bundle.test.js` |
-| Pre-contract autonomy | `LOOP_ENGINEERING.md`, `CLAUDE.md`, `AGENTS.md`, `.github/copilot-instructions.md`, `.cursor/rules/forgeloop.mdc`, and the blind conformance artifacts | `tests/autonomy-policy.test.js`, `tests/conformance-scenarios.test.js` |
+| Pre-contract autonomy | `LOOP_ENGINEERING.md`, `CLAUDE.md`, `AGENTS.md`, `.github/copilot-instructions.md`, `.cursor/rules/project-loop.mdc`, and the blind conformance artifacts | `tests/autonomy-policy.test.js`, `tests/conformance-scenarios.test.js` |
 
 The implementation references above are local observations. OS runners,
 remote links, provider sessions, publication, and deployment remain `Not
