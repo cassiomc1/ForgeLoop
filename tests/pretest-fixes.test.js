@@ -27,9 +27,10 @@ test("ForgeLoop audit checks for a receipt only after checkout", async () => {
   );
 });
 
-test("Lychee excludes only the rate-limited Gradient SaaS host", async () => {
+test("Lychee excludes only documented unavailable references", async () => {
   const config = (await readFile(path.join(repositoryRoot, ".lychee.toml"), "utf8"))
     .replaceAll("\r\n", "\n");
 
+  assert.ok(config.includes("  '^https://fast-check\\.dev/$',"));
   assert.ok(config.includes("  '^https://gradientsaas\\.blogspot\\.com(?:/|$)',"));
 });

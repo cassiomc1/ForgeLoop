@@ -21,4 +21,6 @@ exclude = [
   '^https://(?:www\.)?motion-primitives\.com/$',
   # Blogspot rate-limits shared CI runners; keep the reference visible.
   '^https://gradientsaas\.blogspot\.com(?:/|$)',
+  # The fast-check landing page currently fails connection checks on shared CI runners; keep the reference visible.
+  '^https://fast-check\.dev/$',
 ]
