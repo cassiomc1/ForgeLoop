@@ -6,10 +6,10 @@ import { test } from "node:test";
 const repositoryRoot = path.resolve(".");
 
 test("ForgeLoop audit checks for a receipt only after checkout", async () => {
-  const workflow = await readFile(
+  const workflow = (await readFile(
     path.join(repositoryRoot, ".github/workflows/forgeloop-audit.yml"),
     "utf8",
-  );
+  )).replaceAll("\r\n", "\n");
 
   assert.doesNotMatch(workflow, /audit:\n\s+if:/);
   assert.match(workflow, /audit:\n\s+runs-on: ubuntu-latest\n\s+steps:/);
@@ -28,7 +28,8 @@ test("ForgeLoop audit checks for a receipt only after checkout", async () => {
 });
 
 test("Lychee excludes only the rate-limited Gradient SaaS host", async () => {
-  const config = await readFile(path.join(repositoryRoot, ".lychee.toml"), "utf8");
+  const config = (await readFile(path.join(repositoryRoot, ".lychee.toml"), "utf8"))
+    .replaceAll("\r\n", "\n");
 
   assert.ok(config.includes("  '^https://gradientsaas\\.blogspot\\.com(?:/|$)',"));
 });
