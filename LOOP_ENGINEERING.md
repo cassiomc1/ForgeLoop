@@ -39,6 +39,32 @@ Every load-bearing success criterion must have `COVERED` evidence. A required
 `COMPLETE (FORGELOOP COMPLETION NOT VERIFIED)` rather than claiming protocol
 validity.
 
+## Post-implementation closure
+
+Implementation finished is not task finished, and tests executed are not the
+same as verification recorded. After implementation begins, do not stop or
+return the final result while the ForgeLoop task remains in `EXECUTING`.
+
+```text
+POST-IMPLEMENTATION CLOSURE
+
+EXECUTING
+    ↓ advance
+VERIFYING
+    ↓ run checks and record structured evidence
+REVIEWING
+    ↓ prepare/update the execution receipt
+forgeloop complete
+    ↓ VALID
+COMPLETE
+```
+
+Continue until the terminal outcome is either validator-backed `COMPLETE` or
+an explicitly reported `BLOCKED` / `PARTIALLY VERIFIED` result with exact
+unresolved findings. Record verification evidence before review. If a required
+check fails, use `VERIFYING → DIAGNOSING → CORRECTING → VERIFYING`; do not skip
+the evidence recording step or replace it with prose.
+
 ## Independent completion dimensions
 
 Local task completion, verification, publication, and production readiness are
@@ -162,6 +188,7 @@ The loop invariants are:
 20. completion must be validated by the protocol, not only declared by the agent.
 21. protocol chronology must not permit execution before mandatory preflight events.
 22. publication status and production readiness must remain independent from local task completion.
+23. a task with implemented deliverables must not terminate in EXECUTING.
 
 The serializable phase and transition contract is maintained in
 [`ORCHESTRATOR_INTEGRATION.md`](./ORCHESTRATOR_INTEGRATION.md). It is a host

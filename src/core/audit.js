@@ -2,11 +2,8 @@ import { ARTIFACT_PATHS } from "./artifacts.js";
 import { evaluateCompletion } from "./completion.js";
 import { readManifest } from "./manifest.js";
 import { PROTOCOL_VERSION } from "./protocol.js";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import { readJsonArtifact } from "./artifacts.js";
-
-const execFileAsync = promisify(execFile);
+import { currentChangedPaths } from "./repository.js";
 
 function sortErrors(errors) {
   return [...errors].sort((left, right) => left.code.localeCompare(right.code)
@@ -20,27 +17,20 @@ async function compareChangedPaths(target, packageRoot) {
   } catch {
     return { status: "NOT_VERIFIED", expected: [], observed: [], missing: [], unexpected: [] };
   }
-  try {
-    const { stdout } = await execFileAsync("git", ["-C", target, "status", "--porcelain=v1", "--untracked-files=all"], { windowsHide: true });
-    const observed = stdout
-      .split(/\r?\n/)
-      .filter(Boolean)
-      .map((line) => line.slice(3).trim())
-      .filter((path) => path && !path.startsWith(".forgeloop/"))
-      .sort();
-    const expected = [...new Set(receipt.changedPaths ?? [])].sort();
-    const missing = expected.filter((path) => !observed.includes(path));
-    const unexpected = observed.filter((path) => !expected.includes(path));
-    return {
-      status: missing.length === 0 && unexpected.length === 0 ? "MATCH" : "MISMATCH",
-      expected,
-      observed,
-      missing,
-      unexpected,
-    };
-  } catch {
+  const observed = await currentChangedPaths(target);
+  if (observed === null) {
     return { status: "NOT_VERIFIED", expected: receipt.changedPaths ?? [], observed: [], missing: [], unexpected: [] };
   }
+  const expected = [...new Set(receipt.changedPaths ?? [])].sort();
+  const missing = expected.filter((relativePath) => !observed.includes(relativePath));
+  const unexpected = observed.filter((relativePath) => !expected.includes(relativePath));
+  return {
+    status: missing.length === 0 && unexpected.length === 0 ? "MATCH" : "MISMATCH",
+    expected,
+    observed,
+    missing,
+    unexpected,
+  };
 }
 
 export async function evaluateAudit({ target, packageRoot, strict = false } = {}) {
@@ -61,6 +51,7 @@ export async function evaluateAudit({ target, packageRoot, strict = false } = {}
       artifacts: [ARTIFACT_PATHS.receipt],
       missing: changedPaths.missing,
       unexpected: changedPaths.unexpected,
+      next: "Run forgeloop prepare-completion to refresh changed paths, then rerun audit.",
     });
   }
   const stale = errors.some((error) => error.code.includes("STALE") || error.code === "E_PHASE_ARTIFACT_STALE");

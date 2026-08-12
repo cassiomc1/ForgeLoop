@@ -1,6 +1,6 @@
 import { ARTIFACT_PATHS, canonicalFingerprint, readJsonArtifact } from "./artifacts.js";
+import { requiredEvidenceForTarget } from "./completion-artifacts.js";
 import { appendProtocolEvent, validateEventLedger } from "./events.js";
-import { completionEvidenceForGuides } from "./guide-metadata.js";
 import { evaluatePreflight } from "./preflight.js";
 import { readContract } from "./contract.js";
 import { readPersistedRoute } from "./route-artifact.js";
@@ -14,11 +14,55 @@ function issue(code, message, artifacts = [], details = {}) {
   return { code, message, artifacts, ...details };
 }
 
+function repairNext(error) {
+  switch (error.code) {
+    case "E_RECEIPT_MISSING":
+      return "Run forgeloop prepare-completion after recording verification evidence.";
+    case "E_RECEIPT_INVALID":
+    case "E_RECEIPT_CONTRACT_MISMATCH":
+    case "E_RECEIPT_ROUTE_MISMATCH":
+    case "E_RECEIPT_STATE_MISMATCH":
+      return "Run forgeloop prepare-completion, inspect the receipt, and validate it before retrying completion.";
+    case "E_PHASE_PREREQUISITE_MISSING":
+      return "Advance from EXECUTING through VERIFYING and REVIEWING, resolving the named prerequisite before completion.";
+    case "E_PHASE_CHRONOLOGY_INVALID":
+      return "Record the missing lifecycle event through the normal phase transition or forgeloop record-check path.";
+    case "E_EVIDENCE_REQUIRED":
+    case "E_EVIDENCE_COVERAGE_INVALID":
+    case "E_EVIDENCE_COVERAGE_PARTIAL":
+    case "E_EVIDENCE_KIND_INVALID":
+    case "E_CHECK_INVALID":
+    case "E_CHECK_STATUS_CONTRADICTION":
+      return "Run forgeloop record-check with compatible observed evidence for the named requirement.";
+    case "E_GATE_UNVERIFIED":
+    case "E_GATE_STALE":
+      return "Satisfy or refresh the named gate, then rerun forgeloop preflight.";
+    case "E_PROFILE_UNVERIFIED":
+      return "Use Standard mode for a fresh target, or verify PROJECT_PROFILE.md before Strict completion.";
+    default:
+      return "Resolve this validator finding in the named artifact before retrying completion.";
+  }
+}
+
+function withRepairGuidance(error) {
+  const normalized = {
+    ...error,
+    code: error.code ?? "E_COMPLETION_REJECTED",
+    message: error.message ?? String(error),
+    artifacts: error.artifacts ?? [],
+  };
+  if (!normalized.next) normalized.next = repairNext(normalized);
+  return normalized;
+}
+
 function sortIssues(errors) {
-  const unique = [...new Map(errors.map((error) => [
-    `${error.code}\0${(error.artifacts ?? []).join("\0")}\0${error.message}`,
-    error,
-  ])).values()];
+  const unique = [...new Map(errors.map((rawError) => {
+    const error = withRepairGuidance(rawError);
+    return [
+      `${error.code}\0${(error.artifacts ?? []).join("\0")}\0${error.message}`,
+      error,
+    ];
+  })).values()];
   return unique.sort((left, right) => left.code.localeCompare(right.code)
     || left.artifacts.join("\0").localeCompare(right.artifacts.join("\0"))
     || left.message.localeCompare(right.message));
@@ -39,16 +83,6 @@ function publicationStatus(receipt) {
   if (receipt.publication?.pushed) return "pushed";
   if (receipt.publication?.committed) return "committed";
   return receipt.changedPaths?.length > 0 ? "local-only" : "not-published";
-}
-
-function requiredEvidenceFor(contract, route, packageRoot, preflight) {
-  return Promise.all([
-    completionEvidenceForGuides(route?.value?.guides ?? [], packageRoot),
-  ]).then(([guideEvidence]) => [...new Set([
-    ...(contract?.value?.successCriteria ?? []),
-    ...guideEvidence,
-    ...(preflight?.policy?.requiredEvidence ?? []),
-  ])].sort());
 }
 
 async function validateLedger(target, taskId, state, errors, packageRoot) {
@@ -152,7 +186,13 @@ export async function evaluateCompletion({ target, packageRoot, strict = false }
 
   let coverage = [];
   if (receipt && contract && route) {
-    const requiredEvidence = await requiredEvidenceFor(contract, route, packageRoot, preflight);
+    const requiredEvidence = await requiredEvidenceForTarget({
+      target,
+      contract,
+      route,
+      packageRoot,
+      additionalEvidence: preflight?.policy?.requiredEvidence ?? [],
+    });
     coverage = receipt.value.evidenceCoverage
       ? receipt.value.evidenceCoverage
       : coverageForRequirements(requiredEvidence, receipt.value.checks);

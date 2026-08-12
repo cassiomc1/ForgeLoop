@@ -13,6 +13,7 @@ specific rule overrides them.
 8. Do not install unrelated software, publish, delete, migrate data, or change external systems without applicable authority. For a task-scoped missing Qwen-MM-Plugins capability, follow the discovery protocol in `LOOP_ENGINEERING.md`; API credentials and system dependencies remain separately gated.
 9. Before implementation, create/validate `.forgeloop/current-contract.json`, persist deterministic routing, satisfy mandatory gates, and require `forgeloop preflight` to return `READY`.
 10. Before claiming `COMPLETE`, require `forgeloop complete` to return `VALID`; otherwise report completion as not protocol-verified.
-11. Finish with the result, checks actually run, limitations, and publication state.
+11. After implementation begins, do not return a final result in `EXECUTING`: advance through `VERIFYING`, record structured evidence, reach `REVIEWING`, prepare/update the execution receipt, and require `forgeloop complete` to return `VALID`. If closure cannot be reached, report `BLOCKED` or `PARTIALLY VERIFIED` with exact findings.
+12. Finish with the result, checks actually run, limitations, and publication state.
 
 The guides provide technical defaults; explicit requirements and project evidence prevail.

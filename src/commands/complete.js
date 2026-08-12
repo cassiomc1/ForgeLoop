@@ -10,6 +10,9 @@ export function formatCompleteResult(result) {
     lines.push(`PUBLICATION: ${result.publicationStatus}`);
     lines.push(`PRODUCTION_READINESS: ${result.productionReadiness}`);
   }
-  for (const error of result.errors) lines.push(`${error.code}: ${error.message}`);
+  for (const error of result.errors) {
+    lines.push(`${error.code}: ${error.message}`);
+    if (error.next) lines.push(`NEXT: ${error.next}`);
+  }
   return `${lines.join("\n")}\n`;
 }
