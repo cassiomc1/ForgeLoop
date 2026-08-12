@@ -94,8 +94,15 @@ async function assertPhasePrerequisites(target, state, toPhase, packageRoot) {
       throw phaseError(first.code, first.message, first.artifacts);
     }
     const ledger = await validateEventLedger(target, packageRoot);
+    if (ledger.events.some((event) => event.taskId !== contract.value.taskId)) {
+      throw phaseError(
+        "E_PHASE_CHRONOLOGY_INVALID",
+        "EXECUTING requires protocol prerequisite events to belong to the current task",
+        [ARTIFACT_PATHS.events, ARTIFACT_PATHS.state, ARTIFACT_PATHS.contract],
+      );
+    }
     for (const requiredEvent of ["CONTRACT_VALIDATED", "ROUTE_VALIDATED", "PREFLIGHT_READY"]) {
-      if (!ledger.events.some((event) => event.event === requiredEvent)) {
+      if (!ledger.events.some((event) => event.taskId === contract.value.taskId && event.event === requiredEvent)) {
         throw phaseError("E_PHASE_CHRONOLOGY_INVALID", `EXECUTING requires a ${requiredEvent} protocol event`, [ARTIFACT_PATHS.events]);
       }
     }

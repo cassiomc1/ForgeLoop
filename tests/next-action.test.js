@@ -747,6 +747,27 @@ test("freshness and persisted preflight identity cannot authorize forward lifecy
       assert.equal(await readFile(eventsPath, "utf8"), eventsBefore);
     });
   });
+
+  await t.test("foreign prerequisite events cannot bypass direct execution advance", async () => {
+    await withTarget(async (target) => {
+      await setupTarget(target, { phase: "PLANNED" });
+      const statePath = path.join(target, ARTIFACT_PATHS.state);
+      const eventsPath = path.join(target, ARTIFACT_PATHS.events);
+      await rm(eventsPath);
+      for (const event of ["CONTRACT_VALIDATED", "ROUTE_VALIDATED", "PREFLIGHT_READY"]) {
+        await appendProtocolEvent(target, { taskId: "foreign-task", event }, packageRoot);
+      }
+      const stateHashBefore = createHash("sha256").update(await readFile(statePath)).digest("hex");
+      const eventsHashBefore = createHash("sha256").update(await readFile(eventsPath)).digest("hex");
+
+      await assert.rejects(
+        () => advanceWorkState(target, "EXECUTING", { packageRoot }),
+        (error) => error.code === "E_PHASE_CHRONOLOGY_INVALID",
+      );
+      assert.equal(createHash("sha256").update(await readFile(statePath)).digest("hex"), stateHashBefore);
+      assert.equal(createHash("sha256").update(await readFile(eventsPath)).digest("hex"), eventsHashBefore);
+    });
+  });
 });
 
 test("malformed checks block verifying and reviewing before evidence branching", async (t) => {
