@@ -4,9 +4,9 @@
   "description": "Portable, verifiable instruction kit for AI agents and developers",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cassiomc1/mdfiles.git"
+    "url": "git+https://github.com/cassiomc1/forgeloop.git"
   },
-  "homepage": "https://github.com/cassiomc1/mdfiles#readme",
+  "homepage": "https://github.com/cassiomc1/forgeloop#readme",
   "license": "SEE LICENSE IN LICENSE",
   "publishConfig": {
     "access": "public"
