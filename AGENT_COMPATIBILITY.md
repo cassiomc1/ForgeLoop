@@ -156,5 +156,5 @@ ENG/
 schemas/
 ```
 
-See the main [README](https://github.com/cassiomc1/mdfiles#readme) for the complete `npx` installation,
+See the main [README](https://github.com/cassiomc1/forgeloop#readme) for the complete `npx` installation,
 diagnostic, first-run, and update workflow.

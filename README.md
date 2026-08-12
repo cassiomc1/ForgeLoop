@@ -1,6 +1,6 @@
 # ForgeLoop — Instruction Guides for AI Agents
 
-[![Docs quality](https://github.com/cassiomc1/mdfiles/actions/workflows/docs-quality.yml/badge.svg?branch=main)](https://github.com/cassiomc1/mdfiles/actions/workflows/docs-quality.yml)
+[![Docs quality](https://github.com/cassiomc1/forgeloop/actions/workflows/docs-quality.yml/badge.svg?branch=main)](https://github.com/cassiomc1/forgeloop/actions/workflows/docs-quality.yml)
 
 An English-only collection of operational guides for AI agents and developers.
 It covers product strategy, code, testing, security, performance,

@@ -36,6 +36,14 @@ test("package identity is ForgeLoop", async () => {
   assert.equal(packageJson.name, "@cassiomc1/forgeloop");
   assert.equal(packageJson.bin?.forgeloop, "src/cli.js");
   assert.equal(packageJson.bin?.mdfiles, undefined);
+  assert.equal(
+    packageJson.repository?.url,
+    "git+https://github.com/cassiomc1/forgeloop.git",
+  );
+  assert.equal(
+    packageJson.homepage,
+    "https://github.com/cassiomc1/forgeloop#readme",
+  );
 });
 
 test("runtime paths use the ForgeLoop namespace", () => {
@@ -92,8 +100,7 @@ test("active shipped surfaces use the ForgeLoop identity", async () => {
   assert.equal(files.some((relativePath) => relativePath.startsWith(HISTORICAL_ROOT)), false);
 
   for (const relativePath of new Set(files)) {
-    const text = (await readFile(new URL(relativePath, repoRoot), "utf8"))
-      .replaceAll("https://github.com/cassiomc1/mdfiles", "REMOTE_GITHUB_COORDINATE");
+    const text = await readFile(new URL(relativePath, repoRoot), "utf8");
     for (const line of text.split("\n")) {
       const intentionalMigration = relativePath === "README.md"
         && (line.includes("mv .mdfiles .forgeloop") || line.includes("`.mdfiles` directory"));

@@ -64,7 +64,7 @@ test("init copies canonical files and creates a manifest", async () => {
     await readFile(path.join(target, "LICENSE-DOCS.md"), "utf8");
     assert.match(
       await readFile(path.join(target, "AGENT_COMPATIBILITY.md"), "utf8"),
-      /https:\/\/github\.com\/cassiomc1\/mdfiles#readme/,
+      /https:\/\/github\.com\/cassiomc1\/forgeloop#readme/,
     );
   });
 });

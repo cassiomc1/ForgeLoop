@@ -1,0 +1,14 @@
+{
+  "required": [
+    "accessibility-validation",
+    "build",
+    "focus-management",
+    "keyboard-navigation",
+    "mobile-viewport",
+    "performance-validation",
+    "responsive-validation",
+    "security-validation",
+    "tests",
+    "visual-validation"
+  ]
+}
