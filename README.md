@@ -61,11 +61,17 @@ flowchart TB
   root --> entry["native adapters<br/>+ .forgeloop/kit/"]
   entry --> migration{"target<br/>layout"}
   migration -->|legacy v1| plan["validate paths<br/>+ build plan"]
-  plan --> hidden["write + verify<br/>hidden kit"]
-  hidden --> authority["atomic manifest<br/>authority switch"]
+  plan --> hidden["write hidden<br/>kit"]
+  hidden --> verified["verify hidden<br/>bytes"]
+  verified --> authority["atomic manifest<br/>authority switch"]
   authority --> cleanup["hash-checked<br/>legacy cleanup"]
   cleanup --> recovered["healthy or<br/>recoverable"]
+  hidden -. interruption .-> incomplete["doctor: E_MIGRATION_INCOMPLETE"]
+  verified -. interruption .-> incomplete
+  authority -. interruption .-> incomplete
+  cleanup -. interruption .-> incomplete
   migration -->|layout v2| retry["update + retry<br/>owned cleanup"]
+  incomplete --> retry
   entry --> discovery["discovery +<br/>project profile"]
   discovery --> contract["current<br/>contract"]
   contract --> routing["deterministic<br/>route"]
@@ -115,7 +121,7 @@ flowchart TB
 
   class root root;
   class entry,discovery,delegation entry;
-  class migration,plan,hidden,authority,cleanup,recovered,retry migration;
+  class migration,plan,hidden,verified,authority,cleanup,recovered,retry,incomplete migration;
   class routing,preflight,ready routing;
   class state,events,lifecycle state;
   class checks,receipt,audit evidence;
@@ -127,9 +133,11 @@ flowchart TB
 ```
 
 Equivalent reading for text-only environments: adapters load the canonical kit;
-an older target follows validate paths → write and verify hidden files → switch
-manifest authority → hash-checked cleanup, while an interrupted migration is
-diagnosed and retried by `doctor`/`update`;
+an older target follows validate paths → write hidden files → verify their bytes
+→ switch manifest authority atomically → hash-checked cleanup. An interruption
+after hidden writes, after verification, after the authority switch, or during
+cleanup is diagnosed by `doctor` as `E_MIGRATION_INCOMPLETE` and retried by
+`update`; modified or unmanaged residual files remain preserved;
 discovery creates the contract and deterministic route; contract, route, and
 required gates must produce `PREFLIGHT_READY` before the resumable state and
 append-only event ledger authorize the lifecycle. Verification produces
@@ -149,6 +157,36 @@ Antigravity, OpenCode, Hermes, Pi, Command Code, and Freebuff use the shared
 `AGENTS.md` entry point. All ten agents delegate to the same canonical
 documents; see [`AGENT_COMPATIBILITY.md`](./AGENT_COMPATIBILITY.md) for the
 official sources and precedence notes.
+
+### Migration recovery and release freeze
+
+Legacy layout migration keeps `.forgeloop/kit/` as the canonical layout and
+does not make `layoutVersion: 2` authoritative until every planned hidden file
+has been written and byte-verified. Cleanup runs only after the manifest switch
+and only for legacy files whose recorded ownership hash still matches. A
+modified, unmanaged, or `preserve=true` file is retained for manual review.
+
+The interruption vocabulary is test-only and is not a runtime state machine:
+
+```text
+VALIDATED → HIDDEN_WRITTEN → HIDDEN_VERIFIED → MANIFEST_SWITCHED
+          → LEGACY_CLEANED → COMPLETE
+```
+
+The regression suite injects failures at these boundaries and verifies that
+`doctor` explains the incomplete migration before a later `update` recovers
+owned cleanup. The frozen published installation under
+[`tests/fixtures/legacy-0.1.6/`](./tests/fixtures/legacy-0.1.6/) is derived
+from the real npm tarball, includes provenance and digests, and is copied into
+tests locally; CI does not download npm packages.
+
+The current published baseline for a reproducible blind run is
+`@cassiomc1/forgeloop@0.1.9`. The supplied hardening brief's `0.1.8` reference
+is historical; never move `v0.1.8` or `v0.1.9`, and use the read-only release
+identity verifier before a live run. This task does not publish a new npm
+version: the completion-validation fix in this branch is not part of the frozen
+`0.1.9` tarball, so publish a new version and repeat identity verification
+before a blind run that needs this branch's executable changes.
 
 ### Use with npm
 
