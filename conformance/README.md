@@ -43,6 +43,34 @@ diagnostic records belong under [`conformance/runs/`](./runs/); they must not
 contain secrets, credentials, hidden reasoning, or unnecessary conversation
 history.
 
+## Release identity evidence
+
+Every live-run report records the exact published package used by the target.
+Include all of these fields before sending the blind prompt:
+
+```text
+package: @cassiomc1/forgeloop@X.Y.Z
+npm gitHead: <40-character commit SHA>
+release commit: <40-character commit SHA>
+GitHub tag: vX.Y.Z -> <40-character commit SHA>
+tarball URL: https://registry.npmjs.org/...
+tarball SHA-1: <40-character hex digest>
+npm SHA-512 integrity: sha512-<base64 digest>
+release identity: RELEASE_IDENTITY_VALID
+```
+
+Run the repository's read-only verifier against the exact release commit:
+
+```bash
+RELEASE_COMMIT="$(git rev-list -n1 vX.Y.Z)"
+npm run release:identity -- --version X.Y.Z --release-commit "$RELEASE_COMMIT"
+```
+
+Do not interpret a local package version, a green build, or a tarball URL by
+itself as publication proof. If the verifier cannot establish every identity
+field, record `RELEASE_IDENTITY_NOT_VERIFIED` or
+`RELEASE_IDENTITY_INVALID` and do not start the blind run.
+
 The complete-website scenario deliberately fails when implementation starts
 before the contract, route, and required gates exist.
 

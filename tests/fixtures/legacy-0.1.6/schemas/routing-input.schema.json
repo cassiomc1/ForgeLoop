@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "forgeloop://schemas/routing-input.schema.json",
+  "title": "ForgeLoop routing input",
+  "type": "object",
+  "required": ["schemaVersion", "workType", "surfaces", "risks", "platforms"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "workType": { "type": "string", "minLength": 1 },
+    "surfaces": { "type": "array", "items": { "type": "string" } },
+    "risks": { "type": "array", "items": { "type": "string" } },
+    "platforms": { "type": "array", "items": { "type": "string" } },
+    "behaviorChange": { "type": "boolean" },
+    "executableChange": { "type": "boolean" }
+  },
+  "additionalProperties": false
+}

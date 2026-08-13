@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "forgeloop://schemas/task-brief.schema.json",
+  "title": "ForgeLoop delegation task brief",
+  "type": "object",
+  "required": ["schemaVersion", "protocolVersion", "taskId", "parentTaskId", "objective", "allowedPaths", "readOnlyPaths", "dependencies", "constraints", "requiredGuides", "verification", "authority", "deliverables"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "protocolVersion": { "const": 1 },
+    "taskId": { "type": "string", "minLength": 1 },
+    "parentTaskId": { "type": "string", "minLength": 1 },
+    "objective": { "type": "string", "minLength": 1 },
+    "allowedPaths": { "type": "array", "items": { "type": "string" } },
+    "readOnlyPaths": { "type": "array", "items": { "type": "string" } },
+    "dependencies": { "type": "array", "items": { "type": "string" } },
+    "constraints": { "type": "array", "items": { "type": "string" } },
+    "requiredGuides": { "type": "array", "items": { "type": "string" } },
+    "verification": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "authority": { "type": "array", "items": { "type": "string" } },
+    "deliverables": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "executionMode": { "enum": ["delegated", "inline"] }
+  },
+  "additionalProperties": false
+}

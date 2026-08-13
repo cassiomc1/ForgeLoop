@@ -1,0 +1,191 @@
+{
+  "schemaVersion": 1,
+  "packageName": "@cassiomc1/forgeloop",
+  "packageVersion": "0.1.6",
+  "files": {
+    ".forgeloop/.gitignore": {
+      "sha256": "6ba952dd372f994f00f1227e39d3a6b5613be93815e20f28a113620717c752b7",
+      "preserve": false
+    },
+    "AGENTS.md": {
+      "sha256": "2d7cbba5031186dce9245604543fb141cfa03c72d21e20eab8a85c5849802451",
+      "preserve": false
+    },
+    "CLAUDE.md": {
+      "sha256": "f7624e323e76326d071c13657debb6c6739438bb8a44437dd4ae55c574fa2b8f",
+      "preserve": false
+    },
+    ".cursor/rules/project-loop.mdc": {
+      "sha256": "2ba7a6618b0b9d347f856bcd6440cd89a6ac6b7678043a2f5f08cea63ab084eb",
+      "preserve": false
+    },
+    ".github/copilot-instructions.md": {
+      "sha256": "bdbded7264b8aac9341b730032403adc08bf82e8932629c6b4aff3d9043183f5",
+      "preserve": false
+    },
+    "LOOP_ENGINEERING.md": {
+      "sha256": "104b1dc1991e4f3774fe756b7ca0f8e6a284a1e4eae23ee41800c42e42160956",
+      "preserve": false
+    },
+    "GUIDE_ROUTER.md": {
+      "sha256": "c452cd901ea15c282f5c0c638f7420b7ea4e698d1580d5461556c3ec8d1c39a5",
+      "preserve": false
+    },
+    "PROJECT_PROFILE.md": {
+      "sha256": "f591eaee6df7d475a469b4ffbced200ee7b5b6f18b33ffdb5770f3661364c3c3",
+      "preserve": true
+    },
+    "LOOP_SYSTEM_DESIGN.md": {
+      "sha256": "042c26c675ffcef963ecdd642fc438c4317db094e6341df395e27f3b44be6dd9",
+      "preserve": false
+    },
+    "QUALITY_SCORECARD.md": {
+      "sha256": "5f09f81125f08373e487c337f866644deb9f98ced0ae7c3d4781bb2995541123",
+      "preserve": false
+    },
+    "TERMINOLOGY.md": {
+      "sha256": "2e11ca07677809ba555237819eab798bb369179365c9cdb8790ef681b1c03400",
+      "preserve": false
+    },
+    "EXECUTION_STATE.md": {
+      "sha256": "b16add3b345954460819975b49cbcbc326e11a87e70b43e7646fee48587ce5fb",
+      "preserve": false
+    },
+    "DELEGATION_PROTOCOL.md": {
+      "sha256": "c72d931ed0fbf9aa304b3ba3a89f858beb5a3d52bd335dda1f1b4de1bfdc5d61",
+      "preserve": false
+    },
+    "ORCHESTRATOR_INTEGRATION.md": {
+      "sha256": "741be3c3151d3eb9c27a0e88e68ce78edb69a0d053c04d63516d6bc0e69a673a",
+      "preserve": false
+    },
+    "THREAT_MODEL.md": {
+      "sha256": "88739046cd2e949eefb5e331da3394d11a9c9958c45566b78838559cc2f08fab",
+      "preserve": false
+    },
+    "CONTRACT_COVERAGE.md": {
+      "sha256": "e14d7954fb168ab01da247b418091328dffa703e7fb31f7694d5639592c11e86",
+      "preserve": false
+    },
+    "AGENT_COMPATIBILITY.md": {
+      "sha256": "0c5462465d66c466e062ae0319468cf3f44621423c13ab8b4ad33dc972469b50",
+      "preserve": false
+    },
+    "THIRD_PARTY_NOTICES.md": {
+      "sha256": "4313cfeffed9fe5d4fcdc7ab053612d1aa88260560cbbb9037db2a11b6fe325d",
+      "preserve": false
+    },
+    "LICENSE": {
+      "sha256": "54afb91a712e713aac0d960f3a19577db0e7d85e43bf6fa85f10ef61b3d256d8",
+      "preserve": false
+    },
+    "LICENSE-DOCS.md": {
+      "sha256": "0daa819b023e67407f124c642372d699a469551f298cb3edcc38c2f9fa8a9450",
+      "preserve": false
+    },
+    "ENG/accessibility-eng.md": {
+      "sha256": "459d2e603d238ba091501734afa977dd13d1178b2039844478fbcf7b10363b22",
+      "preserve": false
+    },
+    "ENG/clean-code-eng.md": {
+      "sha256": "7db9ef8e83e2011911332a74afc2dca3be19144d2d0f07d8b20acff42ff6e39d",
+      "preserve": false
+    },
+    "ENG/design-code-eng.md": {
+      "sha256": "addfaaa20f26ee1034d3347cc24ca0425b5f3c47804f4790e652beaff2445c04",
+      "preserve": false
+    },
+    "ENG/games-code-design-web-eng.md": {
+      "sha256": "205913631130393b221ad607aa038c0a7e4147dfd9fc76f73fae092b3b630750",
+      "preserve": false
+    },
+    "ENG/perf-code-eng.md": {
+      "sha256": "f3239e50d1bbd0db1846f3023763daf346f6508941b6056b1b22ccb3d37f99f9",
+      "preserve": false
+    },
+    "ENG/premium-sites-studio-eng.md": {
+      "sha256": "1a3f869423b30b524cf5c5b784c327aca30be7b6d009b1774409c05ea880477d",
+      "preserve": false
+    },
+    "ENG/sec-code-eng.md": {
+      "sha256": "0608b5310b4704f9a5958f18fcedf876e74e8c7b9302276064ad1e85d8fcd9f8",
+      "preserve": false
+    },
+    "ENG/test-code-eng.md": {
+      "sha256": "ad4adfb43294df2d0c9f98ee4011525ab3b6cddb3d7da0da8e186bc15f336648",
+      "preserve": false
+    },
+    "schemas/routing-input.schema.json": {
+      "sha256": "db1b4ab2d4951aab31eb6fdbde2217effd5d016dc91a75a1822f8d6a91864e94",
+      "preserve": false
+    },
+    "schemas/routing-result.schema.json": {
+      "sha256": "48292b50a01bf6904037833576f27e8fa82090ba2e856b5307bebf93791ac03b",
+      "preserve": false
+    },
+    "schemas/work-state.schema.json": {
+      "sha256": "f175f1e3c4bc6999ea1568b5e49b054f91dd93c37664112648cf1b2bf06c21db",
+      "preserve": false
+    },
+    "schemas/execution-receipt.schema.json": {
+      "sha256": "4cce9c0b8e57f4551255a98c7ac2b3f6f9d5adf0eecbeeb889858331ffd68e08",
+      "preserve": false
+    },
+    "schemas/task-brief.schema.json": {
+      "sha256": "37765e0bd0ceb69e916372c18cb30a6fef99db91f53c467cf85d05773105f400",
+      "preserve": false
+    },
+    "schemas/delegated-result.schema.json": {
+      "sha256": "c4e4de6911f524f034da8822fbc3b5bf890bc67f3bc7f69ced9916eff0a3a2ee",
+      "preserve": false
+    },
+    "schemas/evidence.schema.json": {
+      "sha256": "db2053a5cf96dc3a54ab4c03579741e0b4ff0294059f9c5d9e8263bf6020a473",
+      "preserve": false
+    },
+    "schemas/current-contract.schema.json": {
+      "sha256": "5966ebecb7c60c355209cf3a22861e541f48ffbdd1d5d67770433b8d047eaa8d",
+      "preserve": false
+    },
+    "schemas/gate.schema.json": {
+      "sha256": "7e7e1350838586c0b0385c19f5fb4520abf8f290ea60c9d36bdba2d3682b9690",
+      "preserve": false
+    },
+    "schemas/source-registry.schema.json": {
+      "sha256": "8e5e31df83cfa083f135260cc10ffaa6f971c825a285758ba549181401426239",
+      "preserve": false
+    },
+    "schemas/config.schema.json": {
+      "sha256": "d2029befbf2faba46425c24465b7394a4f9b55ba0e395544787cae1fb087bfba",
+      "preserve": false
+    },
+    "schemas/preflight.schema.json": {
+      "sha256": "bf5873352b9cdbf685a9ad8eb58fadbd90693e5c32cd270b1d17f724849eacb3",
+      "preserve": false
+    },
+    "schemas/check.schema.json": {
+      "sha256": "5f5fcbf6ede9543d0f479c028dc8da70ced01c53997bcb3427896e53333f979a",
+      "preserve": false
+    },
+    "schemas/evidence-coverage.schema.json": {
+      "sha256": "30a37fbf60c7a635d816f306d8047c2239143bfcd83fcf6d8d44448c910c5d6c",
+      "preserve": false
+    },
+    "schemas/event.schema.json": {
+      "sha256": "5e16cfd7700ebc70b6b439717b3b2256087ce9fb3b8eeaef730ea2fcb6556b71",
+      "preserve": false
+    },
+    "schemas/activation.schema.json": {
+      "sha256": "19c60c9b8dd99467d7b639031179f1df00971bc5a276bcb00a6b74e7f60f0f6f",
+      "preserve": false
+    },
+    "schemas/policy.schema.json": {
+      "sha256": "624fe6e1aa7f3d5ef221508c7c5f3543390c65eed4bb9f46498c9cfd9b315f90",
+      "preserve": false
+    },
+    "schemas/task-bundle.schema.json": {
+      "sha256": "4d344fcc93d0eea02f52480a72fa1ca10e32f70793ba50aa62e605ed6958d48c",
+      "preserve": false
+    }
+  }
+}

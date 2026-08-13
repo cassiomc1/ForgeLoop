@@ -59,6 +59,13 @@ flowchart TB
   root["FORGELOOP"]
 
   root --> entry["native adapters<br/>+ .forgeloop/kit/"]
+  entry --> migration{"target<br/>layout"}
+  migration -->|legacy v1| plan["validate paths<br/>+ build plan"]
+  plan --> hidden["write + verify<br/>hidden kit"]
+  hidden --> authority["atomic manifest<br/>authority switch"]
+  authority --> cleanup["hash-checked<br/>legacy cleanup"]
+  cleanup --> recovered["healthy or<br/>recoverable"]
+  migration -->|layout v2| retry["update + retry<br/>owned cleanup"]
   entry --> discovery["discovery +<br/>project profile"]
   discovery --> contract["current<br/>contract"]
   contract --> routing["deterministic<br/>route"]
@@ -97,6 +104,7 @@ flowchart TB
 
   classDef root fill:#08090C,stroke:#6E6AF5,stroke-width:3px,color:#EDEEF0;
   classDef entry fill:#101218,stroke:#3EDBB8,stroke-width:2px,color:#EDEEF0;
+  classDef migration fill:#0F766E,stroke:#5EEAD4,stroke-width:2px,color:#FFFFFF;
   classDef routing fill:#4F46E5,stroke:#A5B4FC,stroke-width:2px,color:#FFFFFF;
   classDef state fill:#373A46,stroke:#A1A1AA,stroke-width:2px,color:#FFFFFF;
   classDef evidence fill:#3EDBB8,stroke:#99F6E4,stroke-width:2px,color:#08090C;
@@ -107,6 +115,7 @@ flowchart TB
 
   class root root;
   class entry,discovery,delegation entry;
+  class migration,plan,hidden,authority,cleanup,recovered,retry migration;
   class routing,preflight,ready routing;
   class state,events,lifecycle state;
   class checks,receipt,audit evidence;
@@ -118,6 +127,9 @@ flowchart TB
 ```
 
 Equivalent reading for text-only environments: adapters load the canonical kit;
+an older target follows validate paths → write and verify hidden files → switch
+manifest authority → hash-checked cleanup, while an interrupted migration is
+diagnosed and retried by `doctor`/`update`;
 discovery creates the contract and deterministic route; contract, route, and
 required gates must produce `PREFLIGHT_READY` before the resumable state and
 append-only event ledger authorize the lifecycle. Verification produces
@@ -327,8 +339,17 @@ node src/cli.js update
 The release workflow uses [npm trusted publishing](https://docs.npmjs.com/trusted-publishers)
 through GitHub Actions OIDC. Before the first release, register this repository
 and workflow as the package's trusted publisher in npm; each `vX.Y.Z` tag must
-match `package.json`. After publishing, verify the package version and its npm
-provenance record.
+match `package.json`. After publishing, verify the complete immutable release
+identity before a blind run:
+
+```bash
+RELEASE_COMMIT="$(git rev-list -n1 vX.Y.Z)"
+npm run release:identity -- --version X.Y.Z --release-commit "$RELEASE_COMMIT"
+```
+
+Only `RELEASE_IDENTITY_VALID` is sufficient. The read-only check compares the
+release commit and GitHub tag with npm's version, `gitHead`, tarball URL,
+SHA-1, and SHA-512 integrity; it never publishes or changes a tag.
 
 The commands above use the current directory. To install into another existing
 project directory, pass a relative or absolute `--path`:
@@ -360,7 +381,12 @@ reference.
 Targets created by an older package layout are migrated by `update`: unchanged
 managed root files move into the hidden kit, while modified or unowned root
 files are preserved and reported as conflicts. The migration never follows a
-symlink or deletes a file whose managed hash no longer matches.
+symlink or deletes a file whose managed hash no longer matches. The migration
+writes and verifies the complete hidden plan, atomically switches the manifest
+authority, and only then cleans owned legacy files. If a process stops between
+those stages, `doctor` reports `E_MIGRATION_INCOMPLETE` and the next `update`
+retries cleanup only when the recorded legacy hash still matches; modified or
+unowned files remain for manual review.
 
 ### Migrate an existing mdfiles installation
 

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "forgeloop://schemas/evidence.schema.json",
+  "title": "ForgeLoop evidence record",
+  "type": "object",
+  "required": ["schemaVersion", "kind", "source", "result"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "kind": { "enum": ["OBSERVED", "INFERRED", "NOT_VERIFIED", "BLOCKED"] },
+    "source": { "type": "string", "minLength": 1 },
+    "result": { "type": "string", "minLength": 1 },
+    "details": { "type": "object" }
+  },
+  "additionalProperties": false
+}

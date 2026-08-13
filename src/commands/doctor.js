@@ -147,6 +147,23 @@ export async function runDoctor({ target, packageRoot, adoptPaths = [], strict =
     }
     const hasLegacyAlternative = layoutVersion >= LAYOUT_VERSION
       && entry.legacyRelativePath !== entry.relativePath;
+    if (layoutVersion < LAYOUT_VERSION && entry.legacyRelativePath !== entry.relativePath) {
+      const hiddenDestination = ensureWithin(target, entry.relativePath);
+      try {
+        await assertSafePath(target, entry.relativePath);
+        if (await fileExists(hiddenDestination)) {
+          findings.push(finding(
+            "E_MIGRATION_INCOMPLETE",
+            "error",
+            entry.relativePath,
+            "A hidden migration destination exists while the legacy manifest is still authoritative; rerun forgeloop update to recover the transaction.",
+            "Run forgeloop update and inspect the result before changing either copy.",
+          ));
+        }
+      } catch (error) {
+        findings.push(finding("unsafe-path", "error", entry.relativePath, error.message));
+      }
+    }
     if (hasLegacyAlternative) {
       try {
         await assertSafePath(target, entry.legacyRelativePath);
@@ -161,10 +178,11 @@ export async function runDoctor({ target, packageRoot, adoptPaths = [], strict =
         : null;
       if (legacyDestination && await fileExists(legacyDestination)) {
         findings.push(finding(
-          "legacy-root-file",
-          "warning",
+          "E_MIGRATION_INCOMPLETE",
+          "error",
           entry.legacyRelativePath,
-          "Canonical file remains in the legacy root layout; run forgeloop update to migrate it safely.",
+          "Canonical file remains in the legacy root layout; migration is incomplete and the legacy copy was preserved.",
+          "Run forgeloop update; it removes the root copy only when the recorded ownership hash still matches.",
         ));
         continue;
       }
@@ -215,10 +233,24 @@ export async function runDoctor({ target, packageRoot, adoptPaths = [], strict =
       if (await fileExists(legacyPath)) {
         if (entry.sourcePath !== "PROJECT_PROFILE.md") {
           findings.push(finding(
-            "legacy-root-file",
-            "warning",
+            "E_MIGRATION_INCOMPLETE",
+            "error",
             entry.legacyRelativePath,
-            "A legacy root copy remains alongside the canonical hidden kit; review it after migration.",
+            record.legacySha256
+              ? "A legacy root copy remains after the manifest authority switch; cleanup is incomplete."
+              : "A legacy root copy remains without an ownership proof; it was preserved.",
+            "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+          ));
+        }
+        if (entry.sourcePath === "PROJECT_PROFILE.md") {
+          findings.push(finding(
+            "E_MIGRATION_INCOMPLETE",
+            "error",
+            entry.legacyRelativePath,
+            record.legacySha256
+              ? "The legacy project profile remains after the manifest authority switch; cleanup is incomplete."
+              : "A legacy project profile remains alongside the hidden canonical profile.",
+            "Run forgeloop update, then remove the root profile only after verifying ownership and preserved bytes.",
           ));
         }
       }
