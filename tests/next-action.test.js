@@ -395,13 +395,19 @@ test("verification decisions require observed evidence and surface failed checks
         commandId: "record-check",
         executable: "forgeloop",
         subcommand: "record-check",
-        argv: ["record-check", "--id=requirement-59830ebc3a418411", "--requirement=tests", "--status", "passed", "--evidence-kind", "OBSERVED", "--exit-code", "0"],
-        requiredInputs: [{
-          name: "result",
-          option: "--result=<text>",
-          description: "Observed result supplied by the agent",
-        }],
+        argv: ["record-check", "--id=requirement-59830ebc3a418411", "--requirement=tests"],
+        requiredInputs: [
+          { name: "status", option: "--status=<passed|failed|blocked|not-run>" },
+          { name: "evidenceKind", option: "--evidence-kind=<OBSERVED|INFERRED|NOT_VERIFIED|BLOCKED>" },
+          { name: "result", option: "--result=<text>" },
+          { name: "exitCode", option: "--exit-code=<number>", optional: true },
+        ],
       }]);
+      const serialized = JSON.stringify(result.commandSpecs);
+      assert.doesNotMatch(serialized, /tests passed/);
+      assert.equal(result.commandSpecs[0].argv.some((argument) => argument.startsWith("--status")), false);
+      assert.equal(result.commandSpecs[0].argv.some((argument) => argument.startsWith("--evidence-kind")), false);
+      assert.equal(result.commandSpecs[0].argv.some((argument) => argument.startsWith("--exit-code")), false);
       assert.doesNotMatch(JSON.stringify(result.commands), /run-check|record-verification|advance --to/);
     });
   });
@@ -432,13 +438,19 @@ test("verification decisions require observed evidence and surface failed checks
         const spec = result.commandSpecs.find((item) => item.argv.includes(`--requirement=${requirement}`));
         assert.ok(spec, `missing command spec for requirement ${index}`);
         assert.match(spec.argv.find((argument) => argument.startsWith("--id=")), /^--id=requirement-[a-f0-9]{16}$/);
-        assert.ok(result.commandSpecs.every((spec) => !spec.requiredInputs.some((input) => input.description.includes(requirement))));
+        assert.ok(result.commandSpecs.every((spec) => !spec.requiredInputs.some((input) => input.description?.includes(requirement))));
         assert.ok(result.commands.every((command) => !command.includes(requirement)));
         assert.equal(human.includes(requirement), false);
 
         const direct = spawnSync(process.execPath, [
           cliPath,
           ...spec.argv,
+          "--status",
+          "passed",
+          "--evidence-kind",
+          "OBSERVED",
+          "--exit-code",
+          "0",
           "--result=observed directly without a shell",
           `--path=${target}`,
         ], {
@@ -487,6 +499,56 @@ test("verification decisions require observed evidence and surface failed checks
         exitCode: 0,
       });
       assertStableAction(await getNextAction({ target, packageRoot }), NEXT_ACTIONS.ENTER_REVIEWING);
+    });
+  });
+
+  await t.test("recorded observed pass drives coverage after verification", async () => {
+    await withTarget(async (target) => {
+      await setupTarget(target, { phase: "VERIFYING", receipt: true });
+      assertStableAction(await getNextAction({ target, packageRoot }), NEXT_ACTIONS.RECORD_VERIFICATION);
+
+      await recordCheck({
+        target,
+        packageRoot,
+        id: "tests",
+        kind: "command",
+        requirement: "tests",
+        status: "passed",
+        evidenceKind: "OBSERVED",
+        result: "tests passed",
+        exitCode: 0,
+      });
+
+      const stored = JSON.parse(await readFile(path.join(target, ARTIFACT_PATHS.state), "utf8"));
+      assert.equal(stored.checks[0].status, "passed");
+      assert.equal(stored.checks[0].evidenceKind, "OBSERVED");
+      assert.equal(stored.checks[0].exitCode, 0);
+      assertStableAction(await getNextAction({ target, packageRoot }), NEXT_ACTIONS.ENTER_REVIEWING);
+    });
+  });
+
+  await t.test("recorded observed failure drives diagnosis", async () => {
+    await withTarget(async (target) => {
+      await setupTarget(target, { phase: "VERIFYING", receipt: true });
+      assertStableAction(await getNextAction({ target, packageRoot }), NEXT_ACTIONS.RECORD_VERIFICATION);
+
+      await recordCheck({
+        target,
+        packageRoot,
+        id: "tests",
+        kind: "command",
+        requirement: "tests",
+        status: "failed",
+        evidenceKind: "OBSERVED",
+        result: "tests failed",
+        exitCode: 1,
+      });
+
+      const stored = JSON.parse(await readFile(path.join(target, ARTIFACT_PATHS.state), "utf8"));
+      assert.equal(stored.checks[0].status, "failed");
+      assert.equal(stored.checks[0].evidenceKind, "OBSERVED");
+      assert.equal(stored.checks[0].exitCode, 1);
+      assertStableAction(await getNextAction({ target, packageRoot }), NEXT_ACTIONS.DIAGNOSE);
     });
   });
 

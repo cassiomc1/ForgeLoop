@@ -110,12 +110,13 @@ function recordCheckCommandSpec(requirement) {
     commandId: "record-check",
     executable: "forgeloop",
     subcommand: "record-check",
-    argv: ["record-check", `--id=${checkId}`, `--requirement=${requirement}`, "--status", "passed", "--evidence-kind", "OBSERVED", "--exit-code", "0"],
-    requiredInputs: [{
-      name: "result",
-      option: "--result=<text>",
-      description: "Observed result supplied by the agent",
-    }],
+    argv: ["record-check", `--id=${checkId}`, `--requirement=${requirement}`],
+    requiredInputs: [
+      { name: "status", option: "--status=<passed|failed|blocked|not-run>" },
+      { name: "evidenceKind", option: "--evidence-kind=<OBSERVED|INFERRED|NOT_VERIFIED|BLOCKED>" },
+      { name: "result", option: "--result=<text>" },
+      { name: "exitCode", option: "--exit-code=<number>", optional: true },
+    ],
   };
 }
 

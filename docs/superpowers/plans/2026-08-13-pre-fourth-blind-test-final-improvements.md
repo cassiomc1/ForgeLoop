@@ -198,6 +198,7 @@ Expected: every command exits `0` with no new findings.
 ### Task 4: Verify protocol-backed completion and full regression
 
 **Files:**
+- Modify: `tests/cli.test.js` (keep route persistence isolated from the active target)
 - Modify: task-scoped `.forgeloop` artifacts through ForgeLoop commands and
   APIs; do not hand-edit lifecycle evidence.
 
@@ -210,7 +211,8 @@ Expected: every command exits `0` with no new findings.
 Run `npm test`.
 
 Expected: exit `0`, zero failures, and output includes the new next-action
-regressions.
+regressions. Route CLI tests must use temporary targets so the suite does not
+overwrite an active target's persisted routing artifact.
 
 - [ ] **Step 2: Advance the task through the required lifecycle**
 
@@ -228,6 +230,7 @@ node src/cli.js activate --json
 node src/cli.js advance --to DISCOVERING --json
 node src/cli.js advance --to CONTRACT_READY --json
 node src/cli.js advance --to ROUTED --json
+node src/cli.js preflight --json
 node src/cli.js advance --to PLANNED --json
 node src/cli.js advance --to EXECUTING --json
 node src/cli.js next --json
