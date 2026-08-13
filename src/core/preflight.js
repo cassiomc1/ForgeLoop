@@ -308,6 +308,7 @@ async function assertPreflightPersistenceSafety(target, packageRoot, taskId) {
 
 const PREFLIGHT_IDENTITY_BARRIER_CODES = new Set([
   "E_CONTRACT_STALE",
+  "E_GATE_TASK_MISMATCH",
   "E_ROUTE_STALE",
   "E_STATE_TASK_MISMATCH",
   "E_ROUTE_GUIDE_MISMATCH",

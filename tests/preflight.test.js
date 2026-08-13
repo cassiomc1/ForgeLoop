@@ -67,6 +67,9 @@ async function artifactHashes(target) {
     ARTIFACT_PATHS.state,
     ARTIFACT_PATHS.preflight,
     ARTIFACT_PATHS.events,
+    `${ARTIFACT_PATHS.gates}/design.json`,
+    `${ARTIFACT_PATHS.gates}/quality.json`,
+    `${ARTIFACT_PATHS.gates}/threat-boundary.json`,
   ]) {
     try {
       const bytes = await readFile(path.join(target, relativePath));
@@ -118,6 +121,33 @@ test("preflight rejects a stale route without state before persisting artifacts"
     await assert.rejects(
       () => runPreflight({ target, packageRoot }),
       (error) => error.code === "E_ROUTE_STALE",
+    );
+
+    assert.deepEqual(await artifactHashes(target), before);
+  });
+});
+
+test("preflight rejects foreign gate task identities before persisting artifacts", async () => {
+  await withTarget(async (target) => {
+    await prepareWebsite(target);
+    for (const gate of ["design", "quality", "threat-boundary"]) {
+      await persistGate(target, createGate({
+        taskId: "foreign-task",
+        gate,
+        status: "satisfied",
+        requiredBy: ["test"],
+        artifacts: [],
+        decisions: [],
+        unknowns: [],
+        approvedAssumptions: [],
+        evidence: [],
+      }), packageRoot);
+    }
+    const before = await artifactHashes(target);
+
+    await assert.rejects(
+      () => runPreflight({ target, packageRoot }),
+      (error) => error.code === "E_GATE_TASK_MISMATCH",
     );
 
     assert.deepEqual(await artifactHashes(target), before);
