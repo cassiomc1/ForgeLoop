@@ -46,9 +46,50 @@
     "diagnosedHypothesis": { "type": "string", "minLength": 1 },
     "verificationEvidence": { "type": "array", "items": { "type": "object" } },
     "evidenceCoverage": { "type": "array", "items": { "type": "object" } },
-    "publicationStatus": { "enum": ["not-published", "local-only", "committed", "pushed", "published", "deployed"] }
-    ,"verificationCycle": { "type": "integer", "minimum": 1 }
-    ,"lastCompletionAttempt": { "type": "object" }
+    "publicationStatus": { "enum": ["not-published", "local-only", "committed", "pushed", "published", "deployed"] },
+    "verificationCycle": { "type": "integer", "minimum": 1 },
+    "lastCompletionAttempt": {
+      "type": "object",
+      "required": [
+        "status",
+        "reasonCodes",
+        "missingRequirementIds",
+        "verificationCycle",
+        "timestamp"
+      ],
+      "properties": {
+        "status": { "const": "REJECTED" },
+        "reasonCodes": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "missingRequirementIds": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "verificationCycle": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "stateFingerprint": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "receiptFingerprint": {
+          "oneOf": [
+            { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+            { "type": "null" }
+          ]
+        },
+        "timestamp": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    }
   },
   "additionalProperties": false
 }

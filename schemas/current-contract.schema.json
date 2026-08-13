@@ -17,6 +17,32 @@
     "unresolvedDecisions",
     "sourceRefs"
   ],
+  "$defs": {
+    "requirement": {
+      "type": "object",
+      "required": ["text"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "text": { "type": "string", "minLength": 1 },
+        "type": { "enum": ["PRODUCT", "VERIFICATION", "LIFECYCLE", "PUBLICATION", "PRODUCTION_READINESS"] },
+        "operator": { "enum": ["SINGLE", "ALL"] },
+        "requiredEvidenceKind": { "enum": ["OBSERVED", "INFERRED", "NOT_VERIFIED", "BLOCKED", "HYPOTHESIS"] },
+        "lifecycleOwned": { "type": "boolean" },
+        "terminalOwned": { "type": "boolean" },
+        "mixedTerminal": { "type": "boolean" },
+        "requirements": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "string", "minLength": 1 },
+              { "$ref": "#/$defs/requirement" }
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
   "properties": {
     "schemaVersion": { "const": 1 },
     "protocolVersion": { "const": 1 },
@@ -40,8 +66,24 @@
     "deliverables": { "type": "array", "items": { "type": "string", "minLength": 1 } },
     "constraints": { "type": "array", "items": { "type": "string", "minLength": 1 } },
     "risks": { "type": "array", "items": { "type": "string", "minLength": 1 } },
-    "verification": { "type": "array", "items": { "type": "string", "minLength": 1 } },
-    "successCriteria": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "verification": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "type": "string", "minLength": 1 },
+          { "$ref": "#/$defs/requirement" }
+        ]
+      }
+    },
+    "successCriteria": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "type": "string", "minLength": 1 },
+          { "$ref": "#/$defs/requirement" }
+        ]
+      }
+    },
     "stopConditions": { "type": "array", "items": { "type": "string", "minLength": 1 } },
     "unresolvedDecisions": { "type": "array", "items": { "type": "string", "minLength": 1 } },
     "sourceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 } }

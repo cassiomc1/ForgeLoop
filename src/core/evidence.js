@@ -19,10 +19,22 @@ function assertNonEmptyString(value, label) {
   }
 }
 
-export function createEvidence(input, source, result, details) {
+export function createEvidence(input, source, result, details, cycle) {
   const value = typeof input === "string"
-    ? { kind: input, source, result, ...(details === undefined ? {} : { details }) }
-    : input;
+    ? {
+        kind: input,
+        source,
+        result,
+        ...(cycle !== undefined ? { verificationCycle: cycle } : {}),
+        details: {
+          ...(details === undefined ? {} : details),
+          ...(cycle !== undefined ? { verificationCycle: cycle } : {}),
+        },
+      }
+    : structuredClone(input);
+  if (value.details && typeof value.details === "object" && value.verificationCycle !== undefined) {
+    value.details.verificationCycle = value.verificationCycle;
+  }
   assertEvidence(value);
   return value;
 }
@@ -36,6 +48,9 @@ export function assertEvidence(value, label = "evidence") {
   }
   assertNonEmptyString(value.source, `${label}.source`);
   assertNonEmptyString(value.result, `${label}.result`);
+  if (value.verificationCycle !== undefined && (!Number.isInteger(value.verificationCycle) || value.verificationCycle < 1)) {
+    throw new EvidenceError(`${label}.verificationCycle must be a positive integer`);
+  }
   return value;
 }
 

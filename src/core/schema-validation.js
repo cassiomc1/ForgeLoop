@@ -48,7 +48,29 @@ function display(value) {
   return typeof value === "string" ? JSON.stringify(value) : String(value);
 }
 
-function validate(value, schema, location, errors) {
+function resolveRef(ref, rootSchema) {
+  if (typeof ref !== "string" || !rootSchema) return null;
+  if (ref.startsWith("#/")) {
+    const parts = ref.slice(2).split("/");
+    let target = rootSchema;
+    for (const part of parts) {
+      target = target?.[part];
+    }
+    return target ?? null;
+  }
+  return null;
+}
+
+function validate(value, schema, location, errors, rootSchema = schema) {
+  if (!schema || typeof schema !== "object") return;
+  if (schema.$ref) {
+    const target = resolveRef(schema.$ref, rootSchema);
+    if (target) {
+      validate(value, target, location, errors, rootSchema);
+      return;
+    }
+  }
+
   if (schema.const !== undefined && value !== schema.const) {
     errors.push(`${location}: expected ${display(schema.const)}`);
     return;
@@ -62,7 +84,7 @@ function validate(value, schema, location, errors) {
   if (schema.oneOf) {
     const matches = schema.oneOf.filter((candidate) => {
       const candidateErrors = [];
-      validate(value, candidate, location, candidateErrors);
+      validate(value, candidate, location, candidateErrors, rootSchema);
       return candidateErrors.length === 0;
     });
     if (matches.length !== 1) errors.push(`${location}: expected exactly one matching schema`);
@@ -91,7 +113,7 @@ function validate(value, schema, location, errors) {
       errors.push(`${location}: must contain at most ${schema.maxItems} items`);
     }
     if (schema.items) {
-      value.forEach((item, index) => validate(item, schema.items, `${location}[${index}]`, errors));
+      value.forEach((item, index) => validate(item, schema.items, `${location}[${index}]`, errors, rootSchema));
     }
   }
 
@@ -105,7 +127,7 @@ function validate(value, schema, location, errors) {
     const properties = schema.properties ?? {};
     for (const [key, child] of Object.entries(properties)) {
       if (Object.prototype.hasOwnProperty.call(value, key)) {
-        validate(value[key], child, `${location}.${key}`, errors);
+        validate(value[key], child, `${location}.${key}`, errors, rootSchema);
       }
     }
 
@@ -118,7 +140,7 @@ function validate(value, schema, location, errors) {
     } else if (schema.additionalProperties && typeof schema.additionalProperties === "object") {
       for (const key of Object.keys(value)) {
         if (!Object.prototype.hasOwnProperty.call(properties, key)) {
-          validate(value[key], schema.additionalProperties, `${location}.${key}`, errors);
+          validate(value[key], schema.additionalProperties, `${location}.${key}`, errors, rootSchema);
         }
       }
     }
@@ -128,7 +150,7 @@ function validate(value, schema, location, errors) {
 export function validateSchema(value, schema, { label = "$" } = {}) {
   assertJsonLimits(value, label);
   const errors = [];
-  validate(value, schema, label, errors);
+  validate(value, schema, label, errors, schema);
   return errors;
 }
 

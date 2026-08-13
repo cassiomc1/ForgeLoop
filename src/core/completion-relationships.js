@@ -4,8 +4,8 @@ import { assertCoverageList, coverageForRequirements } from "./coverage.js";
 import { assertEvidenceList } from "./evidence.js";
 import { evaluateRequiredEvidence } from "./evidence-readiness.js";
 
-function issue(code, message, artifacts = []) {
-  return { code, message, artifacts };
+function issue(code, message, artifacts = [], details = {}) {
+  return { code, message, artifacts, ...details };
 }
 
 function sameValue(left, right) {
@@ -119,10 +119,16 @@ export function completionRelationshipErrors({
   }
 
   if (state && receipt) {
-    if (requireReceiptStateFingerprint && receipt.stateFingerprint === undefined) {
-      errors.push(issue("E_RECEIPT_STATE_MISMATCH", "Execution receipt requires the current work-state fingerprint", [ARTIFACT_PATHS.state, ARTIFACT_PATHS.receipt]));
-    } else if (receipt.stateFingerprint !== undefined && receipt.stateFingerprint !== canonicalFingerprint(state)) {
-      errors.push(issue("E_RECEIPT_STATE_MISMATCH", "Execution receipt does not match the recorded work state", [ARTIFACT_PATHS.state, ARTIFACT_PATHS.receipt]));
+    if (state.verificationCycle !== undefined && receipt.verificationCycle !== undefined
+      && state.verificationCycle !== receipt.verificationCycle) {
+      errors.push(issue("E_RECEIPT_CYCLE_MISMATCH", "Work state and execution receipt verification cycles diverge", [ARTIFACT_PATHS.state, ARTIFACT_PATHS.receipt]));
+    }
+    if (requireReceiptStateFingerprint) {
+      if (receipt.stateFingerprint === undefined) {
+        errors.push(issue("E_RECEIPT_STATE_MISMATCH", "Execution receipt requires the current work-state fingerprint", [ARTIFACT_PATHS.state, ARTIFACT_PATHS.receipt]));
+      } else if (receipt.stateFingerprint !== canonicalFingerprint(state)) {
+        errors.push(issue("E_RECEIPT_STATE_MISMATCH", "Execution receipt does not match the recorded work state", [ARTIFACT_PATHS.state, ARTIFACT_PATHS.receipt]));
+      }
     }
     if (!sameValue(state.checks, receipt.checks)) {
       errors.push(issue("E_RECEIPT_STATE_MISMATCH", "Work state and execution receipt checks diverge", [ARTIFACT_PATHS.state, ARTIFACT_PATHS.receipt]));

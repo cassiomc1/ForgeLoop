@@ -30,6 +30,7 @@
           "kind": { "enum": ["OBSERVED", "INFERRED", "NOT_VERIFIED", "BLOCKED"] },
           "source": { "type": "string", "minLength": 1 },
           "result": { "type": "string", "minLength": 1 },
+          "verificationCycle": { "type": "integer", "minimum": 1 },
           "details": { "type": "object" }
         },
         "additionalProperties": false

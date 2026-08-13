@@ -27,6 +27,7 @@ function repairNext(error) {
     case "E_RECEIPT_CONTRACT_MISMATCH":
     case "E_RECEIPT_ROUTE_MISMATCH":
     case "E_RECEIPT_STATE_MISMATCH":
+    case "E_RECEIPT_CYCLE_MISMATCH":
       return "Run forgeloop prepare-completion, inspect the receipt, and validate it before retrying completion.";
     case "E_PHASE_PREREQUISITE_MISSING":
       return "Advance from EXECUTING through VERIFYING and REVIEWING, resolving the named prerequisite before completion.";
@@ -39,6 +40,20 @@ function repairNext(error) {
     case "E_CHECK_INVALID":
     case "E_CHECK_STATUS_CONTRADICTION":
       return "Run forgeloop record-check with compatible observed evidence for the named requirement.";
+    case "E_EVIDENCE_PARTIAL":
+      return "Run or finish the missing component checks and record observed evidence.";
+    case "E_EVIDENCE_INVALID":
+      return "Resolve the invalid evidence format or failure status with forgeloop record-check.";
+    case "E_FUTURE_LIFECYCLE_EVIDENCE":
+      return "Remove the premature terminal claim; the lifecycle event must satisfy it.";
+    case "E_CIRCULAR_COMPLETION_REQUIREMENT":
+    case "E_MIXED_TERMINAL_REQUIREMENT":
+      return "Split ordinary verification from terminal lifecycle criteria.";
+    case "E_STATE_LEDGER_DIVERGENCE":
+      return "Do not edit work-state or receipt manually; recover through supported lifecycle commands.";
+    case "E_COMPLETION_RECOVERY_UNAUTHORIZED":
+    case "E_COMPLETION_REJECTION_LEDGER_MISMATCH":
+      return "Ensure a matching completion rejection exists in the protocol ledger before recovery.";
     case "E_GATE_UNVERIFIED":
     case "E_GATE_STALE":
       return "Satisfy or refresh the named gate, then rerun forgeloop preflight.";
@@ -245,6 +260,10 @@ export async function runComplete({ target, packageRoot, strict = false, persist
     "E_EVIDENCE_INVALID",
     "E_EVIDENCE_KIND_INVALID",
     "E_EVIDENCE_COVERAGE_PARTIAL",
+    "E_EVIDENCE_COVERAGE_INVALID",
+    "E_VERIFICATION_CHECK_REQUIRED",
+    "E_CHECK_REQUIRED",
+    "E_CHECK_INVALID",
   ]);
   const rejectionCodes = [...new Set(result.errors.map((error) => error.code))].sort();
   const evidenceOnlyRejection = rejectionCodes.length > 0
@@ -254,15 +273,27 @@ export async function runComplete({ target, packageRoot, strict = false, persist
     if (state?.phase === "REVIEWING") {
       const reasonCodes = rejectionCodes;
       const missingRequirementIds = [...new Set(result.errors.map((error) => error.requirementId).filter(Boolean))].sort();
+      const currentCycle = state.verificationCycle ?? 1;
+      const alreadyRejected = state.lastCompletionAttempt?.status === "REJECTED"
+        && (state.lastCompletionAttempt.verificationCycle ?? 1) === currentCycle
+        && JSON.stringify([...(state.lastCompletionAttempt.reasonCodes ?? [])].sort()) === JSON.stringify(reasonCodes)
+        && JSON.stringify([...(state.lastCompletionAttempt.missingRequirementIds ?? [])].sort()) === JSON.stringify(missingRequirementIds);
+
+      if (alreadyRejected) {
+        return result;
+      }
+
+      const now = new Date().toISOString();
       const next = {
         ...state,
         lastCompletionAttempt: {
           status: "REJECTED",
           reasonCodes,
           missingRequirementIds,
-          timestamp: new Date().toISOString(),
+          verificationCycle: currentCycle,
+          timestamp: now,
         },
-        lastUpdated: new Date().toISOString(),
+        lastUpdated: now,
       };
       let receipt = null;
       try {
@@ -271,19 +302,38 @@ export async function runComplete({ target, packageRoot, strict = false, persist
         // The evaluator already reports a missing or invalid receipt; evidence-only rejection can persist without one.
       }
       await writeWorkState(target, next, { packageRoot });
+      let nextReceipt = null;
       if (receipt) {
-        const nextReceipt = await createReceipt({
+        nextReceipt = await createReceipt({
           ...receipt.value,
           stateFingerprint: canonicalFingerprint(next),
           verificationCycle: next.verificationCycle ?? receipt.value.verificationCycle ?? 1,
         }, packageRoot);
         await writeJsonArtifact(target, ARTIFACT_PATHS.receipt, nextReceipt, "execution-receipt", packageRoot);
       }
-      await appendProtocolEvent(target, {
-        taskId: state.taskId,
-        event: "COMPLETION_REJECTED",
-        details: { reasonCodes, missingRequirementIds },
-      }, packageRoot);
+      const ledger = await validateEventLedger(target, packageRoot);
+      const lastRejection = ledger.events.filter((e) => e.taskId === state.taskId && e.event === "COMPLETION_REJECTED").at(-1);
+      const lastDetails = lastRejection?.details ?? {};
+      const isIdentical = lastRejection
+        && (lastDetails.verificationCycle ?? 1) === currentCycle
+        && JSON.stringify([...(lastDetails.reasonCodes ?? [])].sort()) === JSON.stringify(reasonCodes)
+        && JSON.stringify([...(lastDetails.missingRequirementIds ?? [])].sort()) === JSON.stringify(missingRequirementIds)
+        && lastDetails.stateFingerprint === canonicalFingerprint(next)
+        && lastDetails.receiptFingerprint === (nextReceipt ? canonicalFingerprint(nextReceipt) : undefined);
+
+      if (!isIdentical) {
+        await appendProtocolEvent(target, {
+          taskId: state.taskId,
+          event: "COMPLETION_REJECTED",
+          details: {
+            verificationCycle: currentCycle,
+            reasonCodes,
+            missingRequirementIds,
+            stateFingerprint: canonicalFingerprint(next),
+            ...(nextReceipt ? { receiptFingerprint: canonicalFingerprint(nextReceipt) } : {}),
+          },
+        }, packageRoot);
+      }
     }
   }
   if (persist && result.status === "VALID") {

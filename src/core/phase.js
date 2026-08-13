@@ -1,6 +1,12 @@
 import { ARTIFACT_PATHS, canonicalFingerprint, readJsonArtifact, writeJsonArtifact } from "./artifacts.js";
 import { readContract } from "./contract.js";
-import { appendProtocolEvent, LIFECYCLE_MILESTONES, validateEventLedger, validateStateLedgerCoherence } from "./events.js";
+import {
+  appendProtocolEvent,
+  LIFECYCLE_MILESTONES,
+  validateCompletionRecoveryAuthorization,
+  validateEventLedger,
+  validateStateLedgerCoherence,
+} from "./events.js";
 import { readPersistedRoute } from "./route-artifact.js";
 import { assertWorkPhase, isValidTransition } from "./protocol.js";
 import { readWorkState, writeWorkState } from "./work-state.js";
@@ -128,7 +134,9 @@ async function assertPhasePrerequisites(target, state, toPhase, packageRoot) {
   }
 }
 
-export async function advanceWorkState(target, toPhase, { packageRoot, now = new Date().toISOString() } = {}) {
+export async function advanceWorkState(target, toPhase, options = {}) {
+  const normalizedOptions = typeof options === "string" ? { packageRoot: options } : options;
+  const { packageRoot, now = new Date().toISOString() } = normalizedOptions;
   assertWorkPhase(toPhase);
   const state = await readWorkState(target, packageRoot);
   if (!state) throw phaseError("E_PHASE_PREREQUISITE_MISSING", "Cannot advance without work state", [ARTIFACT_PATHS.state]);
@@ -154,27 +162,34 @@ export async function advanceWorkState(target, toPhase, { packageRoot, now = new
     throw phaseError(coherenceErrors[0].code, coherenceErrors[0].message, [ARTIFACT_PATHS.state, ARTIFACT_PATHS.events]);
   }
   const eventType = PHASE_EVENTS[toPhase];
-  const repeatedVerification = state.phase === "REVIEWING" && toPhase === "VERIFYING";
-  if (repeatedVerification) {
-    const recoverable = state.lastCompletionAttempt?.status === "REJECTED"
-      && state.lastCompletionAttempt.reasonCodes?.some((code) => [
-        "E_EVIDENCE_REQUIRED",
-        "E_EVIDENCE_PARTIAL",
-        "E_EVIDENCE_INVALID",
-        "E_EVIDENCE_KIND_INVALID",
-        "E_EVIDENCE_COVERAGE_PARTIAL",
-      ].includes(code));
-    if (!recoverable) {
-      throw phaseError("E_PHASE_PREREQUISITE_MISSING", "REVIEWING -> VERIFYING requires a persisted recoverable completion rejection", [ARTIFACT_PATHS.state]);
+  const reenteringVerification = toPhase === "VERIFYING" && ["CORRECTING", "REVIEWING"].includes(state.phase);
+  if (toPhase === "VERIFYING" && state.phase === "REVIEWING") {
+    const recoveryAuth = validateCompletionRecoveryAuthorization({ state, events: ledger.events });
+    if (!recoveryAuth.authorized) {
+      const firstError = recoveryAuth.errors[0] ?? {};
+      throw phaseError(
+        firstError.code ?? "E_COMPLETION_RECOVERY_UNAUTHORIZED",
+        firstError.message ?? "REVIEWING -> VERIFYING requires authorized completion recovery",
+        [ARTIFACT_PATHS.state, ARTIFACT_PATHS.events],
+      );
+    }
+  }
+  if (toPhase === "VERIFYING" && state.phase === "CORRECTING") {
+    if (typeof state.diagnosedHypothesis !== "string" || !state.diagnosedHypothesis.trim()) {
+      throw phaseError(
+        "E_PHASE_PREREQUISITE_MISSING",
+        "CORRECTING -> VERIFYING requires a diagnosed hypothesis",
+        [ARTIFACT_PATHS.state],
+      );
     }
   }
   const repeatedReview = state.phase === "VERIFYING" && toPhase === "REVIEWING"
     && ledger.events.some((event) => event.taskId === state.taskId && event.event === "REVIEW_STARTED");
-  if (eventType && !repeatedVerification && !repeatedReview
+  if (eventType && !reenteringVerification && !repeatedReview
     && ledger.events.some((event) => event.taskId === state.taskId && event.event === eventType)) {
     throw phaseError("E_PHASE_CHRONOLOGY_INVALID", `Lifecycle milestone already exists: ${eventType}`, [ARTIFACT_PATHS.events]);
   }
-  const milestoneIndex = repeatedVerification || repeatedReview ? -1 : LIFECYCLE_MILESTONES.indexOf(eventType);
+  const milestoneIndex = reenteringVerification || repeatedReview ? -1 : LIFECYCLE_MILESTONES.indexOf(eventType);
   if (milestoneIndex >= 0) {
     const lastMilestone = ledger.events.reduce((last, event) => Math.max(last, LIFECYCLE_MILESTONES.indexOf(event.event)), -1);
     if (lastMilestone !== milestoneIndex - 1) {
@@ -189,9 +204,9 @@ export async function advanceWorkState(target, toPhase, { packageRoot, now = new
     lastUpdated: now,
   };
   if (toPhase === "VERIFYING") {
-    next.verificationCycle = repeatedVerification ? (state.verificationCycle ?? 1) + 1 : (state.verificationCycle ?? 1);
+    next.verificationCycle = reenteringVerification ? (state.verificationCycle ?? 1) + 1 : (state.verificationCycle ?? 1);
   }
-  if (repeatedVerification) delete next.lastCompletionAttempt;
+  if (reenteringVerification) delete next.lastCompletionAttempt;
   let nextReceipt = null;
   try {
     const receipt = await readJsonArtifact(target, ARTIFACT_PATHS.receipt, "execution-receipt", packageRoot);
@@ -213,6 +228,7 @@ export async function advanceWorkState(target, toPhase, { packageRoot, now = new
       receipt: receipt.value,
       requiredEvidence,
       requireRequiredChecks: false,
+      requireReceiptStateFingerprint: false,
     });
     nextReceipt = await createReceipt({
       ...receipt.value,
