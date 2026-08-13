@@ -15,11 +15,10 @@ specific rule overrides them.
 10. Before claiming `COMPLETE`, require `forgeloop complete` to return `VALID`; otherwise report completion as not protocol-verified.
 11. After implementation begins, do not return a final result in `EXECUTING`: advance through `VERIFYING`, record structured evidence, reach `REVIEWING`, prepare/update the execution receipt, and require `forgeloop complete` to return `VALID`. If closure cannot be reached, report `BLOCKED` or `PARTIALLY VERIFIED` with exact findings.
 
-After implementation work for the current task is complete, run `forgeloop next`
+12. After implementation work for the current task is complete, run `forgeloop next`
 before returning a final result. Follow the returned lifecycle action until
 ForgeLoop reaches a terminal state or an explicit blocker.
-
-12. Finish with the result, checks actually run, limitations, and publication state.
+13. Finish with the result, checks actually run, limitations, and publication state.
 
 Do not stop for non-blocking missing product details. When a safe, reversible
 local default exists, record it as an agent assumption and follow the Blocking vs Non-Blocking Decisions policy in `LOOP_ENGINEERING.md`. Ask only for

@@ -11,11 +11,10 @@ When working in this repository:
 7. Request authority for unrelated installation, publication, deletion, migration, or another external or destructive action. For a task-scoped missing Qwen-MM-Plugins capability, follow `LOOP_ENGINEERING.md`; API credentials and system dependencies remain separately gated.
 8. After implementation begins, do not return a final result in `EXECUTING`: follow `VERIFYING` → structured evidence → `REVIEWING` → execution receipt → validator-backed `COMPLETE`; otherwise report `BLOCKED` or `PARTIALLY VERIFIED` with exact findings.
 
-After implementation work for the current task is complete, run `forgeloop next`
+9. After implementation work for the current task is complete, run `forgeloop next`
 before returning a final result. Follow the returned lifecycle action until
 ForgeLoop reaches a terminal state or an explicit blocker.
-
-9. Report current evidence, limitations, and publication state without claiming checks that were not run.
+10. Report current evidence, limitations, and publication state without claiming checks that were not run.
 
 Do not stop for non-blocking missing product details. When a safe, reversible
 local default exists, record it as an agent assumption and follow the Blocking vs Non-Blocking Decisions policy in `LOOP_ENGINEERING.md`. Ask only for
