@@ -26,3 +26,14 @@ load-bearing, irreversible, externally consequential, unsafe, or real
 user/business decisions.
 
 The guides provide technical defaults; explicit requirements and project evidence prevail.
+
+## Pre-question decisions
+
+Before asking any product-detail question, classify it as `BLOCKING` or
+`NON_BLOCKING` using `LOOP_ENGINEERING.md`. For
+`NON_BLOCKING`, choose a safe reversible local default, record it in
+`current-contract.assumptions[]`, and continue. For `BLOCKING`, persist
+`current-contract.json` with `unresolvedDecisions[]` and a blocking reason
+before asking. Do not ask the user to choose among reversible local
+product-positioning alternatives; the canonical checklist and boundary remain
+in `LOOP_ENGINEERING.md`.

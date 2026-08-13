@@ -12,22 +12,39 @@ const adapters = [
 ];
 const nonBlocking = [
   "fictional company name",
+  "practice-area emphasis",
+  "fictional positioning",
+  "representative specialty mix",
+  "tone of the fictional firm",
+  "hero messaging",
+  "section ordering",
+  "fictional partner/attorney profiles",
+  "fictional office location",
+  "visual identity",
   "demo phone number",
+  "demo contact details",
   "placeholder copy",
+  "placeholder legal-service descriptions",
+  "fictional testimonials",
   "temporary logo text",
   "palette",
   "typography",
   "local-only fictional identity",
+  "local-only form behavior",
 ];
 const blocking = [
   "real legal business name",
   "real contact details",
+  "real attorney identities",
   "credentials",
+  "payment information",
   "deployment target",
+  "deployment/domain authority",
   "destructive operation",
-  "production endpoint",
+  "production endpoints",
+  "real compliance representations",
   "regulated/legal claim",
-  "payment data",
+  "real business facts not safely inferable",
   "irreversible architectural decision",
 ];
 
@@ -38,16 +55,22 @@ test("canonical policy distinguishes safe assumptions from blocking decisions", 
   assert.match(policy, /BLOCKING/);
   assert.match(policy, /current-contract\.assumptions\[\]/);
   assert.match(policy, /ASSUMPTION/);
-  assert.match(policy, /value.*reason.*scope.*reversible.*source/i);
+  assert.match(policy, /value[\s\S]*reason[\s\S]*scope[\s\S]*reversible[\s\S]*source/i);
   assert.match(policy, /source=agent-default/);
-  assert.match(policy, /Do not place resolved safe assumptions in unresolvedDecisions/i);
+  assert.match(policy, /Do not place resolved[\s\S]*safe assumptions in[\s`]*unresolvedDecisions/i);
   assert.match(policy, /unresolvedDecisions.*preflight.*BLOCKED/i);
   assert.match(policy, /unresolved blocking decisions.*recorded in.*current-contract\.unresolvedDecisions\[\]/i);
   assert.doesNotMatch(
     policy,
     /(?:unresolved(?: blocking)? decisions|remaining blocking items)[^.\n]*prevent contract creation/i,
   );
-  assert.match(policy, /SAFE \+ REVERSIBLE \+ LOCAL \+ NON-SENSITIVE/);
+  assert.match(policy, /SAFE \+ REVERSIBLE \+ LOCAL[\s\n]*\+[\s\n]*NON-SENSITIVE/);
+  assert.match(policy, /PRE-QUESTION CHECK/);
+  assert.match(policy, /Before asking the user any product-detail question/i);
+  assert.match(policy, /NON_BLOCKING[\s\S]{0,320}do not ask[\s\S]{0,320}record it in[\s`]*current-contract\.assumptions/i);
+  assert.match(policy, /BLOCKING[\s\S]{0,320}persist the contract[\s\S]{0,320}ask the user/i);
+  assert.match(policy, /ask_user|ASK_USER|question.*blockingReason|blockingReason.*question/i);
+  assert.match(policy, /current-contract\.json.*before.*clarif|before.*clarif[\s\S]{0,240}current-contract\.json/i);
   for (const example of [...nonBlocking, ...blocking]) {
     assert.match(policy, new RegExp(example, "i"), example);
   }
@@ -58,6 +81,10 @@ test("adapters delegate autonomy decisions to the canonical policy", async () =>
     const instructions = await readFile(path.join(root, relativePath), "utf8");
     assert.match(instructions, /reversible.*placeholder|Blocking vs Non-Blocking Decisions/i, relativePath);
     assert.match(instructions, /LOOP_ENGINEERING\.md/, relativePath);
+    assert.match(instructions, /Before asking any product-detail question/i, relativePath);
+    assert.match(instructions, /NON_BLOCKING[\s\S]{0,260}safe reversible local default[\s\S]{0,260}current-contract\.assumptions/i, relativePath);
+    assert.match(instructions, /BLOCKING[\s\S]{0,260}current-contract\.json[\s\S]{0,260}unresolvedDecisions/i, relativePath);
+    assert.match(instructions, /Do not ask the user to choose among reversible local\s+product-positioning alternatives/i, relativePath);
   }
 });
 

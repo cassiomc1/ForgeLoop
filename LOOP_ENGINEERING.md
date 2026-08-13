@@ -7,31 +7,162 @@
 ## Blocking vs Non-Blocking Decisions
 
 Classify every unresolved decision before deciding whether to ask the user.
+The question is a consequence of a `BLOCKING` classification, never a default
+response to ordinary uncertainty.
 
-`NON_BLOCKING` applies when a safe local default exists, the choice is
-reversible, it does not change external state, it is not sensitive or
-authoritative, and it does not assert a real user or business fact. Examples
-include fictional company name, demo phone number, placeholder copy, temporary logo text,
-palette, typography, local-only fictional identity, fictional identity, demo
-contacts, visual defaults, section ordering, and local-only form behavior.
+### Pre-question decision classification
 
-`BLOCKING` applies when proceeding would require real legal business name,
-real contact details, credentials, payment data, production endpoint,
-deployment target, deployment or domain authority, destructive operation,
-irreversible architectural decision, irreversible data choice, regulated/legal claim,
-regulated claim, or another externally consequential/high-impact decision.
+Before asking the user any product-detail question:
+
+1. Classify the unresolved detail as `BLOCKING` or `NON_BLOCKING`.
+2. If `NON_BLOCKING`, do not ask; choose the smallest reasonable reversible
+   local default, record it in `current-contract.assumptions[]`, and continue.
+3. If `BLOCKING`, record the detail in
+   `current-contract.unresolvedDecisions[]`, persist and validate the contract,
+   then ask the user with a blocking reason.
+
+In short, `NON_BLOCKING` means do not ask and record it in `current-contract.assumptions[]`; `BLOCKING` means persist the contract and ask the user with a blocking reason.
+
+There is no third `UNKNOWN → ask` path for ordinary reversible product
+ambiguity. The invariant is:
+
+```text
+QUESTION
+must never happen
+before CLASSIFICATION
+```
+
+### PRE-QUESTION CHECK
+
+Before asking the user, answer every item:
+
+```text
+[ ] Is this a real user/business fact?
+[ ] Is this sensitive?
+[ ] Is this authoritative?
+[ ] Does it affect external state?
+[ ] Is it destructive?
+[ ] Is it irreversible?
+[ ] Would a safe local reversible default materially misrepresent the user?
+```
+
+If all answers are `NO`, classify the detail as `NON_BLOCKING`, record an
+assumption, and continue. If any answer is `YES`, classify it as `BLOCKING`,
+persist the contract before clarification, and attach a blocking reason.
 
 ### Safe assumption rule
 
-When a missing product detail is non-blocking, choose the smallest reasonable reversible default, explicitly classify it as an agent assumption, and record it in `current-contract.assumptions[]`. Each assumption must include `value`, `reason`, `scope`, `reversible=true`, and `source=agent-default`. Do not place resolved safe assumptions in unresolvedDecisions[]. Never present an assumption as a verified user or business fact.
+`NON_BLOCKING` applies when the choice is `SAFE + REVERSIBLE + LOCAL +
+NON-SENSITIVE + NON-AUTHORITATIVE + NON-DESTRUCTIVE` and does not assert a real
+user or business fact. Each recorded `ASSUMPTION` must include `value`, `reason`,
+`scope`, `reversible=true`, and `source=agent-default`. Do not place resolved
+safe assumptions in `unresolvedDecisions[]`, and never present an assumption as
+a verified user or business fact.
 
-The assumption boundary is:
+Generally `NON_BLOCKING` when no real business fact is supplied:
 
 ```text
-SAFE + REVERSIBLE + LOCAL + NON-SENSITIVE + NON-AUTHORITATIVE + NON-DESTRUCTIVE
+practice-area emphasis
+fictional positioning
+representative specialty mix
+tone of the fictional firm
+hero messaging
+section ordering
+fictional partner/attorney profiles
+fictional office location
+visual identity
+palette
+typography
+local fictional brand name
+local-only fictional identity
+fictional company name
+demo contact details
+demo phone number
+placeholder legal-service descriptions
+placeholder copy
+fictional testimonials
+temporary logo text
+local-only form behavior
 ```
 
-Record the choice with an explicit `ASSUMPTION` marker. Unresolved blocking decisions must be recorded in `current-contract.unresolvedDecisions[]`; they prevent `preflight` from returning `READY` and block `EXECUTING` until resolved, but do not prevent contract serialization.
+These examples remain non-blocking only when they stay safe, reversible,
+local, non-sensitive, non-authoritative, and non-destructive. Do not hardcode
+one law-firm positioning into the protocol or tests.
+
+### Blocking boundary
+
+`BLOCKING` applies when proceeding requires any of the following:
+
+```text
+real legal business name
+real contact information
+real contact details
+real attorney identities
+credentials
+payment information
+payment data
+production endpoints
+production endpoint
+deployment target
+deployment/domain authority
+destructive operations
+destructive operation
+irreversible architecture
+irreversible architectural decision
+irreversible data decisions
+regulated or legal claims
+regulated/legal claim
+real compliance representations
+real business facts not safely inferable
+```
+
+Blocking decisions must be written to
+`current-contract.unresolvedDecisions[]`. They make `preflight` return
+`BLOCKED`, but they do not prevent contract serialization.
+Unresolved blocking decisions are recorded in `current-contract.unresolvedDecisions[]`.
+
+### Question justification invariant
+
+Asking the user is allowed only when `blockingReason` is present and comes from
+a blocking category such as:
+
+A user question requires a `blockingReason`; a question without one is invalid.
+
+```text
+REAL_BUSINESS_FACT_REQUIRED
+SENSITIVE_VALUE_REQUIRED
+EXTERNAL_AUTHORITY_REQUIRED
+IRREVERSIBLE_DECISION_REQUIRED
+REGULATED_CLAIM_REQUIRED
+DESTRUCTIVE_ACTION_REQUIRED
+```
+
+Multiple reasonable aesthetic or positioning choices do not justify a question.
+The deterministic support helper in `src/core/decision-classification.js`
+validates this boundary; it does not use an LLM or parse natural language.
+
+### Contract-before-clarification sequence
+
+The operational order is:
+
+```text
+DISCOVERY
+    ↓
+classify unresolved details
+    ↓
+create and persist current-contract.json
+    ↓
+persist assumptions[] and unresolvedDecisions[]
+    ↓
+validate contract
+    ↓
+if unresolvedDecisions.length > 0
+    ↓
+ask user with blockingReason
+```
+
+No clarification stop is allowed before a serialized contract exists. A
+non-blocking ambiguity never becomes a contract blocker.
 
 ## Serialized protocol preparation
 
