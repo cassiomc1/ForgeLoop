@@ -16,7 +16,7 @@ import { prepareCompletion, recordCheck } from "../src/core/completion-artifacts
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { coverageForRequirements } from "../src/core/coverage.js";
 import { createEvidence } from "../src/core/evidence.js";
-import { appendProtocolEvent } from "../src/core/events.js";
+import { appendProtocolEvent, validateEventLedger } from "../src/core/events.js";
 import { createGate } from "../src/core/gates.js";
 import { persistGate } from "../src/core/gate-artifact.js";
 import { advanceWorkState } from "../src/core/phase.js";
@@ -778,6 +778,26 @@ test("freshness and persisted preflight identity cannot authorize forward lifecy
       });
     });
   }
+
+  await t.test("next-driven stale preflight repair keeps one valid ready lifecycle event", async () => {
+    await withTarget(async (target) => {
+      await setupTarget(target, { phase: "PLANNED" });
+      const preflightPath = path.join(target, ARTIFACT_PATHS.preflight);
+      const preflight = JSON.parse(await readFile(preflightPath, "utf8"));
+      preflight.fingerprints.contract = "a".repeat(64);
+      await writeFile(preflightPath, `${JSON.stringify(preflight, null, 2)}\n`);
+
+      const next = await getNextAction({ target, packageRoot });
+      assertStableAction(next, NEXT_ACTIONS.RUN_PREFLIGHT);
+      assert.ok(next.reasonCodes.includes("E_PREFLIGHT_CONTRACT_STALE"));
+
+      assert.equal((await runPreflight({ target, packageRoot })).status, "READY");
+
+      const ledger = await validateEventLedger(target, packageRoot);
+      assert.equal(ledger.valid, true);
+      assert.equal(ledger.events.filter((event) => event.event === "PREFLIGHT_READY").length, 1);
+    });
+  });
 
   await t.test("foreign state task ID cannot recommend or persist execution", async () => {
     await withTarget(async (target) => {

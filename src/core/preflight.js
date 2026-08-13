@@ -5,7 +5,7 @@ import { requiredGatesForGuides } from "./guide-metadata.js";
 import { assertRouteInvariants } from "./router.js";
 import { assertSourceProvenance } from "./sources.js";
 import { readPersistedRoute } from "./route-artifact.js";
-import { appendProtocolEvent, validateEventLedger } from "./events.js";
+import { appendProtocolEvent, LIFECYCLE_MILESTONES, validateEventLedger } from "./events.js";
 import { readWorkState } from "./work-state.js";
 import { readConfig } from "./config.js";
 import { assertSafePath, ensureWithin, fileExists, readBytes } from "./filesystem.js";
@@ -291,7 +291,7 @@ async function assertPreflightPersistenceSafety(target, packageRoot, taskId) {
     if (contract || route) assertStateIdentity({ contract, route, state });
   }
 
-  if (taskId === "unknown") return;
+  if (taskId === "unknown") return null;
   const ledger = await validateEventLedger(target, packageRoot);
   if (!ledger.valid) {
     const first = ledger.errors[0];
@@ -304,6 +304,7 @@ async function assertPreflightPersistenceSafety(target, packageRoot, taskId) {
       [ARTIFACT_PATHS.events, ARTIFACT_PATHS.contract],
     );
   }
+  return ledger;
 }
 
 const PREFLIGHT_IDENTITY_BARRIER_CODES = new Set([
@@ -321,13 +322,50 @@ function assertPreflightResultPersistenceSafety(result) {
   }
 }
 
+function sameReadyPreflightEvent(event, result) {
+  return event.fingerprint === result.fingerprints.contract
+    && sameStringSet(event.details?.requiredGates, result.requiredGates)
+    && sameStringSet(event.details?.satisfiedGates, result.satisfiedGates);
+}
+
+function planReadyPreflightLifecycleWrite(ledger, result) {
+  if (!ledger) return { appendEvents: false };
+  const existing = ledger.events.find((event) => event.event === "PREFLIGHT_READY");
+  if (existing) {
+    if (sameReadyPreflightEvent(existing, result)) return { appendEvents: false };
+    throw preflightError(
+      "E_PHASE_CHRONOLOGY_INVALID",
+      "PREFLIGHT_READY already exists with different READY preflight details; repair the contract, route, or gate lifecycle before refreshing preflight",
+      [ARTIFACT_PATHS.preflight, ARTIFACT_PATHS.events, ARTIFACT_PATHS.contract, ARTIFACT_PATHS.route, ARTIFACT_PATHS.gates],
+    );
+  }
+  const lastMilestone = ledger.events.reduce(
+    (last, event) => Math.max(last, LIFECYCLE_MILESTONES.indexOf(event.event)),
+    -1,
+  );
+  const routeMilestone = LIFECYCLE_MILESTONES.indexOf("ROUTE_VALIDATED");
+  const preflightMilestone = LIFECYCLE_MILESTONES.indexOf("PREFLIGHT_READY");
+  if (lastMilestone < routeMilestone) return { appendEvents: false };
+  if (lastMilestone !== preflightMilestone - 1) {
+    throw preflightError(
+      "E_PHASE_CHRONOLOGY_INVALID",
+      "PREFLIGHT_READY cannot be appended after the current lifecycle ledger",
+      [ARTIFACT_PATHS.events],
+    );
+  }
+  return { appendEvents: true };
+}
+
 export async function runPreflight({ target, packageRoot, strict = false, persist = true } = {}) {
   const result = await evaluatePreflight({ target, packageRoot, strict });
   if (persist) {
-    await assertPreflightPersistenceSafety(target, packageRoot, result.taskId);
+    const ledger = await assertPreflightPersistenceSafety(target, packageRoot, result.taskId);
     assertPreflightResultPersistenceSafety(result);
+    const lifecycleWrite = result.status === "READY"
+      ? planReadyPreflightLifecycleWrite(ledger, result)
+      : { appendEvents: true };
     await writeJsonArtifact(target, ARTIFACT_PATHS.preflight, result, "preflight", packageRoot);
-    if (result.taskId !== "unknown") {
+    if (result.taskId !== "unknown" && lifecycleWrite.appendEvents) {
       for (const gate of result.satisfiedGates) {
         await appendProtocolEvent(target, {
           taskId: result.taskId,

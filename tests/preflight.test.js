@@ -7,7 +7,7 @@ import { test } from "node:test";
 
 import { ARTIFACT_PATHS } from "../src/core/artifacts.js";
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
-import { appendProtocolEvent } from "../src/core/events.js";
+import { appendProtocolEvent, validateEventLedger } from "../src/core/events.js";
 import { createGate } from "../src/core/gates.js";
 import { persistGate } from "../src/core/gate-artifact.js";
 import { runPreflight } from "../src/commands/preflight.js";
@@ -98,6 +98,63 @@ test("complete website preflight is ready only after required gates", async () =
     assert.equal(result.status, "READY");
     assert.ok(result.requiredGates.includes("design"));
     assert.deepEqual(result.requiredGates, result.satisfiedGates);
+  });
+});
+
+test("ready preflight without lifecycle prerequisites persists its artifact without events", async () => {
+  await withTarget(async (target) => {
+    await prepareWebsite(target);
+
+    const result = await runPreflight({ target, packageRoot });
+    const ledger = await validateEventLedger(target, packageRoot);
+
+    assert.equal(result.status, "READY");
+    assert.equal(ledger.valid, true);
+    assert.deepEqual(ledger.events, []);
+    assert.equal(await readFile(path.join(target, ARTIFACT_PATHS.preflight), "utf8").then(Boolean), true);
+  });
+});
+
+test("equivalent ready preflight rerun does not repeat lifecycle events", async () => {
+  await withTarget(async (target) => {
+    const { contract } = await prepareWebsite(target);
+    await appendProtocolEvent(target, { taskId: contract.taskId, event: "CONTRACT_VALIDATED" }, packageRoot);
+    await appendProtocolEvent(target, { taskId: contract.taskId, event: "ROUTE_VALIDATED" }, packageRoot);
+
+    assert.equal((await runPreflight({ target, packageRoot })).status, "READY");
+    const eventsBefore = await readFile(path.join(target, ARTIFACT_PATHS.events), "utf8");
+
+    assert.equal((await runPreflight({ target, packageRoot })).status, "READY");
+
+    assert.equal(await readFile(path.join(target, ARTIFACT_PATHS.events), "utf8"), eventsBefore);
+    assert.equal((await validateEventLedger(target, packageRoot)).valid, true);
+  });
+});
+
+test("preflight rejects a conflicting ready lifecycle refresh before artifact mutation", async () => {
+  await withTarget(async (target) => {
+    const { contract } = await prepareWebsite(target);
+    await appendProtocolEvent(target, { taskId: contract.taskId, event: "CONTRACT_VALIDATED" }, packageRoot);
+    await appendProtocolEvent(target, { taskId: contract.taskId, event: "ROUTE_VALIDATED" }, packageRoot);
+    await appendProtocolEvent(target, {
+      taskId: contract.taskId,
+      event: "PREFLIGHT_READY",
+      fingerprint: "a".repeat(64),
+      details: {
+        requiredGates: ["design", "quality", "threat-boundary"],
+        satisfiedGates: ["design", "quality", "threat-boundary"],
+      },
+    }, packageRoot);
+    const before = await artifactHashes(target);
+
+    await assert.rejects(
+      () => runPreflight({ target, packageRoot }),
+      (error) => error.code === "E_PHASE_CHRONOLOGY_INVALID"
+        && error.message.includes("PREFLIGHT_READY already exists with different READY preflight details"),
+    );
+
+    assert.deepEqual(await artifactHashes(target), before);
+    assert.equal((await validateEventLedger(target, packageRoot)).valid, true);
   });
 });
 
