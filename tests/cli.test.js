@@ -122,7 +122,7 @@ test("init copies canonical files and creates a manifest", async () => {
       await readFile(path.join(target, ".forgeloop", "manifest.json"), "utf8"),
     );
     assert.equal(manifest.schemaVersion, 1);
-    assert.equal(manifest.packageVersion, "0.1.2");
+    assert.equal(manifest.packageVersion, "0.1.3");
     assert.equal(manifest.files["PROJECT_PROFILE.md"].preserve, true);
     assert.ok(manifest.files["AGENTS.md"].sha256);
     await readFile(path.join(target, "LICENSE"), "utf8");
@@ -352,7 +352,7 @@ test("top-level help succeeds without a command", async () => {
 test("CLI supports version output and equals-form paths", async () => {
   const version = runCliDirect(repositoryRoot, "--version");
   assert.equal(version.status, 0, version.stderr);
-  assert.equal(version.stdout.trim(), "0.1.2");
+  assert.equal(version.stdout.trim(), "0.1.3");
 
   await withTarget(async (target) => {
     const result = runCliDirect(repositoryRoot, "init", `--path=${target}`);
@@ -408,7 +408,7 @@ test("CLI runs when invoked through an npm-style symlink", async () => {
     });
 
     assert.equal(result.status, 0, result.stderr);
-    assert.equal(result.stdout.trim(), "0.1.2");
+    assert.equal(result.stdout.trim(), "0.1.3");
   } finally {
     await rm(binDirectory, { recursive: true, force: true });
   }
@@ -453,41 +453,45 @@ test("reports an existing adapter that was not managed by init", async () => {
   });
 });
 
-test("route emits stable JSON and reason codes", () => {
-  const result = runCliDirect(
-    repositoryRoot,
-    "route",
-    "--work",
-    "api-auth",
-    "--surface",
-    "api",
-    "--surface",
-    "auth",
-    "--json",
-  );
+test("route emits stable JSON and reason codes", async () => {
+  await withTarget(async (target) => {
+    const result = runCli(
+      target,
+      "route",
+      "--work",
+      "api-auth",
+      "--surface",
+      "api",
+      "--surface",
+      "auth",
+      "--json",
+    );
 
-  assert.equal(result.status, 0, result.stderr);
-  const report = JSON.parse(result.stdout);
-  assert.deepEqual(report.guides, ["clean", "test", "security", "performance"]);
-  assert.ok(report.reasons.security.includes("WORK_API_AUTH"));
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.deepEqual(report.guides, ["clean", "test", "security", "performance"]);
+    assert.ok(report.reasons.security.includes("WORK_API_AUTH"));
+  });
 });
 
-test("route human output explains selected guides", () => {
-  const result = runCliDirect(
-    repositoryRoot,
-    "route",
-    "--work",
-    "complete-website",
-    "--surface",
-    "ui",
-    "--risk",
-    "untrusted-input",
-  );
+test("route human output explains selected guides", async () => {
+  await withTarget(async (target) => {
+    const result = runCli(
+      target,
+      "route",
+      "--work",
+      "complete-website",
+      "--surface",
+      "ui",
+      "--risk",
+      "untrusted-input",
+    );
 
-  assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /Selected:/);
-  assert.match(result.stdout, /premium/);
-  assert.match(result.stdout, /RISK_UNTRUSTED_INPUT/);
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /Selected:/);
+    assert.match(result.stdout, /premium/);
+    assert.match(result.stdout, /RISK_UNTRUSTED_INPUT/);
+  });
 });
 
 test("route rejects invalid signal values and unrelated flags", () => {

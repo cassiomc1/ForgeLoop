@@ -83,15 +83,32 @@ runs checks and applies the returned legal transition or repair action.
 POST-IMPLEMENTATION CLOSURE
 
 EXECUTING
-    ↓ advance
-VERIFYING
-    ↓ run checks and record structured evidence
-REVIEWING
-    ↓ prepare/update the execution receipt
-forgeloop complete
+    ↓ forgeloop next
+advance --to VERIFYING
+    ↓ forgeloop next
+prepare-completion
+    ↓
+run applicable project checks
+    ↓
+record observed results with record-check
+    ↓ forgeloop next
+advance --to REVIEWING
+    ↓ forgeloop next
+complete
     ↓ VALID
 COMPLETE
 ```
+
+`prepare-completion` creates or refreshes the in-progress execution receipt.
+It does not claim completion. The receipt is the structured container used by
+subsequent `record-check` operations; completion remains invalid until required
+observed evidence, review state, chronology, and validator requirements are
+satisfied.
+
+The host agent runs applicable checks after the receipt exists, records their
+observed results with `record-check`, and queries `forgeloop next` before each
+subsequent lifecycle action. `record-check` records results already observed by
+the agent; it never executes the supplied command text.
 
 Continue until the terminal outcome is either validator-backed `COMPLETE` or
 an explicitly reported `BLOCKED` / `PARTIALLY VERIFIED` result with exact
