@@ -1,0 +1,516 @@
+---
+name: design-code-eng
+language: en
+description: "Visual direction, UX, motion, and perceived performance for premium digital experiences."
+version: "2026.09"
+last-reviewed: "2026-08-10"
+guide-id: design
+requires-gates:
+  - design
+completion-evidence:
+  - visual-validation
+---
+
+# Web Design Premium v2 — Practical Guidelines
+
+> This guide provides strong defaults, not a blind recipe. Use its values, palettes, and snippets as a verifiable starting point; depart from them only for an explicit user/product requirement or a documented exception that preserves hierarchy, accessibility, and performance. Do not invent values "by eye".
+> **Related documents**: for the complete studio-level website production process, see [`premium-sites-studio-eng.md`](./premium-sites-studio-eng.md). For the quality/structure of the code that implements this design, see [`clean-code-eng.md`](./clean-code-eng.md). For accessibility/visual/E2E testing, see [`test-code-eng.md`](./test-code-eng.md). For form security, authentication, and client-side storage, see [`sec-code-eng.md`](./sec-code-eng.md). To translate visual direction into HTML video, see [HyperFrames](https://hyperframes.heygen.com). This file focuses exclusively on UI/UX/visuals — it does not repeat code, testing, or security rules.
+>
+> **Tooling policy**: identify the stack, the stage, and the applicable checks; prefer an already available equivalent that produces compatible evidence. Ask for authorization before installing a tool or changing the environment. If no safe equivalent exists, record the required check as blocked and never claim that it passed. Do not install merely optional resources.
+
+## How to use this guide (strong default process)
+
+Adopt this order as the default when creating a page from scratch; document an exception when the product, platform, or user requires a different sequence:
+
+1. **Choose 1 ready-made semantic palette** from the "Ready-made semantic palettes" section (do not mix palettes).
+2. **Choose 1 ready-made typographic combination** from the "Typographic Combinations" section.
+3. **Define the page's section list** using the "Premium Page Anatomy".
+4. **Apply the exact grid and spacing** from the "Layout & Spacing" section.
+5. **Apply components** (buttons, cards, nav) with the exact specs from the "Components" section.
+6. **Add motion** only according to the snippets in the "Motion" section — never "creative" motion outside the standard.
+7. **Run the Anti-Slop Checklist** before considering it ready.
+8. **Audit and polish the entire interface with Impeccable**: run `/impeccable audit` to identify quality issues and `/impeccable polish` to apply improvements. Evaluate the complete interface, not only one component, preserve the existing design system, and repeat the audit after the changes.
+
+Do not skip steps 1 and 2 without a documented exception. The biggest cause of an "amateur" result is mixing random palettes/fonts or using framework defaults (e.g., Bootstrap blue, Inter everywhere, generic shadow `box-shadow: 0 0 10px rgba(0,0,0,0.1)`).
+
+> **This guide covers 3 contexts.** For web sites/products (desktop and mobile), follow the flow above normally. For **native mobile apps** (iOS/Android), go directly to the "Premium Mobile Apps" section. For **native desktop apps** (Windows/macOS), go to "Premium Desktop Apps". In the latter two cases, this guide's palettes and typography still serve as tone references, but platform guidelines (HIG, Material Design, Fluent) take priority over the generic values defined here.
+
+---
+
+## Principles (Anti-Slop)
+
+- Fewer elements, more intention: each block must have a clear function.
+- Avoid a template appearance: vary composition, rhythm, and hierarchy between sections (never repeat the same section layout 2x in a row).
+- Visual consistency over effects: motion and 3D should reinforce the narrative, not distract.
+- Premium finish = refined detail in typography, spacing, contrast, and microinteractions — not quantity of elements.
+- **Golden rule of whitespace**: if you are wondering whether there is too much space, there is too little. Premium sites breathe.
+
+---
+
+## Ready-made semantic palettes (choose 1, do not mix)
+
+Each palette implements **seven base semantic tokens**: `background-base`, `background-alt`, `text`, `text-secondary`, `primary`, `border/divider`, and `semantic-accent`. They provide function and contrast; they are not the same as optional decorative accents.
+
+**A. Dark Editorial (fashion, architecture, luxury)**
+
+- Background: `#0B0B0C` | Alt background: `#141416`
+- Text: `#F5F4F1` | Secondary text: `#A8A7A3`
+- Primary: `#C9A876` (matte gold)
+- Border/divider: `#2A2A2C`
+- Accent (rare use): `#D14F3E`
+
+**B. Light Clean Corporate (SaaS, premium fintech)**
+
+- Background: `#FAFAF8` | Alt background: `#F0EFEB`
+- Text: `#141414` | Secondary text: `#5C5C5C`
+- Primary: `#1F3D2B` (deep green)
+- Border/divider: `#E3E1DB`
+- Accent (rare use): `#C4623A`
+
+**C. Minimal Warm Neutral (studios, portfolio, branding)**
+
+- Background: `#F7F5F2` | Alt background: `#EDEAE4`
+- Text: `#1C1B19` | Secondary text: `#726F68`
+- Primary: `#3D3A34` (almost-black brown)
+- Border/divider: `#DEDAD2`
+- Accent (rare use): `#8A6E4B`
+
+**D. Vibrant Dark Tech (digital product, AI, dev tools)**
+
+- Background: `#08090C` | Alt background: `#101218`
+- Text: `#EDEEF0` | Secondary text: `#8A8F98`
+- Primary: `#6E6AF5` (indigo)
+- Border/divider: `#1F2128`
+- Accent (rare use): `#3EDBB8`
+
+Color usage rules:
+
+- Primary: used in CTAs, active links, key icons. Max. 10% of the visible area.
+- Semantic accent: reserve it for a consistent role (for example, a state, short emphasis, or signal) and do not change its meaning between components.
+- **Decorative** accents are extras, not tokens: as a default, limit them to 1–2 simultaneous accents per screen/view (for example, a badge or highlight). That limit does not count functional background, text, primary, or border tokens.
+- Derived states (hover, focus, pressed, disabled, error, success, and selection) must preserve contrast, meaning, and coherence with their source tokens.
+- As a default, use gradients of at most 2 colors and 5%–20% opacity over a solid background; document the exception and test contrast if the product requires more.
+
+---
+
+## Ready-made Typographic Combinations (choose 1)
+
+Format: Display (headings) + Text (body). Families marked as Google Fonts can be loaded from that catalog; `General Sans`, `Clash Display`, and `Satoshi` are **not** Google Fonts and must not be assumed free by default.
+
+1. **Classic editorial**: `Fraunces` (display, serif, weights 400/600) + `Inter` (body).
+2. **Modern luxury**: `Playfair Display` (display) + `Manrope` (body).
+3. **Tech/product**: `Space Grotesk` (Google Fonts) or `General Sans` (external, subject to license) as display + `Inter` (Google Fonts) as body.
+4. **Warm minimal**: `Instrument Serif` (display, only for large headings) + neutral `Sans` such as `Public Sans` (body).
+5. **Contemporary bold**: `Clash Display` (external, subject to license) as display + `Satoshi` (external, subject to license) as body.
+
+Rules:
+
+- Never use more than 2 font families on the entire page.
+- Never use the display font for long paragraphs (only H1/H2/short highlight blocks).
+- Typographic scale (rem, base 16px):
+  - H1: `clamp(2.75rem, 5vw, 5rem)`, line-height `1.05`, letter-spacing `-0.02em`
+  - H2: `clamp(2rem, 3.5vw, 3rem)`, line-height `1.1`, letter-spacing `-0.01em`
+  - H3: `clamp(1.5rem, 2.2vw, 2rem)`, line-height `1.2`
+  - Body: `1.125rem` (18px), line-height `1.6`
+  - Small/caption: `0.875rem`, line-height `1.5`
+- Maximum running-text width: `65ch`.
+- Font weight: headings 500–700, body 400–450 (never 300 for body text, as it harms legibility).
+- Before using an external font, record its source/vendor, license, and authorized files/weights; include an appropriate system fallback, for example `system-ui, -apple-system, "Segoe UI", sans-serif`. Do not assume a font seen in a gallery may be hosted or redistributed.
+
+---
+
+## Layout & Spacing (measurable defaults)
+
+- Maximum container: `1280px`, centered, side padding `clamp(24px, 6vw, 96px)`.
+- Grid: 12 columns, gap `24px` desktop / `16px` mobile.
+- Spacing scale (use multiples of this scale as the default; document values outside it when they improve a concrete need):
+  `4, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192px`
+- Vertical spacing between sections: minimum `96px` mobile, `160px` desktop.
+- Section internal spacing (top/bottom padding): `64px` mobile, `120px` desktop.
+- Breakpoints: mobile `< 640px`, tablet `640–1024px`, desktop `> 1024px`.
+- Rhythm: alternate between "dense" sections (text + image + CTA) and "empty" sections (one large centered sentence, lots of space). Rule of thumb: every 2 dense sections, 1 breathing section.
+- Consistent border-radius: choose 1 scale value and use it everywhere — `8px` (sober/corporate) or `16px` (soft/product) or `2px` (editorial/luxury). Never mix different radii in the same project.
+- Standard shadow (use only 1 recipe per project, applied consistently):
+  - Subtle: `0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.06)`
+  - Elevated (modals/dropdowns): `0 8px 24px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.08)`
+
+---
+
+## Web Mobile — Specifics (it is not just "shrinking desktop")
+
+A premium mobile site is not a reduced desktop layout — hierarchy, density, and interaction change.
+
+- **Viewport**: always `<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">`.
+- **Safe areas**: use `env(safe-area-inset-top/bottom/left/right)` in fixed elements (nav, sticky CTA) to respect the notch/Dynamic Island/home indicator.
+- **Touch, not hover**: every interactive element must have a minimum real touch area of `44x44px`, even if the visual element is smaller (use invisible padding to compensate).
+- **Never depend on hover** to reveal essential information or interaction (tooltips, dropdown menus) — always have a touch/click equivalent.
+- **Mobile nav**: prefer a fullscreen hamburger menu (see Components section) or fixed bottom nav for web apps/PWAs with few sections (3–5 items).
+- **Sticky CTA**: on long conversion pages, consider a CTA fixed to the bottom of the mobile viewport (bar with 1 button, height `56–64px`, subtle upward shadow), with `env(safe-area-inset-bottom)` in the padding.
+- **Content density**: reduce to 1 column, headline smaller than the desktop scale but still dominant (use the `clamp()` already defined — never set a fixed `px` value that ignores the clamp).
+- **Forms**: inputs with minimum `font-size` of `16px` (prevents automatic zoom in iOS Safari), correct `inputmode`/`type` (`email`, `tel`, `numeric`) for the contextual keyboard.
+- **Mobile-first performance**: always test using simulated 4G/3G network throttling; images on mobile must be smaller variants via `srcset`, never the same desktop image resized by CSS.
+- **Gestures**: swipe in carousels/galleries must have a fallback of visible dots/arrows; never depend only on the gesture without a visual indication that more content exists.
+
+---
+
+## Premium Page Anatomy (recommended order)
+
+Use this as the standard skeleton for landing pages; adapt it according to the product, but maintain the logic of "open strong → prove → convert".
+
+1. **Nav**: logo on the left, 3–5 links in the center/right, 1 prominent CTA. Fixed or with a transparent background that gains blur while scrolling.
+2. **Hero**: 1 strong headline (max. 8–10 words), 1 subheadline (1–2 sentences), 1 primary CTA + 1 secondary (text/link). Never more than 2 CTAs in the hero.
+3. **Light social proof**: client/press logos in grayscale, single line, no embellishment.
+4. **Value section (2–3 blocks)**: each block = 1 idea, icon or simple image, short title, 1–2 lines of text.
+5. **Product/demo section**: real screenshot, mockup, or short video — never a generic stock illustration.
+6. **Testimonials or data/numbers**: 2–4 real testimonials OR 3–4 large metrics with numbers.
+7. **Intermediate conversion CTA**: breathing section, large centered sentence + 1 button.
+8. **FAQ** (if applicable): simple accordion, 4–6 questions.
+9. **Final CTA**: repeat the central value proposition + primary button.
+10. **Footer**: organized link columns, social media, copyright. No excessive columns (max. 4).
+
+Rule: never repeat the same "image left + text right" pattern in 2 consecutive sections — alternate sides, or switch to a centered layout.
+
+---
+
+## Color, Contrast, and Depth
+
+- Minimum AA contrast: normal text ≥ 4.5:1, large text (≥24px) ≥ 3:1.
+- Soft backgrounds and subtle gradients (opacity 5–20%, without banding).
+- Depth built with light layers: blur (`8–24px`), subtle shadow, controlled overlay — never hard shadows (`0 0 20px black`).
+
+### Liquid Glass, glassmorphism, and translucency
+
+- **Glassmorphism** is a static approximation: transparency, `backdrop-filter: blur()`, a subtle border, and shadow. **Liquid Glass** describes a dynamic material that attempts to simulate refraction, specular highlights, tint, shadow, and deformation responsive to content or movement.
+- Do not call CSS blur real refraction. On the web, refraction normally requires displacement or shaders, for example SVG, WebGL, or WebGPU; these are optional, costlier enhancements that require a fallback.
+- Reserve transparency/refraction for one or two low-density floating surfaces — contextual navigation, toolbar, tab bar, sheet, popover, or a focused control. Body copy, long forms, prices, critical states, decisions, and essential CTAs remain on solid or predictably contrasting surfaces.
+- Validate every state against the most complex background that could pass behind the surface. Glass over glass, long text over moving/refracted backgrounds, and transparency across every layer turn depth into noise.
+
+### Normative progressive-enhancement contract for Canvas and Liquid Glass
+
+This contract applies to Canvas UI, Canvas/WebGL/WebGPU, SVG displacement, and Liquid Glass; other sections only complement it.
+
+1. **Functional base first:** deliver semantic HTML and real HTML controls before any effect. Content, action, and focus, hover, pressed, disabled, error, success, and selection states must work without JavaScript, WebGL, or a shader.
+2. **Equivalent fallback:** without the enhancement, render an opaque surface with the same content, controls, actions, states, and predictable contrast. Do not transfer meaning to refraction, glare, transparency, motion, or pointer input.
+3. **Preferences and compatibility:** detect capability and compatibility before loading effects; respect `prefers-reduced-motion` with a static version, and reduce or remove transparency for contrast/transparency preferences (`prefers-contrast`, `forced-colors`, or an equivalent control where no reliable media query exists).
+4. **Runtime budget:** initialize on demand; pause outside the viewport and while the page is hidden; limit DPR/resolution, blur, multipass filters, and simultaneous animated effects/surfaces. Simplify or disable on a modest device before sacrificing interaction, readability, or initial load.
+5. **Measurable acceptance:** test variants in supported browsers, on a modest device, with reduced motion, and against the worst plausible background (light, dark, complex image, and video). Record DPR, active surfaces, and the result for readability, equivalent states, and performance budget; if any fails, ship the opaque fallback.
+
+---
+
+## Motion (GSAP / ScrollTrigger)
+
+Use this base reveal pattern as a strong default. Change it only for a user/product requirement or documented exception that preserves hierarchy, accessibility, and the progressive-enhancement contract:
+
+```js
+gsap.registerPlugin(ScrollTrigger);
+
+gsap.utils.toArray('[data-reveal]').forEach((el) => {
+  gsap.from(el, {
+    y: 24,
+    opacity: 0,
+    duration: 0.8,
+    ease: 'power3.out',
+    scrollTrigger: {
+      trigger: el,
+      start: 'top 85%',
+      toggleActions: 'play none none none',
+    },
+  });
+});
+```
+
+### Motion for video with HyperFrames (optional)
+
+When the output is a video, trailer, product demo, or motion graphic rendered from HTML, CSS, and JavaScript, consider [HyperFrames](https://hyperframes.heygen.com). It complements — and does not replace — this guide's visual rules.
+
+- Preserve brand tokens (palette, typography, spacing, and radius) when adapting the interface to the frame; do not simply capture the entire page.
+- Prefer deterministic, frame-controllable animation with a paused/seekable timeline so preview, tests, and rendering reproduce the same result.
+- Keep text large enough for the output format, maintain AA contrast and safe areas, and do not make meaning depend on audio or motion.
+- Respect `prefers-reduced-motion` in interactive previews and provide a static or reduced-motion alternative when appropriate.
+- Start with the [official quickstart](https://hyperframes.heygen.com/quickstart) and use `npx hyperframes preview`, `npx hyperframes lint`, and `npx hyperframes render` in the quality loop when the project uses the CLI.
+
+Motion rules:
+
+- Vertical displacement: `16–32px` (never more than that — avoids a "flying" effect).
+- Duration: `0.6–0.9s` for reveals, `0.2–0.35s` for hover/microinteractions.
+- Easing: `power3.out` or `expo.out` for entrances; `power2.inOut` for state transitions.
+- Stagger between elements in a list: `0.06–0.1s`.
+- Never: bounce, elastic, exaggerated rotation, aggressive parallax (>30% of scroll speed), video autoplay with sound, infinite decorative loops that compete with the content.
+- On Liquid Glass surfaces, elastic easing remains prohibited. Any internal micro-deformation, morphing, glare, or cursor/touch response is visual finish only: short and pausable, never required to understand, focus, or act. With `prefers-reduced-motion: reduce`, use a static surface.
+- Wrap motion logic in this guard by default; a documented exception must still respect `prefers-reduced-motion` and the progressive-enhancement contract:
+
+```js
+if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  // initialize animations
+}
+```
+
+---
+
+## 3D and Interactivity (Three.js) — optional, only if justified
+
+- Use only if it reinforces the product/narrative (e.g., physical product, technical data, technology brand). If you are not sure it helps, do not use it.
+- Keep elements subtle: light particles, simple shapes, soft lighting.
+- For purely decorative 3D scenes, apply the progressive-enhancement contract: the 2D/opaque fallback must serve browsers without WebGL and people who reduce motion.
+- Limit: <5000 particles, no heavy post-processing (bloom may stay, avoid SSAO/motion blur).
+- Pause rendering when the canvas leaves the viewport (`IntersectionObserver`).
+
+Canvas, WebGL, SVG displacement, and Liquid Glass effects follow the **normative progressive-enhancement contract** above. Apply it to decorative 3D scenes too; do not create an alternate interaction path.
+
+---
+
+## Premium Components (measurable defaults)
+
+**Primary button**
+
+- Padding: `14px 28px` (mobile `12px 24px`)
+- Border-radius: equal to the radius chosen in the project
+- Font-weight: 500–600, font-size `1rem`
+- Transition: `transform 0.2s ease` (change the background color immediately; use a slight `translateY(-1px)` on hover)
+- Minimum touch area: `44x44px`
+- Focus state: visible outline (`2px solid`, primary color, offset `2px`) — never `outline: none` without a replacement.
+
+**Cards**
+
+- Internal padding: `32px` (mobile `24px`)
+- Border: `1px solid` palette border color, OR subtle shadow — choose 1 of the two, not both.
+- Radius: equal to the project standard.
+- Hover (if clickable): subtle elevation with `translateY(-2px)`; transition only `transform` for `0.25s ease`.
+
+**Navigation**
+
+- Height: `72–88px` desktop, `64px` mobile.
+- Active item: subtle underline or primary color — never a fully colored background.
+- Mobile menu: fullscreen overlay, fade+slide transition `0.3s`, with an instant/static alternative when reduced motion is active.
+
+**Images**
+
+- Use `object-fit: cover` with a fixed `aspect-ratio` only for editorial/decorative imagery (for example, a card photo or avatar). For logos, charts, screenshots, and informational content, use `contain` or preserve intrinsic proportion so information is not cropped.
+- `border-radius` consistent with the rest of the UI.
+- Never stretch/distort an image.
+
+**Optional canvas/WebGL effects**
+
+- For high-impact moments — such as heroes, reveals, and special interactions — consult [Canvas UI](https://canvasui.dev/) as an **adaptable reference**, never as automatically reusable source material.
+- Before reusing any asset, text, image, or code, confirm provenance, authorship, license, and credit obligations; adapt tokens, composition, and behavior to the project's identity without copying a result or component.
+- Keep text, navigation, controls, and every essential action as semantic, accessible HTML. Canvas follows the **normative progressive-enhancement contract** and is never the only communication channel.
+
+**Liquid Glass surface (optional)**
+
+- Use it for short-content controls or contextual navigation; keep the real element focusable and actionable in HTML.
+- Prefer a simple shape, restrained tint/blur/highlights, and conventional focus states. Internal micro-deformation, glare, and pointer tracking follow the Liquid Glass rule in the Motion section and the progressive-enhancement contract.
+- Do not apply chromatic aberration, distortion, or reflection to readable text, essential icons, fields, tables, or status messages.
+
+**UI libraries and data visualization**
+
+- For accessible, composable, and customizable web components, consult [shadcn/ui](https://ui.shadcn.com/); adapt tokens, states, and composition to the project's visual system instead of copying defaults without intent.
+- For charts and data visualization, consult [TanStack Charts](https://github.com/TanStack/charts); preserve responsiveness, contrast, keyboard readability, and never rely on color alone to communicate series or states.
+- For subtle interaction sounds, consult [Cuelume](https://cuelume-site.pages.dev/); provide volume/mute controls and never rely on audio to communicate essential information.
+
+## External design-reference map
+
+Select references for a product problem; they do not override project tokens or semantics. Check every adoption for keyboard and focus access, contrast, reduced motion, touch behavior, bundle/runtime cost, and fallback behavior. Cursor, canvas, 3D, audio, and decorative motion are progressive enhancement only. Do not copy source or assets; check the license and current terms for each exact resource, and treat a catalog listing as no transfer of rights.
+
+- **Component source and interaction inspiration**: use [21st.dev](https://21st.dev/) to study components and interactions; inspect each source, dependency, community contribution, and premium-material term before adoption.
+- **Component and motion inspiration**: use [React Bits](https://reactbits.dev/) to study component and motion behavior; distinguish public/free material from React Bits Pro and inspect each source/dependency license.
+- **Component inspiration**: use [Fancy Components](https://www.fancycomponents.dev/) to study component composition; verify its terms separately from Motion, Tailwind, shadcn, or other dependencies.
+- **Motion primitives**: use [Motion Primitives](https://motion-primitives.com/) to study discrete interaction patterns; distinguish documented open-source material from its Pro offering and verify component/dependency terms.
+- **Component and design-system research**: use [Component Gallery](https://component.gallery/) for comparison, not for license assumptions.
+- **Numeric feedback**: reserve [NumberFlow](https://number-flow.barvian.me/) for changing metrics, with locale-aware formatting and static or reduced-motion behavior.
+- **Pointer enhancement**: activate [Cursify](https://cursify.ui-layouts.com/) only when `(hover: hover) and (pointer: fine)`; retain native controls and default cursor behavior, with equivalent tap interaction for touch/coarse pointers.
+- **Typography discovery**: verify each [UNCUT](https://uncut.wtf/) font's author, license, weights, and hosting rights.
+- **Creative coding and WebGL**: [cables.gl](https://cables.gl/) requires a semantic fallback, pause/offscreen behavior, a performance budget, and asset/operator provenance.
+
+---
+
+## UX, Accessibility, and Quality
+
+- 100% functional keyboard navigation, focus always visible, no interaction traps.
+- Minimum AA contrast (see Color section).
+- Never communicate state through color alone (add an icon, text, or pattern).
+- Test at 200% zoom and reflow at 320 CSS px wide.
+- Every `<img>` with descriptive `alt`; decorative icons with `aria-hidden="true"`.
+- When the platform exposes contrast or transparency preferences, including `prefers-contrast` and `forced-colors` where applicable, provide an opaque or less-transparent variant. Where no reliable media query exists, provide an equivalent in-product control.
+
+---
+
+## Performance
+
+- For DOM/CSS animations, animate only `transform` and `opacity`; use `will-change` sparingly (remove after the animation). Shader/filter deformation or glare follows the progressive-enhancement contract.
+- Images in `WebP`/`AVIF`, `srcset` + `loading="lazy"` (except the hero image, which must be eager/preload).
+- Fonts: `font-display: swap`, preload only the critical hero font (1–2 files, max.).
+- Performance budget: LCP < 2.5s, CLS < 0.1, and INP ≤ 200 ms at p75 in field data, reported separately for mobile and desktop, unless a different documented product target applies; motion/3D JS must not block the initial load (load via `defer`/lazy-init after interaction or scroll).
+
+---
+
+## Blacklist — Anti-Patterns (never do)
+
+- Generic framework blue (`#007BFF`, `#3B82F6` default) as the primary color without intention.
+- Generic shadow `box-shadow: 0 0 10px rgba(0,0,0,0.1)` on everything.
+- `Inter` or `Roboto` as the site's only font without a display font.
+- Generic stock-library icons (3D arrows, rocket emojis, "lightbulb").
+- Centered text in long paragraph blocks.
+- More than 2 font families or more than 2 simultaneous decorative accents; the seven functional semantic tokens do not count toward that limit.
+- Sections all using the same grid/alignment pattern ("cloned template" look).
+- Identical "fade in" animation applied indiscriminately to EVERYTHING without timing hierarchy.
+- Buttons without a noticeable hover/focus state.
+- Excessive badges, tags, and decorative "glassmorphism" without a function.
+- Footer with 6+ columns of irrelevant links just to fill space.
+- Glass over glass.
+- More than two translucent layers without a semantic function.
+- Long text over a moving/refracted background.
+- Chromatic aberration on readable content.
+- Decorative video behind controls.
+- Blur-only presented as refraction.
+- Reliance on glare, transparency, movement, or a mouse pointer to communicate state.
+
+---
+
+## Review Checklist (before publishing)
+
+- [ ] I chose 1 semantic palette, did not mix in another palette, and documented the 1–2 additional decorative accents when used.
+- [ ] I used at most 2 font families, following the defined scale.
+- [ ] Spacing between sections follows the scale (minimum 96–160px).
+- [ ] No section repeats the same layout as the previous one.
+- [ ] Each section has 1 purpose and (when applicable) 1 clear CTA.
+- [ ] Motion follows the defined snippets/patterns and respects `prefers-reduced-motion`.
+- [ ] Text contrast passes AA.
+- [ ] Buttons/links have visible focus and noticeable hover.
+- [ ] The page works (visually and functionally) without motion/3D JS.
+- [ ] I validated contrast and legibility against the worst possible background and at 200% zoom.
+- [ ] The interface preserves content, focus, states, and actions without WebGL, SVG displacement, transparency, or motion.
+- [ ] Canvas/Liquid Glass effects obey the contract: equivalent HTML and opaque fallback, no-JS/WebGL operation, preferences honored, pauses outside the viewport/on a hidden page, and recorded DPR/blur/effect budget.
+- [ ] No more than two translucent layers compete on the same screen, and each has a clear contextual function.
+- [ ] Where the platform exposes contrast/transparency preferences, including `prefers-contrast` or `forced-colors` when applicable, the opaque/less-transparent variant works; without a reliable media query, there is an equivalent in-product control.
+- [ ] No item from the "Blacklist" is present.
+- [ ] Tested at 320 CSS px reflow and desktop (1440px).
+- [ ] Ran `/impeccable audit` and `/impeccable polish` across the entire interface and addressed applicable findings.
+
+---
+
+## Premium Mobile Apps (iOS & Android)
+
+> Native apps do NOT strictly follow this guide's web palette/typography guidelines. The priority is the platform's design language (Apple HIG / Material Design 3), ensuring that the app looks "premium native", not like a packaged website.
+
+### iOS/iPadOS (Human Interface Guidelines)
+
+- **Liquid Glass**: apply this guidance only when the target Apple platform and corresponding SDK/API apply. Build with the current Apple SDK and check API availability at runtime before using the material. When available, prefer native APIs and respect HIG, Reduce Transparency, and Increase Contrast. On earlier systems, retain legible conventional surfaces. Do not impose this aesthetic on Windows or Android.
+- **Typography**: system font `SF Pro` (Display for large headings, Text for body). Use the system's dynamic styles (Dynamic Type) instead of fixed sizes, to support accessibility:
+  - Large Title `34pt`, Title 1 `28pt`, Title 2 `22pt`, Title 3 `20pt`
+  - Headline `17pt` (semibold), Body `17pt`, Callout `16pt`, Subhead `15pt`
+  - Footnote `13pt`, Caption `12pt`
+- **Spacing**: `8pt` grid. Safe screen margins: `16–20pt`. Always respect *safe areas* (notch, Dynamic Island, home indicator) via `safeAreaInsets`.
+- **Navigation**: bottom Tab Bar for up to 5 main destinations; top Navigation Bar with a Large Title that collapses while scrolling. Avoid side-drawer navigation (drawer) — it is not an iOS standard.
+- **Components**: use native controls (`UIButton`, `UISwitch`, `UISegmentedControl` or equivalent SwiftUI) and `SF Symbols` icons (never custom icons when an equivalent SF Symbol exists).
+- **Minimum touch area**: `44x44pt`.
+- **Color**: define semantic colors (`label`, `secondaryLabel`, `systemBackground`) that automatically adapt to Light/Dark Mode — never hardcode an absolute color in system elements.
+- **Motion**: use native spring curves from UIKit/SwiftUI, duration `0.3–0.35s` for screen transitions, `0.2s` for microinteractions. Use haptics (`UIImpactFeedbackGenerator`) moderately, only for significant actions (confirmation, error, success).
+- **Modals and sheets**: use `sheet`/`.presentationDetents` (native bottom sheet) instead of custom modals whenever possible.
+
+### Android (Material Design 3 / Material You)
+
+- **Typography**: `Roboto` (or a brand font registered in the theme) following the M3 type scale: Display, Headline, Title, Body, Label (each with a Large/Medium/Small variant).
+- **Spacing**: `8dp` grid, screen margins `16dp` (`24dp` on large screens/tablets).
+- **Navigation**: Bottom Navigation Bar (3–5 destinations) on phones; Navigation Rail or Navigation Drawer on tablets/large screens. Top App Bar with title and contextual actions.
+- **Components**: use Material 3 components (`FilledButton`, `FAB`, `Card`, `Chip`, `NavigationBar`) with *tonal elevation* (surfaces with layers of color, not just shadow). Consider dynamic color (Material You) when it makes sense for the product.
+- **Minimum touch area**: `48x48dp`.
+- **Dark theme**: required to support (`isSystemInDarkTheme()` / `DayNight` theme), it is not optional in premium Android products.
+- **Motion**: use M3 easing curves (`emphasized`, `standard`), durations `200–500ms` according to the size of the transition (small → fast, full screen → longer). Container transitions (`Container Transform`) for navigation between card and detail.
+- **Icons**: `Material Symbols` (outlined by default, filled for active/selected state). For searching and discovering web/app icons, see also [Koboyo Icons](https://koboyo.com/icons).
+
+### Common rules for both platforms
+
+- Never clone 100% of one platform's visual style onto the other (e.g., an iOS-style Tab Bar inside an Android app). Adapt the same brand/palette to each OS's native language.
+- Onboarding: maximum 3–4 screens, always with an option to skip.
+- Empty, error, and loading states (skeleton screens) are mandatory on every screen with asynchronous data — never leave a blank screen during loading.
+- Test on at least 1 small device (e.g., iPhone SE / compact Android) and 1 large device (Pro Max / Android tablet).
+- System gestures (swipe back, notification shade) must never be blocked by app overlays.
+- The app icon and splash screen follow each platform's official grids (Apple App Icon grid; Android Adaptive Icon with foreground/background layers).
+
+**Quick checklist — Mobile Apps**
+
+- [ ] I used native platform components/navigation (Tab Bar on iOS, Bottom Nav/Rail on Android), not a generic hybrid.
+- [ ] Dynamic Type (iOS) / system font scale (Android) work without breaking the layout.
+- [ ] Dark Mode implemented and tested on both platforms.
+- [ ] Touch areas ≥ 44pt (iOS) / 48dp (Android).
+- [ ] Loading, empty, and error states covered on all screens with data.
+- [ ] Safe areas respected (notch, system gestures, home indicator).
+
+---
+
+## Premium Desktop Apps (Windows & macOS)
+
+> Like mobile, native desktop apps should follow the operating system's visual language. A "premium" desktop app looks like part of the OS, not a resizable website window.
+
+### Windows (Fluent Design / WinUI 3)
+
+- **Typography**: `Segoe UI Variable` (Display for headings, Text for body), following the Fluent Type Ramp (Display, Title Large, Title, Subtitle, Body Large, Body, Caption).
+- **Spacing**: `4px`/`8px` grid. Standard content padding `24px` in main panels.
+- **Navigation**: `NavigationView` with a collapsible left rail/panel for apps with multiple sections; custom title bar optional, but always with the standard controls (minimize/maximize/close) in the correct corner.
+- **Materials**: use `Mica` (main window) or `Acrylic` (floating panels, flyouts) for subtle translucent depth — do not overuse it, apply it to only 1–2 layers per screen.
+- **Components**: native Fluent controls (`Button`, `ToggleSwitch`, `NavigationView`, `InfoBar`), radius `4–8px`, respecting the system's light/dark theme (`Windows.UI.ViewManagement`).
+- **Keyboard and accessibility**: 100% navigation via `Tab`/arrows, shortcuts with accelerators (`Alt` underlines the menu letter), tooltips on every control without visible text.
+- **Scaling**: test at 100%, 125%, 150%, and 200% Windows scaling (DPI scaling) without cutting off text/icons.
+
+### macOS (Human Interface Guidelines)
+
+- **Liquid Glass**: apply this guidance only when the target Apple platform and corresponding SDK/API apply. Build with the current Apple SDK and check API availability at runtime before using the material. When available, prefer native APIs and respect HIG, Reduce Transparency, and Increase Contrast. On earlier systems, retain legible conventional surfaces. Do not impose this aesthetic on Windows or Android.
+- **Typography**: `SF Pro` (Display/Text), respecting system text sizes; support user text-size preferences when applicable.
+- **Spacing**: `8pt` grid, generous margins (macOS tends to have more breathing room than Windows). Content padding `20–24pt`.
+- **Navigation**: `NSSplitView`/left sidebar + contextual top toolbar; the system menu bar (top of the screen) must contain all of the app's main commands, not only shortcuts hidden in the UI.
+- **Window**: respect the native traffic-light controls (close/minimize/maximize), system rounded corners, and support native full screen (`Full Screen` on macOS) and the system's Split View.
+- **Materials**: `vibrancy`/blur (`NSVisualEffectView`) in sidebars and floating panels, moderately.
+- **Components**: native AppKit/SwiftUI controls for macOS (do not reuse iOS components without adaptation — macOS has different density and affordances, e.g., mouse/trackpad use, hover states exist here unlike on mobile).
+- **Keyboard shortcuts**: every relevant command should have a `Cmd+` shortcut, displayed in the menu itself. Full support for keyboard navigation.
+- **Accent Color**: respect the accent color chosen by the user in the system when it makes sense for the product, instead of always forcing the brand color on all native controls.
+
+### Common rules for both platforms
+
+- Support window resizing with a defined minimum layout (never allow the UI to break below a reasonable minimum size, e.g. `960x600px`).
+- Persist user preferences (window size/position, theme, open panels) between sessions.
+- Dark Mode and Light Mode mandatory, following the system preference by default, with an option for manual override.
+- Immediate visual feedback for every action (hover, pressed, disabled, loading) — on desktop, hover is a valid and expected affordance, unlike on mobile.
+- Contextual menus (right-click) should expose the most-used actions for that element.
+- Never use only custom modals when the OS standard (native file dialogs, system alerts) resolves the need with greater familiarity for the user.
+
+**Quick checklist — Desktop Apps**
+
+- [ ] Layout, typography, and materials follow the native language (Fluent on Windows, HIG on macOS), not a generic hybrid between the two.
+- [ ] Window is resizable with a defined minimum and no layout breakage.
+- [ ] Dark Mode and Light Mode work according to the system preference.
+- [ ] 100% keyboard navigation, with shortcuts visible in menus.
+- [ ] Hover/pressed/disabled/loading states implemented (desktop has cursor/hover).
+- [ ] Tested at least 2 DPI scales (Windows) or 2 screen sizes (macOS).
+
+---
+
+## Sources and References (Base Skills)
+
+- TasteSkill / Anti-Slop: https://github.com/Leonxlnx/taste-skill | https://www.tasteskill.dev/
+- Emil Kowalski (Design Engineering / Motion): https://github.com/emilkowalski/skills
+- GSAP: https://github.com/greensock/gsap-skills
+- ScrollWorld: https://github.com/oso95/scroll-world
+- Three.js: https://threejs.org/
+- HyperFrames (HTML video and motion): https://hyperframes.heygen.com/ | https://github.com/heygen-com/hyperframes
+- Koboyo Icons (Icon Search & Discovery): https://koboyo.com/icons
+- Apple Human Interface Guidelines (iOS/macOS): https://developer.apple.com/design/human-interface-guidelines/
+- Material Design 3 (Android): https://m3.material.io/
+- Microsoft Fluent Design / WinUI 3 (Windows): https://learn.microsoft.com/windows/apps/design/
+- shadcn/ui (accessible, composable web components): https://ui.shadcn.com/
+- TanStack Charts (data visualization): https://github.com/TanStack/charts
+- Cuelume (web interaction sounds): https://cuelume-site.pages.dev/
+- Canvas UI (adaptable canvas/WebGL reference; confirm provenance, license, and credits before any reuse): https://canvasui.dev/
+- Component source and interaction inspiration (inspect source/dependencies; separate free from premium material): https://21st.dev/ | https://reactbits.dev/ | https://www.fancycomponents.dev/ | https://motion-primitives.com/
+- Component and design-system research (comparison, not license assumptions): https://component.gallery/
+- Numeric feedback (changing metrics with locale-aware formatting and static/reduced-motion behavior): https://number-flow.barvian.me/
+- Pointer enhancement (only when `(hover: hover) and (pointer: fine)`; retain native controls/default cursor and equivalent tap interaction for touch/coarse pointers): https://cursify.ui-layouts.com/
+- Typography discovery (verify each font's author, license, weights, and hosting rights): https://uncut.wtf/
+- Creative coding and WebGL (semantic fallback, pause/offscreen behavior, performance budget, and asset/operator provenance): https://cables.gl/
+- Impeccable (interface auditing and polish): https://impeccable.style/
+- Gradient Studio (external procedural gradient exploration with CSS, Tailwind, and SCSS export by Amit Gajare; validate current provenance, reuse terms, output contrast, and performance budgets before adoption): https://gradientsaas.blogspot.com/
+- Liquid Glass Design (an independent inspiration gallery, not affiliated with Apple; not a specification or asset library): https://liquidglassdesign.com/
+  - Guide to the material, glassmorphism, and web implementation: https://liquidglassdesign.com/what-is-liquid-glass
+  - Design and development resources: https://liquidglassdesign.com/resources
+  - Rights: the gallery's images and works are distinct from external resources it merely indexes. Consult the [terms](https://liquidglassdesign.com/terms); do not rehost, redistribute, or directly use images or works commercially without permission. For each external prompt or code resource, verify its license, provenance, credits, compatibility, and maintenance individually before use; being indexed does not transfer rights.
+- Apple — Adopting Liquid Glass (official guidance for Apple platforms): https://developer.apple.com/documentation/TechnologyOverviews/adopting-liquid-glass
+- Liquid Glass React, SVG, and Studio (experimental implementations; assess license, compatibility, weight, and maintenance): https://github.com/rdev/liquid-glass-react | https://github.com/shuding/liquid-glass | https://github.com/iyinchao/liquid-glass-studio

@@ -1,0 +1,43 @@
+---
+description: Universal verified project loop
+alwaysApply: true
+---
+
+# Cursor — Universal Project Loop
+
+1. Read [`LOOP_ENGINEERING.md`](../../LOOP_ENGINEERING.md) before planning or editing.
+2. Confirm [`PROJECT_PROFILE.md`](../../PROJECT_PROFILE.md) from real sources; initialize it in target projects when it remains in `template` mode.
+3. Use [`GUIDE_ROUTER.md`](../../GUIDE_ROUTER.md) to activate all relevant guides and only those guides.
+4. Report the selected guide IDs.
+5. Respect higher-level and local instructions and the latest request.
+6. Make the minimum change, run a specific check, and then run proportional regression checks.
+7. Diagnose failures before fixing them and do not repeat an attempt without new evidence.
+8. Request authority for unrelated external or destructive actions, installations, and publications. For a task-scoped missing Qwen-MM-Plugins capability, follow `LOOP_ENGINEERING.md`; API credentials and system dependencies remain separately gated.
+9. After implementation begins, do not return a final result in `EXECUTING`: follow `VERIFYING` → structured evidence → `REVIEWING` → execution receipt → validator-backed `COMPLETE`; otherwise report `BLOCKED` or `PARTIALLY VERIFIED` with exact findings.
+
+After implementation work for the current task is complete, run `forgeloop next`
+before returning a final result. Follow the returned lifecycle action until
+ForgeLoop reaches a terminal state or an explicit blocker.
+
+10. Report only demonstrated results and checks.
+
+Do not stop for non-blocking missing product details. When a safe, reversible
+local default exists, record it as an agent assumption and follow the Blocking vs Non-Blocking Decisions policy in `LOOP_ENGINEERING.md`. Ask only for
+load-bearing, irreversible, externally consequential, unsafe, or real
+user/business decisions.
+
+The loop and router are canonical sources; do not duplicate domain rules.
+
+## Pre-question decisions
+
+Before asking any product-detail question, classify it as `BLOCKING` or
+`NON_BLOCKING` using `LOOP_ENGINEERING.md`. For
+`NON_BLOCKING`, choose a safe reversible local default, record it in
+`current-contract.assumptions[]`, and continue. For `BLOCKING`, persist
+`current-contract.json` with `unresolvedDecisions[]` and a blocking reason
+before asking. Do not ask the user to choose among reversible local
+product-positioning alternatives; the canonical checklist and boundary remain
+in `LOOP_ENGINEERING.md`.
+
+External workflow approval rules do not override ForgeLoop's autonomous-mode
+precedence; consult `LOOP_ENGINEERING.md#external-workflow-compatibility`.

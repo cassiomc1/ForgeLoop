@@ -1,16 +1,18 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { lstat, mkdir, mkdtemp, readFile, rm, symlink, unlink, writeFile } from "node:fs/promises";
+import { cp, lstat, mkdir, mkdtemp, readFile, rm, symlink, unlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 
 import { getPackageRoot, readTemplateEntries } from "../src/core/templates.js";
 import { sha256 } from "../src/core/manifest.js";
-import { NATIVE_ADAPTER_PATHS } from "../src/core/target-layout.js";
+import { NATIVE_ADAPTER_PATHS, isNativeAdapterPath } from "../src/core/target-layout.js";
+import { runUpdate } from "../src/commands/update.js";
 
 const packageRoot = getPackageRoot();
 const cliPath = path.join(packageRoot, "src", "cli.js");
+const realLegacyFixture = path.join(packageRoot, "tests", "fixtures", "legacy-0.1.6");
 
 function runCli(target, ...args) {
   return spawnSync(process.execPath, [cliPath, ...args], {
@@ -346,5 +348,181 @@ test("doctor rejects stale adapters, missing hidden targets, and duplicate root 
     const missingReport = JSON.parse(missing.stdout);
     assert.equal(missing.status, 1);
     assert.ok(missingReport.findings.some((finding) => finding.code === "E_NATIVE_ADAPTER_TARGET_MISSING"));
+  });
+});
+
+for (const stage of ["HIDDEN_WRITTEN", "HIDDEN_VERIFIED", "MANIFEST_SWITCHED"]) {
+  test(`interrupted migration at ${stage} is diagnosed and recovered by the next update`, async () => {
+    await withTarget(async (target) => {
+      await createLegacyFixture(target);
+
+      await assert.rejects(
+        () => runUpdate({
+          target,
+          dryRun: false,
+          packageRoot,
+          packageVersion: "0.1.9",
+          hooks: {
+            afterStage(currentStage) {
+              if (currentStage === stage) {
+                const error = new Error(`injected migration failure at ${stage}`);
+                error.code = "E_INJECTED_MIGRATION_FAILURE";
+                throw error;
+              }
+            },
+          },
+        }),
+        (error) => error.code === "E_INJECTED_MIGRATION_FAILURE",
+      );
+
+      const interruptedDoctor = runCli(target, "doctor", "--json");
+      assert.equal(interruptedDoctor.status, 1, interruptedDoctor.stderr);
+      assert.ok(JSON.parse(interruptedDoctor.stdout).findings.some((finding) => finding.code === "E_MIGRATION_INCOMPLETE"));
+
+      const recovered = runCli(target, "update");
+      assert.equal(recovered.status, 0, recovered.stderr);
+      assert.equal(JSON.parse(await readFile(path.join(target, ".forgeloop/manifest.json"), "utf8")).layoutVersion, 2);
+      assert.equal((await runCli(target, "doctor", "--json")).status, 0);
+      assert.equal(await pathExists(path.join(target, "LOOP_ENGINEERING.md")), false);
+    });
+  });
+}
+
+test("cleanup interruption leaves a recoverable authority record and does not lose legacy data", async () => {
+  await withTarget(async (target) => {
+    await createLegacyFixture(target);
+
+    await assert.rejects(
+      () => runUpdate({
+        target,
+        dryRun: false,
+        packageRoot,
+        packageVersion: "0.1.9",
+        hooks: {
+          beforeCleanup(relativePath) {
+            if (relativePath === "GUIDE_ROUTER.md") {
+              const error = new Error("injected migration cleanup failure");
+              error.code = "E_INJECTED_MIGRATION_FAILURE";
+              throw error;
+            }
+          },
+        },
+      }),
+      (error) => error.code === "E_INJECTED_MIGRATION_FAILURE",
+    );
+
+    assert.equal(await pathExists(path.join(target, "LOOP_ENGINEERING.md")), false);
+    assert.equal(await pathExists(path.join(target, "GUIDE_ROUTER.md")), true);
+    const manifest = JSON.parse(await readFile(path.join(target, ".forgeloop/manifest.json"), "utf8"));
+    assert.equal(manifest.layoutVersion, 2);
+    assert.equal(typeof manifest.files[".forgeloop/kit/LOOP_ENGINEERING.md"].legacySha256, "string");
+
+    const doctor = runCli(target, "doctor", "--json");
+    assert.equal(doctor.status, 1);
+    assert.ok(JSON.parse(doctor.stdout).findings.some((finding) => finding.code === "E_MIGRATION_INCOMPLETE"));
+
+    const recovered = runCli(target, "update");
+    assert.equal(recovered.status, 0, recovered.stderr);
+    assert.equal(await pathExists(path.join(target, "GUIDE_ROUTER.md")), false);
+    assert.equal((await runCli(target, "doctor", "--json")).status, 0);
+  });
+});
+
+test("a failed empty-directory cleanup is retried by the next update", async () => {
+  await withTarget(async (target) => {
+    await createLegacyFixture(target);
+
+    await assert.rejects(
+      () => runUpdate({
+        target,
+        dryRun: false,
+        packageRoot,
+        packageVersion: "0.1.9",
+        hooks: {
+          beforeCleanupDirectory(relativePath) {
+            if (relativePath === "ENG") {
+              const error = new Error("injected empty-directory cleanup failure");
+              error.code = "E_INJECTED_MIGRATION_FAILURE";
+              throw error;
+            }
+          },
+        },
+      }),
+      (error) => error.code === "E_INJECTED_MIGRATION_FAILURE",
+    );
+
+    assert.equal(await pathExists(path.join(target, "ENG")), true);
+    const recovered = runCli(target, "update");
+    assert.equal(recovered.status, 0, recovered.stderr);
+    assert.equal(await pathExists(path.join(target, "ENG")), false);
+    assert.equal((await runCli(target, "doctor", "--json")).status, 0);
+  });
+});
+
+test("a legacy file modified after the authority switch is preserved during recovery", async () => {
+  await withTarget(async (target) => {
+    await createLegacyFixture(target);
+
+    await assert.rejects(
+      () => runUpdate({
+        target,
+        dryRun: false,
+        packageRoot,
+        packageVersion: "0.1.9",
+        hooks: {
+          afterStage(stage) {
+            if (stage === "MANIFEST_SWITCHED") {
+              const error = new Error("stop before cleanup");
+              error.code = "E_INJECTED_MIGRATION_FAILURE";
+              throw error;
+            }
+          },
+        },
+      }),
+      (error) => error.code === "E_INJECTED_MIGRATION_FAILURE",
+    );
+    const modified = "# User-owned legacy copy\n";
+    await writeFile(path.join(target, "LOOP_ENGINEERING.md"), modified);
+
+    const recovered = runCli(target, "update");
+    assert.equal(recovered.status, 1);
+    assert.match(recovered.stdout, /E_LEGACY_FILE_MIGRATION_CONFLICT/);
+    assert.equal(await readFile(path.join(target, "LOOP_ENGINEERING.md"), "utf8"), modified);
+    assert.equal((await runCli(target, "doctor", "--json")).status, 1);
+  });
+});
+
+test("the frozen published 0.1.6 installation migrates without network access", async () => {
+  await withTarget(async (target) => {
+    await cp(realLegacyFixture, target, { recursive: true });
+    await rm(path.join(target, "PROVENANCE.json"));
+    const profileBefore = await readFile(path.join(target, "PROJECT_PROFILE.md"));
+    const legacyManifest = JSON.parse(await readFile(path.join(target, ".forgeloop/manifest.json"), "utf8"));
+    assert.equal(legacyManifest.packageVersion, "0.1.6");
+    assert.equal(legacyManifest.layoutVersion, undefined);
+
+    const result = runCli(target, "update");
+    assert.equal(result.status, 0, result.stderr);
+    const manifest = JSON.parse(await readFile(path.join(target, ".forgeloop/manifest.json"), "utf8"));
+    assert.equal(manifest.layoutVersion, 2);
+    assert.equal(manifest.packageVersion, "0.1.9");
+    assert.deepEqual(await readFile(path.join(target, ".forgeloop/kit/PROJECT_PROFILE.md")), profileBefore);
+
+    for (const entry of await readTemplateEntries(packageRoot)) {
+      if (entry.legacyRelativePath !== entry.relativePath && !isNativeAdapterPath(entry.relativePath)) {
+        assert.equal(await pathExists(path.join(target, entry.legacyRelativePath)), false, entry.legacyRelativePath);
+      }
+    }
+    for (const relativePath of [
+      ".forgeloop/kit/LOOP_ENGINEERING.md",
+      ".forgeloop/kit/PROJECT_PROFILE.md",
+      ".forgeloop/kit/ENG/sec-code-eng.md",
+      ".forgeloop/kit/schemas/work-state.schema.json",
+    ]) {
+      assert.equal(await pathExists(path.join(target, relativePath)), true, relativePath);
+    }
+    const doctor = runCli(target, "doctor", "--json");
+    assert.equal(doctor.status, 0, doctor.stderr);
+    assert.equal(JSON.parse(doctor.stdout).ok, true);
   });
 });

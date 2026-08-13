@@ -1,0 +1,10 @@
+{
+  "package": "@cassiomc1/forgeloop",
+  "version": "0.1.6",
+  "tarballUrl": "https://registry.npmjs.org/@cassiomc1/forgeloop/-/forgeloop-0.1.6.tgz",
+  "sha1": "22475b5ecfdc5b94ce299ae5e21fec0da5e51f76",
+  "sha512Integrity": "sha512-aQ1ZSxmpvHg6qlDwau+Qc0AJafpXVvQA8JG+mRlAyHCmpwr5VhfsFbC2tqIhUDviQtyTfdfC4l1SuH6aXcOsRw==",
+  "gitHead": "cdc8b32c64db541ec76e8128498b79928cdf26bd",
+  "extractionDate": "2026-08-13T18:08:24Z",
+  "source": "npm registry tarball fetched once and expanded by the published 0.1.6 CLI"
+}

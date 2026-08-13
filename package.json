@@ -1,6 +1,6 @@
 {
   "name": "@cassiomc1/forgeloop",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "Portable, verifiable instruction kit for AI agents and developers",
   "repository": {
     "type": "git",
@@ -47,6 +47,7 @@
   ],
   "scripts": {
     "test": "node scripts/run-tests.js",
-    "pack:check": "node --test tests/package.test.js"
+    "pack:check": "node --test tests/package.test.js",
+    "release:identity": "node scripts/verify_release_identity.mjs"
   }
 }

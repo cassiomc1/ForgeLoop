@@ -49,6 +49,10 @@ function validateManifest(manifest) {
     if (typeof record.preserve !== "boolean") {
       throw new Error(`Invalid manifest preserve flag for ${relativePath}`);
     }
+    if (record.legacySha256 !== undefined
+      && (typeof record.legacySha256 !== "string" || !/^[a-f0-9]{64}$/.test(record.legacySha256))) {
+      throw new Error(`Invalid manifest legacy hash for ${relativePath}`);
+    }
   }
   return manifest;
 }
