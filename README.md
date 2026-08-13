@@ -157,8 +157,7 @@ project without overwriting local instructions. When the package is available
 in the npm registry, use the commands below; otherwise use the repository
 checkout fallback.
 
-The current published release is
-[`@cassiomc1/forgeloop@0.1.9`](https://www.npmjs.com/package/@cassiomc1/forgeloop/v/0.1.9).
+The current published release is `@cassiomc1/forgeloop@0.1.9`.
 Pin this version when a reproducible blind run or release-identity check is
 required:
 
