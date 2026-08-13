@@ -84,7 +84,7 @@ export const PLATFORM_SEMANTICS = Object.freeze({
 });
 
 const WORK_GUIDES = Object.freeze({
-  "complete-website": ["premium", "design", "accessibility", "clean", "test", "security", "performance"],
+  "complete-website": ["premium", "design", "taste", "accessibility", "clean", "test", "security", "performance"],
   "api-auth": ["clean", "test", "security", "performance"],
   api: ["clean", "test"],
   backend: ["clean", "test"],
@@ -240,6 +240,7 @@ export function evaluateRoute(input = {}) {
     else if (guide === "performance") excluded[guide] = ["NO_MEASURABLE_PERFORMANCE_RISK"];
     else if (guide === "design" || guide === "accessibility") excluded[guide] = ["NO_UI_SURFACE"];
     else if (guide === "premium" || guide === "games") excluded[guide] = ["NO_PRIMARY_WORK_TYPE"];
+    else if (guide === "taste") excluded[guide] = ["NO_TASTE_FRONTEND_CONTEXT"];
     else excluded[guide] = ["NO_BEHAVIOR_OR_EXECUTABLE_CHANGE"];
   }
 

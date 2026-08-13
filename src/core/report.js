@@ -2,9 +2,12 @@ import { readFile } from "node:fs/promises";
 
 import { evaluateAudit } from "./audit.js";
 import { fileExists, ensureWithin } from "./filesystem.js";
+import { findProfilePath } from "./profile.js";
 
 async function profileStatus(target) {
-  const profilePath = ensureWithin(target, "PROJECT_PROFILE.md");
+  const relativePath = await findProfilePath(target);
+  if (!relativePath) return "NOT_VERIFIED";
+  const profilePath = ensureWithin(target, relativePath);
   if (!(await fileExists(profilePath))) return "NOT_VERIFIED";
   const text = await readFile(profilePath, "utf8");
   return /^profile-status:\s*verified\s*$/m.test(text) ? "PASS" : "NOT_VERIFIED";

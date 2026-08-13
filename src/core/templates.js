@@ -2,6 +2,12 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import {
+  isNativeAdapterPath,
+  legacyPathForSource,
+  targetPathForSource,
+} from "./target-layout.js";
+
 const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
 const TEMPLATE_SOURCE_PATHS = Object.freeze({
@@ -35,6 +41,7 @@ export const TEMPLATE_PATHS = [
   "ENG/games-code-design-web-eng.md",
   "ENG/perf-code-eng.md",
   "ENG/premium-sites-studio-eng.md",
+  "ENG/taste-frontend-eng.md",
   "ENG/sec-code-eng.md",
   "ENG/test-code-eng.md",
   "schemas/routing-input.schema.json",
@@ -61,13 +68,26 @@ export function getPackageRoot() {
   return PACKAGE_ROOT;
 }
 
+function nativeShim(relativePath) {
+  const kitPrefix = relativePath.startsWith(".cursor/")
+    ? "../../.forgeloop/kit"
+    : relativePath.startsWith(".github/")
+      ? "../.forgeloop/kit"
+      : ".forgeloop/kit";
+  return `# ForgeLoop native adapter\n\nRead and follow the canonical ForgeLoop protocol in ${kitPrefix}/LOOP_ENGINEERING.md and ${kitPrefix}/AGENT_COMPATIBILITY.md.\nThe canonical guides and schemas are under ${kitPrefix}/; keep this adapter concise and preserve any host-specific instructions.\n`;
+}
+
 export async function readTemplateEntries(packageRoot = PACKAGE_ROOT) {
   return Promise.all(
     TEMPLATE_PATHS.map(async (relativePath) => {
       const sourcePath = TEMPLATE_SOURCE_PATHS[relativePath] ?? relativePath;
       return {
-        relativePath,
-        bytes: await readFile(path.join(packageRoot, sourcePath)),
+        relativePath: targetPathForSource(relativePath),
+        sourcePath,
+        legacyRelativePath: legacyPathForSource(sourcePath),
+        bytes: Buffer.from(isNativeAdapterPath(relativePath)
+          ? nativeShim(relativePath)
+          : await readFile(path.join(packageRoot, sourcePath))),
       };
     }),
   );

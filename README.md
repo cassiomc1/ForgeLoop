@@ -16,6 +16,11 @@ ForgeLoop is the portable, evidence-first loop that connects deterministic
 routing, checkpointed state, observable evidence, conformance, and delegation
 for compatible agent harnesses.
 
+The npm package also ships the local `forgeloop` CLI. In a target project it
+installs canonical documents under `.forgeloop/kit/`, keeps only small native
+discovery shims at the root, and stores mutable protocol artifacts under
+`.forgeloop/`.
+
 ## Catalog
 
 | Topic | When to use it | Guide |
@@ -25,6 +30,7 @@ for compatible agent harnesses.
 | Testing | Risk-based testing strategy | [`test-code-eng.md`](./ENG/test-code-eng.md) |
 | Security | Web, mobile, desktop, APIs, and supply chain | [`sec-code-eng.md`](./ENG/sec-code-eng.md) |
 | Design | Visual direction, UX, motion, and perceived performance | [`design-code-eng.md`](./ENG/design-code-eng.md) |
+| Taste frontend | Contextual design-read, anti-slop, and visual pre-flight for premium frontend work | [`taste-frontend-eng.md`](./ENG/taste-frontend-eng.md) |
 | Performance | Measurement, diagnosis, budgets, and optimization | [`perf-code-eng.md`](./ENG/perf-code-eng.md) |
 | Accessibility | WCAG 2.2-oriented protocol for interfaces | [`accessibility-eng.md`](./ENG/accessibility-eng.md) |
 | Web games | Architecture, design, and operation of 2D, 3D, and procedural games | [`games-code-design-web-eng.md`](./ENG/games-code-design-web-eng.md) |
@@ -38,10 +44,12 @@ and catalog remain synchronized.
 The kit turns each request into a verifiable cycle: discover the project,
 define an execution contract, select applicable guides, execute, verify,
 diagnose, and correct until success or a genuine external blocker.
-[`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md) is the operational source;
+[`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md) is the operational source (and
+is installed under `.forgeloop/kit/` in a target);
 [`GUIDE_ROUTER.md`](./GUIDE_ROUTER.md) prevents irrelevant context from being
 loaded; and [`PROJECT_PROFILE.md`](./PROJECT_PROFILE.md) preserves only durable,
-proven project facts.
+proven project facts (installed as `.forgeloop/kit/PROJECT_PROFILE.md` in a
+target).
 
 The canonical system map, including the routing/state/evidence architecture, is
 in [`LOOP_SYSTEM_DESIGN.md`](./LOOP_SYSTEM_DESIGN.md).
@@ -50,60 +58,72 @@ in [`LOOP_SYSTEM_DESIGN.md`](./LOOP_SYSTEM_DESIGN.md).
 flowchart TB
   root["FORGELOOP"]
 
-  subgraph surfaces["CONTROL SURFACES"]
-    direction LR
-    routing["ROUTING"] --> routingFacts["deterministic<br/>decisions"]
-    state["STATE"] --> checkpoint["checkpoint<br/>facts"]
-    evidence["EVIDENCE"] --> claims["observable<br/>claims"]
+  root --> entry["native adapters<br/>+ .forgeloop/kit/"]
+  entry --> discovery["discovery +<br/>project profile"]
+  discovery --> contract["current<br/>contract"]
+  contract --> routing["deterministic<br/>route"]
 
-    checkpoint --> repository["repository"]
-    checkpoint --> contract["contract"]
-    repository --> freshness["freshness"]
-    contract --> freshness
-  end
+  contract --> preflight["preflight"]
+  routing --> preflight
+  gates["required<br/>gates"] --> preflight
+  preflight -->|READY| ready["PREFLIGHT_READY"]
+  preflight -->|BLOCKED| blocker["repair /<br/>blocker"]
 
-  root --> routing
-  root --> state
-  root --> evidence
+  ready --> state["work-state<br/>checkpoint"]
+  ready --> events["append-only<br/>event ledger"]
+  state --> lifecycle["plan → execute<br/>→ verify → review"]
+  lifecycle --> prepare["prepare<br/>completion receipt"]
+  prepare --> checks["checks + structured<br/>evidence"]
+  checks --> receipt["updated execution<br/>receipt"]
+  checks --> audit["audit +<br/>complete"]
+  events --> audit
 
-  routingFacts --> conformance["CONFORMANCE"]
-  routingFacts --> delegation["DELEGATION"]
+  contract --> freshness["freshness<br/>fingerprints"]
+  routing --> freshness
+  state --> freshness
+  checks --> freshness
+  routing --> conformance["validate-protocol<br/>/ conformance"]
+  state --> conformance
+  receipt --> conformance
   freshness --> conformance
-  freshness --> delegation
-  claims --> conformance
-  claims --> delegation
+  conformance --> verdict["VALID / INCOMPLETE /<br/>STALE / INCONSISTENT / INVALID"]
+  audit --> verdict
 
-  conformance --> verdict["VALID / STALE / INVALID"]
-  delegation --> verdict
-  verdict --> harness["compatible harness"]
+  routing --> delegation["optional bundle /<br/>delegation"]
+  checks --> delegation
+  delegation --> handoff["handoff to<br/>compatible harness"]
+  verdict --> handoff
+  blocker --> handoff
 
   classDef root fill:#08090C,stroke:#6E6AF5,stroke-width:3px,color:#EDEEF0;
+  classDef entry fill:#101218,stroke:#3EDBB8,stroke-width:2px,color:#EDEEF0;
   classDef routing fill:#4F46E5,stroke:#A5B4FC,stroke-width:2px,color:#FFFFFF;
   classDef state fill:#373A46,stroke:#A1A1AA,stroke-width:2px,color:#FFFFFF;
   classDef evidence fill:#3EDBB8,stroke:#99F6E4,stroke-width:2px,color:#08090C;
   classDef fact fill:#181B24,stroke:#6E6AF5,stroke-width:1px,color:#EDEEF0;
-  classDef support fill:#181B24,stroke:#8A8F98,stroke-width:1px,color:#EDEEF0;
   classDef gate fill:#3730A3,stroke:#A5B4FC,stroke-width:2px,color:#FFFFFF;
   classDef result fill:#C9A876,stroke:#F5D9A6,stroke-width:2px,color:#08090C;
   classDef harness fill:#101218,stroke:#3EDBB8,stroke-width:2px,color:#EDEEF0;
 
   class root root;
-  class routing,routingFacts routing;
-  class state,checkpoint state;
-  class evidence,claims evidence;
-  class repository,contract,freshness fact;
-  class conformance,delegation gate;
+  class entry,discovery,delegation entry;
+  class routing,preflight,ready routing;
+  class state,events,lifecycle state;
+  class checks,receipt,audit evidence;
+  class contract,freshness,conformance fact;
+  class gates,blocker gate;
   class verdict result;
-  class harness harness;
-  style surfaces fill:#101218,stroke:#2D3340,stroke-width:1px,color:#EDEEF0;
+  class handoff harness;
   linkStyle default stroke:#8A8F98,stroke-width:1.5px;
 ```
 
-Equivalent reading for text-only environments: ForgeLoop turns routing into
-deterministic decisions, state into checkpoint facts, and evidence into
-observable claims. Repository and contract facts establish freshness; all
-three control surfaces feed conformance and delegation, which produce a
-`VALID`, `STALE`, or `INVALID` result for the compatible harness.
+Equivalent reading for text-only environments: adapters load the canonical kit;
+discovery creates the contract and deterministic route; contract, route, and
+required gates must produce `PREFLIGHT_READY` before the resumable state and
+append-only event ledger authorize the lifecycle. Verification produces
+structured evidence and a receipt. `audit`/`complete` and `validate-protocol`
+then classify the result as `VALID`, `INCOMPLETE`, `STALE`, `INCONSISTENT`, or
+`INVALID`. Optional delegation creates a handoff; it is not an agent runtime.
 
 The operational request loop remains:
 
@@ -133,16 +153,22 @@ npx @cassiomc1/forgeloop update
 
 Protocol-support commands are local and do not invoke an agent or model:
 
+The lifecycle example assumes that the harness has already written a
+schema-valid `.forgeloop/current-contract.json` and the required
+`.forgeloop/gates/*.json` files. `route` persists routing; `preflight` validates
+the contract, route, and gates before execution.
+
 ```bash
 npx @cassiomc1/forgeloop route --work complete-website --surface ui --risk untrusted-input
 npx @cassiomc1/forgeloop activate
 npx @cassiomc1/forgeloop preflight --json
 npx @cassiomc1/forgeloop next
 npx @cassiomc1/forgeloop next --json
+npx @cassiomc1/forgeloop advance --to PLANNED
 npx @cassiomc1/forgeloop advance --to EXECUTING
 npx @cassiomc1/forgeloop advance --to VERIFYING
 npx @cassiomc1/forgeloop prepare-completion --json
-npx @cassiomc1/forgeloop record-check --id tests --requirement tests --status passed --evidence-kind OBSERVED --command "npm test" --result "exit 0" --json
+npx @cassiomc1/forgeloop record-check --id tests --requirement tests --status passed --evidence-kind OBSERVED --command "npm test" --result "exit 0" --exit-code 0 --json
 npx @cassiomc1/forgeloop advance --to REVIEWING
 npx @cassiomc1/forgeloop audit --json
 npx @cassiomc1/forgeloop complete --json
@@ -153,9 +179,14 @@ npx @cassiomc1/forgeloop inspect --json
 npx @cassiomc1/forgeloop status --json
 npx @cassiomc1/forgeloop status --contract-file .forgeloop/current-contract.json --json
 npx @cassiomc1/forgeloop validate-state --json
-npx @cassiomc1/forgeloop validate-receipt --file ./execution-receipt.json --json
-npx @cassiomc1/forgeloop validate-protocol --route-file ./routing-result.json --state-file .forgeloop/work-state.json --receipt-file ./execution-receipt.json --contract-file .forgeloop/current-contract.json --json
+npx @cassiomc1/forgeloop validate-receipt --file .forgeloop/execution-receipt.json --json
+npx @cassiomc1/forgeloop validate-protocol --route-file .forgeloop/routing-result.json --state-file .forgeloop/work-state.json --receipt-file .forgeloop/execution-receipt.json --contract-file .forgeloop/current-contract.json --json
 ```
+
+For `complete-website`, record one structured check for each required success
+criterion before `complete`; the single `tests` entry above only illustrates the
+command shape. Route, receipt, state, and contract artifacts all live under
+`.forgeloop/` in the target.
 
 The query-driven post-implementation path is:
 
@@ -175,6 +206,13 @@ implementation
 
 `forgeloop next` and `forgeloop next --json` read persisted state only. They do
 not run project checks or mutate protocol artifacts.
+
+A `READY` preflight is a resumable checkpoint, not only a status value. It must
+reconcile the contract, route, required gates, `.forgeloop/work-state.json`,
+`.forgeloop/events.ndjson`, and a matching `.forgeloop/preflight.json`. If
+`READY` remains while the work state is missing, `next` returns
+`RESOLVE_BLOCKER` with `E_STATE_MISSING_AFTER_PREFLIGHT_READY`; it does not
+silently fall back to discovery.
 
 `route` expands declared signals into deterministic guide IDs and reason codes.
 `activate` records a session marker without storing prompts or hidden reasoning.
@@ -202,6 +240,11 @@ cross-artifact relationships plus the same derived freshness classification
 used by `inspect` and `status`. Supply `--contract-file` to compare the saved
 contract fingerprint with the current contract; omitting it leaves contract
 freshness as `NOT_VERIFIED` and a complete artifact set requires revalidation.
+When delegation is in scope, also supply the matching repeated
+`--task-brief <path>` and `--delegated-result <path>` inputs. Without those
+inputs it reports `INCOMPLETE` with
+`task briefs and delegated results were not supplied`; that classification is
+separate from a local `complete --json` result of `VALID`.
 It returns `VALID`, `INCOMPLETE`, `STALE`, `INCONSISTENT`, or `INVALID` with
 exact invariant codes and derived stale reasons. The persisted
 `.forgeloop/work-state.json` schema is unchanged: `status`, `stale`, and `fresh`
@@ -224,7 +267,7 @@ forgeloop preflight
 ```
 
 Strict blind conformance is a separate profile. First verify the target
-`PROJECT_PROFILE.md`, then use `--strict` consistently with `preflight`,
+`.forgeloop/kit/PROJECT_PROFILE.md`, then use `--strict` consistently with `preflight`,
 `audit`, and `complete`. Do not evaluate a Standard run with Strict criteria
 unless that escalation is explicitly recorded.
 
@@ -260,7 +303,7 @@ target project. Its main threat boundaries are:
 | Untrusted state or profile data | JSON schemas, semantic checks, secret-like field checks, and non-execution rules apply before state or profile data is used. |
 | Command injection | Git inspection uses fixed arguments without a shell; the CLI never treats project text as a command. |
 | Data exposure | Receipts and checkpoints reject secret-like keys and values; examples use placeholders, and the repository secret scanner runs in CI. |
-| Unsafe update overwrite | `update` preserves locally modified files and `PROJECT_PROFILE.md`; adoption and writes remain bounded to the selected target. |
+| Unsafe update overwrite | `update` preserves locally modified files and the target's `.forgeloop/kit/PROJECT_PROFILE.md`; adoption and writes remain bounded to the selected target. |
 | Dependency supply chain | Runtime code uses Node built-ins only; the package does not install agents, providers, plugins, or remote services. |
 | Stale replay | Work state records contract and repository fingerprints; drift requires revalidation and never reruns destructive or publication actions automatically. |
 | Unverified publication | Receipts carry explicit publication booleans; local success never implies a push, pull request, merge, release, or deployment. |
@@ -306,11 +349,18 @@ The target must already exist and be a directory; the CLI will not create or
 replace an arbitrary path. Use `--dry-run` to preview writes before `init` or
 `update`. `--json`, `--strict`, and `--adopt <path>` are supported by `doctor`;
 adoption is limited to a supported adapter that has been reviewed locally. The
-CLI records managed files and their hashes in `.forgeloop/manifest.json`; `update`
-leaves locally modified files and `PROJECT_PROFILE.md` untouched. If a target
-already has a manifest, rerun `update` instead of `init`. Symlinked targets or
-template parents are rejected, and unadopted pre-existing adapters are reported
-for manual merge with the loop reference.
+CLI records managed files and their hashes in `.forgeloop/manifest.json`; a new
+target receives canonical documents under `.forgeloop/kit/` and only small
+native shims at the root. `update` leaves locally modified files and the
+project profile untouched. If a target already has a manifest, rerun `update`
+instead of `init`. Symlinked targets or template parents are rejected, and
+unadopted pre-existing adapters are reported for manual merge with the loop
+reference.
+
+Targets created by an older package layout are migrated by `update`: unchanged
+managed root files move into the hidden kit, while modified or unowned root
+files are preserved and reported as conflicts. The migration never follows a
+symlink or deletes a file whose managed hash no longer matches.
 
 ### Migrate an existing mdfiles installation
 
@@ -329,32 +379,40 @@ ForgeLoop does not automatically migrate, dual-write, or delete a legacy
 ### Install in a target project
 
 If npm is unavailable, download this public repository as a ZIP or clone it
-into a temporary directory. Copy this structure to the target project's root
-while preserving relative paths:
+into a temporary directory, then invoke the bundled CLI against the target:
+
+```bash
+node /path/to/forgeloop/src/cli.js init --path /path/to/my-project
+node /path/to/forgeloop/src/cli.js doctor --path /path/to/my-project
+```
+
+Copying source-root files directly is not equivalent to initialization: the
+canonical documents must be mapped into the hidden kit and the native adapters
+must remain thin. The resulting target layout is:
 
 ```text
 AGENTS.md
 CLAUDE.md
-AGENT_COMPATIBILITY.md
-LOOP_ENGINEERING.md
-GUIDE_ROUTER.md
-PROJECT_PROFILE.md
-LOOP_SYSTEM_DESIGN.md
-QUALITY_SCORECARD.md
-TERMINOLOGY.md
-EXECUTION_STATE.md
-DELEGATION_PROTOCOL.md
-ORCHESTRATOR_INTEGRATION.md
-THREAT_MODEL.md
-CONTRACT_COVERAGE.md
-THIRD_PARTY_NOTICES.md
-LICENSE
-LICENSE-DOCS.md
 .forgeloop/.gitignore
+.forgeloop/kit/AGENT_COMPATIBILITY.md
+.forgeloop/kit/LOOP_ENGINEERING.md
+.forgeloop/kit/GUIDE_ROUTER.md
+.forgeloop/kit/PROJECT_PROFILE.md
+.forgeloop/kit/LOOP_SYSTEM_DESIGN.md
+.forgeloop/kit/QUALITY_SCORECARD.md
+.forgeloop/kit/TERMINOLOGY.md
+.forgeloop/kit/EXECUTION_STATE.md
+.forgeloop/kit/DELEGATION_PROTOCOL.md
+.forgeloop/kit/ORCHESTRATOR_INTEGRATION.md
+.forgeloop/kit/THREAT_MODEL.md
+.forgeloop/kit/CONTRACT_COVERAGE.md
+.forgeloop/kit/THIRD_PARTY_NOTICES.md
+.forgeloop/kit/LICENSE
+.forgeloop/kit/LICENSE-DOCS.md
+.forgeloop/kit/ENG/
+.forgeloop/kit/schemas/
 .github/copilot-instructions.md
 .cursor/rules/project-loop.mdc
-ENG/
-schemas/
 ```
 
 If the target already has `AGENTS.md`, `CLAUDE.md`, Copilot instructions, or
@@ -366,8 +424,10 @@ maintain and validate this source repository.
 ### First run
 
 On the first task in a target project with code or manifests, change
-`profile-mode` from `template` to `project`, discover the stack, and record only
-confirmed facts in `PROJECT_PROFILE.md`. Keep `language: en`.
+`profile-mode` from `template` to `project` in
+`.forgeloop/kit/PROJECT_PROFILE.md`, discover the stack, and record only
+confirmed facts there. In this source checkout, the canonical profile is the
+root `PROJECT_PROFILE.md`. Keep `language: en`.
 
 The profile must not store tokens, passwords, keys, credentials, or task logs.
 Unknown commands remain unverified until a real source identifies them.
@@ -392,7 +452,7 @@ package installation or its automated tests.
 ### Update the kit
 
 When adopting a newer version, preserve target-specific facts from
-`PROJECT_PROFILE.md`. Compare adapters before replacing them, update the loop,
+`.forgeloop/kit/PROJECT_PROFILE.md`. Compare adapters before replacing them, update the loop,
 router, notices, and guides as one coherent set, and never erase local
 instructions. If validators were copied, run:
 
@@ -447,8 +507,9 @@ Optional provider-backed operations follow this boundary:
 
 Provide optional credentials through the process environment or the official
 Qwen configuration file at `~/.qwen-mm-plugins/config` (or its documented
-override). Never put keys in Git, `PROJECT_PROFILE.md`, or copied instruction
-files. The agent must leave an API-backed capability disabled when its key or
+override). Never put keys in Git, the target's
+`.forgeloop/kit/PROJECT_PROFILE.md`, or copied instruction files. The agent must
+leave an API-backed capability disabled when its key or
 service endpoint is absent, and report missing system dependencies instead of
 claiming that the feature is available.
 
@@ -477,12 +538,12 @@ adoption. Local rendering requires Node.js 22+ and FFmpeg.
 ├── AGENT_COMPATIBILITY.md          # supported agents and official sources
 ├── LOOP_ENGINEERING.md             # canonical operating cycle
 ├── GUIDE_ROUTER.md                 # contextual guide selection
-├── PROJECT_PROFILE.md              # verified project facts
+├── PROJECT_PROFILE.md              # source profile (target copy is under .forgeloop/kit/)
 ├── LOOP_SYSTEM_DESIGN.md           # architecture and boundaries
 ├── THIRD_PARTY_NOTICES.md          # provenance and rights
 ├── LICENSE                         # CLI and validator code license
 ├── LICENSE-DOCS.md                 # original documentation license boundary
-├── ENG/                            # eight English guides
+├── ENG/                            # package-source English guides
 ├── .cursor/rules/                  # always-active Cursor rule
 ├── .github/copilot-instructions.md # GitHub Copilot entry point
 ├── .github/workflows/              # quality automation
@@ -494,6 +555,11 @@ adoption. Local rendering requires Node.js 22+ and FFmpeg.
 ├── .markdownlint-cli2.jsonc        # Markdown rules
 └── README.md
 ```
+
+The source repository keeps canonical documents at the root for package
+development and validation. A bootstrapped target uses the hidden-kit layout
+shown above; mutable contract, route, state, gate, event, preflight, and
+receipt artifacts remain directly under `.forgeloop/`.
 
 ## Maintenance
 

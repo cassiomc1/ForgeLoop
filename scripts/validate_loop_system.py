@@ -95,6 +95,7 @@ FAILURE_CLASSES = (
     "ENVIRONMENT_FAILURE",
     "EXTERNAL_SERVICE_FAILURE",
     "STALE_STATE_FAILURE",
+    "OPERATOR_INTERRUPTION",
 )
 
 LOOP_INVARIANTS = (
@@ -120,6 +121,7 @@ LOOP_INVARIANTS = (
     "completion must be validated by the protocol, not only declared by the agent.",
     "protocol chronology must not permit execution before mandatory preflight events.",
     "publication status and production readiness must remain independent from local task completion.",
+    "a persisted PREFLIGHT_READY result must reconcile with a resumable state and",
 )
 
 ADAPTERS = (
@@ -144,10 +146,11 @@ GUIDES = {
     "performance": "ENG/perf-code-eng.md",
     "accessibility": "ENG/accessibility-eng.md",
     "games": "ENG/games-code-design-web-eng.md",
+    "taste": "ENG/taste-frontend-eng.md",
 }
 
 ROUTING_SCENARIOS = {
-    "landing-page-premium": "premium,design,accessibility,clean,test,security,performance",
+    "landing-page-premium": "premium,design,taste,accessibility,clean,test,security,performance",
     "api-auth": "clean,test,security,performance",
     "bug-without-ui": "clean,test",
     "app-mobile-ui": "clean,test,design,accessibility,security,performance",
@@ -611,6 +614,7 @@ def _valid_fixture(root: Path) -> None:
         "performance": "ENG/perf-code-eng.md",
         "accessibility": "ENG/accessibility-eng.md",
         "games": "ENG/games-code-design-web-eng.md",
+        "taste": "ENG/taste-frontend-eng.md",
     }
     for guide_path in guides.values():
         path = root / guide_path
@@ -672,7 +676,7 @@ def _valid_fixture(root: Path) -> None:
         for guide_id, guide_path in guides.items()
     )
     scenarios = {
-        "landing-page-premium": "premium,design,accessibility,clean,test,security,performance",
+        "landing-page-premium": "premium,design,taste,accessibility,clean,test,security,performance",
         "api-auth": "clean,test,security,performance",
         "bug-without-ui": "clean,test",
         "app-mobile-ui": "clean,test,design,accessibility,security,performance",

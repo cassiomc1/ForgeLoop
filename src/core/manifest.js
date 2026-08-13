@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 
 import { assertSafePath, ensureWithin, fileExists, writeFileAtomic } from "./filesystem.js";
 import { assertJsonBytes, assertJsonLimits } from "./json-safety.js";
+import { LAYOUT_VERSION, LEGACY_LAYOUT_VERSION } from "./target-layout.js";
 
 export const MANIFEST_SCHEMA_VERSION = 1;
 export const MANIFEST_PATH = ".forgeloop/manifest.json";
@@ -15,6 +16,7 @@ export function sha256(bytes) {
 export function createManifest(packageVersion) {
   return {
     schemaVersion: MANIFEST_SCHEMA_VERSION,
+    layoutVersion: LAYOUT_VERSION,
     packageName: PACKAGE_NAME,
     packageVersion,
     files: {},
@@ -27,6 +29,10 @@ function validateManifest(manifest) {
   }
   if (manifest.schemaVersion !== MANIFEST_SCHEMA_VERSION) {
     throw new Error(`Unsupported manifest schema: ${manifest.schemaVersion}`);
+  }
+  if (manifest.layoutVersion !== undefined
+    && ![LEGACY_LAYOUT_VERSION, LAYOUT_VERSION].includes(manifest.layoutVersion)) {
+    throw new Error(`Unsupported manifest layout: ${manifest.layoutVersion}`);
   }
   if (typeof manifest.packageVersion !== "string" || !manifest.packageVersion) {
     throw new Error("Manifest packageVersion is required");

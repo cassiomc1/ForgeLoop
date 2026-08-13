@@ -1,4 +1,4 @@
-import { assertSafePath, fileExists, ensureWithin, writeFileAtomic } from "../core/filesystem.js";
+import { assertSafePath, fileExists, ensureWithin, readBytes, writeFileAtomic } from "../core/filesystem.js";
 import {
   createManifest,
   readManifest,
@@ -6,8 +6,6 @@ import {
   writeManifest,
 } from "../core/manifest.js";
 import { readTemplateEntries } from "../core/templates.js";
-
-const PROFILE_PATH = "PROJECT_PROFILE.md";
 
 export async function runInit({ target, dryRun, packageRoot, packageVersion }) {
   const entries = await readTemplateEntries(packageRoot);
@@ -18,11 +16,20 @@ export async function runInit({ target, dryRun, packageRoot, packageVersion }) {
   const manifest = createManifest(packageVersion);
   const actions = [];
 
+  // Validate every destination before any write so a symlinked kit cannot
+  // leave a partially initialized target behind.
+  for (const entry of entries) await assertSafePath(target, entry.relativePath);
+
   for (const entry of entries) {
     const destination = ensureWithin(target, entry.relativePath);
-    await assertSafePath(target, entry.relativePath);
     if (await fileExists(destination)) {
       actions.push({ action: "skip", path: entry.relativePath, reason: "exists" });
+      if (entry.sourcePath === "PROJECT_PROFILE.md") {
+        manifest.files[entry.relativePath] = {
+          sha256: sha256(await readBytes(destination)),
+          preserve: true,
+        };
+      }
       continue;
     }
 
@@ -33,7 +40,7 @@ export async function runInit({ target, dryRun, packageRoot, packageVersion }) {
     await writeFileAtomic(destination, entry.bytes, { dryRun });
     manifest.files[entry.relativePath] = {
       sha256: sha256(entry.bytes),
-      preserve: entry.relativePath === PROFILE_PATH,
+      preserve: entry.sourcePath === "PROJECT_PROFILE.md",
     };
   }
 

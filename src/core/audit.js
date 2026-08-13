@@ -4,6 +4,7 @@ import { readManifest } from "./manifest.js";
 import { PROTOCOL_VERSION } from "./protocol.js";
 import { readJsonArtifact } from "./artifacts.js";
 import { currentChangedPaths } from "./repository.js";
+import { validateReadyProtocolConsistency } from "./preflight.js";
 
 function sortErrors(errors) {
   return [...errors].sort((left, right) => left.code.localeCompare(right.code)
@@ -42,7 +43,21 @@ export async function evaluateAudit({ target, packageRoot, strict = false } = {}
   } catch (error) {
     manifestError = error.message;
   }
-  const errors = sortErrors(completion.errors);
+  let readyConsistencyErrors = [];
+  try {
+    const persistedPreflight = await readJsonArtifact(target, ARTIFACT_PATHS.preflight, "preflight", packageRoot);
+    if (persistedPreflight.value.status === "READY") {
+      readyConsistencyErrors = await validateReadyProtocolConsistency({
+        target,
+        packageRoot,
+        persisted: persistedPreflight.value,
+        current: completion.preflight,
+      });
+    }
+  } catch {
+    // Completion already reports missing or invalid preflight artifacts.
+  }
+  const errors = sortErrors([...completion.errors, ...readyConsistencyErrors]);
   const changedPaths = await compareChangedPaths(target, packageRoot);
   if (changedPaths.status === "MISMATCH") {
     errors.push({

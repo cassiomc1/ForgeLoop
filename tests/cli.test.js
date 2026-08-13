@@ -8,7 +8,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { sha256 } from "../src/core/manifest.js";
-import { TEMPLATE_PATHS } from "../src/core/templates.js";
+import { readTemplateEntries } from "../src/core/templates.js";
 import {
   contractFingerprint,
   createWorkState,
@@ -122,13 +122,14 @@ test("init copies canonical files and creates a manifest", async () => {
       await readFile(path.join(target, ".forgeloop", "manifest.json"), "utf8"),
     );
     assert.equal(manifest.schemaVersion, 1);
-    assert.equal(manifest.packageVersion, "0.1.6");
-    assert.equal(manifest.files["PROJECT_PROFILE.md"].preserve, true);
+    assert.equal(manifest.packageVersion, "0.1.7");
+    assert.equal(manifest.layoutVersion, 2);
+    assert.equal(manifest.files[".forgeloop/kit/PROJECT_PROFILE.md"].preserve, true);
     assert.ok(manifest.files["AGENTS.md"].sha256);
-    await readFile(path.join(target, "LICENSE"), "utf8");
-    await readFile(path.join(target, "LICENSE-DOCS.md"), "utf8");
+    await readFile(path.join(target, ".forgeloop/kit/LICENSE"), "utf8");
+    await readFile(path.join(target, ".forgeloop/kit/LICENSE-DOCS.md"), "utf8");
     assert.match(
-      await readFile(path.join(target, "AGENT_COMPATIBILITY.md"), "utf8"),
+      await readFile(path.join(target, ".forgeloop/kit/AGENT_COMPATIBILITY.md"), "utf8"),
       /https:\/\/github\.com\/cassiomc1\/forgeloop#readme/,
     );
   });
@@ -212,7 +213,7 @@ test("update does not partially apply safe files when another file conflicts", a
 test("update always preserves the project profile", async () => {
   await withTarget(async (target) => {
     assert.equal(runCli(target, "init").status, 0);
-    const profilePath = path.join(target, "PROJECT_PROFILE.md");
+    const profilePath = path.join(target, ".forgeloop/kit/PROJECT_PROFILE.md");
     const profile = await readFile(profilePath, "utf8");
     await writeFile(profilePath, `${profile}\n# Project-specific note\n`);
 
@@ -259,8 +260,8 @@ test("init installs all templates only in the selected target", async () => {
     const result = runCliFrom(caller, target, "init");
 
     assert.equal(result.status, 0, result.stderr);
-    for (const relativePath of TEMPLATE_PATHS) {
-      await readFile(path.join(target, relativePath), "utf8");
+    for (const entry of await readTemplateEntries(repositoryRoot)) {
+      await readFile(path.join(target, entry.relativePath), "utf8");
     }
     assert.deepEqual(await readdir(caller), []);
   } finally {
@@ -352,7 +353,7 @@ test("top-level help succeeds without a command", async () => {
 test("CLI supports version output and equals-form paths", async () => {
   const version = runCliDirect(repositoryRoot, "--version");
   assert.equal(version.status, 0, version.stderr);
-  assert.equal(version.stdout.trim(), "0.1.6");
+  assert.equal(version.stdout.trim(), "0.1.7");
 
   await withTarget(async (target) => {
     const result = runCliDirect(repositoryRoot, "init", `--path=${target}`);
@@ -408,7 +409,7 @@ test("CLI runs when invoked through an npm-style symlink", async () => {
     });
 
     assert.equal(result.status, 0, result.stderr);
-    assert.equal(result.stdout.trim(), "0.1.6");
+  assert.equal(result.stdout.trim(), "0.1.7");
   } finally {
     await rm(binDirectory, { recursive: true, force: true });
   }

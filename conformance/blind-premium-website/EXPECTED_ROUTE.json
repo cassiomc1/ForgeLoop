@@ -3,5 +3,5 @@
   "surfaces": ["ui", "forms"],
   "risks": ["accessibility"],
   "platforms": ["web"],
-  "guides": ["premium", "design", "accessibility", "clean", "test", "security", "performance"]
+  "guides": ["premium", "design", "taste", "accessibility", "clean", "test", "security", "performance"]
 }

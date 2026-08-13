@@ -174,29 +174,41 @@ provider, remote service, or successful check.
 
 ## Installed files
 
-Every initialized project receives this guide plus the canonical documents:
+Every initialized project receives small native adapters at the project root
+and the canonical documents in the package-managed hidden kit. This keeps the
+root readable while preserving the standard instruction entry points:
 
 ```text
 AGENTS.md
 CLAUDE.md
-AGENT_COMPATIBILITY.md
-LOOP_ENGINEERING.md
-GUIDE_ROUTER.md
-PROJECT_PROFILE.md
-LOOP_SYSTEM_DESIGN.md
-QUALITY_SCORECARD.md
-TERMINOLOGY.md
-EXECUTION_STATE.md
-DELEGATION_PROTOCOL.md
-ORCHESTRATOR_INTEGRATION.md
-THIRD_PARTY_NOTICES.md
-LICENSE
-LICENSE-DOCS.md
 .cursor/rules/project-loop.mdc
 .github/copilot-instructions.md
-ENG/
-schemas/
+.forgeloop/manifest.json
+.forgeloop/current-contract.json
+.forgeloop/routing-result.json
+.forgeloop/work-state.json
+.forgeloop/kit/AGENT_COMPATIBILITY.md
+.forgeloop/kit/LOOP_ENGINEERING.md
+.forgeloop/kit/GUIDE_ROUTER.md
+.forgeloop/kit/PROJECT_PROFILE.md
+.forgeloop/kit/LOOP_SYSTEM_DESIGN.md
+.forgeloop/kit/QUALITY_SCORECARD.md
+.forgeloop/kit/TERMINOLOGY.md
+.forgeloop/kit/EXECUTION_STATE.md
+.forgeloop/kit/DELEGATION_PROTOCOL.md
+.forgeloop/kit/ORCHESTRATOR_INTEGRATION.md
+.forgeloop/kit/THIRD_PARTY_NOTICES.md
+.forgeloop/kit/LICENSE
+.forgeloop/kit/LICENSE-DOCS.md
+.forgeloop/kit/ENG/
+.forgeloop/kit/schemas/
 ```
+
+The package source retains the canonical root files so npm can ship and
+validate them; initialized targets use the hidden destination above. Existing
+legacy root files are not deleted when they are modified or unowned. Run
+`forgeloop update` to migrate unchanged managed files and review any reported
+conflict.
 
 See the main [README](https://github.com/cassiomc1/forgeloop#readme) for the complete `npx` installation,
 diagnostic, first-run, and update workflow.

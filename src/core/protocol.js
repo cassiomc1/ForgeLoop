@@ -13,6 +13,7 @@ export const FAILURE_CLASSES = Object.freeze([
   "ENVIRONMENT_FAILURE",
   "EXTERNAL_SERVICE_FAILURE",
   "STALE_STATE_FAILURE",
+  "OPERATOR_INTERRUPTION",
 ]);
 
 export const FAILURE_CODES = Object.freeze([
@@ -47,6 +48,12 @@ export const FAILURE_CODES = Object.freeze([
   "E_COMPLETION_REJECTED",
   "E_PUBLICATION_CLAIM_UNVERIFIED",
   "E_PRODUCTION_READINESS_UNVERIFIED",
+  "E_STATE_MISSING_AFTER_PREFLIGHT_READY",
+  "E_PREFLIGHT_READY_EVENT_MISSING",
+  "E_PREFLIGHT_READY_EVENT_MISMATCH",
+  "E_PREFLIGHT_EVENT_MISSING",
+  "E_PREFLIGHT_GATE_EVENT_MISSING",
+  "E_PREFLIGHT_GATES_STALE",
 ]);
 
 export const WORK_PHASES = Object.freeze([
@@ -74,6 +81,7 @@ export const GUIDE_IDS = Object.freeze([
   "performance",
   "accessibility",
   "games",
+  "taste",
 ]);
 
 export const GUIDE_ORDER = GUIDE_IDS;

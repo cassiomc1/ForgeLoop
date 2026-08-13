@@ -36,8 +36,8 @@ test("CLI handles target paths with spaces and Unicode", async () => {
     const initialized = runCli(target, "init");
     assert.equal(initialized.status, 0, initialized.stderr);
     await readFile(path.join(target, ".forgeloop", ".gitignore"), "utf8");
-    await readFile(path.join(target, "ORCHESTRATOR_INTEGRATION.md"), "utf8");
-    await readFile(path.join(target, "schemas", "work-state.schema.json"), "utf8");
+    await readFile(path.join(target, ".forgeloop/kit/ORCHESTRATOR_INTEGRATION.md"), "utf8");
+    await readFile(path.join(target, ".forgeloop/kit/schemas", "work-state.schema.json"), "utf8");
 
     const status = runCli(target, "status", "--json");
     assert.equal(status.status, 0, status.stderr);

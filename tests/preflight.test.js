@@ -146,7 +146,7 @@ test("complete website preflight is ready only after required gates", async () =
   });
 });
 
-test("ready preflight without lifecycle prerequisites persists its artifact without events", async () => {
+test("ready preflight persists its resumable checkpoint and lifecycle events", async () => {
   await withTarget(async (target) => {
     await prepareWebsite(target);
 
@@ -155,7 +155,16 @@ test("ready preflight without lifecycle prerequisites persists its artifact with
 
     assert.equal(result.status, "READY");
     assert.equal(ledger.valid, true);
-    assert.deepEqual(ledger.events, []);
+    assert.equal((await readFile(path.join(target, ARTIFACT_PATHS.state), "utf8")).length > 0, true);
+    assert.deepEqual(ledger.events.map((event) => event.event), [
+      "TASK_RECEIVED",
+      "CONTRACT_VALIDATED",
+      "ROUTE_VALIDATED",
+      "GATE_SATISFIED",
+      "GATE_SATISFIED",
+      "GATE_SATISFIED",
+      "PREFLIGHT_READY",
+    ]);
     assert.equal(await readFile(path.join(target, ARTIFACT_PATHS.preflight), "utf8").then(Boolean), true);
   });
 });

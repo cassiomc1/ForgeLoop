@@ -1,13 +1,16 @@
 import { assertRouteInvariants } from "./router.js";
 import { ARTIFACT_PATHS, readJsonArtifact, writeJsonArtifact } from "./artifacts.js";
 import { readContract } from "./contract.js";
+import { ensureResumableState } from "./resumability.js";
 
 export async function persistRoute(target, route, packageRoot, options = {}) {
   assertRouteInvariants(route);
   let { contractFingerprint, ...writeOptions } = options;
+  let contractArtifact = null;
   if (contractFingerprint === undefined) {
     try {
-      contractFingerprint = (await readContract(target, packageRoot)).fingerprint;
+      contractArtifact = await readContract(target, packageRoot);
+      contractFingerprint = contractArtifact.fingerprint;
     } catch (error) {
       if (error.code !== "ARTIFACT_MISSING") throw error;
     }
@@ -16,7 +19,7 @@ export async function persistRoute(target, route, packageRoot, options = {}) {
     ? route
     : { ...route, contractFingerprint };
   assertRouteInvariants(value);
-  return writeJsonArtifact(
+  const artifact = await writeJsonArtifact(
     target,
     ARTIFACT_PATHS.route,
     value,
@@ -24,6 +27,10 @@ export async function persistRoute(target, route, packageRoot, options = {}) {
     packageRoot,
     writeOptions,
   );
+  if (contractArtifact && contractArtifact.fingerprint === artifact.value.contractFingerprint) {
+    await ensureResumableState({ target, packageRoot, contract: contractArtifact, route: artifact });
+  }
+  return artifact;
 }
 
 export async function readPersistedRoute(target, packageRoot) {
