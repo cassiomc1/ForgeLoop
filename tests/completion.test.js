@@ -37,15 +37,20 @@ async function withTarget(run) {
   }
 }
 
-async function prepareValidTask(target, { receiptOverrides = {}, events } = {}) {
+async function prepareValidTask(target, {
+  receiptOverrides = {},
+  events,
+  requirement = "tests",
+  checkId = requirement,
+} = {}) {
   const contract = createContract({
     taskId: "task-complete",
     objective: "Validate a complete task",
     deliverables: ["src/example.js"],
     constraints: ["offline"],
     risks: [],
-    verification: ["tests"],
-    successCriteria: ["tests"],
+    verification: [requirement],
+    successCriteria: [requirement],
     stopConditions: ["verification unavailable"],
     unresolvedDecisions: [],
     sourceRefs: [],
@@ -55,9 +60,9 @@ async function prepareValidTask(target, { receiptOverrides = {}, events } = {}) 
   const route = evaluateRoute({ workType: "api", surfaces: ["api"], platforms: [] });
   const persistedRoute = await persistRoute(target, route, packageRoot, { contractFingerprint: contractHash });
   const check = createCheck({
-    id: "tests",
+    id: checkId,
     kind: "command",
-    requirement: "tests",
+    requirement,
     status: "passed",
     evidenceKind: "OBSERVED",
     source: "npm test",
@@ -65,9 +70,9 @@ async function prepareValidTask(target, { receiptOverrides = {}, events } = {}) 
   });
   const evidence = createEvidence({ kind: "OBSERVED", source: "npm test", result: "exit 0" });
   const coverage = [createCoverage({
-    requirement: "tests",
-    requiredEvidence: ["tests"],
-    observedEvidence: ["tests"],
+    requirement,
+    requiredEvidence: [requirement],
+    observedEvidence: [requirement],
   })];
   const state = createWorkState({
     taskId: contract.taskId,
@@ -178,6 +183,16 @@ test("complete validates a coherent task and keeps publication independent", asy
     assert.equal(completion.verificationStatus, "VALID");
     assert.equal(completion.publicationStatus, "local-only");
     assert.equal(result.receipt.productionReadiness, "not-verified");
+  });
+});
+
+test("complete matches required evidence to its check requirement, not only the check id", async () => {
+  await withTarget(async (target) => {
+    await prepareValidTask(target, {
+      checkId: "check-documentation",
+    });
+    const completion = await runComplete({ target, packageRoot, persist: false });
+    assert.equal(completion.status, "VALID", JSON.stringify(completion.errors));
   });
 });
 

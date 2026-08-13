@@ -8,6 +8,25 @@ The current published baseline for new runs is
 `@cassiomc1/forgeloop@0.1.9`. Pin that version when preparing a reproducible
 blind run; historical reports retain the exact package version they used.
 
+The frozen baseline was verified on 2026-08-13 with this identity:
+
+```text
+package: @cassiomc1/forgeloop@0.1.9
+npm gitHead: 0e48240894671ecda2458b15671020b0a7255e70
+release commit: 0e48240894671ecda2458b15671020b0a7255e70
+GitHub tag: v0.1.9 -> 0e48240894671ecda2458b15671020b0a7255e70
+tarball URL: https://registry.npmjs.org/@cassiomc1/forgeloop/-/forgeloop-0.1.9.tgz
+tarball SHA-1: fef7587ebd878e845e9746b4d049a6fe6ef333c5
+npm SHA-512 integrity: sha512-sCvPEDOYT1svNnA8+zw57dJ97N6sNCUH8eDbM6f3cS6eXLCIFFXRPkCAASA+ZPu5mAKbcNaU1TaFKjojbL3DEA==
+release identity: RELEASE_IDENTITY_VALID
+```
+
+The repository may contain documentation or executable commits after this
+frozen package. Those commits do not change the package used by the blind run;
+this branch includes a completion-validation fix that is not in `0.1.9`. If a
+blind run needs that executable change, publish a new version and repeat the
+complete identity check before starting the run.
+
 Run a scenario in a disposable target using the Standard profile first:
 
 ```bash
@@ -77,6 +96,18 @@ field, record `RELEASE_IDENTITY_NOT_VERIFIED` or
 
 The complete-website scenario deliberately fails when implementation starts
 before the contract, route, and required gates exist.
+
+## Migration compatibility evidence
+
+The real published `0.1.6` fixture at
+[`tests/fixtures/legacy-0.1.6/`](../tests/fixtures/legacy-0.1.6/) is frozen
+with package, tarball, SHA-1, SHA-512, `gitHead`, and extraction-date metadata.
+The migration tests run from those local bytes and cover interruptions after
+hidden writes, after hidden verification, after the manifest authority switch,
+and during legacy cleanup. An interrupted target must be diagnosed as
+`E_MIGRATION_INCOMPLETE`; a later `update` may retry only hash-owned cleanup.
+User-modified, unmanaged, and `preserve=true` files remain untouched even when
+that leaves a root residual.
 
 ## Autonomous blind-run isolation
 

@@ -1,5 +1,5 @@
 import { ARTIFACT_PATHS, canonicalFingerprint } from "./artifacts.js";
-import { assertCheckList, requiredChecksSatisfied } from "./checks.js";
+import { assertCheckList, requiredChecksSatisfiedForRequirements } from "./checks.js";
 import { assertCoverageList, coverageForRequirements } from "./coverage.js";
 import { assertEvidenceList } from "./evidence.js";
 
@@ -86,7 +86,7 @@ export function completionRelationshipErrors({
     addAssertion(errors, () => assertCheckList(receipt.checks, "receipt.checks"), "E_CHECK_INVALID", [ARTIFACT_PATHS.receipt]);
     addAssertion(errors, () => assertEvidenceList(receipt.evidence ?? [], "receipt.evidence"), "E_EVIDENCE_INVALID", [ARTIFACT_PATHS.receipt]);
     if (requireRequiredChecks) {
-      for (const error of requiredChecksSatisfied(receipt.checks, requiredEvidence)) {
+      for (const error of requiredChecksSatisfiedForRequirements(receipt.checks, requiredEvidence)) {
         errors.push(issue(error.code, error.message, [ARTIFACT_PATHS.receipt]));
       }
     }
