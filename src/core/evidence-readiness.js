@@ -88,14 +88,30 @@ export function normalizeRequirements(requirements = []) {
 }
 
 export function ordinaryRequirements(requirements = []) {
-  return normalizeRequirements(requirements).filter((requirement) => !requirement.lifecycleOwned);
+  return normalizeRequirements(requirements).filter((requirement) => !requirement.terminalOwned);
 }
 
-function matchesRequirement(check, requirement) {
+export function terminalRequirements(requirements = []) {
+  return normalizeRequirements(requirements).filter((requirement) => requirement.terminalOwned);
+}
+
+export function lifecycleRequirements(requirements = []) {
+  return normalizeRequirements(requirements).filter((requirement) => requirement.type === "LIFECYCLE");
+}
+
+export function publicationRequirements(requirements = []) {
+  return normalizeRequirements(requirements).filter((requirement) => requirement.type === "PUBLICATION");
+}
+
+export function productionReadinessRequirements(requirements = []) {
+  return normalizeRequirements(requirements).filter((requirement) => requirement.type === "PRODUCTION_READINESS");
+}
+
+export function matchesRequirement(check, requirement) {
   return check?.requirement === requirement.id || check?.requirement === requirement.text;
 }
 
-function latestAuthoritativeCheck(candidates) {
+export function latestAuthoritativeCheck(candidates) {
   if (!candidates || candidates.length === 0) return null;
   return [...candidates].sort((a, b) => {
     const cycleA = a.details?.verificationCycle ?? a.verificationCycle ?? 1;
@@ -106,6 +122,16 @@ function latestAuthoritativeCheck(candidates) {
     if (timeA !== timeB) return timeA.localeCompare(timeB);
     return 0;
   }).at(-1);
+}
+
+export function authoritativeChecksForRequirements({ requirements = [], checks = [] } = {}) {
+  return normalizeRequirements(requirements).map((requirement) => {
+    const candidates = checks.filter((check) => matchesRequirement(check, requirement));
+    return {
+      requirement,
+      check: latestAuthoritativeCheck(candidates),
+    };
+  });
 }
 
 function componentStatus(check, requirement, allChecks = []) {

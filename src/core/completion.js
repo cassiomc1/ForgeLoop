@@ -9,6 +9,8 @@ import { createReceipt, validateReceipt } from "./receipt.js";
 import { completionRelationshipErrors } from "./completion-relationships.js";
 import { assertSafePath, ensureWithin, fileExists } from "./filesystem.js";
 import { evaluateStartExecutionPrerequisites, hasExecutionStarted } from "./execution-prerequisites.js";
+import { isRecoverableCompletionEvidenceCode } from "./completion-recovery.js";
+import { classifyRequirement } from "./evidence-readiness.js";
 
 function issue(code, message, artifacts = [], details = {}) {
   return { code, message, artifacts, ...details };
@@ -49,6 +51,12 @@ function repairNext(error) {
     case "E_CIRCULAR_COMPLETION_REQUIREMENT":
     case "E_MIXED_TERMINAL_REQUIREMENT":
       return "Split ordinary verification from terminal lifecycle criteria.";
+    case "E_PUBLICATION_REQUIREMENT_PENDING":
+      return "The contract explicitly requires publication. Record authoritative publication evidence or revise the contract if publication is not in scope.";
+    case "E_PRODUCTION_REQUIREMENT_PENDING":
+      return "The contract explicitly requires production readiness. Record authoritative deployment/readiness evidence before completion.";
+    case "E_TERMINAL_REQUIREMENT_PENDING":
+      return "The contract contains an unresolved terminal requirement. Ensure all terminal lifecycle criteria are satisfied.";
     case "E_STATE_LEDGER_DIVERGENCE":
       return "Do not edit work-state or receipt manually; recover through supported lifecycle commands.";
     case "E_COMPLETION_RECOVERY_UNAUTHORIZED":
@@ -231,9 +239,40 @@ export async function evaluateCompletion({ target, packageRoot, strict = false }
     }
   }
 
-  const sortedErrors = sortIssues(errors);
   const receiptValue = receipt?.value;
   const publication = receiptValue ? publicationStatus(receiptValue) : "not-published";
+
+  if (contract) {
+    const allContractReqs = [
+      ...(contract.value.verification ?? []),
+      ...(contract.value.successCriteria ?? []),
+    ];
+    for (const raw of allContractReqs) {
+      const req = classifyRequirement(raw);
+      if (req.type === "PUBLICATION") {
+        if (publication === "not-published" || publication === "local-only") {
+          errors.push(issue(
+            "E_PUBLICATION_REQUIREMENT_PENDING",
+            `The contract explicitly requires publication, but publication status is ${publication}: ${req.text}`,
+            [ARTIFACT_PATHS.contract, ARTIFACT_PATHS.receipt],
+            { requirementId: req.id },
+          ));
+        }
+      } else if (req.type === "PRODUCTION_READINESS") {
+        const prodStatus = receiptValue?.productionReadiness ?? "not-verified";
+        if (prodStatus !== "ready" && prodStatus !== "verified") {
+          errors.push(issue(
+            "E_PRODUCTION_REQUIREMENT_PENDING",
+            `The contract explicitly requires production readiness, but production readiness is ${prodStatus}: ${req.text}`,
+            [ARTIFACT_PATHS.contract, ARTIFACT_PATHS.receipt],
+            { requirementId: req.id },
+          ));
+        }
+      }
+    }
+  }
+
+  const sortedErrors = sortIssues(errors);
   const valid = sortedErrors.length === 0;
   return {
     status: valid ? "VALID" : "REJECTED",
@@ -254,20 +293,9 @@ export async function evaluateCompletion({ target, packageRoot, strict = false }
 
 export async function runComplete({ target, packageRoot, strict = false, persist = true } = {}) {
   const result = await evaluateCompletion({ target, packageRoot, strict });
-  const recoverableEvidenceCodes = new Set([
-    "E_EVIDENCE_REQUIRED",
-    "E_EVIDENCE_PARTIAL",
-    "E_EVIDENCE_INVALID",
-    "E_EVIDENCE_KIND_INVALID",
-    "E_EVIDENCE_COVERAGE_PARTIAL",
-    "E_EVIDENCE_COVERAGE_INVALID",
-    "E_VERIFICATION_CHECK_REQUIRED",
-    "E_CHECK_REQUIRED",
-    "E_CHECK_INVALID",
-  ]);
   const rejectionCodes = [...new Set(result.errors.map((error) => error.code))].sort();
   const evidenceOnlyRejection = rejectionCodes.length > 0
-    && rejectionCodes.every((code) => recoverableEvidenceCodes.has(code));
+    && rejectionCodes.every(isRecoverableCompletionEvidenceCode);
   if (persist && result.status === "REJECTED" && evidenceOnlyRejection) {
     const state = await readWorkState(target, packageRoot);
     if (state?.phase === "REVIEWING") {

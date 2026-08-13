@@ -272,3 +272,48 @@ test("rejection event idempotency prevents duplicate events on repeated failed c
     assert.equal(rejections.length, 1); // Idempotent, did not duplicate
   });
 });
+
+test("canonical recoverable completion evidence codes consistency", async () => {
+  const { RECOVERABLE_COMPLETION_EVIDENCE_CODES, isRecoverableCompletionEvidenceCode } = await import("../src/core/completion-recovery.js");
+
+  for (const code of RECOVERABLE_COMPLETION_EVIDENCE_CODES) {
+    assert.equal(isRecoverableCompletionEvidenceCode(code), true);
+  }
+
+  assert.equal(isRecoverableCompletionEvidenceCode("E_CONTRACT_STALE"), false);
+  assert.equal(isRecoverableCompletionEvidenceCode("E_PHASE_PREREQUISITE_MISSING"), false);
+  assert.equal(isRecoverableCompletionEvidenceCode("E_GATE_UNVERIFIED"), false);
+});
+
+test("state or receipt fingerprint mismatch in lastCompletionAttempt is rejected (P1-4)", async () => {
+  const state = {
+    taskId: "task-1",
+    verificationCycle: 1,
+    lastCompletionAttempt: {
+      status: "REJECTED",
+      verificationCycle: 1,
+      reasonCodes: ["E_EVIDENCE_REQUIRED"],
+      missingRequirementIds: ["REQ_1"],
+      stateFingerprint: "fingerprint-state-mutated",
+      receiptFingerprint: "fingerprint-receipt-1",
+    },
+  };
+  const events = [
+    {
+      taskId: "task-1",
+      event: "COMPLETION_REJECTED",
+      details: {
+        verificationCycle: 1,
+        reasonCodes: ["E_EVIDENCE_REQUIRED"],
+        missingRequirementIds: ["REQ_1"],
+        stateFingerprint: "fingerprint-state-original",
+        receiptFingerprint: "fingerprint-receipt-1",
+      },
+    },
+  ];
+
+  const auth = validateCompletionRecoveryAuthorization({ state, events });
+  assert.equal(auth.authorized, false);
+  assert.ok(auth.errors.some((e) => e.code === "E_COMPLETION_REJECTION_LEDGER_MISMATCH"));
+});
+

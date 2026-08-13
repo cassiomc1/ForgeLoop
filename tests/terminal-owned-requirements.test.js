@@ -232,3 +232,120 @@ test("standard vs strict closure requirements (Matrix P & Q)", async () => {
     assert.equal(standardResult.status, "VALID");
   });
 });
+
+test("local task without publication requirement completes with local-only and not-verified (P1-6 Test A)", async () => {
+  await withTarget(async (target) => {
+    await setupTarget(target, {
+      verification: ["tests"],
+      successCriteria: ["tests"],
+    });
+    await advanceWorkState(target, "VERIFYING", { packageRoot });
+    await prepareCompletion({ target, packageRoot });
+    await recordCheck({
+      target,
+      packageRoot,
+      id: "tests-pass",
+      requirement: "tests",
+      status: "passed",
+      evidenceKind: "OBSERVED",
+      command: "npm test",
+      result: "Passed",
+    });
+    await advanceWorkState(target, "REVIEWING", { packageRoot });
+
+    const result = await runComplete({ target, packageRoot });
+    assert.equal(result.status, "VALID");
+    assert.equal(result.taskStatus, "COMPLETE");
+    assert.equal(result.publicationStatus, "local-only");
+    assert.equal(result.productionReadiness, "not-verified");
+  });
+});
+
+test("publication explicitly required but local-only rejects completion (P1-6 Test B)", async () => {
+  await withTarget(async (target) => {
+    await setupTarget(target, {
+      verification: ["tests"],
+      successCriteria: ["tests", "Package is published to npm registry"],
+    });
+    await advanceWorkState(target, "VERIFYING", { packageRoot });
+    await prepareCompletion({ target, packageRoot });
+    await recordCheck({
+      target,
+      packageRoot,
+      id: "tests-pass",
+      requirement: "tests",
+      status: "passed",
+      evidenceKind: "OBSERVED",
+      command: "npm test",
+      result: "Passed",
+    });
+    await advanceWorkState(target, "REVIEWING", { packageRoot });
+
+    const result = await runComplete({ target, packageRoot });
+    assert.equal(result.status, "REJECTED");
+    assert.ok(result.errors.some((e) => e.code === "E_PUBLICATION_REQUIREMENT_PENDING"));
+  });
+});
+
+test("production readiness explicitly required but not-verified rejects completion (P1-6 Test D)", async () => {
+  await withTarget(async (target) => {
+    await setupTarget(target, {
+      verification: ["tests"],
+      successCriteria: ["tests", "Production deployment succeeds"],
+    });
+    await advanceWorkState(target, "VERIFYING", { packageRoot });
+    await prepareCompletion({ target, packageRoot });
+    await recordCheck({
+      target,
+      packageRoot,
+      id: "tests-pass",
+      requirement: "tests",
+      status: "passed",
+      evidenceKind: "OBSERVED",
+      command: "npm test",
+      result: "Passed",
+    });
+    await advanceWorkState(target, "REVIEWING", { packageRoot });
+
+    const result = await runComplete({ target, packageRoot });
+    assert.equal(result.status, "REJECTED");
+    assert.ok(result.errors.some((e) => e.code === "E_PRODUCTION_REQUIREMENT_PENDING"));
+  });
+});
+
+test("requirement classification helpers (P2-7)", async () => {
+  const {
+    ordinaryRequirements,
+    terminalRequirements,
+    lifecycleRequirements,
+    publicationRequirements,
+    productionReadinessRequirements,
+  } = await import("../src/core/evidence-readiness.js");
+
+  const reqs = [
+    "All unit tests pass",
+    "Lifecycle reaches validator-backed COMPLETE",
+    "Package is published to npm",
+    "Production deployment succeeds",
+  ];
+
+  const ordinary = ordinaryRequirements(reqs);
+  assert.equal(ordinary.length, 1);
+  assert.equal(ordinary[0].text, "All unit tests pass");
+
+  const terminal = terminalRequirements(reqs);
+  assert.equal(terminal.length, 3);
+
+  const lifecycle = lifecycleRequirements(reqs);
+  assert.equal(lifecycle.length, 1);
+  assert.equal(lifecycle[0].type, "LIFECYCLE");
+
+  const pub = publicationRequirements(reqs);
+  assert.equal(pub.length, 1);
+  assert.equal(pub[0].type, "PUBLICATION");
+
+  const prod = productionReadinessRequirements(reqs);
+  assert.equal(prod.length, 1);
+  assert.equal(prod[0].type, "PRODUCTION_READINESS");
+});
+
