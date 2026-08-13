@@ -162,9 +162,27 @@ export function assertWorkStateSemantics(state) {
   if (state.verificationCycle !== undefined && (!Number.isInteger(state.verificationCycle) || state.verificationCycle < 1)) {
     throw new WorkStateError("verificationCycle must be a positive integer");
   }
-  if (state.lastCompletionAttempt !== undefined
-    && (!state.lastCompletionAttempt || typeof state.lastCompletionAttempt !== "object" || Array.isArray(state.lastCompletionAttempt))) {
-    throw new WorkStateError("lastCompletionAttempt must be an object");
+  if (state.lastCompletionAttempt !== undefined) {
+    if (!state.lastCompletionAttempt || typeof state.lastCompletionAttempt !== "object" || Array.isArray(state.lastCompletionAttempt)) {
+      throw new WorkStateError("lastCompletionAttempt must be an object");
+    }
+    if (state.lastCompletionAttempt.status !== "REJECTED") {
+      throw new WorkStateError("lastCompletionAttempt.status must be REJECTED");
+    }
+    if (!Array.isArray(state.lastCompletionAttempt.reasonCodes)
+      || state.lastCompletionAttempt.reasonCodes.some((code) => typeof code !== "string" || !code.trim())) {
+      throw new WorkStateError("lastCompletionAttempt.reasonCodes must be an array of non-empty strings");
+    }
+    if (!Array.isArray(state.lastCompletionAttempt.missingRequirementIds)
+      || state.lastCompletionAttempt.missingRequirementIds.some((id) => typeof id !== "string" || !id.trim())) {
+      throw new WorkStateError("lastCompletionAttempt.missingRequirementIds must be an array of non-empty strings");
+    }
+    if (!Number.isInteger(state.lastCompletionAttempt.verificationCycle) || state.lastCompletionAttempt.verificationCycle < 1) {
+      throw new WorkStateError("lastCompletionAttempt.verificationCycle must be a positive integer");
+    }
+    if (typeof state.lastCompletionAttempt.timestamp !== "string" || !state.lastCompletionAttempt.timestamp.trim()) {
+      throw new WorkStateError("lastCompletionAttempt.timestamp must be a non-empty string");
+    }
   }
   for (const failure of state.failures) {
     if (failure?.failureClass !== undefined) assertFailureClass(failure.failureClass);

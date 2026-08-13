@@ -228,3 +228,94 @@ export function validateStateLedgerCoherence(state, events) {
   }
   return errors;
 }
+
+export function validateCompletionRecoveryAuthorization({ state, events } = {}) {
+  const errors = [];
+  if (!state || typeof state !== "object") {
+    return {
+      authorized: false,
+      errors: [{ code: "E_COMPLETION_RECOVERY_UNAUTHORIZED", message: "Work state is required for recovery authorization" }],
+    };
+  }
+  const attempt = state.lastCompletionAttempt;
+  if (!attempt || attempt.status !== "REJECTED") {
+    return {
+      authorized: false,
+      errors: [{ code: "E_COMPLETION_RECOVERY_UNAUTHORIZED", message: "Recovery requires a persisted REJECTED completion attempt" }],
+    };
+  }
+  const recoverableCodes = new Set([
+    "E_EVIDENCE_REQUIRED",
+    "E_EVIDENCE_PARTIAL",
+    "E_EVIDENCE_INVALID",
+    "E_EVIDENCE_KIND_INVALID",
+    "E_EVIDENCE_COVERAGE_PARTIAL",
+  ]);
+  const hasRecoverableReason = Array.isArray(attempt.reasonCodes)
+    && attempt.reasonCodes.some((code) => recoverableCodes.has(code));
+  if (!hasRecoverableReason) {
+    return {
+      authorized: false,
+      errors: [{ code: "E_COMPLETION_RECOVERY_UNAUTHORIZED", message: "Completion attempt contains no recoverable evidence reason codes" }],
+    };
+  }
+
+  const taskEvents = (events ?? []).filter((event) => event.taskId === state.taskId);
+  const targetCycle = state.verificationCycle ?? 1;
+
+  const reviewEvents = taskEvents
+    .map((event, index) => ({ event, index }))
+    .filter(({ event }) => event.event === "REVIEW_STARTED" && (event.details?.verificationCycle ?? 1) === targetCycle);
+  const latestReviewIndex = reviewEvents.at(-1)?.index ?? -1;
+
+  const rejectionEvents = taskEvents
+    .map((event, index) => ({ event, index }))
+    .filter(({ event }) => event.event === "COMPLETION_REJECTED");
+
+  if (rejectionEvents.length === 0) {
+    errors.push({
+      code: "E_COMPLETION_RECOVERY_UNAUTHORIZED",
+      message: "No COMPLETION_REJECTED event found in protocol ledger",
+    });
+    return { authorized: false, errors };
+  }
+
+  const matchingEvent = rejectionEvents.findLast(({ event, index }) => {
+    const eventCycle = event.details?.verificationCycle ?? 1;
+    if (eventCycle !== targetCycle) return false;
+    if (latestReviewIndex >= 0 && index < latestReviewIndex) return false;
+    return true;
+  });
+
+  if (!matchingEvent) {
+    errors.push({
+      code: "E_COMPLETION_REJECTION_LEDGER_MISMATCH",
+      message: `No matching COMPLETION_REJECTED event found for verification cycle ${targetCycle}`,
+    });
+    return { authorized: false, errors };
+  }
+
+  const eventDetails = matchingEvent.event.details ?? {};
+  const stateReasons = [...new Set(attempt.reasonCodes ?? [])].sort();
+  const eventReasons = [...new Set(eventDetails.reasonCodes ?? [])].sort();
+  if (stateReasons.join(",") !== eventReasons.join(",")) {
+    errors.push({
+      code: "E_COMPLETION_REJECTION_LEDGER_MISMATCH",
+      message: "Work-state rejection reasonCodes do not match ledger COMPLETION_REJECTED event",
+    });
+  }
+
+  const stateMissing = [...new Set(attempt.missingRequirementIds ?? [])].sort();
+  const eventMissing = [...new Set(eventDetails.missingRequirementIds ?? [])].sort();
+  if (stateMissing.join(",") !== eventMissing.join(",")) {
+    errors.push({
+      code: "E_COMPLETION_REJECTION_LEDGER_MISMATCH",
+      message: "Work-state missingRequirementIds do not match ledger COMPLETION_REJECTED event",
+    });
+  }
+
+  return {
+    authorized: errors.length === 0,
+    errors,
+  };
+}

@@ -225,10 +225,10 @@ export async function recordCheck({
   const requested = normalizeRequirements(requiredEvidence).find((item) => (
     item.id === requirement || item.text === requirement
   ));
-  if (requested?.lifecycleOwned && status === "passed" && evidenceKind === "OBSERVED") {
+  if (requested?.terminalOwned && status === "passed" && evidenceKind === "OBSERVED") {
     throw artifactError(
       "E_FUTURE_LIFECYCLE_EVIDENCE",
-      `Lifecycle-owned requirement cannot be recorded before its terminal event: ${requested.text}`,
+      `Terminal-owned requirement cannot be recorded before its authoritative result: ${requested.text}`,
       [ARTIFACT_PATHS.state, ARTIFACT_PATHS.events],
     );
   }
@@ -257,7 +257,11 @@ export async function recordCheck({
     kind: evidenceKind,
     source,
     result: recordedResult,
-    ...(details === undefined ? {} : { details: structuredClone(details) }),
+    verificationCycle: state.verificationCycle ?? 1,
+    details: {
+      ...(details === undefined ? {} : structuredClone(details)),
+      verificationCycle: state.verificationCycle ?? 1,
+    },
   });
 
   const checks = mergeByCheckId(existingReceipt.value.checks ?? [], check);

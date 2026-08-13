@@ -16,6 +16,7 @@ import {
   evaluateStartExecutionPrerequisites,
   PREFLIGHT_ROUTE_IDENTITY_ERROR_MESSAGE,
 } from "./execution-prerequisites.js";
+import { validateEventLedger, validateCompletionRecoveryAuthorization } from "./events.js";
 
 export const NEXT_ACTIONS = Object.freeze({
   DISCOVER: "DISCOVER",
@@ -227,7 +228,11 @@ async function requirementsAndCoverage({ target, packageRoot, contract, route, c
   return { requirements, coverage: coverageForRequirements(requirements, checks) };
 }
 
-export async function getNextAction({ target, packageRoot } = {}) {
+export async function getNextAction(targetOrOptions = {}, packageRootOption) {
+  const normalized = typeof targetOrOptions === "string"
+    ? { target: targetOrOptions, packageRoot: packageRootOption }
+    : targetOrOptions;
+  const { target, packageRoot } = normalized ?? {};
   const workState = await loadArtifact(
     () => readWorkState(target, packageRoot),
     ARTIFACT_PATHS.state,
@@ -645,19 +650,29 @@ export async function getNextAction({ target, packageRoot } = {}) {
     });
     const readiness = evaluateRequiredEvidence({ requirements: evidence.requirements, checks: state.checks });
     if (!readiness.ready) {
+      let recoveryAuthorized = false;
+      if (state.lastCompletionAttempt?.status === "REJECTED") {
+        try {
+          const ledger = await validateEventLedger(target, packageRoot);
+          const recoveryAuth = validateCompletionRecoveryAuthorization({ state, events: ledger.events });
+          recoveryAuthorized = recoveryAuth.authorized;
+        } catch {
+          recoveryAuthorized = false;
+        }
+      }
       return result({
         ...context,
-        nextAction: state.lastCompletionAttempt?.status === "REJECTED"
+        nextAction: recoveryAuthorized
           ? NEXT_ACTIONS.ENTER_VERIFYING
           : NEXT_ACTIONS.RESOLVE_BLOCKER,
-        commands: state.lastCompletionAttempt?.status === "REJECTED"
+        commands: recoveryAuthorized
           ? [commandFor(NEXT_ACTIONS.ENTER_VERIFYING)]
           : [],
         reasons: [...readiness.invalid, ...readiness.partial, ...readiness.missing]
           .map((item) => artifactError(
             readiness.missing.some((candidate) => candidate.id === item.id)
               ? "E_EVIDENCE_REQUIRED"
-              : "E_EVIDENCE_PARTIAL",
+              : item.reasonCode ?? "E_EVIDENCE_PARTIAL",
             `Evidence is not ready: ${item.text}`,
             [ARTIFACT_PATHS.state],
           )),

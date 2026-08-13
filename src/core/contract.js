@@ -2,24 +2,89 @@ import { PROTOCOL_VERSION } from "./protocol.js";
 import { ARTIFACT_PATHS, canonicalFingerprint, readJsonArtifact, writeJsonArtifact } from "./artifacts.js";
 import { assertSchema, readSchema } from "./schema-validation.js";
 import { assertSecretFree } from "./receipt.js";
+import { REQUIREMENT_TYPES, isMixedTerminalRequirement } from "./evidence-readiness.js";
 
 export const CONTRACT_SCHEMA_VERSION = 1;
 
-const CONTRACT_ARRAY_FIELDS = Object.freeze([
+const CONTRACT_STRING_ARRAY_FIELDS = Object.freeze([
   "deliverables",
   "constraints",
   "risks",
-  "verification",
-  "successCriteria",
   "stopConditions",
   "unresolvedDecisions",
   "sourceRefs",
+]);
+
+const CONTRACT_REQUIREMENT_FIELDS = Object.freeze([
+  "verification",
+  "successCriteria",
 ]);
 
 function assertStringArray(value, label) {
   if (!Array.isArray(value) || value.some((item) => typeof item !== "string" || item.trim() === "")) {
     throw new Error(`${label} must be an array of non-empty strings`);
   }
+}
+
+function assertRequirementItem(item, label, seenIds) {
+  if (typeof item === "string") {
+    if (item.trim() === "") {
+      throw new Error(`${label} must be a non-empty string or requirement object`);
+    }
+    if (isMixedTerminalRequirement(item)) {
+      const err = new Error(`Mixed verification and lifecycle requirement detected in ${label}: ${item}`);
+      err.code = "E_CIRCULAR_COMPLETION_REQUIREMENT";
+      throw err;
+    }
+    return;
+  }
+  if (item && typeof item === "object" && !Array.isArray(item)) {
+    if (typeof item.text !== "string" || item.text.trim() === "") {
+      throw new Error(`${label}.text must be a non-empty string`);
+    }
+    if (isMixedTerminalRequirement(item.text)) {
+      const err = new Error(`Mixed verification and lifecycle requirement detected in ${label}: ${item.text}`);
+      err.code = "E_CIRCULAR_COMPLETION_REQUIREMENT";
+      throw err;
+    }
+    if (item.id !== undefined) {
+      if (typeof item.id !== "string" || item.id.trim() === "") {
+        throw new Error(`${label}.id must be a non-empty string`);
+      }
+      if (seenIds.has(item.id)) {
+        throw new Error(`Duplicate requirement ID in contract: ${item.id}`);
+      }
+      seenIds.add(item.id);
+    }
+    if (item.type !== undefined && !REQUIREMENT_TYPES.includes(item.type)) {
+      throw new Error(`${label}.type must be a valid requirement type`);
+    }
+    if (item.operator !== undefined && !["SINGLE", "ALL"].includes(item.operator)) {
+      throw new Error(`${label}.operator must be SINGLE or ALL`);
+    }
+    if (item.requiredEvidenceKind !== undefined && !["OBSERVED", "INFERRED", "NOT_VERIFIED", "BLOCKED", "HYPOTHESIS"].includes(item.requiredEvidenceKind)) {
+      throw new Error(`${label}.requiredEvidenceKind must be a valid evidence kind`);
+    }
+    if (item.requirements !== undefined) {
+      if (!Array.isArray(item.requirements)) {
+        throw new Error(`${label}.requirements must be an array`);
+      }
+      item.requirements.forEach((child, index) => {
+        assertRequirementItem(child, `${label}.requirements[${index}]`, seenIds);
+      });
+    }
+    return;
+  }
+  throw new Error(`${label} must be a non-empty string or requirement object`);
+}
+
+function assertRequirementArray(value, label, seenIds) {
+  if (!Array.isArray(value)) {
+    throw new Error(`${label} must be an array`);
+  }
+  value.forEach((item, index) => {
+    assertRequirementItem(item, `${label}[${index}]`, seenIds);
+  });
 }
 
 const ASSUMPTION_FIELDS = Object.freeze([
@@ -93,10 +158,16 @@ export function createContract(input = {}) {
     assumptions: [],
   };
   assertAssumptions(input.assumptions ?? []);
-  for (const field of CONTRACT_ARRAY_FIELDS) {
+  const seenIds = new Set();
+  for (const field of CONTRACT_STRING_ARRAY_FIELDS) {
     const value = input[field] ?? [];
     assertStringArray(value, `Contract ${field}`);
     contract[field] = [...value];
+  }
+  for (const field of CONTRACT_REQUIREMENT_FIELDS) {
+    const value = input[field] ?? [];
+    assertRequirementArray(value, `Contract ${field}`, seenIds);
+    contract[field] = structuredClone(value);
   }
   contract.assumptions = (input.assumptions ?? []).map((assumption) => ({
     value: assumption.value,
@@ -116,6 +187,13 @@ export function contractFingerprint(contract) {
 export async function validateContract(contract, packageRoot) {
   assertSecretFree(contract);
   assertAssumptions(contract.assumptions ?? []);
+  const seenIds = new Set();
+  for (const field of CONTRACT_STRING_ARRAY_FIELDS) {
+    assertStringArray(contract[field] ?? [], `Contract ${field}`);
+  }
+  for (const field of CONTRACT_REQUIREMENT_FIELDS) {
+    assertRequirementArray(contract[field] ?? [], `Contract ${field}`, seenIds);
+  }
   const schema = await readSchema("current-contract", packageRoot);
   assertSchema(contract, schema, "current contract");
   return contract;
