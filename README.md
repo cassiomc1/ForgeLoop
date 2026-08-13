@@ -182,12 +182,10 @@ from the real npm tarball, includes provenance and digests, and is copied into
 tests locally; CI does not download npm packages.
 
 The current published baseline for a reproducible blind run is
-`@cassiomc1/forgeloop@0.1.9`. The supplied hardening brief's `0.1.8` reference
-is historical; never move `v0.1.8` or `v0.1.9`, and use the read-only release
-identity verifier before a live run. The repository candidate is `0.1.10`, but
-it is not published: its completion-validation and cleanup TOCTOU fixes are not
-part of the frozen `0.1.9` tarball. Publish, tag, and repeat identity
-verification before a blind run that needs those executable changes.
+`@cassiomc1/forgeloop@0.1.10`. Earlier `0.1.8` and `0.1.9` references are
+historical; never move their tags or `v0.1.10`, and use the read-only release
+identity verifier before a live run. Version `0.1.10` includes the
+completion-validation and cleanup TOCTOU hardening.
 
 ### Use with npm
 
@@ -196,12 +194,12 @@ project without overwriting local instructions. When the package is available
 in the npm registry, use the commands below; otherwise use the repository
 checkout fallback.
 
-The current published release is `@cassiomc1/forgeloop@0.1.9`.
+The current published release is `@cassiomc1/forgeloop@0.1.10`.
 Pin this version when a reproducible blind run or release-identity check is
 required:
 
 ```bash
-npx @cassiomc1/forgeloop@0.1.9 --version
+npx @cassiomc1/forgeloop@0.1.10 --version
 npx @cassiomc1/forgeloop init
 npx @cassiomc1/forgeloop doctor
 npx @cassiomc1/forgeloop update
