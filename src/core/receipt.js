@@ -58,6 +58,10 @@ function assertKnownGuides(guides) {
 
 export function assertReceiptSemantics(receipt) {
   const evidence = receipt.evidence ?? [];
+  if (receipt.verificationCycle !== undefined
+    && (!Number.isInteger(receipt.verificationCycle) || receipt.verificationCycle < 1)) {
+    throw new Error("receipt.verificationCycle must be a positive integer");
+  }
   assertEvidenceList(evidence, "receipt.evidence");
 
   for (const [index, check] of receipt.checks.entries()) {
@@ -145,6 +149,7 @@ export async function createReceipt(input, packageRoot) {
     contractFingerprint: input.contractFingerprint,
     ...(input.routeFingerprint !== undefined ? { routeFingerprint: input.routeFingerprint } : {}),
     ...(input.stateFingerprint !== undefined ? { stateFingerprint: input.stateFingerprint } : {}),
+    ...(input.verificationCycle !== undefined ? { verificationCycle: input.verificationCycle } : {}),
     status: input.status ?? "in-progress",
     ...(input.taskStatus !== undefined ? { taskStatus: input.taskStatus } : {}),
     ...(input.verificationStatus !== undefined ? { verificationStatus: input.verificationStatus } : {}),

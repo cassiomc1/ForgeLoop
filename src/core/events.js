@@ -27,7 +27,7 @@ export const ACTIVATION_EVENT_MATRIX = Object.freeze([
   Object.freeze({ stage: "preflight blocked", event: "PREFLIGHT_BLOCKED", requiredFor: "blocked activation" }),
   Object.freeze({ stage: "preflight ready", event: "PREFLIGHT_READY", requiredFor: "resumable readiness" }),
 ]);
-const REPEATABLE_MILESTONES = new Set(["VERIFICATION_RECORDED"]);
+const REPEATABLE_MILESTONES = new Set(["VERIFICATION_STARTED", "VERIFICATION_RECORDED", "REVIEW_STARTED"]);
 
 function eventHash(event) {
   const { hash, ...body } = event;
@@ -126,7 +126,7 @@ export async function validateEventLedger(target, packageRoot) {
           code: "E_PHASE_CHRONOLOGY_INVALID",
           message: `${event.event} is missing prerequisite milestone: ${LIFECYCLE_MILESTONES[lastMilestone + 1]}`,
         });
-      } else if (milestoneIndex < lastMilestone) {
+      } else if (milestoneIndex < lastMilestone && event.event !== "VERIFICATION_STARTED") {
         errors.push({ code: "E_PHASE_CHRONOLOGY_INVALID", message: `${event.event} is out of lifecycle order` });
       } else if (milestoneIndex === lastMilestone && !REPEATABLE_MILESTONES.has(event.event)) {
         errors.push({ code: "E_PHASE_CHRONOLOGY_INVALID", message: `lifecycle milestone must not repeat: ${event.event}` });
@@ -161,6 +161,70 @@ export async function validateEventLedger(target, packageRoot) {
     if (event.event === "COMPLETION_VALIDATED" && !seen.has("VERIFICATION_RECORDED")) {
       errors.push({ code: "E_PHASE_CHRONOLOGY_INVALID", message: "completion validated before verification evidence" });
     }
+    if (event.event === "COMPLETION_REJECTED" && !seen.has("VERIFICATION_STARTED")) {
+      errors.push({ code: "E_PHASE_CHRONOLOGY_INVALID", message: "completion rejected before verification started" });
+    }
   }
   return { valid: errors.length === 0, events, errors };
+}
+
+export function validateStateLedgerCoherence(state, events) {
+  const errors = [];
+  if (!Number.isInteger(state.verificationCycle)) return errors;
+  const taskEvents = events.filter((event) => event.taskId === state.taskId);
+  const observed = new Set(taskEvents.map((event) => event.event));
+  const supportsReviewEvents = taskEvents.some((event) => event.event === "REVIEW_STARTED"
+    || (event.event === "VERIFICATION_STARTED" && Number.isInteger(event.details?.verificationCycle)));
+  const phaseRequirements = {
+    EXECUTING: ["EXECUTION_STARTED"],
+    VERIFYING: ["EXECUTION_STARTED", "VERIFICATION_STARTED"],
+    DIAGNOSING: ["EXECUTION_STARTED", "VERIFICATION_STARTED"],
+    CORRECTING: ["EXECUTION_STARTED", "VERIFICATION_STARTED"],
+    REVIEWING: ["EXECUTION_STARTED", "VERIFICATION_STARTED", ...(supportsReviewEvents ? ["REVIEW_STARTED"] : [])],
+    COMPLETE: ["EXECUTION_STARTED", "VERIFICATION_STARTED", ...(supportsReviewEvents ? ["REVIEW_STARTED"] : []), "COMPLETION_VALIDATED"],
+  };
+  for (const required of phaseRequirements[state.phase] ?? []) {
+    if (!observed.has(required)) {
+      errors.push({
+        code: "E_STATE_LEDGER_DIVERGENCE",
+        message: `Work-state phase ${state.phase} requires ledger event ${required}`,
+      });
+    }
+  }
+  if (Number.isInteger(state.verificationCycle)) {
+    const verificationEvents = taskEvents
+      .map((event, index) => ({ event, index }))
+      .filter(({ event }) => event.event === "VERIFICATION_STARTED");
+    const cycles = verificationEvents.map(({ event }) => event.details?.verificationCycle ?? 1);
+    if (cycles.at(-1) !== state.verificationCycle) {
+      errors.push({
+        code: "E_STATE_LEDGER_DIVERGENCE",
+        message: "Work-state verification cycle does not match the lifecycle ledger",
+      });
+    }
+    const latestVerification = verificationEvents.at(-1);
+    const latestReview = taskEvents
+      .map((event, index) => ({ event, index }))
+      .filter(({ event }) => event.event === "REVIEW_STARTED")
+      .at(-1);
+    const latestReviewCycle = latestReview?.event.details?.verificationCycle;
+    if (state.phase === "VERIFYING"
+      && latestReviewCycle === state.verificationCycle
+      && latestReview.index > (latestVerification?.index ?? -1)) {
+      errors.push({
+        code: "E_STATE_LEDGER_DIVERGENCE",
+        message: "Work-state returned to VERIFYING without a new verification cycle in the lifecycle ledger",
+      });
+    }
+    if (["REVIEWING", "COMPLETE"].includes(state.phase)
+      && supportsReviewEvents
+      && (latestReviewCycle !== state.verificationCycle
+        || latestReview.index < (latestVerification?.index ?? -1))) {
+      errors.push({
+        code: "E_STATE_LEDGER_DIVERGENCE",
+        message: "Work-state review phase does not match the current lifecycle ledger cycle",
+      });
+    }
+  }
+  return errors;
 }

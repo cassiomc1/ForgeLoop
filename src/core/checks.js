@@ -26,6 +26,25 @@ function contradiction(message) {
   return checkError("E_CHECK_STATUS_CONTRADICTION", message);
 }
 
+function assertCompoundStatus(value, label) {
+  const components = value.details?.components;
+  if (!Array.isArray(components)) return;
+  for (const [index, component] of components.entries()) {
+    if (!component || typeof component !== "object" || Array.isArray(component)) {
+      throw checkError("E_CHECK_INVALID", `${label}.details.components[${index}] must be an object`);
+    }
+    string(component.requirementId ?? component.requirement, `${label}.details.components[${index}].requirementId`);
+    if (!CHECK_STATUSES.includes(component.status) || !CHECK_EVIDENCE_KINDS.includes(component.evidenceKind)) {
+      throw checkError("E_CHECK_INVALID", `${label}.details.components[${index}] has invalid status or evidenceKind`);
+    }
+  }
+  if (value.status === "passed" && components.some((component) => (
+    component.status !== "passed" || component.evidenceKind !== "OBSERVED"
+  ))) {
+    throw contradiction(`${label} passed cannot contain an unverified, partial, blocked, or failed component`);
+  }
+}
+
 export function createCheck(input = {}) {
   const check = {
     schemaVersion: CHECK_SCHEMA_VERSION,
@@ -78,6 +97,7 @@ export function assertCheck(value, label = "check") {
   if (value.status === "not-run" && value.evidenceKind !== "NOT_VERIFIED") {
     throw contradiction(`${label} not-run must use NOT_VERIFIED evidence`);
   }
+  assertCompoundStatus(value, label);
   return value;
 }
 

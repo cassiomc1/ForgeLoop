@@ -1,7 +1,8 @@
 import { ARTIFACT_PATHS, canonicalFingerprint } from "./artifacts.js";
-import { assertCheckList, requiredChecksSatisfiedForRequirements } from "./checks.js";
+import { assertCheckList } from "./checks.js";
 import { assertCoverageList, coverageForRequirements } from "./coverage.js";
 import { assertEvidenceList } from "./evidence.js";
+import { evaluateRequiredEvidence } from "./evidence-readiness.js";
 
 function issue(code, message, artifacts = []) {
   return { code, message, artifacts };
@@ -86,8 +87,15 @@ export function completionRelationshipErrors({
     addAssertion(errors, () => assertCheckList(receipt.checks, "receipt.checks"), "E_CHECK_INVALID", [ARTIFACT_PATHS.receipt]);
     addAssertion(errors, () => assertEvidenceList(receipt.evidence ?? [], "receipt.evidence"), "E_EVIDENCE_INVALID", [ARTIFACT_PATHS.receipt]);
     if (requireRequiredChecks) {
-      for (const error of requiredChecksSatisfiedForRequirements(receipt.checks, requiredEvidence)) {
-        errors.push(issue(error.code, error.message, [ARTIFACT_PATHS.receipt]));
+      const readiness = evaluateRequiredEvidence({ requirements: requiredEvidence, checks: receipt.checks });
+      for (const requirement of readiness.missing) {
+        errors.push(issue("E_EVIDENCE_REQUIRED", `Required check is missing: ${requirement.text}`, [ARTIFACT_PATHS.receipt], { requirementId: requirement.id }));
+      }
+      for (const requirement of readiness.partial) {
+        errors.push(issue("E_EVIDENCE_PARTIAL", `Required evidence is partial: ${requirement.text}`, [ARTIFACT_PATHS.receipt], { requirementId: requirement.id }));
+      }
+      for (const requirement of readiness.invalid) {
+        errors.push(issue(requirement.reasonCode ?? "E_EVIDENCE_INVALID", `Required evidence is invalid: ${requirement.text}`, [ARTIFACT_PATHS.receipt], { requirementId: requirement.id }));
       }
     }
   }

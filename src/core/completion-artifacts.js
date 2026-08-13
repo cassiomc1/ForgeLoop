@@ -17,6 +17,7 @@ import { readPersistedRoute } from "./route-artifact.js";
 import { createReceipt, validateReceipt } from "./receipt.js";
 import { readWorkState, writeWorkState } from "./work-state.js";
 import { assertExecutionPrerequisites, hasExecutionStarted } from "./execution-prerequisites.js";
+import { normalizeRequirements } from "./evidence-readiness.js";
 
 function artifactError(code, message, artifacts = []) {
   const error = new Error(message);
@@ -114,6 +115,7 @@ export async function prepareCompletion({ target, packageRoot }) {
     contractFingerprint: contract.fingerprint,
     routeFingerprint: route.fingerprint,
     stateFingerprint: canonicalFingerprint(state),
+    verificationCycle: state.verificationCycle ?? 1,
     status: existingValue.status ?? "in-progress",
     taskStatus: existingValue.taskStatus ?? "in-progress",
     verificationStatus: existingValue.verificationStatus ?? "not-verified",
@@ -210,6 +212,27 @@ export async function recordCheck({
   }
   await assertExecutionPrerequisites({ target, state, packageRoot });
 
+  const contract = await readContract(target, packageRoot);
+  const route = await readPersistedRoute(target, packageRoot);
+  const preflight = await evaluatePreflight({ target, packageRoot });
+  const requiredEvidence = await requiredEvidenceForTarget({
+    target,
+    contract,
+    route,
+    packageRoot,
+    additionalEvidence: preflight.policy?.requiredEvidence ?? [],
+  });
+  const requested = normalizeRequirements(requiredEvidence).find((item) => (
+    item.id === requirement || item.text === requirement
+  ));
+  if (requested?.lifecycleOwned && status === "passed" && evidenceKind === "OBSERVED") {
+    throw artifactError(
+      "E_FUTURE_LIFECYCLE_EVIDENCE",
+      `Lifecycle-owned requirement cannot be recorded before its terminal event: ${requested.text}`,
+      [ARTIFACT_PATHS.state, ARTIFACT_PATHS.events],
+    );
+  }
+
   const existingReceipt = await readCurrentReceipt(target, packageRoot);
   await validateReceipt(existingReceipt.value, packageRoot);
   const source = command?.trim() || `check:${id}`;
@@ -221,11 +244,13 @@ export async function recordCheck({
     status,
     evidenceKind,
     source,
+    timestamp: new Date().toISOString(),
     ...(exitCode === undefined ? {} : { exitCode }),
     details: {
       ...(command === undefined ? {} : { command }),
       ...(result === undefined ? {} : { result }),
       ...(details === undefined ? {} : details),
+      verificationCycle: state.verificationCycle ?? 1,
     },
   });
   const evidence = createEvidence({
@@ -237,16 +262,6 @@ export async function recordCheck({
 
   const checks = mergeByCheckId(existingReceipt.value.checks ?? [], check);
   const evidenceList = appendUniqueEvidence(existingReceipt.value.evidence ?? [], evidence);
-  const contract = await readContract(target, packageRoot);
-  const route = await readPersistedRoute(target, packageRoot);
-  const preflight = await evaluatePreflight({ target, packageRoot });
-  const requiredEvidence = await requiredEvidenceForTarget({
-    target,
-    contract,
-    route,
-    packageRoot,
-    additionalEvidence: preflight.policy?.requiredEvidence ?? [],
-  });
   assertCompletionRelationships({
     contract,
     route,
@@ -281,6 +296,7 @@ export async function recordCheck({
     evidence: evidenceList,
     evidenceCoverage: coverage,
     stateFingerprint: canonicalFingerprint(nextState),
+    verificationCycle: state.verificationCycle ?? 1,
   }, packageRoot);
 
   assertCompletionRelationships({
@@ -308,6 +324,7 @@ export async function recordCheck({
       requirement: check.requirement,
       status: check.status,
       evidenceKind: check.evidenceKind,
+      verificationCycle: state.verificationCycle ?? 1,
     },
   }, packageRoot);
   return {

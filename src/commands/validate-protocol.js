@@ -8,6 +8,7 @@ import { validateReceipt } from "../core/receipt.js";
 import { validateTaskBrief, validateDelegatedResult } from "../core/delegation.js";
 import { ARTIFACT_PATHS, readJsonArtifact } from "../core/artifacts.js";
 import { evaluatePreflight, validateReadyProtocolConsistency } from "../core/preflight.js";
+import { validateEventLedger, validateStateLedgerCoherence } from "../core/events.js";
 
 async function readArtifact(target, relativePath, label) {
   if (!relativePath) return null;
@@ -118,11 +119,22 @@ export async function runValidateProtocol({
   } catch {
     // A missing or invalid preflight is already outside the optional protocol set.
   }
-  if (readErrors.length > 0 || schemaErrors.length > 0 || readyConsistencyErrors.length > 0) {
+  let ledgerErrors = [];
+  if (state && !stateValidationError) {
+    const ledger = await validateEventLedger(target, packageRoot);
+    ledgerErrors = [
+      ...ledger.errors.map((error) => ({ ...error, artifacts: [ARTIFACT_PATHS.events] })),
+      ...validateStateLedgerCoherence(state, ledger.events).map((error) => ({
+        ...error,
+        artifacts: [ARTIFACT_PATHS.state, ARTIFACT_PATHS.events],
+      })),
+    ];
+  }
+  if (readErrors.length > 0 || schemaErrors.length > 0 || readyConsistencyErrors.length > 0 || ledgerErrors.length > 0) {
     return {
       ...result,
       status: "INVALID",
-      errors: [...result.errors, ...readErrors, ...schemaErrors, ...readyConsistencyErrors]
+      errors: [...result.errors, ...readErrors, ...schemaErrors, ...readyConsistencyErrors, ...ledgerErrors]
         .sort((left, right) => left.code.localeCompare(right.code) || left.message.localeCompare(right.message)),
     };
   }

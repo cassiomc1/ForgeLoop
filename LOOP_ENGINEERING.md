@@ -398,6 +398,15 @@ unresolved findings. Record verification evidence before review. If a required
 check fails, use `VERIFYING → DIAGNOSING → CORRECTING → VERIFYING`; do not skip
 the evidence recording step or replace it with prose.
 
+If completion is rejected only because evidence is missing, partial, invalid,
+or insufficiently observed, ForgeLoop persists `COMPLETION_REJECTED` and
+authorizes `REVIEWING → VERIFYING` without requiring product diagnosis. Each
+restart increments `verificationCycle`; receipts and recorded checks bind to
+the current cycle. Lifecycle-owned terminal criteria such as validator-backed
+`COMPLETE` are satisfied by lifecycle events, not by pre-completion
+`record-check` claims. Compound `ALL` checks cannot pass while any declared
+component is failed, blocked, partial, or not verified.
+
 ## Independent completion dimensions
 
 Local task completion, verification, publication, and production readiness are

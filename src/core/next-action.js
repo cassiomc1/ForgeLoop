@@ -11,6 +11,7 @@ import { assertCheckList } from "./checks.js";
 import { completionRelationshipErrors } from "./completion-relationships.js";
 import { classifyLoadedWorkState, readWorkState } from "./work-state.js";
 import { sha256 } from "./manifest.js";
+import { evaluateRequiredEvidence } from "./evidence-readiness.js";
 import {
   evaluateStartExecutionPrerequisites,
   PREFLIGHT_ROUTE_IDENTITY_ERROR_MESSAGE,
@@ -136,10 +137,6 @@ function missingArtifact(error, fallback) {
   return error?.code === "ARTIFACT_MISSING"
     ? (error.artifacts?.length ? error.artifacts : [fallback])
     : [];
-}
-
-function allCoverageCovered(coverage) {
-  return coverage.every((item) => item.status === "COVERED");
 }
 
 function staleReasons(state, contract, route) {
@@ -571,6 +568,7 @@ export async function getNextAction({ target, packageRoot } = {}) {
       checks: state.checks,
       additionalEvidence: preflight.policy?.requiredEvidence ?? [],
     });
+    const readiness = evaluateRequiredEvidence({ requirements: evidence.requirements, checks: state.checks });
     const receiptRelationships = completionRelationshipErrors({
       contract,
       route,
@@ -587,18 +585,22 @@ export async function getNextAction({ target, packageRoot } = {}) {
         requiredArtifacts: [...requiredArtifacts, ARTIFACT_PATHS.receipt],
       });
     }
-    if (allCoverageCovered(evidence.coverage)) {
+    if (readiness.ready) {
       return decision(context, NEXT_ACTIONS.ENTER_REVIEWING, artifactError("EVIDENCE_COVERED", "All required observed verification evidence is covered"));
     }
-    const uncovered = evidence.coverage.filter((item) => item.status !== "COVERED");
+    const uncovered = [...readiness.invalid, ...readiness.partial, ...readiness.missing];
     return result({
       ...context,
       nextAction: NEXT_ACTIONS.RECORD_VERIFICATION,
       commands: ["forgeloop record-check"],
-      commandSpecs: uncovered.map((item) => recordCheckCommandSpec(item.requirement)),
+      commandSpecs: uncovered.map((item) => recordCheckCommandSpec(item.text)),
       reasons: uncovered
         .map((item) => artifactError(
-          "E_EVIDENCE_REQUIRED",
+          readiness.invalid.some((candidate) => candidate.id === item.id)
+            ? "E_EVIDENCE_INVALID"
+            : readiness.partial.some((candidate) => candidate.id === item.id)
+              ? "E_EVIDENCE_PARTIAL"
+              : "E_EVIDENCE_REQUIRED",
           "Run the required check and record observed evidence through the structured command specification.",
           [ARTIFACT_PATHS.state],
         )),
@@ -641,15 +643,22 @@ export async function getNextAction({ target, packageRoot } = {}) {
       checks: state.checks,
       additionalEvidence: preflight.policy?.requiredEvidence ?? [],
     });
-    if (!allCoverageCovered(evidence.coverage)) {
+    const readiness = evaluateRequiredEvidence({ requirements: evidence.requirements, checks: state.checks });
+    if (!readiness.ready) {
       return result({
         ...context,
-        nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
-        reasons: evidence.coverage
-          .filter((item) => item.status !== "COVERED")
+        nextAction: state.lastCompletionAttempt?.status === "REJECTED"
+          ? NEXT_ACTIONS.ENTER_VERIFYING
+          : NEXT_ACTIONS.RESOLVE_BLOCKER,
+        commands: state.lastCompletionAttempt?.status === "REJECTED"
+          ? [commandFor(NEXT_ACTIONS.ENTER_VERIFYING)]
+          : [],
+        reasons: [...readiness.invalid, ...readiness.partial, ...readiness.missing]
           .map((item) => artifactError(
-            "E_EVIDENCE_COVERAGE_PARTIAL",
-            `Evidence coverage is ${item.status}: ${item.requirement}`,
+            readiness.missing.some((candidate) => candidate.id === item.id)
+              ? "E_EVIDENCE_REQUIRED"
+              : "E_EVIDENCE_PARTIAL",
+            `Evidence is not ready: ${item.text}`,
             [ARTIFACT_PATHS.state],
           )),
         requiredArtifacts,

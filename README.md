@@ -87,8 +87,17 @@ flowchart TB
   state --> lifecycle["plan → execute<br/>→ verify → review"]
   lifecycle --> prepare["prepare<br/>completion receipt"]
   prepare --> checks["checks + structured<br/>evidence"]
+  checks --> readiness{"canonical evidence<br/>readiness"}
+  readiness -->|covered| review["REVIEWING<br/>cycle N"]
+  readiness -->|failed| diagnose["DIAGNOSING →<br/>CORRECTING"]
+  diagnose --> checks
+  review --> complete["complete<br/>validator"]
+  complete -->|VALID| terminal["COMPLETE"]
+  complete -->|evidence-only rejection| rejected["COMPLETION_REJECTED"]
+  rejected --> cycle["VERIFYING<br/>cycle N + 1"]
+  cycle --> prepare
   checks --> receipt["updated execution<br/>receipt"]
-  checks --> audit["audit +<br/>complete"]
+  complete --> audit["audit +<br/>validate-protocol"]
   events --> audit
 
   contract --> freshness["freshness<br/>fingerprints"]
@@ -123,8 +132,10 @@ flowchart TB
   class entry,discovery,delegation entry;
   class migration,plan,hidden,verified,authority,cleanup,recovered,retry,incomplete migration;
   class routing,preflight,ready routing;
-  class state,events,lifecycle state;
-  class checks,receipt,audit evidence;
+  class state,events,lifecycle,review,cycle state;
+  class checks,readiness,receipt,complete,audit evidence;
+  class diagnose,rejected gate;
+  class terminal result;
   class contract,freshness,conformance fact;
   class gates,blocker gate;
   class verdict result;
@@ -141,15 +152,20 @@ cleanup is diagnosed by `doctor` as `E_MIGRATION_INCOMPLETE` and retried by
 discovery creates the contract and deterministic route; contract, route, and
 required gates must produce `PREFLIGHT_READY` before the resumable state and
 append-only event ledger authorize the lifecycle. Verification produces
-structured evidence and a receipt. `audit`/`complete` and `validate-protocol`
-then classify the result as `VALID`, `INCOMPLETE`, `STALE`, `INCONSISTENT`, or
+structured evidence evaluated by one canonical readiness model. Failed checks
+enter diagnosis and correction. An evidence-only completion rejection records
+`COMPLETION_REJECTED` and opens a new numbered verification cycle without
+editing protocol JSON manually. `audit`, `complete`, and `validate-protocol`
+classify the result as `VALID`, `INCOMPLETE`, `STALE`, `INCONSISTENT`, or
 `INVALID`. Optional delegation creates a handoff; it is not an agent runtime.
 
 The operational request loop remains:
 
 ```text
 Request → discovery → profile → routing → plan → execution
-        → verification → correction when needed → final evidence
+        → verification → review → completion validation
+              ↑             │
+              └ evidence-only rejection / next cycle
 ```
 
 Thin native adapters support Codex, Claude Code, Cursor, and GitHub Copilot.
@@ -186,6 +202,11 @@ The current published baseline for a reproducible blind run is
 historical; never move their tags or `v0.1.10`, and use the read-only release
 identity verifier before a live run. Version `0.1.10` includes the
 completion-validation and cleanup TOCTOU hardening.
+
+The repository candidate is `0.1.11` and is not published. It adds canonical
+evidence readiness, legal repeated verification cycles, future-result and
+compound-evidence safeguards, and lifecycle-ledger divergence detection. The
+published npm baseline remains `0.1.10` until a separate release is completed.
 
 ### Use with npm
 
