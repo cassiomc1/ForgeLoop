@@ -7,6 +7,7 @@ import {
   legacyPathForSource,
   targetPathForSource,
 } from "./target-layout.js";
+import { nativeShim } from "./native-adapters.js";
 
 const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -66,15 +67,6 @@ export const TEMPLATE_PATHS = [
 
 export function getPackageRoot() {
   return PACKAGE_ROOT;
-}
-
-function nativeShim(relativePath) {
-  const kitPrefix = relativePath.startsWith(".cursor/")
-    ? "../../.forgeloop/kit"
-    : relativePath.startsWith(".github/")
-      ? "../.forgeloop/kit"
-      : ".forgeloop/kit";
-  return `# ForgeLoop native adapter\n\nRead and follow the canonical ForgeLoop protocol in ${kitPrefix}/LOOP_ENGINEERING.md and ${kitPrefix}/AGENT_COMPATIBILITY.md.\nThe canonical guides and schemas are under ${kitPrefix}/; keep this adapter concise and preserve any host-specific instructions.\n`;
 }
 
 export async function readTemplateEntries(packageRoot = PACKAGE_ROOT) {
