@@ -90,4 +90,3 @@ requirements.
   requirement text is data, not shell syntax.
 - The targeted next-action tests, full `npm test`, package check, Markdown/loop
   validators, secret scan, and validator-backed ForgeLoop completion must pass.
-

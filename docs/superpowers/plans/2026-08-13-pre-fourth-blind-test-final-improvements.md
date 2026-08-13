@@ -22,10 +22,12 @@
 ### Task 1: Add regression tests for unresolved and observed outcomes
 
 **Files:**
+
 - Modify: `tests/next-action.test.js`
 - Test: `tests/next-action.test.js`
 
 **Interfaces:**
+
 - Consumes: `getNextAction`, `recordCheck`, `prepareCompletion`, `advanceWorkState`, and the existing `setupTarget` fixture.
 - Produces: assertions proving the command spec is unresolved before execution and persisted pass/fail observations drive the next action.
 
@@ -96,10 +98,12 @@ guidance assertion is the expected RED failure before production code changes.
 ### Task 2: Remove pre-assumed result fields from command guidance
 
 **Files:**
+
 - Modify: `src/core/next-action.js:107-120`
 - Test: `tests/next-action.test.js`
 
 **Interfaces:**
+
 - Consumes: the existing `requirement` string and stable `sha256` helper.
 - Produces: `recordCheckCommandSpec(requirement)` with deterministic `argv` and unresolved `requiredInputs`.
 
@@ -142,10 +146,12 @@ semantics changed.
 ### Task 3: Align canonical closure documentation and release metadata
 
 **Files:**
+
 - Modify: `LOOP_ENGINEERING.md:69-100`
 - Modify: `package.json:3`
 
 **Interfaces:**
+
 - Consumes: the executable `next`, `prepare-completion`, `record-check`,
   `advance`, and `complete` commands.
 - Produces: canonical documentation matching the persisted receipt prerequisite
@@ -198,11 +204,13 @@ Expected: every command exits `0` with no new findings.
 ### Task 4: Verify protocol-backed completion and full regression
 
 **Files:**
+
 - Modify: `tests/cli.test.js` (keep route persistence isolated from the active target)
 - Modify: task-scoped `.forgeloop` artifacts through ForgeLoop commands and
   APIs; do not hand-edit lifecycle evidence.
 
 **Interfaces:**
+
 - Consumes: the approved contract, persisted route, satisfied gate, and READY preflight.
 - Produces: structured observed evidence, REVIEWING state, a valid execution receipt, and `forgeloop complete` status `VALID`.
 
