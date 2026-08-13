@@ -1,0 +1,2 @@
+# The frozen published-package fixture is hash-addressed; preserve its bytes on every host.
+tests/fixtures/legacy-0.1.6/** -text
