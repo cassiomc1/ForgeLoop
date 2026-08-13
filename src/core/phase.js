@@ -37,21 +37,49 @@ const LATE_PHASES = new Set([
   "COMPLETE",
 ]);
 
-async function assertLatePhaseIdentity(target, state, packageRoot) {
-  if (!LATE_PHASES.has(state.phase)) return;
-  let contract;
-  let route;
+async function assertPersistedStateIdentity(target, state, toPhase, packageRoot) {
+  const requireContract = LATE_PHASES.has(state.phase)
+    || ["CONTRACT_READY", "ROUTED", "EXECUTING"].includes(toPhase);
+  const requireRoute = LATE_PHASES.has(state.phase)
+    || ["ROUTED", "EXECUTING"].includes(toPhase);
+  let contract = null;
+  let route = null;
   try {
     contract = await readContract(target, packageRoot);
+  } catch (error) {
+    if (error.code === "ARTIFACT_MISSING" && !requireContract) {
+      contract = null;
+    } else {
+      throw phaseError(
+        requireContract ? "E_PHASE_PREREQUISITE_MISSING" : error.code ?? "E_CONTRACT_INVALID",
+        `${requireContract ? `Phase ${toPhase} requires current contract` : "Unable to validate current contract"}: ${error.message}`,
+        [ARTIFACT_PATHS.contract],
+      );
+    }
+  }
+  try {
     route = await readPersistedRoute(target, packageRoot);
   } catch (error) {
+    if (error.code === "ARTIFACT_MISSING" && !requireRoute) {
+      route = null;
+    } else {
+      throw phaseError(
+        requireRoute ? "E_PHASE_PREREQUISITE_MISSING" : error.code ?? "E_ROUTE_INVALID",
+        `${requireRoute ? `Phase ${toPhase} requires persisted route` : "Unable to validate persisted route"}: ${error.message}`,
+        [ARTIFACT_PATHS.route],
+      );
+    }
+  }
+  if (!contract && !route) return;
+  try {
+    assertStateIdentity({ contract, route, state });
+  } catch (error) {
     throw phaseError(
-      "E_PHASE_PREREQUISITE_MISSING",
-      `Late-phase transition requires current contract and route: ${error.message}`,
-      [ARTIFACT_PATHS.contract, ARTIFACT_PATHS.route],
+      error.code,
+      error.message,
+      error.artifacts,
     );
   }
-  assertStateIdentity({ contract, route, state });
 }
 
 function reconcileImplementationStep(state, toPhase) {
@@ -103,8 +131,8 @@ export async function advanceWorkState(target, toPhase, { packageRoot, now = new
   assertWorkPhase(toPhase);
   const state = await readWorkState(target, packageRoot);
   if (!state) throw phaseError("E_PHASE_PREREQUISITE_MISSING", "Cannot advance without work state", [ARTIFACT_PATHS.state]);
-  await assertLatePhaseIdentity(target, state, packageRoot);
   await assertPhasePrerequisites(target, state, toPhase, packageRoot);
+  await assertPersistedStateIdentity(target, state, toPhase, packageRoot);
   if (!isValidTransition(state.phase, toPhase)) {
     throw phaseError("E_PHASE_TRANSITION_INVALID", `Invalid work-state transition: ${state.phase} -> ${toPhase}`);
   }

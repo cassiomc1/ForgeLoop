@@ -1,16 +1,20 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 
-import { createContract, writeContract } from "../src/core/contract.js";
+import { ARTIFACT_PATHS } from "../src/core/artifacts.js";
+import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
+import { appendProtocolEvent } from "../src/core/events.js";
 import { createGate } from "../src/core/gates.js";
 import { persistGate } from "../src/core/gate-artifact.js";
 import { runPreflight } from "../src/commands/preflight.js";
 import { evaluateRoute } from "../src/core/router.js";
 import { persistRoute } from "../src/core/route-artifact.js";
 import { getPackageRoot } from "../src/core/templates.js";
+import { createWorkState, writeWorkState } from "../src/core/work-state.js";
 
 const packageRoot = getPackageRoot();
 
@@ -38,7 +42,7 @@ async function prepareWebsite(target, objective = "Prepare website") {
   });
   await writeContract(target, contract, packageRoot);
   const route = evaluateRoute({ workType: "complete-website", surfaces: ["ui"], platforms: ["web"] });
-  await persistRoute(target, route, packageRoot, { contractFingerprint: (await import("../src/core/contract.js")).contractFingerprint(contract) });
+  const persistedRoute = await persistRoute(target, route, packageRoot, { contractFingerprint: contractFingerprint(contract) });
   for (const gate of ["design", "quality", "threat-boundary"]) {
     await persistGate(target, createGate({
       taskId: contract.taskId,
@@ -52,7 +56,21 @@ async function prepareWebsite(target, objective = "Prepare website") {
       evidence: [],
     }), packageRoot);
   }
-  return contract;
+  return { contract, route, persistedRoute };
+}
+
+async function artifactHashes(target) {
+  const hashes = {};
+  for (const relativePath of [ARTIFACT_PATHS.state, ARTIFACT_PATHS.preflight, ARTIFACT_PATHS.events]) {
+    try {
+      const bytes = await readFile(path.join(target, relativePath));
+      hashes[relativePath] = createHash("sha256").update(bytes).digest("hex");
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+      hashes[relativePath] = null;
+    }
+  }
+  return hashes;
 }
 
 test("preflight blocks missing contract and route with stable codes", async () => {
@@ -92,5 +110,36 @@ test("preflight detects a contract changed after route persistence", async () =>
     const result = await runPreflight({ target, packageRoot });
     assert.equal(result.status, "BLOCKED");
     assert.ok(result.errors.some((error) => error.code === "E_ROUTE_STALE"));
+  });
+});
+
+test("preflight rejects a mixed-task ledger before persisting artifacts", async () => {
+  await withTarget(async (target) => {
+    const { contract, route, persistedRoute } = await prepareWebsite(target);
+    await writeWorkState(target, createWorkState({
+      taskId: contract.taskId,
+      contractFingerprint: contractFingerprint(contract),
+      routeFingerprint: persistedRoute.fingerprint,
+      repositoryFingerprint: { branch: null, head: null },
+      phase: "ROUTED",
+      previousPhase: "CONTRACT_READY",
+      selectedGuides: route.guides,
+      completedSteps: ["contract", "route"],
+      pendingSteps: ["implementation"],
+      checks: [],
+      failures: [],
+      blockers: [],
+      verificationEvidence: [],
+    }), { packageRoot });
+    await appendProtocolEvent(target, { taskId: "foreign-task", event: "CONTRACT_VALIDATED" }, packageRoot);
+    await appendProtocolEvent(target, { taskId: "foreign-task", event: "ROUTE_VALIDATED" }, packageRoot);
+    const before = await artifactHashes(target);
+
+    await assert.rejects(
+      () => runPreflight({ target, packageRoot }),
+      (error) => error.code === "E_PHASE_CHRONOLOGY_INVALID",
+    );
+
+    assert.deepEqual(await artifactHashes(target), before);
   });
 });

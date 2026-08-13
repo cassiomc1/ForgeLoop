@@ -5,12 +5,13 @@ import { requiredGatesForGuides } from "./guide-metadata.js";
 import { assertRouteInvariants } from "./router.js";
 import { assertSourceProvenance } from "./sources.js";
 import { readPersistedRoute } from "./route-artifact.js";
-import { appendProtocolEvent } from "./events.js";
+import { appendProtocolEvent, validateEventLedger } from "./events.js";
 import { readWorkState } from "./work-state.js";
 import { readConfig } from "./config.js";
 import { assertSafePath, ensureWithin, fileExists, readBytes } from "./filesystem.js";
 import { sha256 } from "./manifest.js";
 import { validateProfileSources } from "./profile.js";
+import { assertStateIdentity } from "./completion-relationships.js";
 
 function issue(code, message, artifacts = [], details = {}) {
   return { code, message, artifacts, ...details };
@@ -24,6 +25,13 @@ function sortIssues(errors) {
   return unique.sort((left, right) => left.code.localeCompare(right.code)
     || left.artifacts.join("\0").localeCompare(right.artifacts.join("\0"))
     || left.message.localeCompare(right.message));
+}
+
+function preflightError(code, message, artifacts = []) {
+  const error = new Error(message);
+  error.code = code;
+  error.artifacts = artifacts;
+  return error;
 }
 
 function sameStringSet(left, right) {
@@ -253,9 +261,46 @@ export async function evaluatePreflight({ target, packageRoot, strict = false } 
   };
 }
 
+async function readOptionalIdentityArtifact(readArtifact) {
+  try {
+    return await readArtifact();
+  } catch {
+    return null;
+  }
+}
+
+async function assertPreflightPersistenceSafety(target, packageRoot, taskId) {
+  let state = null;
+  try {
+    state = await readWorkState(target, packageRoot);
+  } catch {
+    state = null;
+  }
+  if (state) {
+    const contract = await readOptionalIdentityArtifact(() => readContract(target, packageRoot));
+    const route = await readOptionalIdentityArtifact(() => readPersistedRoute(target, packageRoot));
+    if (contract || route) assertStateIdentity({ contract, route, state });
+  }
+
+  if (taskId === "unknown") return;
+  const ledger = await validateEventLedger(target, packageRoot);
+  if (!ledger.valid) {
+    const first = ledger.errors[0];
+    throw preflightError(first.code, first.message, [ARTIFACT_PATHS.events]);
+  }
+  if (ledger.events.some((event) => event.taskId !== taskId)) {
+    throw preflightError(
+      "E_PHASE_CHRONOLOGY_INVALID",
+      "Preflight cannot append events to a ledger owned by a different task",
+      [ARTIFACT_PATHS.events, ARTIFACT_PATHS.contract],
+    );
+  }
+}
+
 export async function runPreflight({ target, packageRoot, strict = false, persist = true } = {}) {
   const result = await evaluatePreflight({ target, packageRoot, strict });
   if (persist) {
+    await assertPreflightPersistenceSafety(target, packageRoot, result.taskId);
     await writeJsonArtifact(target, ARTIFACT_PATHS.preflight, result, "preflight", packageRoot);
     if (result.taskId !== "unknown") {
       for (const gate of result.satisfiedGates) {

@@ -173,3 +173,27 @@ test("late-phase advance rejects a foreign state without a receipt before writin
     assert.deepEqual(await artifactHashes(target), before);
   });
 });
+
+test("early lifecycle advance rejects a foreign state before writing", async () => {
+  await withTarget(async (target) => {
+    const identity = await prepareIdentity(target, "task-current");
+    await writeWorkState(target, state({
+      taskId: "task-foreign",
+      contractFingerprint: identity.fingerprint,
+      routeFingerprint: identity.persistedRoute.fingerprint,
+      phase: "CONTRACT_READY",
+      previousPhase: "DISCOVERING",
+      completedSteps: ["contract"],
+      pendingSteps: ["route", "implementation"],
+    }));
+    await appendProtocolEvent(target, { taskId: "task-foreign", event: "CONTRACT_VALIDATED" }, repositoryRoot);
+    const before = await artifactHashes(target);
+
+    await assert.rejects(
+      () => advanceWorkState(target, "ROUTED", { packageRoot: repositoryRoot }),
+      (error) => error.code === "E_STATE_TASK_MISMATCH",
+    );
+
+    assert.deepEqual(await artifactHashes(target), before);
+  });
+});
