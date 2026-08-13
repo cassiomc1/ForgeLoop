@@ -19,6 +19,14 @@ export const LIFECYCLE_MILESTONES = Object.freeze([
   "VERIFICATION_RECORDED",
   "COMPLETION_VALIDATED",
 ]);
+export const ACTIVATION_EVENT_MATRIX = Object.freeze([
+  Object.freeze({ stage: "task received", event: "TASK_RECEIVED", requiredFor: "new activation" }),
+  Object.freeze({ stage: "contract validated", event: "CONTRACT_VALIDATED", requiredFor: "preflight readiness" }),
+  Object.freeze({ stage: "route validated", event: "ROUTE_VALIDATED", requiredFor: "preflight readiness" }),
+  Object.freeze({ stage: "gate satisfied", event: "GATE_SATISFIED", requiredFor: "each satisfied gate" }),
+  Object.freeze({ stage: "preflight blocked", event: "PREFLIGHT_BLOCKED", requiredFor: "blocked activation" }),
+  Object.freeze({ stage: "preflight ready", event: "PREFLIGHT_READY", requiredFor: "resumable readiness" }),
+]);
 const REPEATABLE_MILESTONES = new Set(["VERIFICATION_RECORDED"]);
 
 function eventHash(event) {

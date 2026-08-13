@@ -32,7 +32,7 @@ implementation
 Use the Strict profile only as a separate experiment:
 
 ```bash
-# PROJECT_PROFILE.md must be verified before this profile starts.
+# .forgeloop/kit/PROJECT_PROFILE.md must be verified before this profile starts.
 npx @cassiomc1/forgeloop preflight --strict --json
 npx @cassiomc1/forgeloop audit --strict --json
 npx @cassiomc1/forgeloop complete --strict --json
@@ -73,3 +73,9 @@ cannot disable a mandatory approval workflow, record `TEST_NOT_STARTED` and do
 not interpret the run as a conformance failure or success. An installed
 workflow and a compatible workflow are separate claims; use
 `INCOMPATIBLE WITH AUTONOMOUS MODE`, not "broken", for the former.
+
+Every live-run report must classify how it ended with exactly one
+`terminationSource`: `AGENT`, `OPERATOR`, `HARNESS`, `TIMEOUT`, or `BLOCKER`.
+An operator-terminated run is recorded as `RUN_STATUS: OPERATOR_INTERRUPTED`,
+`CONFORMANCE: PARTIAL`, with post-termination capabilities marked
+`NOT_REACHED` and the smallest failure class `OPERATOR_INTERRUPTION`.

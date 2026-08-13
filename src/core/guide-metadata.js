@@ -3,6 +3,7 @@ import path from "node:path";
 
 const GUIDE_FILES = Object.freeze({
   premium: "ENG/premium-sites-studio-eng.md",
+  taste: "ENG/taste-frontend-eng.md",
   clean: "ENG/clean-code-eng.md",
   test: "ENG/test-code-eng.md",
   security: "ENG/sec-code-eng.md",

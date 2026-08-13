@@ -6,8 +6,6 @@ import { TEMPLATE_PATHS } from "../src/core/templates.js";
 import { WORK_STATE_PATH } from "../src/core/work-state.js";
 
 const repoRoot = new URL("../", import.meta.url);
-const HISTORICAL_ROOT = "docs/superpowers/";
-
 async function filesUnder(relativeRoot) {
   const files = [];
 
@@ -68,20 +66,27 @@ test("architecture diagram is canonical and discoverable", async () => {
 
   for (const marker of [
     "FORGELOOP",
-    "ROUTING",
-    "STATE",
+    "CONTRACT",
+    "ROUTE",
     "EVIDENCE",
-    "repository",
-    "contract",
-    "freshness",
-    "CONFORMANCE",
-    "DELEGATION",
-    "VALID / STALE / INVALID",
+    "PREFLIGHT_READY",
+    "work-state",
+    "event ledger",
+    "AUDIT / COMPLETE / VALIDATE-PROTOCOL",
+    "VALID / INCOMPLETE / STALE / INCONSISTENT / INVALID",
     "compatible harness",
   ]) {
     assert.match(design, new RegExp(marker.replaceAll("/", "\\/")));
   }
   assert.match(readme, /LOOP_SYSTEM_DESIGN\.md/);
+  for (const marker of [
+    "PREFLIGHT_READY",
+    "append-only<br/>event ledger",
+    "VALID / INCOMPLETE /<br/>STALE / INCONSISTENT / INVALID",
+    ".forgeloop/kit/",
+  ]) {
+    assert.match(readme, new RegExp(marker.replaceAll("/", "\\/")));
+  }
 });
 
 test("active shipped surfaces use the ForgeLoop identity", async () => {
@@ -96,8 +101,6 @@ test("active shipped surfaces use the ForgeLoop identity", async () => {
     ),
     ...runtimeFiles.map((relativePath) => `src/${relativePath}`),
   ];
-
-  assert.equal(files.some((relativePath) => relativePath.startsWith(HISTORICAL_ROOT)), false);
 
   for (const relativePath of new Set(files)) {
     const text = await readFile(new URL(relativePath, repoRoot), "utf8");

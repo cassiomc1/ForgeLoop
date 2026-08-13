@@ -47,6 +47,7 @@ project commands.
 | `test` | [Testing](./ENG/test-code-eng.md) | Risk-driven verification strategy and tooling |
 | `security` | [Security](./ENG/sec-code-eng.md) | Web, API, mobile, desktop, data, and supply-chain security |
 | `design` | [Design](./ENG/design-code-eng.md) | Visual direction, UX, motion, and perceived performance |
+| `taste` | [Taste frontend](./ENG/taste-frontend-eng.md) | Contextual design-read, anti-slop, and visual pre-flight for premium frontend work |
 | `performance` | [Performance](./ENG/perf-code-eng.md) | Measurement, diagnosis, budgets, and optimization |
 | `accessibility` | [Accessibility](./ENG/accessibility-eng.md) | WCAG, keyboard access, focus, semantics, and assistive technology |
 | `games` | [Web games](./ENG/games-code-design-web-eng.md) | Architecture and operation of 2D, 3D, and procedural web games |
@@ -153,6 +154,28 @@ rg -n '^## [0-9]+\.|brief|content|direction|design system|implementation|quality
 
 **Expected evidence:** approved strategy, content, direction, production, quality, launch, and operation gates.
 
+### `taste` — contextual frontend taste review
+
+**Activate when:** the router selects a premium marketing site, landing page,
+portfolio, brand-heavy surface, or high-finish redesign with a meaningful
+visual composition.
+
+**Do not activate when:** the task is backend, infrastructure, data, CLI,
+documentation, or a nonvisual bug. A UI word in a technical description is not
+enough context.
+
+Use this guide as an advisory review. It does not add a user-approval gate,
+require GSAP or a static-site approach, prescribe fonts/layouts, or override
+accessibility, performance, security, or product evidence.
+
+```bash
+rg -n '^## (Design Read|Design Dials|Anti-Slop Checks|Typography Quality|Layout Composition|Motion Restraint|Responsive Composition|Design-System Selection|Visual Pre-Flight|Redesign Audit)' ENG/taste-frontend-eng.md
+```
+
+**Expected evidence:** a contextual design read, intentional dials, bounded
+anti-slop review, and only the visual/accessibility/performance checks that are
+in scope. Mark unavailable visual evidence `NOT_VERIFIED`.
+
 ### `games` — web game architecture and operation
 
 **Activate when:** designing, implementing, testing, or operating a 2D or 3D web game, procedural generation, game loops, assets, input, multiplayer, or game distribution.
@@ -249,7 +272,7 @@ Route comments are stable contracts for the validator. They contain IDs, not loa
 
 ### Premium landing page
 
-<!-- route:landing-page-premium=premium,design,accessibility,clean,test,security,performance -->
+<!-- route:landing-page-premium=premium,design,taste,accessibility,clean,test,security,performance -->
 
 Verify the brief, content, responsive UI, states, WCAG coverage, build, tests, Web Vitals, forms, analytics, launch, and operation.
 

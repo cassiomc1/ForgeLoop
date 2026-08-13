@@ -22,6 +22,8 @@ The system should use every guide that materially helps the task without loading
 - The loop continues while safe progress is possible. Repetition without new evidence triggers hypothesis reassessment or a blocked result, not infinite retries.
 - Third-party provenance and reuse boundaries remain part of every portable copy.
 - Qwen-MM-Plugins is an optional, task-scoped capability extension: the agent checks native support first, installs the smallest missing capability when needed, and verifies it before use; it is not a package or runtime dependency.
+- Canonical documents are installed under `.forgeloop/kit/`; root native adapters remain small shims and mutable protocol artifacts remain directly under `.forgeloop/`.
+- `PREFLIGHT_READY` is a resumable protocol checkpoint reconciled with work state, activation events, fingerprints, and the append-only hash chain.
 
 ## Alternatives considered
 
@@ -46,33 +48,35 @@ the compatible harness.
 ```text
                             FORGELOOP
                                 │
-                  ┌─────────────┼─────────────┐
-                  │             │             │
-               ROUTING        STATE        EVIDENCE
-                  │             │             │
-                  ▼             ▼             ▼
-            deterministic   checkpoint    observable
-              decisions       facts         claims
-                  │             │             │
-                  │       ┌─────┴─────┐       │
-                  │       │           │       │
-                  │   repository   contract   │
-                  │       │           │       │
-                  │       └─────┬─────┘       │
-                  │             │             │
-                  │          freshness        │
-                  │             │             │
-                  └───────┬─────┴─────┬───────┘
-                          │           │
-                          ▼           ▼
-                    CONFORMANCE   DELEGATION
-                          │           │
-                          └─────┬─────┘
-                                ▼
-                    VALID / STALE / INVALID
-                                │
-                                ▼
-                        compatible harness
+                   ┌──────────────┼──────────────┐
+                   │              │              │
+                CONTRACT        ROUTE         EVIDENCE
+                   │              │              │
+                   └──────┬───────┴──────┬───────┘
+                          │              │
+                       required       current
+                        gates         fingerprints
+                          │              │
+                          ▼              │
+                      PREFLIGHT_READY   │
+                          │              │
+                   ┌──────┴──────┐       │
+                   │             │       │
+                work-state   event ledger │
+                   │             │       │
+                   └──────┬──────┘       │
+                          │              │
+                  plan → execute → verify → review
+                          │              │
+                          └──────┬───────┘
+                                 ▼
+                   AUDIT / COMPLETE / VALIDATE-PROTOCOL
+                                 │
+                                 ▼
+              VALID / INCOMPLETE / STALE / INCONSISTENT / INVALID
+                                 │
+                                 ▼
+                         compatible harness
 ```
 
 ```text
@@ -81,12 +85,14 @@ User request
     v
 Nearest agent adapter
     |
-    +--> LOOP_ENGINEERING.md
-    |        |
-    |        +--> PROJECT_PROFILE.md
-    |        +--> GUIDE_ROUTER.md
-    |                  |
-    |                  +--> ENG/*.md
+    +--> root native shim
+             |
+             +--> .forgeloop/kit/LOOP_ENGINEERING.md
+             |        |
+             |        +--> .forgeloop/kit/PROJECT_PROFILE.md
+             |        +--> .forgeloop/kit/GUIDE_ROUTER.md
+             |                  |
+             |                  +--> .forgeloop/kit/ENG/*.md
     |
     +--> repository-specific instructions
     |
@@ -188,7 +194,7 @@ Durable context for a destination project. The template captures:
 - constraints, decisions, and unverified items;
 - a source for every durable fact.
 
-The profile changes only when discovery reveals a real project change; it is not a task diary. In this source repository, `profile-mode: template` keeps it as a reusable template. After copying it into a code repository, the first cycle may change the mode to `project` and fill only confirmed facts.
+The profile changes only when discovery reveals a real project change; it is not a task diary. In this source repository, `profile-mode: template` keeps it as a reusable template. After `forgeloop init` installs it under `.forgeloop/kit/` in a target, the first cycle may change the mode to `project` and fill only confirmed facts.
 
 ### `DELEGATION_PROTOCOL.md`
 
@@ -212,7 +218,7 @@ mitigations, residual limitations, and executable evidence.
 
 ### `ENG/*.md`
 
-Eight canonical guides cover:
+Nine canonical guides cover:
 
 - clean code;
 - testing;
@@ -221,7 +227,8 @@ Eight canonical guides cover:
 - design;
 - accessibility;
 - premium website production;
-- web games.
+- web games;
+- contextual frontend taste.
 
 Each guide has exact English frontmatter and a stable guide ID.
 
@@ -328,7 +335,7 @@ The documentation workflow verifies:
 
 - every file referenced by an adapter exists;
 - repository-relative links resolve;
-- exactly eight canonical English guides exist;
+- exactly nine canonical English guides exist;
 - guide IDs, filenames, frontmatter keys, and `language: en` match the catalog;
 - no legacy language tree or bilingual metadata remains;
 - all route contracts contain valid guide IDs;
@@ -352,18 +359,12 @@ The validator also exercises six routing scenarios:
 The npm CLI installs the kit into the current directory or an existing
 directory selected with `--path` when the package is available in the npm
 registry. If it is not available yet, the same commands can run as
-`node src/cli.js ...` from a repository checkout. A user may also download the
-repository or a release archive and copy these items while preserving their
-relative structure:
-
-- the four native agent adapters plus `AGENT_COMPATIBILITY.md`;
-- the shared `AGENTS.md` entry point for the six compatible agents;
-- `LOOP_ENGINEERING.md`;
-- `GUIDE_ROUTER.md`;
-- `PROJECT_PROFILE.md`;
-- `THIRD_PARTY_NOTICES.md`;
-- `LICENSE` and `LICENSE-DOCS.md`;
-- the `ENG/` guide directory.
+`node src/cli.js ...` from a repository checkout. The CLI maps canonical
+documents into `.forgeloop/kit/`, keeps only native instruction shims at the
+target root, and leaves mutable contract, route, gate, state, event, preflight,
+and receipt artifacts under `.forgeloop/`. Manual copying must preserve that
+target layout; copying package-source root files directly is not equivalent to
+`forgeloop init`.
 
 The README explains the file set, activation behavior, current/relative/absolute
 target installation, first-run profile flow, local validation commands, and safe

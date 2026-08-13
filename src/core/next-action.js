@@ -3,7 +3,7 @@ import { completionIdentityErrors, evaluateCompletion } from "./completion.js";
 import { requiredEvidenceForTarget } from "./completion-artifacts.js";
 import { coverageForRequirements } from "./coverage.js";
 import { readContract } from "./contract.js";
-import { evaluatePreflight, validatePersistedPreflight } from "./preflight.js";
+import { evaluatePreflight, validatePersistedPreflight, validateReadyProtocolConsistency } from "./preflight.js";
 import { PROTOCOL_VERSION } from "./protocol.js";
 import { validateReceipt } from "./receipt.js";
 import { readPersistedRoute } from "./route-artifact.js";
@@ -245,6 +245,47 @@ export async function getNextAction({ target, packageRoot } = {}) {
     );
   }
   if (!workState.value) {
+    const persistedPreflight = await loadArtifact(
+      () => readJsonArtifact(target, ARTIFACT_PATHS.preflight, "preflight", packageRoot),
+      ARTIFACT_PATHS.preflight,
+    );
+    if (!persistedPreflight.error && persistedPreflight.value?.value?.status === "READY") {
+      try {
+        const consistencyErrors = await validateReadyProtocolConsistency({
+          target,
+          packageRoot,
+          persisted: persistedPreflight.value.value,
+        });
+        if (consistencyErrors.length > 0) {
+          return result({
+            taskId: persistedPreflight.value.value.taskId ?? "unknown",
+            currentPhase: "ROUTED",
+            nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
+            reasons: consistencyErrors,
+            requiredArtifacts: [
+              ARTIFACT_PATHS.state,
+              ARTIFACT_PATHS.contract,
+              ARTIFACT_PATHS.route,
+              ARTIFACT_PATHS.preflight,
+              ARTIFACT_PATHS.events,
+            ],
+            missingArtifacts: [ARTIFACT_PATHS.state],
+          });
+        }
+      } catch (error) {
+        return result({
+          taskId: persistedPreflight.value.value.taskId ?? "unknown",
+          currentPhase: "ROUTED",
+          nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
+          reasons: [artifactError(
+            error.code ?? "E_PREFLIGHT_READY_INCONSISTENT",
+            error.message,
+            error.artifacts ?? [ARTIFACT_PATHS.preflight, ARTIFACT_PATHS.events],
+          )],
+          requiredArtifacts: [ARTIFACT_PATHS.preflight, ARTIFACT_PATHS.events],
+        });
+      }
+    }
     return decision(
       {},
       NEXT_ACTIONS.DISCOVER,

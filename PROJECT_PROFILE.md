@@ -10,6 +10,19 @@ last-confirmed: unknown
 > Durable context for [Loop Engineering](./LOOP_ENGINEERING.md). Fill it only
 > with evidence from the target project.
 
+This source profile is a template. Its planned fields describe what a target
+may confirm after bootstrap; they do not assert that the corresponding product
+files, services, commands, or directories are present in the source kit.
+
+Use these terms precisely:
+
+- **Planned**: an expected discovery field or protocol location, not observed
+  product evidence.
+- **Present**: observed in the target with a file, command, manifest, or other
+  authoritative source.
+- **Absent**: checked and not found; record the check and scope.
+- **Unverified**: not checked yet; do not infer presence from this template.
+
 ## Maintenance rules
 
 - Update a fact only after inspecting authoritative files, commands, or sources.
@@ -21,18 +34,18 @@ last-confirmed: unknown
 - Keep `language: en`; this kit has no alternate language variant.
 - Do not use this file as a task diary.
 
-## Product and objective
+## Product and objective (planned vs observed)
 
-| Field | Current state | Source |
+| Field | Planned baseline or observed state | Source |
 | --- | --- | --- |
 | Product | Not identified — confirm from the stated source | Source not identified |
 | Users | Not identified — confirm from the stated source | Source not identified |
 | Primary outcome | Not identified — confirm from the stated source | Source not identified |
 | Durable exclusions | Not identified — confirm from the stated source | Source not identified |
 
-## Confirmed stack
+## Confirmed stack (planned vs observed)
 
-| Layer | Technology and version | Source |
+| Layer | Planned baseline or observed technology and version | Source |
 | --- | --- | --- |
 | Frontend | Not identified — confirm from the stated source | Source not identified |
 | Backend | Not identified — confirm from the stated source | Source not identified |
@@ -44,9 +57,9 @@ last-confirmed: unknown
 Record a missing manifest or configuration as verified absence. Do not infer a
 stack from technology names found only in documentation or examples.
 
-## Official commands
+## Official commands (planned vs observed)
 
-| Purpose | Confirmed command | Source |
+| Purpose | Planned baseline or observed command | Source |
 | --- | --- | --- |
 | Installation | Not identified — confirm from the stated source | Source not identified |
 | Development | Not identified — confirm from the stated source | Source not identified |
@@ -60,9 +73,9 @@ stack from technology names found only in documentation or examples.
 Never invent a command when the project already declares official scripts or
 automation.
 
-## Architecture and directories
+## Architecture and directories (planned vs observed)
 
-| Area | Path or responsibility | Source |
+| Area | Planned location or observed responsibility | Source |
 | --- | --- | --- |
 | Primary entry point | Not identified — confirm from the stated source | Source not identified |
 | Domain | Not identified — confirm from the stated source | Source not identified |
@@ -72,7 +85,7 @@ automation.
 | Documentation | Not identified — confirm from the stated source | Source not identified |
 | CI/CD | Not identified — confirm from the stated source | Source not identified |
 
-## Supported platforms
+## Supported platforms (planned vs observed)
 
 | Surface | Confirmed targets | Evidence |
 | --- | --- | --- |
@@ -82,7 +95,7 @@ automation.
 | Browsers and devices | Not identified — confirm from the stated source | Source not identified |
 | Accessibility requirements | Not identified — confirm from the stated source | Source not identified |
 
-## Services and risk surfaces
+## Services and risk surfaces (planned vs observed)
 
 | Item | Use and risk | Safe source |
 | --- | --- | --- |
@@ -97,7 +110,7 @@ automation.
 Record only the mechanism and safe configuration location. Never copy credential
 values.
 
-## Constraints and decisions
+## Constraints and decisions (planned vs observed)
 
 | Decision or constraint | State | Source |
 | --- | --- | --- |
@@ -121,4 +134,6 @@ appropriate section.
 | Not identified | Not identified — confirm from the stated source | Source not identified | Not identified |
 
 Keep evidence concise. Long outputs, temporary logs, and per-task history do not
-belong in this file.
+belong in this file. A planned row becomes present only after the target check;
+an absent row must include the scope of the check rather than being silently
+treated as a missing product feature.

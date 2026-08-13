@@ -6,8 +6,9 @@ import { inspectSchemaHealth } from "./schema-validation.js";
 import { readAndClassifyWorkState, WORK_STATE_PATH } from "./work-state.js";
 import { createEvidence } from "./evidence.js";
 import { runDoctor } from "../commands/doctor.js";
+import { findProfilePath } from "./profile.js";
+import { FORGELOOP_KIT_DIR } from "./target-layout.js";
 
-const PROFILE_PATH = "PROJECT_PROFILE.md";
 function profileMetadata(bytes) {
   const text = bytes.toString("utf8");
   return {
@@ -25,14 +26,21 @@ export async function inspectTarget({ target, packageRoot, contractFile = null }
     manifestError = error.message;
   }
 
-  const profilePath = ensureWithin(target, PROFILE_PATH);
-  const profile = (await fileExists(profilePath))
-    ? profileMetadata(await readBytes(profilePath))
+  const profileRelativePath = await findProfilePath(target);
+  const profilePath = profileRelativePath ? ensureWithin(target, profileRelativePath) : null;
+  const profile = (profilePath && await fileExists(profilePath))
+    ? { ...profileMetadata(await readBytes(profilePath)), path: profileRelativePath }
     : { mode: null, status: null };
   const statePath = ensureWithin(target, WORK_STATE_PATH);
   const statePresent = await fileExists(statePath);
   const state = await readAndClassifyWorkState({ target, packageRoot, contractFile });
-  const schemaHealth = await inspectSchemaHealth(target);
+  const schemaRoot = manifest?.layoutVersion >= 2
+    ? ensureWithin(target, FORGELOOP_KIT_DIR)
+    : target;
+  const schemaHealth = await inspectSchemaHealth(schemaRoot);
+  const schemaPathPrefix = manifest?.layoutVersion >= 2
+    ? `${FORGELOOP_KIT_DIR}/schemas`
+    : "schemas";
   const doctor = await runDoctor({ target, packageRoot });
   const agents = await Promise.all(AGENT_SUPPORT.map(async (record) => ({
     id: record.id,
@@ -50,12 +58,12 @@ export async function inspectTarget({ target, packageRoot, contractFile = null }
       findings.push({
         code: `schema-${schema.status}`,
         severity: "error",
-        path: `schemas/${schema.name}.schema.json`,
+        path: `${schemaPathPrefix}/${schema.name}.schema.json`,
         message: schema.error ?? `Schema is ${schema.status}.`,
         remediation: "Restore the shipped schema and rerun inspect.",
         evidence: createEvidence({
           kind: schema.status === "missing" ? "NOT_VERIFIED" : "OBSERVED",
-          source: `schemas/${schema.name}.schema.json`,
+          source: `${schemaPathPrefix}/${schema.name}.schema.json`,
           result: schema.status,
         }),
       });
@@ -88,6 +96,7 @@ export async function inspectTarget({ target, packageRoot, contractFile = null }
       present: manifest !== null,
       status: manifestError ? "invalid" : manifest ? "ready" : "missing",
       packageVersion: manifest?.packageVersion ?? null,
+      layoutVersion: manifest?.layoutVersion ?? 1,
       error: manifestError,
     },
     profile,

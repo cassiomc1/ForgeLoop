@@ -5,11 +5,12 @@
     "risks": ["untrusted-input", "critical-path"],
     "platforms": ["web"]
   },
-  "guides": ["premium", "design", "accessibility", "clean", "test", "security", "performance"],
+  "guides": ["premium", "design", "taste", "accessibility", "clean", "test", "security", "performance"],
   "primary": "premium",
   "forbidden": [],
   "expectedReasons": {
     "premium": ["WORK_COMPLETE_WEBSITE"],
+    "taste": ["WORK_COMPLETE_WEBSITE"],
     "design": ["WORK_COMPLETE_WEBSITE", "SURFACE_UI"],
     "accessibility": ["WORK_COMPLETE_WEBSITE", "SURFACE_FORMS"],
     "clean": ["WORK_COMPLETE_WEBSITE"],

@@ -2,6 +2,7 @@ import { assertSafePath, fileExists, ensureWithin, readBytes } from "../core/fil
 import { readManifest, sha256, writeManifest } from "../core/manifest.js";
 import { readTemplateEntries } from "../core/templates.js";
 import { createEvidence } from "../core/evidence.js";
+import { LAYOUT_VERSION } from "../core/target-layout.js";
 
 function finding(code, severity, relativePath, message, remediation = null, evidence = null) {
   const evidenceRecord = evidence && typeof evidence === "object"
@@ -97,34 +98,66 @@ export async function runDoctor({ target, packageRoot, adoptPaths = [], strict =
 
   manifest = await adoptAdapters({ target, manifest, adoptPaths, findings });
   const entries = await readTemplateEntries(packageRoot);
+  const layoutVersion = manifest?.layoutVersion ?? 1;
+  if (manifest && layoutVersion < LAYOUT_VERSION) {
+    findings.push(finding(
+      "legacy-layout",
+      "info",
+      ".forgeloop/manifest.json",
+      "Target uses the legacy root template layout; run forgeloop update to migrate the canonical kit under .forgeloop/kit.",
+    ));
+  }
   for (const entry of entries) {
-    const destination = ensureWithin(target, entry.relativePath);
+    const managedPath = layoutVersion >= LAYOUT_VERSION ? entry.relativePath : entry.legacyRelativePath;
+    const destination = ensureWithin(target, managedPath);
     try {
-      await assertSafePath(target, entry.relativePath);
+      await assertSafePath(target, managedPath);
     } catch (error) {
-      findings.push(finding("unsafe-path", "error", entry.relativePath, error.message));
+      findings.push(finding("unsafe-path", "error", managedPath, error.message));
       continue;
     }
+    const hasLegacyAlternative = layoutVersion >= LAYOUT_VERSION
+      && entry.legacyRelativePath !== entry.relativePath;
+    if (hasLegacyAlternative) {
+      try {
+        await assertSafePath(target, entry.legacyRelativePath);
+      } catch (error) {
+        findings.push(finding("unsafe-path", "error", entry.legacyRelativePath, error.message));
+        continue;
+      }
+    }
     if (!(await fileExists(destination))) {
-      findings.push(finding("file-missing", "error", entry.relativePath, "Managed file is missing."));
+      const legacyDestination = hasLegacyAlternative
+        ? ensureWithin(target, entry.legacyRelativePath)
+        : null;
+      if (legacyDestination && await fileExists(legacyDestination)) {
+        findings.push(finding(
+          "legacy-root-file",
+          "warning",
+          entry.legacyRelativePath,
+          "Canonical file remains in the legacy root layout; run forgeloop update to migrate it safely.",
+        ));
+        continue;
+      }
+      findings.push(finding("file-missing", "error", managedPath, "Managed file is missing."));
       continue;
     }
 
-    if (entry.relativePath === "PROJECT_PROFILE.md") {
+    if (entry.sourcePath === "PROJECT_PROFILE.md") {
       const mode = readProfileMode(await readBytes(destination));
       if (mode === "template") {
-        findings.push(finding("profile-template", "info", entry.relativePath, "Initialize profile-mode as project after confirming real project facts."));
+        findings.push(finding("profile-template", "info", managedPath, "Initialize profile-mode as project after confirming real project facts."));
       }
     }
 
-    const record = manifest?.files?.[entry.relativePath];
+    const record = manifest?.files?.[managedPath];
     if (!record) {
-      if (ADAPTER_PATHS.has(entry.relativePath)) {
+      if (ADAPTER_PATHS.has(managedPath)) {
         findings.push(
           finding(
             "unmanaged-file",
             "error",
-            entry.relativePath,
+            managedPath,
             "Existing adapter is not managed by ForgeLoop; merge the loop reference and rerun doctor.",
           ),
         );
@@ -133,11 +166,22 @@ export async function runDoctor({ target, packageRoot, adoptPaths = [], strict =
     }
     const actualHash = sha256(await readBytes(destination));
     if (actualHash !== record.sha256 && !record.preserve) {
-      findings.push(finding("file-drift", "warning", entry.relativePath, "File differs from the last managed version; update will preserve it."));
+      findings.push(finding("file-drift", "warning", managedPath, "File differs from the last managed version; update will preserve it."));
+    }
+    if (hasLegacyAlternative) {
+      const legacyPath = ensureWithin(target, entry.legacyRelativePath);
+      if (await fileExists(legacyPath)) {
+        findings.push(finding(
+          "legacy-root-file",
+          "warning",
+          entry.legacyRelativePath,
+          "A legacy root copy remains alongside the canonical hidden kit; review it after migration.",
+        ));
+      }
     }
   }
 
-  const shippedPaths = new Set(entries.map((entry) => entry.relativePath));
+  const shippedPaths = new Set(entries.map((entry) => layoutVersion >= LAYOUT_VERSION ? entry.relativePath : entry.legacyRelativePath));
   for (const relativePath of Object.keys(manifest?.files ?? {})) {
     if (!shippedPaths.has(relativePath)) {
       findings.push(

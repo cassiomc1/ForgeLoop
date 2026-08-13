@@ -127,3 +127,14 @@ collection. Do not host, redistribute, or infer rights for a font, image,
 template, prompt, audio asset, or other premium material from a citation or
 catalog listing. Verify the exact resource's author, license, attribution,
 hosting, and current terms before use.
+
+## Taste Skill
+
+The contextual frontend taste guide is informed by Taste Skill:
+
+- Taste Skill, Copyright (c) 2026 Leonxlnx, MIT License.
+- Source: <https://github.com/leonxlnx/taste-skill>
+
+ForgeLoop includes a short, adapted guide under `ENG/taste-frontend-eng.md`.
+It does not vendor upstream runtime code, depend on its repository at runtime,
+or make its prescriptive examples universal.

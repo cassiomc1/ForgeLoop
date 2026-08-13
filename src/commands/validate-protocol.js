@@ -6,6 +6,8 @@ import { assertRouteInvariants } from "../core/router.js";
 import { assertWorkStateSemantics, classifyLoadedWorkState } from "../core/work-state.js";
 import { validateReceipt } from "../core/receipt.js";
 import { validateTaskBrief, validateDelegatedResult } from "../core/delegation.js";
+import { ARTIFACT_PATHS, readJsonArtifact } from "../core/artifacts.js";
+import { evaluatePreflight, validateReadyProtocolConsistency } from "../core/preflight.js";
 
 async function readArtifact(target, relativePath, label) {
   if (!relativePath) return null;
@@ -102,11 +104,26 @@ export async function runValidateProtocol({
     taskBriefs,
     delegatedResults,
   });
-  if (readErrors.length > 0 || schemaErrors.length > 0) {
+  let readyConsistencyErrors = [];
+  try {
+    const persistedPreflight = await readJsonArtifact(target, ARTIFACT_PATHS.preflight, "preflight", packageRoot);
+    if (persistedPreflight.value.status === "READY") {
+      readyConsistencyErrors = await validateReadyProtocolConsistency({
+        target,
+        packageRoot,
+        persisted: persistedPreflight.value,
+        current: await evaluatePreflight({ target, packageRoot }),
+      });
+    }
+  } catch {
+    // A missing or invalid preflight is already outside the optional protocol set.
+  }
+  if (readErrors.length > 0 || schemaErrors.length > 0 || readyConsistencyErrors.length > 0) {
     return {
       ...result,
       status: "INVALID",
-      errors: [...result.errors, ...readErrors, ...schemaErrors].sort((left, right) => left.code.localeCompare(right.code) || left.message.localeCompare(right.message)),
+      errors: [...result.errors, ...readErrors, ...schemaErrors, ...readyConsistencyErrors]
+        .sort((left, right) => left.code.localeCompare(right.code) || left.message.localeCompare(right.message)),
     };
   }
   return result;

@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { ARTIFACT_PATHS, readJsonArtifact } from "./artifacts.js";
 import { assertSafePath, ensureWithin, fileExists } from "./filesystem.js";
 import { assertSourceProvenance } from "./sources.js";
+import { LEGACY_PROFILE_PATH, PROFILE_PATH } from "./target-layout.js";
 
 const SOURCE_ID_PATTERN = /\b(?:USER|FILE|CMD|DECISION|OBS|INFER|UNKNOWN)-[A-Z0-9_-]+\b/g;
 const DIRECTIVE_PATTERN = /forgeloop-source:\s*([A-Z0-9_-]+)\s+kind=([a-z-]+)/gi;
@@ -12,12 +13,11 @@ function issue(code, message, artifacts = []) {
 }
 
 export async function validateProfileSources(target, packageRoot) {
-  const profilePath = "PROJECT_PROFILE.md";
-  await assertSafePath(target, profilePath);
-  const absolutePath = ensureWithin(target, profilePath);
-  if (!(await fileExists(absolutePath))) {
+  const profilePath = await findProfilePath(target);
+  if (!profilePath) {
     return { status: "missing", refs: [], errors: [] };
   }
+  const absolutePath = ensureWithin(target, profilePath);
   const text = await readFile(absolutePath, "utf8");
   const refs = [...new Set(text.match(SOURCE_ID_PATTERN) ?? [])].sort();
   const directives = [...text.matchAll(DIRECTIVE_PATTERN)].map((match) => ({ id: match[1], kind: match[2] }));
@@ -45,4 +45,12 @@ export async function validateProfileSources(target, packageRoot) {
     }
   }
   return { status: errors.length === 0 ? "valid" : "invalid", refs, errors };
+}
+
+export async function findProfilePath(target) {
+  for (const relativePath of [PROFILE_PATH, LEGACY_PROFILE_PATH]) {
+    await assertSafePath(target, relativePath);
+    if (await fileExists(ensureWithin(target, relativePath))) return relativePath;
+  }
+  return null;
 }

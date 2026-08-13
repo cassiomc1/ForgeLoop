@@ -7,8 +7,9 @@ Compatible agents may persist a handoff checkpoint at:
 ```
 
 The file is local, ignored by Git, schema-versioned, and never a replacement
-for the manifest or `PROJECT_PROFILE.md`. It contains no secrets and is
-untrusted on read.
+for the manifest or the target project profile (installed as
+`.forgeloop/kit/PROJECT_PROFILE.md`). It contains no secrets and is untrusted
+on read.
 
 ## Shape
 
@@ -69,16 +70,22 @@ An optional age threshold may recommend cheap verification with
 `CHECKPOINT_OLD` without changing a fresh result.
 
 `inspect`, `status`, and `validate-protocol` use the same derived freshness
-classifier. Protocol validation can be run against the complete artifact set:
+classifier. Protocol validation can be run against the current route, state,
+receipt, and contract artifacts:
 
 ```bash
 forgeloop validate-protocol \
-  --route-file ./routing-result.json \
+  --route-file .forgeloop/routing-result.json \
   --state-file .forgeloop/work-state.json \
-  --receipt-file ./execution-receipt.json \
+  --receipt-file .forgeloop/execution-receipt.json \
   --contract-file .forgeloop/current-contract.json \
   --json
 ```
+
+When delegation is in scope, repeat `--task-brief <path>` and
+`--delegated-result <path>` for the matching handoff artifacts. If those inputs
+are omitted, `validate-protocol` reports `INCOMPLETE` because delegation
+conformance was not supplied; this is distinct from a local `complete` result.
 
 `validate-protocol` reports `STALE` when the current repository fingerprint,
 contract, or required-artifact fingerprints require revalidation. Its JSON

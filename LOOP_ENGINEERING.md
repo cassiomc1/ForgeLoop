@@ -286,6 +286,45 @@ forgeloop preflight
 
 `preflight` validates local ForgeLoop artifacts only. It does not invoke the model, run project commands, or treat a prose declaration as evidence. A `READY` result is required before `EXECUTING` in standard and strict workflows. A non-empty `current-contract.unresolvedDecisions[]` causes `forgeloop preflight` to return `BLOCKED` with `E_CONTRACT_UNRESOLVED_DECISION`; a valid `current-contract.assumptions[]` list does not block preparation.
 
+### Resumable activation and artifact reconciliation
+
+`PREFLIGHT_READY` is a durable checkpoint, not only a status value. A persisted
+READY result is valid only when the same target also contains:
+
+```text
+current-contract.json
+routing-result.json
+gates required by the route
+work-state.json
+events.ndjson with the activation chronology
+preflight.json with status READY
+```
+
+The activation event matrix is explicit:
+
+| Stage | Event | Requirement |
+| --- | --- | --- |
+| Task received | `TASK_RECEIVED` | New activation; one first event when the ledger is empty |
+| Contract validated | `CONTRACT_VALIDATED` | Before READY |
+| Route validated | `ROUTE_VALIDATED` | Before READY |
+| Gate satisfied | `GATE_SATISFIED` | One event for each satisfied required gate |
+| Preflight blocked | `PREFLIGHT_BLOCKED` | Persisted when activation is blocked |
+| Preflight ready | `PREFLIGHT_READY` | Exactly the matching READY fingerprints and gate sets |
+
+The ledger is append-only and hash-linked. A `BLOCKED → READY` recovery keeps
+the original `PREFLIGHT_BLOCKED` event, appends only newly satisfied gate and
+readiness events, and never deletes or rewrites history. `forgeloop next` is a
+read-only query: if READY remains but `work-state.json` is missing, it returns
+`RESOLVE_BLOCKER` with `E_STATE_MISSING_AFTER_PREFLIGHT_READY` instead of
+silently returning to discovery.
+
+`PROJECT_PROFILE.md` distinguishes planned template locations from files
+observed in the target. New targets receive canonical documents under
+`.forgeloop/kit/`; root `AGENTS.md`, `CLAUDE.md`, Cursor, and Copilot files are
+minimal native shims. `forgeloop update` migrates unchanged managed legacy root
+files, preserves modified or unowned files, and reports conflicts without
+following symlinks or escaping the selected target.
+
 ## Completion validation and chronology
 
 `COMPLETE` is a validator result, not a string an agent may assign by itself.
@@ -446,6 +485,7 @@ AUTHORITY_FAILURE
 ENVIRONMENT_FAILURE
 EXTERNAL_SERVICE_FAILURE
 STALE_STATE_FAILURE
+OPERATOR_INTERRUPTION
 ```
 
 For every failure, record the class, hypothesis, evidence, and next safe
@@ -479,6 +519,9 @@ The loop invariants are:
 21. protocol chronology must not permit execution before mandatory preflight events.
 22. publication status and production readiness must remain independent from local task completion.
 23. a task with implemented deliverables must not terminate in EXECUTING.
+24. a persisted PREFLIGHT_READY result must reconcile with a resumable state and
+    its matching append-only activation chronology.
+25. planned profile fields must not be reported as present target evidence.
 
 The serializable phase and transition contract is maintained in
 [`ORCHESTRATOR_INTEGRATION.md`](./ORCHESTRATOR_INTEGRATION.md). It is a host
