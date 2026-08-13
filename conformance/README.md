@@ -5,28 +5,26 @@ artifacts a live agent must produce; they do not invoke a model runtime and are
 not part of the deterministic `npm test` execution path.
 
 The current published baseline for new runs is
-`@cassiomc1/forgeloop@0.1.9`. Pin that version when preparing a reproducible
+`@cassiomc1/forgeloop@0.1.10`. Pin that version when preparing a reproducible
 blind run; historical reports retain the exact package version they used.
 
 The frozen baseline was verified on 2026-08-13 with this identity:
 
 ```text
-package: @cassiomc1/forgeloop@0.1.9
-npm gitHead: 0e48240894671ecda2458b15671020b0a7255e70
-release commit: 0e48240894671ecda2458b15671020b0a7255e70
-GitHub tag: v0.1.9 -> 0e48240894671ecda2458b15671020b0a7255e70
-tarball URL: https://registry.npmjs.org/@cassiomc1/forgeloop/-/forgeloop-0.1.9.tgz
-tarball SHA-1: fef7587ebd878e845e9746b4d049a6fe6ef333c5
-npm SHA-512 integrity: sha512-sCvPEDOYT1svNnA8+zw57dJ97N6sNCUH8eDbM6f3cS6eXLCIFFXRPkCAASA+ZPu5mAKbcNaU1TaFKjojbL3DEA==
+package: @cassiomc1/forgeloop@0.1.10
+npm gitHead: 10246cf92016c92c91c6d99c2e8c7df7d99fa68a
+release commit: 10246cf92016c92c91c6d99c2e8c7df7d99fa68a
+GitHub tag: v0.1.10 -> 10246cf92016c92c91c6d99c2e8c7df7d99fa68a
+tarball URL: https://registry.npmjs.org/@cassiomc1/forgeloop/-/forgeloop-0.1.10.tgz
+tarball SHA-1: 175a83ebd00e6b0ec4f0b7bf2ed8924198d6df3c
+npm SHA-512 integrity: sha512-+aMssrl9Wh69at9B1oKJQJEpgHpbKlb7sT1pLAWh+v/IouxXZkVqz5w34iR54pfqykjhl5Nrpd+g3XbQtzYdbA==
 release identity: RELEASE_IDENTITY_VALID
 ```
 
 The repository may contain documentation or executable commits after this
-frozen package. Those commits do not change the package used by the blind run;
-the repository's `0.1.10` candidate includes completion-validation and cleanup
-TOCTOU fixes that are not in `0.1.9`. If a blind run needs those executable
-changes, publish and tag the candidate, then repeat the complete identity check
-before starting the run.
+frozen package. Those commits do not change the package used by the blind run.
+Version `0.1.10` includes the completion-validation and cleanup TOCTOU fixes;
+repeat the complete identity check before starting a reproducible run.
 
 Run a scenario in a disposable target using the Standard profile first:
 
