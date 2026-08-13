@@ -3,7 +3,6 @@ import { completionIdentityErrors, evaluateCompletion } from "./completion.js";
 import { requiredEvidenceForTarget } from "./completion-artifacts.js";
 import { coverageForRequirements } from "./coverage.js";
 import { readContract } from "./contract.js";
-import { validateEventLedger } from "./events.js";
 import { evaluatePreflight, validatePersistedPreflight } from "./preflight.js";
 import { PROTOCOL_VERSION } from "./protocol.js";
 import { validateReceipt } from "./receipt.js";
@@ -44,13 +43,6 @@ const PHASES_REQUIRING_EXECUTION_CHRONOLOGY = new Set([
   "CORRECTING",
   "REVIEWING",
   "COMPLETE",
-]);
-
-const EXECUTION_EVENTS = Object.freeze([
-  "CONTRACT_VALIDATED",
-  "ROUTE_VALIDATED",
-  "PREFLIGHT_READY",
-  "EXECUTION_STARTED",
 ]);
 
 function artifactError(code, message, artifacts = []) {
@@ -218,44 +210,6 @@ function checkListReasons(state) {
   }
 }
 
-function executionChronologyErrors(ledger, { stateTaskId, contractTaskId }) {
-  const errors = [...(ledger.errors ?? [])].map((error) => artifactError(
-    error.code ?? "E_PHASE_CHRONOLOGY_INVALID",
-    error.message,
-    [ARTIFACT_PATHS.events],
-  ));
-  const currentTaskId = stateTaskId === contractTaskId ? stateTaskId : null;
-  const ledgerEvents = ledger.events ?? [];
-  const currentEvents = currentTaskId === null
-    ? []
-    : ledgerEvents.filter((event) => event.taskId === currentTaskId);
-  if (currentTaskId === null) {
-    errors.push(artifactError(
-      "E_PHASE_CHRONOLOGY_INVALID",
-      "Work state and current contract task IDs do not match",
-      [ARTIFACT_PATHS.events],
-    ));
-  }
-  if (ledgerEvents.some((event) => event.taskId !== currentTaskId)) {
-    errors.push(artifactError(
-      "E_PHASE_CHRONOLOGY_INVALID",
-      "Protocol event ledger contains an event for a different task",
-      [ARTIFACT_PATHS.events],
-    ));
-  }
-  const events = new Set(currentEvents.map((event) => event.event));
-  for (const event of EXECUTION_EVENTS) {
-    if (!events.has(event)) {
-      errors.push(artifactError(
-        "E_PHASE_CHRONOLOGY_INVALID",
-        `Required protocol event is missing: ${event}`,
-        [ARTIFACT_PATHS.events],
-      ));
-    }
-  }
-  return errors;
-}
-
 async function loadArtifact(loader, fallback) {
   try {
     return { value: await loader(), error: null, missingArtifacts: [] };
@@ -405,42 +359,51 @@ export async function getNextAction({ target, packageRoot } = {}) {
     });
   }
 
-  const preflight = await evaluatePreflight({ target, packageRoot });
-  const preflightArtifact = await loadArtifact(
-    () => readJsonArtifact(target, ARTIFACT_PATHS.preflight, "preflight", packageRoot),
-    ARTIFACT_PATHS.preflight,
-  );
-  const ledger = await validateEventLedger(target, packageRoot);
-  const missingGates = preflight.requiredGates.filter((gate) => !preflight.satisfiedGates.includes(gate));
-  const preflightArtifacts = [...requiredArtifacts, ARTIFACT_PATHS.preflight];
   const phaseNeedsChronology = PHASES_REQUIRING_EXECUTION_CHRONOLOGY.has(state.phase);
-  const persistedPreflightErrors = validatePersistedPreflight(preflightArtifact.value?.value, preflight);
-
-  if (phaseNeedsChronology && persistedPreflightErrors.length > 0) {
-    return result({
-      ...context,
-      nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
-      reasons: persistedPreflightErrors,
-      requiredArtifacts: preflightArtifacts,
-      missingArtifacts: preflightArtifact.missingArtifacts,
-    });
-  }
-
+  let executionPrerequisites = null;
   if (phaseNeedsChronology) {
-    const chronologyErrors = executionChronologyErrors(ledger, {
-      stateTaskId: state.taskId,
-      contractTaskId: contract.value.taskId,
-    });
-    if (chronologyErrors.length > 0) {
+    try {
+      executionPrerequisites = await evaluateStartExecutionPrerequisites({ target, state, packageRoot });
+    } catch (error) {
       return result({
         ...context,
         nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
-        reasons: chronologyErrors,
-        requiredArtifacts: [...preflightArtifacts, ARTIFACT_PATHS.events],
-        missingArtifacts: ledger.events.length === 0 ? [ARTIFACT_PATHS.events] : [],
+        reasons: [artifactError(
+          error?.code ?? "E_PHASE_CHRONOLOGY_INVALID",
+          `Unable to evaluate post-execution prerequisites: ${error?.message ?? String(error)}`,
+          Array.isArray(error?.artifacts) ? error.artifacts : [ARTIFACT_PATHS.events],
+        )],
+        requiredArtifacts: [
+          ARTIFACT_PATHS.state,
+          ARTIFACT_PATHS.contract,
+          ARTIFACT_PATHS.route,
+          ARTIFACT_PATHS.preflight,
+          ARTIFACT_PATHS.events,
+        ],
+      });
+    }
+    if (executionPrerequisites.errors.length > 0) {
+      return result({
+        ...context,
+        nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
+        reasons: executionPrerequisites.errors,
+        requiredArtifacts: executionPrerequisites.requiredArtifacts,
       });
     }
   }
+
+  const preflight = executionPrerequisites?.preflight ?? await evaluatePreflight({ target, packageRoot });
+  const preflightArtifact = phaseNeedsChronology
+    ? null
+    : await loadArtifact(
+      () => readJsonArtifact(target, ARTIFACT_PATHS.preflight, "preflight", packageRoot),
+      ARTIFACT_PATHS.preflight,
+    );
+  const missingGates = preflight.requiredGates.filter((gate) => !preflight.satisfiedGates.includes(gate));
+  const preflightArtifacts = [...requiredArtifacts, ARTIFACT_PATHS.preflight];
+  const persistedPreflightErrors = phaseNeedsChronology
+    ? []
+    : validatePersistedPreflight(preflightArtifact.value?.value, preflight);
 
   if (["ROUTED", "DESIGNING", "PLANNED"].includes(state.phase) && missingGates.length > 0) {
     return result({

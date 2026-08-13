@@ -20,6 +20,7 @@ const POST_EXECUTION_PHASES = new Set([
   "COMPLETE",
 ]);
 export const PREFLIGHT_ROUTE_IDENTITY_ERROR_MESSAGE = "PREFLIGHT_READY event routing fingerprint does not match the current READY preflight and route";
+export const PREFLIGHT_CONTRACT_IDENTITY_ERROR_MESSAGE = "PREFLIGHT_READY event contract fingerprint does not match the current READY preflight";
 
 export function hasExecutionStarted(phase) {
   return POST_EXECUTION_PHASES.has(phase);
@@ -107,6 +108,13 @@ function prerequisiteLedgerErrors(ledger, taskId, preflight, route) {
       "E_PHASE_CHRONOLOGY_INVALID",
       "PREFLIGHT_READY event gate sets do not match the current READY preflight",
       [ARTIFACT_PATHS.events, ARTIFACT_PATHS.preflight],
+    ));
+  }
+  if (preflightEvent && preflightEvent.fingerprint !== preflight.fingerprints.contract) {
+    errors.push(issue(
+      "E_PHASE_CHRONOLOGY_INVALID",
+      PREFLIGHT_CONTRACT_IDENTITY_ERROR_MESSAGE,
+      [ARTIFACT_PATHS.events, ARTIFACT_PATHS.preflight, ARTIFACT_PATHS.contract],
     ));
   }
   if (preflightEvent && (preflightEvent.details?.routingFingerprint !== preflight.fingerprints.routing

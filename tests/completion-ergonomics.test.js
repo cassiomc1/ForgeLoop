@@ -8,7 +8,7 @@ import { test } from "node:test";
 import { runComplete } from "../src/commands/complete.js";
 import { runPreflight } from "../src/commands/preflight.js";
 import { prepareCompletion, recordCheck } from "../src/core/completion-artifacts.js";
-import { ARTIFACT_PATHS } from "../src/core/artifacts.js";
+import { ARTIFACT_PATHS, canonicalFingerprint } from "../src/core/artifacts.js";
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { appendProtocolEvent, validateEventLedger } from "../src/core/events.js";
 import { advanceWorkState } from "../src/core/phase.js";
@@ -91,6 +91,21 @@ async function replacePersistedPreflight(target, mutate) {
   const preflight = JSON.parse(await readFile(preflightPath, "utf8"));
   mutate(preflight);
   await writeFile(preflightPath, `${JSON.stringify(preflight, null, 2)}\n`);
+}
+
+async function replacePreflightReadyEvent(target, mutate) {
+  const eventsPath = path.join(target, ARTIFACT_PATHS.events);
+  const events = (await readFile(eventsPath, "utf8")).trim().split("\n").map((line) => JSON.parse(line));
+  const ready = events.find((event) => event.event === "PREFLIGHT_READY");
+  mutate(ready);
+  let previousHash = null;
+  for (const event of events) {
+    event.previousHash = previousHash;
+    const { hash, ...body } = event;
+    event.hash = canonicalFingerprint(body);
+    previousHash = event.hash;
+  }
+  await writeFile(eventsPath, `${events.map((event) => JSON.stringify(event)).join("\n")}\n`);
 }
 
 async function setupReviewedTarget(target) {
@@ -198,6 +213,82 @@ test("post-execution paths reject foreign or stale persisted preflight before mu
       assert.equal(completion.status, "REJECTED");
       assert.ok(completion.errors.some((error) => error.code === "E_PREFLIGHT_TASK_MISMATCH"));
       assert.deepEqual(await artifactContents(target, [ARTIFACT_PATHS.state, ARTIFACT_PATHS.receipt, ARTIFACT_PATHS.events]), before);
+    });
+  });
+
+  await t.test("PREFLIGHT_READY contract fingerprint drift blocks every post-execution writer", async () => {
+    await withTarget(async (target) => {
+      await setupTarget(target);
+      await prepareCompletion({ target, packageRoot });
+      await replacePreflightReadyEvent(target, (event) => {
+        event.fingerprint = "a".repeat(64);
+      });
+      const before = await artifactContents(target, [ARTIFACT_PATHS.state, ARTIFACT_PATHS.receipt, ARTIFACT_PATHS.events]);
+
+      const next = await getNextAction({ target, packageRoot });
+      assert.equal(next.nextAction, NEXT_ACTIONS.RESOLVE_BLOCKER);
+      assert.ok(next.reasonCodes.includes("E_PHASE_CHRONOLOGY_INVALID"));
+      assert.equal(next.commands.length, 0);
+      await assert.rejects(
+        () => advanceWorkState(target, "REVIEWING", { packageRoot }),
+        (error) => error.code === "E_PHASE_CHRONOLOGY_INVALID",
+      );
+      await assert.rejects(
+        () => prepareCompletion({ target, packageRoot }),
+        (error) => error.code === "E_PHASE_CHRONOLOGY_INVALID",
+      );
+      await assert.rejects(
+        () => recordCheck({
+          target,
+          packageRoot,
+          id: "tests",
+          kind: "command",
+          requirement: "tests",
+          status: "passed",
+          evidenceKind: "OBSERVED",
+          result: "tests passed",
+          exitCode: 0,
+        }),
+        (error) => error.code === "E_PHASE_CHRONOLOGY_INVALID",
+      );
+      const completion = await runComplete({ target, packageRoot, persist: true });
+
+      assert.equal(completion.status, "REJECTED");
+      assert.ok(completion.errors.some((error) => error.code === "E_PHASE_CHRONOLOGY_INVALID"));
+      assert.deepEqual(await artifactContents(target, [ARTIFACT_PATHS.state, ARTIFACT_PATHS.receipt, ARTIFACT_PATHS.events]), before);
+    });
+  });
+
+  await t.test("next blocks stale execution gate sets and route-bound preflight events", async (t) => {
+    await t.test("state gate-set mismatch", async () => {
+      await withTarget(async (target) => {
+        await setupTarget(target, { advanceToVerifying: false });
+        const statePath = path.join(target, ARTIFACT_PATHS.state);
+        const state = JSON.parse(await readFile(statePath, "utf8"));
+        state.requiredGates = ["foreign-gate"];
+        await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`);
+
+        const next = await getNextAction({ target, packageRoot });
+
+        assert.equal(next.nextAction, NEXT_ACTIONS.RESOLVE_BLOCKER);
+        assert.ok(next.reasonCodes.includes("E_PREFLIGHT_GATES_STALE"));
+        assert.equal(next.commands.includes("forgeloop advance --to VERIFYING"), false);
+      });
+    });
+
+    await t.test("PREFLIGHT_READY route fingerprint mismatch", async () => {
+      await withTarget(async (target) => {
+        await setupTarget(target, { advanceToVerifying: false });
+        await replacePreflightReadyEvent(target, (event) => {
+          event.details.routingFingerprint = "b".repeat(64);
+        });
+
+        const next = await getNextAction({ target, packageRoot });
+
+        assert.equal(next.nextAction, NEXT_ACTIONS.RESOLVE_BLOCKER);
+        assert.ok(next.reasonCodes.includes("E_PHASE_CHRONOLOGY_INVALID"));
+        assert.equal(next.commands.includes("forgeloop advance --to VERIFYING"), false);
+      });
     });
   });
 });
