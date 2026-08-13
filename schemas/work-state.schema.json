@@ -47,6 +47,8 @@
     "verificationEvidence": { "type": "array", "items": { "type": "object" } },
     "evidenceCoverage": { "type": "array", "items": { "type": "object" } },
     "publicationStatus": { "enum": ["not-published", "local-only", "committed", "pushed", "published", "deployed"] }
+    ,"verificationCycle": { "type": "integer", "minimum": 1 }
+    ,"lastCompletionAttempt": { "type": "object" }
   },
   "additionalProperties": false
 }

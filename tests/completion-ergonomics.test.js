@@ -34,7 +34,7 @@ async function withTarget(run) {
   }
 }
 
-async function setupTarget(target, { advanceToVerifying = true } = {}) {
+async function setupTarget(target, { advanceToVerifying = true, successCriteria = ["tests"] } = {}) {
   const contract = createContract({
     taskId: "task-ergonomics",
     objective: "Exercise completion ergonomics",
@@ -42,7 +42,7 @@ async function setupTarget(target, { advanceToVerifying = true } = {}) {
     constraints: ["offline"],
     risks: [],
     verification: ["tests"],
-    successCriteria: ["tests"],
+    successCriteria,
     stopConditions: ["verification unavailable"],
     unresolvedDecisions: [],
     sourceRefs: [],
@@ -485,5 +485,91 @@ test("recordCheck keeps verification evidence before REVIEWING", async () => {
       }),
       (error) => error.code === "E_PHASE_PREREQUISITE_MISSING",
     );
+  });
+});
+
+test("recordCheck rejects future evidence for a lifecycle-owned criterion", async () => {
+  await withTarget(async (target) => {
+    const requirement = "Lifecycle reaches validator-backed COMPLETE";
+    await setupTarget(target, { successCriteria: [requirement] });
+    await prepareCompletion({ target, packageRoot });
+
+    await assert.rejects(
+      () => recordCheck({
+        target,
+        packageRoot,
+        id: "future-complete",
+        requirement,
+        status: "passed",
+        evidenceKind: "OBSERVED",
+        result: "claimed complete before terminal validation",
+      }),
+      (error) => error.code === "E_FUTURE_LIFECYCLE_EVIDENCE",
+    );
+
+    assert.deepEqual((await readWorkState(target, packageRoot)).checks, []);
+  });
+});
+
+test("evidence-only completion rejection supports a second legal verification cycle", async () => {
+  await withTarget(async (target) => {
+    await setupTarget(target);
+    await prepareCompletion({ target, packageRoot });
+    await recordCheck({
+      target,
+      packageRoot,
+      id: "tests-incomplete",
+      requirement: "tests",
+      status: "not-run",
+      evidenceKind: "NOT_VERIFIED",
+      result: "tests still pending",
+    });
+
+    const state = await readWorkState(target, packageRoot);
+    const reviewed = { ...state, previousPhase: "VERIFYING", phase: "REVIEWING" };
+    await writeWorkState(target, reviewed, { packageRoot });
+    await appendProtocolEvent(target, {
+      taskId: state.taskId,
+      event: "REVIEW_STARTED",
+      details: { verificationCycle: 1 },
+    }, packageRoot);
+    const receiptPath = path.join(target, ARTIFACT_PATHS.receipt);
+    const receipt = JSON.parse(await readFile(receiptPath, "utf8"));
+    receipt.stateFingerprint = canonicalFingerprint(reviewed);
+    await writeFile(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`);
+
+    const rejected = await runComplete({ target, packageRoot });
+    assert.equal(rejected.status, "REJECTED");
+    assert.ok(rejected.errors.some((error) => error.code === "E_EVIDENCE_PARTIAL"));
+
+    const recovery = await getNextAction({ target, packageRoot });
+    assert.equal(recovery.nextAction, NEXT_ACTIONS.ENTER_VERIFYING);
+    assert.deepEqual(recovery.commands, ["forgeloop advance --to VERIFYING"]);
+
+    const verifying = await advanceWorkState(target, "VERIFYING", { packageRoot });
+    assert.equal(verifying.verificationCycle, 2);
+    assert.equal(verifying.lastCompletionAttempt, undefined);
+    await prepareCompletion({ target, packageRoot });
+    await recordCheck({
+      target,
+      packageRoot,
+      id: "tests-complete",
+      requirement: "tests",
+      status: "passed",
+      evidenceKind: "OBSERVED",
+      result: "tests passed in cycle 2",
+      exitCode: 0,
+    });
+    await advanceWorkState(target, "REVIEWING", { packageRoot });
+
+    const completed = await runComplete({ target, packageRoot });
+    assert.equal(completed.status, "VALID", JSON.stringify(completed.errors));
+    const ledger = await validateEventLedger(target, packageRoot);
+    assert.deepEqual(
+      ledger.events.filter((event) => event.event === "VERIFICATION_STARTED")
+        .map((event) => event.details.verificationCycle),
+      [1, 2],
+    );
+    assert.ok(ledger.events.some((event) => event.event === "COMPLETION_REJECTED"));
   });
 });

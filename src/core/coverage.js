@@ -1,4 +1,5 @@
 import { PROTOCOL_VERSION } from "./protocol.js";
+import { evaluateRequiredEvidence, normalizeRequirements } from "./evidence-readiness.js";
 
 export const COVERAGE_SCHEMA_VERSION = 1;
 export const COVERAGE_STATUSES = Object.freeze(["COVERED", "PARTIAL", "NOT_VERIFIED", "BLOCKED"]);
@@ -59,7 +60,8 @@ export function assertCoverage(value, label = "evidence coverage") {
   const expected = evaluateCoverage(requiredEvidence, observedEvidence, {
     blocked: value.status === "BLOCKED",
   });
-  if (value.status !== expected && !(value.status === "BLOCKED" && expected === "BLOCKED")) {
+  const semanticPartial = value.status === "PARTIAL" && value.details?.readinessStatus === "PARTIAL";
+  if (value.status !== expected && !semanticPartial && !(value.status === "BLOCKED" && expected === "BLOCKED")) {
     throw coverageError("E_EVIDENCE_COVERAGE_PARTIAL", `${label}.status does not match its observed evidence`);
   }
   return value;
@@ -72,18 +74,21 @@ export function assertCoverageList(value, label = "evidenceCoverage") {
 }
 
 export function coverageForRequirements(requirements, checks, { blockedIds = [] } = {}) {
-  const normalizedRequirements = stringArray(requirements ?? [], "requirements");
+  const normalizedRequirements = normalizeRequirements(requirements ?? []);
   const normalizedChecks = Array.isArray(checks) ? checks : [];
-  const observed = new Set(
-    normalizedChecks
-      .filter((check) => check?.status === "passed" && check.evidenceKind === "OBSERVED")
-      .flatMap((check) => [check.id, check.kind, check.requirement]),
-  );
+  const readiness = evaluateRequiredEvidence({ requirements: normalizedRequirements, checks: normalizedChecks });
+  const covered = new Set(readiness.covered.map((item) => item.id));
+  const partial = new Set(readiness.partial.map((item) => item.id));
+  const invalid = new Set(readiness.invalid.map((item) => item.id));
   const blocked = new Set(blockedIds);
-  return normalizedRequirements.map((requirement) => createCoverage({
-    requirement,
-    requiredEvidence: [requirement],
-    observedEvidence: observed.has(requirement) ? [requirement] : [],
-    blocked: blocked.has(requirement),
+  return normalizedRequirements.filter((requirement) => !requirement.lifecycleOwned).map((requirement) => createCoverage({
+    requirement: requirement.text,
+    requiredEvidence: [requirement.text],
+    observedEvidence: covered.has(requirement.id) ? [requirement.text] : [],
+    blocked: blocked.has(requirement.text) || blocked.has(requirement.id),
+    ...(partial.has(requirement.id) || invalid.has(requirement.id) ? {
+      status: "PARTIAL",
+      details: { requirementId: requirement.id, readinessStatus: "PARTIAL" },
+    } : {}),
   }));
 }

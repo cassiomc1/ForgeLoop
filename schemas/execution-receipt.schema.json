@@ -11,6 +11,7 @@
     "contractFingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
     "routeFingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
     "stateFingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "verificationCycle": { "type": "integer", "minimum": 1 },
     "status": { "enum": ["in-progress", "complete", "blocked", "complete-with-concerns"] },
     "taskStatus": { "enum": ["in-progress", "complete", "blocked", "incomplete"] },
     "verificationStatus": { "enum": ["valid", "invalid", "not-verified", "blocked"] },

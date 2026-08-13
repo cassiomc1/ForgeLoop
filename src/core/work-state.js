@@ -159,6 +159,13 @@ export function assertWorkStateSemantics(state) {
       throw new WorkStateError(`Invalid work-state transition: ${state.previousPhase} -> ${state.phase}`);
     }
   }
+  if (state.verificationCycle !== undefined && (!Number.isInteger(state.verificationCycle) || state.verificationCycle < 1)) {
+    throw new WorkStateError("verificationCycle must be a positive integer");
+  }
+  if (state.lastCompletionAttempt !== undefined
+    && (!state.lastCompletionAttempt || typeof state.lastCompletionAttempt !== "object" || Array.isArray(state.lastCompletionAttempt))) {
+    throw new WorkStateError("lastCompletionAttempt must be an object");
+  }
   for (const failure of state.failures) {
     if (failure?.failureClass !== undefined) assertFailureClass(failure.failureClass);
   }
@@ -191,6 +198,8 @@ export function createWorkState(input) {
     verificationEvidence: [...(input.verificationEvidence ?? [])],
     lastUpdated: input.lastUpdated ?? new Date().toISOString(),
   };
+  if (input.verificationCycle !== undefined) state.verificationCycle = input.verificationCycle;
+  if (input.lastCompletionAttempt !== undefined) state.lastCompletionAttempt = structuredClone(input.lastCompletionAttempt);
   if (input.previousPhase !== undefined) state.previousPhase = input.previousPhase;
   if (input.diagnosedHypothesis !== undefined) state.diagnosedHypothesis = input.diagnosedHypothesis;
   return assertWorkStateSemantics(state);

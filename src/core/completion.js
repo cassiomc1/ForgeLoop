@@ -1,6 +1,6 @@
 import { ARTIFACT_PATHS, canonicalFingerprint, readJsonArtifact, writeJsonArtifact } from "./artifacts.js";
 import { requiredEvidenceForTarget } from "./completion-artifacts.js";
-import { appendProtocolEvent, LIFECYCLE_MILESTONES, validateEventLedger } from "./events.js";
+import { appendProtocolEvent, LIFECYCLE_MILESTONES, validateEventLedger, validateStateLedgerCoherence } from "./events.js";
 import { evaluatePreflight } from "./preflight.js";
 import { readContract } from "./contract.js";
 import { readPersistedRoute } from "./route-artifact.js";
@@ -99,6 +99,9 @@ async function validateLedger(target, taskId, state, errors, packageRoot) {
   }
   const ledger = await validateEventLedger(target, packageRoot);
   for (const error of ledger.errors) errors.push({ ...error, artifacts: [ARTIFACT_PATHS.events] });
+  for (const error of validateStateLedgerCoherence(state, ledger.events)) {
+    errors.push({ ...error, artifacts: [ARTIFACT_PATHS.state, ARTIFACT_PATHS.events] });
+  }
   const requiredEvents = LIFECYCLE_MILESTONES.slice(0, state?.phase === "COMPLETE" ? undefined : -1);
   const observed = new Set(ledger.events.filter((event) => event.taskId === taskId).map((event) => event.event));
   for (const event of requiredEvents) {
@@ -236,6 +239,53 @@ export async function evaluateCompletion({ target, packageRoot, strict = false }
 
 export async function runComplete({ target, packageRoot, strict = false, persist = true } = {}) {
   const result = await evaluateCompletion({ target, packageRoot, strict });
+  const recoverableEvidenceCodes = new Set([
+    "E_EVIDENCE_REQUIRED",
+    "E_EVIDENCE_PARTIAL",
+    "E_EVIDENCE_INVALID",
+    "E_EVIDENCE_KIND_INVALID",
+    "E_EVIDENCE_COVERAGE_PARTIAL",
+  ]);
+  const rejectionCodes = [...new Set(result.errors.map((error) => error.code))].sort();
+  const evidenceOnlyRejection = rejectionCodes.length > 0
+    && rejectionCodes.every((code) => recoverableEvidenceCodes.has(code));
+  if (persist && result.status === "REJECTED" && evidenceOnlyRejection) {
+    const state = await readWorkState(target, packageRoot);
+    if (state?.phase === "REVIEWING") {
+      const reasonCodes = rejectionCodes;
+      const missingRequirementIds = [...new Set(result.errors.map((error) => error.requirementId).filter(Boolean))].sort();
+      const next = {
+        ...state,
+        lastCompletionAttempt: {
+          status: "REJECTED",
+          reasonCodes,
+          missingRequirementIds,
+          timestamp: new Date().toISOString(),
+        },
+        lastUpdated: new Date().toISOString(),
+      };
+      let receipt = null;
+      try {
+        receipt = await readJsonArtifact(target, ARTIFACT_PATHS.receipt, "execution-receipt", packageRoot);
+      } catch {
+        // The evaluator already reports a missing or invalid receipt; evidence-only rejection can persist without one.
+      }
+      await writeWorkState(target, next, { packageRoot });
+      if (receipt) {
+        const nextReceipt = await createReceipt({
+          ...receipt.value,
+          stateFingerprint: canonicalFingerprint(next),
+          verificationCycle: next.verificationCycle ?? receipt.value.verificationCycle ?? 1,
+        }, packageRoot);
+        await writeJsonArtifact(target, ARTIFACT_PATHS.receipt, nextReceipt, "execution-receipt", packageRoot);
+      }
+      await appendProtocolEvent(target, {
+        taskId: state.taskId,
+        event: "COMPLETION_REJECTED",
+        details: { reasonCodes, missingRequirementIds },
+      }, packageRoot);
+    }
+  }
   if (persist && result.status === "VALID") {
     const state = await readWorkState(target, packageRoot);
     if (state && state.phase !== "COMPLETE") {
@@ -252,6 +302,7 @@ export async function runComplete({ target, packageRoot, strict = false, persist
       const nextReceipt = await createReceipt({
         ...receipt.value,
         stateFingerprint: canonicalFingerprint(next),
+        verificationCycle: next.verificationCycle ?? receipt.value.verificationCycle ?? 1,
       }, packageRoot);
       await writeWorkState(target, next, { packageRoot });
       await writeJsonArtifact(target, ARTIFACT_PATHS.receipt, nextReceipt, "execution-receipt", packageRoot);

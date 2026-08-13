@@ -279,6 +279,7 @@ RECEIVED → DISCOVERING → CONTRACT_READY → ROUTED
 PLANNED → EXECUTING → VERIFYING
 VERIFYING ├→ DIAGNOSING → CORRECTING → VERIFYING
           └→ REVIEWING → COMPLETE
+                         └→ VERIFYING when completion is rejected only for evidence
 Any non-terminal state → BLOCKED when a genuine blocker is evidenced
 ```
 
@@ -296,12 +297,15 @@ Any non-terminal state → BLOCKED when a genuine blocker is evidenced
 | `DIAGNOSING` | a fix hypothesis exists | `CORRECTING` |
 | `CORRECTING` | the fix is applied | `VERIFYING` |
 | `VERIFYING` | checks pass | `REVIEWING` |
+| `REVIEWING` | completion is rejected only for evidence | `VERIFYING` |
 | `REVIEWING` | contract and quality are accepted | `COMPLETE` |
 | any non-terminal state | a genuine external blocker is evidenced | `BLOCKED` |
 
 State invariants are machine-validatable: `COMPLETE` requires verification
 evidence, `BLOCKED` requires a blocker category, `CORRECTING` requires a
-diagnosed hypothesis, and `REVIEWING` cannot claim independent review from the
+diagnosed hypothesis, an evidence-only `REVIEWING → VERIFYING` transition
+requires a persisted rejection and starts a new verification cycle, and
+`REVIEWING` cannot claim independent review from the
 same identity as the implementer. Simple documentation tasks may skip design,
 delegation, and full regression when the contract records why those states are
 not applicable.

@@ -13,6 +13,7 @@ RECEIVED → DISCOVERING → CONTRACT_READY → ROUTED
 PLANNED → EXECUTING → VERIFYING
 VERIFYING ├→ DIAGNOSING → CORRECTING → VERIFYING
           └→ REVIEWING → COMPLETE
+                         └→ VERIFYING when completion is rejected only for evidence
 Any non-terminal state → BLOCKED when a genuine blocker is evidenced
 ```
 
@@ -48,6 +49,7 @@ Any non-terminal state → BLOCKED when a genuine blocker is evidenced
 | `DIAGNOSING` | a fix hypothesis exists | `CORRECTING` |
 | `CORRECTING` | the fix is applied | `VERIFYING` |
 | `VERIFYING` | checks pass | `REVIEWING` |
+| `REVIEWING` | completion is rejected only for evidence | `VERIFYING` |
 | `REVIEWING` | contract and quality are accepted | `COMPLETE` |
 | `Any non-terminal state` | a genuine external blocker is evidenced | `BLOCKED` |
 
@@ -61,6 +63,8 @@ invariants and record why a skipped phase was not applicable.
 - `CORRECTING` requires a diagnosed hypothesis and a changed evidence basis.
 - `REVIEWING` cannot claim independent review when reviewer and implementer
   identities are equal.
+- `REVIEWING → VERIFYING` requires a persisted evidence-only completion
+  rejection and starts a new `verificationCycle`.
 - A retry requires new evidence or a changed hypothesis.
 
 ## Serializable interfaces

@@ -1,6 +1,6 @@
 import { ARTIFACT_PATHS, canonicalFingerprint, readJsonArtifact, writeJsonArtifact } from "./artifacts.js";
 import { readContract } from "./contract.js";
-import { appendProtocolEvent, LIFECYCLE_MILESTONES, validateEventLedger } from "./events.js";
+import { appendProtocolEvent, LIFECYCLE_MILESTONES, validateEventLedger, validateStateLedgerCoherence } from "./events.js";
 import { readPersistedRoute } from "./route-artifact.js";
 import { assertWorkPhase, isValidTransition } from "./protocol.js";
 import { readWorkState, writeWorkState } from "./work-state.js";
@@ -25,6 +25,7 @@ const PHASE_EVENTS = Object.freeze({
   PLANNED: "PLAN_RECORDED",
   EXECUTING: "EXECUTION_STARTED",
   VERIFYING: "VERIFICATION_STARTED",
+  REVIEWING: "REVIEW_STARTED",
   COMPLETE: "COMPLETION_VALIDATED",
 });
 
@@ -148,11 +149,32 @@ export async function advanceWorkState(target, toPhase, { packageRoot, now = new
       [ARTIFACT_PATHS.events, ARTIFACT_PATHS.state],
     );
   }
+  const coherenceErrors = validateStateLedgerCoherence(state, ledger.events);
+  if (coherenceErrors.length > 0) {
+    throw phaseError(coherenceErrors[0].code, coherenceErrors[0].message, [ARTIFACT_PATHS.state, ARTIFACT_PATHS.events]);
+  }
   const eventType = PHASE_EVENTS[toPhase];
-  if (eventType && ledger.events.some((event) => event.taskId === state.taskId && event.event === eventType)) {
+  const repeatedVerification = state.phase === "REVIEWING" && toPhase === "VERIFYING";
+  if (repeatedVerification) {
+    const recoverable = state.lastCompletionAttempt?.status === "REJECTED"
+      && state.lastCompletionAttempt.reasonCodes?.some((code) => [
+        "E_EVIDENCE_REQUIRED",
+        "E_EVIDENCE_PARTIAL",
+        "E_EVIDENCE_INVALID",
+        "E_EVIDENCE_KIND_INVALID",
+        "E_EVIDENCE_COVERAGE_PARTIAL",
+      ].includes(code));
+    if (!recoverable) {
+      throw phaseError("E_PHASE_PREREQUISITE_MISSING", "REVIEWING -> VERIFYING requires a persisted recoverable completion rejection", [ARTIFACT_PATHS.state]);
+    }
+  }
+  const repeatedReview = state.phase === "VERIFYING" && toPhase === "REVIEWING"
+    && ledger.events.some((event) => event.taskId === state.taskId && event.event === "REVIEW_STARTED");
+  if (eventType && !repeatedVerification && !repeatedReview
+    && ledger.events.some((event) => event.taskId === state.taskId && event.event === eventType)) {
     throw phaseError("E_PHASE_CHRONOLOGY_INVALID", `Lifecycle milestone already exists: ${eventType}`, [ARTIFACT_PATHS.events]);
   }
-  const milestoneIndex = LIFECYCLE_MILESTONES.indexOf(eventType);
+  const milestoneIndex = repeatedVerification || repeatedReview ? -1 : LIFECYCLE_MILESTONES.indexOf(eventType);
   if (milestoneIndex >= 0) {
     const lastMilestone = ledger.events.reduce((last, event) => Math.max(last, LIFECYCLE_MILESTONES.indexOf(event.event)), -1);
     if (lastMilestone !== milestoneIndex - 1) {
@@ -166,6 +188,10 @@ export async function advanceWorkState(target, toPhase, { packageRoot, now = new
     phase: toPhase,
     lastUpdated: now,
   };
+  if (toPhase === "VERIFYING") {
+    next.verificationCycle = repeatedVerification ? (state.verificationCycle ?? 1) + 1 : (state.verificationCycle ?? 1);
+  }
+  if (repeatedVerification) delete next.lastCompletionAttempt;
   let nextReceipt = null;
   try {
     const receipt = await readJsonArtifact(target, ARTIFACT_PATHS.receipt, "execution-receipt", packageRoot);
@@ -191,6 +217,7 @@ export async function advanceWorkState(target, toPhase, { packageRoot, now = new
     nextReceipt = await createReceipt({
       ...receipt.value,
       stateFingerprint: canonicalFingerprint(next),
+      verificationCycle: next.verificationCycle ?? receipt.value.verificationCycle ?? 1,
     }, packageRoot);
     assertCompletionRelationships({
       contract,
@@ -207,6 +234,15 @@ export async function advanceWorkState(target, toPhase, { packageRoot, now = new
   if (nextReceipt) {
     await writeJsonArtifact(target, ARTIFACT_PATHS.receipt, nextReceipt, "execution-receipt", packageRoot);
   }
-  if (eventType) await appendProtocolEvent(target, { taskId: state.taskId, event: eventType, at: now }, packageRoot);
+  if (eventType) await appendProtocolEvent(target, {
+    taskId: state.taskId,
+    event: eventType,
+    at: now,
+    details: eventType === "VERIFICATION_STARTED"
+      ? { verificationCycle: next.verificationCycle }
+      : eventType === "REVIEW_STARTED"
+        ? { verificationCycle: next.verificationCycle ?? 1 }
+        : undefined,
+  }, packageRoot);
   return next;
 }

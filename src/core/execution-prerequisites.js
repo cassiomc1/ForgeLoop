@@ -1,6 +1,6 @@
 import { ARTIFACT_PATHS, readJsonArtifact } from "./artifacts.js";
 import { readContract } from "./contract.js";
-import { validateEventLedger } from "./events.js";
+import { validateEventLedger, validateStateLedgerCoherence } from "./events.js";
 import { evaluatePreflight, validatePersistedPreflight } from "./preflight.js";
 import { readPersistedRoute } from "./route-artifact.js";
 import { stateIdentityErrors } from "./completion-relationships.js";
@@ -195,6 +195,11 @@ export async function evaluateStartExecutionPrerequisites({ target, state, packa
 
   const ledger = await validateEventLedger(target, packageRoot);
   errors.push(...prerequisiteLedgerErrors(ledger, contract.value.taskId, preflight, route));
+  errors.push(...validateStateLedgerCoherence(state, ledger.events).map((error) => issue(
+    error.code,
+    error.message,
+    [ARTIFACT_PATHS.state, ARTIFACT_PATHS.events],
+  )));
   errors.push(...persistedPreflightErrors);
   return { errors, requiredArtifacts, contract, route, preflight, persistedPreflight, ledger };
 }
