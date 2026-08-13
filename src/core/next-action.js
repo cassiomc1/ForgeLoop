@@ -11,7 +11,7 @@ import { assertCheckList } from "./checks.js";
 import { completionRelationshipErrors } from "./completion-relationships.js";
 import { classifyLoadedWorkState, readWorkState } from "./work-state.js";
 import { sha256 } from "./manifest.js";
-import { evaluateRequiredEvidence } from "./evidence-readiness.js";
+import { evaluateRequiredEvidence, authoritativeChecksForRequirements } from "./evidence-readiness.js";
 import {
   evaluateStartExecutionPrerequisites,
   PREFLIGHT_ROUTE_IDENTITY_ERROR_MESSAGE,
@@ -518,20 +518,32 @@ export async function getNextAction(targetOrOptions = {}, packageRootOption) {
         requiredArtifacts,
       });
     }
-    const failed = state.checks.find((check) => check?.status === "failed");
+    const evidence = await requirementsAndCoverage({
+      target,
+      packageRoot,
+      contract,
+      route,
+      checks: state.checks,
+      additionalEvidence: preflight.policy?.requiredEvidence ?? [],
+    });
+    const authoritative = authoritativeChecksForRequirements({
+      requirements: evidence.requirements,
+      checks: state.checks,
+    });
+    const failed = authoritative.find(({ check }) => check?.status === "failed");
     if (failed) {
       return decision(
         context,
         NEXT_ACTIONS.DIAGNOSE,
-        artifactError("E_CHECK_FAILED", `Observed check failed: ${failed.id}`, [ARTIFACT_PATHS.state]),
+        artifactError("E_CHECK_FAILED", `Observed check failed: ${failed.check.id}`, [ARTIFACT_PATHS.state]),
       );
     }
-    const blocked = state.checks.find((check) => check?.status === "blocked");
+    const blocked = authoritative.find(({ check }) => check?.status === "blocked");
     if (blocked) {
       return decision(
         context,
         NEXT_ACTIONS.RESOLVE_BLOCKER,
-        artifactError("E_CHECK_BLOCKED", `Observed check is blocked: ${blocked.id}`, [ARTIFACT_PATHS.state]),
+        artifactError("E_CHECK_BLOCKED", `Observed check is blocked: ${blocked.check.id}`, [ARTIFACT_PATHS.state]),
       );
     }
     const receipt = await loadArtifact(
@@ -565,14 +577,6 @@ export async function getNextAction(targetOrOptions = {}, packageRootOption) {
         [...requiredArtifacts, ARTIFACT_PATHS.receipt],
       );
     }
-    const evidence = await requirementsAndCoverage({
-      target,
-      packageRoot,
-      contract,
-      route,
-      checks: state.checks,
-      additionalEvidence: preflight.policy?.requiredEvidence ?? [],
-    });
     const readiness = evaluateRequiredEvidence({ requirements: evidence.requirements, checks: state.checks });
     const receiptRelationships = completionRelationshipErrors({
       contract,

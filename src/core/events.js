@@ -8,6 +8,7 @@ import { assertJsonBytes, assertJsonLimits } from "./json-safety.js";
 import { assertSchema, readSchema } from "./schema-validation.js";
 import { assertSecretFree } from "./receipt.js";
 import { PROTOCOL_VERSION } from "./protocol.js";
+import { isRecoverableCompletionEvidenceCode } from "./completion-recovery.js";
 
 const EVENT_SCHEMA_VERSION = 1;
 export const LIFECYCLE_MILESTONES = Object.freeze([
@@ -244,15 +245,9 @@ export function validateCompletionRecoveryAuthorization({ state, events } = {}) 
       errors: [{ code: "E_COMPLETION_RECOVERY_UNAUTHORIZED", message: "Recovery requires a persisted REJECTED completion attempt" }],
     };
   }
-  const recoverableCodes = new Set([
-    "E_EVIDENCE_REQUIRED",
-    "E_EVIDENCE_PARTIAL",
-    "E_EVIDENCE_INVALID",
-    "E_EVIDENCE_KIND_INVALID",
-    "E_EVIDENCE_COVERAGE_PARTIAL",
-  ]);
   const hasRecoverableReason = Array.isArray(attempt.reasonCodes)
-    && attempt.reasonCodes.some((code) => recoverableCodes.has(code));
+    && attempt.reasonCodes.length > 0
+    && attempt.reasonCodes.every((code) => isRecoverableCompletionEvidenceCode(code));
   if (!hasRecoverableReason) {
     return {
       authorized: false,
@@ -262,6 +257,14 @@ export function validateCompletionRecoveryAuthorization({ state, events } = {}) 
 
   const taskEvents = (events ?? []).filter((event) => event.taskId === state.taskId);
   const targetCycle = state.verificationCycle ?? 1;
+
+  if (attempt.verificationCycle !== targetCycle) {
+    errors.push({
+      code: "E_COMPLETION_REJECTION_LEDGER_MISMATCH",
+      message: `Work-state rejection verificationCycle ${attempt.verificationCycle} does not match state verificationCycle ${targetCycle}`,
+    });
+    return { authorized: false, errors };
+  }
 
   const reviewEvents = taskEvents
     .map((event, index) => ({ event, index }))
@@ -311,6 +314,20 @@ export function validateCompletionRecoveryAuthorization({ state, events } = {}) 
     errors.push({
       code: "E_COMPLETION_REJECTION_LEDGER_MISMATCH",
       message: "Work-state missingRequirementIds do not match ledger COMPLETION_REJECTED event",
+    });
+  }
+
+  if (attempt.stateFingerprint && eventDetails.stateFingerprint && attempt.stateFingerprint !== eventDetails.stateFingerprint) {
+    errors.push({
+      code: "E_COMPLETION_REJECTION_LEDGER_MISMATCH",
+      message: "Work-state rejection stateFingerprint does not match ledger COMPLETION_REJECTED event",
+    });
+  }
+
+  if (attempt.receiptFingerprint !== undefined && eventDetails.receiptFingerprint !== undefined && attempt.receiptFingerprint !== eventDetails.receiptFingerprint) {
+    errors.push({
+      code: "E_COMPLETION_REJECTION_LEDGER_MISMATCH",
+      message: "Work-state rejection receiptFingerprint does not match ledger COMPLETION_REJECTED event",
     });
   }
 

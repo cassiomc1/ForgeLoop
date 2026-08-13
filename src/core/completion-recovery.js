@@ -1,0 +1,15 @@
+export const RECOVERABLE_COMPLETION_EVIDENCE_CODES = Object.freeze([
+  "E_EVIDENCE_REQUIRED",
+  "E_EVIDENCE_PARTIAL",
+  "E_EVIDENCE_INVALID",
+  "E_EVIDENCE_KIND_INVALID",
+  "E_EVIDENCE_COVERAGE_PARTIAL",
+  "E_EVIDENCE_COVERAGE_INVALID",
+  "E_VERIFICATION_CHECK_REQUIRED",
+  "E_CHECK_REQUIRED",
+  "E_CHECK_INVALID",
+]);
+
+export function isRecoverableCompletionEvidenceCode(code) {
+  return typeof code === "string" && RECOVERABLE_COMPLETION_EVIDENCE_CODES.includes(code);
+}
