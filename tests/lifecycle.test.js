@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { activateSession } from "../src/core/activation.js";
 import { appendProtocolEvent, validateEventLedger } from "../src/core/events.js";
 import { advanceWorkState } from "../src/core/phase.js";
+import { runPreflight } from "../src/commands/preflight.js";
 import { ARTIFACT_PATHS } from "../src/core/artifacts.js";
 import { contractFingerprint, createContract, writeContract } from "../src/core/contract.js";
 import { evaluateRoute } from "../src/core/router.js";
@@ -33,6 +34,8 @@ function state(overrides = {}) {
     repositoryFingerprint: { branch: null, head: null },
     phase: "RECEIVED",
     selectedGuides: ["clean", "test"],
+    requiredGates: [],
+    satisfiedGates: [],
     completedSteps: [],
     pendingSteps: ["contract", "route", "implementation"],
     checks: [],
@@ -147,9 +150,11 @@ test("entering verification reconciles only the implementation step", async () =
       completedSteps: ["contract", "route"],
       pendingSteps: ["implementation", "verification"],
     }));
-    for (const event of ["CONTRACT_VALIDATED", "ROUTE_VALIDATED", "PREFLIGHT_READY", "EXECUTION_STARTED"]) {
+    for (const event of ["CONTRACT_VALIDATED", "ROUTE_VALIDATED"]) {
       await appendProtocolEvent(target, { taskId: "task-lifecycle", event }, repositoryRoot);
     }
+    assert.equal((await runPreflight({ target, packageRoot: repositoryRoot })).status, "READY");
+    await appendProtocolEvent(target, { taskId: "task-lifecycle", event: "EXECUTION_STARTED" }, repositoryRoot);
 
     const next = await advanceWorkState(target, "VERIFYING", { packageRoot: repositoryRoot });
 
@@ -170,6 +175,10 @@ test("direct late-phase advance rejects a foreign ledger before writing", async 
       completedSteps: ["contract", "route"],
       pendingSteps: ["implementation", "verification"],
     }));
+    await appendProtocolEvent(target, { taskId: "task-lifecycle", event: "CONTRACT_VALIDATED" }, repositoryRoot);
+    await appendProtocolEvent(target, { taskId: "task-lifecycle", event: "ROUTE_VALIDATED" }, repositoryRoot);
+    assert.equal((await runPreflight({ target, packageRoot: repositoryRoot })).status, "READY");
+    await rm(path.join(target, ARTIFACT_PATHS.events));
     for (const event of ["CONTRACT_VALIDATED", "ROUTE_VALIDATED", "PREFLIGHT_READY", "EXECUTION_STARTED"]) {
       await appendProtocolEvent(target, { taskId: "task-foreign", event }, repositoryRoot);
     }

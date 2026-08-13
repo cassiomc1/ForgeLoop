@@ -11,7 +11,35 @@ const START_EXECUTION_EVENTS = Object.freeze([
   "ROUTE_VALIDATED",
   "PREFLIGHT_READY",
 ]);
+const POST_EXECUTION_PHASES = new Set([
+  "EXECUTING",
+  "VERIFYING",
+  "DIAGNOSING",
+  "CORRECTING",
+  "REVIEWING",
+  "COMPLETE",
+]);
 export const PREFLIGHT_ROUTE_IDENTITY_ERROR_MESSAGE = "PREFLIGHT_READY event routing fingerprint does not match the current READY preflight and route";
+
+export function hasExecutionStarted(phase) {
+  return POST_EXECUTION_PHASES.has(phase);
+}
+
+export function prerequisiteError(prerequisites) {
+  const first = prerequisites.errors[0];
+  if (!first) return null;
+  const error = new Error(first.message);
+  error.code = first.code;
+  error.artifacts = first.artifacts;
+  return error;
+}
+
+export async function assertExecutionPrerequisites(input = {}) {
+  const prerequisites = await evaluateStartExecutionPrerequisites(input);
+  const error = prerequisiteError(prerequisites);
+  if (error) throw error;
+  return prerequisites;
+}
 
 function issue(code, message, artifacts = []) {
   return { code, message, artifacts };

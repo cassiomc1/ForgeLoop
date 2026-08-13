@@ -8,6 +8,7 @@ import { readWorkState, writeWorkState, classifyLoadedWorkState } from "./work-s
 import { createReceipt, validateReceipt } from "./receipt.js";
 import { completionRelationshipErrors } from "./completion-relationships.js";
 import { assertSafePath, ensureWithin, fileExists } from "./filesystem.js";
+import { evaluateStartExecutionPrerequisites, hasExecutionStarted } from "./execution-prerequisites.js";
 
 function issue(code, message, artifacts = [], details = {}) {
   return { code, message, artifacts, ...details };
@@ -153,6 +154,11 @@ export async function evaluateCompletion({ target, packageRoot, strict = false }
     [ARTIFACT_PATHS.receipt],
     errors,
   );
+
+  if (state && hasExecutionStarted(state.phase)) {
+    const prerequisites = await evaluateStartExecutionPrerequisites({ target, state, packageRoot });
+    errors.push(...prerequisites.errors);
+  }
 
   if (receipt) {
     try {

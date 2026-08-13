@@ -16,6 +16,7 @@ import { currentChangedPaths } from "./repository.js";
 import { readPersistedRoute } from "./route-artifact.js";
 import { createReceipt, validateReceipt } from "./receipt.js";
 import { readWorkState, writeWorkState } from "./work-state.js";
+import { assertExecutionPrerequisites, hasExecutionStarted } from "./execution-prerequisites.js";
 
 function artifactError(code, message, artifacts = []) {
   const error = new Error(message);
@@ -72,6 +73,9 @@ export async function prepareCompletion({ target, packageRoot }) {
   const state = await readWorkState(target, packageRoot);
   if (!state) {
     throw artifactError("E_STATE_MISSING", "Work state is required before preparing completion", [ARTIFACT_PATHS.state]);
+  }
+  if (hasExecutionStarted(state.phase)) {
+    await assertExecutionPrerequisites({ target, state, packageRoot });
   }
 
   let existing = null;
@@ -204,6 +208,7 @@ export async function recordCheck({
       [ARTIFACT_PATHS.state],
     );
   }
+  await assertExecutionPrerequisites({ target, state, packageRoot });
 
   const existingReceipt = await readCurrentReceipt(target, packageRoot);
   await validateReceipt(existingReceipt.value, packageRoot);

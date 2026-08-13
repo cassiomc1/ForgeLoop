@@ -12,6 +12,7 @@ import { ARTIFACT_PATHS } from "../src/core/artifacts.js";
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { appendProtocolEvent, validateEventLedger } from "../src/core/events.js";
 import { advanceWorkState } from "../src/core/phase.js";
+import { NEXT_ACTIONS, getNextAction } from "../src/core/next-action.js";
 import { evaluateRoute } from "../src/core/router.js";
 import { persistRoute } from "../src/core/route-artifact.js";
 import { getPackageRoot } from "../src/core/templates.js";
@@ -74,6 +75,41 @@ async function setupTarget(target, { advanceToVerifying = true } = {}) {
   return { contract, route, persistedRoute };
 }
 
+async function artifactContents(target, paths) {
+  return Promise.all(paths.map(async (relativePath) => {
+    try {
+      return await readFile(path.join(target, relativePath), "utf8");
+    } catch (error) {
+      if (error.code === "ENOENT") return null;
+      throw error;
+    }
+  }));
+}
+
+async function replacePersistedPreflight(target, mutate) {
+  const preflightPath = path.join(target, ARTIFACT_PATHS.preflight);
+  const preflight = JSON.parse(await readFile(preflightPath, "utf8"));
+  mutate(preflight);
+  await writeFile(preflightPath, `${JSON.stringify(preflight, null, 2)}\n`);
+}
+
+async function setupReviewedTarget(target) {
+  await setupTarget(target);
+  await prepareCompletion({ target, packageRoot });
+  await recordCheck({
+    target,
+    packageRoot,
+    id: "tests",
+    kind: "command",
+    requirement: "tests",
+    status: "passed",
+    evidenceKind: "OBSERVED",
+    result: "tests passed",
+    exitCode: 0,
+  });
+  await advanceWorkState(target, "REVIEWING", { packageRoot });
+}
+
 test("completion rejects implemented work that stops in EXECUTING", async () => {
   await withTarget(async (target) => {
     await setupTarget(target, { advanceToVerifying: false });
@@ -87,6 +123,82 @@ test("completion rejects implemented work that stops in EXECUTING", async () => 
     assert.ok(completion.errors.some((error) => error.code === "E_PHASE_PREREQUISITE_MISSING"));
     assert.match(completion.errors.find((error) => error.code === "E_PHASE_PREREQUISITE_MISSING").next, /VERIFYING.*REVIEWING/i);
     assert.equal((await readWorkState(target, packageRoot)).phase, "EXECUTING");
+  });
+});
+
+test("post-execution paths reject foreign or stale persisted preflight before mutating", async (t) => {
+  await t.test("foreign persisted preflight blocks next and direct VERIFYING advance", async () => {
+    await withTarget(async (target) => {
+      await setupTarget(target, { advanceToVerifying: false });
+      await replacePersistedPreflight(target, (preflight) => {
+        preflight.taskId = "foreign-task";
+      });
+      const before = await artifactContents(target, [ARTIFACT_PATHS.state, ARTIFACT_PATHS.events]);
+
+      const next = await getNextAction({ target, packageRoot });
+      assert.equal(next.nextAction, NEXT_ACTIONS.RESOLVE_BLOCKER);
+      assert.ok(next.reasonCodes.includes("E_PREFLIGHT_TASK_MISMATCH"));
+      await assert.rejects(
+        () => advanceWorkState(target, "VERIFYING", { packageRoot }),
+        (error) => error.code === "E_PREFLIGHT_TASK_MISMATCH"
+          && error.message === "Persisted preflight does not belong to the current task",
+      );
+
+      assert.deepEqual(await artifactContents(target, [ARTIFACT_PATHS.state, ARTIFACT_PATHS.events]), before);
+    });
+  });
+
+  await t.test("stale persisted preflight blocks preparation and evidence recording", async () => {
+    await withTarget(async (target) => {
+      await setupTarget(target);
+      await replacePersistedPreflight(target, (preflight) => {
+        preflight.fingerprints.routing = "a".repeat(64);
+      });
+      const before = await artifactContents(target, [ARTIFACT_PATHS.state, ARTIFACT_PATHS.receipt, ARTIFACT_PATHS.events]);
+
+      const next = await getNextAction({ target, packageRoot });
+      assert.equal(next.nextAction, NEXT_ACTIONS.RESOLVE_BLOCKER);
+      assert.ok(next.reasonCodes.includes("E_PREFLIGHT_ROUTE_STALE"));
+      await assert.rejects(
+        () => prepareCompletion({ target, packageRoot }),
+        (error) => error.code === "E_PREFLIGHT_ROUTE_STALE",
+      );
+      await assert.rejects(
+        () => recordCheck({
+          target,
+          packageRoot,
+          id: "tests",
+          kind: "command",
+          requirement: "tests",
+          status: "passed",
+          evidenceKind: "OBSERVED",
+          result: "tests passed",
+          exitCode: 0,
+        }),
+        (error) => error.code === "E_PREFLIGHT_ROUTE_STALE",
+      );
+
+      assert.deepEqual(await artifactContents(target, [ARTIFACT_PATHS.state, ARTIFACT_PATHS.receipt, ARTIFACT_PATHS.events]), before);
+    });
+  });
+
+  await t.test("foreign persisted preflight rejects complete without changing a reviewed target", async () => {
+    await withTarget(async (target) => {
+      await setupReviewedTarget(target);
+      await replacePersistedPreflight(target, (preflight) => {
+        preflight.taskId = "foreign-task";
+      });
+      const before = await artifactContents(target, [ARTIFACT_PATHS.state, ARTIFACT_PATHS.receipt, ARTIFACT_PATHS.events]);
+
+      const next = await getNextAction({ target, packageRoot });
+      assert.equal(next.nextAction, NEXT_ACTIONS.RESOLVE_BLOCKER);
+      assert.ok(next.reasonCodes.includes("E_PREFLIGHT_TASK_MISMATCH"));
+      const completion = await runComplete({ target, packageRoot });
+
+      assert.equal(completion.status, "REJECTED");
+      assert.ok(completion.errors.some((error) => error.code === "E_PREFLIGHT_TASK_MISMATCH"));
+      assert.deepEqual(await artifactContents(target, [ARTIFACT_PATHS.state, ARTIFACT_PATHS.receipt, ARTIFACT_PATHS.events]), before);
+    });
   });
 });
 

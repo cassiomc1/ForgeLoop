@@ -6,6 +6,7 @@ import path from "node:path";
 import { test } from "node:test";
 
 import { runComplete } from "../src/commands/complete.js";
+import { runPreflight } from "../src/commands/preflight.js";
 import { createCheck } from "../src/core/checks.js";
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { coverageForRequirements, createCoverage } from "../src/core/coverage.js";
@@ -110,16 +111,23 @@ async function prepareValidTask(target, { receiptOverrides = {}, events } = {}) 
     ...receiptOverrides,
   };
   await writeJsonArtifact(target, ARTIFACT_PATHS.receipt, receipt, "execution-receipt", packageRoot);
-  for (const event of events ?? [
+  for (const event of [
     "TASK_RECEIVED",
     "CONTRACT_VALIDATED",
     "ROUTE_VALIDATED",
-    "PREFLIGHT_READY",
-    "EXECUTION_STARTED",
-    "VERIFICATION_STARTED",
-    "VERIFICATION_RECORDED",
   ]) {
     await appendProtocolEvent(target, { taskId: contract.taskId, event }, packageRoot);
+  }
+  assert.equal((await runPreflight({ target, packageRoot })).status, "READY");
+  if (events) {
+    await rm(path.join(target, ARTIFACT_PATHS.events));
+    for (const event of events) {
+      await appendProtocolEvent(target, { taskId: contract.taskId, event }, packageRoot);
+    }
+  } else {
+    for (const event of ["EXECUTION_STARTED", "VERIFICATION_STARTED", "VERIFICATION_RECORDED"]) {
+      await appendProtocolEvent(target, { taskId: contract.taskId, event }, packageRoot);
+    }
   }
   return { contract, route, receipt };
 }

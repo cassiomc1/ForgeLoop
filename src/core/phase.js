@@ -9,7 +9,7 @@ import { evaluatePreflight, validatePersistedPreflight } from "./preflight.js";
 import { requiredEvidenceForTarget } from "./completion-artifacts.js";
 import { assertCompletionRelationships, assertStateIdentity } from "./completion-relationships.js";
 import { createReceipt, validateReceipt } from "./receipt.js";
-import { evaluateStartExecutionPrerequisites } from "./execution-prerequisites.js";
+import { assertExecutionPrerequisites, hasExecutionStarted } from "./execution-prerequisites.js";
 
 function phaseError(code, message, artifacts = []) {
   const error = new Error(message);
@@ -109,11 +109,11 @@ async function assertPhasePrerequisites(target, state, toPhase, packageRoot) {
       throw phaseError("E_PHASE_PREREQUISITE_MISSING", `Phase ${toPhase} requires ${ARTIFACT_PATHS.route}: ${error.message}`, [ARTIFACT_PATHS.route]);
     }
   }
-  if (toPhase === "EXECUTING") {
-    const prerequisites = await evaluateStartExecutionPrerequisites({ target, state, packageRoot });
-    if (prerequisites.errors.length > 0) {
-      const first = prerequisites.errors[0];
-      throw phaseError(first.code, first.message, first.artifacts);
+  if (hasExecutionStarted(toPhase)) {
+    try {
+      await assertExecutionPrerequisites({ target, state, packageRoot });
+    } catch (error) {
+      throw phaseError(error.code, error.message, error.artifacts);
     }
   }
   if (toPhase === "COMPLETE" && state.verificationEvidence.length === 0) {
