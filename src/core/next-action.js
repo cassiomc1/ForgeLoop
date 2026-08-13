@@ -12,7 +12,10 @@ import { assertCheckList } from "./checks.js";
 import { completionRelationshipErrors } from "./completion-relationships.js";
 import { classifyLoadedWorkState, readWorkState } from "./work-state.js";
 import { sha256 } from "./manifest.js";
-import { evaluateStartExecutionPrerequisites } from "./execution-prerequisites.js";
+import {
+  evaluateStartExecutionPrerequisites,
+  PREFLIGHT_ROUTE_IDENTITY_ERROR_MESSAGE,
+} from "./execution-prerequisites.js";
 
 export const NEXT_ACTIONS = Object.freeze({
   DISCOVER: "DISCOVER",
@@ -471,7 +474,9 @@ export async function getNextAction({ target, packageRoot } = {}) {
   if (state.phase === "PLANNED") {
     const prerequisites = await evaluateStartExecutionPrerequisites({ target, state, packageRoot });
     if (prerequisites.errors.length > 0) {
-      const preflightOnly = prerequisites.errors.every((error) => error.code.startsWith("E_PREFLIGHT_"));
+      const preflightOnly = prerequisites.errors.every((error) => error.code.startsWith("E_PREFLIGHT_")
+        || (error.code === "E_PHASE_CHRONOLOGY_INVALID"
+          && error.message === PREFLIGHT_ROUTE_IDENTITY_ERROR_MESSAGE));
       if (preflightOnly) {
         return result({
           ...context,

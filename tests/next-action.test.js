@@ -799,6 +799,60 @@ test("freshness and persisted preflight identity cannot authorize forward lifecy
     });
   });
 
+  await t.test("a replaced same-gate route cannot refresh or start from the prior ready lifecycle", async () => {
+    await withTarget(async (target) => {
+      const { contract } = await setupTarget(target, { phase: "PLANNED" });
+      const statePath = path.join(target, ARTIFACT_PATHS.state);
+      const preflightPath = path.join(target, ARTIFACT_PATHS.preflight);
+      const eventsPath = path.join(target, ARTIFACT_PATHS.events);
+      const replacementRoute = evaluateRoute({ workType: "bug", surfaces: [], platforms: [] });
+      const persistedReplacement = await persistRoute(target, replacementRoute, packageRoot, {
+        contractFingerprint: contractFingerprint(contract),
+      });
+      const state = JSON.parse(await readFile(statePath, "utf8"));
+      state.routeFingerprint = persistedReplacement.fingerprint;
+      state.selectedGuides = [...replacementRoute.guides];
+      await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`);
+
+      const stateBefore = await readFile(statePath, "utf8");
+      const preflightBefore = await readFile(preflightPath, "utf8");
+      const eventsBefore = await readFile(eventsPath, "utf8");
+
+      const next = await getNextAction({ target, packageRoot });
+      assertStableAction(next, NEXT_ACTIONS.RUN_PREFLIGHT);
+      assert.ok(next.reasonCodes.includes("E_PREFLIGHT_ROUTE_STALE"));
+      assert.equal(next.commands.includes("forgeloop advance --to EXECUTING"), false);
+
+      await assert.rejects(
+        () => runPreflight({ target, packageRoot }),
+        (error) => error.code === "E_PHASE_CHRONOLOGY_INVALID",
+      );
+      assert.equal(await readFile(preflightPath, "utf8"), preflightBefore);
+      assert.equal(await readFile(eventsPath, "utf8"), eventsBefore);
+
+      await assert.rejects(
+        () => advanceWorkState(target, "EXECUTING", { packageRoot }),
+        (error) => error.code === "E_PHASE_CHRONOLOGY_INVALID",
+      );
+      assert.equal(await readFile(statePath, "utf8"), stateBefore);
+      assert.equal(await readFile(eventsPath, "utf8"), eventsBefore);
+    });
+  });
+
+  await t.test("same-route ready lifecycle serializes route identity and starts execution", async () => {
+    await withTarget(async (target) => {
+      await setupTarget(target, { phase: "PLANNED" });
+      const preflight = JSON.parse(await readFile(path.join(target, ARTIFACT_PATHS.preflight), "utf8"));
+      const ledger = await validateEventLedger(target, packageRoot);
+      const ready = ledger.events.find((event) => event.event === "PREFLIGHT_READY");
+
+      assert.equal(ready.details.routingFingerprint, preflight.fingerprints.routing);
+      assert.deepEqual(Object.keys(ready.details), ["requiredGates", "satisfiedGates", "routingFingerprint"]);
+      assertStableAction(await getNextAction({ target, packageRoot }), NEXT_ACTIONS.START_EXECUTION);
+      await advanceWorkState(target, "EXECUTING", { packageRoot });
+    });
+  });
+
   await t.test("foreign state task ID cannot recommend or persist execution", async () => {
     await withTarget(async (target) => {
       await setupTarget(target, { phase: "PLANNED" });

@@ -324,6 +324,7 @@ function assertPreflightResultPersistenceSafety(result) {
 
 function sameReadyPreflightEvent(event, result) {
   return event.fingerprint === result.fingerprints.contract
+    && event.details?.routingFingerprint === result.fingerprints.routing
     && sameStringSet(event.details?.requiredGates, result.requiredGates)
     && sameStringSet(event.details?.satisfiedGates, result.satisfiedGates);
 }
@@ -380,6 +381,7 @@ export async function runPreflight({ target, packageRoot, strict = false, persis
         details: {
           requiredGates: result.requiredGates,
           satisfiedGates: result.satisfiedGates,
+          routingFingerprint: result.fingerprints.routing,
         },
       }, packageRoot);
     }

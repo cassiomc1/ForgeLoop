@@ -11,6 +11,7 @@ const START_EXECUTION_EVENTS = Object.freeze([
   "ROUTE_VALIDATED",
   "PREFLIGHT_READY",
 ]);
+export const PREFLIGHT_ROUTE_IDENTITY_ERROR_MESSAGE = "PREFLIGHT_READY event routing fingerprint does not match the current READY preflight and route";
 
 function issue(code, message, artifacts = []) {
   return { code, message, artifacts };
@@ -46,7 +47,7 @@ function freshnessErrors(state, freshness) {
   )];
 }
 
-function prerequisiteLedgerErrors(ledger, taskId, preflight) {
+function prerequisiteLedgerErrors(ledger, taskId, preflight, route) {
   const errors = (ledger.errors ?? []).map((error) => issue(
     error.code ?? "E_PHASE_CHRONOLOGY_INVALID",
     error.message,
@@ -78,6 +79,14 @@ function prerequisiteLedgerErrors(ledger, taskId, preflight) {
       "E_PHASE_CHRONOLOGY_INVALID",
       "PREFLIGHT_READY event gate sets do not match the current READY preflight",
       [ARTIFACT_PATHS.events, ARTIFACT_PATHS.preflight],
+    ));
+  }
+  if (preflightEvent && (preflightEvent.details?.routingFingerprint !== preflight.fingerprints.routing
+    || preflightEvent.details?.routingFingerprint !== route.fingerprint)) {
+    errors.push(issue(
+      "E_PHASE_CHRONOLOGY_INVALID",
+      PREFLIGHT_ROUTE_IDENTITY_ERROR_MESSAGE,
+      [ARTIFACT_PATHS.events, ARTIFACT_PATHS.preflight, ARTIFACT_PATHS.route],
     ));
   }
   return errors;
@@ -138,7 +147,7 @@ export async function evaluateStartExecutionPrerequisites({ target, state, packa
   } catch {
     // validatePersistedPreflight reports the stable, actionable preflight reason.
   }
-  errors.push(...validatePersistedPreflight(persistedPreflight?.value, preflight));
+  const persistedPreflightErrors = validatePersistedPreflight(persistedPreflight?.value, preflight);
   if (!sameStringSet(state.requiredGates, preflight.requiredGates)
     || !sameStringSet(state.satisfiedGates, preflight.satisfiedGates)) {
     errors.push(issue(
@@ -149,6 +158,7 @@ export async function evaluateStartExecutionPrerequisites({ target, state, packa
   }
 
   const ledger = await validateEventLedger(target, packageRoot);
-  errors.push(...prerequisiteLedgerErrors(ledger, contract.value.taskId, preflight));
+  errors.push(...prerequisiteLedgerErrors(ledger, contract.value.taskId, preflight, route));
+  errors.push(...persistedPreflightErrors);
   return { errors, requiredArtifacts, contract, route, preflight, persistedPreflight, ledger };
 }
