@@ -4,6 +4,10 @@ These scenarios are adapter-facing contracts. They describe requests and the
 artifacts a live agent must produce; they do not invoke a model runtime and are
 not part of the deterministic `npm test` execution path.
 
+The current published baseline for new runs is
+`@cassiomc1/forgeloop@0.1.9`. Pin that version when preparing a reproducible
+blind run; historical reports retain the exact package version they used.
+
 Run a scenario in a disposable target using the Standard profile first:
 
 ```bash

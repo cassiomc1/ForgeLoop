@@ -157,7 +157,12 @@ project without overwriting local instructions. When the package is available
 in the npm registry, use the commands below; otherwise use the repository
 checkout fallback.
 
+The current published release is `@cassiomc1/forgeloop@0.1.9`.
+Pin this version when a reproducible blind run or release-identity check is
+required:
+
 ```bash
+npx @cassiomc1/forgeloop@0.1.9 --version
 npx @cassiomc1/forgeloop init
 npx @cassiomc1/forgeloop doctor
 npx @cassiomc1/forgeloop update
