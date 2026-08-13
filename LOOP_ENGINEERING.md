@@ -72,6 +72,13 @@ Implementation finished is not task finished, and tests executed are not the
 same as verification recorded. After implementation begins, do not stop or
 return the final result while the ForgeLoop task remains in `EXECUTING`.
 
+ACT → QUERY NEXT → ACT → QUERY NEXT → … → TERMINAL
+
+At each lifecycle boundary, query persisted state with `forgeloop next` before
+choosing the next action. Always query after implementation, verification,
+correction, and review. The query is advisory and read-only; the host agent
+runs checks and applies the returned legal transition or repair action.
+
 ```text
 POST-IMPLEMENTATION CLOSURE
 

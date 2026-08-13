@@ -1,11 +1,15 @@
-import { ARTIFACT_PATHS } from "./artifacts.js";
-import { readJsonArtifact } from "./artifacts.js";
+import { ARTIFACT_PATHS, canonicalFingerprint, readJsonArtifact, writeJsonArtifact } from "./artifacts.js";
 import { readContract } from "./contract.js";
-import { appendProtocolEvent, validateEventLedger } from "./events.js";
+import { appendProtocolEvent, LIFECYCLE_MILESTONES, validateEventLedger } from "./events.js";
 import { readPersistedRoute } from "./route-artifact.js";
 import { assertWorkPhase, isValidTransition } from "./protocol.js";
 import { readWorkState, writeWorkState } from "./work-state.js";
 import { evaluateCompletion } from "./completion.js";
+import { evaluatePreflight, validatePersistedPreflight } from "./preflight.js";
+import { requiredEvidenceForTarget } from "./completion-artifacts.js";
+import { assertCompletionRelationships, assertStateIdentity } from "./completion-relationships.js";
+import { createReceipt, validateReceipt } from "./receipt.js";
+import { assertExecutionPrerequisites, hasExecutionStarted } from "./execution-prerequisites.js";
 
 function phaseError(code, message, artifacts = []) {
   const error = new Error(message);
@@ -24,6 +28,72 @@ const PHASE_EVENTS = Object.freeze({
   COMPLETE: "COMPLETION_VALIDATED",
 });
 
+const LATE_PHASES = new Set([
+  "EXECUTING",
+  "VERIFYING",
+  "DIAGNOSING",
+  "CORRECTING",
+  "REVIEWING",
+  "COMPLETE",
+]);
+
+async function assertPersistedStateIdentity(target, state, toPhase, packageRoot) {
+  const requireContract = LATE_PHASES.has(state.phase)
+    || ["CONTRACT_READY", "ROUTED", "EXECUTING"].includes(toPhase);
+  const requireRoute = LATE_PHASES.has(state.phase)
+    || ["ROUTED", "EXECUTING"].includes(toPhase);
+  let contract = null;
+  let route = null;
+  try {
+    contract = await readContract(target, packageRoot);
+  } catch (error) {
+    if (error.code === "ARTIFACT_MISSING" && !requireContract) {
+      contract = null;
+    } else {
+      throw phaseError(
+        requireContract ? "E_PHASE_PREREQUISITE_MISSING" : error.code ?? "E_CONTRACT_INVALID",
+        `${requireContract ? `Phase ${toPhase} requires current contract` : "Unable to validate current contract"}: ${error.message}`,
+        [ARTIFACT_PATHS.contract],
+      );
+    }
+  }
+  try {
+    route = await readPersistedRoute(target, packageRoot);
+  } catch (error) {
+    if (error.code === "ARTIFACT_MISSING" && !requireRoute) {
+      route = null;
+    } else {
+      throw phaseError(
+        requireRoute ? "E_PHASE_PREREQUISITE_MISSING" : error.code ?? "E_ROUTE_INVALID",
+        `${requireRoute ? `Phase ${toPhase} requires persisted route` : "Unable to validate persisted route"}: ${error.message}`,
+        [ARTIFACT_PATHS.route],
+      );
+    }
+  }
+  if (!contract && !route) return;
+  try {
+    assertStateIdentity({ contract, route, state });
+  } catch (error) {
+    throw phaseError(
+      error.code,
+      error.message,
+      error.artifacts,
+    );
+  }
+}
+
+function reconcileImplementationStep(state, toPhase) {
+  if (state.phase !== "EXECUTING" || toPhase !== "VERIFYING") return state;
+  if (!state.pendingSteps.includes("implementation")) return state;
+  return {
+    ...state,
+    completedSteps: state.completedSteps.includes("implementation")
+      ? [...state.completedSteps]
+      : [...state.completedSteps, "implementation"],
+    pendingSteps: state.pendingSteps.filter((step) => step !== "implementation"),
+  };
+}
+
 async function assertPhasePrerequisites(target, state, toPhase, packageRoot) {
   if (toPhase === "CONTRACT_READY" || toPhase === "ROUTED" || toPhase === "EXECUTING") {
     try {
@@ -39,21 +109,11 @@ async function assertPhasePrerequisites(target, state, toPhase, packageRoot) {
       throw phaseError("E_PHASE_PREREQUISITE_MISSING", `Phase ${toPhase} requires ${ARTIFACT_PATHS.route}: ${error.message}`, [ARTIFACT_PATHS.route]);
     }
   }
-  if (toPhase === "EXECUTING") {
-    let preflight;
+  if (hasExecutionStarted(toPhase)) {
     try {
-      preflight = await readJsonArtifact(target, ARTIFACT_PATHS.preflight, "preflight", packageRoot);
+      await assertExecutionPrerequisites({ target, state, packageRoot });
     } catch (error) {
-      throw phaseError("E_PHASE_PREREQUISITE_MISSING", `EXECUTING requires READY ${ARTIFACT_PATHS.preflight}: ${error.message}`, [ARTIFACT_PATHS.preflight]);
-    }
-    if (preflight.value.status !== "READY") {
-      throw phaseError("E_PREFLIGHT_NOT_READY", "EXECUTING requires a READY preflight", [ARTIFACT_PATHS.preflight]);
-    }
-    const ledger = await validateEventLedger(target, packageRoot);
-    for (const requiredEvent of ["CONTRACT_VALIDATED", "ROUTE_VALIDATED", "PREFLIGHT_READY"]) {
-      if (!ledger.events.some((event) => event.event === requiredEvent)) {
-        throw phaseError("E_PHASE_CHRONOLOGY_INVALID", `EXECUTING requires a ${requiredEvent} protocol event`, [ARTIFACT_PATHS.events]);
-      }
+      throw phaseError(error.code, error.message, error.artifacts);
     }
   }
   if (toPhase === "COMPLETE" && state.verificationEvidence.length === 0) {
@@ -72,17 +132,81 @@ export async function advanceWorkState(target, toPhase, { packageRoot, now = new
   const state = await readWorkState(target, packageRoot);
   if (!state) throw phaseError("E_PHASE_PREREQUISITE_MISSING", "Cannot advance without work state", [ARTIFACT_PATHS.state]);
   await assertPhasePrerequisites(target, state, toPhase, packageRoot);
+  await assertPersistedStateIdentity(target, state, toPhase, packageRoot);
   if (!isValidTransition(state.phase, toPhase)) {
     throw phaseError("E_PHASE_TRANSITION_INVALID", `Invalid work-state transition: ${state.phase} -> ${toPhase}`);
   }
+  const ledger = await validateEventLedger(target, packageRoot);
+  if (!ledger.valid) {
+    const first = ledger.errors[0];
+    throw phaseError(first.code, first.message, [ARTIFACT_PATHS.events]);
+  }
+  if (ledger.events.some((event) => event.taskId !== state.taskId)) {
+    throw phaseError(
+      "E_PHASE_CHRONOLOGY_INVALID",
+      "Cannot advance work state with lifecycle events from a different task",
+      [ARTIFACT_PATHS.events, ARTIFACT_PATHS.state],
+    );
+  }
+  const eventType = PHASE_EVENTS[toPhase];
+  if (eventType && ledger.events.some((event) => event.taskId === state.taskId && event.event === eventType)) {
+    throw phaseError("E_PHASE_CHRONOLOGY_INVALID", `Lifecycle milestone already exists: ${eventType}`, [ARTIFACT_PATHS.events]);
+  }
+  const milestoneIndex = LIFECYCLE_MILESTONES.indexOf(eventType);
+  if (milestoneIndex >= 0) {
+    const lastMilestone = ledger.events.reduce((last, event) => Math.max(last, LIFECYCLE_MILESTONES.indexOf(event.event)), -1);
+    if (lastMilestone !== milestoneIndex - 1) {
+      throw phaseError("E_PHASE_CHRONOLOGY_INVALID", `Phase ${toPhase} cannot append ${eventType} after the current lifecycle ledger`, [ARTIFACT_PATHS.events]);
+    }
+  }
+  const reconciled = reconcileImplementationStep(state, toPhase);
   const next = {
-    ...state,
+    ...reconciled,
     previousPhase: state.phase,
     phase: toPhase,
     lastUpdated: now,
   };
+  let nextReceipt = null;
+  try {
+    const receipt = await readJsonArtifact(target, ARTIFACT_PATHS.receipt, "execution-receipt", packageRoot);
+    const contract = await readContract(target, packageRoot);
+    const route = await readPersistedRoute(target, packageRoot);
+    const preflight = await evaluatePreflight({ target, packageRoot });
+    const requiredEvidence = await requiredEvidenceForTarget({
+      target,
+      contract,
+      route,
+      packageRoot,
+      additionalEvidence: preflight.policy?.requiredEvidence ?? [],
+    });
+    await validateReceipt(receipt.value, packageRoot);
+    assertCompletionRelationships({
+      contract,
+      route,
+      state,
+      receipt: receipt.value,
+      requiredEvidence,
+      requireRequiredChecks: false,
+    });
+    nextReceipt = await createReceipt({
+      ...receipt.value,
+      stateFingerprint: canonicalFingerprint(next),
+    }, packageRoot);
+    assertCompletionRelationships({
+      contract,
+      route,
+      state: next,
+      receipt: nextReceipt,
+      requiredEvidence,
+      requireRequiredChecks: false,
+    });
+  } catch (error) {
+    if (error.code !== "ARTIFACT_MISSING") throw error;
+  }
   await writeWorkState(target, next, { packageRoot });
-  const eventType = PHASE_EVENTS[toPhase];
+  if (nextReceipt) {
+    await writeJsonArtifact(target, ARTIFACT_PATHS.receipt, nextReceipt, "execution-receipt", packageRoot);
+  }
   if (eventType) await appendProtocolEvent(target, { taskId: state.taskId, event: eventType, at: now }, packageRoot);
   return next;
 }

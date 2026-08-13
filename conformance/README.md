@@ -8,6 +8,7 @@ Run a scenario in a disposable target using the Standard profile first:
 
 ```bash
 npx @cassiomc1/forgeloop preflight --json
+npx @cassiomc1/forgeloop next --json
 npx @cassiomc1/forgeloop audit --json
 npx @cassiomc1/forgeloop complete --json
 ```
@@ -15,12 +16,16 @@ npx @cassiomc1/forgeloop complete --json
 The expected post-implementation path is:
 
 ```text
-EXECUTING
+implementation
+→ forgeloop next
 → advance --to VERIFYING
+→ forgeloop next
 → prepare-completion
-→ record-check for each observed check
+→ forgeloop next
+→ checks + record-check
+→ forgeloop next
 → advance --to REVIEWING
-→ audit
+→ forgeloop next
 → complete
 ```
 

@@ -5,12 +5,13 @@ import { requiredGatesForGuides } from "./guide-metadata.js";
 import { assertRouteInvariants } from "./router.js";
 import { assertSourceProvenance } from "./sources.js";
 import { readPersistedRoute } from "./route-artifact.js";
-import { appendProtocolEvent } from "./events.js";
+import { appendProtocolEvent, LIFECYCLE_MILESTONES, validateEventLedger } from "./events.js";
 import { readWorkState } from "./work-state.js";
 import { readConfig } from "./config.js";
 import { assertSafePath, ensureWithin, fileExists, readBytes } from "./filesystem.js";
 import { sha256 } from "./manifest.js";
 import { validateProfileSources } from "./profile.js";
+import { assertStateIdentity } from "./completion-relationships.js";
 
 const PREVIEW_DECISION_LIMIT = 10;
 const PREVIEW_DECISION_MAX_LENGTH = 240;
@@ -27,6 +28,66 @@ function sortIssues(errors) {
   return unique.sort((left, right) => left.code.localeCompare(right.code)
     || left.artifacts.join("\0").localeCompare(right.artifacts.join("\0"))
     || left.message.localeCompare(right.message));
+}
+
+function preflightError(code, message, artifacts = []) {
+  const error = new Error(message);
+  error.code = code;
+  error.artifacts = artifacts;
+  return error;
+}
+
+function sameStringSet(left, right) {
+  if (!Array.isArray(left) || !Array.isArray(right)) return false;
+  const leftSet = new Set(left);
+  const rightSet = new Set(right);
+  return leftSet.size === left.length
+    && rightSet.size === right.length
+    && leftSet.size === rightSet.size
+    && [...leftSet].every((value) => rightSet.has(value));
+}
+
+export function validatePersistedPreflight(persisted, current) {
+  const errors = [];
+  if (persisted?.status !== "READY") {
+    errors.push(issue("E_PREFLIGHT_NOT_READY", "A persisted READY preflight is required", [ARTIFACT_PATHS.preflight]));
+    return errors;
+  }
+  if (current?.status !== "READY") {
+    errors.push(issue("E_PREFLIGHT_NOT_READY", "The current preflight evaluation is not READY", [ARTIFACT_PATHS.preflight]));
+  }
+  if (persisted.taskId !== current?.taskId) {
+    errors.push(issue(
+      "E_PREFLIGHT_TASK_MISMATCH",
+      "Persisted preflight does not belong to the current task",
+      [ARTIFACT_PATHS.preflight, ARTIFACT_PATHS.contract],
+    ));
+  }
+  if (persisted.fingerprints?.contract !== current?.fingerprints?.contract
+    || persisted.contract?.fingerprint !== current?.contract?.fingerprint) {
+    errors.push(issue(
+      "E_PREFLIGHT_CONTRACT_STALE",
+      "Persisted preflight does not match the current contract fingerprint",
+      [ARTIFACT_PATHS.preflight, ARTIFACT_PATHS.contract],
+    ));
+  }
+  if (persisted.fingerprints?.routing !== current?.fingerprints?.routing
+    || persisted.routing?.fingerprint !== current?.routing?.fingerprint) {
+    errors.push(issue(
+      "E_PREFLIGHT_ROUTE_STALE",
+      "Persisted preflight does not match the current routing fingerprint",
+      [ARTIFACT_PATHS.preflight, ARTIFACT_PATHS.route],
+    ));
+  }
+  if (!sameStringSet(persisted.requiredGates, current?.requiredGates)
+    || !sameStringSet(persisted.satisfiedGates, current?.satisfiedGates)) {
+    errors.push(issue(
+      "E_PREFLIGHT_GATES_STALE",
+      "Persisted preflight gate sets do not match the current evaluation",
+      [ARTIFACT_PATHS.preflight, ARTIFACT_PATHS.gates],
+    ));
+  }
+  return sortIssues(errors);
 }
 
 async function readProfile(target) {
@@ -219,11 +280,112 @@ export async function evaluatePreflight({ target, packageRoot, strict = false } 
   };
 }
 
+async function readOptionalIdentityArtifact(readArtifact, invalidCode, artifactPath) {
+  try {
+    return await readArtifact();
+  } catch (error) {
+    if (error.code === "ARTIFACT_MISSING") return null;
+    throw preflightError(invalidCode, error.message, [artifactPath]);
+  }
+}
+
+async function assertPreflightPersistenceSafety(target, packageRoot, taskId) {
+  let state;
+  try {
+    state = await readWorkState(target, packageRoot);
+  } catch (error) {
+    throw preflightError("E_STATE_INVALID", error.message, [ARTIFACT_PATHS.state]);
+  }
+  const contract = await readOptionalIdentityArtifact(
+    () => readContract(target, packageRoot),
+    "E_CONTRACT_INVALID",
+    ARTIFACT_PATHS.contract,
+  );
+  const route = await readOptionalIdentityArtifact(
+    () => readPersistedRoute(target, packageRoot),
+    "E_ROUTE_INVALID",
+    ARTIFACT_PATHS.route,
+  );
+  if (state) {
+    if (contract || route) assertStateIdentity({ contract, route, state });
+  }
+
+  if (taskId === "unknown") return null;
+  const ledger = await validateEventLedger(target, packageRoot);
+  if (!ledger.valid) {
+    const first = ledger.errors[0];
+    throw preflightError(first.code, first.message, [ARTIFACT_PATHS.events]);
+  }
+  if (ledger.events.some((event) => event.taskId !== taskId)) {
+    throw preflightError(
+      "E_PHASE_CHRONOLOGY_INVALID",
+      "Preflight cannot append events to a ledger owned by a different task",
+      [ARTIFACT_PATHS.events, ARTIFACT_PATHS.contract],
+    );
+  }
+  return ledger;
+}
+
+const PREFLIGHT_IDENTITY_BARRIER_CODES = new Set([
+  "E_CONTRACT_STALE",
+  "E_GATE_TASK_MISMATCH",
+  "E_ROUTE_STALE",
+  "E_STATE_TASK_MISMATCH",
+  "E_ROUTE_GUIDE_MISMATCH",
+]);
+
+function assertPreflightResultPersistenceSafety(result) {
+  const identityError = result.errors.find((error) => PREFLIGHT_IDENTITY_BARRIER_CODES.has(error.code));
+  if (identityError) {
+    throw preflightError(identityError.code, identityError.message, identityError.artifacts);
+  }
+}
+
+function sameReadyPreflightEvent(event, result) {
+  return event.fingerprint === result.fingerprints.contract
+    && event.details?.routingFingerprint === result.fingerprints.routing
+    && sameStringSet(event.details?.requiredGates, result.requiredGates)
+    && sameStringSet(event.details?.satisfiedGates, result.satisfiedGates);
+}
+
+function planReadyPreflightLifecycleWrite(ledger, result) {
+  if (!ledger) return { appendEvents: false };
+  const existing = ledger.events.find((event) => event.event === "PREFLIGHT_READY");
+  if (existing) {
+    if (sameReadyPreflightEvent(existing, result)) return { appendEvents: false };
+    throw preflightError(
+      "E_PHASE_CHRONOLOGY_INVALID",
+      "PREFLIGHT_READY already exists with different READY preflight details; repair the contract, route, or gate lifecycle before refreshing preflight",
+      [ARTIFACT_PATHS.preflight, ARTIFACT_PATHS.events, ARTIFACT_PATHS.contract, ARTIFACT_PATHS.route, ARTIFACT_PATHS.gates],
+    );
+  }
+  const lastMilestone = ledger.events.reduce(
+    (last, event) => Math.max(last, LIFECYCLE_MILESTONES.indexOf(event.event)),
+    -1,
+  );
+  const routeMilestone = LIFECYCLE_MILESTONES.indexOf("ROUTE_VALIDATED");
+  const preflightMilestone = LIFECYCLE_MILESTONES.indexOf("PREFLIGHT_READY");
+  if (lastMilestone < routeMilestone) return { appendEvents: false };
+  if (lastMilestone !== preflightMilestone - 1) {
+    throw preflightError(
+      "E_PHASE_CHRONOLOGY_INVALID",
+      "PREFLIGHT_READY cannot be appended after the current lifecycle ledger",
+      [ARTIFACT_PATHS.events],
+    );
+  }
+  return { appendEvents: true };
+}
+
 export async function runPreflight({ target, packageRoot, strict = false, persist = true } = {}) {
   const result = await evaluatePreflight({ target, packageRoot, strict });
   if (persist) {
+    const ledger = await assertPreflightPersistenceSafety(target, packageRoot, result.taskId);
+    assertPreflightResultPersistenceSafety(result);
+    const lifecycleWrite = result.status === "READY"
+      ? planReadyPreflightLifecycleWrite(ledger, result)
+      : { appendEvents: true };
     await writeJsonArtifact(target, ARTIFACT_PATHS.preflight, result, "preflight", packageRoot);
-    if (result.taskId !== "unknown") {
+    if (result.taskId !== "unknown" && lifecycleWrite.appendEvents) {
       for (const gate of result.satisfiedGates) {
         await appendProtocolEvent(target, {
           taskId: result.taskId,
@@ -238,6 +400,7 @@ export async function runPreflight({ target, packageRoot, strict = false, persis
         details: {
           requiredGates: result.requiredGates,
           satisfiedGates: result.satisfiedGates,
+          routingFingerprint: result.fingerprints.routing,
         },
       }, packageRoot);
     }

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -8,8 +9,11 @@ import { fileURLToPath } from "node:url";
 import { activateSession } from "../src/core/activation.js";
 import { appendProtocolEvent, validateEventLedger } from "../src/core/events.js";
 import { advanceWorkState } from "../src/core/phase.js";
+import { runPreflight } from "../src/commands/preflight.js";
 import { ARTIFACT_PATHS } from "../src/core/artifacts.js";
-import { contractFingerprint } from "../src/core/contract.js";
+import { contractFingerprint, createContract, writeContract } from "../src/core/contract.js";
+import { evaluateRoute } from "../src/core/router.js";
+import { persistRoute } from "../src/core/route-artifact.js";
 import { createWorkState, writeWorkState } from "../src/core/work-state.js";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -30,6 +34,8 @@ function state(overrides = {}) {
     repositoryFingerprint: { branch: null, head: null },
     phase: "RECEIVED",
     selectedGuides: ["clean", "test"],
+    requiredGates: [],
+    satisfiedGates: [],
     completedSteps: [],
     pendingSteps: ["contract", "route", "implementation"],
     checks: [],
@@ -38,6 +44,46 @@ function state(overrides = {}) {
     verificationEvidence: [],
     ...overrides,
   });
+}
+
+async function prepareIdentity(target, taskId = "task-lifecycle") {
+  const contract = createContract({
+    taskId,
+    objective: "Validate lifecycle identity",
+    deliverables: [],
+    constraints: [],
+    risks: [],
+    verification: [],
+    successCriteria: [],
+    stopConditions: [],
+    unresolvedDecisions: [],
+    sourceRefs: [],
+  });
+  const fingerprint = contractFingerprint(contract);
+  await writeContract(target, contract, repositoryRoot);
+  const route = evaluateRoute({ workType: "bug", surfaces: [], platforms: [] });
+  const persistedRoute = await persistRoute(target, route, repositoryRoot, { contractFingerprint: fingerprint });
+  return { contract, fingerprint, route, persistedRoute };
+}
+
+async function artifactHashes(target) {
+  const hashes = {};
+  for (const relativePath of [
+    ARTIFACT_PATHS.contract,
+    ARTIFACT_PATHS.route,
+    ARTIFACT_PATHS.state,
+    ARTIFACT_PATHS.receipt,
+    ARTIFACT_PATHS.events,
+  ]) {
+    try {
+      const bytes = await readFile(path.join(target, relativePath));
+      hashes[relativePath] = createHash("sha256").update(bytes).digest("hex");
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+      hashes[relativePath] = null;
+    }
+  }
+  return hashes;
 }
 
 test("protocol events are append-only, sequenced, and hash chained", async () => {
@@ -90,5 +136,138 @@ test("advance rejects illegal transitions without changing work state", async ()
     );
     const stored = JSON.parse(await readFile(path.join(target, ARTIFACT_PATHS.state), "utf8"));
     assert.equal(stored.phase, "RECEIVED");
+  });
+});
+
+test("entering verification reconciles only the implementation step", async () => {
+  await withTarget(async (target) => {
+    const identity = await prepareIdentity(target);
+    await writeWorkState(target, state({
+      contractFingerprint: identity.fingerprint,
+      routeFingerprint: identity.persistedRoute.fingerprint,
+      phase: "EXECUTING",
+      previousPhase: "PLANNED",
+      completedSteps: ["contract", "route"],
+      pendingSteps: ["implementation", "verification"],
+    }));
+    for (const event of ["CONTRACT_VALIDATED", "ROUTE_VALIDATED"]) {
+      await appendProtocolEvent(target, { taskId: "task-lifecycle", event }, repositoryRoot);
+    }
+    assert.equal((await runPreflight({ target, packageRoot: repositoryRoot })).status, "READY");
+    await appendProtocolEvent(target, { taskId: "task-lifecycle", event: "EXECUTION_STARTED" }, repositoryRoot);
+
+    const next = await advanceWorkState(target, "VERIFYING", { packageRoot: repositoryRoot });
+
+    assert.deepEqual(next.completedSteps, ["contract", "route", "implementation"]);
+    assert.deepEqual(next.pendingSteps, ["verification"]);
+    assert.deepEqual(next.verificationEvidence, []);
+  });
+});
+
+test("direct late-phase advance rejects a foreign ledger before writing", async () => {
+  await withTarget(async (target) => {
+    const identity = await prepareIdentity(target);
+    await writeWorkState(target, state({
+      contractFingerprint: identity.fingerprint,
+      routeFingerprint: identity.persistedRoute.fingerprint,
+      phase: "EXECUTING",
+      previousPhase: "PLANNED",
+      completedSteps: ["contract", "route"],
+      pendingSteps: ["implementation", "verification"],
+    }));
+    await appendProtocolEvent(target, { taskId: "task-lifecycle", event: "CONTRACT_VALIDATED" }, repositoryRoot);
+    await appendProtocolEvent(target, { taskId: "task-lifecycle", event: "ROUTE_VALIDATED" }, repositoryRoot);
+    assert.equal((await runPreflight({ target, packageRoot: repositoryRoot })).status, "READY");
+    await rm(path.join(target, ARTIFACT_PATHS.events));
+    for (const event of ["CONTRACT_VALIDATED", "ROUTE_VALIDATED", "PREFLIGHT_READY", "EXECUTION_STARTED"]) {
+      await appendProtocolEvent(target, { taskId: "task-foreign", event }, repositoryRoot);
+    }
+    const before = await artifactHashes(target);
+
+    await assert.rejects(
+      () => advanceWorkState(target, "VERIFYING", { packageRoot: repositoryRoot }),
+      (error) => error.code === "E_PHASE_CHRONOLOGY_INVALID",
+    );
+
+    assert.deepEqual(await artifactHashes(target), before);
+  });
+});
+
+test("late-phase advance rejects a foreign state without a receipt before writing", async () => {
+  await withTarget(async (target) => {
+    const identity = await prepareIdentity(target, "task-current");
+    await writeWorkState(target, state({
+      taskId: "task-foreign",
+      contractFingerprint: identity.fingerprint,
+      routeFingerprint: identity.persistedRoute.fingerprint,
+      phase: "EXECUTING",
+      previousPhase: "PLANNED",
+      completedSteps: ["contract", "route"],
+      pendingSteps: ["implementation", "verification"],
+    }));
+    for (const event of ["CONTRACT_VALIDATED", "ROUTE_VALIDATED", "PREFLIGHT_READY", "EXECUTION_STARTED"]) {
+      await appendProtocolEvent(target, { taskId: "task-foreign", event }, repositoryRoot);
+    }
+    const before = await artifactHashes(target);
+
+    await assert.rejects(
+      () => advanceWorkState(target, "VERIFYING", { packageRoot: repositoryRoot }),
+      (error) => error.code === "E_STATE_TASK_MISMATCH",
+    );
+
+    assert.deepEqual(await artifactHashes(target), before);
+  });
+});
+
+test("early lifecycle advance rejects a foreign state before writing", async () => {
+  await withTarget(async (target) => {
+    const identity = await prepareIdentity(target, "task-current");
+    await writeWorkState(target, state({
+      taskId: "task-foreign",
+      contractFingerprint: identity.fingerprint,
+      routeFingerprint: identity.persistedRoute.fingerprint,
+      phase: "CONTRACT_READY",
+      previousPhase: "DISCOVERING",
+      completedSteps: ["contract"],
+      pendingSteps: ["route", "implementation"],
+    }));
+    await appendProtocolEvent(target, { taskId: "task-foreign", event: "CONTRACT_VALIDATED" }, repositoryRoot);
+    const before = await artifactHashes(target);
+
+    await assert.rejects(
+      () => advanceWorkState(target, "ROUTED", { packageRoot: repositoryRoot }),
+      (error) => error.code === "E_STATE_TASK_MISMATCH",
+    );
+
+    assert.deepEqual(await artifactHashes(target), before);
+  });
+});
+
+test("early lifecycle advance rejects a foreign route when the contract is absent", async () => {
+  await withTarget(async (target) => {
+    const identity = await prepareIdentity(target);
+    const foreignRoute = await persistRoute(target, identity.route, repositoryRoot, {
+      contractFingerprint: "b".repeat(64),
+    });
+    await writeWorkState(target, state({
+      contractFingerprint: identity.fingerprint,
+      routeFingerprint: foreignRoute.fingerprint,
+      phase: "ROUTED",
+      previousPhase: "CONTRACT_READY",
+      completedSteps: ["contract", "route"],
+      pendingSteps: ["implementation"],
+    }));
+    await rm(path.join(target, ARTIFACT_PATHS.contract));
+    for (const event of ["CONTRACT_VALIDATED", "ROUTE_VALIDATED"]) {
+      await appendProtocolEvent(target, { taskId: "task-lifecycle", event }, repositoryRoot);
+    }
+    const before = await artifactHashes(target);
+
+    await assert.rejects(
+      () => advanceWorkState(target, "PLANNED", { packageRoot: repositoryRoot }),
+      (error) => error.code === "E_ROUTE_STALE",
+    );
+
+    assert.deepEqual(await artifactHashes(target), before);
   });
 });

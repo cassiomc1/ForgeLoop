@@ -24,12 +24,13 @@ import { formatPolicyResult, runPolicy } from "./commands/policy.js";
 import { formatBundleResult, runBundle } from "./commands/bundle.js";
 import { formatPrepareCompletionResult, runPrepareCompletion } from "./commands/prepare-completion.js";
 import { formatRecordCheckResult, runRecordCheck } from "./commands/record-check.js";
+import { formatNextActionResult, runNext } from "./commands/next.js";
 import { resolveTarget } from "./core/filesystem.js";
 import { getPackageRoot } from "./core/templates.js";
 import { ARTIFACT_PATHS } from "./core/artifacts.js";
 
 function usage(command = null) {
-  const commands = "init|doctor|update|activate|route|preflight|advance|prepare-completion|record-check|complete|audit|report|policy|bundle|inspect|status|validate-state|clear-state|validate-receipt|validate-protocol";
+  const commands = "init|doctor|update|activate|route|preflight|advance|next|prepare-completion|record-check|complete|audit|report|policy|bundle|inspect|status|validate-state|clear-state|validate-receipt|validate-protocol";
   const options = ["  --path <directory>  target project directory (default: current directory)"];
   if (!command || command === "init" || command === "update") {
     options.push("  --dry-run           show planned writes without changing files");
@@ -51,7 +52,7 @@ function usage(command = null) {
   if (!command || command === "advance") {
     options.push("  --to <phase>        destination workflow phase");
   }
-  if (!command || ["activate", "advance", "prepare-completion", "record-check", "preflight", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"].includes(command)) {
+  if (!command || ["activate", "advance", "next", "prepare-completion", "record-check", "preflight", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"].includes(command)) {
     options.push("  --json              emit structured output as JSON");
   }
   if (!command || ["preflight", "complete", "audit", "report"].includes(command)) {
@@ -132,7 +133,7 @@ export function parseArgs(argv) {
 
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
-    if (["init", "doctor", "update", "activate", "route", "preflight", "advance", "prepare-completion", "record-check", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"].includes(argument)) {
+    if (["init", "doctor", "update", "activate", "route", "preflight", "advance", "next", "prepare-completion", "record-check", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"].includes(argument)) {
       if (command) throw new Error(`Multiple commands are not supported: ${argument}`);
       command = argument;
     } else if (argument === "--help" || argument === "-h") {
@@ -214,6 +215,10 @@ export function parseArgs(argv) {
       if (!id || id.startsWith("-")) throw new Error("--id requires a check ID");
       options.checkId = id;
       index += 1;
+    } else if (argument.startsWith("--id=")) {
+      const id = argument.slice("--id=".length);
+      if (!id || id.startsWith("-")) throw new Error("--id requires a check ID");
+      options.checkId = id;
     } else if (argument === "--kind") {
       const kind = argv[index + 1];
       if (!kind || kind.startsWith("-")) throw new Error("--kind requires a check kind");
@@ -224,6 +229,10 @@ export function parseArgs(argv) {
       if (!requirement || requirement.startsWith("-")) throw new Error("--requirement requires an evidence target");
       options.checkRequirement = requirement;
       index += 1;
+    } else if (argument.startsWith("--requirement=")) {
+      const requirement = argument.slice("--requirement=".length);
+      if (!requirement) throw new Error("--requirement requires an evidence target");
+      options.checkRequirement = requirement;
     } else if (argument === "--status") {
       const status = argv[index + 1];
       if (!status || status.startsWith("-")) throw new Error("--status requires a check status");
@@ -244,6 +253,10 @@ export function parseArgs(argv) {
       if (!resultText || resultText.startsWith("-")) throw new Error("--result requires recorded text");
       options.checkResult = resultText;
       index += 1;
+    } else if (argument.startsWith("--result=")) {
+      const resultText = argument.slice("--result=".length);
+      if (!resultText) throw new Error("--result requires recorded text");
+      options.checkResult = resultText;
     } else if (argument === "--exit-code") {
       const exitCode = argv[index + 1];
       if (!exitCode || exitCode.startsWith("-")) throw new Error("--exit-code requires a non-negative integer");
@@ -282,7 +295,7 @@ export function parseArgs(argv) {
 
   if (!command) return { command: null, options };
 
-  const jsonCommands = ["doctor", "route", "activate", "advance", "prepare-completion", "record-check", "preflight", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"];
+  const jsonCommands = ["doctor", "route", "activate", "advance", "next", "prepare-completion", "record-check", "preflight", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"];
   if (!jsonCommands.includes(command) && options.json) {
     throw new Error(`Option --json is not valid for ${command}`);
   }
@@ -436,6 +449,12 @@ export async function main(argv = process.argv.slice(2)) {
       return 0;
     }
 
+    if (command === "next") {
+      const result = await runNext({ target, packageRoot });
+      console.log(options.json ? JSON.stringify(result, null, 2) : formatNextActionResult(result));
+      return 0;
+    }
+
     if (command === "prepare-completion") {
       const result = await runPrepareCompletion({ target, packageRoot });
       console.log(options.json ? JSON.stringify(result, null, 2) : formatPrepareCompletionResult(result));
@@ -451,8 +470,8 @@ export async function main(argv = process.argv.slice(2)) {
         requirement: options.checkRequirement,
         status: options.checkStatus,
         evidenceKind: options.checkEvidenceKind,
-        command: options.checkCommand,
-        result: options.checkResult,
+        command: options.checkCommand ?? undefined,
+        result: options.checkResult ?? undefined,
         exitCode: options.checkExitCode,
         details: options.checkDetails ?? undefined,
       });
