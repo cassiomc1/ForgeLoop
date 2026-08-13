@@ -3,6 +3,7 @@ import { readManifest, sha256, writeManifest } from "../core/manifest.js";
 import { readTemplateEntries } from "../core/templates.js";
 import { createEvidence } from "../core/evidence.js";
 import { LAYOUT_VERSION } from "../core/target-layout.js";
+import { inspectNativeAdapter, validateNativeAdapterTargets } from "../core/native-adapters.js";
 
 function finding(code, severity, relativePath, message, remediation = null, evidence = null) {
   const evidenceRecord = evidence && typeof evidence === "object"
@@ -25,6 +26,34 @@ function finding(code, severity, relativePath, message, remediation = null, evid
 function readProfileMode(bytes) {
   const text = bytes.toString("utf8");
   return text.match(/^profile-mode:\s*([^\s]+)\s*$/m)?.[1] ?? null;
+}
+
+async function inspectManagedNativeAdapter({ target, relativePath, bytes, record, findings }) {
+  const initialInspection = inspectNativeAdapter(relativePath, bytes);
+  const appearsForgeLoopManaged = initialInspection.hasForgeLoopMarker
+    || initialInspection.legacyReferences.length > 0
+    || initialInspection.text.includes(".forgeloop/kit/");
+  if (record.preserve && !appearsForgeLoopManaged) return;
+
+  const validation = await validateNativeAdapterTargets({ target, relativePath, bytes });
+  if (validation.stale) {
+    findings.push(finding(
+      "E_NATIVE_ADAPTER_STALE",
+      "error",
+      relativePath,
+      "Managed native adapter does not resolve its ForgeLoop references to the hidden kit.",
+      "Run forgeloop update or merge the hidden-kit references into this adapter.",
+    ));
+  }
+  for (const missingTarget of validation.missingTargets) {
+    findings.push(finding(
+      "E_NATIVE_ADAPTER_TARGET_MISSING",
+      "error",
+      relativePath,
+      `Managed native adapter target is missing: ${missingTarget}.`,
+      "Restore the hidden canonical target and rerun doctor.",
+    ));
+  }
 }
 
 const ADAPTER_PATHS = new Set([
@@ -143,11 +172,25 @@ export async function runDoctor({ target, packageRoot, adoptPaths = [], strict =
       continue;
     }
 
+    const destinationBytes = await readBytes(destination);
     if (entry.sourcePath === "PROJECT_PROFILE.md") {
-      const mode = readProfileMode(await readBytes(destination));
+      const mode = readProfileMode(destinationBytes);
       if (mode === "template") {
         findings.push(finding("profile-template", "info", managedPath, "Initialize profile-mode as project after confirming real project facts."));
       }
+    }
+
+    const legacyPath = hasLegacyAlternative
+      ? ensureWithin(target, entry.legacyRelativePath)
+      : null;
+    if (entry.sourcePath === "PROJECT_PROFILE.md" && legacyPath && await fileExists(legacyPath)) {
+      findings.push(finding(
+        "E_DUPLICATE_PROFILE_SOURCE",
+        "error",
+        entry.legacyRelativePath,
+        "Both legacy root and hidden-kit project profiles exist; keep only the hidden profile as canonical.",
+        "Remove the legacy root profile after verifying its bytes are represented in .forgeloop/kit/PROJECT_PROFILE.md.",
+      ));
     }
 
     const record = manifest?.files?.[managedPath];
@@ -164,20 +207,30 @@ export async function runDoctor({ target, packageRoot, adoptPaths = [], strict =
       }
       continue;
     }
-    const actualHash = sha256(await readBytes(destination));
+    const actualHash = sha256(destinationBytes);
     if (actualHash !== record.sha256 && !record.preserve) {
       findings.push(finding("file-drift", "warning", managedPath, "File differs from the last managed version; update will preserve it."));
     }
     if (hasLegacyAlternative) {
-      const legacyPath = ensureWithin(target, entry.legacyRelativePath);
       if (await fileExists(legacyPath)) {
-        findings.push(finding(
-          "legacy-root-file",
-          "warning",
-          entry.legacyRelativePath,
-          "A legacy root copy remains alongside the canonical hidden kit; review it after migration.",
-        ));
+        if (entry.sourcePath !== "PROJECT_PROFILE.md") {
+          findings.push(finding(
+            "legacy-root-file",
+            "warning",
+            entry.legacyRelativePath,
+            "A legacy root copy remains alongside the canonical hidden kit; review it after migration.",
+          ));
+        }
       }
+    }
+    if (layoutVersion >= LAYOUT_VERSION && ADAPTER_PATHS.has(managedPath)) {
+      await inspectManagedNativeAdapter({
+        target,
+        relativePath: managedPath,
+        bytes: destinationBytes,
+        record,
+        findings,
+      });
     }
   }
 

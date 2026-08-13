@@ -557,7 +557,8 @@ export async function main(argv = process.argv.slice(2)) {
     const result = await runUpdate({ target, dryRun: options.dryRun, packageRoot, packageVersion: version });
     printActions(result.actions);
     for (const conflict of result.conflicts) {
-      console.log(`conflict: ${conflict.path} - ${conflict.message}`);
+      const code = conflict.code ? `${conflict.code}: ` : "";
+      console.log(`conflict: ${code}${conflict.path} - ${conflict.message}`);
     }
     return result.conflicts.length === 0 ? 0 : 1;
   } catch (error) {
