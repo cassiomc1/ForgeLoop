@@ -502,7 +502,11 @@ test("the frozen published 0.1.6 installation migrates without network access", 
     assert.equal(legacyManifest.layoutVersion, undefined);
 
     const result = runCli(target, "update");
-    assert.equal(result.status, 0, result.stderr);
+    assert.equal(
+      result.status,
+      0,
+      JSON.stringify({ status: result.status, error: result.error?.message, stdout: result.stdout, stderr: result.stderr }),
+    );
     const manifest = JSON.parse(await readFile(path.join(target, ".forgeloop/manifest.json"), "utf8"));
     assert.equal(manifest.layoutVersion, 2);
     assert.equal(manifest.packageVersion, "0.1.9");
