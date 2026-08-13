@@ -163,8 +163,9 @@ official sources and precedence notes.
 Legacy layout migration keeps `.forgeloop/kit/` as the canonical layout and
 does not make `layoutVersion: 2` authoritative until every planned hidden file
 has been written and byte-verified. Cleanup runs only after the manifest switch
-and only for legacy files whose recorded ownership hash still matches. A
-modified, unmanaged, or `preserve=true` file is retained for manual review.
+and only for legacy files whose recorded ownership hash still matches when
+ForgeLoop revalidates it immediately before deletion. A modified, unmanaged,
+or `preserve=true` file is retained for manual review.
 
 The interruption vocabulary is test-only and is not a runtime state machine:
 
@@ -183,10 +184,10 @@ tests locally; CI does not download npm packages.
 The current published baseline for a reproducible blind run is
 `@cassiomc1/forgeloop@0.1.9`. The supplied hardening brief's `0.1.8` reference
 is historical; never move `v0.1.8` or `v0.1.9`, and use the read-only release
-identity verifier before a live run. This task does not publish a new npm
-version: the completion-validation fix in this branch is not part of the frozen
-`0.1.9` tarball, so publish a new version and repeat identity verification
-before a blind run that needs this branch's executable changes.
+identity verifier before a live run. The repository candidate is `0.1.10`, but
+it is not published: its completion-validation and cleanup TOCTOU fixes are not
+part of the frozen `0.1.9` tarball. Publish, tag, and repeat identity
+verification before a blind run that needs those executable changes.
 
 ### Use with npm
 

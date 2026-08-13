@@ -23,9 +23,10 @@ release identity: RELEASE_IDENTITY_VALID
 
 The repository may contain documentation or executable commits after this
 frozen package. Those commits do not change the package used by the blind run;
-this branch includes a completion-validation fix that is not in `0.1.9`. If a
-blind run needs that executable change, publish a new version and repeat the
-complete identity check before starting the run.
+the repository's `0.1.10` candidate includes completion-validation and cleanup
+TOCTOU fixes that are not in `0.1.9`. If a blind run needs those executable
+changes, publish and tag the candidate, then repeat the complete identity check
+before starting the run.
 
 Run a scenario in a disposable target using the Standard profile first:
 
@@ -107,7 +108,10 @@ hidden writes, after hidden verification, after the manifest authority switch,
 and during legacy cleanup. An interrupted target must be diagnosed as
 `E_MIGRATION_INCOMPLETE`; a later `update` may retry only hash-owned cleanup.
 User-modified, unmanaged, and `preserve=true` files remain untouched even when
-that leaves a root residual.
+that leaves a root residual. ForgeLoop revalidates the recorded ownership hash
+immediately before deleting each managed legacy file. This narrows the race
+window but does not provide OS-level filesystem locking against a separately
+privileged concurrent process.
 
 ## Autonomous blind-run isolation
 

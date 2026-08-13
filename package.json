@@ -1,6 +1,6 @@
 {
   "name": "@cassiomc1/forgeloop",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "Portable, verifiable instruction kit for AI agents and developers",
   "repository": {
     "type": "git",
