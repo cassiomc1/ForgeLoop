@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "taskId": "pre-question-autonomy-hardening-fifth-blind-test-2026-08-13",
+  "objective": "Harden ForgeLoop so product-detail questions require prior BLOCKING classification while reversible local ambiguity becomes a recorded assumption and continues to contract creation.",
+  "assumptions": [
+    {
+      "value": "Use a deterministic flag-based decision helper only as validation and serialization support; do not parse natural language or invoke a model.",
+      "reason": "The requested correction must strengthen one agent's behavior without adding an orchestration runtime or LLM dependency.",
+      "scope": "ForgeLoop policy validation and regression tests",
+      "reversible": true,
+      "source": "agent-default"
+    }
+  ],
+  "deliverables": [
+    "Add mandatory classify-before-ask policy and reversible positioning examples",
+    "Persist contracts before blocking clarification and preserve preflight blocking",
+    "Add deterministic decision-classification and question-justification regressions",
+    "Update shipped adapters, scorecard, and single-agent conformance metadata"
+  ],
+  "constraints": [
+    "Preserve protocol version 1, assumptions schema, lifecycle, forgeloop next, evidence, and false-completion semantics",
+    "Do not hardcode a law-firm positioning choice or present agent assumptions as user or business facts",
+    "Do not install unrelated software, publish, deploy, or change external systems",
+    "Execute all analysis, planning, implementation, tests, review, and release preparation inline with one primary agent and no subagents or delegation"
+  ],
+  "risks": [
+    "Reversible product ambiguity causing a clarification stop before contract creation",
+    "Blocking decisions being asked without persisted unresolvedDecisions[] or a reason code",
+    "Adapter and canonical policy drift",
+    "Regression in contract, preflight, lifecycle, evidence, or package boundaries"
+  ],
+  "verification": [
+    "node --test tests/decision-classification.test.js tests/autonomy-policy.test.js tests/conformance-scenarios.test.js",
+    "npm test",
+    "npm run pack:check",
+    "python3 scripts/validate_loop_system.py",
+    "python3 scripts/validate_markdown.py",
+    "python3 scripts/scan_secrets.py"
+  ],
+  "successCriteria": [
+    "tests",
+    "documentation",
+    "security-validation",
+    "package"
+  ],
+  "stopConditions": [
+    "A required local check remains blocked after diagnosis",
+    "Completion cannot reach validator-backed VALID",
+    "A proposed change would alter frozen lifecycle, evidence, schema, or false-completion behavior",
+    "An external publication decision is required"
+  ],
+  "unresolvedDecisions": [],
+  "sourceRefs": []
+}

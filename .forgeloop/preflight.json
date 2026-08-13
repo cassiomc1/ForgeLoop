@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "taskId": "pre-question-autonomy-hardening-fifth-blind-test-2026-08-13",
+  "status": "READY",
+  "profile": {
+    "status": "unverified",
+    "mode": "template",
+    "profileStatus": "uninitialized",
+    "fingerprint": "f591eaee6df7d475a469b4ffbced200ee7b5b6f18b33ffdb5770f3661364c3c3",
+    "provenance": "not-referenced"
+  },
+  "contract": {
+    "status": "valid",
+    "fingerprint": "24c485842d0915b22906b64b9c6c9e5ad444b5882a52ff1f9b92c5b49390ffe5"
+  },
+  "routing": {
+    "status": "valid",
+    "fingerprint": "78fa64036de7624e4c0940de4f0ed2652348f901eafbb6aad948daa6e827f397",
+    "guides": [
+      "clean",
+      "test",
+      "security"
+    ]
+  },
+  "requiredGates": [
+    "threat-boundary"
+  ],
+  "satisfiedGates": [
+    "threat-boundary"
+  ],
+  "errors": [],
+  "fingerprints": {
+    "contract": "24c485842d0915b22906b64b9c6c9e5ad444b5882a52ff1f9b92c5b49390ffe5",
+    "routing": "78fa64036de7624e4c0940de4f0ed2652348f901eafbb6aad948daa6e827f397",
+    "profile": "f591eaee6df7d475a469b4ffbced200ee7b5b6f18b33ffdb5770f3661364c3c3"
+  }
+}

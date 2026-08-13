@@ -17,7 +17,8 @@ policy are all present.
 | Completion enforcement | Canonical contract, persisted route, guide-declared gates, preflight, phase ledger, structured checks, evidence coverage, `audit`, `report`, and `complete` validators. |
 | Agent lifecycle navigation | Read-only `forgeloop next` decisions, stable action/reason output, persisted-state safety, and adapter guidance at lifecycle boundaries. |
 | Execution → Verification handoff | Legal `EXECUTING` → `VERIFYING` transition, implementation-step reconciliation, and preservation of verification evidence. |
-| Pre-contract autonomy | Blocking vs Non-Blocking Decisions policy, explicit ASSUMPTION / source=agent-default recording, safe-boundary invariant, positive and negative tests, and a blind run showing non-blocking ambiguity continues while blocking ambiguity remains user-gated. |
+| Pre-contract autonomy — structural | Blocking vs Non-Blocking Decisions policy, classify-before-ask invariant, PRE-QUESTION CHECK, explicit ASSUMPTION / source=agent-default recording, contract-before-clarification ordering, deterministic reason-code helper, and positive/negative tests. |
+| Pre-contract autonomy — cross-agent live robustness | Independent live-agent behavior across fresh package installs, exact blind prompts, one-process/no-subagent topology, and separate evidence for non-blocking continuation versus blocking clarification. Structural coverage does not imply live cross-agent robustness. |
 | Resume/checkpoint | Atomic local state, contract/HEAD/artifact freshness, age warning, schema/secret validation, status, safe validation, and bounded clearing without persisting derived freshness fields. |
 | Multi-agent coordination | Self-contained briefs, write/write and write/read ownership checks, dependency-set validation, reviewer independence, normalized results, and inline fallback. |
 | Security boundaries | Realpath containment, bounded untrusted JSON, threat model, nested secret scanning, publication evidence, and explicit authority rules. |
@@ -37,14 +38,16 @@ policy are all present.
 - Literal graph runtime and runtime multi-agent orchestration are `N/A by
   design`; compatible harnesses own those capabilities.
 
-## Third-run conformance position
+## Blind-run conformance position
 
 | Dimension | Classification |
 | --- | --- |
-| Execution → Verification | REPRODUCED FAILURE before this fix |
-| Verification serialization | NOT_REACHED |
-| Review transition | NOT_REACHED |
-| Receipt generation | NOT_REACHED |
+| Pre-contract autonomy — structural | IMPLEMENTED / LOCAL TESTS PASS — 369 Node tests and 42 Python tests, with focused autonomy/conformance checks green |
+| Pre-contract autonomy — cross-agent live robustness | NOT_PROVEN — the prior third blind run was reported as PASS, the fourth blind run failed on a non-blocking question, and the fifth blind run is pending a newly published package |
+| Execution → Verification | REPRODUCED FAILURE in fourth blind run before implementation |
+| Verification serialization | NOT_REACHED in fourth blind run |
+| Review transition | NOT_REACHED in fourth blind run |
+| Receipt generation | NOT_REACHED in fourth blind run |
 | Full conformance | PARTIAL |
 
 ## Evidence matrix
@@ -63,7 +66,8 @@ are both present:
 | Security boundary | realpath containment, bounded JSON, `THREAT_MODEL.md`, secret-free artifacts, authority and no-runtime rules | `tests/security-limits.test.js`, Markdown/loop validators, and `scripts/scan_secrets.py` |
 | Cross-artifact conformance | `src/core/conformance.js`, `classifyLoadedWorkState`, and `forgeloop validate-protocol --contract-file` | `tests/conformance.test.js`, `tests/validate-protocol-cli.test.js`, and protocol fixtures covering precedence and stale evidence |
 | Protocol preparation and completion | `src/core/preflight.js`, `src/core/completion.js`, `src/core/events.js`, policy packs, and portable bundles | `tests/preflight.test.js`, `tests/completion.test.js`, `tests/lifecycle.test.js`, `tests/policy.test.js`, and `tests/bundle.test.js` |
-| Pre-contract autonomy | `LOOP_ENGINEERING.md`, `CLAUDE.md`, `AGENTS.md`, `.github/copilot-instructions.md`, `.cursor/rules/project-loop.mdc`, and the blind conformance artifacts | `tests/autonomy-policy.test.js`, `tests/conformance-scenarios.test.js` |
+| Pre-contract autonomy — structural | `LOOP_ENGINEERING.md`, `src/core/decision-classification.js`, `CLAUDE.md`, `AGENTS.md`, `.github/copilot-instructions.md`, `.cursor/rules/project-loop.mdc` | `tests/decision-classification.test.js`, `tests/autonomy-policy.test.js`, `tests/preflight.test.js` |
+| Pre-contract autonomy — cross-agent live robustness | Prior third blind-run result reported in the hardening brief, `conformance/runs/2026-08-13-codex-fourth-live.md`, and the exact blind request | `tests/conformance-scenarios.test.js`; fifth run remains pending publication and execution |
 
 The implementation references above are local observations. OS runners,
 remote links, provider sessions, publication, and deployment remain `Not

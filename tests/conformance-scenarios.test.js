@@ -102,3 +102,18 @@ test("the second live run records the pre-implementation clarification stop", as
   assert.match(record, /current-contract\.json.*Missing/);
   assert.match(record, /Full conformance.*PARTIAL/);
 });
+
+test("the fourth live run records the exact ambiguity failure and single-agent topology", async () => {
+  const record = await readFile(path.join(root, "runs", "2026-08-13-codex-fourth-live.md"), "utf8");
+
+  assert.match(record, /Create a premium website for a law firm\./);
+  assert.match(record, /What kind of law firm should the site represent\?/);
+  assert.match(record, /Absence of real brand treated as non-blocking: `FAIL`/);
+  assert.match(record, /Pre-contract autonomy: `FAIL`/);
+  assert.match(record, /Execution topology: `single-agent`/);
+  assert.match(record, /Agent process count: `1`/);
+  assert.match(record, /Subagents enabled: `NO`/);
+  assert.match(record, /Delegation used: `NO`/);
+  assert.match(record, /Parallel agents: `NO`/);
+  assert.match(record, /No artifacts were edited manually to make the test pass\./);
+});
