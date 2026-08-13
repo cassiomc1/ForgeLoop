@@ -41,8 +41,8 @@ async function removeEmptyLegacyDirectory(target, relativePath, dryRun) {
   }
 }
 
-function addLegacyCleanup(cleanupFiles, cleanupDirectories, relativePath) {
-  cleanupFiles.add(relativePath);
+function addLegacyCleanup(cleanupFiles, cleanupDirectories, relativePath, expectedLegacySha256) {
+  cleanupFiles.set(relativePath, expectedLegacySha256);
   addLegacyCleanupDirectory(cleanupDirectories, relativePath);
 }
 
@@ -66,14 +66,25 @@ async function notifyStage(hooks, stage, context) {
   if (typeof hooks?.afterStage === "function") await hooks.afterStage(stage, context);
 }
 
-async function cleanupLegacyFiles({ target, dryRun, cleanupFiles, cleanupDirectories, hooks }) {
-  for (const relativePath of cleanupFiles) {
-    await assertSafePath(target, relativePath);
+async function cleanupLegacyFiles({ target, dryRun, cleanupFiles, cleanupDirectories, hooks, actions, conflicts }) {
+  for (const [relativePath, expectedLegacySha256] of cleanupFiles) {
     if (typeof hooks?.beforeCleanup === "function") {
       await hooks.beforeCleanup(relativePath);
     }
+    await assertSafePath(target, relativePath);
     const legacyPath = ensureWithin(target, relativePath);
-    if (!dryRun && await fileExists(legacyPath)) await unlink(legacyPath);
+    if (dryRun || !(await fileExists(legacyPath))) continue;
+    const currentLegacySha256 = sha256(await readBytes(legacyPath));
+    if (currentLegacySha256 !== expectedLegacySha256) {
+      conflicts.push(migrationConflict(
+        "E_LEGACY_FILE_MIGRATION_CONFLICT",
+        relativePath,
+        "Legacy file changed before cleanup; it was preserved.",
+      ));
+      actions.push({ action: "preserve-conflict", path: relativePath, reason: "changed-before-cleanup" });
+      continue;
+    }
+    await unlink(legacyPath);
   }
 
   for (const relativePath of cleanupDirectories) {
@@ -89,7 +100,7 @@ async function migrateLegacyLayout({ target, dryRun, packageVersion, currentMani
   const actions = [];
   const conflicts = [];
   const writes = [];
-  const cleanupFiles = new Set();
+  const cleanupFiles = new Map();
   const cleanupDirectories = new Set();
 
   // Validate every path before creating the migration plan or touching data.
@@ -163,7 +174,7 @@ async function migrateLegacyLayout({ target, dryRun, packageVersion, currentMani
         && legacyRecord
         && currentHash === legacyHash) {
         actions.push({ action: "skip", path: entry.relativePath, reason: "profile-move-resumed" });
-        addLegacyCleanup(cleanupFiles, cleanupDirectories, entry.legacyRelativePath);
+        addLegacyCleanup(cleanupFiles, cleanupDirectories, entry.legacyRelativePath, legacyHash);
         nextManifest.files[entry.relativePath] = manifestRecord(currentHash, true, legacyHash);
         continue;
       }
@@ -177,7 +188,7 @@ async function migrateLegacyLayout({ target, dryRun, packageVersion, currentMani
         addAction(actions, dryRun, "preserve-conflict", entry.relativePath, { reason: "hidden-unmanaged" });
       } else if (hiddenMatchesSource && legacyExists && unchangedManagedLegacy) {
         actions.push({ action: "skip", path: entry.relativePath, reason: "hidden-ready" });
-        addLegacyCleanup(cleanupFiles, cleanupDirectories, entry.legacyRelativePath);
+        addLegacyCleanup(cleanupFiles, cleanupDirectories, entry.legacyRelativePath, legacyHash);
         nextManifest.files[entry.relativePath] = manifestRecord(
           sourceHash,
           entry.sourcePath === PROFILE_PATH,
@@ -224,7 +235,7 @@ async function migrateLegacyLayout({ target, dryRun, packageVersion, currentMani
     if (entry.sourcePath === PROFILE_PATH && legacyRecord) {
       addAction(actions, dryRun, "move-profile", entry.legacyRelativePath, { to: entry.relativePath });
       writes.push({ destination, bytes: legacyBytes });
-      addLegacyCleanup(cleanupFiles, cleanupDirectories, entry.legacyRelativePath);
+      addLegacyCleanup(cleanupFiles, cleanupDirectories, entry.legacyRelativePath, legacyHash);
       nextManifest.files[entry.relativePath] = manifestRecord(legacyHash, true, legacyHash);
       continue;
     }
@@ -232,7 +243,7 @@ async function migrateLegacyLayout({ target, dryRun, packageVersion, currentMani
     if (legacyRecord?.preserve && unchangedManaged) {
       addAction(actions, dryRun, "move-preserved", entry.legacyRelativePath, { to: entry.relativePath });
       writes.push({ destination, bytes: legacyBytes });
-      addLegacyCleanup(cleanupFiles, cleanupDirectories, entry.legacyRelativePath);
+      addLegacyCleanup(cleanupFiles, cleanupDirectories, entry.legacyRelativePath, legacyHash);
       nextManifest.files[entry.relativePath] = manifestRecord(legacyHash, true, legacyHash);
       continue;
     }
@@ -240,7 +251,7 @@ async function migrateLegacyLayout({ target, dryRun, packageVersion, currentMani
     if (unchangedManaged) {
       addAction(actions, dryRun, "migrate", entry.legacyRelativePath, { to: entry.relativePath });
       writes.push({ destination, bytes: entry.bytes });
-      addLegacyCleanup(cleanupFiles, cleanupDirectories, entry.legacyRelativePath);
+      addLegacyCleanup(cleanupFiles, cleanupDirectories, entry.legacyRelativePath, legacyHash);
       nextManifest.files[entry.relativePath] = manifestRecord(sourceHash, false, legacyHash);
       continue;
     }
@@ -278,10 +289,10 @@ async function migrateLegacyLayout({ target, dryRun, packageVersion, currentMani
   // Atomic manifest replacement is the authority switch. Cleanup follows it and
   // remains recoverable because managed legacy hashes are retained in the record.
   await writeManifest(target, nextManifest, { dryRun });
-  await notifyStage(hooks, "MANIFEST_SWITCHED", { cleanupFiles: [...cleanupFiles] });
-  await cleanupLegacyFiles({ target, dryRun, cleanupFiles, cleanupDirectories, hooks });
-  await notifyStage(hooks, "LEGACY_CLEANED", { cleanupFiles: [...cleanupFiles] });
-  await notifyStage(hooks, "COMPLETE", { cleanupFiles: [...cleanupFiles] });
+  await notifyStage(hooks, "MANIFEST_SWITCHED", { cleanupFiles: [...cleanupFiles.keys()] });
+  await cleanupLegacyFiles({ target, dryRun, cleanupFiles, cleanupDirectories, hooks, actions, conflicts });
+  await notifyStage(hooks, "LEGACY_CLEANED", { cleanupFiles: [...cleanupFiles.keys()] });
+  await notifyStage(hooks, "COMPLETE", { cleanupFiles: [...cleanupFiles.keys()] });
   return { actions, conflicts, manifest: nextManifest };
 }
 
@@ -300,7 +311,7 @@ export async function runUpdate({ target, dryRun, packageRoot, packageVersion, h
   const actions = [];
   const conflicts = [];
   const plans = [];
-  const cleanupFiles = new Set();
+  const cleanupFiles = new Map();
   const cleanupDirectories = new Set();
   const pruneActions = [];
   const shippedPaths = new Set(entries.map((entry) => entry.relativePath));
@@ -333,7 +344,7 @@ export async function runUpdate({ target, dryRun, packageRoot, packageVersion, h
     if (hasLegacyAlternative && await fileExists(legacyDestination)) {
       const legacyHash = sha256(await readBytes(legacyDestination));
       if (record?.legacySha256 && legacyHash === record.legacySha256) {
-        addLegacyCleanup(cleanupFiles, cleanupDirectories, entry.legacyRelativePath);
+        addLegacyCleanup(cleanupFiles, cleanupDirectories, entry.legacyRelativePath, record.legacySha256);
       } else {
         conflicts.push({
           code: "E_LEGACY_FILE_MIGRATION_CONFLICT",
@@ -412,6 +423,6 @@ export async function runUpdate({ target, dryRun, packageRoot, packageVersion, h
   nextManifest.packageName = PACKAGE_NAME;
   nextManifest.packageVersion = packageVersion;
   await writeManifest(target, nextManifest, { dryRun });
-  await cleanupLegacyFiles({ target, dryRun, cleanupFiles, cleanupDirectories, hooks });
+  await cleanupLegacyFiles({ target, dryRun, cleanupFiles, cleanupDirectories, hooks, actions, conflicts });
   return { actions, conflicts, manifest: nextManifest };
 }

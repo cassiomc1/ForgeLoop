@@ -492,6 +492,124 @@ test("a legacy file modified after the authority switch is preserved during reco
   });
 });
 
+test("same-update cleanup preserves a managed legacy file changed after the authority switch", async () => {
+  await withTarget(async (target) => {
+    await createLegacyFixture(target);
+    const modified = "# Changed during active cleanup\n";
+
+    const result = await runUpdate({
+      target,
+      dryRun: false,
+      packageRoot,
+      packageVersion: "0.1.9",
+      hooks: {
+        async afterStage(stage) {
+          if (stage === "MANIFEST_SWITCHED") {
+            await writeFile(path.join(target, "LOOP_ENGINEERING.md"), modified);
+          }
+        },
+      },
+    });
+
+    assert.ok(result.conflicts.some((conflict) => (
+      conflict.code === "E_LEGACY_FILE_MIGRATION_CONFLICT"
+      && conflict.path === "LOOP_ENGINEERING.md"
+    )));
+    assert.ok(result.actions.some((action) => (
+      action.action === "preserve-conflict"
+      && action.path === "LOOP_ENGINEERING.md"
+      && action.reason === "changed-before-cleanup"
+    )));
+    assert.equal(
+      await readFile(path.join(target, "LOOP_ENGINEERING.md"), "utf8"),
+      modified,
+    );
+    assert.equal(
+      JSON.parse(await readFile(path.join(target, ".forgeloop/manifest.json"), "utf8")).layoutVersion,
+      2,
+    );
+    assert.equal((await runCli(target, "doctor", "--json")).status, 1);
+  });
+});
+
+test("same-update cleanup preserves a managed project profile changed after the authority switch", async () => {
+  await withTarget(async (target) => {
+    await createLegacyFixture(target, { profileBytes: "# Managed legacy profile\n" });
+    const modified = "# Profile changed during active cleanup\n";
+
+    const result = await runUpdate({
+      target,
+      dryRun: false,
+      packageRoot,
+      packageVersion: "0.1.9",
+      hooks: {
+        async afterStage(stage) {
+          if (stage === "MANIFEST_SWITCHED") {
+            await writeFile(path.join(target, "PROJECT_PROFILE.md"), modified);
+          }
+        },
+      },
+    });
+
+    assert.ok(result.conflicts.some((conflict) => (
+      conflict.code === "E_LEGACY_FILE_MIGRATION_CONFLICT"
+      && conflict.path === "PROJECT_PROFILE.md"
+    )));
+    assert.ok(result.actions.some((action) => (
+      action.action === "preserve-conflict"
+      && action.path === "PROJECT_PROFILE.md"
+      && action.reason === "changed-before-cleanup"
+    )));
+    assert.equal(await readFile(path.join(target, "PROJECT_PROFILE.md"), "utf8"), modified);
+    assert.equal(
+      await readFile(path.join(target, ".forgeloop/kit/PROJECT_PROFILE.md"), "utf8"),
+      "# Managed legacy profile\n",
+    );
+    assert.equal((await runCli(target, "doctor", "--json")).status, 1);
+  });
+});
+
+test("same-update cleanup preserves a managed ENG file changed after the authority switch", async () => {
+  await withTarget(async (target) => {
+    await createLegacyFixture(target);
+    const relativePath = "ENG/design-code-eng.md";
+    const hiddenBefore = (await readTemplateEntries(packageRoot))
+      .find((entry) => entry.sourcePath === relativePath).bytes;
+    const modified = "# Guide changed during active cleanup\n";
+
+    const result = await runUpdate({
+      target,
+      dryRun: false,
+      packageRoot,
+      packageVersion: "0.1.9",
+      hooks: {
+        async afterStage(stage) {
+          if (stage === "MANIFEST_SWITCHED") {
+            await writeFile(path.join(target, relativePath), modified);
+          }
+        },
+      },
+    });
+
+    assert.ok(result.conflicts.some((conflict) => (
+      conflict.code === "E_LEGACY_FILE_MIGRATION_CONFLICT"
+      && conflict.path === relativePath
+    )));
+    assert.ok(result.actions.some((action) => (
+      action.action === "preserve-conflict"
+      && action.path === relativePath
+      && action.reason === "changed-before-cleanup"
+    )));
+    assert.equal(await readFile(path.join(target, relativePath), "utf8"), modified);
+    assert.deepEqual(
+      await readFile(path.join(target, ".forgeloop/kit", relativePath)),
+      hiddenBefore,
+    );
+    assert.equal(await pathExists(path.join(target, "ENG")), true);
+    assert.equal((await runCli(target, "doctor", "--json")).status, 1);
+  });
+});
+
 test("the frozen published 0.1.6 installation migrates without network access", async () => {
   await withTarget(async (target) => {
     await cp(realLegacyFixture, target, { recursive: true });
@@ -509,7 +627,7 @@ test("the frozen published 0.1.6 installation migrates without network access", 
     );
     const manifest = JSON.parse(await readFile(path.join(target, ".forgeloop/manifest.json"), "utf8"));
     assert.equal(manifest.layoutVersion, 2);
-    assert.equal(manifest.packageVersion, "0.1.9");
+    assert.equal(manifest.packageVersion, "0.1.10");
     assert.deepEqual(await readFile(path.join(target, ".forgeloop/kit/PROJECT_PROFILE.md")), profileBefore);
 
     for (const entry of await readTemplateEntries(packageRoot)) {
