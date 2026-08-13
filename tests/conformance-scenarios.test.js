@@ -117,3 +117,16 @@ test("the fourth live run records the exact ambiguity failure and single-agent t
   assert.match(record, /Parallel agents: `NO`/);
   assert.match(record, /No artifacts were edited manually to make the test pass\./);
 });
+
+test("the sixth blind run defines harness-level external workflow exclusion", async () => {
+  const readme = await readFile(path.join(root, "README.md"), "utf8");
+
+  assert.match(readme, /## Autonomous blind-run isolation/);
+  assert.match(readme, /mandatory-approval workflows enabled: NO/);
+  assert.match(readme, /external brainstorming hard gate enabled: NO/);
+  assert.match(readme, /external design approval gate enabled: NO/);
+  assert.match(readme, /subagents enabled: NO/);
+  assert.match(readme, /delegation enabled: NO/);
+  assert.match(readme, /TEST_NOT_STARTED/);
+  assert.match(readme, /INCOMPATIBLE WITH AUTONOMOUS MODE/);
+});

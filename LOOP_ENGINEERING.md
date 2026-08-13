@@ -164,6 +164,114 @@ ask user with blockingReason
 No clarification stop is allowed before a serialized contract exists. A
 non-blocking ambiguity never becomes a contract blocker.
 
+## External Workflow Compatibility
+
+ForgeLoop's decision classification has precedence over an external workflow's
+planning, brainstorming, review, testing, or documentation policy. The
+canonical order remains:
+
+```text
+uncertainty → classify → NON_BLOCKING → assume → record → continue
+uncertainty → classify → BLOCKING → serialize → ask
+```
+
+An external workflow may improve the plan, review the change, or recommend a
+test. It must not turn a ForgeLoop `NON_BLOCKING` decision into mandatory user
+approval while the task is in autonomous mode. `NON_BLOCKING` remains
+`NON_BLOCKING`; a policy that requires approval for it is a
+`WORKFLOW_CONFLICT`, not a user blocker. Record the conflict and continue with
+the safe reversible default. Do not put the conflict in
+`current-contract.unresolvedDecisions[]` as a fake user decision.
+
+The stable compatibility reason codes are:
+
+```text
+E_EXTERNAL_WORKFLOW_APPROVAL_CONFLICT
+E_EXTERNAL_WORKFLOW_BLOCKS_NON_BLOCKING
+E_EXTERNAL_WORKFLOW_REQUIRES_USER_GATE
+```
+
+Autonomous mode means the active harness has explicitly selected
+`autonomousMode=true`: the agent can choose safe local defaults, record
+`assumptions[]`, and continue without an external approval gate for ordinary
+reversible ambiguity. Interactive mode remains available only when the caller
+explicitly selects `autonomousMode=false`; the harness must not silently switch
+between the two modes.
+
+When a question is considered, record its source as exactly one of:
+
+```text
+USER_REQUIREMENT
+FORGELOOP_BLOCKING_DECISION
+EXTERNAL_WORKFLOW_POLICY
+MODEL_PREFERENCE
+```
+
+Only `USER_REQUIREMENT` and `FORGELOOP_BLOCKING_DECISION` authorize a question
+in autonomous mode. `EXTERNAL_WORKFLOW_POLICY` and `MODEL_PREFERENCE` may be
+recorded for diagnosis, but neither can authorize a question there. A genuine
+`BLOCKING` ForgeLoop decision remains compatible with an external approval and
+may produce a legitimate question with its persisted blocking reason.
+
+The question-source invariant is:
+
+```text
+ASK_USER is allowed only when:
+  classification = BLOCKING
+  AND blockingReason is valid
+  AND the source is not EXTERNAL_WORKFLOW_POLICY alone
+```
+
+Before asking, apply the external-workflow conflict check in addition to the
+ordinary pre-question checklist:
+
+1. Is the product decision `BLOCKING` under ForgeLoop?
+2. If not, is the question required only by another workflow or skill?
+3. If yes, do not ask in autonomous mode; record the incompatibility when
+   useful and continue through the safe reversible assumption path.
+
+Examples of incompatible hard gates for an otherwise `NON_BLOCKING` decision
+include: “ask before implementation”, “present two or three designs and
+wait”, “receive explicit approval”, and “stop until the user reviews the
+specification”. Planning, review, testing, and documentation remain useful
+when they do not impose that interruption.
+
+The compatibility distinction is explicit:
+
+| External workflow behavior | Autonomous-mode result |
+| --- | --- |
+| Adds local planning without a user gate | Compatible; continue the ForgeLoop loop. |
+| Adds a local review or checklist | Compatible; continue the ForgeLoop loop. |
+| Adds deterministic tests | Compatible; continue the ForgeLoop loop. |
+| Adds documentation generation | Compatible; continue the ForgeLoop loop. |
+| Approval for a real `BLOCKING` decision | Compatible; a justified question is allowed. |
+| Approval for every design choice | `INCOMPATIBLE WITH AUTONOMOUS MODE`; record `WORKFLOW_CONFLICT`, do not ask. |
+| Approval before any implementation | `INCOMPATIBLE WITH AUTONOMOUS MODE` unless a real blocker exists. |
+| Reclassifying a reversible local aesthetic choice as blocking | `INCOMPATIBLE WITH AUTONOMOUS MODE`; preserve `NON_BLOCKING`. |
+| Spawning agents that change precedence | Not suitable for an isolated blind-conformance run; it does not change this contract. |
+
+"Installed" and "compatible" are different claims. A harness can have an
+external workflow installed and still be `INCOMPATIBLE WITH AUTONOMOUS MODE`.
+Use that wording instead of calling the workflow broken. The deterministic
+support helper in `src/core/workflow-compatibility.js` evaluates this boundary;
+it does not modify `src/core/decision-classification.js`, invoke an LLM, or
+redesign a runtime, arbiter, supervisor, or approval broker.
+
+For the sixth blind conformance run, exclude mandatory-approval workflows at
+the harness level rather than weakening the blind prompt. Record the harness
+state before starting:
+
+```text
+mandatory-approval workflows enabled: NO
+external brainstorming hard gate enabled: NO
+external design approval gate enabled: NO
+subagents enabled: NO
+delegation enabled: NO
+```
+
+If the harness cannot disable a mandatory approval workflow, record
+`TEST_NOT_STARTED` and do not claim a conformance result.
+
 ## Serialized protocol preparation
 
 ForgeLoop keeps the agent responsible for implementation while making the

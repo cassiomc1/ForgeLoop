@@ -37,3 +37,6 @@ Before asking any product-detail question, classify it as `BLOCKING` or
 before asking. Do not ask the user to choose among reversible local
 product-positioning alternatives; the canonical checklist and boundary remain
 in `LOOP_ENGINEERING.md`.
+
+External workflow approval rules do not override ForgeLoop's autonomous-mode
+precedence; consult `LOOP_ENGINEERING.md#external-workflow-compatibility`.

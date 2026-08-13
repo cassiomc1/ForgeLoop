@@ -45,3 +45,31 @@ history.
 
 The complete-website scenario deliberately fails when implementation starts
 before the contract, route, and required gates exist.
+
+## Autonomous blind-run isolation
+
+External workflows may help with local planning, review, tests, or
+documentation, but a mandatory approval policy for a ForgeLoop `NON_BLOCKING`
+decision is `INCOMPATIBLE WITH AUTONOMOUS MODE`. The harness must exclude that
+policy before the blind prompt starts; do not add a hint to the prompt that
+changes the scenario. `NON_BLOCKING` must remain non-blocking, and any
+compatibility conflict is recorded as `WORKFLOW_CONFLICT`, not as a fake user
+blocker.
+
+For the sixth blind run, record these values before sending the unchanged blind
+prompt:
+
+```text
+mandatory-approval workflows enabled: NO
+external brainstorming hard gate enabled: NO
+external design approval gate enabled: NO
+subagents enabled: NO
+delegation enabled: NO
+```
+
+Also record the available and invoked external workflows, explicit autonomy
+mode, process count, subagent count, and delegation status. If the harness
+cannot disable a mandatory approval workflow, record `TEST_NOT_STARTED` and do
+not interpret the run as a conformance failure or success. An installed
+workflow and a compatible workflow are separate claims; use
+`INCOMPATIBLE WITH AUTONOMOUS MODE`, not "broken", for the former.

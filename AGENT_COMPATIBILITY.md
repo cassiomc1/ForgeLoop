@@ -96,6 +96,48 @@ When a target already has local rules, keep them and merge only the relevant
 loop reference manually. Run `doctor --path /path/to/project` after resolving
 the merge so missing files and managed drift are visible.
 
+## External workflow compatibility
+
+An external planning, brainstorming, design-review, testing, or documentation
+workflow can be installed and still be `INCOMPATIBLE WITH AUTONOMOUS MODE`.
+Installation is a capability fact; compatibility is a precedence and behavior
+fact. The ForgeLoop `NON_BLOCKING` classification remains authoritative in
+autonomous mode. A mandatory approval policy for a reversible local choice is
+recorded as `WORKFLOW_CONFLICT`, with no user question and no fake entry in
+`current-contract.unresolvedDecisions[]`.
+
+The supported autonomous boundary is:
+
+| Workflow policy | Result |
+| --- | --- |
+| Local planning, review, tests, or docs | Compatible. |
+| Approval only for a real ForgeLoop `BLOCKING` decision | Compatible; the justified question may proceed. |
+| Approval for every design choice or before implementation | `INCOMPATIBLE WITH AUTONOMOUS MODE`. |
+| Reclassifying reversible aesthetics as blocking | `INCOMPATIBLE WITH AUTONOMOUS MODE`. |
+
+Interactive operation is explicit (`autonomousMode=false`) and must not be
+selected silently. Live conformance records the available and invoked external
+workflows, mandatory-approval setting, brainstorming/design hard gates,
+autonomy mode, process count, subagent count, and delegation status. For the
+sixth blind run, the harness must report:
+
+```text
+mandatory-approval workflows enabled: NO
+external brainstorming hard gate enabled: NO
+external design approval gate enabled: NO
+subagents enabled: NO
+delegation enabled: NO
+```
+
+Question attribution remains `USER_REQUIREMENT`,
+`FORGELOOP_BLOCKING_DECISION`, `EXTERNAL_WORKFLOW_POLICY`, or
+`MODEL_PREFERENCE`. In autonomous mode, only the first two can authorize a
+question, and `ASK_USER` additionally requires a valid ForgeLoop blocking
+reason. External policy alone cannot manufacture a blocker.
+
+If a mandatory approval workflow cannot be disabled, the run is
+`TEST_NOT_STARTED`; do not call it a failed or successful conformance result.
+
 ## Deterministic verification boundary
 
 The repository verifies package contents, adapter paths, installation into a
