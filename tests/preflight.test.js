@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -61,7 +61,13 @@ async function prepareWebsite(target, objective = "Prepare website") {
 
 async function artifactHashes(target) {
   const hashes = {};
-  for (const relativePath of [ARTIFACT_PATHS.state, ARTIFACT_PATHS.preflight, ARTIFACT_PATHS.events]) {
+  for (const relativePath of [
+    ARTIFACT_PATHS.contract,
+    ARTIFACT_PATHS.route,
+    ARTIFACT_PATHS.state,
+    ARTIFACT_PATHS.preflight,
+    ARTIFACT_PATHS.events,
+  ]) {
     try {
       const bytes = await readFile(path.join(target, relativePath));
       hashes[relativePath] = createHash("sha256").update(bytes).digest("hex");
@@ -92,7 +98,7 @@ test("complete website preflight is ready only after required gates", async () =
   });
 });
 
-test("preflight detects a contract changed after route persistence", async () => {
+test("preflight rejects a stale route without state before persisting artifacts", async () => {
   await withTarget(async (target) => {
     await prepareWebsite(target);
     await writeContract(target, createContract({
@@ -107,9 +113,14 @@ test("preflight detects a contract changed after route persistence", async () =>
       unresolvedDecisions: [],
       sourceRefs: [],
     }), packageRoot);
-    const result = await runPreflight({ target, packageRoot });
-    assert.equal(result.status, "BLOCKED");
-    assert.ok(result.errors.some((error) => error.code === "E_ROUTE_STALE"));
+    const before = await artifactHashes(target);
+
+    await assert.rejects(
+      () => runPreflight({ target, packageRoot }),
+      (error) => error.code === "E_ROUTE_STALE",
+    );
+
+    assert.deepEqual(await artifactHashes(target), before);
   });
 });
 
@@ -138,6 +149,21 @@ test("preflight rejects a mixed-task ledger before persisting artifacts", async 
     await assert.rejects(
       () => runPreflight({ target, packageRoot }),
       (error) => error.code === "E_PHASE_CHRONOLOGY_INVALID",
+    );
+
+    assert.deepEqual(await artifactHashes(target), before);
+  });
+});
+
+test("preflight rejects a malformed work state before persisting artifacts", async () => {
+  await withTarget(async (target) => {
+    await prepareWebsite(target);
+    await writeFile(path.join(target, ARTIFACT_PATHS.state), "{ malformed");
+    const before = await artifactHashes(target);
+
+    await assert.rejects(
+      () => runPreflight({ target, packageRoot }),
+      (error) => error.code === "E_STATE_INVALID",
     );
 
     assert.deepEqual(await artifactHashes(target), before);

@@ -65,9 +65,20 @@ async function prepareIdentity(target, taskId = "task-lifecycle") {
 
 async function artifactHashes(target) {
   const hashes = {};
-  for (const relativePath of [ARTIFACT_PATHS.state, ARTIFACT_PATHS.events]) {
-    const bytes = await readFile(path.join(target, relativePath));
-    hashes[relativePath] = createHash("sha256").update(bytes).digest("hex");
+  for (const relativePath of [
+    ARTIFACT_PATHS.contract,
+    ARTIFACT_PATHS.route,
+    ARTIFACT_PATHS.state,
+    ARTIFACT_PATHS.receipt,
+    ARTIFACT_PATHS.events,
+  ]) {
+    try {
+      const bytes = await readFile(path.join(target, relativePath));
+      hashes[relativePath] = createHash("sha256").update(bytes).digest("hex");
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+      hashes[relativePath] = null;
+    }
   }
   return hashes;
 }
@@ -148,6 +159,31 @@ test("entering verification reconciles only the implementation step", async () =
   });
 });
 
+test("direct late-phase advance rejects a foreign ledger before writing", async () => {
+  await withTarget(async (target) => {
+    const identity = await prepareIdentity(target);
+    await writeWorkState(target, state({
+      contractFingerprint: identity.fingerprint,
+      routeFingerprint: identity.persistedRoute.fingerprint,
+      phase: "EXECUTING",
+      previousPhase: "PLANNED",
+      completedSteps: ["contract", "route"],
+      pendingSteps: ["implementation", "verification"],
+    }));
+    for (const event of ["CONTRACT_VALIDATED", "ROUTE_VALIDATED", "PREFLIGHT_READY", "EXECUTION_STARTED"]) {
+      await appendProtocolEvent(target, { taskId: "task-foreign", event }, repositoryRoot);
+    }
+    const before = await artifactHashes(target);
+
+    await assert.rejects(
+      () => advanceWorkState(target, "VERIFYING", { packageRoot: repositoryRoot }),
+      (error) => error.code === "E_PHASE_CHRONOLOGY_INVALID",
+    );
+
+    assert.deepEqual(await artifactHashes(target), before);
+  });
+});
+
 test("late-phase advance rejects a foreign state without a receipt before writing", async () => {
   await withTarget(async (target) => {
     const identity = await prepareIdentity(target, "task-current");
@@ -192,6 +228,35 @@ test("early lifecycle advance rejects a foreign state before writing", async () 
     await assert.rejects(
       () => advanceWorkState(target, "ROUTED", { packageRoot: repositoryRoot }),
       (error) => error.code === "E_STATE_TASK_MISMATCH",
+    );
+
+    assert.deepEqual(await artifactHashes(target), before);
+  });
+});
+
+test("early lifecycle advance rejects a foreign route when the contract is absent", async () => {
+  await withTarget(async (target) => {
+    const identity = await prepareIdentity(target);
+    const foreignRoute = await persistRoute(target, identity.route, repositoryRoot, {
+      contractFingerprint: "b".repeat(64),
+    });
+    await writeWorkState(target, state({
+      contractFingerprint: identity.fingerprint,
+      routeFingerprint: foreignRoute.fingerprint,
+      phase: "ROUTED",
+      previousPhase: "CONTRACT_READY",
+      completedSteps: ["contract", "route"],
+      pendingSteps: ["implementation"],
+    }));
+    await rm(path.join(target, ARTIFACT_PATHS.contract));
+    for (const event of ["CONTRACT_VALIDATED", "ROUTE_VALIDATED"]) {
+      await appendProtocolEvent(target, { taskId: "task-lifecycle", event }, repositoryRoot);
+    }
+    const before = await artifactHashes(target);
+
+    await assert.rejects(
+      () => advanceWorkState(target, "PLANNED", { packageRoot: repositoryRoot }),
+      (error) => error.code === "E_ROUTE_STALE",
     );
 
     assert.deepEqual(await artifactHashes(target), before);

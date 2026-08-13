@@ -261,24 +261,33 @@ export async function evaluatePreflight({ target, packageRoot, strict = false } 
   };
 }
 
-async function readOptionalIdentityArtifact(readArtifact) {
+async function readOptionalIdentityArtifact(readArtifact, invalidCode, artifactPath) {
   try {
     return await readArtifact();
-  } catch {
-    return null;
+  } catch (error) {
+    if (error.code === "ARTIFACT_MISSING") return null;
+    throw preflightError(invalidCode, error.message, [artifactPath]);
   }
 }
 
 async function assertPreflightPersistenceSafety(target, packageRoot, taskId) {
-  let state = null;
+  let state;
   try {
     state = await readWorkState(target, packageRoot);
-  } catch {
-    state = null;
+  } catch (error) {
+    throw preflightError("E_STATE_INVALID", error.message, [ARTIFACT_PATHS.state]);
   }
+  const contract = await readOptionalIdentityArtifact(
+    () => readContract(target, packageRoot),
+    "E_CONTRACT_INVALID",
+    ARTIFACT_PATHS.contract,
+  );
+  const route = await readOptionalIdentityArtifact(
+    () => readPersistedRoute(target, packageRoot),
+    "E_ROUTE_INVALID",
+    ARTIFACT_PATHS.route,
+  );
   if (state) {
-    const contract = await readOptionalIdentityArtifact(() => readContract(target, packageRoot));
-    const route = await readOptionalIdentityArtifact(() => readPersistedRoute(target, packageRoot));
     if (contract || route) assertStateIdentity({ contract, route, state });
   }
 
@@ -297,10 +306,25 @@ async function assertPreflightPersistenceSafety(target, packageRoot, taskId) {
   }
 }
 
+const PREFLIGHT_IDENTITY_BARRIER_CODES = new Set([
+  "E_CONTRACT_STALE",
+  "E_ROUTE_STALE",
+  "E_STATE_TASK_MISMATCH",
+  "E_ROUTE_GUIDE_MISMATCH",
+]);
+
+function assertPreflightResultPersistenceSafety(result) {
+  const identityError = result.errors.find((error) => PREFLIGHT_IDENTITY_BARRIER_CODES.has(error.code));
+  if (identityError) {
+    throw preflightError(identityError.code, identityError.message, identityError.artifacts);
+  }
+}
+
 export async function runPreflight({ target, packageRoot, strict = false, persist = true } = {}) {
   const result = await evaluatePreflight({ target, packageRoot, strict });
   if (persist) {
     await assertPreflightPersistenceSafety(target, packageRoot, result.taskId);
+    assertPreflightResultPersistenceSafety(result);
     await writeJsonArtifact(target, ARTIFACT_PATHS.preflight, result, "preflight", packageRoot);
     if (result.taskId !== "unknown") {
       for (const gate of result.satisfiedGates) {

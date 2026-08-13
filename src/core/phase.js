@@ -141,6 +141,13 @@ export async function advanceWorkState(target, toPhase, { packageRoot, now = new
     const first = ledger.errors[0];
     throw phaseError(first.code, first.message, [ARTIFACT_PATHS.events]);
   }
+  if (ledger.events.some((event) => event.taskId !== state.taskId)) {
+    throw phaseError(
+      "E_PHASE_CHRONOLOGY_INVALID",
+      "Cannot advance work state with lifecycle events from a different task",
+      [ARTIFACT_PATHS.events, ARTIFACT_PATHS.state],
+    );
+  }
   const eventType = PHASE_EVENTS[toPhase];
   if (eventType && ledger.events.some((event) => event.taskId === state.taskId && event.event === eventType)) {
     throw phaseError("E_PHASE_CHRONOLOGY_INVALID", `Lifecycle milestone already exists: ${eventType}`, [ARTIFACT_PATHS.events]);

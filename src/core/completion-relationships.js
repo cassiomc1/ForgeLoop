@@ -36,6 +36,10 @@ export function stateIdentityErrors({
   if (contractFingerprint && route && route.value.contractFingerprint !== contractFingerprint) {
     errors.push(issue("E_ROUTE_STALE", "Routing result does not match the current contract", [ARTIFACT_PATHS.contract, ARTIFACT_PATHS.route]));
   }
+  if (route && state && route.value.contractFingerprint !== undefined
+    && route.value.contractFingerprint !== state.contractFingerprint) {
+    errors.push(issue("E_ROUTE_STALE", "Routing result does not match the work state contract", [ARTIFACT_PATHS.route, ARTIFACT_PATHS.state]));
+  }
   if (route && state && (state.routeFingerprint !== route.fingerprint || !sameValue(state.selectedGuides, route.value.guides))) {
     errors.push(issue("E_ROUTE_GUIDE_MISMATCH", "Work state does not match the persisted route identity", [ARTIFACT_PATHS.route, ARTIFACT_PATHS.state]));
   }
