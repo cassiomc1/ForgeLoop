@@ -122,7 +122,7 @@ test("init copies canonical files and creates a manifest", async () => {
       await readFile(path.join(target, ".forgeloop", "manifest.json"), "utf8"),
     );
     assert.equal(manifest.schemaVersion, 1);
-    assert.equal(manifest.packageVersion, "0.1.4");
+    assert.equal(manifest.packageVersion, "0.1.6");
     assert.equal(manifest.files["PROJECT_PROFILE.md"].preserve, true);
     assert.ok(manifest.files["AGENTS.md"].sha256);
     await readFile(path.join(target, "LICENSE"), "utf8");
@@ -352,7 +352,7 @@ test("top-level help succeeds without a command", async () => {
 test("CLI supports version output and equals-form paths", async () => {
   const version = runCliDirect(repositoryRoot, "--version");
   assert.equal(version.status, 0, version.stderr);
-  assert.equal(version.stdout.trim(), "0.1.4");
+  assert.equal(version.stdout.trim(), "0.1.6");
 
   await withTarget(async (target) => {
     const result = runCliDirect(repositoryRoot, "init", `--path=${target}`);
@@ -408,7 +408,7 @@ test("CLI runs when invoked through an npm-style symlink", async () => {
     });
 
     assert.equal(result.status, 0, result.stderr);
-    assert.equal(result.stdout.trim(), "0.1.4");
+    assert.equal(result.stdout.trim(), "0.1.6");
   } finally {
     await rm(binDirectory, { recursive: true, force: true });
   }

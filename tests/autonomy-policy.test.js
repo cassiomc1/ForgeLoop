@@ -93,3 +93,22 @@ test("autonomy policy does not prescribe a fabricated brand", async () => {
   assert.doesNotMatch(policy, /Smith & Partners|Silva Advocacia|Law Firm XYZ/);
   assert.match(policy, /never.*verified.*user|business fact/i);
 });
+
+test("external workflow policy preserves autonomous precedence and source attribution", async () => {
+  const policy = await readFile(path.join(root, "LOOP_ENGINEERING.md"), "utf8");
+
+  assert.match(policy, /## External Workflow Compatibility/);
+  assert.match(policy, /NON_BLOCKING[\s\S]{0,260}WORKFLOW_CONFLICT[\s\S]{0,260}unresolvedDecisions/);
+  assert.match(policy, /E_EXTERNAL_WORKFLOW_APPROVAL_CONFLICT/);
+  assert.match(policy, /E_EXTERNAL_WORKFLOW_BLOCKS_NON_BLOCKING/);
+  assert.match(policy, /E_EXTERNAL_WORKFLOW_REQUIRES_USER_GATE/);
+  assert.match(policy, /autonomousMode=true/);
+  assert.match(policy, /autonomousMode=false/);
+  assert.match(policy, /USER_REQUIREMENT/);
+  assert.match(policy, /FORGELOOP_BLOCKING_DECISION/);
+  assert.match(policy, /EXTERNAL_WORKFLOW_POLICY/);
+  assert.match(policy, /MODEL_PREFERENCE/);
+  assert.match(policy, /INCOMPATIBLE WITH AUTONOMOUS MODE/);
+  assert.match(policy, /mandatory-approval workflows enabled: NO/);
+  assert.match(policy, /TEST_NOT_STARTED/);
+});
