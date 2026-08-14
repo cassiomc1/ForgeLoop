@@ -26,12 +26,10 @@ frozen package. Those commits do not change the package used by the blind run.
 Version `0.1.10` includes the completion-validation and cleanup TOCTOU fixes;
 repeat the complete identity check before starting a reproducible run.
 
-The repository candidate is `0.1.11` and is not published. It makes repeated
-verification recoverable through normal CLI transitions, evaluates evidence
-readiness consistently, rejects future lifecycle claims and contradictory
-compound evidence, and detects divergence between new work-state cycles and
-their event ledger. Continue pinning `0.1.10` until `0.1.11` is published and
-its release identity is verified.
+The repository candidate is `0.1.13`. It enforces the missing verification
+tool policy, conditional single-actor delegation validation, and universal
+vendor-neutral engineering protocol architecture. Repeat the complete identity
+check before starting a reproducible run.
 
 Run a scenario in a disposable target using the Standard profile first:
 

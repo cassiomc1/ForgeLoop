@@ -11,7 +11,7 @@ const outputSvgPath = path.join(repositoryRoot, "docs", "assets", "forgeloop-flo
 
 // Read package version dynamically
 const pkg = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
-const version = pkg.version || "0.1.11";
+const version = pkg.version || "0.1.13";
 
 // Theme constants - Tokyo Night / Modern Engineering Dark
 const THEME = {
