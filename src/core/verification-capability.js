@@ -1,10 +1,15 @@
-import fs from "node:fs";
+import {
+  E_AUTHORITY_UNTRUSTED_SOURCE,
+  resolveTrustedAuthority,
+} from "./trusted-authority.js";
 import path from "node:path";
 
 export const E_VERIFICATION_TOOL_UNAVAILABLE = "E_VERIFICATION_TOOL_UNAVAILABLE";
 export const E_INSTALLATION_AUTHORITY_REQUIRED = "E_INSTALLATION_AUTHORITY_REQUIRED";
 export const E_AUTHORITY_INVALID = "E_AUTHORITY_INVALID";
 export const E_AUTHORITY_SCOPE_MISMATCH = "E_AUTHORITY_SCOPE_MISMATCH";
+
+export { E_AUTHORITY_UNTRUSTED_SOURCE };
 
 export const RESOLUTION_MODES = Object.freeze([
   "LOCAL_EXECUTABLE",
@@ -504,39 +509,18 @@ export function validateVerificationAuthority(check, options = {}) {
     };
   }
 
-  let authority = null;
-  if (options.authorities) {
-    if (Array.isArray(options.authorities)) {
-      authority = options.authorities.find((a) => a.authorityId === authorityRef || a.id === authorityRef) || null;
-    } else if (typeof options.authorities === "object") {
-      authority = options.authorities[authorityRef] || null;
-    }
-  } else if (options.authority && (options.authority.authorityId === authorityRef || options.authority.id === authorityRef)) {
-    authority = options.authority;
-  } else if (options.target) {
-    try {
-      const authFileName = authorityRef.endsWith(".json") ? authorityRef : `${authorityRef}.json`;
-      const authPath = path.join(options.target, ".forgeloop", "authorities", authFileName);
-      if (fs.existsSync(authPath)) {
-        authority = JSON.parse(fs.readFileSync(authPath, "utf8"));
-      }
-    } catch {
-      authority = null;
-    }
-  }
-
-  if (!authority) {
-    return {
-      valid: false,
-      error: {
-        code: E_AUTHORITY_INVALID,
-        message: `Referenced installation authority '${authorityRef}' could not be resolved`,
-      },
-    };
-  }
+  const resolved = resolveTrustedAuthority({
+    authorityRef,
+    target: options.target,
+    trustedAuthorityFile: options.trustedAuthorityFile,
+    trustedAuthorityDir: options.trustedAuthorityDir,
+    authorities: options.authorities,
+    authority: options.authority,
+  });
+  if (!resolved.trusted) return { valid: false, error: resolved.error };
 
   return validateAuthorityGrant({
-    authority,
+    authority: resolved.authority,
     taskId: options.taskId,
     type: "SOFTWARE_INSTALLATION",
     tool: classification.tool,

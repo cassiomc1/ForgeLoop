@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import { test } from "node:test";
 
 import {
@@ -8,6 +10,7 @@ import {
   validateVerificationAuthority,
   E_VERIFICATION_TOOL_UNAVAILABLE,
   E_INSTALLATION_AUTHORITY_REQUIRED,
+  E_AUTHORITY_UNTRUSTED_SOURCE,
 } from "../src/core/verification-capability.js";
 import { evaluateRequiredEvidence } from "../src/core/evidence-readiness.js";
 
@@ -365,6 +368,124 @@ test("evaluateRequiredEvidence rejects unauthorized install-capable verification
   assert.equal(readiness.covered.length, 0);
   assert.equal(readiness.invalid.length, 1);
   assert.equal(readiness.invalid[0].reasonCode, E_INSTALLATION_AUTHORITY_REQUIRED);
+});
+
+function authorityCheck() {
+  return {
+    id: "visual-check",
+    kind: "command",
+    requirement: "visual-verification",
+    status: "passed",
+    source: "npx @liustack/modlens",
+    details: {
+      command: "npx @liustack/modlens",
+      installationAuthorityRef: "auth-modlens",
+    },
+  };
+}
+
+function authorityGrant(taskId = "task-1") {
+  return {
+    schemaVersion: 1,
+    protocolVersion: 1,
+    authorityId: "auth-modlens",
+    taskId,
+    type: "SOFTWARE_INSTALLATION",
+    status: "AUTHORIZED",
+    scope: { tool: "@liustack/modlens" },
+    source: "operator",
+  };
+}
+
+test("project-local authority claims are rejected as an untrusted source", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-local-authority-"));
+  try {
+    const localAuthorityPath = path.join(target, ".forgeloop", "authorities", "auth-modlens.json");
+    await mkdir(path.dirname(localAuthorityPath), { recursive: true });
+    await writeFile(localAuthorityPath, JSON.stringify(authorityGrant()), "utf8");
+
+    const result = validateVerificationAuthority(authorityCheck(), {
+      target,
+      taskId: "task-1",
+    });
+
+    assert.equal(result.valid, false);
+    assert.equal(result.error.code, E_AUTHORITY_UNTRUSTED_SOURCE);
+
+    const readiness = evaluateRequiredEvidence({
+      requirements: ["visual-verification"],
+      checks: [{
+        ...authorityCheck(),
+        schemaVersion: 1,
+        protocolVersion: 1,
+        evidenceKind: "OBSERVED",
+      }],
+      target,
+      taskId: "task-1",
+    });
+    assert.equal(readiness.ready, false);
+    assert.equal(readiness.covered.length, 0);
+    assert.equal(readiness.invalid[0].reasonCode, E_AUTHORITY_UNTRUSTED_SOURCE);
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
+test("host-supplied external authority file and directory are trusted", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-external-target-"));
+  const authorityRoot = await mkdtemp(path.join(os.tmpdir(), "forgeloop-host-authority-"));
+  try {
+    const authorityFile = path.join(authorityRoot, "authorities.json");
+    await writeFile(authorityFile, JSON.stringify({
+      schemaVersion: 1,
+      protocolVersion: 1,
+      authorities: [authorityGrant()],
+    }), "utf8");
+
+    const fromFile = validateVerificationAuthority(authorityCheck(), {
+      target,
+      taskId: "task-1",
+      trustedAuthorityFile: authorityFile,
+    });
+    assert.equal(fromFile.valid, true);
+
+    const authorityDir = path.join(authorityRoot, "authorities");
+    await mkdir(authorityDir);
+    await writeFile(path.join(authorityDir, "auth-modlens.json"), JSON.stringify(authorityGrant()), "utf8");
+    const fromDirectory = validateVerificationAuthority(authorityCheck(), {
+      target,
+      taskId: "task-1",
+      trustedAuthorityDir: authorityDir,
+    });
+    assert.equal(fromDirectory.valid, true);
+  } finally {
+    await rm(target, { recursive: true, force: true });
+    await rm(authorityRoot, { recursive: true, force: true });
+  }
+});
+
+test("a configured authority file inside the target is rejected", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-contained-authority-"));
+  try {
+    const authorityFile = path.join(target, ".forgeloop", "authorities.json");
+    await mkdir(path.dirname(authorityFile), { recursive: true });
+    await writeFile(authorityFile, JSON.stringify({
+      schemaVersion: 1,
+      protocolVersion: 1,
+      authorities: [authorityGrant()],
+    }), "utf8");
+
+    const result = validateVerificationAuthority(authorityCheck(), {
+      target,
+      taskId: "task-1",
+      trustedAuthorityFile: authorityFile,
+    });
+
+    assert.equal(result.valid, false);
+    assert.equal(result.error.code, E_AUTHORITY_UNTRUSTED_SOURCE);
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
 });
 
 test("canonical loop engineering documentation defines missing verification tool policy", async () => {

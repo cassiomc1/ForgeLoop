@@ -8,6 +8,7 @@ import { createEvidence } from "./evidence.js";
 import { runDoctor } from "../commands/doctor.js";
 import { findProfilePath } from "./profile.js";
 import { FORGELOOP_KIT_DIR } from "./target-layout.js";
+import { trustedAuthorityConfiguration } from "./trusted-authority.js";
 
 function profileMetadata(bytes) {
   const text = bytes.toString("utf8");
@@ -91,6 +92,7 @@ export async function inspectTarget({ target, packageRoot, contractFile = null }
   ];
   return {
     target: { path: target },
+    authority: trustedAuthorityConfiguration(),
     manifest: {
       present: manifest !== null,
       status: manifestError ? "invalid" : manifest ? "ready" : "missing",

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -28,12 +28,19 @@ import { prepareCompletion, recordCheck } from "../src/core/completion-artifacts
 
 const packageRoot = getPackageRoot();
 
-async function withTarget(run) {
+async function withTargetAndAuthority(run) {
   const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-auth-"));
+  const authorityRoot = await mkdtemp(path.join(os.tmpdir(), "forgeloop-host-authority-"));
+  const authorityFile = path.join(authorityRoot, "authorities.json");
+  const previousAuthorityFile = process.env.FORGELOOP_AUTHORITY_FILE;
+  process.env.FORGELOOP_AUTHORITY_FILE = authorityFile;
   try {
-    await run(target);
+    await run(target, authorityFile);
   } finally {
+    if (previousAuthorityFile === undefined) delete process.env.FORGELOOP_AUTHORITY_FILE;
+    else process.env.FORGELOOP_AUTHORITY_FILE = previousAuthorityFile;
     await rm(target, { recursive: true, force: true });
+    await rm(authorityRoot, { recursive: true, force: true });
   }
 }
 
@@ -135,8 +142,8 @@ test("authority extraction helper getInstallationAuthorityRef", () => {
   assert.equal(getInstallationAuthorityRef(null), null);
 });
 
-test("audit and complete revalidate installation authority from target artifacts", async () => {
-  await withTarget(async (target) => {
+test("audit and complete revalidate installation authority from the external host source", async () => {
+  await withTargetAndAuthority(async (target, authFile) => {
     const contract = createContract({
       taskId: "task-audit-authority",
       objective: "Verify audit and complete enforce authority from target artifacts",
@@ -176,22 +183,20 @@ test("audit and complete revalidate installation authority from target artifacts
     await advanceWorkState(target, "EXECUTING", packageRoot);
     await advanceWorkState(target, "VERIFYING", packageRoot);
 
-    const authDir = path.join(target, ".forgeloop", "authorities");
-    await mkdir(authDir, { recursive: true });
-    const authFile = path.join(authDir, "auth-modlens.json");
-
     // Write valid authority grant
     await writeFile(
       authFile,
       JSON.stringify({
         schemaVersion: 1,
         protocolVersion: 1,
-        authorityId: "auth-modlens",
-        taskId: contract.taskId,
-        type: "SOFTWARE_INSTALLATION",
-        status: "AUTHORIZED",
-        scope: { tool: "@liustack/modlens" },
-        source: "operator",
+        authorities: [{
+          authorityId: "auth-modlens",
+          taskId: contract.taskId,
+          type: "SOFTWARE_INSTALLATION",
+          status: "AUTHORIZED",
+          scope: { tool: "@liustack/modlens" },
+          source: "operator",
+        }],
       }),
       "utf8",
     );
@@ -236,18 +241,29 @@ test("audit and complete revalidate installation authority from target artifacts
     const completeBefore = await evaluateCompletion({ target, packageRoot });
     assert.equal(completeBefore.status, "VALID", JSON.stringify(completeBefore.errors));
 
+    // Removing the trusted source after recording invalidates both validators.
+    await rm(authFile, { force: true });
+    const auditAfterRemoval = await evaluateAudit({ target, packageRoot });
+    assert.equal(auditAfterRemoval.status, "INVALID");
+    assert.ok(auditAfterRemoval.errors.some((e) => e.code === E_AUTHORITY_INVALID));
+    const completeAfterRemoval = await evaluateCompletion({ target, packageRoot });
+    assert.equal(completeAfterRemoval.status, "REJECTED");
+    assert.ok(completeAfterRemoval.errors.some((e) => e.code === E_AUTHORITY_INVALID));
+
     // Now tamper with authority artifact: revoke it
     await writeFile(
       authFile,
       JSON.stringify({
         schemaVersion: 1,
         protocolVersion: 1,
-        authorityId: "auth-modlens",
-        taskId: contract.taskId,
-        type: "SOFTWARE_INSTALLATION",
-        status: "REVOKED",
-        scope: { tool: "@liustack/modlens" },
-        source: "operator",
+        authorities: [{
+          authorityId: "auth-modlens",
+          taskId: contract.taskId,
+          type: "SOFTWARE_INSTALLATION",
+          status: "REVOKED",
+          scope: { tool: "@liustack/modlens" },
+          source: "operator",
+        }],
       }),
       "utf8",
     );

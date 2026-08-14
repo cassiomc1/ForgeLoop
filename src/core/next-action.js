@@ -244,7 +244,13 @@ async function requirementsAndCoverage({ target, packageRoot, contract, route, c
     packageRoot,
     additionalEvidence,
   });
-  return { requirements, coverage: coverageForRequirements(requirements, checks) };
+  return {
+    requirements,
+    coverage: coverageForRequirements(requirements, checks, {
+      target,
+      taskId: contract?.value?.taskId,
+    }),
+  };
 }
 
 export async function getNextAction(targetOrOptions = {}, packageRootOption) {
@@ -596,7 +602,12 @@ export async function getNextAction(targetOrOptions = {}, packageRootOption) {
         [...requiredArtifacts, ARTIFACT_PATHS.receipt],
       );
     }
-    const readiness = evaluateRequiredEvidence({ requirements: evidence.requirements, checks: state.checks });
+    const readiness = evaluateRequiredEvidence({
+      requirements: evidence.requirements,
+      checks: state.checks,
+      target,
+      taskId: contract?.value?.taskId,
+    });
     const receiptRelationships = completionRelationshipErrors({
       contract,
       route,
@@ -604,6 +615,8 @@ export async function getNextAction(targetOrOptions = {}, packageRootOption) {
       receipt: receipt.value.value,
       requiredEvidence: evidence.requirements,
       requireRequiredChecks: false,
+      target,
+      taskId: contract?.value?.taskId,
     });
     if (receiptRelationships.length > 0) {
       if (receiptRelationships.some((err) => (
@@ -685,7 +698,12 @@ export async function getNextAction(targetOrOptions = {}, packageRootOption) {
       checks: state.checks,
       additionalEvidence: preflight.policy?.requiredEvidence ?? [],
     });
-    const readiness = evaluateRequiredEvidence({ requirements: evidence.requirements, checks: state.checks });
+    const readiness = evaluateRequiredEvidence({
+      requirements: evidence.requirements,
+      checks: state.checks,
+      target,
+      taskId: contract?.value?.taskId,
+    });
     if (!readiness.ready) {
       let recoveryAuthorized = false;
       if (state.lastCompletionAttempt?.status === "REJECTED") {
@@ -766,6 +784,8 @@ export async function getNextAction(targetOrOptions = {}, packageRootOption) {
       state,
       receipt: receipt.value.value,
       requiredEvidence: evidence.requirements,
+      target,
+      taskId: contract?.value?.taskId,
     });
     if (receiptRelationships.length > 0) {
       if (receiptRelationships.some((err) => (

@@ -157,7 +157,7 @@ Every verification command is classified by resolution mode (`LOCAL_EXECUTABLE`,
 `EXPLICIT_INSTALLATION`). Any command that uses an install-capable or installation
 path without a valid canonical authority reference is rejected by `record-check`,
 `audit`, and `complete` with `E_INSTALLATION_AUTHORITY_REQUIRED`, `E_AUTHORITY_INVALID`,
-or `E_AUTHORITY_SCOPE_MISMATCH`.
+`E_AUTHORITY_SCOPE_MISMATCH`, or `E_AUTHORITY_UNTRUSTED_SOURCE`.
 
 ```text
 capability ≠ authority
@@ -167,6 +167,33 @@ actor claim ≠ operator grant
 
 Authority cannot be self-issued by the actor consuming it. Boolean fields inside
 verification evidence are not sufficient proof of installation authority.
+
+### Authority provenance
+
+Authority provenance is external to actor-authored project state. Configure a
+host/operator-owned grant source with `FORGELOOP_AUTHORITY_FILE` or
+`FORGELOOP_AUTHORITY_DIR`; the resolved path must be outside the actor-writable
+target. A project-local authority reference may identify a grant, but it does
+not create the root of trust.
+
+```text
+actor-authored evidence
+≠
+trusted authority
+
+project-local file
+≠
+host grant
+
+declared provenance
+≠
+verified provenance
+```
+
+A local artifact claiming `source: operator` is not sufficient proof of operator
+authority. If the host exposes the trusted source as writable to the actor, the
+host boundary has been compromised and ForgeLoop cannot provide cryptographic
+attestation by itself.
 
 Never convert `PROTOCOL_LIMITED` into environmental mutation by implicitly
 installing a package.

@@ -73,10 +73,23 @@ export function assertCoverageList(value, label = "evidenceCoverage") {
   return value;
 }
 
-export function coverageForRequirements(requirements, checks, { blockedIds = [] } = {}) {
+export function coverageForRequirements(requirements, checks, {
+  blockedIds = [],
+  target,
+  taskId,
+  authorities,
+  options = {},
+} = {}) {
   const normalizedRequirements = normalizeRequirements(requirements ?? []);
   const normalizedChecks = Array.isArray(checks) ? checks : [];
-  const readiness = evaluateRequiredEvidence({ requirements: normalizedRequirements, checks: normalizedChecks });
+  const readiness = evaluateRequiredEvidence({
+    requirements: normalizedRequirements,
+    checks: normalizedChecks,
+    target,
+    taskId,
+    authorities,
+    options,
+  });
   const covered = new Set(readiness.covered.map((item) => item.id));
   const partial = new Set(readiness.partial.map((item) => item.id));
   const invalid = new Set(readiness.invalid.map((item) => item.id));

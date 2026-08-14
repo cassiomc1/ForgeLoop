@@ -374,6 +374,7 @@ target project. Its main threat boundaries are:
 | Data exposure | Receipts and checkpoints reject secret-like keys and values; examples use placeholders, and the repository secret scanner runs in CI. |
 | Unsafe update overwrite | `update` preserves locally modified files and the target's `.forgeloop/kit/PROJECT_PROFILE.md`; adoption and writes remain bounded to the selected target. |
 | Dependency supply chain | Runtime code uses Node built-ins only; the package does not install agents, providers, plugins, or remote services. |
+| Installation authority provenance | Trusted grants come from host-supplied `FORGELOOP_AUTHORITY_FILE` or `FORGELOOP_AUTHORITY_DIR` outside the actor-writable target; project-local authority claims are untrusted by default. |
 | Stale replay | Work state records contract and repository fingerprints; drift requires revalidation and never reruns destructive or publication actions automatically. |
 | Unverified publication | Receipts carry explicit publication booleans; local success never implies a push, pull request, merge, release, or deployment. |
 

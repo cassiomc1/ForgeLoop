@@ -84,6 +84,10 @@ test("inspect exposes target, protocol, compatibility, state, and findings", asy
     assert.equal(report.target.path, target);
     assert.equal(report.protocol.version, 1);
     assert.equal(report.protocol.schemaStatus, "valid");
+    assert.deepEqual(report.authority, {
+      trustedSourceConfigured: false,
+      sourceType: null,
+    });
     assert.ok(report.protocol.schemas.every((schema) => schema.status === "valid"));
     assert.equal(Array.isArray(report.compatibility.agents), true);
     assert.equal(typeof report.state.status, "string");
