@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -10,6 +10,8 @@ import { ARTIFACT_PATHS } from "../src/core/artifacts.js";
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { appendProtocolEvent } from "../src/core/events.js";
 import { advanceWorkState } from "../src/core/phase.js";
+import { recordCheck } from "../src/core/completion-artifacts.js";
+import { runComplete } from "../src/commands/complete.js";
 import { evaluateRoute } from "../src/core/router.js";
 import { persistRoute } from "../src/core/route-artifact.js";
 import { getPackageRoot } from "../src/core/templates.js";
@@ -23,6 +25,14 @@ function runCli(target, ...args) {
   return spawnSync(process.execPath, [cliPath, ...args, "--path", target], {
     cwd: root,
     encoding: "utf8",
+  });
+}
+
+function runCliWithEnv(target, env, ...args) {
+  return spawnSync(process.execPath, [cliPath, ...args, "--path", target], {
+    cwd: root,
+    encoding: "utf8",
+    env: { ...process.env, ...env },
   });
 }
 
@@ -141,4 +151,82 @@ test("completion CLI rejects malformed details and command-specific options", ()
   assert.match(malformed.stderr, /valid JSON/i);
   assert.equal(unrelated.status, 1);
   assert.match(unrelated.stderr, /not valid/i);
+});
+
+test("standalone completion CLI rejects actor-selected authority sources", async () => {
+  const authorityRoot = await mkdtemp(path.join(os.tmpdir(), "forgeloop-cli-authority-"));
+  const authorityFile = path.join(authorityRoot, "host-authority.json");
+  const actorFakeFile = path.join(authorityRoot, "actor-fake.json");
+  try {
+    await withTarget(async (target) => {
+      await setupTarget(target);
+      const prepared = runCli(target, "prepare-completion", "--json");
+      assert.equal(prepared.status, 0, prepared.stderr);
+
+      const authority = {
+        schemaVersion: 1,
+        protocolVersion: 1,
+        authorities: [{
+          authorityId: "auth-cli",
+          taskId: "task-cli-ergonomics",
+          type: "SOFTWARE_INSTALLATION",
+          status: "AUTHORIZED",
+          scope: { tool: "@liustack/modlens" },
+          source: "operator",
+        }],
+      };
+      await writeFile(authorityFile, JSON.stringify(authority), "utf8");
+      await writeFile(actorFakeFile, JSON.stringify(authority), "utf8");
+
+      const rejectedRecord = runCliWithEnv(
+        target,
+        { FORGELOOP_AUTHORITY_FILE: actorFakeFile },
+        "record-check",
+        "--id", "install-check",
+        "--requirement", "tests",
+        "--status", "passed",
+        "--evidence-kind", "OBSERVED",
+        "--command", "npx @liustack/modlens --spec=app.json",
+        "--exit-code", "0",
+        "--details", JSON.stringify({ installationAuthorityRef: "auth-cli" }),
+        "--json",
+      );
+      assert.equal(rejectedRecord.status, 1);
+      assert.match(`${rejectedRecord.stdout}\n${rejectedRecord.stderr}`, /does not attest host authority/);
+
+      const authorityContext = {
+        trustMode: "HOST_ATTESTED",
+        trustedAuthorityFile: authorityFile,
+      };
+      await recordCheck({
+        target,
+        packageRoot,
+        id: "install-check",
+        kind: "command",
+        requirement: "tests",
+        status: "passed",
+        evidenceKind: "OBSERVED",
+        command: "npx @liustack/modlens --spec=app.json",
+        details: { installationAuthorityRef: "auth-cli" },
+        authorityContext,
+      });
+      await advanceWorkState(target, "REVIEWING", { packageRoot, authorityContext });
+      const hostedComplete = await runComplete({ target, packageRoot, authorityContext });
+      assert.equal(hostedComplete.status, "VALID", JSON.stringify(hostedComplete.errors));
+
+      const audit = runCliWithEnv(target, { FORGELOOP_AUTHORITY_FILE: actorFakeFile }, "audit", "--json");
+      assert.equal(audit.status, 1);
+      const auditReport = JSON.parse(audit.stdout);
+      assert.equal(auditReport.status, "INVALID");
+      assert.ok(auditReport.errors.some((error) => error.code === "E_AUTHORITY_UNTRUSTED_SOURCE"));
+
+      const complete = runCliWithEnv(target, { FORGELOOP_AUTHORITY_FILE: actorFakeFile }, "complete", "--json");
+      assert.equal(complete.status, 1);
+      const completeReport = JSON.parse(complete.stdout);
+      assert.equal(completeReport.status, "REJECTED");
+      assert.ok(completeReport.errors.some((error) => error.code === "E_AUTHORITY_UNTRUSTED_SOURCE"));
+    });
+  } finally {
+    await rm(authorityRoot, { recursive: true, force: true });
+  }
 });

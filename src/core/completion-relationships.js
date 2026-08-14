@@ -69,6 +69,8 @@ export function completionRelationshipErrors({
   target,
   taskId,
   authorities,
+  authorityContext,
+  runtimeContext,
 } = {}) {
   const errors = stateIdentityErrors({ contract, route, state });
   const contractValue = contract?.value ?? contract;
@@ -78,6 +80,8 @@ export function completionRelationshipErrors({
     ...(target ? { target } : {}),
     ...(effectiveTaskId ? { taskId: effectiveTaskId } : {}),
     ...(authorities ? { authorities } : {}),
+    ...(authorityContext ? { authorityContext } : {}),
+    ...(runtimeContext ? { runtimeContext } : {}),
   };
   if (contractValue && receipt && contractValue.taskId !== receipt.taskId) {
     errors.push(issue("E_RECEIPT_TASK_MISMATCH", "Execution receipt does not belong to the current contract task", [ARTIFACT_PATHS.contract, ARTIFACT_PATHS.receipt]));
@@ -130,6 +134,7 @@ export function completionRelationshipErrors({
     target,
     taskId: effectiveTaskId,
     authorities,
+    options: authOptions,
   }) : [];
   if (state?.evidenceCoverage !== undefined) {
     addAssertion(errors, () => assertCoverageList(state.evidenceCoverage, "work-state.evidenceCoverage"), "E_EVIDENCE_COVERAGE_INVALID", [ARTIFACT_PATHS.state]);

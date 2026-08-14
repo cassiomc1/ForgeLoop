@@ -2,6 +2,10 @@ import { accessSync, constants as fsConstants, lstatSync, readFileSync, realpath
 import path from "node:path";
 
 import { assertJsonBytes, assertJsonLimits } from "./json-safety.js";
+import {
+  hasAuthorityContext,
+  resolveAuthorityContext,
+} from "./runtime-context.js";
 
 export const E_AUTHORITY_UNTRUSTED_SOURCE = "E_AUTHORITY_UNTRUSTED_SOURCE";
 const E_AUTHORITY_INVALID = "E_AUTHORITY_INVALID";
@@ -13,28 +17,79 @@ function configuredValue(value) {
 }
 
 function authoritySourceOptions(options = {}) {
-  const explicitFile = configuredValue(options.trustedAuthorityFile);
-  const explicitDir = configuredValue(options.trustedAuthorityDir);
-  if (explicitFile) return { file: explicitFile, dir: null };
-  if (explicitDir) return { file: null, dir: explicitDir };
+  const context = resolveAuthorityContext(options);
+  const contextProvided = hasAuthorityContext(options);
+  const directFile = configuredValue(options.trustedAuthorityFile);
+  const directDir = configuredValue(options.trustedAuthorityDir);
+  const contextFile = configuredValue(context.trustedAuthorityFile);
+  const contextDir = configuredValue(context.trustedAuthorityDir);
+  const file = contextFile ?? (contextProvided ? null : directFile);
+  const dir = contextDir ?? (contextProvided ? null : directDir);
+  const authorities = context.authorities ?? (contextProvided ? undefined : options.authorities);
+  const authority = context.authority ?? (contextProvided ? undefined : options.authority);
+
+  if (contextProvided
+    && context.trustMode !== "HOST_ATTESTED"
+    && !file
+    && !dir
+    && authorities === undefined
+    && authority === undefined) {
+    const envFile = configuredValue(process.env[AUTHORITY_FILE_ENV]);
+    const envDir = configuredValue(process.env[AUTHORITY_DIR_ENV]);
+    return {
+      context,
+      file: envFile,
+      dir: envDir,
+      authorities: undefined,
+      authority: undefined,
+      sourceConfigured: Boolean(envFile || envDir),
+      sourceType: envFile ? "external-file" : envDir ? "external-dir" : null,
+    };
+  }
+
+  if (context.trustMode === "HOST_ATTESTED" || contextProvided || file || dir || authorities !== undefined || authority !== undefined) {
+    return {
+      context,
+      file,
+      dir,
+      authorities,
+      authority,
+      sourceConfigured: Boolean(file || dir || authorities !== undefined || authority !== undefined),
+      sourceType: file ? "external-file" : dir ? "external-dir" : authorities !== undefined || authority !== undefined ? "in-memory" : null,
+    };
+  }
+
+  const envFile = configuredValue(process.env[AUTHORITY_FILE_ENV]);
+  const envDir = configuredValue(process.env[AUTHORITY_DIR_ENV]);
   return {
-    file: configuredValue(process.env[AUTHORITY_FILE_ENV]),
-    dir: configuredValue(process.env[AUTHORITY_DIR_ENV]),
+    context,
+    file: envFile,
+    dir: envDir,
+    authorities: undefined,
+    authority: undefined,
+    sourceConfigured: Boolean(envFile || envDir),
+    sourceType: envFile ? "external-file" : envDir ? "external-dir" : null,
   };
 }
 
 export function trustedAuthorityConfiguration(options = {}) {
-  const { file, dir } = authoritySourceOptions(options);
+  const { context, sourceConfigured, sourceType, file, dir } = authoritySourceOptions(options);
+  const sourceInsideTarget = options.target && (file || dir)
+    ? isInsideTarget(options.target, file ?? dir)
+    : false;
   return {
-    trustedSourceConfigured: Boolean(file || dir),
-    sourceType: file ? "external-file" : dir ? "external-dir" : null,
+    sourceConfigured,
+    sourceType,
+    trustMode: context.trustMode,
+    trusted: context.trustMode === "HOST_ATTESTED" && sourceConfigured && !sourceInsideTarget,
   };
 }
 
-function invalid(message) {
+function invalid(message, details = {}) {
   return {
     trusted: false,
     error: { code: E_AUTHORITY_INVALID, message },
+    ...details,
   };
 }
 
@@ -199,11 +254,23 @@ export function resolveTrustedAuthority({
   trustedAuthorityDir,
   authorities,
   authority,
+  authorityContext,
+  runtimeContext,
 } = {}) {
   const fileName = authorityFileName(authorityRef);
   if (!fileName) return invalid("Installation authority reference must be a simple authority ID");
 
-  const sources = authoritySourceOptions({ trustedAuthorityFile, trustedAuthorityDir });
+  const sources = authoritySourceOptions({
+    trustedAuthorityFile,
+    trustedAuthorityDir,
+    authorities,
+    authority,
+    authorityContext,
+    runtimeContext,
+  });
+  if (sources.sourceConfigured && sources.context.trustMode !== "HOST_ATTESTED") {
+    return untrusted("Standalone configuration selects an authority source but does not attest host authority");
+  }
   if ((sources.file || sources.dir) && !target) {
     return untrusted("A target path is required to validate trusted authority provenance");
   }
@@ -213,7 +280,7 @@ export function resolveTrustedAuthority({
   // In-memory authorities are a host-injected policy interface. They never
   // originate from project-local files and are intentionally resolved only
   // after the explicit external sources above.
-  const inMemory = findInMemoryAuthority(authorities, authority, authorityRef);
+  const inMemory = findInMemoryAuthority(sources.authorities, sources.authority, authorityRef);
   if (inMemory !== undefined) {
     return inMemory
       ? { trusted: true, authority: inMemory, sourceType: "in-memory" }
@@ -223,5 +290,7 @@ export function resolveTrustedAuthority({
   if (projectLocalAuthorityExists(authorityRef, target)) {
     return untrusted("Project-local authority artifacts are references only and are not trusted authority sources");
   }
-  return invalid(`Referenced installation authority '${authorityRef}' could not be resolved`);
+  return invalid(`Referenced installation authority '${authorityRef}' could not be resolved`, {
+    sourceConfigured: sources.sourceConfigured,
+  });
 }

@@ -158,7 +158,7 @@ async function validateLedger(target, taskId, state, errors, packageRoot) {
   return ledger;
 }
 
-export async function evaluateCompletion({ target, packageRoot, strict = false } = {}) {
+export async function evaluateCompletion({ target, packageRoot, strict = false, authorityContext, runtimeContext } = {}) {
   const errors = [];
   const preflight = await evaluatePreflight({ target, packageRoot, strict });
   errors.push(...preflight.errors);
@@ -205,7 +205,12 @@ export async function evaluateCompletion({ target, packageRoot, strict = false }
 
   if (receipt) {
     try {
-      await validateReceipt(receipt.value, packageRoot, { target, taskId: contract?.value?.taskId });
+      await validateReceipt(receipt.value, packageRoot, {
+        target,
+        taskId: contract?.value?.taskId,
+        authorityContext,
+        runtimeContext,
+      });
     } catch (error) {
       errors.push(issue(error.code ?? "E_RECEIPT_INVALID", `Execution receipt is invalid: ${error.message}`, [ARTIFACT_PATHS.receipt]));
     }
@@ -232,6 +237,8 @@ export async function evaluateCompletion({ target, packageRoot, strict = false }
       requiredEvidence,
       target,
       taskId: contract?.value?.taskId,
+      authorityContext,
+      runtimeContext,
     });
     errors.push(...relationshipErrors);
     coverage = receipt?.value?.evidenceCoverage ?? [];
@@ -299,12 +306,18 @@ export async function evaluateCompletion({ target, packageRoot, strict = false }
   };
 }
 
-export async function runComplete({ target, packageRoot, strict = false, persist = true } = {}) {
-  const result = await evaluateCompletion({ target, packageRoot, strict });
+export async function runComplete({ target, packageRoot, strict = false, persist = true, authorityContext, runtimeContext } = {}) {
+  const result = await evaluateCompletion({ target, packageRoot, strict, authorityContext, runtimeContext });
   const rejectionCodes = [...new Set(result.errors.map((error) => error.code))].sort();
   const evidenceOnlyRejection = rejectionCodes.length > 0
     && rejectionCodes.every(isRecoverableCompletionEvidenceCode);
-  if (persist && result.status === "REJECTED" && evidenceOnlyRejection) {
+  const authorityRejection = rejectionCodes.some((code) => [
+    "E_INSTALLATION_AUTHORITY_REQUIRED",
+    "E_AUTHORITY_INVALID",
+    "E_AUTHORITY_SCOPE_MISMATCH",
+    "E_AUTHORITY_UNTRUSTED_SOURCE",
+  ].includes(code));
+  if (persist && result.status === "REJECTED" && evidenceOnlyRejection && !authorityRejection) {
     const state = await readWorkState(target, packageRoot);
     if (state?.phase === "REVIEWING") {
       const reasonCodes = rejectionCodes;
@@ -344,7 +357,7 @@ export async function runComplete({ target, packageRoot, strict = false, persist
           ...receipt.value,
           stateFingerprint: canonicalFingerprint(next),
           verificationCycle: next.verificationCycle ?? receipt.value.verificationCycle ?? 1,
-        }, packageRoot);
+        }, packageRoot, { target, taskId: state.taskId, authorityContext, runtimeContext });
         await writeJsonArtifact(target, ARTIFACT_PATHS.receipt, nextReceipt, "execution-receipt", packageRoot);
       }
       const ledger = await validateEventLedger(target, packageRoot);
@@ -389,7 +402,7 @@ export async function runComplete({ target, packageRoot, strict = false, persist
         ...receipt.value,
         stateFingerprint: canonicalFingerprint(next),
         verificationCycle: next.verificationCycle ?? receipt.value.verificationCycle ?? 1,
-      }, packageRoot);
+      }, packageRoot, { target, taskId: state.taskId, authorityContext, runtimeContext });
       await writeWorkState(target, next, { packageRoot });
       await writeJsonArtifact(target, ARTIFACT_PATHS.receipt, nextReceipt, "execution-receipt", packageRoot);
     }

@@ -3,6 +3,11 @@ import {
   resolveTrustedAuthority,
 } from "./trusted-authority.js";
 import path from "node:path";
+export {
+  AUTHORITY_TRUST_MODES,
+  createAuthorityContext,
+  createForgeLoopContext,
+} from "./runtime-context.js";
 
 export const E_VERIFICATION_TOOL_UNAVAILABLE = "E_VERIFICATION_TOOL_UNAVAILABLE";
 export const E_INSTALLATION_AUTHORITY_REQUIRED = "E_INSTALLATION_AUTHORITY_REQUIRED";
@@ -516,8 +521,21 @@ export function validateVerificationAuthority(check, options = {}) {
     trustedAuthorityDir: options.trustedAuthorityDir,
     authorities: options.authorities,
     authority: options.authority,
+    authorityContext: options.authorityContext,
+    runtimeContext: options.runtimeContext,
   });
-  if (!resolved.trusted) return { valid: false, error: resolved.error };
+  if (!resolved.trusted) {
+    if (resolved.error?.code === E_AUTHORITY_INVALID && resolved.sourceConfigured === false) {
+      return {
+        valid: false,
+        error: {
+          code: E_INSTALLATION_AUTHORITY_REQUIRED,
+          message: "Installation-capable verification requires a host-attested authority context",
+        },
+      };
+    }
+    return { valid: false, error: resolved.error };
+  }
 
   return validateAuthorityGrant({
     authority: resolved.authority,

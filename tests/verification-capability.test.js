@@ -251,7 +251,7 @@ test("validateVerificationAuthority rejects self-asserted booleans and requires 
   };
   const val4 = validateVerificationAuthority(unresolvableCheck);
   assert.equal(val4.valid, false);
-  assert.equal(val4.error.code, "E_AUTHORITY_INVALID");
+  assert.equal(val4.error.code, E_INSTALLATION_AUTHORITY_REQUIRED);
 
   // Valid authority grant
   const validAuthority = {
@@ -277,15 +277,37 @@ test("validateVerificationAuthority rejects self-asserted booleans and requires 
   };
   const val5 = validateVerificationAuthority(checkWithValidAuth, {
     taskId: "task-1",
-    authorities: { "auth-modlens": validAuthority },
+    authorityContext: {
+      trustMode: "HOST_ATTESTED",
+      authorities: { "auth-modlens": validAuthority },
+    },
   });
   assert.equal(val5.valid, true);
   assert.equal(val5.error, null);
 
+  // A loose trustMode or a source outside authorityContext cannot self-attest.
+  const directSelfAttested = validateVerificationAuthority(checkWithValidAuth, {
+    taskId: "task-1",
+    trustMode: "HOST_ATTESTED",
+    authorities: { "auth-modlens": validAuthority },
+  });
+  assert.equal(directSelfAttested.valid, false);
+  assert.equal(directSelfAttested.error.code, E_AUTHORITY_UNTRUSTED_SOURCE);
+  const splitContext = validateVerificationAuthority(checkWithValidAuth, {
+    taskId: "task-1",
+    authorityContext: { trustMode: "HOST_ATTESTED" },
+    authorities: { "auth-modlens": validAuthority },
+  });
+  assert.equal(splitContext.valid, false);
+  assert.equal(splitContext.error.code, E_INSTALLATION_AUTHORITY_REQUIRED);
+
   // Wrong task authority grant
   const valWrongTask = validateVerificationAuthority(checkWithValidAuth, {
     taskId: "task-2",
-    authorities: { "auth-modlens": validAuthority },
+    authorityContext: {
+      trustMode: "HOST_ATTESTED",
+      authorities: { "auth-modlens": validAuthority },
+    },
   });
   assert.equal(valWrongTask.valid, false);
   assert.equal(valWrongTask.error.code, "E_AUTHORITY_INVALID");
@@ -297,7 +319,10 @@ test("validateVerificationAuthority rejects self-asserted booleans and requires 
   };
   const valWrongScope = validateVerificationAuthority(checkWithValidAuth, {
     taskId: "task-1",
-    authorities: { "auth-modlens": wrongScopeAuth },
+    authorityContext: {
+      trustMode: "HOST_ATTESTED",
+      authorities: { "auth-modlens": wrongScopeAuth },
+    },
   });
   assert.equal(valWrongScope.valid, false);
   assert.equal(valWrongScope.error.code, "E_AUTHORITY_SCOPE_MISMATCH");
@@ -309,7 +334,10 @@ test("validateVerificationAuthority rejects self-asserted booleans and requires 
   };
   const valRevoked = validateVerificationAuthority(checkWithValidAuth, {
     taskId: "task-1",
-    authorities: { "auth-modlens": revokedAuth },
+    authorityContext: {
+      trustMode: "HOST_ATTESTED",
+      authorities: { "auth-modlens": revokedAuth },
+    },
   });
   assert.equal(valRevoked.valid, false);
   assert.equal(valRevoked.error.code, "E_AUTHORITY_INVALID");
@@ -321,7 +349,10 @@ test("validateVerificationAuthority rejects self-asserted booleans and requires 
   };
   const valAgentSelf = validateVerificationAuthority(checkWithValidAuth, {
     taskId: "task-1",
-    authorities: { "auth-modlens": agentSelfAuth },
+    authorityContext: {
+      trustMode: "HOST_ATTESTED",
+      authorities: { "auth-modlens": agentSelfAuth },
+    },
   });
   assert.equal(valAgentSelf.valid, false);
   assert.equal(valAgentSelf.error.code, "E_AUTHORITY_INVALID");
@@ -445,7 +476,10 @@ test("host-supplied external authority file and directory are trusted", async ()
     const fromFile = validateVerificationAuthority(authorityCheck(), {
       target,
       taskId: "task-1",
-      trustedAuthorityFile: authorityFile,
+      authorityContext: {
+        trustMode: "HOST_ATTESTED",
+        trustedAuthorityFile: authorityFile,
+      },
     });
     assert.equal(fromFile.valid, true);
 
@@ -455,10 +489,72 @@ test("host-supplied external authority file and directory are trusted", async ()
     const fromDirectory = validateVerificationAuthority(authorityCheck(), {
       target,
       taskId: "task-1",
-      trustedAuthorityDir: authorityDir,
+      authorityContext: {
+        trustMode: "HOST_ATTESTED",
+        trustedAuthorityDir: authorityDir,
+      },
     });
     assert.equal(fromDirectory.valid, true);
   } finally {
+    await rm(target, { recursive: true, force: true });
+    await rm(authorityRoot, { recursive: true, force: true });
+  }
+});
+
+test("standalone environment-selected authority remains untrusted", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-env-authority-target-"));
+  const authorityRoot = await mkdtemp(path.join(os.tmpdir(), "forgeloop-env-authority-root-"));
+  const authorityFile = path.join(authorityRoot, "actor-selected.json");
+  const previousFile = process.env.FORGELOOP_AUTHORITY_FILE;
+  const previousDir = process.env.FORGELOOP_AUTHORITY_DIR;
+  try {
+    await writeFile(authorityFile, JSON.stringify({
+      schemaVersion: 1,
+      protocolVersion: 1,
+      authorities: [authorityGrant()],
+    }), "utf8");
+    process.env.FORGELOOP_AUTHORITY_FILE = authorityFile;
+    delete process.env.FORGELOOP_AUTHORITY_DIR;
+
+    const result = validateVerificationAuthority(authorityCheck(), {
+      target,
+      taskId: "task-1",
+    });
+
+    assert.equal(result.valid, false);
+    assert.equal(result.error.code, E_AUTHORITY_UNTRUSTED_SOURCE);
+  } finally {
+    if (previousFile === undefined) delete process.env.FORGELOOP_AUTHORITY_FILE;
+    else process.env.FORGELOOP_AUTHORITY_FILE = previousFile;
+    if (previousDir === undefined) delete process.env.FORGELOOP_AUTHORITY_DIR;
+    else process.env.FORGELOOP_AUTHORITY_DIR = previousDir;
+    await rm(target, { recursive: true, force: true });
+    await rm(authorityRoot, { recursive: true, force: true });
+  }
+});
+
+test("standalone environment-selected authority directory remains untrusted", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-env-authority-dir-target-"));
+  const authorityRoot = await mkdtemp(path.join(os.tmpdir(), "forgeloop-env-authority-dir-"));
+  const previousFile = process.env.FORGELOOP_AUTHORITY_FILE;
+  const previousDir = process.env.FORGELOOP_AUTHORITY_DIR;
+  try {
+    await writeFile(path.join(authorityRoot, "auth-modlens.json"), JSON.stringify(authorityGrant()), "utf8");
+    delete process.env.FORGELOOP_AUTHORITY_FILE;
+    process.env.FORGELOOP_AUTHORITY_DIR = authorityRoot;
+
+    const result = validateVerificationAuthority(authorityCheck(), {
+      target,
+      taskId: "task-1",
+    });
+
+    assert.equal(result.valid, false);
+    assert.equal(result.error.code, E_AUTHORITY_UNTRUSTED_SOURCE);
+  } finally {
+    if (previousFile === undefined) delete process.env.FORGELOOP_AUTHORITY_FILE;
+    else process.env.FORGELOOP_AUTHORITY_FILE = previousFile;
+    if (previousDir === undefined) delete process.env.FORGELOOP_AUTHORITY_DIR;
+    else process.env.FORGELOOP_AUTHORITY_DIR = previousDir;
     await rm(target, { recursive: true, force: true });
     await rm(authorityRoot, { recursive: true, force: true });
   }

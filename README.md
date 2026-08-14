@@ -374,12 +374,16 @@ target project. Its main threat boundaries are:
 | Data exposure | Receipts and checkpoints reject secret-like keys and values; examples use placeholders, and the repository secret scanner runs in CI. |
 | Unsafe update overwrite | `update` preserves locally modified files and the target's `.forgeloop/kit/PROJECT_PROFILE.md`; adoption and writes remain bounded to the selected target. |
 | Dependency supply chain | Runtime code uses Node built-ins only; the package does not install agents, providers, plugins, or remote services. |
-| Installation authority provenance | Trusted grants come from host-supplied `FORGELOOP_AUTHORITY_FILE` or `FORGELOOP_AUTHORITY_DIR` outside the actor-writable target; project-local authority claims are untrusted by default. |
+| Installation authority provenance | Standalone CLI uses `trustMode: NONE`: environment-selected `FORGELOOP_AUTHORITY_FILE`/`FORGELOOP_AUTHORITY_DIR` sources are untrusted candidates; only an internal `HOST_ATTESTED` context may select a trusted source outside the actor-writable target. Project-local authority claims remain untrusted. |
 | Stale replay | Work state records contract and repository fingerprints; drift requires revalidation and never reruns destructive or publication actions automatically. |
 | Unverified publication | Receipts carry explicit publication booleans; local success never implies a push, pull request, merge, release, or deployment. |
 
 The full boundary inventory, residual limitations, and executable evidence are
 in [`THREAT_MODEL.md`](./THREAT_MODEL.md).
+
+An external path is not equivalent to external authority ownership. Actor-controlled
+environment configuration is not sufficient proof of host/operator authority;
+trusted authority requires a host-attested integration boundary.
 
 The CLI cannot protect a target from a separately privileged or hostile process
 that changes the filesystem after validation. Consumers must still review

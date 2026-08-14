@@ -236,7 +236,16 @@ async function loadArtifact(loader, fallback) {
   }
 }
 
-async function requirementsAndCoverage({ target, packageRoot, contract, route, checks, additionalEvidence = [] }) {
+async function requirementsAndCoverage({
+  target,
+  packageRoot,
+  contract,
+  route,
+  checks,
+  additionalEvidence = [],
+  authorityContext,
+  runtimeContext,
+}) {
   const requirements = await requiredEvidenceForTarget({
     target,
     contract,
@@ -249,6 +258,7 @@ async function requirementsAndCoverage({ target, packageRoot, contract, route, c
     coverage: coverageForRequirements(requirements, checks, {
       target,
       taskId: contract?.value?.taskId,
+      options: { authorityContext, runtimeContext },
     }),
   };
 }
@@ -257,7 +267,7 @@ export async function getNextAction(targetOrOptions = {}, packageRootOption) {
   const normalized = typeof targetOrOptions === "string"
     ? { target: targetOrOptions, packageRoot: packageRootOption }
     : targetOrOptions;
-  const { target, packageRoot } = normalized ?? {};
+  const { target, packageRoot, authorityContext, runtimeContext } = normalized ?? {};
   const workState = await loadArtifact(
     () => readWorkState(target, packageRoot),
     ARTIFACT_PATHS.state,
@@ -550,6 +560,8 @@ export async function getNextAction(targetOrOptions = {}, packageRootOption) {
       route,
       checks: state.checks,
       additionalEvidence: preflight.policy?.requiredEvidence ?? [],
+      authorityContext,
+      runtimeContext,
     });
     const authoritative = authoritativeChecksForRequirements({
       requirements: ordinaryLeafRequirements(evidence.requirements),
@@ -593,7 +605,12 @@ export async function getNextAction(targetOrOptions = {}, packageRootOption) {
       );
     }
     try {
-      await validateReceipt(receipt.value.value, packageRoot, { target, taskId: contract?.value?.taskId });
+      await validateReceipt(receipt.value.value, packageRoot, {
+        target,
+        taskId: contract?.value?.taskId,
+        authorityContext,
+        runtimeContext,
+      });
     } catch (error) {
       return decision(
         context,
@@ -607,6 +624,7 @@ export async function getNextAction(targetOrOptions = {}, packageRootOption) {
       checks: state.checks,
       target,
       taskId: contract?.value?.taskId,
+      options: { authorityContext, runtimeContext },
     });
     const receiptRelationships = completionRelationshipErrors({
       contract,
@@ -617,6 +635,8 @@ export async function getNextAction(targetOrOptions = {}, packageRootOption) {
       requireRequiredChecks: false,
       target,
       taskId: contract?.value?.taskId,
+      authorityContext,
+      runtimeContext,
     });
     if (receiptRelationships.length > 0) {
       if (receiptRelationships.some((err) => (
@@ -697,12 +717,15 @@ export async function getNextAction(targetOrOptions = {}, packageRootOption) {
       route,
       checks: state.checks,
       additionalEvidence: preflight.policy?.requiredEvidence ?? [],
+      authorityContext,
+      runtimeContext,
     });
     const readiness = evaluateRequiredEvidence({
       requirements: evidence.requirements,
       checks: state.checks,
       target,
       taskId: contract?.value?.taskId,
+      options: { authorityContext, runtimeContext },
     });
     if (!readiness.ready) {
       let recoveryAuthorized = false;
@@ -769,7 +792,12 @@ export async function getNextAction(targetOrOptions = {}, packageRootOption) {
       );
     }
     try {
-      await validateReceipt(receipt.value.value, packageRoot, { target, taskId: contract?.value?.taskId });
+      await validateReceipt(receipt.value.value, packageRoot, {
+        target,
+        taskId: contract?.value?.taskId,
+        authorityContext,
+        runtimeContext,
+      });
     } catch (error) {
       return decision(
         context,
@@ -786,6 +814,8 @@ export async function getNextAction(targetOrOptions = {}, packageRootOption) {
       requiredEvidence: evidence.requirements,
       target,
       taskId: contract?.value?.taskId,
+      authorityContext,
+      runtimeContext,
     });
     if (receiptRelationships.length > 0) {
       if (receiptRelationships.some((err) => (
@@ -809,7 +839,7 @@ export async function getNextAction(targetOrOptions = {}, packageRootOption) {
         requiredArtifacts: [...requiredArtifacts, ARTIFACT_PATHS.receipt],
       });
     }
-    const completion = await evaluateCompletion({ target, packageRoot });
+    const completion = await evaluateCompletion({ target, packageRoot, authorityContext, runtimeContext });
     if (completion.status !== "VALID") {
       const terminalPendingErrors = completion.errors.filter((err) => (
         err.code === "E_PUBLICATION_REQUIREMENT_PENDING" || err.code === "E_PRODUCTION_REQUIREMENT_PENDING"
@@ -841,7 +871,7 @@ export async function getNextAction(targetOrOptions = {}, packageRootOption) {
     return decision(context, NEXT_ACTIONS.RUN_COMPLETE, artifactError("COMPLETION_READY", "Completion artifacts and cross-artifact validation are valid"));
   }
   if (state.phase === "COMPLETE") {
-    const completion = await evaluateCompletion({ target, packageRoot });
+    const completion = await evaluateCompletion({ target, packageRoot, authorityContext, runtimeContext });
     if (completion.status === "VALID") {
       return decision(context, NEXT_ACTIONS.NONE, artifactError("PHASE_COMPLETE", "Completion is validator-backed and terminal"));
     }

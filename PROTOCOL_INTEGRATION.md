@@ -170,11 +170,37 @@ verification evidence are not sufficient proof of installation authority.
 
 ### Authority provenance
 
-Authority provenance is external to actor-authored project state. Configure a
-host/operator-owned grant source with `FORGELOOP_AUTHORITY_FILE` or
-`FORGELOOP_AUTHORITY_DIR`; the resolved path must be outside the actor-writable
-target. A project-local authority reference may identify a grant, but it does
-not create the root of trust.
+Authority provenance is external to actor-authored project state. An external
+path is not equivalent to external authority ownership:
+
+```text
+outside target
+≠
+outside actor control
+```
+
+The standalone CLI uses `trustMode: NONE`. `FORGELOOP_AUTHORITY_FILE` and
+`FORGELOOP_AUTHORITY_DIR` select candidate authority sources, but they do not
+make a source trusted in actor-facing execution. Environment-selected sources
+are rejected with `E_AUTHORITY_UNTRUSTED_SOURCE` for install-capable checks.
+
+Trusted authority requires an explicit `HOST_ATTESTED` runtime context supplied
+through an integration boundary the active actor cannot replace at command
+invocation time. Configuration is not trust:
+
+```text
+environment-selected source
+≠
+host-attested source
+
+configuration
+≠
+trust
+```
+
+The host-attested source must still resolve outside the actor-writable target. A
+project-local authority reference may identify a grant, but it does not create
+the root of trust.
 
 ```text
 actor-authored evidence
@@ -191,9 +217,11 @@ verified provenance
 ```
 
 A local artifact claiming `source: operator` is not sufficient proof of operator
-authority. If the host exposes the trusted source as writable to the actor, the
-host boundary has been compromised and ForgeLoop cannot provide cryptographic
-attestation by itself.
+authority. The actor-facing CLI must not expose an equivalent of
+`--authority-source-attested-by-host` or `--trusted-authority-file` that
+self-promotes a source. If the host exposes the attested source as writable to
+the actor, the host boundary has been compromised and ForgeLoop cannot provide
+cryptographic attestation by itself.
 
 Never convert `PROTOCOL_LIMITED` into environmental mutation by implicitly
 installing a package.

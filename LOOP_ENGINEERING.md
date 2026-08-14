@@ -122,9 +122,16 @@ Every verification command path is classified by resolution mode:
 
 **Validator-enforced rule**: Any verification command executed via an installation-capable or explicit-installation resolution mode without a valid canonical installation authority grant is rejected by `record-check`, `audit`, and `complete` with error code `E_INSTALLATION_AUTHORITY_REQUIRED`, `E_AUTHORITY_INVALID`, `E_AUTHORITY_SCOPE_MISMATCH`, or `E_AUTHORITY_UNTRUSTED_SOURCE` and cannot contribute to `VALID` completion.
 
-Authority cannot be self-issued by the actor consuming it. Boolean fields inside verification evidence (such as `installationAuthorized: true`) are not sufficient proof of installation authority. Installation authority must be established via a canonical authority grant supplied by a host/operator trust boundary and referenced via `installationAuthorityRef`. The trusted grant source is configured with `FORGELOOP_AUTHORITY_FILE` or `FORGELOOP_AUTHORITY_DIR` and must resolve outside the actor-writable target. A project-local `.forgeloop/authorities/` artifact is an untrusted reference, cache, diagnostic, or mirror by default; a local claim such as `source: operator` is not proof of operator authority.
+Authority cannot be self-issued by the actor consuming it. Boolean fields inside verification evidence (such as `installationAuthorized: true`) are not sufficient proof of installation authority. Installation authority must be established via a canonical authority grant supplied by a host/operator trust boundary and referenced via `installationAuthorityRef`.
 
-ForgeLoop validates authority semantics, while the host defines the trust boundary. If the host grants the actor write access to the configured trusted source, ForgeLoop cannot distinguish operator authority from actor fabrication without a stronger external trust anchor.
+The runtime authority context has two modes:
+
+- `NONE` is the default for the actor-facing standalone CLI. `FORGELOOP_AUTHORITY_FILE` and `FORGELOOP_AUTHORITY_DIR` may select candidate source metadata for compatibility and diagnostics, but they do not make a source trusted. An environment-selected source is rejected with `E_AUTHORITY_UNTRUSTED_SOURCE` when it is used for an installation-capable verification.
+- `HOST_ATTESTED` is an internal integration context supplied by a host-owned wrapper, embedded API, or equivalent boundary. It may select a trusted authority file, directory, or in-memory provider only when the actor cannot replace that context at command invocation time. The CLI exposes no flag that promotes a source to `HOST_ATTESTED`.
+
+External path is not equivalent to external authority ownership. The host-attested source must still resolve outside the actor-writable target, and a project-local `.forgeloop/authorities/` artifact remains an untrusted reference, cache, diagnostic, or mirror by default. A local claim such as `source: operator` is not proof of operator authority.
+
+ForgeLoop validates authority semantics, while the host defines the trust boundary. If the host grants the actor write access to the configured attested source, the host boundary is compromised and ForgeLoop cannot distinguish operator authority from actor fabrication without a stronger external trust anchor.
 
 ### Stale receipt recovery invariant
 

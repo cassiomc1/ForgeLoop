@@ -7,6 +7,7 @@ import { test } from "node:test";
 import { runDoctor } from "../src/commands/doctor.js";
 import { createReceipt, validateReceipt } from "../src/core/receipt.js";
 import { inspectTarget } from "../src/core/inspect.js";
+import { formatInspectResult } from "../src/commands/inspect.js";
 import { runInit } from "../src/commands/init.js";
 import { getPackageRoot } from "../src/core/templates.js";
 
@@ -85,12 +86,58 @@ test("inspect exposes target, protocol, compatibility, state, and findings", asy
     assert.equal(report.protocol.version, 1);
     assert.equal(report.protocol.schemaStatus, "valid");
     assert.deepEqual(report.authority, {
-      trustedSourceConfigured: false,
+      sourceConfigured: false,
       sourceType: null,
+      trustMode: "NONE",
+      trusted: false,
     });
     assert.ok(report.protocol.schemas.every((schema) => schema.status === "valid"));
     assert.equal(Array.isArray(report.compatibility.agents), true);
     assert.equal(typeof report.state.status, "string");
     assert.equal(Array.isArray(report.findings), true);
+  });
+});
+
+test("inspect labels environment configuration as NONE and untrusted", async () => {
+  await withTarget(async (target) => {
+    await runInit({ target, dryRun: false, packageRoot, packageVersion: "0.1.0" });
+    const previousFile = process.env.FORGELOOP_AUTHORITY_FILE;
+    try {
+      process.env.FORGELOOP_AUTHORITY_FILE = "/tmp/actor-selected-authority.json";
+      const report = await inspectTarget({ target, packageRoot });
+
+      assert.deepEqual(report.authority, {
+        sourceConfigured: true,
+        sourceType: "external-file",
+        trustMode: "NONE",
+        trusted: false,
+      });
+      assert.match(formatInspectResult(report), /external-file \/ UNATTESTED/);
+    } finally {
+      if (previousFile === undefined) delete process.env.FORGELOOP_AUTHORITY_FILE;
+      else process.env.FORGELOOP_AUTHORITY_FILE = previousFile;
+    }
+  });
+});
+
+test("inspect reports a host-attested authority context as trusted", async () => {
+  await withTarget(async (target) => {
+    await runInit({ target, dryRun: false, packageRoot, packageVersion: "0.1.0" });
+    const report = await inspectTarget({
+      target,
+      packageRoot,
+      authorityContext: {
+        trustMode: "HOST_ATTESTED",
+        trustedAuthorityFile: "/trusted/host/authority.json",
+      },
+    });
+
+    assert.deepEqual(report.authority, {
+      sourceConfigured: true,
+      sourceType: "external-file",
+      trustMode: "HOST_ATTESTED",
+      trusted: true,
+    });
+    assert.match(formatInspectResult(report), /external-file \/ TRUSTED/);
   });
 });
