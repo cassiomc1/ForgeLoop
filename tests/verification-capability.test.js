@@ -9,6 +9,7 @@ import {
   classifyCommandResolution,
   resolveExecutionResolution,
   getNpmScriptName,
+  getNpmLifecycleCandidates,
   validateVerificationAuthority,
   E_VERIFICATION_TOOL_UNAVAILABLE,
   E_INSTALLATION_AUTHORITY_REQUIRED,
@@ -16,6 +17,274 @@ import {
 } from "../src/core/verification-capability.js";
 import { evaluateRequiredEvidence } from "../src/core/evidence-readiness.js";
 import { assertCheck } from "../src/core/checks.js";
+
+test("getNpmLifecycleCandidates computes correct lifecycle chains", () => {
+  // Generic script
+  assert.deepEqual(getNpmLifecycleCandidates({ scriptName: "test" }), [
+    "pretest",
+    "test",
+    "posttest",
+  ]);
+
+  // restart with explicit restart script
+  assert.deepEqual(getNpmLifecycleCandidates({
+    scriptName: "restart",
+    scripts: { restart: "node restart.js" },
+  }), [
+    "prerestart",
+    "restart",
+    "postrestart",
+  ]);
+
+  // restart without explicit restart script falls back to stop and start
+  assert.deepEqual(getNpmLifecycleCandidates({
+    scriptName: "restart",
+    scripts: { start: "node server.js" },
+  }), [
+    "prerestart",
+    "prestop",
+    "stop",
+    "poststop",
+    "prestart",
+    "start",
+    "poststart",
+    "postrestart",
+  ]);
+});
+
+test("getNpmScriptName recognizes run aliases including rum and urn", () => {
+  assert.equal(getNpmScriptName(["npm", "run", "visual"]), "visual");
+  assert.equal(getNpmScriptName(["npm", "run-script", "visual"]), "visual");
+  assert.equal(getNpmScriptName(["npm", "rum", "visual"]), "visual");
+  assert.equal(getNpmScriptName(["npm", "urn", "visual"]), "visual");
+  assert.equal(getNpmScriptName(["npm.cmd", "rum", "visual"]), "visual");
+  assert.equal(getNpmScriptName(["npm.cmd", "urn", "visual"]), "visual");
+});
+
+test("resolveExecutionResolution handles recursive npm scripts, restart semantics, and aliases", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-npm-script-"));
+  try {
+    // 1. Safe script
+    await writeFile(path.join(target, "package.json"), JSON.stringify({
+      scripts: {
+        test: "node tests/run.js",
+      },
+    }), "utf8");
+
+    const safeResult = await resolveExecutionResolution({
+      argv: ["npm", "test"],
+      cwd: target,
+    });
+    assert.equal(safeResult.mayInstall, false);
+
+    // 2. Nested npx inside test
+    await writeFile(path.join(target, "package.json"), JSON.stringify({
+      scripts: {
+        test: "npx @liustack/modlens image.png",
+      },
+    }), "utf8");
+
+    const nestedNpxResult = await resolveExecutionResolution({
+      argv: ["npm", "test"],
+      cwd: target,
+    });
+    assert.equal(nestedNpxResult.mayInstall, true);
+    assert.equal(nestedNpxResult.resolutionMode, "INSTALL_CAPABLE_RESOLUTION");
+    assert.equal(nestedNpxResult.tool, "@liustack/modlens");
+    assert.deepEqual(nestedNpxResult.dispatch, {
+      kind: "npm-script",
+      scriptName: "test",
+    });
+
+    // 3. Two-level recursive npm run: test -> npm run visual -> npx @liustack/modlens
+    await writeFile(path.join(target, "package.json"), JSON.stringify({
+      scripts: {
+        test: "npm run visual",
+        visual: "npx @liustack/modlens image.png",
+      },
+    }), "utf8");
+
+    const twoLevelResult = await resolveExecutionResolution({
+      argv: ["npm", "test"],
+      cwd: target,
+    });
+    assert.equal(twoLevelResult.mayInstall, true);
+    assert.equal(twoLevelResult.tool, "@liustack/modlens");
+    assert.deepEqual(twoLevelResult.dispatch, {
+      kind: "npm-script",
+      scriptName: "visual",
+    });
+
+    // 4. Three-level recursive npm run: test -> npm run verify -> npm run visual -> npm exec -- @liustack/modlens
+    await writeFile(path.join(target, "package.json"), JSON.stringify({
+      scripts: {
+        test: "npm run verify",
+        verify: "npm run visual",
+        visual: "npm exec -- @liustack/modlens image.png",
+      },
+    }), "utf8");
+
+    const threeLevelResult = await resolveExecutionResolution({
+      argv: ["npm", "test"],
+      cwd: target,
+    });
+    assert.equal(threeLevelResult.mayInstall, true);
+    assert.equal(threeLevelResult.tool, "@liustack/modlens");
+
+    // 5. Recursive safe chain: test -> verify -> unit -> node
+    await writeFile(path.join(target, "package.json"), JSON.stringify({
+      scripts: {
+        test: "npm run verify",
+        verify: "npm run unit",
+        unit: "node tests/unit.js",
+      },
+    }), "utf8");
+
+    const recursiveSafeResult = await resolveExecutionResolution({
+      argv: ["npm", "test"],
+      cwd: target,
+    });
+    assert.equal(recursiveSafeResult.mayInstall, false);
+
+    // 6. Script cycle detection fails closed
+    await writeFile(path.join(target, "package.json"), JSON.stringify({
+      scripts: {
+        a: "npm run b",
+        b: "npm run a",
+      },
+    }), "utf8");
+
+    const cycleResult = await resolveExecutionResolution({
+      argv: ["npm", "run", "a"],
+      cwd: target,
+    });
+    assert.equal(cycleResult.mayInstall, true);
+    assert.equal(cycleResult.reason, "SCRIPT_CYCLE");
+
+    // 7. npm restart fallback to start when restart is absent
+    await writeFile(path.join(target, "package.json"), JSON.stringify({
+      scripts: {
+        start: "npx package-x",
+      },
+    }), "utf8");
+
+    const restartFallbackStart = await resolveExecutionResolution({
+      argv: ["npm", "restart"],
+      cwd: target,
+    });
+    assert.equal(restartFallbackStart.mayInstall, true);
+    assert.equal(restartFallbackStart.tool, "package-x");
+
+    // 8. npm restart fallback to stop when restart is absent
+    await writeFile(path.join(target, "package.json"), JSON.stringify({
+      scripts: {
+        stop: "npm exec -- package-y",
+      },
+    }), "utf8");
+
+    const restartFallbackStop = await resolveExecutionResolution({
+      argv: ["npm", "restart"],
+      cwd: target,
+    });
+    assert.equal(restartFallbackStop.mayInstall, true);
+    assert.equal(restartFallbackStop.tool, "package-y");
+
+    // 9. npm restart explicit restart overrides start/stop fallback
+    await writeFile(path.join(target, "package.json"), JSON.stringify({
+      scripts: {
+        restart: "node restart.js",
+        start: "npx package-x",
+      },
+    }), "utf8");
+
+    const restartExplicit = await resolveExecutionResolution({
+      argv: ["npm", "restart"],
+      cwd: target,
+    });
+    assert.equal(restartExplicit.mayInstall, false);
+
+    // 10. npm restart prerestart / postrestart install-capable
+    await writeFile(path.join(target, "package.json"), JSON.stringify({
+      scripts: {
+        restart: "node restart.js",
+        prerestart: "npm x package-x",
+      },
+    }), "utf8");
+
+    const prerestartResult = await resolveExecutionResolution({
+      argv: ["npm", "restart"],
+      cwd: target,
+    });
+    assert.equal(prerestartResult.mayInstall, true);
+    assert.equal(prerestartResult.tool, "package-x");
+
+    // 11. npm rum and npm urn aliases
+    await writeFile(path.join(target, "package.json"), JSON.stringify({
+      scripts: {
+        visual: "npx @liustack/modlens",
+      },
+    }), "utf8");
+
+    const rumResult = await resolveExecutionResolution({
+      argv: ["npm", "rum", "visual"],
+      cwd: target,
+    });
+    assert.equal(rumResult.mayInstall, true);
+    assert.equal(rumResult.tool, "@liustack/modlens");
+
+    const urnResult = await resolveExecutionResolution({
+      argv: ["npm", "urn", "visual"],
+      cwd: target,
+    });
+    assert.equal(urnResult.mayInstall, true);
+    assert.equal(urnResult.tool, "@liustack/modlens");
+
+    // 12. Recursive alias: test -> npm rum visual -> npx package-x
+    await writeFile(path.join(target, "package.json"), JSON.stringify({
+      scripts: {
+        test: "npm rum visual",
+        visual: "npx package-x",
+      },
+    }), "utf8");
+
+    const recursiveRumResult = await resolveExecutionResolution({
+      argv: ["npm", "test"],
+      cwd: target,
+    });
+    assert.equal(recursiveRumResult.mayInstall, true);
+    assert.equal(recursiveRumResult.tool, "package-x");
+
+    // 13. pretest / posttest direct hooks
+    await writeFile(path.join(target, "package.json"), JSON.stringify({
+      scripts: {
+        pretest: "npx package-x",
+        test: "node tests.js",
+      },
+    }), "utf8");
+
+    const pretestResult = await resolveExecutionResolution({
+      argv: ["npm", "test"],
+      cwd: target,
+    });
+    assert.equal(pretestResult.mayInstall, true);
+    assert.equal(pretestResult.tool, "package-x");
+
+    // 14. Missing package.json or missing script does not crash
+    const missingPkgResult = await resolveExecutionResolution({
+      argv: ["npm", "test"],
+      cwd: path.join(target, "nonexistent"),
+    });
+    assert.equal(missingPkgResult.mayInstall, false);
+
+    const missingScriptResult = await resolveExecutionResolution({
+      argv: ["npm", "run", "missing-script"],
+      cwd: target,
+    });
+    assert.equal(missingScriptResult.mayInstall, false);
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
 
 test("classifyVerificationCapability prefers locally available verifiers", () => {
   const result = classifyVerificationCapability({ available: true });

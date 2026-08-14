@@ -477,7 +477,7 @@ export function getNpmScriptName(argv) {
   const sub = rest[0]?.toLowerCase();
   if (sub === "test" || sub === "t" || sub === "tst") return "test";
   if (sub === "start" || sub === "stop" || sub === "restart") return sub;
-  if (sub === "run" || sub === "run-script") {
+  if (["run", "run-script", "rum", "urn"].includes(sub)) {
     let afterDoubleDash = false;
     for (let idx = 1; idx < rest.length; idx++) {
       const arg = rest[idx];
@@ -493,6 +493,101 @@ export function getNpmScriptName(argv) {
       }
     }
   }
+  return null;
+}
+
+export function getNpmLifecycleCandidates({ scriptName, scripts = {} } = {}) {
+  if (scriptName === "restart") {
+    if (typeof scripts?.restart === "string" && scripts.restart.trim() !== "") {
+      return ["prerestart", "restart", "postrestart"];
+    }
+    return [
+      "prerestart",
+      "prestop",
+      "stop",
+      "poststop",
+      "prestart",
+      "start",
+      "poststart",
+      "postrestart",
+    ];
+  }
+  return [`pre${scriptName}`, scriptName, `post${scriptName}`];
+}
+
+export const MAX_NPM_SCRIPT_DEPTH = 16;
+
+async function resolveNpmScriptRisk({
+  scriptName,
+  packageJson,
+  visited = new Set(),
+  depth = 0,
+} = {}) {
+  if (depth > MAX_NPM_SCRIPT_DEPTH) {
+    return {
+      resolutionMode: "UNKNOWN",
+      mayInstall: true,
+      installer: "npm-script",
+      tool: null,
+      reason: "MAX_SCRIPT_DEPTH",
+    };
+  }
+
+  if (visited.has(scriptName)) {
+    return {
+      resolutionMode: "UNKNOWN",
+      mayInstall: true,
+      installer: "npm-script",
+      tool: null,
+      reason: "SCRIPT_CYCLE",
+    };
+  }
+
+  const nextVisited = new Set(visited);
+  nextVisited.add(scriptName);
+
+  const candidates = getNpmLifecycleCandidates({
+    scriptName,
+    scripts: packageJson?.scripts ?? {},
+  });
+
+  for (const candidate of candidates) {
+    const scriptBody = packageJson?.scripts?.[candidate];
+    if (typeof scriptBody !== "string" || scriptBody.trim() === "") {
+      continue;
+    }
+
+    const direct = classifyCommandResolution(scriptBody);
+    if (direct.mayInstall) {
+      return {
+        resolutionMode: direct.resolutionMode,
+        mayInstall: true,
+        installer: direct.installer ?? "npm-script",
+        tool: direct.tool,
+        dispatch: {
+          kind: "npm-script",
+          scriptName: candidate,
+        },
+      };
+    }
+
+    const subcommands = splitCommandPipeline(scriptBody);
+    for (const subcommand of subcommands) {
+      const nestedScriptName = getNpmScriptName(subcommand);
+      if (nestedScriptName) {
+        const nested = await resolveNpmScriptRisk({
+          scriptName: nestedScriptName,
+          packageJson,
+          visited: nextVisited,
+          depth: depth + 1,
+        });
+        if (nested?.mayInstall) {
+          return nested;
+        }
+      }
+    }
+  }
+
   return null;
 }
 
@@ -519,29 +614,13 @@ export async function resolveExecutionResolution({ argv, cwd } = {}) {
     return direct;
   }
 
-  const lifecycleCandidates = [
-    `pre${scriptName}`,
+  const nestedRisk = await resolveNpmScriptRisk({
     scriptName,
-    `post${scriptName}`,
-  ];
+    packageJson,
+  });
 
-  for (const candidate of lifecycleCandidates) {
-    const scriptBody = packageJson.scripts[candidate];
-    if (typeof scriptBody === "string" && scriptBody.trim() !== "") {
-      const nested = classifyCommandResolution(scriptBody);
-      if (nested.mayInstall) {
-        return {
-          resolutionMode: nested.resolutionMode,
-          mayInstall: true,
-          installer: nested.installer ?? "npm-script",
-          tool: nested.tool,
-          dispatch: {
-            kind: "npm-script",
-            scriptName: candidate,
-          },
-        };
-      }
-    }
+  if (nestedRisk?.mayInstall) {
+    return nestedRisk;
   }
 
   return direct;

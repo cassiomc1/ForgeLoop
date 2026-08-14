@@ -175,6 +175,76 @@ test("nested install-capable npm script without authority is blocked before proc
   });
 });
 
+test("recursive multi-level npm run without authority is blocked before process launch", async () => {
+  await withTarget(async (target) => {
+    await writeFile(path.join(target, "package.json"), JSON.stringify({
+      scripts: {
+        test: "npm run visual",
+        visual: "npx @liustack/modlens image.png",
+      },
+    }), "utf8");
+
+    await assert.rejects(
+      () => runCommandExecution({
+        target,
+        packageRoot,
+        taskId: "task-1",
+        checkId: "tests",
+        requirement: "tests",
+        verificationCycle: 1,
+        argv: ["npm", "test"],
+      }),
+      (error) => error.code === E_INSTALLATION_AUTHORITY_REQUIRED,
+    );
+  });
+});
+
+test("npm restart fallback without authority is blocked before process launch", async () => {
+  await withTarget(async (target) => {
+    await writeFile(path.join(target, "package.json"), JSON.stringify({
+      scripts: {
+        start: "npx @liustack/modlens image.png",
+      },
+    }), "utf8");
+
+    await assert.rejects(
+      () => runCommandExecution({
+        target,
+        packageRoot,
+        taskId: "task-1",
+        checkId: "tests",
+        requirement: "tests",
+        verificationCycle: 1,
+        argv: ["npm", "restart"],
+      }),
+      (error) => error.code === E_INSTALLATION_AUTHORITY_REQUIRED,
+    );
+  });
+});
+
+test("npm rum alias without authority is blocked before process launch", async () => {
+  await withTarget(async (target) => {
+    await writeFile(path.join(target, "package.json"), JSON.stringify({
+      scripts: {
+        visual: "npx @liustack/modlens image.png",
+      },
+    }), "utf8");
+
+    await assert.rejects(
+      () => runCommandExecution({
+        target,
+        packageRoot,
+        taskId: "task-1",
+        checkId: "visual",
+        requirement: "visual-verification",
+        verificationCycle: 1,
+        argv: ["npm", "rum", "visual"],
+      }),
+      (error) => error.code === E_INSTALLATION_AUTHORITY_REQUIRED,
+    );
+  });
+});
+
 test("execution binding rejects a different check", async () => {
   await withTarget(async (target) => {
     const result = await runCommandExecution({
