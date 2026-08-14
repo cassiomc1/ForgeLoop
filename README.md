@@ -56,66 +56,113 @@ in [`LOOP_SYSTEM_DESIGN.md`](./LOOP_SYSTEM_DESIGN.md).
 
 ```mermaid
 flowchart TB
-  root["FORGELOOP"]
+  subgraph INIT["1. Bootstrap & Adaptation"]
+    root["FORGELOOP"]
+    entry["native adapters<br/>+ .forgeloop/kit/"]
+    migration{"target<br/>layout"}
+    plan["validate paths<br/>+ build plan"]
+    hidden["write hidden<br/>kit"]
+    verified["verify hidden<br/>bytes"]
+    authority["atomic manifest<br/>authority switch"]
+    cleanup["hash-checked<br/>legacy cleanup"]
+    recovered["healthy or<br/>recoverable"]
+    incomplete["doctor:<br/>E_MIGRATION_INCOMPLETE"]
+    retry["update + retry<br/>owned cleanup"]
+  end
 
-  root --> entry["native adapters<br/>+ .forgeloop/kit/"]
-  entry --> migration{"target<br/>layout"}
-  migration -->|legacy v1| plan["validate paths<br/>+ build plan"]
-  plan --> hidden["write hidden<br/>kit"]
-  hidden --> verified["verify hidden<br/>bytes"]
-  verified --> authority["atomic manifest<br/>authority switch"]
-  authority --> cleanup["hash-checked<br/>legacy cleanup"]
-  cleanup --> recovered["healthy or<br/>recoverable"]
-  hidden -. interruption .-> incomplete["doctor: E_MIGRATION_INCOMPLETE"]
+  subgraph CONTRACT_ROUTING["2. Discovery, Contract & Routing"]
+    discovery["discovery +<br/>project profile"]
+    contract["current<br/>contract"]
+    routing["deterministic<br/>route"]
+    gates["required<br/>gates"]
+    preflight["preflight"]
+    ready["PREFLIGHT_READY"]
+    blocker["repair /<br/>blocker"]
+  end
+
+  subgraph EXECUTION_LOOP["3. Execution & Verification Loop"]
+    state["work-state<br/>checkpoint"]
+    events["append-only<br/>event ledger"]
+    lifecycle["PLANNED → EXECUTING<br/>→ VERIFYING"]
+    prepare["prepare<br/>completion receipt"]
+    checks["checks + structured<br/>evidence"]
+    readiness{"canonical evidence<br/>readiness"}
+    review["REVIEWING<br/>cycle N"]
+    diagnose["DIAGNOSING →<br/>CORRECTING"]
+    terminal_result["record-terminal-result<br/>(publication / production)"]
+    complete["complete<br/>validator"]
+    terminal["COMPLETE"]
+    rejected["COMPLETION_REJECTED<br/>(cycle N + 1)"]
+    receipt["updated execution<br/>receipt"]
+  end
+
+  subgraph AUDIT_CONFORMANCE["4. Freshness, Audit & Conformance"]
+    freshness["freshness<br/>fingerprints"]
+    conformance["validate-protocol<br/>/ conformance"]
+    audit["audit +<br/>validate-protocol"]
+    verdict["VALID / INCOMPLETE /<br/>STALE / INCONSISTENT / INVALID"]
+    delegation["optional bundle /<br/>delegation"]
+    handoff["handoff to<br/>compatible harness"]
+  end
+
+  root --> entry
+  entry --> migration
+  migration -->|legacy v1| plan
+  plan --> hidden
+  hidden --> verified
+  verified --> authority
+  authority --> cleanup
+  cleanup --> recovered
+  hidden -. interruption .-> incomplete
   verified -. interruption .-> incomplete
   authority -. interruption .-> incomplete
   cleanup -. interruption .-> incomplete
-  migration -->|layout v2| retry["update + retry<br/>owned cleanup"]
+  migration -->|layout v2| retry
   incomplete --> retry
-  entry --> discovery["discovery +<br/>project profile"]
-  discovery --> contract["current<br/>contract"]
-  contract --> routing["deterministic<br/>route"]
 
-  contract --> preflight["preflight"]
+  entry --> discovery
+  discovery --> contract
+  contract --> routing
+  contract --> preflight
   routing --> preflight
-  gates["required<br/>gates"] --> preflight
-  preflight -->|READY| ready["PREFLIGHT_READY"]
-  preflight -->|BLOCKED| blocker["repair /<br/>blocker"]
+  gates --> preflight
+  preflight -->|READY| ready
+  preflight -->|BLOCKED| blocker
 
-  ready --> state["work-state<br/>checkpoint"]
-  ready --> events["append-only<br/>event ledger"]
-  state --> lifecycle["plan → execute<br/>→ verify → review"]
-  lifecycle --> prepare["prepare<br/>completion receipt"]
-  prepare --> checks["checks + structured<br/>evidence"]
-  checks --> readiness{"canonical evidence<br/>readiness"}
-  readiness -->|covered| review["REVIEWING<br/>cycle N"]
-  readiness -->|failed| diagnose["DIAGNOSING →<br/>CORRECTING"]
-  review --> complete["complete<br/>validator"]
-  review --> terminal_result["record-terminal-result<br/>(publication / production)"]
+  ready --> state
+  ready --> events
+  state --> lifecycle
+  lifecycle --> prepare
+  prepare --> checks
+  checks --> readiness
+  readiness -->|covered| review
+  readiness -->|failed / blocked| diagnose
+  diagnose --> checks
+  review --> complete
+  review --> terminal_result
   terminal_result --> complete
-  complete -->|VALID| terminal["COMPLETE"]
-  complete -->|evidence-only rejection| rejected["COMPLETION_REJECTED"]
-  rejected --> cycle["VERIFYING<br/>cycle N + 1"]
-  cycle --> prepare
-  checks --> receipt["updated execution<br/>receipt"]
+  complete -->|VALID| terminal
+  complete -->|evidence-only rejection| rejected
+  rejected --> prepare
+  checks --> receipt
   terminal_result --> receipt
-  complete --> audit["audit +<br/>validate-protocol"]
-  events --> audit
 
-  contract --> freshness["freshness<br/>fingerprints"]
+  contract --> freshness
   routing --> freshness
   state --> freshness
   checks --> freshness
-  routing --> conformance["validate-protocol<br/>/ conformance"]
+  routing --> conformance
   state --> conformance
   receipt --> conformance
   freshness --> conformance
-  conformance --> verdict["VALID / INCOMPLETE /<br/>STALE / INCONSISTENT / INVALID"]
+  conformance --> verdict
+  complete --> audit
+  events --> audit
   audit --> verdict
 
-  routing --> delegation["optional bundle /<br/>delegation"]
+  routing --> delegation
   checks --> delegation
-  delegation --> handoff["handoff to<br/>compatible harness"]
+  delegation --> handoff
   verdict --> handoff
   blocker --> handoff
 
@@ -134,13 +181,11 @@ flowchart TB
   class entry,discovery,delegation entry;
   class migration,plan,hidden,verified,authority,cleanup,recovered,retry,incomplete migration;
   class routing,preflight,ready routing;
-  class state,events,lifecycle,review,cycle state;
-  class checks,readiness,receipt,complete,audit evidence;
-  class diagnose,rejected gate;
-  class terminal result;
+  class state,events,lifecycle,review state;
+  class checks,readiness,receipt,complete,audit,terminal_result evidence;
+  class diagnose,rejected,gates,blocker gate;
+  class terminal,verdict result;
   class contract,freshness,conformance fact;
-  class gates,blocker gate;
-  class verdict result;
   class handoff harness;
   linkStyle default stroke:#8A8F98,stroke-width:1.5px;
 ```
@@ -197,18 +242,12 @@ The regression suite injects failures at these boundaries and verifies that
 owned cleanup. The frozen published installation under
 [`tests/fixtures/legacy-0.1.6/`](./tests/fixtures/legacy-0.1.6/) is derived
 from the real npm tarball, includes provenance and digests, and is copied into
-tests locally; CI does not download npm packages.
-
-The current published baseline for a reproducible blind run is
-`@cassiomc1/forgeloop@0.1.10`. Earlier `0.1.8` and `0.1.9` references are
-historical; never move their tags or `v0.1.10`, and use the read-only release
-identity verifier before a live run. Version `0.1.10` includes the
-completion-validation and cleanup TOCTOU hardening.
-
-The repository candidate is `0.1.11` and is not published. It adds canonical
-evidence readiness, legal repeated verification cycles, future-result and
-compound-evidence safeguards, and lifecycle-ledger divergence detection. The
-published npm baseline remains `0.1.10` until a separate release is completed.
+The current published release is `@cassiomc1/forgeloop@0.1.11`.
+Earlier `0.1.8`, `0.1.9`, and `0.1.10` references are historical; never move
+their tags or `v0.1.10`. Version `0.1.11` adds canonical evidence readiness,
+requirement-specific terminal result recording, legal repeated verification
+cycles, future-result and compound-evidence safeguards, and lifecycle-ledger
+divergence detection.
 
 ### Use with npm
 
@@ -217,12 +256,12 @@ project without overwriting local instructions. When the package is available
 in the npm registry, use the commands below; otherwise use the repository
 checkout fallback.
 
-The current published release is `@cassiomc1/forgeloop@0.1.10`.
+The current published release is `@cassiomc1/forgeloop@0.1.11`.
 Pin this version when a reproducible blind run or release-identity check is
 required:
 
 ```bash
-npx @cassiomc1/forgeloop@0.1.10 --version
+npx @cassiomc1/forgeloop@0.1.11 --version
 npx @cassiomc1/forgeloop init
 npx @cassiomc1/forgeloop doctor
 npx @cassiomc1/forgeloop update
