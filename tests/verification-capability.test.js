@@ -13,6 +13,7 @@ import {
   E_AUTHORITY_UNTRUSTED_SOURCE,
 } from "../src/core/verification-capability.js";
 import { evaluateRequiredEvidence } from "../src/core/evidence-readiness.js";
+import { assertCheck } from "../src/core/checks.js";
 
 test("classifyVerificationCapability prefers locally available verifiers", () => {
   const result = classifyVerificationCapability({ available: true });
@@ -186,6 +187,23 @@ test("classifyCommandResolution classifies resolution modes deterministically", 
     installer: null,
     tool: null,
   });
+});
+
+test("observed command checks require ForgeLoop execution provenance", () => {
+  assert.throws(
+    () => assertCheck({
+      schemaVersion: 1,
+      protocolVersion: 1,
+      id: "tests",
+      kind: "command",
+      requirement: "tests",
+      status: "passed",
+      evidenceKind: "OBSERVED",
+      source: "npm test",
+      provenance: "ACTOR_REPORTED",
+    }, "check", { requireCommandProvenance: true }),
+    (error) => error.code === "E_COMMAND_PROVENANCE_UNATTESTED",
+  );
 });
 
 test("validateVerificationAuthority rejects self-asserted booleans and requires canonical authority grants", () => {
