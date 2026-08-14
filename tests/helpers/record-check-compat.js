@@ -4,6 +4,16 @@ import path from "node:path";
 import { runCommandExecution } from "../../src/core/execution.js";
 import { readWorkState } from "../../src/core/work-state.js";
 
+function windowsCommandArgv(fakeNpx, tokens) {
+  if (process.platform !== "win32") return [fakeNpx, ...tokens.slice(1)];
+
+  const command = [
+    `"${fakeNpx.replaceAll('"', '""')}"`,
+    ...tokens.slice(1),
+  ].join(" ");
+  return [process.env.ComSpec ?? "cmd.exe", "/d", "/s", "/c", command];
+}
+
 /**
  * Older lifecycle fixtures describe manual evidence with `kind: command`.
  * Keep those fixtures explicit as manual observations while command-backed
@@ -17,10 +27,19 @@ export async function recordManualCheck(recordCheck, input) {
     const tokens = command.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/gu)
       ?.map((token) => token.replace(/^("|')|("|')$/gu, "")) ?? [];
     const state = await readWorkState(input.target, input.packageRoot);
-    const fakeNpx = path.join(input.target, ".forgeloop", "test-bin", "npx");
+    const fakeNpx = path.join(
+      input.target,
+      ".forgeloop",
+      "test-bin",
+      process.platform === "win32" ? "npx.cmd" : "npx",
+    );
     await mkdir(path.dirname(fakeNpx), { recursive: true });
-    await writeFile(fakeNpx, "#!/bin/sh\nexit 0\n", "utf8");
-    await chmod(fakeNpx, 0o755);
+    if (process.platform === "win32") {
+      await writeFile(fakeNpx, "@echo off\r\nexit /b 0\r\n", "utf8");
+    } else {
+      await writeFile(fakeNpx, "#!/bin/sh\nexit 0\n", "utf8");
+      await chmod(fakeNpx, 0o755);
+    }
     const execution = await runCommandExecution({
       target: input.target,
       packageRoot: input.packageRoot,
@@ -28,7 +47,7 @@ export async function recordManualCheck(recordCheck, input) {
       checkId: input.id,
       requirement: input.requirement,
       verificationCycle: state.verificationCycle ?? 1,
-      argv: [fakeNpx, ...tokens.slice(1)],
+      argv: windowsCommandArgv(fakeNpx, tokens),
       details: input.details,
       authorityContext: input.authorityContext,
       runtimeContext: input.runtimeContext,

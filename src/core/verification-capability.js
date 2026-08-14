@@ -155,6 +155,11 @@ function extractToolFromArgs(args) {
   return null;
 }
 
+function normalizeExecutableName(binaryToken) {
+  const base = binaryToken.split(/[\\/]/u).pop() ?? binaryToken;
+  return base.toLowerCase().replace(/\.(?:cmd|bat|exe)$/u, "");
+}
+
 function classifySingleCommand(commandInput) {
   const tokens = Array.isArray(commandInput) ? [...commandInput] : tokenizeCommand(commandInput);
   if (tokens.length === 0) {
@@ -170,7 +175,7 @@ function classifySingleCommand(commandInput) {
   }
 
   const binaryToken = tokens[i];
-  const binary = path.basename(binaryToken).toLowerCase();
+  const binary = normalizeExecutableName(binaryToken);
   const rest = tokens.slice(i + 1);
 
   if (binaryToken.includes("node_modules/.bin/") || binaryToken.startsWith("./node_modules/")) {
@@ -365,9 +370,14 @@ export function classifyCommandResolution(commandInput) {
     if (commandInput.length === 0 || commandInput.some((item) => typeof item !== "string" || item.trim() === "")) {
       return { resolutionMode: "UNKNOWN", mayInstall: false, installer: null, tool: null };
     }
-    const binary = path.basename(commandInput[0]).toLowerCase();
+    const binary = normalizeExecutableName(commandInput[0]);
     if (["sh", "bash", "zsh", "dash", "ksh"].includes(binary)) {
       const shellFlagIndex = commandInput.findIndex((item, index) => index > 0 && /^-.*c/.test(item));
+      const shellCommand = shellFlagIndex >= 0 ? commandInput[shellFlagIndex + 1] : null;
+      if (shellCommand) return classifyCommandResolution(shellCommand);
+    }
+    if (binary === "cmd") {
+      const shellFlagIndex = commandInput.findIndex((item, index) => index > 0 && /^\/c$/iu.test(item));
       const shellCommand = shellFlagIndex >= 0 ? commandInput[shellFlagIndex + 1] : null;
       if (shellCommand) return classifyCommandResolution(shellCommand);
     }
