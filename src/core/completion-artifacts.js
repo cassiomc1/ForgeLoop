@@ -70,7 +70,7 @@ export async function requiredEvidenceForTarget({ target, contract, route, packa
   ])].sort();
 }
 
-export async function prepareCompletion({ target, packageRoot }) {
+export async function prepareCompletion({ target, packageRoot, authorityContext, runtimeContext }) {
   const contract = await readContract(target, packageRoot);
   const route = await readPersistedRoute(target, packageRoot);
   const state = await readWorkState(target, packageRoot);
@@ -84,7 +84,12 @@ export async function prepareCompletion({ target, packageRoot }) {
   let existing = null;
   try {
     existing = await readJsonArtifact(target, ARTIFACT_PATHS.receipt, "execution-receipt", packageRoot);
-    await validateReceipt(existing.value, packageRoot, { target, taskId: contract?.value?.taskId });
+    await validateReceipt(existing.value, packageRoot, {
+      target,
+      taskId: contract?.value?.taskId,
+      authorityContext,
+      runtimeContext,
+    });
   } catch (error) {
     if (error.code !== "ARTIFACT_MISSING") throw error;
   }
@@ -132,6 +137,7 @@ export async function prepareCompletion({ target, packageRoot }) {
     evidenceCoverage: coverageForRequirements(requiredEvidence, checks, {
       target,
       taskId: contract.value.taskId,
+      options: { authorityContext, runtimeContext },
     }),
     review: existingValue.review ?? { status: "not-run", independent: false },
     limitations: [...(existingValue.limitations ?? [])],
@@ -141,7 +147,12 @@ export async function prepareCompletion({ target, packageRoot }) {
       pullRequest: null,
       deployed: false,
     },
-  }, packageRoot);
+  }, packageRoot, {
+    target,
+    taskId: contract.value.taskId,
+    authorityContext,
+    runtimeContext,
+  });
   assertCompletionRelationships({
     contract,
     route,
@@ -151,6 +162,8 @@ export async function prepareCompletion({ target, packageRoot }) {
     requireRequiredChecks: false,
     target,
     taskId: contract.value.taskId,
+    authorityContext,
+    runtimeContext,
   });
   const written = await writeJsonArtifact(
     target,
@@ -195,6 +208,8 @@ export async function recordCheck({
   result,
   exitCode,
   details,
+  authorityContext,
+  runtimeContext,
 }) {
   requiredString(id, "check id");
   requiredString(kind, "check kind");
@@ -253,7 +268,12 @@ export async function recordCheck({
   }
 
   const existingReceipt = await readCurrentReceipt(target, packageRoot);
-  await validateReceipt(existingReceipt.value, packageRoot, { target, taskId: contract.value.taskId });
+  await validateReceipt(existingReceipt.value, packageRoot, {
+    target,
+    taskId: contract.value.taskId,
+    authorityContext,
+    runtimeContext,
+  });
   const source = commandSpec || `check:${id}`;
   const recordedResult = result?.trim() || `recorded command: ${commandSpec || source}`;
   const classification = commandSpec !== undefined ? classifyCommandResolution(commandSpec) : null;
@@ -284,7 +304,13 @@ export async function recordCheck({
         },
       } : {}),
     },
-  }, { target, taskId: contract.value.taskId, packageRoot });
+  }, {
+    target,
+    taskId: contract.value.taskId,
+    packageRoot,
+    authorityContext,
+    runtimeContext,
+  });
   const evidence = createEvidence({
     kind: evidenceKind,
     source,
@@ -297,7 +323,13 @@ export async function recordCheck({
   });
 
   if (status === "passed") {
-    const auth = validateVerificationAuthority(check, { target, taskId: contract.value.taskId, packageRoot });
+    const auth = validateVerificationAuthority(check, {
+      target,
+      taskId: contract.value.taskId,
+      packageRoot,
+      authorityContext,
+      runtimeContext,
+    });
     if (!auth.valid) {
       throw artifactError(auth.error.code, auth.error.message, [ARTIFACT_PATHS.receipt]);
     }
@@ -314,6 +346,8 @@ export async function recordCheck({
     requireRequiredChecks: false,
     target,
     taskId: contract.value.taskId,
+    authorityContext,
+    runtimeContext,
   });
   const ledger = await validateEventLedger(target, packageRoot);
   if (!ledger.valid) {
@@ -330,6 +364,7 @@ export async function recordCheck({
   const coverage = coverageForRequirements(requiredEvidence, checks, {
     target,
     taskId: contract.value.taskId,
+    options: { authorityContext, runtimeContext },
   });
   const nextState = {
     ...state,
@@ -345,7 +380,12 @@ export async function recordCheck({
     evidenceCoverage: coverage,
     stateFingerprint: canonicalFingerprint(nextState),
     verificationCycle: state.verificationCycle ?? 1,
-  }, packageRoot, { target, taskId: contract.value.taskId });
+  }, packageRoot, {
+    target,
+    taskId: contract.value.taskId,
+    authorityContext,
+    runtimeContext,
+  });
 
   assertCompletionRelationships({
     contract,
@@ -356,6 +396,8 @@ export async function recordCheck({
     requireRequiredChecks: false,
     target,
     taskId: contract.value.taskId,
+    authorityContext,
+    runtimeContext,
   });
 
   await writeWorkState(target, nextState, { packageRoot });
@@ -396,6 +438,8 @@ export async function recordTerminalResult({
   source,
   result,
   details = {},
+  authorityContext,
+  runtimeContext,
 } = {}) {
   if (!target || !requirement || !type || !status || !source || !result) {
     throw artifactError("E_CHECK_INVALID", "record-terminal-result requires target, requirement, type, status, source, and result", [ARTIFACT_PATHS.state]);
@@ -458,7 +502,12 @@ export async function recordTerminalResult({
   }
 
   const existingReceipt = await readCurrentReceipt(target, packageRoot);
-  await validateReceipt(existingReceipt.value, packageRoot, { target, taskId: contract?.value?.taskId });
+  await validateReceipt(existingReceipt.value, packageRoot, {
+    target,
+    taskId: contract?.value?.taskId,
+    authorityContext,
+    runtimeContext,
+  });
 
   if (type === "PUBLICATION") {
     const rank = {
@@ -585,7 +634,12 @@ export async function recordTerminalResult({
   const nextReceipt = await createReceipt({
     ...receiptUpdates,
     stateFingerprint: canonicalFingerprint(nextState),
-  }, packageRoot);
+  }, packageRoot, {
+    target,
+    taskId: contract.value.taskId,
+    authorityContext,
+    runtimeContext,
+  });
 
   await writeWorkState(target, nextState, { packageRoot });
   await writeJsonArtifact(

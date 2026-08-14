@@ -215,7 +215,7 @@ test("installation authority enforcement: recordCheck, evaluateCompletion, and e
       (error) => error.code === E_INSTALLATION_AUTHORITY_REQUIRED,
     );
 
-    // Missing authority artifact must throw E_AUTHORITY_INVALID
+    // Missing authority reference without a host context must request authority.
     await assert.rejects(
       async () => {
         await recordCheck({
@@ -232,7 +232,7 @@ test("installation authority enforcement: recordCheck, evaluateCompletion, and e
           },
         });
       },
-      (error) => error.code === "E_AUTHORITY_INVALID",
+      (error) => error.code === E_INSTALLATION_AUTHORITY_REQUIRED,
     );
 
     // A project-local authority artifact is only an untrusted reference.
@@ -272,7 +272,6 @@ test("installation authority enforcement: recordCheck, evaluateCompletion, and e
     );
 
     // Configure the host-supplied authority file and create a grant with wrong scope.
-    process.env.FORGELOOP_AUTHORITY_FILE = authorityFile;
     await writeFile(
       authorityFile,
       JSON.stringify({
@@ -289,6 +288,10 @@ test("installation authority enforcement: recordCheck, evaluateCompletion, and e
       }),
       "utf8",
     );
+    const authorityContext = {
+      trustMode: "HOST_ATTESTED",
+      trustedAuthorityFile: authorityFile,
+    };
 
     // Attempting to record with wrong tool scope must throw E_AUTHORITY_SCOPE_MISMATCH
     await assert.rejects(
@@ -303,9 +306,10 @@ test("installation authority enforcement: recordCheck, evaluateCompletion, and e
           evidenceKind: "OBSERVED",
           command: "npx @liustack/modlens --spec=ui.json",
           details: {
-            installationAuthorityRef: "auth-wrong-scope",
-          },
-        });
+          installationAuthorityRef: "auth-wrong-scope",
+        },
+        authorityContext,
+      });
       },
       (error) => error.code === "E_AUTHORITY_SCOPE_MISMATCH",
     );
@@ -341,6 +345,7 @@ test("installation authority enforcement: recordCheck, evaluateCompletion, and e
       details: {
         installationAuthorityRef: "auth-modlens",
       },
+      authorityContext,
     });
     assert.ok(authorizedRecord.check);
     assert.equal(authorizedRecord.check.status, "passed");
@@ -355,6 +360,7 @@ test("installation authority enforcement: recordCheck, evaluateCompletion, and e
       status: "passed",
       evidenceKind: "OBSERVED",
       command: "npx --no-install @liustack/modlens --spec=ui.json",
+      authorityContext,
     });
     assert.ok(nonInstallingRecord.check);
     assert.equal(nonInstallingRecord.check.status, "passed");

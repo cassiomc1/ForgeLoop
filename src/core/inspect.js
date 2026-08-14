@@ -18,7 +18,7 @@ function profileMetadata(bytes) {
   };
 }
 
-export async function inspectTarget({ target, packageRoot, contractFile = null }) {
+export async function inspectTarget({ target, packageRoot, contractFile = null, authorityContext, runtimeContext }) {
   let manifest = null;
   let manifestError = null;
   try {
@@ -92,7 +92,7 @@ export async function inspectTarget({ target, packageRoot, contractFile = null }
   ];
   return {
     target: { path: target },
-    authority: trustedAuthorityConfiguration(),
+    authority: trustedAuthorityConfiguration({ target, authorityContext, runtimeContext }),
     manifest: {
       present: manifest !== null,
       status: manifestError ? "invalid" : manifest ? "ready" : "missing",

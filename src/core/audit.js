@@ -34,8 +34,8 @@ async function compareChangedPaths(target, packageRoot) {
   };
 }
 
-export async function evaluateAudit({ target, packageRoot, strict = false } = {}) {
-  const completion = await evaluateCompletion({ target, packageRoot, strict });
+export async function evaluateAudit({ target, packageRoot, strict = false, authorityContext, runtimeContext } = {}) {
+  const completion = await evaluateCompletion({ target, packageRoot, strict, authorityContext, runtimeContext });
   let manifest = null;
   let manifestError = null;
   try {

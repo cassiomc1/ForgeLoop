@@ -11,6 +11,7 @@ import {
   validateVerificationAuthority,
   E_INSTALLATION_AUTHORITY_REQUIRED,
   E_AUTHORITY_INVALID,
+  E_AUTHORITY_UNTRUSTED_SOURCE,
   E_AUTHORITY_SCOPE_MISMATCH,
 } from "../src/core/verification-capability.js";
 import { evaluateRequiredEvidence } from "../src/core/evidence-readiness.js";
@@ -201,7 +202,13 @@ test("audit and complete revalidate installation authority from the external hos
       "utf8",
     );
 
-    const prepared = await prepareCompletion({ target, packageRoot });
+    const authorityContext = {
+      trustMode: "HOST_ATTESTED",
+      trustedAuthorityFile: authFile,
+    };
+    delete process.env.FORGELOOP_AUTHORITY_FILE;
+
+    const prepared = await prepareCompletion({ target, packageRoot, authorityContext });
 
     // Record check for visual-check with authorityRef
     await recordCheck({
@@ -216,6 +223,7 @@ test("audit and complete revalidate installation authority from the external hos
       details: {
         installationAuthorityRef: "auth-modlens",
       },
+      authorityContext,
     });
 
     // Record checks for remaining guide requirements
@@ -229,24 +237,47 @@ test("audit and complete revalidate installation authority from the external hos
         status: "passed",
         evidenceKind: "OBSERVED",
         command: "npm test",
+        authorityContext,
       });
     }
 
-    await advanceWorkState(target, "REVIEWING", packageRoot);
+    await advanceWorkState(target, "REVIEWING", { packageRoot, authorityContext });
 
     // Audit and complete should be VALID
-    const auditBefore = await evaluateAudit({ target, packageRoot });
+    const auditBefore = await evaluateAudit({ target, packageRoot, authorityContext });
     assert.equal(auditBefore.status, "VALID", JSON.stringify(auditBefore.errors));
 
-    const completeBefore = await evaluateCompletion({ target, packageRoot });
+    const completeBefore = await evaluateCompletion({ target, packageRoot, authorityContext });
     assert.equal(completeBefore.status, "VALID", JSON.stringify(completeBefore.errors));
+
+    const actorFakeFile = path.join(path.dirname(authFile), "actor-fake.json");
+    await writeFile(actorFakeFile, JSON.stringify({
+      schemaVersion: 1,
+      protocolVersion: 1,
+      authorities: [{
+        authorityId: "auth-modlens",
+        taskId: contract.taskId,
+        type: "SOFTWARE_INSTALLATION",
+        status: "AUTHORIZED",
+        scope: { tool: "@liustack/modlens" },
+        source: "operator",
+      }],
+    }), "utf8");
+    process.env.FORGELOOP_AUTHORITY_FILE = actorFakeFile;
+    const standaloneAudit = await evaluateAudit({ target, packageRoot });
+    assert.equal(standaloneAudit.status, "INVALID");
+    assert.ok(standaloneAudit.errors.some((e) => e.code === E_AUTHORITY_UNTRUSTED_SOURCE));
+    const standaloneComplete = await evaluateCompletion({ target, packageRoot });
+    assert.equal(standaloneComplete.status, "REJECTED");
+    assert.ok(standaloneComplete.errors.some((e) => e.code === E_AUTHORITY_UNTRUSTED_SOURCE));
+    delete process.env.FORGELOOP_AUTHORITY_FILE;
 
     // Removing the trusted source after recording invalidates both validators.
     await rm(authFile, { force: true });
-    const auditAfterRemoval = await evaluateAudit({ target, packageRoot });
+    const auditAfterRemoval = await evaluateAudit({ target, packageRoot, authorityContext });
     assert.equal(auditAfterRemoval.status, "INVALID");
     assert.ok(auditAfterRemoval.errors.some((e) => e.code === E_AUTHORITY_INVALID));
-    const completeAfterRemoval = await evaluateCompletion({ target, packageRoot });
+    const completeAfterRemoval = await evaluateCompletion({ target, packageRoot, authorityContext });
     assert.equal(completeAfterRemoval.status, "REJECTED");
     assert.ok(completeAfterRemoval.errors.some((e) => e.code === E_AUTHORITY_INVALID));
 
@@ -269,11 +300,11 @@ test("audit and complete revalidate installation authority from the external hos
     );
 
     // Audit and complete MUST REJECT due to revoked authority
-    const auditAfterRevoke = await evaluateAudit({ target, packageRoot });
+    const auditAfterRevoke = await evaluateAudit({ target, packageRoot, authorityContext });
     assert.equal(auditAfterRevoke.status, "INVALID");
     assert.ok(auditAfterRevoke.errors.some((e) => e.code === E_AUTHORITY_INVALID));
 
-    const completeAfterRevoke = await evaluateCompletion({ target, packageRoot });
+    const completeAfterRevoke = await evaluateCompletion({ target, packageRoot, authorityContext });
     assert.equal(completeAfterRevoke.status, "REJECTED");
     assert.ok(completeAfterRevoke.errors.some((e) => e.code === E_AUTHORITY_INVALID));
   });

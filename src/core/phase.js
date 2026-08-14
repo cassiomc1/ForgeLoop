@@ -101,7 +101,7 @@ function reconcileImplementationStep(state, toPhase) {
   };
 }
 
-async function assertPhasePrerequisites(target, state, toPhase, packageRoot) {
+async function assertPhasePrerequisites(target, state, toPhase, packageRoot, authorityContext, runtimeContext) {
   if (toPhase === "CONTRACT_READY" || toPhase === "ROUTED" || toPhase === "EXECUTING") {
     try {
       await readContract(target, packageRoot);
@@ -127,7 +127,7 @@ async function assertPhasePrerequisites(target, state, toPhase, packageRoot) {
     throw phaseError("E_PHASE_EVIDENCE_MISSING", "COMPLETE requires verification evidence");
   }
   if (toPhase === "COMPLETE") {
-    const completion = await evaluateCompletion({ target, packageRoot, persist: false });
+    const completion = await evaluateCompletion({ target, packageRoot, persist: false, authorityContext, runtimeContext });
     if (completion.status !== "VALID") {
       throw phaseError("E_COMPLETION_REJECTED", "COMPLETE requires a valid completion audit", completion.errors.flatMap((error) => error.artifacts ?? []));
     }
@@ -136,11 +136,16 @@ async function assertPhasePrerequisites(target, state, toPhase, packageRoot) {
 
 export async function advanceWorkState(target, toPhase, options = {}) {
   const normalizedOptions = typeof options === "string" ? { packageRoot: options } : options;
-  const { packageRoot, now = new Date().toISOString() } = normalizedOptions;
+  const {
+    packageRoot,
+    now = new Date().toISOString(),
+    authorityContext,
+    runtimeContext,
+  } = normalizedOptions;
   assertWorkPhase(toPhase);
   const state = await readWorkState(target, packageRoot);
   if (!state) throw phaseError("E_PHASE_PREREQUISITE_MISSING", "Cannot advance without work state", [ARTIFACT_PATHS.state]);
-  await assertPhasePrerequisites(target, state, toPhase, packageRoot);
+  await assertPhasePrerequisites(target, state, toPhase, packageRoot, authorityContext, runtimeContext);
   await assertPersistedStateIdentity(target, state, toPhase, packageRoot);
   if (!isValidTransition(state.phase, toPhase)) {
     throw phaseError("E_PHASE_TRANSITION_INVALID", `Invalid work-state transition: ${state.phase} -> ${toPhase}`);
@@ -231,7 +236,12 @@ export async function advanceWorkState(target, toPhase, options = {}) {
       packageRoot,
       additionalEvidence: preflight.policy?.requiredEvidence ?? [],
     });
-    await validateReceipt(receipt.value, packageRoot, { target, taskId: contract?.value?.taskId });
+    await validateReceipt(receipt.value, packageRoot, {
+      target,
+      taskId: contract?.value?.taskId,
+      authorityContext,
+      runtimeContext,
+    });
     assertCompletionRelationships({
       contract,
       route,
@@ -242,12 +252,19 @@ export async function advanceWorkState(target, toPhase, options = {}) {
       requireReceiptStateFingerprint: false,
       target,
       taskId: contract?.value?.taskId,
+      authorityContext,
+      runtimeContext,
     });
     nextReceipt = await createReceipt({
       ...receipt.value,
       stateFingerprint: canonicalFingerprint(next),
       verificationCycle: next.verificationCycle ?? receipt.value.verificationCycle ?? 1,
-    }, packageRoot, { target, taskId: contract?.value?.taskId });
+    }, packageRoot, {
+      target,
+      taskId: contract?.value?.taskId,
+      authorityContext,
+      runtimeContext,
+    });
     assertCompletionRelationships({
       contract,
       route,
@@ -257,6 +274,8 @@ export async function advanceWorkState(target, toPhase, options = {}) {
       requireRequiredChecks: false,
       target,
       taskId: contract?.value?.taskId,
+      authorityContext,
+      runtimeContext,
     });
   } catch (error) {
     if (error.code !== "ARTIFACT_MISSING") throw error;

@@ -2,8 +2,8 @@ import { prepareCompletion as prepareCompletionArtifacts } from "../core/complet
 
 export { prepareCompletionArtifacts as prepareCompletion };
 
-export async function runPrepareCompletion({ target, packageRoot }) {
-  return prepareCompletionArtifacts({ target, packageRoot });
+export async function runPrepareCompletion({ target, packageRoot, authorityContext, runtimeContext }) {
+  return prepareCompletionArtifacts({ target, packageRoot, authorityContext, runtimeContext });
 }
 
 export function formatPrepareCompletionResult(result) {
