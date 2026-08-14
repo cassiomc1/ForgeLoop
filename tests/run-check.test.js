@@ -1,0 +1,115 @@
+import assert from "node:assert/strict";
+import { access, mkdtemp, rm } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { test } from "node:test";
+
+import {
+  classifyCommandResolution,
+  E_INSTALLATION_AUTHORITY_REQUIRED,
+} from "../src/core/verification-capability.js";
+import {
+  readExecutionArtifact,
+  runCommandExecution,
+  validateExecutionBinding,
+} from "../src/core/execution.js";
+import { executionArtifactPath } from "../src/core/artifacts.js";
+import { getPackageRoot } from "../src/core/templates.js";
+
+const packageRoot = getPackageRoot();
+
+async function withTarget(run) {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-run-check-"));
+  try {
+    await run(target);
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+}
+
+test("classifyCommandResolution uses the exact argv vector", () => {
+  assert.deepEqual(classifyCommandResolution(["npx", "@liustack/modlens", "image.png"]), {
+    resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+    mayInstall: true,
+    installer: "npx",
+    tool: "@liustack/modlens",
+  });
+  assert.deepEqual(classifyCommandResolution(["npx", "--no-install", "@liustack/modlens"]), {
+    resolutionMode: "NON_INSTALLING_RESOLUTION",
+    mayInstall: false,
+    installer: "npx",
+    tool: "@liustack/modlens",
+  });
+});
+
+test("runCommandExecution captures exact argv, target cwd, and non-zero exit", async () => {
+  await withTarget(async (target) => {
+    const result = await runCommandExecution({
+      target,
+      packageRoot,
+      taskId: "task-1",
+      checkId: "tests",
+      requirement: "tests",
+      verificationCycle: 1,
+      argv: [process.execPath, "-e", "process.exit(3)"],
+    });
+
+    assert.deepEqual(result.execution.argv, [process.execPath, "-e", "process.exit(3)"]);
+    assert.equal(result.execution.cwd, target);
+    assert.equal(result.execution.exitCode, 3);
+    assert.equal(result.execution.status, "failed");
+    assert.match(result.execution.startedAt, /^\d{4}-\d{2}-\d{2}T/);
+    assert.match(result.execution.finishedAt, /^\d{4}-\d{2}-\d{2}T/);
+    assert.deepEqual((await readExecutionArtifact({
+      target,
+      executionRef: result.execution.executionId,
+      packageRoot,
+    })).value, result.execution);
+  });
+});
+
+test("install-capable commands are blocked before process launch without authority", async () => {
+  await withTarget(async (target) => {
+    await assert.rejects(
+      () => runCommandExecution({
+        target,
+        packageRoot,
+        taskId: "task-1",
+        checkId: "visual",
+        requirement: "visual-verification",
+        verificationCycle: 1,
+        argv: ["npx", "@liustack/modlens", "image.png"],
+      }),
+      (error) => error.code === E_INSTALLATION_AUTHORITY_REQUIRED,
+    );
+    await assert.rejects(
+      () => access(path.join(target, executionArtifactPath("exec-blocked"))),
+      (error) => error.code === "ENOENT",
+    );
+  });
+});
+
+test("execution binding rejects a different check", async () => {
+  await withTarget(async (target) => {
+    const result = await runCommandExecution({
+      target,
+      packageRoot,
+      taskId: "task-1",
+      checkId: "tests",
+      requirement: "tests",
+      verificationCycle: 2,
+      argv: [process.execPath, "--version"],
+    });
+
+    assert.throws(
+      () => validateExecutionBinding({
+        execution: result.execution,
+        taskId: "task-1",
+        checkId: "different-check",
+        requirement: "tests",
+        verificationCycle: 2,
+      }),
+      (error) => error.code === "E_EXECUTION_REF_INVALID",
+    );
+  });
+});

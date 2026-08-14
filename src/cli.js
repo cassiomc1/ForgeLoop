@@ -24,6 +24,7 @@ import { formatPolicyResult, runPolicy } from "./commands/policy.js";
 import { formatBundleResult, runBundle } from "./commands/bundle.js";
 import { formatPrepareCompletionResult, runPrepareCompletion } from "./commands/prepare-completion.js";
 import { formatRecordCheckResult, runRecordCheck } from "./commands/record-check.js";
+import { formatRunCheckResult, runCheck } from "./commands/run-check.js";
 import { formatRecordTerminalResult, runRecordTerminalResult } from "./commands/record-terminal-result.js";
 import { formatNextActionResult, runNext } from "./commands/next.js";
 import { resolveTarget } from "./core/filesystem.js";
@@ -31,7 +32,7 @@ import { getPackageRoot } from "./core/templates.js";
 import { ARTIFACT_PATHS } from "./core/artifacts.js";
 
 function usage(command = null) {
-  const commands = "init|doctor|update|activate|route|preflight|advance|next|prepare-completion|record-check|record-terminal-result|complete|audit|report|policy|bundle|inspect|status|validate-state|clear-state|validate-receipt|validate-protocol";
+  const commands = "init|doctor|update|activate|route|preflight|advance|next|prepare-completion|run-check|record-check|record-terminal-result|complete|audit|report|policy|bundle|inspect|status|validate-state|clear-state|validate-receipt|validate-protocol";
   const options = ["  --path <directory>  target project directory (default: current directory)"];
   if (!command || command === "init" || command === "update") {
     options.push("  --dry-run           show planned writes without changing files");
@@ -53,7 +54,7 @@ function usage(command = null) {
   if (!command || command === "advance") {
     options.push("  --to <phase>        destination workflow phase");
   }
-  if (!command || ["activate", "advance", "next", "prepare-completion", "record-check", "record-terminal-result", "preflight", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"].includes(command)) {
+  if (!command || ["activate", "advance", "next", "prepare-completion", "run-check", "record-check", "record-terminal-result", "preflight", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"].includes(command)) {
     options.push("  --json              emit structured output as JSON");
   }
   if (!command || ["preflight", "complete", "audit", "report"].includes(command)) {
@@ -78,16 +79,23 @@ function usage(command = null) {
   if (!command || command === "validate-receipt") {
     options.push("  --file <path>       receipt file relative to target");
   }
-  if (!command || command === "record-check") {
+  if (!command || command === "record-check" || command === "run-check") {
     options.push("  --id <id>            stable check identifier");
-    options.push("  --kind <kind>        check kind (default: command)");
     options.push("  --requirement <id>   completion requirement covered by the check");
+    options.push("  --details <json>     additional structured check details");
+  }
+  if (!command || command === "record-check") {
+    options.push("  --kind <kind>        check kind (default: command; use manual-review for manual evidence)");
     options.push("  --status <status>    passed, failed, blocked, or not-run");
     options.push("  --evidence-kind <kind> OBSERVED, INFERRED, NOT_VERIFIED, or BLOCKED");
-    options.push("  --command <text>     command already run by the agent (recorded only)");
-    options.push("  --result <text>      observed result supplied by the agent");
+    options.push("  --command <text>     recorded only as metadata; it is never executed");
+    options.push("  --result <text>      observed result supplied by the actor");
     options.push("  --exit-code <number> observed process exit code");
-    options.push("  --details <json>     additional structured check details");
+    options.push("  --execution-ref <id> ForgeLoop execution artifact reference");
+    options.push("  --provenance <value> FORGELOOP_EXECUTED, ACTOR_REPORTED, or MANUAL_OBSERVATION");
+  }
+  if (!command || command === "run-check") {
+    options.push("  -- <argv>            exact command argv to classify, execute, and attest");
   }
   if (!command || command === "record-terminal-result") {
     options.push("  --requirement <id>   terminal requirement covered by the result");
@@ -133,6 +141,9 @@ export function parseArgs(argv) {
     checkResult: null,
     checkExitCode: null,
     checkDetails: null,
+    checkExecutionRef: null,
+    checkProvenance: null,
+    commandArgv: [],
     checkType: null,
     checkSource: null,
     policy: null,
@@ -144,7 +155,7 @@ export function parseArgs(argv) {
 
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
-    if (["init", "doctor", "update", "activate", "route", "preflight", "advance", "next", "prepare-completion", "record-check", "record-terminal-result", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"].includes(argument)) {
+    if (["init", "doctor", "update", "activate", "route", "preflight", "advance", "next", "prepare-completion", "run-check", "record-check", "record-terminal-result", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"].includes(argument)) {
       if (command) throw new Error(`Multiple commands are not supported: ${argument}`);
       command = argument;
     } else if (argument === "--help" || argument === "-h") {
@@ -304,6 +315,19 @@ export function parseArgs(argv) {
         throw new Error("--details must be a JSON object");
       }
       index += 1;
+    } else if (argument === "--execution-ref") {
+      const executionRef = argv[index + 1];
+      if (!executionRef || executionRef.startsWith("-")) throw new Error("--execution-ref requires an execution ID");
+      options.checkExecutionRef = executionRef;
+      index += 1;
+    } else if (argument === "--provenance") {
+      const provenance = argv[index + 1];
+      if (!provenance || provenance.startsWith("-")) throw new Error("--provenance requires a provenance value");
+      options.checkProvenance = provenance;
+      index += 1;
+    } else if (argument === "--" && command === "run-check") {
+      options.commandArgv = argv.slice(index + 1);
+      break;
     } else if (argument === "--path") {
       options.path = argv[index + 1];
       if (!options.path || options.path.startsWith("-")) throw new Error("--path requires a directory");
@@ -324,7 +348,7 @@ export function parseArgs(argv) {
 
   if (!command) return { command: null, options };
 
-  const jsonCommands = ["doctor", "route", "activate", "advance", "next", "prepare-completion", "record-check", "record-terminal-result", "preflight", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"];
+  const jsonCommands = ["doctor", "route", "activate", "advance", "next", "prepare-completion", "run-check", "record-check", "record-terminal-result", "preflight", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"];
   if (!jsonCommands.includes(command) && options.json) {
     throw new Error(`Option --json is not valid for ${command}`);
   }
@@ -377,8 +401,10 @@ export function parseArgs(argv) {
     options.checkResult,
     options.checkExitCode,
     options.checkDetails,
+    options.checkExecutionRef,
+    options.checkProvenance,
   ];
-  if (command !== "record-check" && checkOptions.some((value) => value !== null)) {
+  if (!["record-check", "run-check"].includes(command) && checkOptions.some((value) => value !== null)) {
     throw new Error(`Check recording options are not valid for ${command}`);
   }
   if (command === "record-check" && !options.help) {
@@ -387,6 +413,17 @@ export function parseArgs(argv) {
     if (!options.checkStatus) throw new Error("record-check requires --status");
     if (!options.checkEvidenceKind) throw new Error("record-check requires --evidence-kind");
     if (!options.checkCommand && !options.checkResult) throw new Error("record-check requires --command or --result");
+  }
+  if (command === "run-check" && !options.help) {
+    if (!options.checkId) throw new Error("run-check requires --id");
+    if (!options.checkRequirement) throw new Error("run-check requires --requirement");
+    if (options.checkKind || options.checkStatus || options.checkEvidenceKind || options.checkCommand
+      || options.checkResult || options.checkExitCode !== null || options.checkExecutionRef || options.checkProvenance) {
+      throw new Error("run-check accepts only --id, --requirement, --details, and -- <argv>");
+    }
+    if (!Array.isArray(options.commandArgv) || options.commandArgv.length === 0) {
+      throw new Error("run-check requires -- followed by an exact command argv");
+    }
   }
   return { command, options };
 }
@@ -490,6 +527,19 @@ export async function main(argv = process.argv.slice(2)) {
       return 0;
     }
 
+    if (command === "run-check") {
+      const result = await runCheck({
+        target,
+        packageRoot,
+        id: options.checkId,
+        requirement: options.checkRequirement,
+        argv: options.commandArgv,
+        details: options.checkDetails ?? undefined,
+      });
+      console.log(options.json ? JSON.stringify(result, null, 2) : formatRunCheckResult(result));
+      return result.check.status === "passed" ? 0 : 1;
+    }
+
     if (command === "record-check") {
       const result = await runRecordCheck({
         target,
@@ -501,8 +551,10 @@ export async function main(argv = process.argv.slice(2)) {
         evidenceKind: options.checkEvidenceKind,
         command: options.checkCommand ?? undefined,
         result: options.checkResult ?? undefined,
-        exitCode: options.checkExitCode,
+        ...(options.checkExitCode === null ? {} : { exitCode: options.checkExitCode }),
         details: options.checkDetails ?? undefined,
+        executionRef: options.checkExecutionRef ?? undefined,
+        provenance: options.checkProvenance ?? undefined,
       });
       console.log(options.json ? JSON.stringify(result, null, 2) : formatRecordCheckResult(result));
       return 0;
@@ -606,7 +658,7 @@ export async function main(argv = process.argv.slice(2)) {
     }
     return result.conflicts.length === 0 ? 0 : 1;
   } catch (error) {
-    console.error(`error: ${error.message}`);
+    console.error(`error: ${error.code ? `${error.code}: ` : ""}${error.message}`);
     return 1;
   }
 }

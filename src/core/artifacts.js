@@ -17,7 +17,15 @@ export const ARTIFACT_PATHS = Object.freeze({
   gates: ".forgeloop/gates",
   state: ".forgeloop/work-state.json",
   receipt: ".forgeloop/execution-receipt.json",
+  executionDirectory: ".forgeloop/executions",
 });
+
+export function executionArtifactPath(executionId) {
+  if (typeof executionId !== "string" || !/^exec-[A-Za-z0-9_-]+$/.test(executionId)) {
+    throw new ArtifactError("E_EXECUTION_REF_INVALID", "Execution reference must be a simple execution ID");
+  }
+  return `${ARTIFACT_PATHS.executionDirectory}/${executionId}.json`;
+}
 
 export class ArtifactError extends Error {
   constructor(code, message, artifacts = []) {

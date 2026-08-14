@@ -1,6 +1,24 @@
 import { sha256 } from "./manifest.js";
 import { validateVerificationAuthority } from "./verification-capability.js";
 
+export const E_COMMAND_PROVENANCE_UNATTESTED = "E_COMMAND_PROVENANCE_UNATTESTED";
+
+export function validateCommandProvenance(check) {
+  if (check?.kind !== "command" || check.evidenceKind !== "OBSERVED") {
+    return { valid: true, error: null };
+  }
+  if (check.provenance !== "FORGELOOP_EXECUTED" || typeof check.executionRef !== "string" || check.executionRef.trim() === "") {
+    return {
+      valid: false,
+      error: {
+        code: E_COMMAND_PROVENANCE_UNATTESTED,
+        message: "Observed command evidence requires a ForgeLoop execution artifact",
+      },
+    };
+  }
+  return { valid: true, error: null };
+}
+
 export const REQUIREMENT_TYPES = Object.freeze([
   "PRODUCT",
   "VERIFICATION",
@@ -256,6 +274,8 @@ function componentStatus(check, requirement, allChecks = [], options = {}) {
         item?.requirementId === child.id || item?.requirement === child.text
       )).at(-1);
       if (matchingComp) {
+        const provenance = validateCommandProvenance(matchingComp);
+        if (!provenance.valid) return { ...matchingComp, status: "failed", reasonCode: provenance.error.code };
         const auth = validateVerificationAuthority(matchingComp, options);
         if (!auth.valid) return { ...matchingComp, status: "failed", reasonCode: auth.error.code };
         return matchingComp;
@@ -264,6 +284,8 @@ function componentStatus(check, requirement, allChecks = [], options = {}) {
     const childCandidates = allChecks.filter((candidate) => matchesRequirement(candidate, child));
     const childCheck = latestAuthoritativeCheck(childCandidates);
     if (childCheck) {
+      const provenance = validateCommandProvenance(childCheck);
+      if (!provenance.valid) return { ...childCheck, status: "failed", reasonCode: provenance.error.code };
       const auth = validateVerificationAuthority(childCheck, options);
       if (!auth.valid) return { ...childCheck, status: "failed", reasonCode: auth.error.code };
     }
@@ -314,7 +336,10 @@ export function evaluateRequiredEvidence({
     }
     const candidates = checks.filter((check) => matchesRequirement(check, requirement));
     const check = latestAuthoritativeCheck(candidates);
-    const auth = check ? validateVerificationAuthority(check, authOptions) : { valid: true };
+    const provenance = check ? validateCommandProvenance(check) : { valid: true };
+    const auth = provenance.valid
+      ? (check ? validateVerificationAuthority(check, authOptions) : { valid: true })
+      : provenance;
     const compound = componentStatus(check, requirement, checks, authOptions);
     if (!auth.valid) {
       result.invalid.push({ ...requirement, reasonCode: auth.error.code });

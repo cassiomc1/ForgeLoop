@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 
-import { inspectSchemaHealth } from "../src/core/schema-validation.js";
+import { assertSchema, inspectSchemaHealth, readSchema } from "../src/core/schema-validation.js";
 import { getPackageRoot } from "../src/core/templates.js";
 
 test("schema health parses every shipped schema and reports valid status", async () => {
@@ -15,6 +15,32 @@ test("schema health parses every shipped schema and reports valid status", async
     assert.equal(schema.status, "valid", schema.name);
     assert.equal(schema.version, 1, schema.name);
   }
+});
+
+test("execution schema accepts a ForgeLoop-owned command execution artifact", async () => {
+  const schema = await readSchema("execution", getPackageRoot());
+  assertSchema({
+    schemaVersion: 1,
+    protocolVersion: 1,
+    executionId: "exec-001",
+    taskId: "task-1",
+    checkId: "tests",
+    requirement: "tests",
+    verificationCycle: 1,
+    kind: "COMMAND_EXECUTION",
+    argv: ["npm", "test"],
+    cwd: "/target/project",
+    resolution: {
+      resolutionMode: "LOCAL_PACKAGE_BINARY",
+      mayInstall: false,
+      installer: null,
+      tool: null,
+    },
+    startedAt: "2026-08-14T19:00:00.000Z",
+    finishedAt: "2026-08-14T19:00:03.000Z",
+    status: "passed",
+    exitCode: 0,
+  }, schema, "execution artifact");
 });
 
 test("schema health distinguishes invalid and unsupported schema versions", async () => {

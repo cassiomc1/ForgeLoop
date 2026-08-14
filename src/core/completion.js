@@ -1,5 +1,5 @@
 import { ARTIFACT_PATHS, canonicalFingerprint, readJsonArtifact, writeJsonArtifact } from "./artifacts.js";
-import { requiredEvidenceForTarget } from "./completion-artifacts.js";
+import { requiredEvidenceForTarget, validateChecksExecutionProvenance } from "./completion-artifacts.js";
 import { appendProtocolEvent, LIFECYCLE_MILESTONES, validateEventLedger, validateStateLedgerCoherence } from "./events.js";
 import { evaluatePreflight } from "./preflight.js";
 import { readContract } from "./contract.js";
@@ -42,6 +42,9 @@ function repairNext(error) {
     case "E_CHECK_INVALID":
     case "E_CHECK_STATUS_CONTRADICTION":
       return "Run forgeloop record-check with compatible observed evidence for the named requirement.";
+    case "E_COMMAND_PROVENANCE_UNATTESTED":
+    case "E_EXECUTION_REF_INVALID":
+      return "Run forgeloop run-check with the exact argv, or record the result as manual/NOT_VERIFIED evidence without claiming command execution.";
     case "E_EVIDENCE_PARTIAL":
       return "Run or finish the missing component checks and record observed evidence.";
     case "E_EVIDENCE_INVALID":
@@ -214,6 +217,21 @@ export async function evaluateCompletion({ target, packageRoot, strict = false, 
     } catch (error) {
       errors.push(issue(error.code ?? "E_RECEIPT_INVALID", `Execution receipt is invalid: ${error.message}`, [ARTIFACT_PATHS.receipt]));
     }
+  }
+
+  if (contract) {
+    errors.push(...await validateChecksExecutionProvenance(state?.checks, {
+      target,
+      packageRoot,
+      taskId: contract.value.taskId,
+      artifactPath: ARTIFACT_PATHS.state,
+    }));
+    errors.push(...await validateChecksExecutionProvenance(receipt?.value?.checks, {
+      target,
+      packageRoot,
+      taskId: contract.value.taskId,
+      artifactPath: ARTIFACT_PATHS.receipt,
+    }));
   }
 
   if (state && !["REVIEWING", "COMPLETE"].includes(state.phase)) {

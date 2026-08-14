@@ -12,7 +12,10 @@ import { formatNextActionResult } from "../src/commands/next.js";
 import { runPreflight } from "../src/commands/preflight.js";
 import { ARTIFACT_PATHS } from "../src/core/artifacts.js";
 import { createCheck } from "../src/core/checks.js";
-import { prepareCompletion, recordCheck } from "../src/core/completion-artifacts.js";
+import { prepareCompletion, recordCheck as recordCheckArtifact } from "../src/core/completion-artifacts.js";
+import { recordManualCheck } from "./helpers/record-check-compat.js";
+
+const recordCheck = (input) => recordManualCheck(recordCheckArtifact, input);
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { coverageForRequirements } from "../src/core/coverage.js";
 import { createEvidence } from "../src/core/evidence.js";
@@ -50,10 +53,11 @@ function checkFor({
   requirement = "tests",
   status = "passed",
   evidenceKind = "OBSERVED",
+  kind = "command",
 } = {}) {
   return createCheck({
     id,
-    kind: "command",
+    kind,
     requirement,
     status,
     evidenceKind,
@@ -136,7 +140,7 @@ async function setupTarget(target, {
   const defaultChecks = checks.length > 0
     ? checks
     : phase === "COMPLETE"
-      ? [checkFor()]
+      ? [checkFor({ kind: "manual-review" })]
       : [];
   const defaultEvidence = verificationEvidence.length > 0
     ? verificationEvidence
@@ -445,6 +449,8 @@ test("verification decisions require observed evidence and surface failed checks
         const direct = spawnSync(process.execPath, [
           cliPath,
           ...spec.argv,
+          "--kind",
+          "manual-review",
           "--status",
           "passed",
           "--evidence-kind",

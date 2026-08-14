@@ -25,7 +25,10 @@ import { createWorkState, writeWorkState } from "../src/core/work-state.js";
 import { appendProtocolEvent } from "../src/core/events.js";
 import { runPreflight } from "../src/commands/preflight.js";
 import { advanceWorkState } from "../src/core/phase.js";
-import { prepareCompletion, recordCheck } from "../src/core/completion-artifacts.js";
+import { prepareCompletion, recordCheck as recordCheckArtifact } from "../src/core/completion-artifacts.js";
+import { recordManualCheck } from "./helpers/record-check-compat.js";
+
+const recordCheck = (input) => recordManualCheck(recordCheckArtifact, input);
 
 const packageRoot = getPackageRoot();
 

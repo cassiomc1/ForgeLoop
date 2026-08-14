@@ -4,6 +4,7 @@ import { validateVerificationAuthority } from "./verification-capability.js";
 export const CHECK_SCHEMA_VERSION = 1;
 export const CHECK_STATUSES = Object.freeze(["passed", "failed", "blocked", "not-run"]);
 export const CHECK_EVIDENCE_KINDS = Object.freeze(["OBSERVED", "INFERRED", "NOT_VERIFIED", "BLOCKED"]);
+export const CHECK_PROVENANCE = Object.freeze(["FORGELOOP_EXECUTED", "ACTOR_REPORTED", "MANUAL_OBSERVATION"]);
 
 function checkError(code, message, artifacts = []) {
   const error = new Error(message);
@@ -60,6 +61,8 @@ export function createCheck(input = {}, options = {}) {
     ...(input.timestamp !== undefined ? { timestamp: input.timestamp } : {}),
     ...(input.repositoryFingerprint !== undefined ? { repositoryFingerprint: input.repositoryFingerprint } : {}),
     ...(input.viewport !== undefined ? { viewport: structuredClone(input.viewport) } : {}),
+    ...(input.executionRef !== undefined ? { executionRef: input.executionRef } : {}),
+    ...(input.provenance !== undefined ? { provenance: input.provenance } : {}),
     ...(input.details !== undefined ? { details: structuredClone(input.details) } : {}),
   };
   return assertCheck(check, "check", options);
@@ -76,6 +79,19 @@ export function assertCheck(value, label = "check", options = {}) {
   string(value.kind, `${label}.kind`);
   string(value.requirement, `${label}.requirement`);
   string(value.source, `${label}.source`);
+  optionalString(value.executionRef, `${label}.executionRef`);
+  if (value.provenance !== undefined && !CHECK_PROVENANCE.includes(value.provenance)) {
+    throw checkError("E_CHECK_INVALID", `${label}.provenance must be one of ${CHECK_PROVENANCE.join(", ")}`);
+  }
+  if (options.requireCommandProvenance === true
+    && value.kind === "command"
+    && value.evidenceKind === "OBSERVED"
+    && (value.executionRef === undefined || value.provenance !== "FORGELOOP_EXECUTED")) {
+    throw checkError(
+      "E_COMMAND_PROVENANCE_UNATTESTED",
+      `${label} observed command evidence requires ForgeLoop execution provenance`,
+    );
+  }
   if (!CHECK_STATUSES.includes(value.status)) {
     throw checkError("E_CHECK_INVALID", `${label}.status must be one of ${CHECK_STATUSES.join(", ")}`);
   }

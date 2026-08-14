@@ -11,7 +11,7 @@ const outputSvgPath = path.join(repositoryRoot, "docs", "assets", "forgeloop-flo
 
 // Read package version dynamically
 const pkg = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
-const version = pkg.version || "0.1.14";
+const version = pkg.version || "0.1.15";
 
 // Theme constants - Tokyo Night / Modern Engineering Dark
 const THEME = {
@@ -468,7 +468,7 @@ svg.add(drawCard({
   height: 60,
   title: "Prepare Completion &amp; Record Checks",
   subtitle: "Captures observed commands & structured evidence items",
-  meta: "forgeloop prepare-completion · forgeloop record-check",
+  meta: "forgeloop prepare-completion · run-check + record-check",
   accent: THEME.teal,
 }));
 

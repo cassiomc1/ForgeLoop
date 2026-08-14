@@ -24,6 +24,7 @@ export const SHIPPED_SCHEMA_NAMES = Object.freeze([
   "activation",
   "policy",
   "task-bundle",
+  "execution",
 ]);
 
 export class SchemaValidationError extends Error {

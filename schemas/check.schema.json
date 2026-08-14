@@ -13,6 +13,8 @@
     "status": { "enum": ["passed", "failed", "blocked", "not-run"] },
     "evidenceKind": { "enum": ["OBSERVED", "INFERRED", "NOT_VERIFIED", "BLOCKED"] },
     "source": { "type": "string", "minLength": 1 },
+    "executionRef": { "type": "string", "minLength": 1 },
+    "provenance": { "enum": ["FORGELOOP_EXECUTED", "ACTOR_REPORTED", "MANUAL_OBSERVATION"] },
     "exitCode": { "type": "integer" },
     "timestamp": { "type": "string", "minLength": 1 },
     "repositoryFingerprint": { "type": "string", "pattern": "^[a-f0-9]{40}$" },

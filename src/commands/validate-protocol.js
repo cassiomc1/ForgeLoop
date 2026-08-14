@@ -9,6 +9,7 @@ import { validateTaskBrief, validateDelegatedResult } from "../core/delegation.j
 import { ARTIFACT_PATHS, readJsonArtifact } from "../core/artifacts.js";
 import { evaluatePreflight, validateReadyProtocolConsistency } from "../core/preflight.js";
 import { validateEventLedger, validateStateLedgerCoherence } from "../core/events.js";
+import { validateChecksExecutionProvenance } from "../core/completion-artifacts.js";
 
 async function readArtifact(target, relativePath, label) {
   if (!relativePath) return null;
@@ -87,6 +88,23 @@ export async function runValidateProtocol({
   await validateLoaded(loaded.find((item) => item.label === "route"), "routing-result", async (value) => assertRouteInvariants(value));
   await validateLoaded(loaded.find((item) => item.label === "state"), "work-state", async (value) => assertWorkStateSemantics(value));
   await validateLoaded(loaded.find((item) => item.label === "receipt"), "execution-receipt", async (value) => validateReceipt(value, packageRoot));
+  for (const [value, artifactPath] of [
+    [state, stateFile],
+    [receipt, receiptFile],
+  ]) {
+    if (!value) continue;
+    const provenanceErrors = await validateChecksExecutionProvenance(value.checks, {
+      target,
+      packageRoot,
+      taskId: value.taskId,
+      artifactPath,
+    });
+    schemaErrors.push(...provenanceErrors.map((error) => ({
+      ...error,
+      message: `Command provenance validation failed: ${error.message}`,
+      artifacts: [artifactPath, ...(error.artifacts ?? [])],
+    })));
+  }
   for (const item of loaded.filter((candidate) => candidate.label.startsWith("task brief:"))) {
     await validateLoaded(item, "task-brief", async (value) => validateTaskBrief(value, packageRoot));
   }

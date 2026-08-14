@@ -6,7 +6,10 @@ import { test } from "node:test";
 
 import { runComplete } from "../src/commands/complete.js";
 import { runPreflight } from "../src/commands/preflight.js";
-import { prepareCompletion, recordCheck } from "../src/core/completion-artifacts.js";
+import { prepareCompletion, recordCheck as recordCheckArtifact } from "../src/core/completion-artifacts.js";
+import { recordManualCheck } from "./helpers/record-check-compat.js";
+
+const recordCheck = (input) => recordManualCheck(recordCheckArtifact, input);
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { appendProtocolEvent, validateEventLedger } from "../src/core/events.js";
 import { advanceWorkState } from "../src/core/phase.js";
@@ -348,4 +351,3 @@ test("requirement classification helpers (P2-7)", async () => {
   assert.equal(prod.length, 1);
   assert.equal(prod[0].type, "PRODUCTION_READINESS");
 });
-

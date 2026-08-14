@@ -13,6 +13,7 @@ import {
   E_AUTHORITY_UNTRUSTED_SOURCE,
 } from "../src/core/verification-capability.js";
 import { evaluateRequiredEvidence } from "../src/core/evidence-readiness.js";
+import { assertCheck } from "../src/core/checks.js";
 
 test("classifyVerificationCapability prefers locally available verifiers", () => {
   const result = classifyVerificationCapability({ available: true });
@@ -186,6 +187,44 @@ test("classifyCommandResolution classifies resolution modes deterministically", 
     installer: null,
     tool: null,
   });
+});
+
+test("classifyCommandResolution preserves string behavior while accepting argv", () => {
+  assert.deepEqual(
+    classifyCommandResolution(["node", "scripts/verify.js"]),
+    classifyCommandResolution("node scripts/verify.js"),
+  );
+});
+
+test("classifyCommandResolution inspects explicit Windows cmd wrappers", () => {
+  assert.deepEqual(classifyCommandResolution([
+    "cmd.exe",
+    "/d",
+    "/c",
+    'call "C:\\tmp\\npx.cmd" @liustack/modlens --spec=foo',
+  ]), {
+    resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+    mayInstall: true,
+    installer: "npx",
+    tool: "@liustack/modlens",
+  });
+});
+
+test("observed command checks require ForgeLoop execution provenance", () => {
+  assert.throws(
+    () => assertCheck({
+      schemaVersion: 1,
+      protocolVersion: 1,
+      id: "tests",
+      kind: "command",
+      requirement: "tests",
+      status: "passed",
+      evidenceKind: "OBSERVED",
+      source: "npm test",
+      provenance: "ACTOR_REPORTED",
+    }, "check", { requireCommandProvenance: true }),
+    (error) => error.code === "E_COMMAND_PROVENANCE_UNATTESTED",
+  );
 });
 
 test("validateVerificationAuthority rejects self-asserted booleans and requires canonical authority grants", () => {
@@ -384,6 +423,8 @@ test("evaluateRequiredEvidence rejects unauthorized install-capable verification
     status: "passed",
     evidenceKind: "OBSERVED",
     source: "npx @liustack/modlens",
+    executionRef: "exec-test",
+    provenance: "FORGELOOP_EXECUTED",
     details: {
       command: "npx @liustack/modlens",
       installationAuthorized: true, // self-asserted boolean must NOT pass
@@ -412,6 +453,8 @@ function authorityCheck() {
       command: "npx @liustack/modlens",
       installationAuthorityRef: "auth-modlens",
     },
+    executionRef: "exec-test",
+    provenance: "FORGELOOP_EXECUTED",
   };
 }
 

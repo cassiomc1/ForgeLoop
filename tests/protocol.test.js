@@ -30,6 +30,7 @@ const schemaNames = [
   "config",
   "preflight",
   "check",
+  "execution",
   "evidence-coverage",
   "event",
   "activation",

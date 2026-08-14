@@ -4,6 +4,8 @@ import { ARTIFACT_PATHS, readJsonArtifact, writeJsonArtifact } from "./artifacts
 import { readContract, validateContract } from "./contract.js";
 import { assertSafePath, ensureWithin, fileExists, readBytes, writeFileAtomic } from "./filesystem.js";
 import { PROTOCOL_VERSION } from "./protocol.js";
+import { validateChecksExecutionProvenance } from "./completion-artifacts.js";
+import { readExecutionArtifact } from "./execution.js";
 
 export const BUNDLE_SCHEMA_VERSION = 1;
 const BUNDLE_ROOT = ".forgeloop/tasks";
@@ -37,6 +39,34 @@ export async function exportTaskBundle(target, taskId, packageRoot) {
   safeTaskId(taskId);
   const directory = bundleDirectory(taskId);
   const artifacts = [];
+  const stateSource = await readJsonArtifact(target, ARTIFACT_PATHS.state, "work-state", packageRoot);
+  let receiptSource = null;
+  try {
+    receiptSource = await readJsonArtifact(target, ARTIFACT_PATHS.receipt, "execution-receipt", packageRoot);
+  } catch (error) {
+    if (error.code !== "ARTIFACT_MISSING") throw error;
+  }
+  const provenanceErrors = [
+    ...(await validateChecksExecutionProvenance(stateSource.value.checks, {
+      target,
+      packageRoot,
+      taskId,
+      artifactPath: ARTIFACT_PATHS.state,
+    })),
+    ...(await validateChecksExecutionProvenance(receiptSource?.value?.checks, {
+      target,
+      packageRoot,
+      taskId,
+      artifactPath: ARTIFACT_PATHS.receipt,
+    })),
+  ];
+  if (provenanceErrors.length > 0) {
+    const first = provenanceErrors[0];
+    const error = new Error(first.message);
+    error.code = first.code;
+    error.artifacts = first.artifacts;
+    throw error;
+  }
   const required = [
     [ARTIFACT_PATHS.contract, "contract.json", "current-contract"],
     [ARTIFACT_PATHS.route, "route.json", "routing-result"],
@@ -63,6 +93,16 @@ export async function exportTaskBundle(target, taskId, packageRoot) {
   for (const [sourcePath, destinationName, schemaName] of optional) {
     const copied = await copyJson(target, sourcePath, `${directory}/${destinationName}`, schemaName, packageRoot, artifacts, destinationName);
     if (copied && !artifacts.includes(destinationName)) artifacts.push(destinationName);
+  }
+  const executionRefs = [...new Set([
+    ...(stateSource.value.checks ?? []),
+    ...(receiptSource?.value?.checks ?? []),
+  ].map((check) => check?.executionRef).filter(Boolean))].sort();
+  for (const executionRef of executionRefs) {
+    const execution = await readExecutionArtifact({ target, executionRef, packageRoot });
+    const destination = `${directory}/executions/${execution.value.executionId}.json`;
+    await writeJsonArtifact(target, destination, execution.value, "execution", packageRoot);
+    artifacts.push(`executions/${execution.value.executionId}.json`);
   }
   const eventsPath = ensureWithin(target, ARTIFACT_PATHS.events);
   if (await fileExists(eventsPath)) {
@@ -107,7 +147,13 @@ export async function readTaskBundle(target, taskId, packageRoot) {
     "sources.json": ["sources", "source-registry"],
     "config.json": ["config", "config"],
   };
+  const executions = {};
   for (const artifact of manifest.value.artifacts) {
+    if (artifact.startsWith("executions/") && artifact.endsWith(".json")) {
+      const execution = await readJsonArtifact(target, `${directory}/${artifact}`, "execution", packageRoot);
+      executions[execution.value.executionId] = execution.value;
+      continue;
+    }
     const mapping = mappings[artifact];
     if (!mapping) continue;
     const loadedArtifact = await readJsonArtifact(target, `${directory}/${artifact}`, mapping[1], packageRoot);
@@ -115,6 +161,32 @@ export async function readTaskBundle(target, taskId, packageRoot) {
       await validateContract(loadedArtifact.value, packageRoot);
     }
     loaded[mapping[0]] = loadedArtifact.value;
+  }
+  if (Object.keys(executions).length > 0) loaded.executions = executions;
+  const provenanceErrors = [
+    ...(await validateChecksExecutionProvenance(loaded.state?.checks, {
+      target,
+      packageRoot,
+      taskId,
+      executionArtifacts: executions,
+      allowForeignCwd: true,
+      artifactPath: "state.json",
+    })),
+    ...(await validateChecksExecutionProvenance(loaded.receipt?.checks, {
+      target,
+      packageRoot,
+      taskId,
+      executionArtifacts: executions,
+      allowForeignCwd: true,
+      artifactPath: "receipt.json",
+    })),
+  ];
+  if (provenanceErrors.length > 0) {
+    const first = provenanceErrors[0];
+    const error = new Error(first.message);
+    error.code = first.code;
+    error.artifacts = first.artifacts;
+    throw error;
   }
   return { manifest: manifest.value, artifacts: loaded };
 }

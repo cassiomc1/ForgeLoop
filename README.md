@@ -110,11 +110,14 @@ owned cleanup. The frozen published installation under
 [`tests/fixtures/legacy-0.1.6/`](./tests/fixtures/legacy-0.1.6/) is derived
 from the real npm tarball, includes provenance and digests, and is copied into
 The latest verified published npm release is `@cassiomc1/forgeloop@0.1.14`.
-The repository release is `0.1.14`.
+The repository package candidate is `@cassiomc1/forgeloop@0.1.15`; it is not
+published yet.
 Earlier `0.1.8`, `0.1.9`, `0.1.10`, `0.1.11`, `0.1.12`, and `0.1.13` references are historical; never move
 their tags or `v0.1.10`. Release `0.1.14` enforces verification installation
 authority, provides recoverable stale receipt lifecycle in `prepare-completion`,
-and validates single-actor protocol runs.
+and validates single-actor protocol runs. The `0.1.15` candidate adds trusted
+command execution provenance without changing the v1 lifecycle or authority
+boundary.
 
 ## How to prompt ForgeLoop
 
@@ -204,7 +207,8 @@ project without overwriting local instructions. When the package is available
 in the npm registry, use the commands below; otherwise use the repository
 checkout fallback.
 
-The current repository package is `@cassiomc1/forgeloop@0.1.14`.
+The current repository package candidate is `@cassiomc1/forgeloop@0.1.15` and is
+not yet published.
 The latest verified published npm release is `@cassiomc1/forgeloop@0.1.14`.
 For reproducible published-package runs or release-identity checks,
 pin the published version:
@@ -233,7 +237,8 @@ npx @cassiomc1/forgeloop advance --to PLANNED
 npx @cassiomc1/forgeloop advance --to EXECUTING
 npx @cassiomc1/forgeloop advance --to VERIFYING
 npx @cassiomc1/forgeloop prepare-completion --json
-npx @cassiomc1/forgeloop record-check --id tests --requirement tests --status passed --evidence-kind OBSERVED --command "npm test" --result "exit 0" --exit-code 0 --json
+npx @cassiomc1/forgeloop run-check --json --id tests --requirement tests -- npm test
+npx @cassiomc1/forgeloop record-check --id docs-review --kind manual-review --requirement "documentation synchronized" --status passed --evidence-kind OBSERVED --provenance MANUAL_OBSERVATION --result "reviewed" --json
 npx @cassiomc1/forgeloop record-terminal-result --requirement "Package published" --type PUBLICATION --status published --source "npm publish" --result "Published package to npm" --json
 npx @cassiomc1/forgeloop advance --to REVIEWING
 npx @cassiomc1/forgeloop audit --json
@@ -263,7 +268,7 @@ implementation
 → forgeloop next
 → prepare-completion
 → forgeloop next
-→ checks + record-check
+→ checks + run-check/record-check
 → forgeloop next
 → advance --to REVIEWING
 → forgeloop next
@@ -287,10 +292,15 @@ Before implementation, write the canonical contract, persist the route, create
 required gate artifacts under `.forgeloop/gates/`, and require `preflight` to
 return `READY`. `advance` enforces legal phase transitions; it never runs the
 project's commands. After implementation, advance to `VERIFYING`, use
-`prepare-completion` to create a safe receipt skeleton, and use `record-check`
-to serialize results that the agent has already observed. `record-check` never
-executes the supplied command text. Advance to `REVIEWING` before running
-`audit` and `complete`.
+`prepare-completion` to create a safe receipt skeleton, use `run-check` for
+commands, and use `record-check` for manual or non-command observations.
+`run-check` accepts the exact argv after `--`, classifies resolution before
+launch, blocks install-capable resolution without trusted host authority, and
+writes `.forgeloop/executions/<executionId>.json` before recording the check.
+`record-check` never executes `--command`; that option is metadata only. A
+command check with `OBSERVED` evidence must reference a ForgeLoop execution
+artifact with `provenance: FORGELOOP_EXECUTED`. Advance to `REVIEWING` before
+running `audit` and `complete`.
 `audit` is a read-only consistency check. `complete` validates the final
 contract, route, gates, phase ledger, structured evidence, coverage, receipt,
 and freshness before it can return `VALID`. `report` renders the same result as
@@ -377,6 +387,7 @@ target project. Its main threat boundaries are:
 | Installation authority provenance | Standalone CLI uses `trustMode: NONE`: environment-selected `FORGELOOP_AUTHORITY_FILE`/`FORGELOOP_AUTHORITY_DIR` sources are untrusted candidates; only an internal `HOST_ATTESTED` context may select a trusted source outside the actor-writable target. Project-local authority claims remain untrusted. |
 | Stale replay | Work state records contract and repository fingerprints; drift requires revalidation and never reruns destructive or publication actions automatically. |
 | Unverified publication | Receipts carry explicit publication booleans; local success never implies a push, pull request, merge, release, or deployment. |
+| Unattested observed command | `record-check --command` is metadata only; command `OBSERVED` evidence requires a bound ForgeLoop execution artifact. `run-check` preserves exact argv, target cwd, resolution mode, timestamps, and exit status, and rejects install-capable resolution before launch without trusted host authority. |
 
 The full boundary inventory, residual limitations, and executable evidence are
 in [`THREAT_MODEL.md`](./THREAT_MODEL.md).
@@ -649,7 +660,7 @@ adoption. Local rendering requires Node.js 22+ and FFmpeg.
 The source repository keeps canonical documents at the root for package
 development and validation. A bootstrapped target uses the hidden-kit layout
 shown above; mutable contract, route, state, gate, event, preflight, and
-receipt artifacts remain directly under `.forgeloop/`.
+receipt and execution artifacts remain directly under `.forgeloop/`.
 
 ## Maintenance
 

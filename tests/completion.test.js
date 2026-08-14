@@ -61,7 +61,7 @@ async function prepareValidTask(target, {
   const persistedRoute = await persistRoute(target, route, packageRoot, { contractFingerprint: contractHash });
   const check = createCheck({
     id: checkId,
-    kind: "command",
+    kind: "manual-review",
     requirement,
     status: "passed",
     evidenceKind: "OBSERVED",
