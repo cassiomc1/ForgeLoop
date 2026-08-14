@@ -731,12 +731,14 @@ test("classifyCommandResolution classifies resolution modes deterministically", 
     mayInstall: false,
     installer: null,
     tool: null,
+    dispatch: { kind: "npm-script-command" },
   });
   assert.deepEqual(classifyCommandResolution("npm run check"), {
     resolutionMode: "LOCAL_PACKAGE_BINARY",
     mayInstall: false,
     installer: null,
     tool: null,
+    dispatch: { kind: "npm-script-command" },
   });
   assert.deepEqual(classifyCommandResolution("node scripts/verify.js"), {
     resolutionMode: "LOCAL_EXECUTABLE",
@@ -1337,4 +1339,141 @@ test("protocol integration guide defines missing tool capability policy", async 
   assert.match(text, /## Missing tool capability/);
   assert.match(text, /A missing tool is a capability gap, not installation authority/);
   assert.match(text, /Never convert `PROTOCOL_LIMITED` into environmental mutation/);
+});
+
+test("semantic npm classifier regression - install aliases", () => {
+  const aliases = ["install", "add", "i", "in", "ins", "inst", "insta", "instal", "isnt", "isnta", "isntal", "isntall"];
+  for (const alias of aliases) {
+    assert.deepEqual(classifyCommandResolution(`npm ${alias} pkg`), {
+      resolutionMode: "EXPLICIT_INSTALLATION",
+      mayInstall: true,
+      installer: "npm",
+      tool: "pkg",
+    });
+  }
+});
+
+test("semantic npm classifier regression - ci families", () => {
+  const aliases = ["ci", "clean-install", "ic", "install-clean", "isntall-clean"];
+  for (const alias of aliases) {
+    assert.deepEqual(classifyCommandResolution(`npm ${alias}`), {
+      resolutionMode: "EXPLICIT_INSTALLATION",
+      mayInstall: true,
+      installer: `npm ${alias}`,
+      tool: null,
+    });
+  }
+});
+
+test("semantic npm classifier regression - install-test families", () => {
+  const aliases = ["install-test", "it", "install-ci-test", "cit", "clean-install-test", "sit"];
+  for (const alias of aliases) {
+    assert.deepEqual(classifyCommandResolution(`npm ${alias}`), {
+      resolutionMode: "EXPLICIT_INSTALLATION",
+      mayInstall: true,
+      installer: `npm ${alias}`,
+      tool: null,
+    });
+  }
+});
+
+test("semantic npm classifier regression - init", () => {
+  assert.deepEqual(classifyCommandResolution("npm init"), {
+    resolutionMode: "LOCAL_PACKAGE_BINARY",
+    mayInstall: false,
+    installer: null,
+    tool: null,
+  });
+  assert.deepEqual(classifyCommandResolution("npm init -y"), {
+    resolutionMode: "LOCAL_PACKAGE_BINARY",
+    mayInstall: false,
+    installer: null,
+    tool: null,
+  });
+  assert.deepEqual(classifyCommandResolution("npm init foo"), {
+    resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+    mayInstall: true,
+    installer: "npm init",
+    tool: "foo",
+  });
+  assert.deepEqual(classifyCommandResolution("npm create foo"), {
+    resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+    mayInstall: true,
+    installer: "npm create",
+    tool: "foo",
+  });
+  assert.deepEqual(classifyCommandResolution("npm innit foo"), {
+    resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+    mayInstall: true,
+    installer: "npm innit",
+    tool: "foo",
+  });
+  assert.deepEqual(classifyCommandResolution("npm --silent init foo"), {
+    resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+    mayInstall: true,
+    installer: "npm init",
+    tool: "foo",
+  });
+});
+
+test("semantic npm classifier regression - update", () => {
+  assert.deepEqual(classifyCommandResolution("npm update"), {
+    resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+    mayInstall: true,
+    installer: "npm update",
+    tool: null,
+  });
+  assert.deepEqual(classifyCommandResolution("npm update package-x"), {
+    resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+    mayInstall: true,
+    installer: "npm update",
+    tool: "package-x",
+  });
+});
+
+test("semantic npm classifier regression - audit", () => {
+  assert.deepEqual(classifyCommandResolution("npm audit"), {
+    resolutionMode: "LOCAL_PACKAGE_BINARY",
+    mayInstall: false,
+    installer: null,
+    tool: null,
+  });
+  assert.deepEqual(classifyCommandResolution("npm audit fix"), {
+    resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+    mayInstall: true,
+    installer: "npm audit fix",
+    tool: null,
+  });
+  assert.deepEqual(classifyCommandResolution("npm audit fix --force"), {
+    resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+    mayInstall: true,
+    installer: "npm audit fix",
+    tool: null,
+  });
+});
+
+test("semantic npm classifier regression - unknown", () => {
+  assert.deepEqual(classifyCommandResolution("npm frobnicate"), {
+    resolutionMode: "UNKNOWN",
+    mayInstall: true,
+    installer: "npm",
+    tool: null,
+    reason: "NPM_COMMAND_UNCLASSIFIED",
+  });
+});
+
+test("semantic npm classifier regression - option ambiguity", () => {
+  assert.deepEqual(classifyCommandResolution("npm --scope @mycorp exec -- package"), {
+    resolutionMode: "UNKNOWN",
+    mayInstall: true,
+    installer: "npm",
+    tool: null,
+    reason: "NPM_OPTION_VALUE_AMBIGUOUS",
+  });
+  assert.deepEqual(classifyCommandResolution("npm --scope=@mycorp exec -- package"), {
+    resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+    mayInstall: true,
+    installer: "npm exec",
+    tool: "package",
+  });
 });

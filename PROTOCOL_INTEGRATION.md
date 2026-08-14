@@ -165,7 +165,7 @@ recursively across recognized lifecycle scripts before launch with cycle
 detection, leading option normalization, and restart-specific lifecycle fallback.
 npm workspace script executions (`--workspace`, `-w`, `--workspaces`, `--ws`) fail
 closed before launch with `E_COMMAND_RESOLUTION_AMBIGUOUS` because the effective
-`package.json` context cannot be proven from the root target. `npx --no-install` is
+`package.json` context cannot be proven from the root target. Unknown npm command semantics are rejected before execution rather than downgraded to local execution. ForgeLoop uses an explicit non-installing allowlist instead of assuming that unrecognized npm commands are safe. `npx --no-install` is
 an allowed non-installing resolution and can return a normal failed result when
 the requested tool is unavailable. Completion, audit, `validate-protocol`, and task
 bundles revalidate execution references rather than trusting duplicated check

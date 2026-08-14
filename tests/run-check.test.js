@@ -336,3 +336,41 @@ test("execution binding rejects a different check", async () => {
     );
   });
 });
+
+test("runCommandExecution throws E_COMMAND_RESOLUTION_AMBIGUOUS for unclassified npm commands without spawning", async () => {
+  await withTarget(async (target) => {
+    try {
+      await runCommandExecution({
+        target,
+        packageRoot,
+        taskId: "task-frobnicate",
+        checkId: "check-npm",
+        requirement: "matrix",
+        argv: ["npm", "frobnicate"],
+      });
+      assert.fail("Should throw E_COMMAND_RESOLUTION_AMBIGUOUS");
+    } catch (err) {
+      assert.equal(err.code, E_COMMAND_RESOLUTION_AMBIGUOUS);
+      assert.equal(err.resolution.reason, "NPM_COMMAND_UNCLASSIFIED");
+    }
+  });
+});
+
+test("runCommandExecution throws E_COMMAND_RESOLUTION_AMBIGUOUS for npm option ambiguity without spawning", async () => {
+  await withTarget(async (target) => {
+    try {
+      await runCommandExecution({
+        target,
+        packageRoot,
+        taskId: "task-scope",
+        checkId: "check-npm",
+        requirement: "matrix",
+        argv: ["npm", "--scope", "@mycorp", "exec", "--", "package"],
+      });
+      assert.fail("Should throw E_COMMAND_RESOLUTION_AMBIGUOUS");
+    } catch (err) {
+      assert.equal(err.code, E_COMMAND_RESOLUTION_AMBIGUOUS);
+      assert.equal(err.resolution.reason, "NPM_OPTION_VALUE_AMBIGUOUS");
+    }
+  });
+});

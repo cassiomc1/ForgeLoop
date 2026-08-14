@@ -99,6 +99,8 @@ export async function runCommandExecution({
     && (
       resolution.reason === "NPM_WORKSPACE_SCRIPT_UNRESOLVED"
       || resolution.reason === "NPM_SUBCOMMAND_AMBIGUOUS"
+      || resolution.reason === "NPM_COMMAND_UNCLASSIFIED"
+      || resolution.reason === "NPM_OPTION_VALUE_AMBIGUOUS"
     )
   ) {
     const error = new Error(

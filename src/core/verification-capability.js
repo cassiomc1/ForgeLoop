@@ -192,6 +192,42 @@ function normalizeExecutableName(binaryToken) {
   return base.toLowerCase().replace(/\.(?:cmd|bat|exe)$/u, "");
 }
 
+const NPM_INSTALL_COMMANDS = new Set([
+  "install", "add", "i", "in", "ins", "inst", "insta", "instal", "isnt", "isnta", "isntal", "isntall",
+]);
+
+const NPM_CI_COMMANDS = new Set([
+  "ci", "clean-install", "ic", "install-clean", "isntall-clean",
+]);
+
+const NPM_INSTALL_TEST_COMMANDS = new Set([
+  "install-test", "it",
+]);
+
+const NPM_INSTALL_CI_TEST_COMMANDS = new Set([
+  "install-ci-test", "cit", "clean-install-test", "sit",
+]);
+
+const NPM_EXEC_COMMANDS = new Set([
+  "exec", "x",
+]);
+
+const NPM_INIT_COMMANDS = new Set([
+  "init", "create", "innit",
+]);
+
+const NPM_SCRIPT_COMMANDS = new Set([
+  "test", "t", "tst", "start", "stop", "restart", "run", "run-script", "rum", "urn",
+]);
+
+const NPM_KNOWN_NON_INSTALLING_COMMANDS = new Set([
+  "version", "v", "view", "info", "show", "list", "ls", "outdated", "config", "help", "help-search", "doctor", "ping", "root", "prefix", "bin", "whoami",
+]);
+
+const NPM_KNOWN_BOOLEAN_OPTIONS = new Set([
+  "--silent", "--json", "--long", "--parseable", "--global", "-g", "--force", "--yes", "-y", "--no",
+]);
+
 const NPM_OPTIONS_WITH_VALUE = new Set([
   "--workspace",
   "-w",
@@ -285,6 +321,31 @@ export function parseNpmInvocationArgs(rest) {
       continue;
     }
 
+    if (NPM_KNOWN_BOOLEAN_OPTIONS.has(arg)) {
+      leadingOptions.push(arg);
+      i += 1;
+      continue;
+    }
+
+    if (/^--/.test(arg)) {
+      const next = rest[i + 1];
+      if (next && !next.startsWith("-")) {
+        return {
+          subcommand: null,
+          subcommandIndex: -1,
+          args: [],
+          leadingOptions,
+          workspace,
+          workspaces,
+          ambiguous: true,
+          reason: "NPM_OPTION_VALUE_AMBIGUOUS",
+        };
+      }
+      leadingOptions.push(arg);
+      i += 1;
+      continue;
+    }
+
     if (arg.startsWith("-")) {
       leadingOptions.push(arg);
       i += 1;
@@ -313,6 +374,7 @@ export function parseNpmInvocationArgs(rest) {
     }
   }
 
+  const ambiguous = subcommand === null;
   return {
     subcommand,
     subcommandIndex: subcommand ? i : -1,
@@ -320,7 +382,8 @@ export function parseNpmInvocationArgs(rest) {
     leadingOptions,
     workspace,
     workspaces,
-    ambiguous: subcommand === null,
+    ambiguous,
+    ...(ambiguous ? { reason: "NPM_SUBCOMMAND_AMBIGUOUS" } : {}),
   };
 }
 
@@ -357,6 +420,129 @@ export function npmWorkspaceSelection(npmInvocation) {
     scoped: Boolean(npmInvocation?.workspace || npmInvocation?.workspaces),
     workspace: npmInvocation?.workspace ?? null,
     allWorkspaces: npmInvocation?.workspaces === true,
+  };
+}
+
+export function classifyNpmInvocation(npm) {
+  const sub = npm.subcommand;
+
+  if (npm.ambiguous) {
+    return {
+      resolutionMode: "UNKNOWN",
+      mayInstall: true,
+      installer: "npm",
+      tool: null,
+      reason: npm.reason || "NPM_SUBCOMMAND_AMBIGUOUS",
+    };
+  }
+
+  if (NPM_EXEC_COMMANDS.has(sub)) {
+    return {
+      resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+      mayInstall: true,
+      installer: `npm ${sub}`,
+      tool: extractNpmExecTool(npm.args),
+    };
+  }
+
+  if (NPM_INSTALL_COMMANDS.has(sub) || NPM_CI_COMMANDS.has(sub) || NPM_INSTALL_TEST_COMMANDS.has(sub) || NPM_INSTALL_CI_TEST_COMMANDS.has(sub)) {
+    let tool = null;
+    let installer = `npm ${sub}`;
+    if (NPM_INSTALL_COMMANDS.has(sub)) {
+      tool = extractToolFromArgs(npm.args);
+      installer = "npm";
+    }
+    return {
+      resolutionMode: "EXPLICIT_INSTALLATION",
+      mayInstall: true,
+      installer,
+      tool,
+    };
+  }
+
+  if (NPM_INIT_COMMANDS.has(sub)) {
+    let firstMeaningful = null;
+    for (let i = 0; i < npm.args.length; i++) {
+      const arg = npm.args[i];
+      if (arg === "--") {
+        const next = npm.args[i + 1];
+        firstMeaningful = next && !next.startsWith("-") ? next : null;
+        break;
+      }
+      if (!arg.startsWith("-")) {
+        firstMeaningful = arg;
+        break;
+      }
+    }
+    if (firstMeaningful) {
+      return {
+        resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+        mayInstall: true,
+        installer: `npm ${sub}`,
+        tool: firstMeaningful,
+      };
+    }
+    return {
+      resolutionMode: "LOCAL_PACKAGE_BINARY",
+      mayInstall: false,
+      installer: null,
+      tool: null,
+    };
+  }
+
+  if (sub === "update" || sub === "up" || sub === "upgrade") {
+    return {
+      resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+      mayInstall: true,
+      installer: `npm ${sub}`,
+      tool: extractToolFromArgs(npm.args),
+    };
+  }
+
+  if (sub === "audit") {
+    if (npm.args.includes("fix")) {
+      return {
+        resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+        mayInstall: true,
+        installer: "npm audit fix",
+        tool: null,
+      };
+    }
+    return {
+      resolutionMode: "LOCAL_PACKAGE_BINARY",
+      mayInstall: false,
+      installer: null,
+      tool: null,
+    };
+  }
+
+  if (NPM_SCRIPT_COMMANDS.has(sub)) {
+    return {
+      resolutionMode: "LOCAL_PACKAGE_BINARY",
+      mayInstall: false,
+      installer: null,
+      tool: null,
+      dispatch: {
+        kind: "npm-script-command",
+      },
+    };
+  }
+
+  if (NPM_KNOWN_NON_INSTALLING_COMMANDS.has(sub)) {
+    return {
+      resolutionMode: "LOCAL_PACKAGE_BINARY",
+      mayInstall: false,
+      installer: null,
+      tool: null,
+    };
+  }
+
+  return {
+    resolutionMode: "UNKNOWN",
+    mayInstall: true,
+    installer: "npm",
+    tool: null,
+    reason: "NPM_COMMAND_UNCLASSIFIED",
   };
 }
 
@@ -510,36 +696,7 @@ function classifySingleCommand(commandInput) {
   // Check npm
   if (binary === "npm") {
     const npm = parseNpmInvocationArgs(rest);
-
-    if (npm.ambiguous) {
-      return {
-        resolutionMode: "UNKNOWN",
-        mayInstall: true,
-        installer: "npm",
-        tool: null,
-        reason: "NPM_SUBCOMMAND_AMBIGUOUS",
-      };
-    }
-
-    if (["exec", "x"].includes(npm.subcommand)) {
-      return {
-        resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
-        mayInstall: true,
-        installer: `npm ${npm.subcommand}`,
-        tool: extractNpmExecTool(npm.args),
-      };
-    }
-
-    if (["install", "i", "add"].includes(npm.subcommand)) {
-      return {
-        resolutionMode: "EXPLICIT_INSTALLATION",
-        mayInstall: true,
-        installer: "npm",
-        tool: extractToolFromArgs(npm.args),
-      };
-    }
-
-    return { resolutionMode: "LOCAL_PACKAGE_BINARY", mayInstall: false, installer: null, tool: null };
+    return classifyNpmInvocation(npm);
   }
 
   // Check python/pip
