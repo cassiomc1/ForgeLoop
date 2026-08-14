@@ -8,10 +8,11 @@ function windowsCommandArgv(fakeNpx, tokens) {
   if (process.platform !== "win32") return [fakeNpx, ...tokens.slice(1)];
 
   const command = [
+    "call",
     `"${fakeNpx.replaceAll('"', '""')}"`,
     ...tokens.slice(1),
   ].join(" ");
-  return [process.env.ComSpec ?? "cmd.exe", "/d", "/s", "/c", command];
+  return [process.env.ComSpec ?? "cmd.exe", "/d", "/c", command];
 }
 
 /**

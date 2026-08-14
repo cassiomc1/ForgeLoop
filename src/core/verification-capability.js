@@ -178,6 +178,10 @@ function classifySingleCommand(commandInput) {
   const binary = normalizeExecutableName(binaryToken);
   const rest = tokens.slice(i + 1);
 
+  if (binary === "call") {
+    return classifyCommandResolution(rest);
+  }
+
   if (binaryToken.includes("node_modules/.bin/") || binaryToken.startsWith("./node_modules/")) {
     return { resolutionMode: "LOCAL_PACKAGE_BINARY", mayInstall: false, installer: null, tool: binary };
   }
@@ -378,7 +382,7 @@ export function classifyCommandResolution(commandInput) {
     }
     if (binary === "cmd") {
       const shellFlagIndex = commandInput.findIndex((item, index) => index > 0 && /^\/c$/iu.test(item));
-      const shellCommand = shellFlagIndex >= 0 ? commandInput[shellFlagIndex + 1] : null;
+      const shellCommand = shellFlagIndex >= 0 ? commandInput.slice(shellFlagIndex + 1).join(" ") : null;
       if (shellCommand) return classifyCommandResolution(shellCommand);
     }
     return classifySingleCommand(commandInput);

@@ -200,9 +200,8 @@ test("classifyCommandResolution inspects explicit Windows cmd wrappers", () => {
   assert.deepEqual(classifyCommandResolution([
     "cmd.exe",
     "/d",
-    "/s",
     "/c",
-    '"C:\\tmp\\npx.cmd" @liustack/modlens --spec=foo',
+    'call "C:\\tmp\\npx.cmd" @liustack/modlens --spec=foo',
   ]), {
     resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
     mayInstall: true,
