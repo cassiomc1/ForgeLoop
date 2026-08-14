@@ -769,7 +769,8 @@ export async function getNextAction(targetOrOptions = {}, packageRootOption) {
       if (terminalPendingErrors.length > 0 && terminalPendingErrors.length === completion.errors.length) {
         const terminalPendingReqs = terminalPendingErrors.map((err) => {
           const reqId = err.requirementId;
-          const matchingReq = evidence.requirements.find((r) => r.id === reqId || r.text === reqId)
+          const matchingReq = evidence.requirements.find((r) => r.id === reqId)
+            ?? evidence.requirements.find((r) => r.text === reqId)
             ?? classifyRequirement(reqId ?? err.message);
           return matchingReq;
         });

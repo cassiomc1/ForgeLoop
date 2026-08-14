@@ -177,12 +177,7 @@ export function evaluateTerminalRequirements({ requirements = [], receipt = null
       const requiredLevel = req.requiredPublicationStatus ?? "published";
       const matchingEvidence = receiptEvidence
         .filter((item) => item.kind === "OBSERVED")
-        .filter((item) => (
-          item.details?.requirementId === req.id
-          || item.details?.requirementText === req.text
-          || item.requirement === req.id
-          || item.requirement === req.text
-        ))
+        .filter((item) => item.details?.requirementId === req.id)
         .filter((item) => item.details?.terminalType === "PUBLICATION");
       const latestEvidence = latestAuthoritativeCheck(matchingEvidence);
       const evidenceStatus = latestEvidence?.details?.terminalStatus;
@@ -202,12 +197,7 @@ export function evaluateTerminalRequirements({ requirements = [], receipt = null
     } else if (req.type === "PRODUCTION_READINESS") {
       const matchingEvidence = receiptEvidence
         .filter((item) => item.kind === "OBSERVED")
-        .filter((item) => (
-          item.details?.requirementId === req.id
-          || item.details?.requirementText === req.text
-          || item.requirement === req.id
-          || item.requirement === req.text
-        ))
+        .filter((item) => item.details?.requirementId === req.id)
         .filter((item) => item.details?.terminalType === "PRODUCTION_READINESS");
       const latestEvidence = latestAuthoritativeCheck(matchingEvidence);
       const evidenceStatus = latestEvidence?.details?.terminalStatus;

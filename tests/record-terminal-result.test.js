@@ -511,3 +511,208 @@ test("T-P1-03: publication status regression is rejected with E_TERMINAL_STATUS_
   });
 });
 
+test("duplicate requirement text with distinct IDs requires independent evidence for each ID", async () => {
+  await withTarget(async (target) => {
+    await setupTarget(target, {
+      verification: ["tests"],
+      successCriteria: [
+        "tests",
+        { id: "PUB_A", text: "Release is published", type: "PUBLICATION", requiredPublicationStatus: "published" },
+        { id: "PUB_B", text: "Release is published", type: "PUBLICATION", requiredPublicationStatus: "published" },
+      ],
+    });
+    await advanceWorkState(target, "VERIFYING", { packageRoot });
+    await prepareCompletion({ target, packageRoot });
+    await recordCheck({
+      target,
+      packageRoot,
+      id: "tests-check",
+      requirement: "tests",
+      status: "passed",
+      evidenceKind: "OBSERVED",
+      command: "npm test",
+      result: "Passed",
+    });
+    await advanceWorkState(target, "REVIEWING", { packageRoot });
+
+    // Record only PUB_A
+    await runRecordTerminalResult({
+      target,
+      packageRoot,
+      requirement: "PUB_A",
+      type: "PUBLICATION",
+      status: "published",
+      source: "npm publish",
+      result: "Published to npm",
+    });
+
+    // Complete must be REJECTED because PUB_B is still pending, despite sharing identical text
+    const comp1 = await runComplete({ target, packageRoot });
+    assert.equal(comp1.status, "REJECTED");
+    assert.ok(comp1.errors.some((e) => e.requirementId === "PUB_B" && e.code === "E_PUBLICATION_REQUIREMENT_PENDING"));
+
+    // Next action in REVIEWING must recommend PUB_B specifically with its canonical requirement ID
+    const next = await getNextAction(target, packageRoot);
+    assert.equal(next.nextAction, NEXT_ACTIONS.RECORD_TERMINAL_RESULT);
+    const pubBSpec = next.commandSpecs.find((spec) => spec.argv.some((arg) => arg.includes("--requirement=PUB_B")));
+    assert.ok(pubBSpec, "Expected commandSpec targeting PUB_B");
+
+    // Record PUB_B
+    await runRecordTerminalResult({
+      target,
+      packageRoot,
+      requirement: "PUB_B",
+      type: "PUBLICATION",
+      status: "published",
+      source: "gh release",
+      result: "Published to GitHub",
+    });
+
+    // Complete must now be VALID
+    const comp2 = await runComplete({ target, packageRoot });
+    assert.equal(comp2.status, "VALID");
+    assert.equal(comp2.taskStatus, "COMPLETE");
+  });
+});
+
+test("duplicate production readiness text with distinct IDs requires independent evidence for each ID", async () => {
+  await withTarget(async (target) => {
+    await setupTarget(target, {
+      verification: ["tests"],
+      successCriteria: [
+        "tests",
+        { id: "PROD_A", text: "Production readiness verified", type: "PRODUCTION_READINESS" },
+        { id: "PROD_B", text: "Production readiness verified", type: "PRODUCTION_READINESS" },
+      ],
+    });
+    await advanceWorkState(target, "VERIFYING", { packageRoot });
+    await prepareCompletion({ target, packageRoot });
+    await recordCheck({
+      target,
+      packageRoot,
+      id: "tests-check",
+      requirement: "tests",
+      status: "passed",
+      evidenceKind: "OBSERVED",
+      command: "npm test",
+      result: "Passed",
+    });
+    await advanceWorkState(target, "REVIEWING", { packageRoot });
+
+    // Record only PROD_A
+    await runRecordTerminalResult({
+      target,
+      packageRoot,
+      requirement: "PROD_A",
+      type: "PRODUCTION_READINESS",
+      status: "ready",
+      source: "smoke-east.sh",
+      result: "East region ready",
+    });
+
+    // Complete must be REJECTED because PROD_B is still pending
+    const comp1 = await runComplete({ target, packageRoot });
+    assert.equal(comp1.status, "REJECTED");
+    assert.ok(comp1.errors.some((e) => e.requirementId === "PROD_B" && e.code === "E_PRODUCTION_REQUIREMENT_PENDING"));
+
+    // Record PROD_B
+    await runRecordTerminalResult({
+      target,
+      packageRoot,
+      requirement: "PROD_B",
+      type: "PRODUCTION_READINESS",
+      status: "ready",
+      source: "smoke-west.sh",
+      result: "West region ready",
+    });
+
+    // Complete must now be VALID
+    const comp2 = await runComplete({ target, packageRoot });
+    assert.equal(comp2.status, "VALID");
+    assert.equal(comp2.taskStatus, "COMPLETE");
+  });
+});
+
+test("observation A event does not satisfy observation B during retry reconciliation", async () => {
+  await withTarget(async (target) => {
+    await setupTarget(target, {
+      verification: ["tests"],
+      successCriteria: ["tests", "Package is published to npm registry"],
+    });
+    await advanceWorkState(target, "VERIFYING", { packageRoot });
+    await prepareCompletion({ target, packageRoot });
+
+    // Observation A recorded normally with event A
+    const resA = await runRecordTerminalResult({
+      target,
+      packageRoot,
+      requirement: "Package is published to npm registry",
+      type: "PUBLICATION",
+      status: "published",
+      source: "source-A",
+      result: "result-A",
+    });
+    assert.ok(resA.event);
+
+    // Now record observation B into state and receipt manually (simulating interrupted write where event B was omitted)
+    const state = await readWorkState(target, packageRoot);
+    const receipt = (await readJsonArtifact(target, ARTIFACT_PATHS.receipt, "execution-receipt", packageRoot)).value;
+    const { createEvidence } = await import("../src/core/evidence.js");
+    const { createReceipt } = await import("../src/core/receipt.js");
+    const { canonicalFingerprint, writeJsonArtifact } = await import("../src/core/artifacts.js");
+
+    const { classifyRequirement } = await import("../src/core/evidence-readiness.js");
+    const targetReq = classifyRequirement("Package is published to npm registry");
+
+    const evidenceB = createEvidence({
+      kind: "OBSERVED",
+      source: "source-B",
+      result: "result-B",
+      verificationCycle: state.verificationCycle ?? 1,
+      details: {
+        requirementId: targetReq.id,
+        requirementText: targetReq.text,
+        terminalType: "PUBLICATION",
+        terminalStatus: "published",
+        verificationCycle: state.verificationCycle ?? 1,
+      },
+    });
+
+    const nextStateEvidence = [...(state.verificationEvidence ?? []), evidenceB];
+    const nextState = {
+      ...state,
+      verificationEvidence: nextStateEvidence,
+      lastUpdated: new Date().toISOString(),
+    };
+    const nextReceiptEvidence = [...(receipt.evidence ?? []), evidenceB];
+    const nextReceipt = await createReceipt({
+      ...receipt,
+      evidence: nextReceiptEvidence,
+      stateFingerprint: canonicalFingerprint(nextState),
+    }, packageRoot);
+
+    await writeWorkState(target, nextState, { packageRoot });
+    await writeJsonArtifact(target, ARTIFACT_PATHS.receipt, nextReceipt, "execution-receipt", packageRoot);
+
+    // Retrying observation B must detect evidence B and append event B specifically (not satisfied by event A)
+    const retryB = await runRecordTerminalResult({
+      target,
+      packageRoot,
+      requirement: "Package is published to npm registry",
+      type: "PUBLICATION",
+      status: "published",
+      source: "source-B",
+      result: "result-B",
+    });
+    assert.equal(retryB.idempotent, true);
+    assert.equal(retryB.repaired, true);
+
+    const ledger = await validateEventLedger(target, packageRoot);
+    const termEvents = ledger.events.filter((e) => e.event === "TERMINAL_RESULT_RECORDED");
+    assert.equal(termEvents.length, 2);
+    assert.equal(termEvents[0].details.source, "source-A");
+    assert.equal(termEvents[1].details.source, "source-B");
+  });
+});
+
+

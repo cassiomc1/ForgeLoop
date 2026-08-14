@@ -455,6 +455,8 @@ export async function recordTerminalResult({
       && event.details?.type === type
       && event.details?.status === status
       && event.details?.verificationCycle === cycle
+      && event.details?.source === source.trim()
+      && event.details?.result === result.trim()
     ));
 
     if (matchingEvent) {
