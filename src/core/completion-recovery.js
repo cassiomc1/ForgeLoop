@@ -11,6 +11,7 @@ export const RECOVERABLE_COMPLETION_EVIDENCE_CODES = Object.freeze([
   "E_INSTALLATION_AUTHORITY_REQUIRED",
   "E_AUTHORITY_INVALID",
   "E_AUTHORITY_SCOPE_MISMATCH",
+  "E_AUTHORITY_UNTRUSTED_SOURCE",
 ]);
 
 export function isRecoverableCompletionEvidenceCode(code) {

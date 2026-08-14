@@ -129,7 +129,10 @@ export async function prepareCompletion({ target, packageRoot }) {
     changedPaths,
     checks,
     evidence,
-    evidenceCoverage: coverageForRequirements(requiredEvidence, checks),
+    evidenceCoverage: coverageForRequirements(requiredEvidence, checks, {
+      target,
+      taskId: contract.value.taskId,
+    }),
     review: existingValue.review ?? { status: "not-run", independent: false },
     limitations: [...(existingValue.limitations ?? [])],
     publication: existingValue.publication ?? {
@@ -146,6 +149,8 @@ export async function prepareCompletion({ target, packageRoot }) {
     receipt,
     requiredEvidence,
     requireRequiredChecks: false,
+    target,
+    taskId: contract.value.taskId,
   });
   const written = await writeJsonArtifact(
     target,
@@ -322,7 +327,10 @@ export async function recordCheck({
       [ARTIFACT_PATHS.events],
     );
   }
-  const coverage = coverageForRequirements(requiredEvidence, checks);
+  const coverage = coverageForRequirements(requiredEvidence, checks, {
+    target,
+    taskId: contract.value.taskId,
+  });
   const nextState = {
     ...state,
     checks,

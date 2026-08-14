@@ -80,6 +80,7 @@ function repairNext(error) {
     case "E_INSTALLATION_AUTHORITY_REQUIRED":
     case "E_AUTHORITY_INVALID":
     case "E_AUTHORITY_SCOPE_MISMATCH":
+    case "E_AUTHORITY_UNTRUSTED_SOURCE":
       return "Do not execute installation-capable verification commands without explicit scoped installation authority; use local equivalents or record NOT_VERIFIED.";
     case "E_VERIFICATION_TOOL_UNAVAILABLE":
       return "Use an available local verifier, an existing equivalent, or record NOT_VERIFIED if installation was not authorized.";

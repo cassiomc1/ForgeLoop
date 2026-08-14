@@ -8,6 +8,7 @@ export function formatInspectResult(report) {
     `Manifest: ${report.manifest.status}`,
     `Profile: ${report.profile.mode ?? "unknown"}/${report.profile.status ?? "unknown"}`,
     `Protocol: v${report.protocol.version}`,
+    `Authority source: ${report.authority.sourceType ?? "none configured"}`,
     `State: ${report.state.status}`,
     `Adapters: ${report.adapters.detected.length} detected`,
     `Findings: ${report.findings.length}`,

@@ -126,7 +126,11 @@ export function completionRelationshipErrors({
     }
   }
 
-  const expectedCoverage = state ? coverageForRequirements(requiredEvidence, state.checks) : [];
+  const expectedCoverage = state ? coverageForRequirements(requiredEvidence, state.checks, {
+    target,
+    taskId: effectiveTaskId,
+    authorities,
+  }) : [];
   if (state?.evidenceCoverage !== undefined) {
     addAssertion(errors, () => assertCoverageList(state.evidenceCoverage, "work-state.evidenceCoverage"), "E_EVIDENCE_COVERAGE_INVALID", [ARTIFACT_PATHS.state]);
     if (!sameValue(state.evidenceCoverage, expectedCoverage)) {

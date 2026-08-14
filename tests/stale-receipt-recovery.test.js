@@ -34,6 +34,23 @@ async function withTarget(run) {
   }
 }
 
+async function withTargetAndAuthority(run, { configure = true } = {}) {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-stale-receipt-"));
+  const authorityRoot = await mkdtemp(path.join(os.tmpdir(), "forgeloop-host-authority-"));
+  const authorityFile = path.join(authorityRoot, "authorities.json");
+  const previousAuthorityFile = process.env.FORGELOOP_AUTHORITY_FILE;
+  if (configure) process.env.FORGELOOP_AUTHORITY_FILE = authorityFile;
+  else delete process.env.FORGELOOP_AUTHORITY_FILE;
+  try {
+    await run(target, authorityFile);
+  } finally {
+    if (previousAuthorityFile === undefined) delete process.env.FORGELOOP_AUTHORITY_FILE;
+    else process.env.FORGELOOP_AUTHORITY_FILE = previousAuthorityFile;
+    await rm(target, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+    await rm(authorityRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+  }
+}
+
 test("stale receipt recovery: prepare-completion is recoverable and next returns executable recovery", async () => {
   await withTarget(async (target) => {
     const contract = createContract({
@@ -119,7 +136,7 @@ test("stale receipt recovery: prepare-completion is recoverable and next returns
 });
 
 test("installation authority enforcement: recordCheck, evaluateCompletion, and evaluateAudit reject unauthorized install-capable commands", async () => {
-  await withTarget(async (target) => {
+  await withTargetAndAuthority(async (target, authorityFile) => {
     const contract = createContract({
       taskId: "task-auth-enforcement",
       objective: "Verify installation authority enforcement across validators",
@@ -218,20 +235,57 @@ test("installation authority enforcement: recordCheck, evaluateCompletion, and e
       (error) => error.code === "E_AUTHORITY_INVALID",
     );
 
-    // Create an authority grant artifact with wrong scope
-    const authDir = path.join(target, ".forgeloop", "authorities");
-    await mkdir(authDir, { recursive: true });
+    // A project-local authority artifact is only an untrusted reference.
+    const localAuthDir = path.join(target, ".forgeloop", "authorities");
+    await mkdir(localAuthDir, { recursive: true });
     await writeFile(
-      path.join(authDir, "auth-wrong-scope.json"),
+      path.join(localAuthDir, "auth-local-fake.json"),
       JSON.stringify({
         schemaVersion: 1,
         protocolVersion: 1,
-        authorityId: "auth-wrong-scope",
+        authorityId: "auth-local-fake",
         taskId: contract.taskId,
         type: "SOFTWARE_INSTALLATION",
         status: "AUTHORIZED",
-        scope: { tool: "playwright" },
+        scope: { tool: "@liustack/modlens" },
         source: "operator",
+      }),
+      "utf8",
+    );
+    await assert.rejects(
+      async () => {
+        await recordCheck({
+          target,
+          packageRoot,
+          id: "modlens-check-local-fake",
+          kind: "command",
+          requirement: "visual-check",
+          status: "passed",
+          evidenceKind: "OBSERVED",
+          command: "npx @liustack/modlens --spec=ui.json",
+          details: {
+            installationAuthorityRef: "auth-local-fake",
+          },
+        });
+      },
+      (error) => error.code === "E_AUTHORITY_UNTRUSTED_SOURCE",
+    );
+
+    // Configure the host-supplied authority file and create a grant with wrong scope.
+    process.env.FORGELOOP_AUTHORITY_FILE = authorityFile;
+    await writeFile(
+      authorityFile,
+      JSON.stringify({
+        schemaVersion: 1,
+        protocolVersion: 1,
+        authorities: [{
+          authorityId: "auth-wrong-scope",
+          taskId: contract.taskId,
+          type: "SOFTWARE_INSTALLATION",
+          status: "AUTHORIZED",
+          scope: { tool: "playwright" },
+          source: "operator",
+        }],
       }),
       "utf8",
     );
@@ -256,18 +310,20 @@ test("installation authority enforcement: recordCheck, evaluateCompletion, and e
       (error) => error.code === "E_AUTHORITY_SCOPE_MISMATCH",
     );
 
-    // Create a valid authority grant artifact
+    // Replace the trusted external source with a valid authority grant.
     await writeFile(
-      path.join(authDir, "auth-modlens.json"),
+      authorityFile,
       JSON.stringify({
         schemaVersion: 1,
         protocolVersion: 1,
-        authorityId: "auth-modlens",
-        taskId: contract.taskId,
-        type: "SOFTWARE_INSTALLATION",
-        status: "AUTHORIZED",
-        scope: { tool: "@liustack/modlens" },
-        source: "operator",
+        authorities: [{
+          authorityId: "auth-modlens",
+          taskId: contract.taskId,
+          type: "SOFTWARE_INSTALLATION",
+          status: "AUTHORIZED",
+          scope: { tool: "@liustack/modlens" },
+          source: "operator",
+        }],
       }),
       "utf8",
     );
@@ -302,5 +358,5 @@ test("installation authority enforcement: recordCheck, evaluateCompletion, and e
     });
     assert.ok(nonInstallingRecord.check);
     assert.equal(nonInstallingRecord.check.status, "passed");
-  });
+  }, { configure: false });
 });
