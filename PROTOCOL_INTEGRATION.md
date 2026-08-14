@@ -53,6 +53,7 @@ adapter (such as `AGENTS.md`, `CLAUDE.md`, `.cursor/rules/project-loop.mdc`,
 ### Level 2 — `PROTOCOL_CAPABLE`
 
 The environment possesses the necessary local capabilities:
+
 - Read project files.
 - Write project-local files.
 - Execute local commands.
@@ -67,6 +68,7 @@ The environment discovered ForgeLoop but lacks one or more required local
 capabilities (for example, no command execution or no write access).
 
 ForgeLoop **still applies**, but the runtime must:
+
 - Fail closed for the affected lifecycle dimension.
 - Report the missing capability explicitly.
 - Never simulate missing capabilities.
@@ -129,6 +131,7 @@ The following protocol artifacts are strictly owned by ForgeLoop:
 - Canonical check, evidence, and terminal-result state
 
 If the required CLI or API capability cannot be resolved:
+
 - **Do not** fabricate lifecycle state manually.
 - **Do not** synthesize event history.
 - **Do not** manually assign `COMPLETE`.

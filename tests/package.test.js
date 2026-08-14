@@ -16,7 +16,7 @@ test("npm tarball contains the CLI, templates, and license notices only", () => 
 
   for (const expected of [
     "src/cli.js",
-    "src/core/agent-support.js",
+    "src/core/discovery-surfaces.js",
     ...TEMPLATE_PATHS.filter((relativePath) => relativePath !== ".forgeloop/.gitignore"),
     ".forgeloop/forgeloop.gitignore",
     "QUALITY_SCORECARD.md",
@@ -40,6 +40,7 @@ test("npm tarball contains the CLI, templates, and license notices only", () => 
     assert.ok(listing.includes(expected), `missing ${expected}`);
   }
   for (const excluded of [
+    "src/core/agent-support.js",
     "tests/cli.test.js",
     "scripts/scan_secrets.py",
     ".forgeloop/work-state.json",

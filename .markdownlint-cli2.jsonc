@@ -19,6 +19,7 @@
   "globs": [
     "**/*.md",
     "!**/.worktrees/**",
-    "!**/.superpowers/**"
+    "!**/.superpowers/**",
+    "!docs/superpowers/**"
   ]
 }

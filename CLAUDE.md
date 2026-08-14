@@ -8,17 +8,15 @@ Do not treat ForgeLoop as vendor-specific, optional, or to follow only "in spiri
 When working in this repository:
 
 1. Follow higher-level instructions, the user's latest request, and local rules first.
-2. Read [`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md) and [`PROTOCOL_INTEGRATION.md`](./PROTOCOL_INTEGRATION.md).
-3. Verify [`PROJECT_PROFILE.md`](./PROJECT_PROFILE.md) against real sources; initialize if in `template` mode.
-4. Consult [`GUIDE_ROUTER.md`](./GUIDE_ROUTER.md), select relevant guides, and announce their IDs.
-5. Make small changes, run specific checks, and run proportional regression checks.
-6. Investigate root causes before fixing failures; do not make unverified attempts.
-7. Request authority for unrelated installations, publications, deletions, or migrations. For missing Qwen-MM-Plugins, follow `LOOP_ENGINEERING.md`.
-8. After implementation begins, do not return a final result in `EXECUTING`: advance through `VERIFYING` → structured evidence → `REVIEWING` → execution receipt → validator-backed `COMPLETE`. If closure cannot be reached, report `BLOCKED` or `PARTIALLY VERIFIED`.
-
-After implementation work for the current task is complete, run `forgeloop next` before returning a final result. Follow the returned lifecycle action until ForgeLoop reaches a terminal state or an explicit blocker.
-
-9. Report current evidence, limitations, and publication state without claiming checks that were not run.
+1. Read [`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md) and [`PROTOCOL_INTEGRATION.md`](./PROTOCOL_INTEGRATION.md).
+1. Verify [`PROJECT_PROFILE.md`](./PROJECT_PROFILE.md) against real sources; initialize if in `template` mode.
+1. Consult [`GUIDE_ROUTER.md`](./GUIDE_ROUTER.md), select relevant guides, and announce their IDs.
+1. Make small changes, run specific checks, and run proportional regression checks.
+1. Investigate root causes before fixing failures; do not make unverified attempts.
+1. Request authority for unrelated installations, publications, deletions, or migrations. For missing Qwen-MM-Plugins, follow `LOOP_ENGINEERING.md`.
+1. After implementation begins, do not return a final result in `EXECUTING`: advance through `VERIFYING` → structured evidence → `REVIEWING` → execution receipt → validator-backed `COMPLETE`. If closure cannot be reached, report `BLOCKED` or `PARTIALLY VERIFIED`.
+1. After implementation work for the current task is complete, run `forgeloop next` before returning a final result. Follow the returned lifecycle action until ForgeLoop reaches a terminal state or an explicit blocker.
+1. Report current evidence, limitations, and publication state without claiming checks that were not run.
 
 Do not stop for non-blocking missing product details. When a safe, reversible
 local default exists, record it as an agent assumption and follow the Blocking vs Non-Blocking Decisions policy in `LOOP_ENGINEERING.md`.

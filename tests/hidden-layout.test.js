@@ -627,7 +627,7 @@ test("the frozen published 0.1.6 installation migrates without network access", 
     );
     const manifest = JSON.parse(await readFile(path.join(target, ".forgeloop/manifest.json"), "utf8"));
     assert.equal(manifest.layoutVersion, 2);
-    assert.equal(manifest.packageVersion, "0.1.11");
+    assert.equal(manifest.packageVersion, "0.1.12");
     assert.deepEqual(await readFile(path.join(target, ".forgeloop/kit/PROJECT_PROFILE.md")), profileBefore);
 
     for (const entry of await readTemplateEntries(packageRoot)) {

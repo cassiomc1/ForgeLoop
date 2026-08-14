@@ -35,6 +35,7 @@ My current runtime may have unverified or limited capabilities, which I will eva
 An unknown or undocumented execution environment is not a blocker by itself.
 
 If it discovered the ForgeLoop project adapter, evaluate capabilities:
+
 - If protocol-capable: execute ForgeLoop normally.
 - If capability-limited: execute all supported ForgeLoop dimensions, fail closed
   for unavailable dimensions, and report limitations precisely.
@@ -56,6 +57,7 @@ the supported ForgeLoop lifecycle commands or canonical ForgeLoop APIs:
 - terminal-result lifecycle state
 
 If the required CLI/API capability cannot be resolved:
+
 - do not fabricate current lifecycle state;
 - do not synthesize event history;
 - do not manually assign `COMPLETE`;

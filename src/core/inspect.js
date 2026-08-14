@@ -1,5 +1,5 @@
 import { fileExists, ensureWithin, readBytes } from "./filesystem.js";
-import { AGENT_SUPPORT } from "./agent-support.js";
+import { DISCOVERY_SURFACES } from "./discovery-surfaces.js";
 import { readManifest } from "./manifest.js";
 import { PROTOCOL_VERSION } from "./protocol.js";
 import { inspectSchemaHealth } from "./schema-validation.js";
@@ -42,15 +42,14 @@ export async function inspectTarget({ target, packageRoot, contractFile = null }
     ? `${FORGELOOP_KIT_DIR}/schemas`
     : "schemas";
   const doctor = await runDoctor({ target, packageRoot });
-  const agents = await Promise.all(AGENT_SUPPORT.map(async (record) => ({
-    id: record.id,
-    name: record.name,
-    support: record.support,
-    instructionFiles: record.instructionFiles,
-    available: (await Promise.all(
-      record.instructionFiles.map(async (relativePath) => fileExists(ensureWithin(target, relativePath))),
-    )).some(Boolean),
+  const surfaces = await Promise.all(DISCOVERY_SURFACES.map(async (surface) => ({
+    id: surface.id,
+    path: surface.path,
+    kind: surface.kind,
+    available: await fileExists(ensureWithin(target, surface.path)),
   })));
+  const availableSurfaces = surfaces.filter((surface) => surface.available);
+  const protocolActivated = availableSurfaces.length > 0;
 
   const findings = [...doctor.findings];
   for (const schema of schemaHealth.schemas) {
@@ -100,9 +99,20 @@ export async function inspectTarget({ target, packageRoot, contractFile = null }
       error: manifestError,
     },
     profile,
+    integration: {
+      protocolActivated,
+      protocolMarker: "FORGELOOP_PROJECT_PROTOCOL=REQUIRED",
+      discovery: {
+        status: protocolActivated ? "INSTRUCTION_DISCOVERED" : "INSTRUCTION_ABSENT",
+        surfaces,
+      },
+      capability: {
+        status: "NOT_VERIFIED",
+      },
+    },
     adapters: {
-      detected: agents.filter((agent) => agent.available).map((agent) => agent.id),
-      agents,
+      detected: availableSurfaces.map((s) => s.path),
+      surfaces,
     },
     protocol: {
       version: PROTOCOL_VERSION,
@@ -112,7 +122,8 @@ export async function inspectTarget({ target, packageRoot, contractFile = null }
     },
     state: { ...state, path: WORK_STATE_PATH, present: statePresent },
     compatibility: {
-      agents: AGENT_SUPPORT.map((record) => record.id),
+      deprecated: true,
+      agents: [],
     },
     findings,
     evidence,
