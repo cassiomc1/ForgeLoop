@@ -84,16 +84,21 @@ test("publication precision levels and satisfaction logic", () => {
   assert.equal(isPublicationStatusSatisfied("committed", "published"), false);
   assert.equal(isPublicationStatusSatisfied("pushed", "published"), false);
   assert.equal(isPublicationStatusSatisfied("published", "published"), true);
-  assert.equal(isPublicationStatusSatisfied("deployed", "published"), true);
+  assert.equal(isPublicationStatusSatisfied("deployed", "published"), false);
 
   assert.equal(isPublicationStatusSatisfied("local-only", "pushed"), false);
   assert.equal(isPublicationStatusSatisfied("committed", "pushed"), false);
   assert.equal(isPublicationStatusSatisfied("pushed", "pushed"), true);
   assert.equal(isPublicationStatusSatisfied("published", "pushed"), true);
+  assert.equal(isPublicationStatusSatisfied("deployed", "pushed"), false);
 
   assert.equal(isPublicationStatusSatisfied("local-only", "committed"), false);
   assert.equal(isPublicationStatusSatisfied("committed", "committed"), true);
   assert.equal(isPublicationStatusSatisfied("pushed", "committed"), true);
+  assert.equal(isPublicationStatusSatisfied("published", "committed"), true);
+
+  assert.equal(isPublicationStatusSatisfied("published", "deployed"), false);
+  assert.equal(isPublicationStatusSatisfied("deployed", "deployed"), true);
 });
 
 test("recording PUBLICATION terminal result satisfies explicit publication requirement", async () => {
@@ -216,7 +221,10 @@ test("recording PRODUCTION_READINESS terminal result satisfies explicit producti
 
 test("record-terminal-result rejects unsupported types and invalid statuses", async () => {
   await withTarget(async (target) => {
-    await setupTarget(target);
+    await setupTarget(target, {
+      verification: ["tests"],
+      successCriteria: ["tests", "Package is published to npm registry"],
+    });
     await advanceWorkState(target, "VERIFYING", { packageRoot });
     await prepareCompletion({ target, packageRoot });
 
@@ -239,7 +247,7 @@ test("record-terminal-result rejects unsupported types and invalid statuses", as
       () => runRecordTerminalResult({
         target,
         packageRoot,
-        requirement: "Package is published",
+        requirement: "Package is published to npm registry",
         type: "PUBLICATION",
         status: "invalid-status",
         source: "npm",
@@ -249,3 +257,257 @@ test("record-terminal-result rejects unsupported types and invalid statuses", as
     );
   });
 });
+
+test("T-P0-01 & T-P0-02 & T-P0-03: rejects unknown, ordinary, and mismatched terminal requirements without mutation", async () => {
+  const { canonicalFingerprint } = await import("../src/core/artifacts.js");
+  await withTarget(async (target) => {
+    await setupTarget(target, {
+      verification: ["tests"],
+      successCriteria: ["tests", "Package is published to npm registry"],
+    });
+    await advanceWorkState(target, "VERIFYING", { packageRoot });
+    await prepareCompletion({ target, packageRoot });
+
+    const stateBefore = await readWorkState(target, packageRoot);
+    const receiptBefore = (await readJsonArtifact(target, ARTIFACT_PATHS.receipt, "execution-receipt", packageRoot)).value;
+    const ledgerBefore = await validateEventLedger(target, packageRoot);
+
+    const stateHashBefore = canonicalFingerprint(stateBefore);
+    const receiptHashBefore = canonicalFingerprint(receiptBefore);
+    const ledgerCountBefore = ledgerBefore.events.length;
+
+    // T-P0-01: Unknown terminal requirement
+    await assert.rejects(
+      () => runRecordTerminalResult({
+        target,
+        packageRoot,
+        requirement: "Unrelated publication",
+        type: "PUBLICATION",
+        status: "published",
+        source: "manual",
+        result: "published",
+      }),
+      (err) => err.code === "E_TERMINAL_REQUIREMENT_UNKNOWN",
+    );
+
+    // T-P0-02: Ordinary requirement passed to terminal recorder
+    await assert.rejects(
+      () => runRecordTerminalResult({
+        target,
+        packageRoot,
+        requirement: "tests",
+        type: "PUBLICATION",
+        status: "published",
+        source: "manual",
+        result: "published",
+      }),
+      (err) => err.code === "E_TERMINAL_REQUIREMENT_NOT_TERMINAL",
+    );
+
+    // T-P0-03: Terminal type mismatch
+    await assert.rejects(
+      () => runRecordTerminalResult({
+        target,
+        packageRoot,
+        requirement: "Package is published to npm registry",
+        type: "PRODUCTION_READINESS",
+        status: "ready",
+        source: "manual",
+        result: "ready",
+      }),
+      (err) => err.code === "E_TERMINAL_REQUIREMENT_TYPE_MISMATCH",
+    );
+
+    // Assert zero partial mutation on failure
+    const stateAfter = await readWorkState(target, packageRoot);
+    const receiptAfter = (await readJsonArtifact(target, ARTIFACT_PATHS.receipt, "execution-receipt", packageRoot)).value;
+    const ledgerAfter = await validateEventLedger(target, packageRoot);
+
+    assert.equal(canonicalFingerprint(stateAfter), stateHashBefore);
+    assert.equal(canonicalFingerprint(receiptAfter), receiptHashBefore);
+    assert.equal(ledgerAfter.events.length, ledgerCountBefore);
+  });
+});
+
+test("T-P0-04 & T-P0-05: requirement-specific evidence binding and multi-terminal criteria", async () => {
+  await withTarget(async (target) => {
+    await setupTarget(target, {
+      verification: ["tests"],
+      successCriteria: [
+        "tests",
+        { id: "REQ_NPM", text: "Package is published to npm", type: "PUBLICATION", requiredPublicationStatus: "published" },
+        { id: "REQ_RELEASE", text: "GitHub release is published", type: "PUBLICATION", requiredPublicationStatus: "published" },
+      ],
+    });
+    await advanceWorkState(target, "VERIFYING", { packageRoot });
+    await prepareCompletion({ target, packageRoot });
+    await recordCheck({
+      target,
+      packageRoot,
+      id: "tests-check",
+      requirement: "tests",
+      status: "passed",
+      evidenceKind: "OBSERVED",
+      command: "npm test",
+      result: "Passed",
+    });
+    await advanceWorkState(target, "REVIEWING", { packageRoot });
+
+    // Record only REQ_NPM
+    await runRecordTerminalResult({
+      target,
+      packageRoot,
+      requirement: "REQ_NPM",
+      type: "PUBLICATION",
+      status: "published",
+      source: "npm publish",
+      result: "npm published",
+    });
+
+    // Complete must be REJECTED because REQ_RELEASE is still pending
+    const comp1 = await runComplete({ target, packageRoot });
+    assert.equal(comp1.status, "REJECTED");
+    assert.ok(comp1.errors.some((e) => e.requirementId === "REQ_RELEASE" && e.code === "E_PUBLICATION_REQUIREMENT_PENDING"));
+
+    // Record REQ_RELEASE
+    await runRecordTerminalResult({
+      target,
+      packageRoot,
+      requirement: "REQ_RELEASE",
+      type: "PUBLICATION",
+      status: "published",
+      source: "gh release",
+      result: "release published",
+    });
+
+    // Complete must now be VALID
+    const comp2 = await runComplete({ target, packageRoot });
+    assert.equal(comp2.status, "VALID");
+    assert.equal(comp2.taskStatus, "COMPLETE");
+  });
+});
+
+test("T-P0-06: global publication status without matching requirement evidence is rejected", async () => {
+  await withTarget(async (target) => {
+    await setupTarget(target, {
+      verification: ["tests"],
+      successCriteria: [
+        "tests",
+        { id: "REQ_NPM", text: "Package is published to npm", type: "PUBLICATION", requiredPublicationStatus: "published" },
+      ],
+    });
+    await advanceWorkState(target, "VERIFYING", { packageRoot });
+    await prepareCompletion({ target, packageRoot });
+    await recordCheck({
+      target,
+      packageRoot,
+      id: "tests-check",
+      requirement: "tests",
+      status: "passed",
+      evidenceKind: "OBSERVED",
+      command: "npm test",
+      result: "Passed",
+    });
+    await advanceWorkState(target, "REVIEWING", { packageRoot });
+
+    // Forged receipt with publicationStatus = "published", but no matching requirement-bound evidence in evidence[]
+    const receipt = (await readJsonArtifact(target, ARTIFACT_PATHS.receipt, "execution-receipt", packageRoot)).value;
+    receipt.publicationStatus = "published";
+    receipt.publication = { ...receipt.publication, pushed: true, deployed: false };
+    const { writeJsonArtifact } = await import("../src/core/artifacts.js");
+    await writeJsonArtifact(target, ARTIFACT_PATHS.receipt, receipt, "execution-receipt", packageRoot);
+
+    const comp = await runComplete({ target, packageRoot });
+    assert.equal(comp.status, "REJECTED");
+    assert.ok(comp.errors.some((e) => e.code === "E_PUBLICATION_REQUIREMENT_PENDING"));
+  });
+});
+
+test("T-P1-01: fault-injection interrupted terminal recording repairs missing ledger event on retry", async () => {
+  await withTarget(async (target) => {
+    await setupTarget(target, {
+      verification: ["tests"],
+      successCriteria: ["tests", "Package is published to npm registry"],
+    });
+    await advanceWorkState(target, "VERIFYING", { packageRoot });
+    await prepareCompletion({ target, packageRoot });
+
+    // Record terminal result normally
+    const result1 = await runRecordTerminalResult({
+      target,
+      packageRoot,
+      requirement: "Package is published to npm registry",
+      type: "PUBLICATION",
+      status: "published",
+      source: "npm publish",
+      result: "Published package",
+    });
+    assert.equal(result1.idempotent, undefined);
+
+    // Simulate interruption: rewrite events ledger removing the TERMINAL_RESULT_RECORDED event
+    const { readFile, writeFile } = await import("node:fs/promises");
+    const eventsPath = path.join(target, ARTIFACT_PATHS.events);
+    const lines = (await readFile(eventsPath, "utf8")).trim().split("\n");
+    const filteredLines = lines.filter((line) => !line.includes("TERMINAL_RESULT_RECORDED"));
+    await writeFile(eventsPath, `${filteredLines.join("\n")}\n`, "utf8");
+
+    // Retry recording same terminal result
+    const result2 = await runRecordTerminalResult({
+      target,
+      packageRoot,
+      requirement: "Package is published to npm registry",
+      type: "PUBLICATION",
+      status: "published",
+      source: "npm publish",
+      result: "Published package",
+    });
+    assert.equal(result2.idempotent, true);
+    assert.equal(result2.repaired, true);
+
+    // Verify ledger has exactly 1 repaired event and evidence is not duplicated
+    const ledger = await validateEventLedger(target, packageRoot);
+    const termEvents = ledger.events.filter((e) => e.event === "TERMINAL_RESULT_RECORDED");
+    assert.equal(termEvents.length, 1);
+
+    const receipt = (await readJsonArtifact(target, ARTIFACT_PATHS.receipt, "execution-receipt", packageRoot)).value;
+    const termEv = receipt.evidence.filter((e) => e.details?.terminalType === "PUBLICATION");
+    assert.equal(termEv.length, 1);
+  });
+});
+
+test("T-P1-03: publication status regression is rejected with E_TERMINAL_STATUS_REGRESSION", async () => {
+  await withTarget(async (target) => {
+    await setupTarget(target, {
+      verification: ["tests"],
+      successCriteria: ["tests", "Package is published to npm registry"],
+    });
+    await advanceWorkState(target, "VERIFYING", { packageRoot });
+    await prepareCompletion({ target, packageRoot });
+
+    // Step 1: published
+    await runRecordTerminalResult({
+      target,
+      packageRoot,
+      requirement: "Package is published to npm registry",
+      type: "PUBLICATION",
+      status: "published",
+      source: "npm publish",
+      result: "Published package",
+    });
+
+    // Step 2: attempt regression to pushed -> MUST REJECT
+    await assert.rejects(
+      () => runRecordTerminalResult({
+        target,
+        packageRoot,
+        requirement: "Package is published to npm registry",
+        type: "PUBLICATION",
+        status: "pushed",
+        source: "git push",
+        result: "Pushed",
+      }),
+      (err) => err.code === "E_TERMINAL_STATUS_REGRESSION",
+    );
+  });
+});
+

@@ -57,6 +57,14 @@ function repairNext(error) {
       return "The contract explicitly requires production readiness. Record authoritative deployment/readiness evidence before completion.";
     case "E_TERMINAL_REQUIREMENT_PENDING":
       return "The contract contains an unresolved terminal requirement. Ensure all terminal lifecycle criteria are satisfied.";
+    case "E_TERMINAL_REQUIREMENT_UNKNOWN":
+      return "Terminal results must reference an existing canonical requirement declared in the contract.";
+    case "E_TERMINAL_REQUIREMENT_NOT_TERMINAL":
+      return "Use forgeloop record-check for ordinary verification requirements.";
+    case "E_TERMINAL_REQUIREMENT_TYPE_MISMATCH":
+      return "Ensure the supplied terminal type matches the canonical requirement type.";
+    case "E_TERMINAL_STATUS_REGRESSION":
+      return "Terminal publication status cannot regress to a weaker state.";
     case "E_STATE_LEDGER_DIVERGENCE":
       return "Do not edit work-state or receipt manually; recover through supported lifecycle commands.";
     case "E_COMPLETION_RECOVERY_UNAUTHORIZED":
