@@ -26,6 +26,8 @@ exclude = [
   # Ansible Molecule documentation rate-limits shared CI runners.
   # Keep the official references visible while checking other Ansible URLs normally.
   '^https://docs\.ansible\.com/projects/molecule(?:/.*)?$',
+  # Testcontainers blocks automated checks on shared CI runners.
+  '^https://(?:www\.)?testcontainers\.com(?:/.*)?$',
 ]
 
 [hosts."docs.ansible.com"]
