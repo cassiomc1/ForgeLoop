@@ -314,11 +314,13 @@ cross-artifact relationships plus the same derived freshness classification
 used by `inspect` and `status`. Supply `--contract-file` to compare the saved
 contract fingerprint with the current contract; omitting it leaves contract
 freshness as `NOT_VERIFIED` and a complete artifact set requires revalidation.
-When delegation is in scope, also supply the matching repeated
-`--task-brief <path>` and `--delegated-result <path>` inputs. Without those
-inputs it reports `INCOMPLETE` with
-`task briefs and delegated results were not supplied`; that classification is
-separate from a local `complete --json` result of `VALID`.
+Delegation artifacts are required only when delegation is present in the
+canonical execution history or explicitly supplied as part of a delegated run.
+For a purely local single-actor lifecycle, the delegation dimension is
+`NOT_APPLICABLE` and does not require task briefs or delegated results. When
+delegation is in scope, also supply the matching repeated
+`--task-brief <path>` and `--delegated-result <path>` inputs; omitting them in a
+delegated run reports `INCOMPLETE`.
 It returns `VALID`, `INCOMPLETE`, `STALE`, `INCONSISTENT`, or `INVALID` with
 exact invariant codes and derived stale reasons. The persisted
 `.forgeloop/work-state.json` schema is unchanged: `status`, `stale`, and `fresh`

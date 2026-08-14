@@ -23,6 +23,24 @@ function sortErrors(errors) {
     || left.message.localeCompare(right.message));
 }
 
+export function delegationIsInScope({
+  state = null,
+  receipt = null,
+  events = [],
+  taskBriefs = [],
+  delegatedResults = [],
+} = {}) {
+  if (taskBriefs && taskBriefs.length > 0) return true;
+  if (delegatedResults && delegatedResults.length > 0) return true;
+  if (state?.delegatedTasks && state.delegatedTasks.length > 0) return true;
+  if (state?.delegatedTaskIds && state.delegatedTaskIds.length > 0) return true;
+  if (receipt?.delegatedTasks && receipt.delegatedTasks.length > 0) return true;
+  if (Array.isArray(events) && events.some((event) => typeof event?.type === "string" && event.type.toLowerCase().includes("delegat"))) {
+    return true;
+  }
+  return false;
+}
+
 export function validateTaskArtifactSet({
   route = null,
   state = null,
@@ -30,6 +48,7 @@ export function validateTaskArtifactSet({
   receipt = null,
   taskBriefs = [],
   delegatedResults = [],
+  events = [],
 } = {}) {
   const errors = [];
   const incomplete = [];
@@ -62,6 +81,7 @@ export function validateTaskArtifactSet({
     errors.push(error("STATE_RECEIPT_GUIDES_MISMATCH", "execution-receipt.selectedGuides must equal work-state.selectedGuides", ["state", "receipt"]));
   }
 
+  const delegationActive = delegationIsInScope({ state, receipt, events, taskBriefs, delegatedResults });
   const briefIds = new Set();
   for (const brief of taskBriefs) {
     if (!brief?.taskId) continue;
@@ -86,13 +106,18 @@ export function validateTaskArtifactSet({
     }
   }
 
-  if (taskBriefs.length > 0) {
-    for (const taskId of [...briefIds].sort()) {
-      if (!delegatedIds.has(taskId)) incomplete.push(`missing delegated result: ${taskId}`);
+  if (delegationActive) {
+    if (taskBriefs.length > 0) {
+      for (const taskId of [...briefIds].sort()) {
+        if (!delegatedIds.has(taskId)) incomplete.push(`missing delegated result: ${taskId}`);
+      }
+    } else if (delegatedResults.length > 0) {
+      incomplete.push("task briefs are required when delegated results are supplied");
+    } else {
+      incomplete.push("task briefs and delegated results were not supplied for delegated task");
     }
-  } else if (delegatedResults.length === 0) {
-    incomplete.push("task briefs and delegated results were not supplied");
   }
+
   if (!route || !state || !receipt) incomplete.push("route, state, and receipt are all required for a complete artifact set");
 
   const sortedErrors = sortErrors(errors);
@@ -117,6 +142,22 @@ export function validateTaskArtifactSet({
     }
     : null;
 
+  const delegation = delegationActive
+    ? {
+      status: sortedErrors.some((e) => e.code.includes("DELEGAT") || e.code.includes("TASK"))
+        ? "INCONSISTENT"
+        : incomplete.some((i) => i.includes("delegat") || i.includes("brief"))
+          ? "INCOMPLETE"
+          : "VALID",
+      required: true,
+      errors: sortedErrors.filter((e) => e.code.includes("DELEGAT") || e.code.includes("TASK")),
+    }
+    : {
+      status: "NOT_APPLICABLE",
+      required: false,
+      errors: [],
+    };
+
   const evidenceKind = status === "VALID"
     ? "OBSERVED"
     : status === "INCOMPLETE"
@@ -131,6 +172,7 @@ export function validateTaskArtifactSet({
     errors: sortedErrors,
     incomplete: [...new Set(incomplete)].sort(),
     stale,
+    delegation,
     evidence: [createEvidence({
       kind: evidenceKind,
       source: "ForgeLoop protocol conformance",

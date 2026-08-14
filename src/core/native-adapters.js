@@ -43,6 +43,10 @@ route, required gates, and READY preflight.
 Use the project-local ForgeLoop CLI for lifecycle-owned protocol state.
 Never manually synthesize lifecycle chronology or assign ForgeLoop COMPLETE.
 
+Do not install a missing verification tool merely to satisfy a check.
+Use an existing equivalent, obtain explicit authority, or report the
+verification dimension as NOT_VERIFIED.
+
 Before claiming ForgeLoop-verified completion, require
 \`forgeloop complete\` to return \`VALID\`.
 

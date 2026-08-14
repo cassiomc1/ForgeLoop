@@ -97,14 +97,6 @@ export async function runValidateProtocol({
   const stateClassification = state && readErrors.length === 0 && !stateValidationError
     ? await classifyLoadedWorkState({ target, state, contractFile })
     : null;
-  const result = validateTaskArtifactSet({
-    route,
-    state,
-    stateClassification,
-    receipt,
-    taskBriefs,
-    delegatedResults,
-  });
   let readyConsistencyErrors = [];
   try {
     const persistedPreflight = await readJsonArtifact(target, ARTIFACT_PATHS.preflight, "preflight", packageRoot);
@@ -119,9 +111,11 @@ export async function runValidateProtocol({
   } catch {
     // A missing or invalid preflight is already outside the optional protocol set.
   }
+  let ledgerEvents = [];
   let ledgerErrors = [];
   if (state && !stateValidationError) {
     const ledger = await validateEventLedger(target, packageRoot);
+    ledgerEvents = ledger.events ?? [];
     ledgerErrors = [
       ...ledger.errors.map((error) => ({ ...error, artifacts: [ARTIFACT_PATHS.events] })),
       ...validateStateLedgerCoherence(state, ledger.events).map((error) => ({
@@ -130,6 +124,15 @@ export async function runValidateProtocol({
       })),
     ];
   }
+  const result = validateTaskArtifactSet({
+    route,
+    state,
+    stateClassification,
+    receipt,
+    taskBriefs,
+    delegatedResults,
+    events: ledgerEvents,
+  });
   if (readErrors.length > 0 || schemaErrors.length > 0 || readyConsistencyErrors.length > 0 || ledgerErrors.length > 0) {
     return {
       ...result,

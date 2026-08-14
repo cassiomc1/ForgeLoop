@@ -140,6 +140,21 @@ If the required CLI or API capability cannot be resolved:
 
 Report the corresponding ForgeLoop dimension as `NOT_VERIFIED` / `E_FORGELOOP_CLI_UNAVAILABLE`.
 
+## Missing tool capability
+
+A missing tool is a capability gap, not installation authority.
+
+If an expected verifier, browser tool, linter, analyzer, or test dependency is
+not already available:
+
+- use a suitable existing local equivalent when possible;
+- otherwise request authority if installation is necessary and allowed;
+- otherwise report the affected verification dimension as not verified with
+  `E_VERIFICATION_TOOL_UNAVAILABLE`.
+
+Never convert `PROTOCOL_LIMITED` into environmental mutation by implicitly
+installing a package.
+
 ## Optional capability extensions
 
 The installed loop directs the active actor to inspect native model and harness
@@ -149,6 +164,19 @@ through native mechanisms or upstream installers, then verify it before use.
 
 API credentials, system packages, and unrelated environment changes remain
 separately gated.
+
+## Delegation scope
+
+Delegation is optional.
+
+A run that contains no delegation events, no delegated task references, and no
+delegation artifacts is a valid single-actor run.
+
+Missing delegation artifacts must not make such a run incomplete. For a purely
+local single-actor lifecycle, the delegation dimension is `NOT_APPLICABLE`.
+
+Once delegation is observed in canonical state, receipt, or event history, the
+required delegation artifacts become mandatory.
 
 ## Instruction precedence
 

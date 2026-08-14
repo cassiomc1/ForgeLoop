@@ -13,7 +13,7 @@ Use these instructions across the repository while preserving local rules.
 - Respect the latest request, scope, and higher-level instructions.
 - Make the smallest coherent change; validate with specific and regression checks.
 - Diagnose causes before fixing failures; do not make unverified attempts.
-- Do not install software, publish, delete, or alter external state without authority. For missing Qwen-MM-Plugins, follow `LOOP_ENGINEERING.md`.
+- Do not install software, publish, delete, or alter external state without authority. Do not install a missing verification tool merely to satisfy a check. For missing Qwen-MM-Plugins, follow `LOOP_ENGINEERING.md`.
 - After implementation begins, do not return a final result in `EXECUTING`: advance through `VERIFYING` → structured evidence → `REVIEWING` → execution receipt → validator-backed `COMPLETE`. If closure cannot be reached, report `BLOCKED` or `PARTIALLY VERIFIED`.
 
 After implementation work for the current task is complete, run `forgeloop next` before returning a final result. Follow the returned lifecycle action until ForgeLoop reaches a terminal state or an explicit blocker.

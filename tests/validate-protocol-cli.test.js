@@ -98,6 +98,60 @@ test("validate-protocol validates a read-only coherent artifact set", async () =
   }
 });
 
+test("validate-protocol validates a single-actor run without delegation inputs", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-conformance-cli-"));
+  try {
+    const route = evaluateRoute({ workType: "api", surfaces: ["api"], platforms: [] });
+    const contract = { objective: "single actor" };
+    const state = createWorkState({
+      taskId: "single-task",
+      contractFingerprint: contractFingerprint(contract),
+      repositoryFingerprint: { branch: null, head: null },
+      phase: "ROUTED",
+      selectedGuides: route.guides,
+      completedSteps: [],
+      pendingSteps: ["implementation"],
+      checks: [],
+      failures: [],
+      blockers: [],
+      verificationEvidence: [],
+    });
+    const receipt = {
+      schemaVersion: 1,
+      protocolVersion: 1,
+      taskId: "single-task",
+      contractFingerprint: state.contractFingerprint,
+      selectedGuides: route.guides,
+      changedPaths: [],
+      checks: [],
+      review: { status: "not-run", independent: false },
+      limitations: [],
+      publication: { committed: false, pushed: false, pullRequest: null, deployed: false },
+    };
+    await writeFile(path.join(target, "route.json"), `${JSON.stringify(route)}\n`);
+    await writeFile(path.join(target, "state.json"), `${JSON.stringify(state)}\n`);
+    await writeFile(path.join(target, "receipt.json"), `${JSON.stringify(receipt)}\n`);
+    await writeFile(path.join(target, "contract.json"), `${JSON.stringify(contract)}\n`);
+
+    const result = runCli(
+      target,
+      "validate-protocol",
+      "--route-file", "route.json",
+      "--state-file", "state.json",
+      "--receipt-file", "receipt.json",
+      "--contract-file", "contract.json",
+      "--json",
+    );
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.status, "VALID");
+    assert.equal(report.delegation.status, "NOT_APPLICABLE");
+    assert.equal(report.delegation.required, false);
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
 test("validate-protocol reports inconsistencies and rejects unsafe paths", async () => {
   const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-conformance-cli-"));
   try {

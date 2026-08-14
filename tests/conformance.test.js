@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { validateTaskArtifactSet } from "../src/core/conformance.js";
+import { validateTaskArtifactSet, delegationIsInScope } from "../src/core/conformance.js";
 import { evaluateRoute } from "../src/core/router.js";
 import { contractFingerprint, createWorkState } from "../src/core/work-state.js";
 
@@ -59,7 +59,28 @@ const delegated = {
   limitations: [],
 };
 
-test("cross-artifact conformance accepts a coherent current set", () => {
+test("delegationIsInScope correctly derives whether delegation applies", () => {
+  assert.equal(delegationIsInScope({ state, receipt }), false);
+  assert.equal(delegationIsInScope({ state, receipt, taskBriefs: [brief] }), true);
+  assert.equal(delegationIsInScope({ state, receipt, delegatedResults: [delegated] }), true);
+  assert.equal(delegationIsInScope({ state: { ...state, delegatedTasks: ["child"] } }), true);
+  assert.equal(delegationIsInScope({ events: [{ type: "TASK_DELEGATED", taskId: "child" }] }), true);
+});
+
+test("cross-artifact conformance accepts a coherent single-actor set without delegation", () => {
+  const result = validateTaskArtifactSet({
+    route,
+    state,
+    receipt,
+  });
+  assert.equal(result.status, "VALID");
+  assert.deepEqual(result.errors, []);
+  assert.deepEqual(result.incomplete, []);
+  assert.equal(result.delegation.status, "NOT_APPLICABLE");
+  assert.equal(result.delegation.required, false);
+});
+
+test("cross-artifact conformance accepts a coherent delegated set", () => {
   const result = validateTaskArtifactSet({
     route,
     state,
@@ -69,6 +90,8 @@ test("cross-artifact conformance accepts a coherent current set", () => {
   });
   assert.equal(result.status, "VALID");
   assert.deepEqual(result.errors, []);
+  assert.equal(result.delegation.status, "VALID");
+  assert.equal(result.delegation.required, true);
 });
 
 test("cross-artifact conformance reports exact relationship failures", () => {
@@ -83,10 +106,12 @@ test("cross-artifact conformance reports exact relationship failures", () => {
   assert.ok(result.errors.some((error) => error.code === "ROUTE_STATE_GUIDES_MISMATCH"));
   assert.ok(result.errors.some((error) => error.code === "STATE_RECEIPT_CONTRACT_MISMATCH"));
   assert.ok(result.errors.some((error) => error.code === "UNKNOWN_DELEGATED_TASK"));
+  assert.equal(result.delegation.status, "INCONSISTENT");
 });
 
 test("cross-artifact conformance distinguishes incomplete, stale, and incompatible sets", () => {
-  assert.equal(validateTaskArtifactSet({ route, state, receipt }).status, "INCOMPLETE");
+  assert.equal(validateTaskArtifactSet({ route, state }).status, "INCOMPLETE");
+  assert.equal(validateTaskArtifactSet({ route, state, receipt, taskBriefs: [brief] }).status, "INCOMPLETE");
   const stateClassification = {
     status: "REVALIDATION_REQUIRED",
     reasons: ["CONTRACT_CHANGED"],

@@ -68,6 +68,46 @@ If the required CLI/API capability cannot be resolved:
 Report the corresponding ForgeLoop dimension as `NOT_VERIFIED` with
 `E_FORGELOOP_CLI_UNAVAILABLE`.
 
+### Missing verification tool policy
+
+A missing verification tool does not grant authority to install it.
+
+When a verification command or checker is unavailable:
+
+1. Try only already-installed or explicitly non-installing resolution paths.
+2. Prefer an already available equivalent when it can verify the same requirement.
+3. If no suitable local capability exists, request explicit installation authority
+   only when the missing verification is genuinely required.
+4. If authority is unavailable or the check is non-critical, record the affected
+   verification dimension as `NOT_VERIFIED` with `E_VERIFICATION_TOOL_UNAVAILABLE`.
+
+Do not retry a failed non-installing lookup with a command that implicitly
+downloads or installs the missing package.
+
+Examples of forbidden escalation without authority:
+
+```text
+npx --no-install TOOL → missing
+npx TOOL              → implicit install
+```
+
+```text
+command -v TOOL → missing
+package-manager install TOOL
+```
+
+```text
+local executable missing
+curl | sh
+```
+
+Automatic installation is allowed only when an explicit ForgeLoop rule grants
+that exact task-scoped installation authority and higher-priority platform/user
+rules permit it.
+
+A missing checker must never be converted into environmental mutation merely
+to make verification pass.
+
 ## Blocking vs Non-Blocking Decisions
 
 Classify every unresolved decision before deciding whether to ask the user.
