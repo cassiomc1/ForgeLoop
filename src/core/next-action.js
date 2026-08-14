@@ -606,6 +606,20 @@ export async function getNextAction(targetOrOptions = {}, packageRootOption) {
       requireRequiredChecks: false,
     });
     if (receiptRelationships.length > 0) {
+      if (receiptRelationships.some((err) => (
+        err.code === "E_RECEIPT_STATE_MISMATCH"
+        || err.code === "E_RECEIPT_CYCLE_MISMATCH"
+        || err.code === "E_RECEIPT_CONTRACT_MISMATCH"
+        || err.code === "E_ROUTE_GUIDE_MISMATCH"
+        || err.code === "E_EVIDENCE_COVERAGE_INVALID"
+      ))) {
+        return decision(
+          context,
+          NEXT_ACTIONS.PREPARE_COMPLETION,
+          artifactError("E_RECEIPT_STATE_MISMATCH", "Run forgeloop prepare-completion to refresh the execution receipt with current state", [ARTIFACT_PATHS.receipt]),
+          [...requiredArtifacts, ARTIFACT_PATHS.receipt],
+        );
+      }
       return result({
         ...context,
         nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
@@ -754,6 +768,20 @@ export async function getNextAction(targetOrOptions = {}, packageRootOption) {
       requiredEvidence: evidence.requirements,
     });
     if (receiptRelationships.length > 0) {
+      if (receiptRelationships.some((err) => (
+        err.code === "E_RECEIPT_STATE_MISMATCH"
+        || err.code === "E_RECEIPT_CYCLE_MISMATCH"
+        || err.code === "E_RECEIPT_CONTRACT_MISMATCH"
+        || err.code === "E_ROUTE_GUIDE_MISMATCH"
+        || err.code === "E_EVIDENCE_COVERAGE_INVALID"
+      ))) {
+        return decision(
+          context,
+          NEXT_ACTIONS.PREPARE_COMPLETION,
+          artifactError("E_RECEIPT_STATE_MISMATCH", "Run forgeloop prepare-completion to refresh the execution receipt with current state", [ARTIFACT_PATHS.receipt]),
+          [...requiredArtifacts, ARTIFACT_PATHS.receipt],
+        );
+      }
       return result({
         ...context,
         nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,

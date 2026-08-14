@@ -77,6 +77,10 @@ function repairNext(error) {
       return "Satisfy or refresh the named gate, then rerun forgeloop preflight.";
     case "E_PROFILE_UNVERIFIED":
       return "Use Standard mode for a fresh target, or verify PROJECT_PROFILE.md before Strict completion.";
+    case "E_INSTALLATION_AUTHORITY_REQUIRED":
+      return "Do not execute installation-capable verification commands without explicit installation authority; use local equivalents or record NOT_VERIFIED.";
+    case "E_VERIFICATION_TOOL_UNAVAILABLE":
+      return "Use an available local verifier, an existing equivalent, or record NOT_VERIFIED if installation was not authorized.";
     default:
       return "Resolve this validator finding in the named artifact before retrying completion.";
   }

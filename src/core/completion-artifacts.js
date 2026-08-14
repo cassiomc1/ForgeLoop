@@ -11,7 +11,7 @@ import { completionEvidenceForGuides } from "./guide-metadata.js";
 import { createCheck } from "./checks.js";
 import { createEvidence } from "./evidence.js";
 import { coverageForRequirements } from "./coverage.js";
-import { assertCompletionRelationships } from "./completion-relationships.js";
+import { assertCompletionRelationships, assertStateIdentity } from "./completion-relationships.js";
 import { evaluatePreflight } from "./preflight.js";
 import { currentChangedPaths } from "./repository.js";
 import { readPersistedRoute } from "./route-artifact.js";
@@ -19,6 +19,7 @@ import { createReceipt, validateReceipt } from "./receipt.js";
 import { readWorkState, writeWorkState } from "./work-state.js";
 import { assertExecutionPrerequisites, hasExecutionStarted } from "./execution-prerequisites.js";
 import { normalizeRequirements, classifyRequirement } from "./evidence-readiness.js";
+import { classifyCommandResolution } from "./verification-capability.js";
 
 function artifactError(code, message, artifacts = []) {
   const error = new Error(message);
@@ -97,17 +98,19 @@ export async function prepareCompletion({ target, packageRoot }) {
     additionalEvidence: preflight.policy?.requiredEvidence ?? [],
   });
   const existingValue = existing?.value ?? {};
-  assertCompletionRelationships({
-    contract,
-    route,
-    state,
-    receipt: existingValue.taskId ? existingValue : null,
-    requiredEvidence,
-    requireRequiredChecks: false,
-  });
-  const changedPaths = existing
-    ? [...(existingValue.changedPaths ?? [])]
-    : (await currentChangedPaths(target) ?? []);
+  if (existingValue.taskId && existingValue.taskId !== contract.value.taskId) {
+    throw artifactError("E_RECEIPT_TASK_MISMATCH", "Execution receipt does not belong to the current contract task", [ARTIFACT_PATHS.receipt]);
+  }
+  if (existing && existingValue.stateFingerprint === undefined) {
+    throw artifactError("E_RECEIPT_STATE_MISMATCH", "Execution receipt requires the current work-state fingerprint", [ARTIFACT_PATHS.receipt]);
+  }
+  assertStateIdentity({ contract, route, state });
+  const observedPaths = await currentChangedPaths(target);
+  const changedPaths = observedPaths !== null
+    ? [...observedPaths]
+    : existing
+      ? [...(existingValue.changedPaths ?? [])]
+      : [];
   const checks = existing ? [...existingValue.checks] : [...state.checks];
   const evidence = existing ? [...(existingValue.evidence ?? [])] : [...state.verificationEvidence];
   const receipt = await createReceipt({
@@ -136,6 +139,14 @@ export async function prepareCompletion({ target, packageRoot }) {
       deployed: false,
     },
   }, packageRoot);
+  assertCompletionRelationships({
+    contract,
+    route,
+    state,
+    receipt,
+    requiredEvidence,
+    requireRequiredChecks: false,
+  });
   const written = await writeJsonArtifact(
     target,
     ARTIFACT_PATHS.receipt,
@@ -199,6 +210,23 @@ export async function recordCheck({
     throw artifactError("E_CHECK_INVALID", "record-check requires --command or --result");
   }
 
+  const commandSpec = typeof command === "string" && command.trim() !== "" ? command.trim() : undefined;
+  if (commandSpec !== undefined) {
+    const classification = classifyCommandResolution(commandSpec);
+    const installationAuthorized = Boolean(
+      details?.installationAuthorized
+      || details?.authority?.softwareInstallation === "AUTHORIZED"
+      || details?.execution?.installationAuthorized
+    );
+    if (classification.mayInstall && !installationAuthorized) {
+      throw artifactError(
+        "E_INSTALLATION_AUTHORITY_REQUIRED",
+        `Verification command '${commandSpec}' uses installation-capable resolution (${classification.resolutionMode}) without recorded installation authority`,
+        [ARTIFACT_PATHS.state, ARTIFACT_PATHS.receipt],
+      );
+    }
+  }
+
   const state = await readWorkState(target, packageRoot);
   if (!state) throw artifactError("E_STATE_MISSING", "Work state is required before recording a check", [ARTIFACT_PATHS.state]);
   if (["COMPLETE", "BLOCKED"].includes(state.phase)) {
@@ -236,8 +264,14 @@ export async function recordCheck({
 
   const existingReceipt = await readCurrentReceipt(target, packageRoot);
   await validateReceipt(existingReceipt.value, packageRoot);
-  const source = command?.trim() || `check:${id}`;
-  const recordedResult = result?.trim() || `recorded command: ${command.trim()}`;
+  const source = commandSpec || `check:${id}`;
+  const recordedResult = result?.trim() || `recorded command: ${commandSpec || source}`;
+  const classification = commandSpec !== undefined ? classifyCommandResolution(commandSpec) : null;
+  const installationAuthorized = Boolean(
+    details?.installationAuthorized
+    || details?.authority?.softwareInstallation === "AUTHORIZED"
+    || details?.execution?.installationAuthorized
+  );
   const check = createCheck({
     id,
     kind,
@@ -252,6 +286,13 @@ export async function recordCheck({
       ...(result === undefined ? {} : { result }),
       ...(details === undefined ? {} : details),
       verificationCycle: state.verificationCycle ?? 1,
+      ...(classification ? {
+        execution: {
+          resolutionMode: classification.resolutionMode,
+          mayInstall: classification.mayInstall,
+          installationAuthorized,
+        },
+      } : {}),
     },
   });
   const evidence = createEvidence({

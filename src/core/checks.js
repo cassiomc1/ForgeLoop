@@ -1,4 +1,5 @@
 import { PROTOCOL_VERSION } from "./protocol.js";
+import { validateVerificationAuthority } from "./verification-capability.js";
 
 export const CHECK_SCHEMA_VERSION = 1;
 export const CHECK_STATUSES = Object.freeze(["passed", "failed", "blocked", "not-run"]);
@@ -96,6 +97,12 @@ export function assertCheck(value, label = "check") {
   }
   if (value.status === "not-run" && value.evidenceKind !== "NOT_VERIFIED") {
     throw contradiction(`${label} not-run must use NOT_VERIFIED evidence`);
+  }
+  if (value.status === "passed") {
+    const auth = validateVerificationAuthority(value);
+    if (!auth.valid) {
+      throw checkError(auth.error.code, auth.error.message);
+    }
   }
   assertCompoundStatus(value, label);
   return value;

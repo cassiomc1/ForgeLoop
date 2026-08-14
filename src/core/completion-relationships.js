@@ -3,6 +3,7 @@ import { assertCheckList } from "./checks.js";
 import { assertCoverageList, coverageForRequirements } from "./coverage.js";
 import { assertEvidenceList } from "./evidence.js";
 import { evaluateRequiredEvidence } from "./evidence-readiness.js";
+import { validateVerificationAuthority } from "./verification-capability.js";
 
 function issue(code, message, artifacts = [], details = {}) {
   return { code, message, artifacts, ...details };
@@ -82,10 +83,26 @@ export function completionRelationshipErrors({
   if (state) {
     addAssertion(errors, () => assertCheckList(state.checks, "work-state.checks"), "E_CHECK_INVALID", [ARTIFACT_PATHS.state]);
     addAssertion(errors, () => assertEvidenceList(state.verificationEvidence, "work-state.verificationEvidence"), "E_EVIDENCE_INVALID", [ARTIFACT_PATHS.state]);
+    for (const check of state.checks ?? []) {
+      if (check.status === "passed") {
+        const auth = validateVerificationAuthority(check);
+        if (!auth.valid) {
+          errors.push(issue(auth.error.code, auth.error.message, [ARTIFACT_PATHS.state]));
+        }
+      }
+    }
   }
   if (receipt) {
     addAssertion(errors, () => assertCheckList(receipt.checks, "receipt.checks"), "E_CHECK_INVALID", [ARTIFACT_PATHS.receipt]);
     addAssertion(errors, () => assertEvidenceList(receipt.evidence ?? [], "receipt.evidence"), "E_EVIDENCE_INVALID", [ARTIFACT_PATHS.receipt]);
+    for (const check of receipt.checks ?? []) {
+      if (check.status === "passed") {
+        const auth = validateVerificationAuthority(check);
+        if (!auth.valid) {
+          errors.push(issue(auth.error.code, auth.error.message, [ARTIFACT_PATHS.receipt]));
+        }
+      }
+    }
     if (requireRequiredChecks) {
       const readiness = evaluateRequiredEvidence({ requirements: requiredEvidence, checks: receipt.checks });
       for (const requirement of readiness.missing) {

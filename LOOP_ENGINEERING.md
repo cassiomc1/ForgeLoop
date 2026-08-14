@@ -108,6 +108,28 @@ rules permit it.
 A missing checker must never be converted into environmental mutation merely
 to make verification pass.
 
+### Verification command resolution modes and validator enforcement
+
+Every verification command path is classified by resolution mode:
+
+| Mode | Examples | May install software | Authority required |
+| --- | --- | --- | --- |
+| `LOCAL_EXECUTABLE` | `node scripts/test.js`, `python3 -m unittest`, `./bin/check` | No | No |
+| `LOCAL_PACKAGE_BINARY` | `./node_modules/.bin/tool`, `npm test`, `pnpm test`, `yarn test` | No | No |
+| `NON_INSTALLING_RESOLUTION` | `npx --no-install tool`, `npx --no tool` | No | No |
+| `INSTALL_CAPABLE_RESOLUTION` | `npx tool`, `pnpm dlx tool`, `yarn dlx tool`, `bunx tool`, `uvx tool`, `pipx run tool` | Yes | Yes (`E_INSTALLATION_AUTHORITY_REQUIRED`) |
+| `EXPLICIT_INSTALLATION` | `npm install tool`, `pnpm add tool`, `pip install tool`, `cargo install tool` | Yes | Yes (`E_INSTALLATION_AUTHORITY_REQUIRED`) |
+
+**Validator-enforced rule**: Any verification command executed via an installation-capable or explicit-installation resolution mode without recorded installation authority is rejected by `record-check`, `audit`, and `complete` with error code `E_INSTALLATION_AUTHORITY_REQUIRED` and cannot contribute to `VALID` completion.
+
+### Stale receipt recovery invariant
+
+Every recovery action returned by `forgeloop next` must be executable from the state that produced it. When work state changes legitimately after preparing a completion receipt, `forgeloop prepare-completion` refreshes the receipt and re-binds it to current state and changed paths without requiring manual deletion of `.forgeloop/execution-receipt.json`.
+
+### Conformance profile escalation policy
+
+A run started in Standard conformance must not be silently escalated to Strict after validator-backed completion. Strict validation is a separate conformance profile. If Strict revalidation is performed after Standard `COMPLETE`, it is treated as a distinct revalidation cycle and does not retroactively invalidate a valid Standard result.
+
 ## Blocking vs Non-Blocking Decisions
 
 Classify every unresolved decision before deciding whether to ask the user.

@@ -1,4 +1,5 @@
 import { sha256 } from "./manifest.js";
+import { validateVerificationAuthority } from "./verification-capability.js";
 
 export const REQUIREMENT_TYPES = Object.freeze([
   "PRODUCT",
@@ -254,10 +255,19 @@ function componentStatus(check, requirement, allChecks = []) {
       const matchingComp = components.filter((item) => (
         item?.requirementId === child.id || item?.requirement === child.text
       )).at(-1);
-      if (matchingComp) return matchingComp;
+      if (matchingComp) {
+        const auth = validateVerificationAuthority(matchingComp);
+        if (!auth.valid) return { ...matchingComp, status: "failed", reasonCode: auth.error.code };
+        return matchingComp;
+      }
     }
     const childCandidates = allChecks.filter((candidate) => matchesRequirement(candidate, child));
-    return latestAuthoritativeCheck(childCandidates);
+    const childCheck = latestAuthoritativeCheck(childCandidates);
+    if (childCheck) {
+      const auth = validateVerificationAuthority(childCheck);
+      if (!auth.valid) return { ...childCheck, status: "failed", reasonCode: auth.error.code };
+    }
+    return childCheck;
   });
   if (statuses.some((item) => !item)) return "MISSING";
   if (statuses.some((item) => item.status === "failed")) return "INVALID";
@@ -291,8 +301,11 @@ export function evaluateRequiredEvidence({ requirements = [], checks = [] } = {}
     }
     const candidates = checks.filter((check) => matchesRequirement(check, requirement));
     const check = latestAuthoritativeCheck(candidates);
+    const auth = check ? validateVerificationAuthority(check) : { valid: true };
     const compound = componentStatus(check, requirement, checks);
-    if (compound === "INVALID" || check?.status === "failed") {
+    if (!auth.valid) {
+      result.invalid.push({ ...requirement, reasonCode: auth.error.code });
+    } else if (compound === "INVALID" || check?.status === "failed") {
       result.invalid.push(requirement);
     } else if (compound === "PARTIAL") {
       result.partial.push(requirement);
