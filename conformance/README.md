@@ -26,7 +26,7 @@ frozen package. Those commits do not change the package used by the blind run.
 Version `0.1.10` includes the completion-validation and cleanup TOCTOU fixes;
 repeat the complete identity check before starting a reproducible run.
 
-The repository candidate is `0.1.14`. It enforces verification installation
+The repository release is `0.1.14`. It enforces verification installation
 authority, provides recoverable stale receipt lifecycle in `prepare-completion`,
 and validates single-actor protocol runs. Repeat the complete identity
 check before starting a reproducible run.
