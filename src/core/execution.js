@@ -11,8 +11,10 @@ import {
   classifyCommandResolution,
   resolveExecutionResolution,
   validateVerificationAuthority,
+  E_COMMAND_RESOLUTION_AMBIGUOUS,
 } from "./verification-capability.js";
 
+export { E_COMMAND_RESOLUTION_AMBIGUOUS };
 export const EXECUTION_KIND = "COMMAND_EXECUTION";
 
 function executionError(code, message, artifacts = []) {
@@ -90,6 +92,25 @@ export async function runCommandExecution({
     argv: commandArgv,
     cwd: target,
   });
+
+  if (
+    resolution.resolutionMode === "UNKNOWN"
+    && resolution.mayInstall === true
+    && (
+      resolution.reason === "NPM_WORKSPACE_SCRIPT_UNRESOLVED"
+      || resolution.reason === "NPM_SUBCOMMAND_AMBIGUOUS"
+    )
+  ) {
+    const error = new Error(
+      resolution.reason === "NPM_WORKSPACE_SCRIPT_UNRESOLVED"
+        ? "npm workspace script execution cannot be proven from the current target. Run ForgeLoop against the selected workspace directory."
+        : "Command execution context could not be proven safe before launch."
+    );
+    error.code = E_COMMAND_RESOLUTION_AMBIGUOUS;
+    error.resolution = resolution;
+    throw error;
+  }
+
   validateAuthorityBeforeLaunch({
     target,
     taskId,

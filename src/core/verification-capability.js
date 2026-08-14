@@ -12,6 +12,7 @@ export {
 
 export const E_VERIFICATION_TOOL_UNAVAILABLE = "E_VERIFICATION_TOOL_UNAVAILABLE";
 export const E_INSTALLATION_AUTHORITY_REQUIRED = "E_INSTALLATION_AUTHORITY_REQUIRED";
+export const E_COMMAND_RESOLUTION_AMBIGUOUS = "E_COMMAND_RESOLUTION_AMBIGUOUS";
 export const E_AUTHORITY_INVALID = "E_AUTHORITY_INVALID";
 export const E_AUTHORITY_SCOPE_MISMATCH = "E_AUTHORITY_SCOPE_MISMATCH";
 
@@ -191,6 +192,174 @@ function normalizeExecutableName(binaryToken) {
   return base.toLowerCase().replace(/\.(?:cmd|bat|exe)$/u, "");
 }
 
+const NPM_OPTIONS_WITH_VALUE = new Set([
+  "--workspace",
+  "-w",
+  "--loglevel",
+  "--prefix",
+  "-C",
+  "--userconfig",
+  "--registry",
+  "--cache",
+]);
+
+export function parseNpmInvocationArgs(rest) {
+  if (!Array.isArray(rest)) {
+    return {
+      subcommand: null,
+      subcommandIndex: -1,
+      args: [],
+      leadingOptions: [],
+      workspace: null,
+      workspaces: false,
+      ambiguous: true,
+    };
+  }
+
+  const leadingOptions = [];
+  let workspace = null;
+  let workspaces = false;
+
+  let i = 0;
+  while (i < rest.length) {
+    const arg = rest[i];
+
+    if (arg === "--") {
+      break;
+    }
+
+    if (!arg.startsWith("-")) {
+      break;
+    }
+
+    if (arg === "--workspaces" || arg === "--ws") {
+      workspaces = true;
+      leadingOptions.push(arg);
+      i += 1;
+      continue;
+    }
+
+    if (arg.startsWith("--workspace=")) {
+      workspace = arg.slice("--workspace=".length) || null;
+      leadingOptions.push(arg);
+      i += 1;
+      continue;
+    }
+
+    if (arg.startsWith("-w=")) {
+      workspace = arg.slice(3) || null;
+      leadingOptions.push(arg);
+      i += 1;
+      continue;
+    }
+
+    if (arg === "--workspace" || arg === "-w") {
+      leadingOptions.push(arg);
+      const value = rest[i + 1] ?? null;
+      if (value !== null && !value.startsWith("-")) {
+        workspace = value;
+        leadingOptions.push(value);
+        i += 2;
+      } else {
+        workspace = value;
+        i += 1;
+      }
+      continue;
+    }
+
+    if (NPM_OPTIONS_WITH_VALUE.has(arg)) {
+      leadingOptions.push(arg);
+      const value = rest[i + 1] ?? null;
+      if (value !== null && !value.startsWith("-")) {
+        leadingOptions.push(value);
+        i += 2;
+      } else {
+        i += 1;
+      }
+      continue;
+    }
+
+    if (/^--[^=]+=/.test(arg)) {
+      leadingOptions.push(arg);
+      i += 1;
+      continue;
+    }
+
+    if (arg.startsWith("-")) {
+      leadingOptions.push(arg);
+      i += 1;
+      continue;
+    }
+  }
+
+  const subcommand = rest[i] ? rest[i].toLowerCase() : null;
+  const trailingArgs = subcommand ? rest.slice(i + 1) : [];
+
+  for (let j = 0; j < trailingArgs.length; j++) {
+    const tArg = trailingArgs[j];
+    if (tArg === "--") break;
+    if (tArg === "--workspaces" || tArg === "--ws") {
+      workspaces = true;
+    } else if (tArg.startsWith("--workspace=")) {
+      workspace = tArg.slice("--workspace=".length) || null;
+    } else if (tArg.startsWith("-w=")) {
+      workspace = tArg.slice(3) || null;
+    } else if (tArg === "--workspace" || tArg === "-w") {
+      const val = trailingArgs[j + 1];
+      if (val && !val.startsWith("-")) {
+        workspace = val;
+        j += 1;
+      }
+    }
+  }
+
+  return {
+    subcommand,
+    subcommandIndex: subcommand ? i : -1,
+    args: trailingArgs,
+    leadingOptions,
+    workspace,
+    workspaces,
+    ambiguous: subcommand === null,
+  };
+}
+
+export function parseNpmInvocation(argv) {
+  const tokens = unwrapCommandArgv(Array.isArray(argv) ? argv : tokenizeCommand(argv));
+  if (!tokens || tokens.length === 0) {
+    return {
+      subcommand: null,
+      subcommandIndex: -1,
+      args: [],
+      leadingOptions: [],
+      workspace: null,
+      workspaces: false,
+      ambiguous: true,
+    };
+  }
+  const binary = normalizeExecutableName(tokens[0]);
+  if (binary !== "npm") {
+    return {
+      subcommand: null,
+      subcommandIndex: -1,
+      args: [],
+      leadingOptions: [],
+      workspace: null,
+      workspaces: false,
+      ambiguous: true,
+    };
+  }
+  return parseNpmInvocationArgs(tokens.slice(1));
+}
+
+export function npmWorkspaceSelection(npmInvocation) {
+  return {
+    scoped: Boolean(npmInvocation?.workspace || npmInvocation?.workspaces),
+    workspace: npmInvocation?.workspace ?? null,
+    allWorkspaces: npmInvocation?.workspaces === true,
+  };
+}
+
 function classifySingleCommand(commandInput) {
   const tokens = Array.isArray(commandInput) ? [...commandInput] : tokenizeCommand(commandInput);
   if (tokens.length === 0) {
@@ -340,23 +509,36 @@ function classifySingleCommand(commandInput) {
 
   // Check npm
   if (binary === "npm") {
-    if (["exec", "x"].includes(rest[0])) {
-      const execArgs = rest.slice(1);
+    const npm = parseNpmInvocationArgs(rest);
+
+    if (npm.ambiguous) {
+      return {
+        resolutionMode: "UNKNOWN",
+        mayInstall: true,
+        installer: "npm",
+        tool: null,
+        reason: "NPM_SUBCOMMAND_AMBIGUOUS",
+      };
+    }
+
+    if (["exec", "x"].includes(npm.subcommand)) {
       return {
         resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
         mayInstall: true,
-        installer: `npm ${rest[0]}`,
-        tool: extractNpmExecTool(execArgs),
+        installer: `npm ${npm.subcommand}`,
+        tool: extractNpmExecTool(npm.args),
       };
     }
-    if (["install", "i", "add"].includes(rest[0])) {
+
+    if (["install", "i", "add"].includes(npm.subcommand)) {
       return {
         resolutionMode: "EXPLICIT_INSTALLATION",
         mayInstall: true,
         installer: "npm",
-        tool: extractToolFromArgs(rest.slice(1)),
+        tool: extractToolFromArgs(npm.args),
       };
     }
+
     return { resolutionMode: "LOCAL_PACKAGE_BINARY", mayInstall: false, installer: null, tool: null };
   }
 
@@ -468,27 +650,31 @@ function unwrapCommandArgv(argv) {
 }
 
 export function getNpmScriptName(argv) {
-  const tokens = unwrapCommandArgv(Array.isArray(argv) ? argv : tokenizeCommand(argv));
-  if (!tokens || tokens.length < 2) return null;
-  const binary = normalizeExecutableName(tokens[0]);
-  if (binary !== "npm") return null;
+  const npm = parseNpmInvocation(argv);
+  if (npm.ambiguous || !npm.subcommand) {
+    return null;
+  }
 
-  const rest = tokens.slice(1);
-  const sub = rest[0]?.toLowerCase();
-  if (sub === "test" || sub === "t" || sub === "tst") return "test";
-  if (sub === "start" || sub === "stop" || sub === "restart") return sub;
+  const sub = npm.subcommand;
+  const args = npm.args;
+
+  if (["test", "t", "tst"].includes(sub)) return "test";
+  if (["start", "stop", "restart"].includes(sub)) return sub;
   if (["run", "run-script", "rum", "urn"].includes(sub)) {
     let afterDoubleDash = false;
-    for (let idx = 1; idx < rest.length; idx++) {
-      const arg = rest[idx];
+    for (let idx = 0; idx < args.length; idx++) {
+      const arg = args[idx];
       if (arg === "--") {
         afterDoubleDash = true;
-        if (rest[idx + 1] && !rest[idx + 1].startsWith("-")) {
-          return rest[idx + 1];
+        if (args[idx + 1] && !args[idx + 1].startsWith("-")) {
+          return args[idx + 1];
         }
         continue;
       }
       if (!afterDoubleDash && !arg.startsWith("-")) {
+        if (idx > 0 && (args[idx - 1] === "-w" || args[idx - 1] === "--workspace" || NPM_OPTIONS_WITH_VALUE.has(args[idx - 1]))) {
+          continue;
+        }
         return arg;
       }
     }
@@ -604,9 +790,26 @@ async function readPackageJsonIfPresent(cwd) {
 
 export async function resolveExecutionResolution({ argv, cwd } = {}) {
   const direct = classifyCommandResolution(argv);
-  if (direct.mayInstall) return direct;
+  if (direct.mayInstall && direct.resolutionMode !== "UNKNOWN") return direct;
 
+  const npmInvocation = parseNpmInvocation(argv);
   const scriptName = getNpmScriptName(argv);
+
+  if (scriptName && (npmInvocation.workspace || npmInvocation.workspaces)) {
+    return {
+      resolutionMode: "UNKNOWN",
+      mayInstall: true,
+      installer: "npm-workspace",
+      tool: null,
+      reason: "NPM_WORKSPACE_SCRIPT_UNRESOLVED",
+      dispatch: {
+        kind: "npm-workspace-script",
+        scriptName,
+      },
+    };
+  }
+
+  if (direct.mayInstall) return direct;
   if (!scriptName) return direct;
 
   const packageJson = await readPackageJsonIfPresent(cwd);

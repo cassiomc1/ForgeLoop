@@ -10,9 +10,12 @@ import {
   resolveExecutionResolution,
   getNpmScriptName,
   getNpmLifecycleCandidates,
+  parseNpmInvocation,
+  npmWorkspaceSelection,
   validateVerificationAuthority,
   E_VERIFICATION_TOOL_UNAVAILABLE,
   E_INSTALLATION_AUTHORITY_REQUIRED,
+  E_COMMAND_RESOLUTION_AMBIGUOUS,
   E_AUTHORITY_UNTRUSTED_SOURCE,
 } from "../src/core/verification-capability.js";
 import { evaluateRequiredEvidence } from "../src/core/evidence-readiness.js";
@@ -269,7 +272,110 @@ test("resolveExecutionResolution handles recursive npm scripts, restart semantic
     assert.equal(pretestResult.mayInstall, true);
     assert.equal(pretestResult.tool, "package-x");
 
-    // 14. Missing package.json or missing script does not crash
+    // 14. Leading npm option before run: npm --silent run visual
+    await writeFile(path.join(target, "package.json"), JSON.stringify({
+      scripts: {
+        visual: "npx @liustack/modlens",
+      },
+    }), "utf8");
+
+    const leadingOptionRunResult = await resolveExecutionResolution({
+      argv: ["npm", "--silent", "run", "visual"],
+      cwd: target,
+    });
+    assert.equal(leadingOptionRunResult.mayInstall, true);
+    assert.equal(leadingOptionRunResult.tool, "@liustack/modlens");
+
+    // 15. Recursive leading option: test -> npm --silent run visual
+    await writeFile(path.join(target, "package.json"), JSON.stringify({
+      scripts: {
+        test: "npm --silent run visual",
+        visual: "npx @liustack/modlens",
+      },
+    }), "utf8");
+
+    const recursiveLeadingOptionResult = await resolveExecutionResolution({
+      argv: ["npm", "test"],
+      cwd: target,
+    });
+    assert.equal(recursiveLeadingOptionResult.mayInstall, true);
+    assert.equal(recursiveLeadingOptionResult.tool, "@liustack/modlens");
+
+    // 16. Workspace dispatch fails closed (various flag formats)
+    const wsBeforeResult = await resolveExecutionResolution({
+      argv: ["npm", "--workspace=a", "test"],
+      cwd: target,
+    });
+    assert.equal(wsBeforeResult.resolutionMode, "UNKNOWN");
+    assert.equal(wsBeforeResult.mayInstall, true);
+    assert.equal(wsBeforeResult.reason, "NPM_WORKSPACE_SCRIPT_UNRESOLVED");
+
+    const wsAfterResult = await resolveExecutionResolution({
+      argv: ["npm", "test", "--workspace=a"],
+      cwd: target,
+    });
+    assert.equal(wsAfterResult.resolutionMode, "UNKNOWN");
+    assert.equal(wsAfterResult.mayInstall, true);
+    assert.equal(wsAfterResult.reason, "NPM_WORKSPACE_SCRIPT_UNRESOLVED");
+
+    const wsShortResult = await resolveExecutionResolution({
+      argv: ["npm", "test", "-w", "a"],
+      cwd: target,
+    });
+    assert.equal(wsShortResult.resolutionMode, "UNKNOWN");
+    assert.equal(wsShortResult.mayInstall, true);
+    assert.equal(wsShortResult.reason, "NPM_WORKSPACE_SCRIPT_UNRESOLVED");
+
+    const wsRunResult = await resolveExecutionResolution({
+      argv: ["npm", "run", "visual", "--workspace=a"],
+      cwd: target,
+    });
+    assert.equal(wsRunResult.resolutionMode, "UNKNOWN");
+    assert.equal(wsRunResult.mayInstall, true);
+    assert.equal(wsRunResult.reason, "NPM_WORKSPACE_SCRIPT_UNRESOLVED");
+
+    const wsShortRunResult = await resolveExecutionResolution({
+      argv: ["npm", "run", "visual", "-w", "a"],
+      cwd: target,
+    });
+    assert.equal(wsShortRunResult.resolutionMode, "UNKNOWN");
+    assert.equal(wsShortRunResult.mayInstall, true);
+    assert.equal(wsShortRunResult.reason, "NPM_WORKSPACE_SCRIPT_UNRESOLVED");
+
+    const wsAllWorkspacesResult = await resolveExecutionResolution({
+      argv: ["npm", "run", "visual", "--workspaces"],
+      cwd: target,
+    });
+    assert.equal(wsAllWorkspacesResult.resolutionMode, "UNKNOWN");
+    assert.equal(wsAllWorkspacesResult.mayInstall, true);
+    assert.equal(wsAllWorkspacesResult.reason, "NPM_WORKSPACE_SCRIPT_UNRESOLVED");
+
+    const wsWsAliasResult = await resolveExecutionResolution({
+      argv: ["npm", "run", "visual", "--ws"],
+      cwd: target,
+    });
+    assert.equal(wsWsAliasResult.resolutionMode, "UNKNOWN");
+    assert.equal(wsWsAliasResult.mayInstall, true);
+    assert.equal(wsWsAliasResult.reason, "NPM_WORKSPACE_SCRIPT_UNRESOLVED");
+
+    // 17. Windows workspace variants fail closed
+    const wsWindowsResult = await resolveExecutionResolution({
+      argv: ["npm.cmd", "--workspace=a", "test"],
+      cwd: target,
+    });
+    assert.equal(wsWindowsResult.resolutionMode, "UNKNOWN");
+    assert.equal(wsWindowsResult.mayInstall, true);
+    assert.equal(wsWindowsResult.reason, "NPM_WORKSPACE_SCRIPT_UNRESOLVED");
+
+    const wsWindowsShortResult = await resolveExecutionResolution({
+      argv: ["npm.cmd", "test", "-w", "a"],
+      cwd: target,
+    });
+    assert.equal(wsWindowsShortResult.resolutionMode, "UNKNOWN");
+    assert.equal(wsWindowsShortResult.mayInstall, true);
+    assert.equal(wsWindowsShortResult.reason, "NPM_WORKSPACE_SCRIPT_UNRESOLVED");
+
+    // 18. Missing package.json or missing script does not crash
     const missingPkgResult = await resolveExecutionResolution({
       argv: ["npm", "test"],
       cwd: path.join(target, "nonexistent"),
@@ -284,6 +390,112 @@ test("resolveExecutionResolution handles recursive npm scripts, restart semantic
   } finally {
     await rm(target, { recursive: true, force: true });
   }
+});
+
+test("parseNpmInvocation correctly extracts subcommands, options, and workspace flags", () => {
+  const parsed1 = parseNpmInvocation(["npm", "--silent", "exec", "--", "@liustack/modlens"]);
+  assert.equal(parsed1.subcommand, "exec");
+  assert.deepEqual(parsed1.leadingOptions, ["--silent"]);
+  assert.deepEqual(parsed1.args, ["--", "@liustack/modlens"]);
+  assert.equal(parsed1.workspace, null);
+  assert.equal(parsed1.workspaces, false);
+
+  const parsed2 = parseNpmInvocation(["npm", "--workspace=pkg-a", "test"]);
+  assert.equal(parsed2.subcommand, "test");
+  assert.equal(parsed2.workspace, "pkg-a");
+
+  const parsed3 = parseNpmInvocation(["npm", "run", "build", "--workspaces"]);
+  assert.equal(parsed3.subcommand, "run");
+  assert.equal(parsed3.workspaces, true);
+
+  const parsed4 = parseNpmInvocation(["npm", "--silent"]);
+  assert.equal(parsed4.ambiguous, true);
+  assert.equal(parsed4.subcommand, null);
+
+  assert.deepEqual(npmWorkspaceSelection(parsed2), {
+    scoped: true,
+    workspace: "pkg-a",
+    allWorkspaces: false,
+  });
+  assert.deepEqual(npmWorkspaceSelection(parsed3), {
+    scoped: true,
+    workspace: null,
+    allWorkspaces: true,
+  });
+});
+
+test("classifyCommandResolution recognizes npm options before the subcommand", () => {
+  assert.deepEqual(
+    classifyCommandResolution(["npm", "--silent", "exec", "--", "@liustack/modlens"]),
+    {
+      resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+      mayInstall: true,
+      installer: "npm exec",
+      tool: "@liustack/modlens",
+    },
+  );
+
+  assert.deepEqual(
+    classifyCommandResolution(["npm", "--silent", "x", "@liustack/modlens"]),
+    {
+      resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+      mayInstall: true,
+      installer: "npm x",
+      tool: "@liustack/modlens",
+    },
+  );
+
+  assert.deepEqual(
+    classifyCommandResolution(["npm", "--loglevel", "error", "exec", "--", "@liustack/modlens"]),
+    {
+      resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+      mayInstall: true,
+      installer: "npm exec",
+      tool: "@liustack/modlens",
+    },
+  );
+
+  assert.deepEqual(
+    classifyCommandResolution(["npm", "--loglevel=error", "exec", "--", "@liustack/modlens"]),
+    {
+      resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+      mayInstall: true,
+      installer: "npm exec",
+      tool: "@liustack/modlens",
+    },
+  );
+
+  assert.deepEqual(
+    classifyCommandResolution(["npm.cmd", "--silent", "exec", "--", "package-win"]),
+    {
+      resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+      mayInstall: true,
+      installer: "npm exec",
+      tool: "package-win",
+    },
+  );
+
+  assert.deepEqual(
+    classifyCommandResolution(["sh", "-lc", "npm --silent exec -- package-sh"]),
+    {
+      resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+      mayInstall: true,
+      installer: "npm exec",
+      tool: "package-sh",
+    },
+  );
+
+  // Ambiguous invocation without subcommand fails closed
+  assert.deepEqual(
+    classifyCommandResolution(["npm", "--silent"]),
+    {
+      resolutionMode: "UNKNOWN",
+      mayInstall: true,
+      installer: "npm",
+      tool: null,
+      reason: "NPM_SUBCOMMAND_AMBIGUOUS",
+    },
+  );
 });
 
 test("classifyVerificationCapability prefers locally available verifiers", () => {

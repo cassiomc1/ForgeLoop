@@ -162,9 +162,12 @@ host supplies a valid trusted authority context. `npm exec` and `npm x` are
 installation-capable resolution paths. Recognized command dispatchers (such as
 `npm test`, `npm restart`, `npm run`, `npm rum`, `npm urn`) are resolved
 recursively across recognized lifecycle scripts before launch with cycle
-detection and restart-specific lifecycle fallback. `npx --no-install` is an
-allowed non-installing resolution and can return a normal failed result when the
-requested tool is unavailable. Completion, audit, `validate-protocol`, and task
+detection, leading option normalization, and restart-specific lifecycle fallback.
+npm workspace script executions (`--workspace`, `-w`, `--workspaces`, `--ws`) fail
+closed before launch with `E_COMMAND_RESOLUTION_AMBIGUOUS` because the effective
+`package.json` context cannot be proven from the root target. `npx --no-install` is
+an allowed non-installing resolution and can return a normal failed result when
+the requested tool is unavailable. Completion, audit, `validate-protocol`, and task
 bundles revalidate execution references rather than trusting duplicated check
 metadata. Invalid or missing references return `E_EXECUTION_REF_INVALID`; an
 observed command without ForgeLoop provenance returns

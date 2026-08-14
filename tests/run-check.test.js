@@ -7,6 +7,7 @@ import { test } from "node:test";
 import {
   classifyCommandResolution,
   E_INSTALLATION_AUTHORITY_REQUIRED,
+  E_COMMAND_RESOLUTION_AMBIGUOUS,
 } from "../src/core/verification-capability.js";
 import {
   readExecutionArtifact,
@@ -241,6 +242,72 @@ test("npm rum alias without authority is blocked before process launch", async (
         argv: ["npm", "rum", "visual"],
       }),
       (error) => error.code === E_INSTALLATION_AUTHORITY_REQUIRED,
+    );
+  });
+});
+
+test("npm with leading options without authority is blocked before process launch", async () => {
+  await withTarget(async (target) => {
+    await assert.rejects(
+      () => runCommandExecution({
+        target,
+        packageRoot,
+        taskId: "task-1",
+        checkId: "visual",
+        requirement: "visual-verification",
+        verificationCycle: 1,
+        argv: ["npm", "--silent", "exec", "--", "@liustack/modlens", "image.png"],
+      }),
+      (error) => error.code === E_INSTALLATION_AUTHORITY_REQUIRED,
+    );
+  });
+});
+
+test("npm workspace script dispatch is blocked before launch with E_COMMAND_RESOLUTION_AMBIGUOUS", async () => {
+  await withTarget(async (target) => {
+    await writeFile(path.join(target, "package.json"), JSON.stringify({
+      scripts: {
+        test: "node test.js",
+      },
+    }), "utf8");
+
+    await assert.rejects(
+      () => runCommandExecution({
+        target,
+        packageRoot,
+        taskId: "task-1",
+        checkId: "tests",
+        requirement: "tests",
+        verificationCycle: 1,
+        argv: ["npm", "test", "--workspace=a"],
+      }),
+      (error) => error.code === E_COMMAND_RESOLUTION_AMBIGUOUS,
+    );
+
+    await assert.rejects(
+      () => runCommandExecution({
+        target,
+        packageRoot,
+        taskId: "task-1",
+        checkId: "tests",
+        requirement: "tests",
+        verificationCycle: 1,
+        argv: ["npm", "--workspace=a", "test"],
+      }),
+      (error) => error.code === E_COMMAND_RESOLUTION_AMBIGUOUS,
+    );
+
+    await assert.rejects(
+      () => runCommandExecution({
+        target,
+        packageRoot,
+        taskId: "task-1",
+        checkId: "visual",
+        requirement: "visual-verification",
+        verificationCycle: 1,
+        argv: ["npm", "run", "visual", "--workspaces"],
+      }),
+      (error) => error.code === E_COMMAND_RESOLUTION_AMBIGUOUS,
     );
   });
 });
