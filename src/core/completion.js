@@ -78,7 +78,9 @@ function repairNext(error) {
     case "E_PROFILE_UNVERIFIED":
       return "Use Standard mode for a fresh target, or verify PROJECT_PROFILE.md before Strict completion.";
     case "E_INSTALLATION_AUTHORITY_REQUIRED":
-      return "Do not execute installation-capable verification commands without explicit installation authority; use local equivalents or record NOT_VERIFIED.";
+    case "E_AUTHORITY_INVALID":
+    case "E_AUTHORITY_SCOPE_MISMATCH":
+      return "Do not execute installation-capable verification commands without explicit scoped installation authority; use local equivalents or record NOT_VERIFIED.";
     case "E_VERIFICATION_TOOL_UNAVAILABLE":
       return "Use an available local verifier, an existing equivalent, or record NOT_VERIFIED if installation was not authorized.";
     default:
@@ -202,7 +204,7 @@ export async function evaluateCompletion({ target, packageRoot, strict = false }
 
   if (receipt) {
     try {
-      await validateReceipt(receipt.value, packageRoot);
+      await validateReceipt(receipt.value, packageRoot, { target, taskId: contract?.value?.taskId });
     } catch (error) {
       errors.push(issue(error.code ?? "E_RECEIPT_INVALID", `Execution receipt is invalid: ${error.message}`, [ARTIFACT_PATHS.receipt]));
     }
@@ -227,6 +229,8 @@ export async function evaluateCompletion({ target, packageRoot, strict = false }
       state,
       receipt: receipt?.value,
       requiredEvidence,
+      target,
+      taskId: contract?.value?.taskId,
     });
     errors.push(...relationshipErrors);
     coverage = receipt?.value?.evidenceCoverage ?? [];

@@ -1,0 +1,264 @@
+import assert from "node:assert/strict";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { test } from "node:test";
+
+import {
+  classifyCommandResolution,
+  getInstallationAuthorityRef,
+  validateAuthorityGrant,
+  validateVerificationAuthority,
+  E_INSTALLATION_AUTHORITY_REQUIRED,
+  E_AUTHORITY_INVALID,
+  E_AUTHORITY_SCOPE_MISMATCH,
+} from "../src/core/verification-capability.js";
+import { evaluateRequiredEvidence } from "../src/core/evidence-readiness.js";
+import { evaluateCompletion } from "../src/core/completion.js";
+import { evaluateAudit } from "../src/core/audit.js";
+import { getPackageRoot } from "../src/core/templates.js";
+import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
+import { evaluateRoute } from "../src/core/router.js";
+import { persistRoute } from "../src/core/route-artifact.js";
+import { createWorkState, writeWorkState } from "../src/core/work-state.js";
+import { appendProtocolEvent } from "../src/core/events.js";
+import { runPreflight } from "../src/commands/preflight.js";
+import { advanceWorkState } from "../src/core/phase.js";
+import { prepareCompletion, recordCheck } from "../src/core/completion-artifacts.js";
+
+const packageRoot = getPackageRoot();
+
+async function withTarget(run) {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-auth-"));
+  try {
+    await run(target);
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+}
+
+test("authority grant schema and validation rules", () => {
+  // Missing authority
+  assert.equal(validateAuthorityGrant({ authority: null }).valid, false);
+  assert.equal(validateAuthorityGrant({ authority: null }).error.code, E_AUTHORITY_INVALID);
+
+  // Invalid schema version
+  const badVersion = {
+    schemaVersion: 2,
+    protocolVersion: 1,
+    authorityId: "auth-1",
+    taskId: "task-1",
+    type: "SOFTWARE_INSTALLATION",
+    status: "AUTHORIZED",
+    scope: { tool: "jest" },
+    source: "operator",
+  };
+  assert.equal(validateAuthorityGrant({ authority: badVersion }).valid, false);
+  assert.equal(validateAuthorityGrant({ authority: badVersion }).error.code, E_AUTHORITY_INVALID);
+
+  // Type mismatch
+  const badType = {
+    ...badVersion,
+    schemaVersion: 1,
+    type: "OTHER_TYPE",
+  };
+  assert.equal(validateAuthorityGrant({ authority: badType }).valid, false);
+  assert.equal(validateAuthorityGrant({ authority: badType }).error.code, E_AUTHORITY_INVALID);
+
+  // Status not AUTHORIZED (e.g. REVOKED or EXPIRED)
+  const revoked = {
+    ...badVersion,
+    schemaVersion: 1,
+    status: "REVOKED",
+  };
+  assert.equal(validateAuthorityGrant({ authority: revoked }).valid, false);
+  assert.equal(validateAuthorityGrant({ authority: revoked }).error.code, E_AUTHORITY_INVALID);
+
+  const expired = {
+    ...badVersion,
+    schemaVersion: 1,
+    status: "EXPIRED",
+  };
+  assert.equal(validateAuthorityGrant({ authority: expired }).valid, false);
+  assert.equal(validateAuthorityGrant({ authority: expired }).error.code, E_AUTHORITY_INVALID);
+
+  // Source agent-self is prohibited
+  const agentSelf = {
+    ...badVersion,
+    schemaVersion: 1,
+    source: "agent-self",
+  };
+  assert.equal(validateAuthorityGrant({ authority: agentSelf }).valid, false);
+  assert.equal(validateAuthorityGrant({ authority: agentSelf }).error.code, E_AUTHORITY_INVALID);
+
+  // Unknown source
+  const unknownSource = {
+    ...badVersion,
+    schemaVersion: 1,
+    source: "unknown-source",
+  };
+  assert.equal(validateAuthorityGrant({ authority: unknownSource }).valid, false);
+  assert.equal(validateAuthorityGrant({ authority: unknownSource }).error.code, E_AUTHORITY_INVALID);
+
+  // Task mismatch
+  const validGrant = {
+    schemaVersion: 1,
+    protocolVersion: 1,
+    authorityId: "auth-jest",
+    taskId: "task-A",
+    type: "SOFTWARE_INSTALLATION",
+    status: "AUTHORIZED",
+    scope: { tool: "jest" },
+    source: "operator",
+  };
+  assert.equal(validateAuthorityGrant({ authority: validGrant, taskId: "task-B" }).valid, false);
+  assert.equal(validateAuthorityGrant({ authority: validGrant, taskId: "task-B" }).error.code, E_AUTHORITY_INVALID);
+
+  // Scope tool mismatch
+  assert.equal(validateAuthorityGrant({ authority: validGrant, taskId: "task-A", tool: "vitest" }).valid, false);
+  assert.equal(validateAuthorityGrant({ authority: validGrant, taskId: "task-A", tool: "vitest" }).error.code, E_AUTHORITY_SCOPE_MISMATCH);
+
+  // Valid grant with exact match
+  assert.equal(validateAuthorityGrant({ authority: validGrant, taskId: "task-A", tool: "jest" }).valid, true);
+
+  // Valid grant with wildcard tool
+  const wildcardGrant = { ...validGrant, scope: { tool: "*" } };
+  assert.equal(validateAuthorityGrant({ authority: wildcardGrant, taskId: "task-A", tool: "anything" }).valid, true);
+});
+
+test("authority extraction helper getInstallationAuthorityRef", () => {
+  assert.equal(getInstallationAuthorityRef({ details: { installationAuthorityRef: "auth-1" } }), "auth-1");
+  assert.equal(getInstallationAuthorityRef({ details: { authorityRef: "auth-2" } }), "auth-2");
+  assert.equal(getInstallationAuthorityRef({ installationAuthorityRef: "auth-3" }), "auth-3");
+  assert.equal(getInstallationAuthorityRef({ authorityRef: "auth-4" }), "auth-4");
+  assert.equal(getInstallationAuthorityRef({ details: { installationAuthorized: true } }), null);
+  assert.equal(getInstallationAuthorityRef(null), null);
+});
+
+test("audit and complete revalidate installation authority from target artifacts", async () => {
+  await withTarget(async (target) => {
+    const contract = createContract({
+      taskId: "task-audit-authority",
+      objective: "Verify audit and complete enforce authority from target artifacts",
+      deliverables: ["src/app.js"],
+      constraints: [],
+      risks: [],
+      verification: ["visual-check"],
+      successCriteria: ["visual-check"],
+      stopConditions: [],
+      unresolvedDecisions: [],
+      sourceRefs: [],
+    });
+    const contractHash = contractFingerprint(contract);
+    await writeContract(target, contract, packageRoot);
+
+    const route = evaluateRoute({ workType: "code", surfaces: ["config"], platforms: [] });
+    const persistedRoute = await persistRoute(target, route, packageRoot, {
+      contractFingerprint: contractHash,
+    });
+
+    const state = createWorkState({
+      taskId: contract.taskId,
+      contractFingerprint: contractHash,
+      routeFingerprint: persistedRoute.fingerprint,
+      selectedGuides: persistedRoute.value.guides,
+      phase: "ROUTED",
+    });
+    await writeWorkState(target, state, packageRoot);
+
+    await appendProtocolEvent(target, { taskId: contract.taskId, event: "TASK_RECEIVED" }, packageRoot);
+    await appendProtocolEvent(target, { taskId: contract.taskId, event: "CONTRACT_VALIDATED" }, packageRoot);
+    await appendProtocolEvent(target, { taskId: contract.taskId, event: "ROUTE_VALIDATED" }, packageRoot);
+
+    await runPreflight({ target, packageRoot });
+
+    await advanceWorkState(target, "PLANNED", packageRoot);
+    await advanceWorkState(target, "EXECUTING", packageRoot);
+    await advanceWorkState(target, "VERIFYING", packageRoot);
+
+    const authDir = path.join(target, ".forgeloop", "authorities");
+    await mkdir(authDir, { recursive: true });
+    const authFile = path.join(authDir, "auth-modlens.json");
+
+    // Write valid authority grant
+    await writeFile(
+      authFile,
+      JSON.stringify({
+        schemaVersion: 1,
+        protocolVersion: 1,
+        authorityId: "auth-modlens",
+        taskId: contract.taskId,
+        type: "SOFTWARE_INSTALLATION",
+        status: "AUTHORIZED",
+        scope: { tool: "@liustack/modlens" },
+        source: "operator",
+      }),
+      "utf8",
+    );
+
+    const prepared = await prepareCompletion({ target, packageRoot });
+
+    // Record check for visual-check with authorityRef
+    await recordCheck({
+      target,
+      packageRoot,
+      id: "check-visual",
+      kind: "command",
+      requirement: "visual-check",
+      status: "passed",
+      evidenceKind: "OBSERVED",
+      command: "npx @liustack/modlens --spec=app.json",
+      details: {
+        installationAuthorityRef: "auth-modlens",
+      },
+    });
+
+    // Record checks for remaining guide requirements
+    for (const req of prepared.requiredEvidence.filter((r) => r !== "visual-check")) {
+      await recordCheck({
+        target,
+        packageRoot,
+        id: `check-${req}`,
+        kind: "command",
+        requirement: req,
+        status: "passed",
+        evidenceKind: "OBSERVED",
+        command: "npm test",
+      });
+    }
+
+    await advanceWorkState(target, "REVIEWING", packageRoot);
+
+    // Audit and complete should be VALID
+    const auditBefore = await evaluateAudit({ target, packageRoot });
+    assert.equal(auditBefore.status, "VALID", JSON.stringify(auditBefore.errors));
+
+    const completeBefore = await evaluateCompletion({ target, packageRoot });
+    assert.equal(completeBefore.status, "VALID", JSON.stringify(completeBefore.errors));
+
+    // Now tamper with authority artifact: revoke it
+    await writeFile(
+      authFile,
+      JSON.stringify({
+        schemaVersion: 1,
+        protocolVersion: 1,
+        authorityId: "auth-modlens",
+        taskId: contract.taskId,
+        type: "SOFTWARE_INSTALLATION",
+        status: "REVOKED",
+        scope: { tool: "@liustack/modlens" },
+        source: "operator",
+      }),
+      "utf8",
+    );
+
+    // Audit and complete MUST REJECT due to revoked authority
+    const auditAfterRevoke = await evaluateAudit({ target, packageRoot });
+    assert.equal(auditAfterRevoke.status, "INVALID");
+    assert.ok(auditAfterRevoke.errors.some((e) => e.code === E_AUTHORITY_INVALID));
+
+    const completeAfterRevoke = await evaluateCompletion({ target, packageRoot });
+    assert.equal(completeAfterRevoke.status, "REJECTED");
+    assert.ok(completeAfterRevoke.errors.some((e) => e.code === E_AUTHORITY_INVALID));
+  });
+});

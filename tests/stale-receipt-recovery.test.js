@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -178,7 +178,101 @@ test("installation authority enforcement: recordCheck, evaluateCompletion, and e
       (error) => error.code === E_INSTALLATION_AUTHORITY_REQUIRED,
     );
 
-    // If recorded with explicit installation authorization, it succeeds
+    // Self-asserted boolean alone without canonical authority grant must be REJECTED
+    await assert.rejects(
+      async () => {
+        await recordCheck({
+          target,
+          packageRoot,
+          id: "modlens-check-self-assert",
+          kind: "command",
+          requirement: "visual-check",
+          status: "passed",
+          evidenceKind: "OBSERVED",
+          command: "npx @liustack/modlens --spec=ui.json",
+          details: {
+            installationAuthorized: true,
+          },
+        });
+      },
+      (error) => error.code === E_INSTALLATION_AUTHORITY_REQUIRED,
+    );
+
+    // Missing authority artifact must throw E_AUTHORITY_INVALID
+    await assert.rejects(
+      async () => {
+        await recordCheck({
+          target,
+          packageRoot,
+          id: "modlens-check-missing-auth",
+          kind: "command",
+          requirement: "visual-check",
+          status: "passed",
+          evidenceKind: "OBSERVED",
+          command: "npx @liustack/modlens --spec=ui.json",
+          details: {
+            installationAuthorityRef: "auth-nonexistent",
+          },
+        });
+      },
+      (error) => error.code === "E_AUTHORITY_INVALID",
+    );
+
+    // Create an authority grant artifact with wrong scope
+    const authDir = path.join(target, ".forgeloop", "authorities");
+    await mkdir(authDir, { recursive: true });
+    await writeFile(
+      path.join(authDir, "auth-wrong-scope.json"),
+      JSON.stringify({
+        schemaVersion: 1,
+        protocolVersion: 1,
+        authorityId: "auth-wrong-scope",
+        taskId: contract.taskId,
+        type: "SOFTWARE_INSTALLATION",
+        status: "AUTHORIZED",
+        scope: { tool: "playwright" },
+        source: "operator",
+      }),
+      "utf8",
+    );
+
+    // Attempting to record with wrong tool scope must throw E_AUTHORITY_SCOPE_MISMATCH
+    await assert.rejects(
+      async () => {
+        await recordCheck({
+          target,
+          packageRoot,
+          id: "modlens-check-wrong-scope",
+          kind: "command",
+          requirement: "visual-check",
+          status: "passed",
+          evidenceKind: "OBSERVED",
+          command: "npx @liustack/modlens --spec=ui.json",
+          details: {
+            installationAuthorityRef: "auth-wrong-scope",
+          },
+        });
+      },
+      (error) => error.code === "E_AUTHORITY_SCOPE_MISMATCH",
+    );
+
+    // Create a valid authority grant artifact
+    await writeFile(
+      path.join(authDir, "auth-modlens.json"),
+      JSON.stringify({
+        schemaVersion: 1,
+        protocolVersion: 1,
+        authorityId: "auth-modlens",
+        taskId: contract.taskId,
+        type: "SOFTWARE_INSTALLATION",
+        status: "AUTHORIZED",
+        scope: { tool: "@liustack/modlens" },
+        source: "operator",
+      }),
+      "utf8",
+    );
+
+    // If recorded with canonical authority reference, it succeeds
     const authorizedRecord = await recordCheck({
       target,
       packageRoot,
@@ -189,7 +283,7 @@ test("installation authority enforcement: recordCheck, evaluateCompletion, and e
       evidenceKind: "OBSERVED",
       command: "npx @liustack/modlens --spec=ui.json",
       details: {
-        installationAuthorized: true,
+        installationAuthorityRef: "auth-modlens",
       },
     });
     assert.ok(authorizedRecord.check);

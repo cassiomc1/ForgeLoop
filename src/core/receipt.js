@@ -56,7 +56,7 @@ function assertKnownGuides(guides) {
   if (new Set(guides).size !== guides.length) throw new Error("Receipt selectedGuides must not contain duplicates");
 }
 
-export function assertReceiptSemantics(receipt) {
+export function assertReceiptSemantics(receipt, options = {}) {
   const evidence = receipt.evidence ?? [];
   if (receipt.verificationCycle !== undefined
     && (!Number.isInteger(receipt.verificationCycle) || receipt.verificationCycle < 1)) {
@@ -66,7 +66,7 @@ export function assertReceiptSemantics(receipt) {
 
   for (const [index, check] of receipt.checks.entries()) {
     if (check?.schemaVersion !== undefined || check?.id !== undefined || check?.evidenceKind !== undefined) {
-      assertCheck(check, `receipt.checks[${index}]`);
+      assertCheck(check, `receipt.checks[${index}]`, options);
       continue;
     }
     if (check?.status === "passed") {
@@ -132,15 +132,15 @@ export function assertReceiptSemantics(receipt) {
   return receipt;
 }
 
-export async function validateReceipt(receipt, packageRoot) {
+export async function validateReceipt(receipt, packageRoot, options = {}) {
   assertSecretFree(receipt);
   const schema = await readSchema("execution-receipt", packageRoot);
   assertSchema(receipt, schema, "execution receipt");
   assertKnownGuides(receipt.selectedGuides);
-  return assertReceiptSemantics(receipt);
+  return assertReceiptSemantics(receipt, options);
 }
 
-export async function createReceipt(input, packageRoot) {
+export async function createReceipt(input, packageRoot, options = {}) {
   assertSecretFree(input);
   const receipt = {
     schemaVersion: RECEIPT_SCHEMA_VERSION,
@@ -169,5 +169,5 @@ export async function createReceipt(input, packageRoot) {
       deployed: false,
     },
   };
-  return validateReceipt(receipt, packageRoot);
+  return validateReceipt(receipt, packageRoot, options);
 }

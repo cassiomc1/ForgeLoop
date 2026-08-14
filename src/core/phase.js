@@ -231,7 +231,7 @@ export async function advanceWorkState(target, toPhase, options = {}) {
       packageRoot,
       additionalEvidence: preflight.policy?.requiredEvidence ?? [],
     });
-    await validateReceipt(receipt.value, packageRoot);
+    await validateReceipt(receipt.value, packageRoot, { target, taskId: contract?.value?.taskId });
     assertCompletionRelationships({
       contract,
       route,
@@ -240,12 +240,14 @@ export async function advanceWorkState(target, toPhase, options = {}) {
       requiredEvidence,
       requireRequiredChecks: false,
       requireReceiptStateFingerprint: false,
+      target,
+      taskId: contract?.value?.taskId,
     });
     nextReceipt = await createReceipt({
       ...receipt.value,
       stateFingerprint: canonicalFingerprint(next),
       verificationCycle: next.verificationCycle ?? receipt.value.verificationCycle ?? 1,
-    }, packageRoot);
+    }, packageRoot, { target, taskId: contract?.value?.taskId });
     assertCompletionRelationships({
       contract,
       route,
@@ -253,6 +255,8 @@ export async function advanceWorkState(target, toPhase, options = {}) {
       receipt: nextReceipt,
       requiredEvidence,
       requireRequiredChecks: false,
+      target,
+      taskId: contract?.value?.taskId,
     });
   } catch (error) {
     if (error.code !== "ARTIFACT_MISSING") throw error;

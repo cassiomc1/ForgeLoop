@@ -67,46 +67,55 @@ test("classifyCommandResolution classifies resolution modes deterministically", 
     resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
     mayInstall: true,
     installer: "npx",
+    tool: "@liustack/modlens",
   });
   assert.deepEqual(classifyCommandResolution("npx -y @liustack/modlens"), {
     resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
     mayInstall: true,
     installer: "npx",
+    tool: "@liustack/modlens",
   });
   assert.deepEqual(classifyCommandResolution("pnpm dlx @liustack/modlens"), {
     resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
     mayInstall: true,
     installer: "pnpm dlx",
+    tool: "@liustack/modlens",
   });
   assert.deepEqual(classifyCommandResolution("yarn dlx jest"), {
     resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
     mayInstall: true,
     installer: "yarn dlx",
+    tool: "jest",
   });
   assert.deepEqual(classifyCommandResolution("bunx vitest"), {
     resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
     mayInstall: true,
     installer: "bunx",
+    tool: "vitest",
   });
   assert.deepEqual(classifyCommandResolution("bun x vitest"), {
     resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
     mayInstall: true,
     installer: "bun x",
+    tool: "vitest",
   });
   assert.deepEqual(classifyCommandResolution("uvx ruff check ."), {
     resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
     mayInstall: true,
     installer: "uvx",
+    tool: "ruff",
   });
   assert.deepEqual(classifyCommandResolution("uv tool run ruff"), {
     resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
     mayInstall: true,
     installer: "uv tool run",
+    tool: "ruff",
   });
   assert.deepEqual(classifyCommandResolution("pipx run flake8"), {
     resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
     mayInstall: true,
     installer: "pipx run",
+    tool: "flake8",
   });
 
   // Non-installing resolution
@@ -114,11 +123,13 @@ test("classifyCommandResolution classifies resolution modes deterministically", 
     resolutionMode: "NON_INSTALLING_RESOLUTION",
     mayInstall: false,
     installer: "npx",
+    tool: "@liustack/modlens",
   });
   assert.deepEqual(classifyCommandResolution("npx --no @liustack/modlens"), {
     resolutionMode: "NON_INSTALLING_RESOLUTION",
     mayInstall: false,
     installer: "npx",
+    tool: "@liustack/modlens",
   });
 
   // Explicit installation
@@ -126,16 +137,19 @@ test("classifyCommandResolution classifies resolution modes deterministically", 
     resolutionMode: "EXPLICIT_INSTALLATION",
     mayInstall: true,
     installer: "npm",
+    tool: "@liustack/modlens",
   });
   assert.deepEqual(classifyCommandResolution("pnpm add -D jest"), {
     resolutionMode: "EXPLICIT_INSTALLATION",
     mayInstall: true,
     installer: "pnpm",
+    tool: "jest",
   });
   assert.deepEqual(classifyCommandResolution("pip install pytest"), {
     resolutionMode: "EXPLICIT_INSTALLATION",
     mayInstall: true,
     installer: "pip",
+    tool: "pytest",
   });
 
   // Local package binary / local executable
@@ -143,47 +157,37 @@ test("classifyCommandResolution classifies resolution modes deterministically", 
     resolutionMode: "LOCAL_PACKAGE_BINARY",
     mayInstall: false,
     installer: null,
+    tool: "modlens",
   });
   assert.deepEqual(classifyCommandResolution("npm test"), {
     resolutionMode: "LOCAL_PACKAGE_BINARY",
     mayInstall: false,
     installer: null,
+    tool: null,
   });
   assert.deepEqual(classifyCommandResolution("npm run check"), {
     resolutionMode: "LOCAL_PACKAGE_BINARY",
     mayInstall: false,
     installer: null,
+    tool: null,
   });
   assert.deepEqual(classifyCommandResolution("node scripts/verify.js"), {
     resolutionMode: "LOCAL_EXECUTABLE",
     mayInstall: false,
     installer: null,
+    tool: null,
   });
   assert.deepEqual(classifyCommandResolution("command -v modlens"), {
     resolutionMode: "LOCAL_EXECUTABLE",
     mayInstall: false,
     installer: null,
+    tool: null,
   });
 });
 
-test("validateVerificationAuthority rejects unauthorized install-capable verification checks", () => {
-  const unauthorizedCheck = {
-    id: "visual-check",
-    kind: "command",
-    requirement: "visual-verification",
-    status: "passed",
-    source: "npx @liustack/modlens --spec=visual.json",
-    details: {
-      command: "npx @liustack/modlens --spec=visual.json",
-      installationAuthorized: false,
-    },
-  };
-
-  const validation = validateVerificationAuthority(unauthorizedCheck);
-  assert.equal(validation.valid, false);
-  assert.equal(validation.error.code, E_INSTALLATION_AUTHORITY_REQUIRED);
-
-  const authorizedCheck = {
+test("validateVerificationAuthority rejects self-asserted booleans and requires canonical authority grants", () => {
+  // Self-asserted boolean without authorityRef
+  const selfAssertedCheck = {
     id: "visual-check",
     kind: "command",
     requirement: "visual-verification",
@@ -194,10 +198,145 @@ test("validateVerificationAuthority rejects unauthorized install-capable verific
       installationAuthorized: true,
     },
   };
+  const val1 = validateVerificationAuthority(selfAssertedCheck);
+  assert.equal(val1.valid, false);
+  assert.equal(val1.error.code, E_INSTALLATION_AUTHORITY_REQUIRED);
 
-  const authValidation = validateVerificationAuthority(authorizedCheck);
-  assert.equal(authValidation.valid, true);
-  assert.equal(authValidation.error, null);
+  // Nested self-asserted authority without authorityRef
+  const nestedSelfAsserted = {
+    id: "visual-check",
+    kind: "command",
+    requirement: "visual-verification",
+    status: "passed",
+    source: "npx @liustack/modlens",
+    details: {
+      command: "npx @liustack/modlens",
+      authority: { softwareInstallation: "AUTHORIZED" },
+    },
+  };
+  const val2 = validateVerificationAuthority(nestedSelfAsserted);
+  assert.equal(val2.valid, false);
+  assert.equal(val2.error.code, E_INSTALLATION_AUTHORITY_REQUIRED);
+
+  // Execution self-asserted boolean
+  const execSelfAsserted = {
+    id: "visual-check",
+    kind: "command",
+    requirement: "visual-verification",
+    status: "passed",
+    source: "npx @liustack/modlens",
+    details: {
+      command: "npx @liustack/modlens",
+      execution: { installationAuthorized: true },
+    },
+  };
+  const val3 = validateVerificationAuthority(execSelfAsserted);
+  assert.equal(val3.valid, false);
+  assert.equal(val3.error.code, E_INSTALLATION_AUTHORITY_REQUIRED);
+
+  // Unresolvable authorityRef
+  const unresolvableCheck = {
+    id: "visual-check",
+    kind: "command",
+    requirement: "visual-verification",
+    status: "passed",
+    source: "npx @liustack/modlens",
+    details: {
+      command: "npx @liustack/modlens",
+      installationAuthorityRef: "auth-missing",
+    },
+  };
+  const val4 = validateVerificationAuthority(unresolvableCheck);
+  assert.equal(val4.valid, false);
+  assert.equal(val4.error.code, "E_AUTHORITY_INVALID");
+
+  // Valid authority grant
+  const validAuthority = {
+    schemaVersion: 1,
+    protocolVersion: 1,
+    authorityId: "auth-modlens",
+    taskId: "task-1",
+    type: "SOFTWARE_INSTALLATION",
+    status: "AUTHORIZED",
+    scope: { tool: "@liustack/modlens" },
+    source: "operator",
+  };
+  const checkWithValidAuth = {
+    id: "visual-check",
+    kind: "command",
+    requirement: "visual-verification",
+    status: "passed",
+    source: "npx @liustack/modlens --spec=visual.json",
+    details: {
+      command: "npx @liustack/modlens --spec=visual.json",
+      installationAuthorityRef: "auth-modlens",
+    },
+  };
+  const val5 = validateVerificationAuthority(checkWithValidAuth, {
+    taskId: "task-1",
+    authorities: { "auth-modlens": validAuthority },
+  });
+  assert.equal(val5.valid, true);
+  assert.equal(val5.error, null);
+
+  // Wrong task authority grant
+  const valWrongTask = validateVerificationAuthority(checkWithValidAuth, {
+    taskId: "task-2",
+    authorities: { "auth-modlens": validAuthority },
+  });
+  assert.equal(valWrongTask.valid, false);
+  assert.equal(valWrongTask.error.code, "E_AUTHORITY_INVALID");
+
+  // Wrong tool scope authority grant
+  const wrongScopeAuth = {
+    ...validAuthority,
+    scope: { tool: "playwright" },
+  };
+  const valWrongScope = validateVerificationAuthority(checkWithValidAuth, {
+    taskId: "task-1",
+    authorities: { "auth-modlens": wrongScopeAuth },
+  });
+  assert.equal(valWrongScope.valid, false);
+  assert.equal(valWrongScope.error.code, "E_AUTHORITY_SCOPE_MISMATCH");
+
+  // Revoked authority grant
+  const revokedAuth = {
+    ...validAuthority,
+    status: "REVOKED",
+  };
+  const valRevoked = validateVerificationAuthority(checkWithValidAuth, {
+    taskId: "task-1",
+    authorities: { "auth-modlens": revokedAuth },
+  });
+  assert.equal(valRevoked.valid, false);
+  assert.equal(valRevoked.error.code, "E_AUTHORITY_INVALID");
+
+  // Self-issued agent-self authority grant
+  const agentSelfAuth = {
+    ...validAuthority,
+    source: "agent-self",
+  };
+  const valAgentSelf = validateVerificationAuthority(checkWithValidAuth, {
+    taskId: "task-1",
+    authorities: { "auth-modlens": agentSelfAuth },
+  });
+  assert.equal(valAgentSelf.valid, false);
+  assert.equal(valAgentSelf.error.code, "E_AUTHORITY_INVALID");
+
+  // Non-installing command needs no authority
+  const nonInstallingCheck = {
+    id: "visual-check",
+    kind: "command",
+    requirement: "visual-verification",
+    status: "passed",
+    source: "npx --no-install @liustack/modlens",
+    details: {
+      command: "npx --no-install @liustack/modlens",
+    },
+  };
+  const valNonInstall = validateVerificationAuthority(nonInstallingCheck);
+  assert.equal(valNonInstall.valid, true);
+  assert.equal(valNonInstall.error, null);
 });
 
 test("evaluateRequiredEvidence rejects unauthorized install-capable verification from passing readiness", () => {
@@ -213,7 +352,7 @@ test("evaluateRequiredEvidence rejects unauthorized install-capable verification
     source: "npx @liustack/modlens",
     details: {
       command: "npx @liustack/modlens",
-      installationAuthorized: false,
+      installationAuthorized: true, // self-asserted boolean must NOT pass
     },
   };
 

@@ -247,7 +247,7 @@ export function authoritativeChecksForRequirements({ requirements = [], checks =
   });
 }
 
-function componentStatus(check, requirement, allChecks = []) {
+function componentStatus(check, requirement, allChecks = [], options = {}) {
   if (requirement.operator !== "ALL" || !requirement.requirements?.length) return null;
   const components = check?.details?.components;
   const statuses = requirement.requirements.map((child) => {
@@ -256,7 +256,7 @@ function componentStatus(check, requirement, allChecks = []) {
         item?.requirementId === child.id || item?.requirement === child.text
       )).at(-1);
       if (matchingComp) {
-        const auth = validateVerificationAuthority(matchingComp);
+        const auth = validateVerificationAuthority(matchingComp, options);
         if (!auth.valid) return { ...matchingComp, status: "failed", reasonCode: auth.error.code };
         return matchingComp;
       }
@@ -264,7 +264,7 @@ function componentStatus(check, requirement, allChecks = []) {
     const childCandidates = allChecks.filter((candidate) => matchesRequirement(candidate, child));
     const childCheck = latestAuthoritativeCheck(childCandidates);
     if (childCheck) {
-      const auth = validateVerificationAuthority(childCheck);
+      const auth = validateVerificationAuthority(childCheck, options);
       if (!auth.valid) return { ...childCheck, status: "failed", reasonCode: auth.error.code };
     }
     return childCheck;
@@ -275,7 +275,20 @@ function componentStatus(check, requirement, allChecks = []) {
   return "COVERED";
 }
 
-export function evaluateRequiredEvidence({ requirements = [], checks = [] } = {}) {
+export function evaluateRequiredEvidence({
+  requirements = [],
+  checks = [],
+  target,
+  taskId,
+  authorities,
+  options = {},
+} = {}) {
+  const authOptions = {
+    ...(target ? { target } : {}),
+    ...(taskId ? { taskId } : {}),
+    ...(authorities ? { authorities } : {}),
+    ...options,
+  };
   const normalized = normalizeRequirements(requirements);
   const result = {
     ready: true,
@@ -301,8 +314,8 @@ export function evaluateRequiredEvidence({ requirements = [], checks = [] } = {}
     }
     const candidates = checks.filter((check) => matchesRequirement(check, requirement));
     const check = latestAuthoritativeCheck(candidates);
-    const auth = check ? validateVerificationAuthority(check) : { valid: true };
-    const compound = componentStatus(check, requirement, checks);
+    const auth = check ? validateVerificationAuthority(check, authOptions) : { valid: true };
+    const compound = componentStatus(check, requirement, checks, authOptions);
     if (!auth.valid) {
       result.invalid.push({ ...requirement, reasonCode: auth.error.code });
     } else if (compound === "INVALID" || check?.status === "failed") {

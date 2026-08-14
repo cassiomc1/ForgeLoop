@@ -46,7 +46,7 @@ function assertCompoundStatus(value, label) {
   }
 }
 
-export function createCheck(input = {}) {
+export function createCheck(input = {}, options = {}) {
   const check = {
     schemaVersion: CHECK_SCHEMA_VERSION,
     protocolVersion: PROTOCOL_VERSION,
@@ -62,10 +62,10 @@ export function createCheck(input = {}) {
     ...(input.viewport !== undefined ? { viewport: structuredClone(input.viewport) } : {}),
     ...(input.details !== undefined ? { details: structuredClone(input.details) } : {}),
   };
-  return assertCheck(check);
+  return assertCheck(check, "check", options);
 }
 
-export function assertCheck(value, label = "check") {
+export function assertCheck(value, label = "check", options = {}) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw checkError("E_CHECK_INVALID", `${label} must be an object`);
   }
@@ -99,7 +99,7 @@ export function assertCheck(value, label = "check") {
     throw contradiction(`${label} not-run must use NOT_VERIFIED evidence`);
   }
   if (value.status === "passed") {
-    const auth = validateVerificationAuthority(value);
+    const auth = validateVerificationAuthority(value, options);
     if (!auth.valid) {
       throw checkError(auth.error.code, auth.error.message);
     }
@@ -108,11 +108,11 @@ export function assertCheck(value, label = "check") {
   return value;
 }
 
-export function assertCheckList(value, label = "checks") {
+export function assertCheckList(value, label = "checks", options = {}) {
   if (!Array.isArray(value)) throw checkError("E_CHECK_INVALID", `${label} must be an array`);
   const ids = new Set();
   value.forEach((item, index) => {
-    assertCheck(item, `${label}[${index}]`);
+    assertCheck(item, `${label}[${index}]`, options);
     if (ids.has(item.id)) throw checkError("E_CHECK_INVALID", `${label} contains duplicate id ${item.id}`);
     ids.add(item.id);
   });

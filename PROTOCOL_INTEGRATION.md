@@ -155,8 +155,18 @@ not already available:
 Every verification command is classified by resolution mode (`LOCAL_EXECUTABLE`,
 `LOCAL_PACKAGE_BINARY`, `NON_INSTALLING_RESOLUTION`, `INSTALL_CAPABLE_RESOLUTION`,
 `EXPLICIT_INSTALLATION`). Any command that uses an install-capable or installation
-path without recorded authority is rejected by `record-check`, `audit`, and
-`complete` with `E_INSTALLATION_AUTHORITY_REQUIRED`.
+path without a valid canonical authority reference is rejected by `record-check`,
+`audit`, and `complete` with `E_INSTALLATION_AUTHORITY_REQUIRED`, `E_AUTHORITY_INVALID`,
+or `E_AUTHORITY_SCOPE_MISMATCH`.
+
+```text
+capability ≠ authority
+evidence ≠ authority grant
+actor claim ≠ operator grant
+```
+
+Authority cannot be self-issued by the actor consuming it. Boolean fields inside
+verification evidence are not sufficient proof of installation authority.
 
 Never convert `PROTOCOL_LIMITED` into environmental mutation by implicitly
 installing a package.

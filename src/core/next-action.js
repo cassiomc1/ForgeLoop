@@ -587,7 +587,7 @@ export async function getNextAction(targetOrOptions = {}, packageRootOption) {
       );
     }
     try {
-      await validateReceipt(receipt.value.value, packageRoot);
+      await validateReceipt(receipt.value.value, packageRoot, { target, taskId: contract?.value?.taskId });
     } catch (error) {
       return decision(
         context,
@@ -751,7 +751,7 @@ export async function getNextAction(targetOrOptions = {}, packageRootOption) {
       );
     }
     try {
-      await validateReceipt(receipt.value.value, packageRoot);
+      await validateReceipt(receipt.value.value, packageRoot, { target, taskId: contract?.value?.taskId });
     } catch (error) {
       return decision(
         context,

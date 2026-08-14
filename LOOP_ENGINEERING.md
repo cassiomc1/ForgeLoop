@@ -120,7 +120,9 @@ Every verification command path is classified by resolution mode:
 | `INSTALL_CAPABLE_RESOLUTION` | `npx tool`, `pnpm dlx tool`, `yarn dlx tool`, `bunx tool`, `uvx tool`, `pipx run tool` | Yes | Yes (`E_INSTALLATION_AUTHORITY_REQUIRED`) |
 | `EXPLICIT_INSTALLATION` | `npm install tool`, `pnpm add tool`, `pip install tool`, `cargo install tool` | Yes | Yes (`E_INSTALLATION_AUTHORITY_REQUIRED`) |
 
-**Validator-enforced rule**: Any verification command executed via an installation-capable or explicit-installation resolution mode without recorded installation authority is rejected by `record-check`, `audit`, and `complete` with error code `E_INSTALLATION_AUTHORITY_REQUIRED` and cannot contribute to `VALID` completion.
+**Validator-enforced rule**: Any verification command executed via an installation-capable or explicit-installation resolution mode without a valid canonical installation authority grant is rejected by `record-check`, `audit`, and `complete` with error code `E_INSTALLATION_AUTHORITY_REQUIRED`, `E_AUTHORITY_INVALID`, or `E_AUTHORITY_SCOPE_MISMATCH` and cannot contribute to `VALID` completion.
+
+Authority cannot be self-issued by the actor consuming it. Boolean fields inside verification evidence (such as `installationAuthorized: true`) are not sufficient proof of installation authority. Installation authority must be established via a canonical authority grant artifact in `.forgeloop/authorities/` (issued by `operator`, `host`, or `project-policy`) and referenced via `installationAuthorityRef`.
 
 ### Stale receipt recovery invariant
 

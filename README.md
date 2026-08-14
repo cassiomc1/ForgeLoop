@@ -109,9 +109,10 @@ The regression suite injects failures at these boundaries and verifies that
 owned cleanup. The frozen published installation under
 [`tests/fixtures/legacy-0.1.6/`](./tests/fixtures/legacy-0.1.6/) is derived
 from the real npm tarball, includes provenance and digests, and is copied into
-The current published release is `@cassiomc1/forgeloop@0.1.14`.
+The latest verified published npm release is `@cassiomc1/forgeloop@0.1.13`.
+The repository release candidate is `0.1.14`.
 Earlier `0.1.8`, `0.1.9`, `0.1.10`, `0.1.11`, `0.1.12`, and `0.1.13` references are historical; never move
-their tags or `v0.1.10`. Version `0.1.14` enforces verification installation
+their tags or `v0.1.10`. Candidate `0.1.14` enforces verification installation
 authority, provides recoverable stale receipt lifecycle in `prepare-completion`,
 and validates single-actor protocol runs.
 
@@ -203,12 +204,13 @@ project without overwriting local instructions. When the package is available
 in the npm registry, use the commands below; otherwise use the repository
 checkout fallback.
 
-The current published release is `@cassiomc1/forgeloop@0.1.14`.
-Pin this version when a reproducible blind run or release-identity check is
-required:
+The repository package candidate is `@cassiomc1/forgeloop@0.1.14`.
+The latest verified published npm release is `@cassiomc1/forgeloop@0.1.13`.
+For reproducible published-package runs or release-identity checks,
+pin the published version:
 
 ```bash
-npx @cassiomc1/forgeloop@0.1.14 --version
+npx @cassiomc1/forgeloop@0.1.13 --version
 npx @cassiomc1/forgeloop init
 npx @cassiomc1/forgeloop doctor
 npx @cassiomc1/forgeloop update

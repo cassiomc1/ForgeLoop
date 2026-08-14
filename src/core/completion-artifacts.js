@@ -19,7 +19,7 @@ import { createReceipt, validateReceipt } from "./receipt.js";
 import { readWorkState, writeWorkState } from "./work-state.js";
 import { assertExecutionPrerequisites, hasExecutionStarted } from "./execution-prerequisites.js";
 import { normalizeRequirements, classifyRequirement } from "./evidence-readiness.js";
-import { classifyCommandResolution } from "./verification-capability.js";
+import { classifyCommandResolution, validateVerificationAuthority } from "./verification-capability.js";
 
 function artifactError(code, message, artifacts = []) {
   const error = new Error(message);
@@ -84,7 +84,7 @@ export async function prepareCompletion({ target, packageRoot }) {
   let existing = null;
   try {
     existing = await readJsonArtifact(target, ARTIFACT_PATHS.receipt, "execution-receipt", packageRoot);
-    await validateReceipt(existing.value, packageRoot);
+    await validateReceipt(existing.value, packageRoot, { target, taskId: contract?.value?.taskId });
   } catch (error) {
     if (error.code !== "ARTIFACT_MISSING") throw error;
   }
@@ -211,21 +211,6 @@ export async function recordCheck({
   }
 
   const commandSpec = typeof command === "string" && command.trim() !== "" ? command.trim() : undefined;
-  if (commandSpec !== undefined) {
-    const classification = classifyCommandResolution(commandSpec);
-    const installationAuthorized = Boolean(
-      details?.installationAuthorized
-      || details?.authority?.softwareInstallation === "AUTHORIZED"
-      || details?.execution?.installationAuthorized
-    );
-    if (classification.mayInstall && !installationAuthorized) {
-      throw artifactError(
-        "E_INSTALLATION_AUTHORITY_REQUIRED",
-        `Verification command '${commandSpec}' uses installation-capable resolution (${classification.resolutionMode}) without recorded installation authority`,
-        [ARTIFACT_PATHS.state, ARTIFACT_PATHS.receipt],
-      );
-    }
-  }
 
   const state = await readWorkState(target, packageRoot);
   if (!state) throw artifactError("E_STATE_MISSING", "Work state is required before recording a check", [ARTIFACT_PATHS.state]);
@@ -263,7 +248,7 @@ export async function recordCheck({
   }
 
   const existingReceipt = await readCurrentReceipt(target, packageRoot);
-  await validateReceipt(existingReceipt.value, packageRoot);
+  await validateReceipt(existingReceipt.value, packageRoot, { target, taskId: contract.value.taskId });
   const source = commandSpec || `check:${id}`;
   const recordedResult = result?.trim() || `recorded command: ${commandSpec || source}`;
   const classification = commandSpec !== undefined ? classifyCommandResolution(commandSpec) : null;
@@ -294,7 +279,7 @@ export async function recordCheck({
         },
       } : {}),
     },
-  });
+  }, { target, taskId: contract.value.taskId, packageRoot });
   const evidence = createEvidence({
     kind: evidenceKind,
     source,
@@ -306,6 +291,13 @@ export async function recordCheck({
     },
   });
 
+  if (status === "passed") {
+    const auth = validateVerificationAuthority(check, { target, taskId: contract.value.taskId, packageRoot });
+    if (!auth.valid) {
+      throw artifactError(auth.error.code, auth.error.message, [ARTIFACT_PATHS.receipt]);
+    }
+  }
+
   const checks = mergeByCheckId(existingReceipt.value.checks ?? [], check);
   const evidenceList = appendUniqueEvidence(existingReceipt.value.evidence ?? [], evidence);
   assertCompletionRelationships({
@@ -315,6 +307,8 @@ export async function recordCheck({
     receipt: existingReceipt.value,
     requiredEvidence,
     requireRequiredChecks: false,
+    target,
+    taskId: contract.value.taskId,
   });
   const ledger = await validateEventLedger(target, packageRoot);
   if (!ledger.valid) {
@@ -343,7 +337,7 @@ export async function recordCheck({
     evidenceCoverage: coverage,
     stateFingerprint: canonicalFingerprint(nextState),
     verificationCycle: state.verificationCycle ?? 1,
-  }, packageRoot);
+  }, packageRoot, { target, taskId: contract.value.taskId });
 
   assertCompletionRelationships({
     contract,
@@ -352,6 +346,8 @@ export async function recordCheck({
     receipt: nextReceipt,
     requiredEvidence,
     requireRequiredChecks: false,
+    target,
+    taskId: contract.value.taskId,
   });
 
   await writeWorkState(target, nextState, { packageRoot });
@@ -454,7 +450,7 @@ export async function recordTerminalResult({
   }
 
   const existingReceipt = await readCurrentReceipt(target, packageRoot);
-  await validateReceipt(existingReceipt.value, packageRoot);
+  await validateReceipt(existingReceipt.value, packageRoot, { target, taskId: contract?.value?.taskId });
 
   if (type === "PUBLICATION") {
     const rank = {

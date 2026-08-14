@@ -66,10 +66,19 @@ export function completionRelationshipErrors({
   requiredEvidence = [],
   requireReceiptStateFingerprint = true,
   requireRequiredChecks = true,
+  target,
+  taskId,
+  authorities,
 } = {}) {
   const errors = stateIdentityErrors({ contract, route, state });
   const contractValue = contract?.value ?? contract;
   const contractFingerprint = contract?.fingerprint;
+  const effectiveTaskId = taskId ?? contractValue?.taskId ?? state?.taskId ?? receipt?.taskId;
+  const authOptions = {
+    ...(target ? { target } : {}),
+    ...(effectiveTaskId ? { taskId: effectiveTaskId } : {}),
+    ...(authorities ? { authorities } : {}),
+  };
   if (contractValue && receipt && contractValue.taskId !== receipt.taskId) {
     errors.push(issue("E_RECEIPT_TASK_MISMATCH", "Execution receipt does not belong to the current contract task", [ARTIFACT_PATHS.contract, ARTIFACT_PATHS.receipt]));
   }
@@ -81,11 +90,11 @@ export function completionRelationshipErrors({
   }
 
   if (state) {
-    addAssertion(errors, () => assertCheckList(state.checks, "work-state.checks"), "E_CHECK_INVALID", [ARTIFACT_PATHS.state]);
+    addAssertion(errors, () => assertCheckList(state.checks, "work-state.checks", authOptions), "E_CHECK_INVALID", [ARTIFACT_PATHS.state]);
     addAssertion(errors, () => assertEvidenceList(state.verificationEvidence, "work-state.verificationEvidence"), "E_EVIDENCE_INVALID", [ARTIFACT_PATHS.state]);
     for (const check of state.checks ?? []) {
       if (check.status === "passed") {
-        const auth = validateVerificationAuthority(check);
+        const auth = validateVerificationAuthority(check, authOptions);
         if (!auth.valid) {
           errors.push(issue(auth.error.code, auth.error.message, [ARTIFACT_PATHS.state]));
         }
@@ -93,18 +102,18 @@ export function completionRelationshipErrors({
     }
   }
   if (receipt) {
-    addAssertion(errors, () => assertCheckList(receipt.checks, "receipt.checks"), "E_CHECK_INVALID", [ARTIFACT_PATHS.receipt]);
+    addAssertion(errors, () => assertCheckList(receipt.checks, "receipt.checks", authOptions), "E_CHECK_INVALID", [ARTIFACT_PATHS.receipt]);
     addAssertion(errors, () => assertEvidenceList(receipt.evidence ?? [], "receipt.evidence"), "E_EVIDENCE_INVALID", [ARTIFACT_PATHS.receipt]);
     for (const check of receipt.checks ?? []) {
       if (check.status === "passed") {
-        const auth = validateVerificationAuthority(check);
+        const auth = validateVerificationAuthority(check, authOptions);
         if (!auth.valid) {
           errors.push(issue(auth.error.code, auth.error.message, [ARTIFACT_PATHS.receipt]));
         }
       }
     }
     if (requireRequiredChecks) {
-      const readiness = evaluateRequiredEvidence({ requirements: requiredEvidence, checks: receipt.checks });
+      const readiness = evaluateRequiredEvidence({ requirements: requiredEvidence, checks: receipt.checks, options: authOptions });
       for (const requirement of readiness.missing) {
         errors.push(issue("E_EVIDENCE_REQUIRED", `Required check is missing: ${requirement.text}`, [ARTIFACT_PATHS.receipt], { requirementId: requirement.id }));
       }
