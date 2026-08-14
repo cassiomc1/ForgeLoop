@@ -21,7 +21,7 @@ class QwenCapabilityPolicyTests(unittest.TestCase):
 
     def test_public_docs_explain_optional_installation_and_provenance(self) -> None:
         readme = self.read("README.md")
-        compatibility = self.read("AGENT_COMPATIBILITY.md")
+        compatibility = self.read("PROTOCOL_INTEGRATION.md")
         design = self.read("LOOP_SYSTEM_DESIGN.md")
         notices = self.read("THIRD_PARTY_NOTICES.md")
 
@@ -40,6 +40,7 @@ class QwenCapabilityPolicyTests(unittest.TestCase):
             for path in (
                 "LOOP_ENGINEERING.md",
                 "README.md",
+                "PROTOCOL_INTEGRATION.md",
                 "AGENT_COMPATIBILITY.md",
                 "LOOP_SYSTEM_DESIGN.md",
                 "THIRD_PARTY_NOTICES.md",

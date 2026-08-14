@@ -4,6 +4,68 @@
 > technical rules remain in the guides selected through
 > [`GUIDE_ROUTER.md`](./GUIDE_ROUTER.md).
 
+## Protocol applicability
+
+ForgeLoop is a project-local engineering protocol.
+
+If the active execution environment discovers a ForgeLoop project adapter,
+ForgeLoop applies to work performed in that project regardless of the
+environment's model, provider, product, IDE, agent name, runtime name, or
+orchestration implementation.
+
+Named integrations, documented discovery surfaces, previous conformance runs,
+and certification records are informational evidence only. They are never an
+allowlist.
+
+An execution environment that has not been previously tested is
+`CONFORMANCE_UNVERIFIED`, not `PROTOCOL_OPTIONAL`.
+
+```text
+INVALID:
+"I am not a named ForgeLoop integration, therefore ForgeLoop does not apply."
+"I will follow ForgeLoop only in spirit because my harness is not documented."
+
+VALID:
+"I discovered the ForgeLoop project adapter. ForgeLoop applies.
+My current runtime may have unverified or limited capabilities, which I will evaluate."
+```
+
+### Unknown execution environment policy
+
+An unknown or undocumented execution environment is not a blocker by itself.
+
+If it discovered the ForgeLoop project adapter, evaluate capabilities:
+- If protocol-capable: execute ForgeLoop normally.
+- If capability-limited: execute all supported ForgeLoop dimensions, fail closed
+  for unavailable dimensions, and report limitations precisely.
+
+Never downgrade ForgeLoop to optional guidance solely because the runtime
+name is unknown.
+
+### CLI-owned artifact policy
+
+Lifecycle-owned ForgeLoop artifacts must be created or mutated only through
+the supported ForgeLoop lifecycle commands or canonical ForgeLoop APIs:
+
+- `.forgeloop/preflight.json`
+- `.forgeloop/work-state.json`
+- `.forgeloop/events.ndjson`
+- `.forgeloop/execution-receipt.json`
+- completion recovery metadata
+- canonical check/evidence state
+- terminal-result lifecycle state
+
+If the required CLI/API capability cannot be resolved:
+- do not fabricate current lifecycle state;
+- do not synthesize event history;
+- do not manually assign `COMPLETE`;
+- do not construct a fake execution receipt;
+- do not invent `record-check` evidence;
+- do not rewrite `events.ndjson` to simulate chronology.
+
+Report the corresponding ForgeLoop dimension as `NOT_VERIFIED` with
+`E_FORGELOOP_CLI_UNAVAILABLE`.
+
 ## Blocking vs Non-Blocking Decisions
 
 Classify every unresolved decision before deciding whether to ask the user.

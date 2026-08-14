@@ -131,11 +131,11 @@ GitHub Copilot adapter. It activates the same operational contract while preserv
 
 Always-applicable Cursor adapter. It delegates decisions to the loop and router.
 
-### `AGENT_COMPATIBILITY.md`
+### `PROTOCOL_INTEGRATION.md`
 
-Human-readable support matrix for all ten agents. It explains each native entry
-file, the shared `AGENTS.md` compatibility contract, official documentation,
-precedence caveats, and the deterministic verification boundary.
+Human-readable integration protocol and capability levels. It explains native entry
+points, discovery surfaces, required and optional capabilities, degradation,
+and the deterministic verification boundary.
 
 ### `LOOP_ENGINEERING.md`
 

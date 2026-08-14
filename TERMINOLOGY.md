@@ -19,3 +19,5 @@
 | Evidence kind | One of `OBSERVED`, `INFERRED`, `NOT_VERIFIED`, or `BLOCKED`; evidence never upgrades an unverified claim by itself. |
 | Required artifact | A checkpoint-recorded relative path and SHA-256 hash that must still match before resume. |
 | Conformance | Relationship validation across route, state, receipt, task brief, and delegated-result artifacts. |
+| Universal applicability | ForgeLoop applies whenever an execution environment discovers a project adapter, regardless of model, provider, agent, IDE, or tool name. |
+| Integration level | The capability tier of an execution environment (`INSTRUCTION_DISCOVERED`, `PROTOCOL_CAPABLE`, `PROTOCOL_LIMITED`, `CONFORMANCE_VERIFIED`). |

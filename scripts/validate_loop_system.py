@@ -26,6 +26,7 @@ REQUIRED_FILES = (
     "ORCHESTRATOR_INTEGRATION.md",
     "THREAT_MODEL.md",
     "CONTRACT_COVERAGE.md",
+    "PROTOCOL_INTEGRATION.md",
 )
 
 WORK_PHASES = (
@@ -644,6 +645,7 @@ def _valid_fixture(root: Path) -> None:
     _write(root / "THIRD_PARTY_NOTICES.md", "# Third-party notices\n")
     _write(root / "THREAT_MODEL.md", "# Threat model\n")
     _write(root / "CONTRACT_COVERAGE.md", "# Coverage\n")
+    _write(root / "PROTOCOL_INTEGRATION.md", "# Protocol Integration\n")
     _write(
         root / "QUALITY_SCORECARD.md",
         "# Scorecard\n10/10 evidence\n"

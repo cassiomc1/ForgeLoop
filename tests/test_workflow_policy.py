@@ -67,18 +67,19 @@ class WorkflowPolicyTests(unittest.TestCase):
                 "LOOP_ENGINEERING.md",
                 "PROJECT_PROFILE.md",
                 "GUIDE_ROUTER.md",
+                "PROTOCOL_INTEGRATION.md",
             ):
                 self.assertIn(reference, text, f"{relative_path}: {reference}")
 
     def test_public_documents_point_to_the_canonical_boundary(self) -> None:
         design = self.read("LOOP_SYSTEM_DESIGN.md")
-        compatibility = self.read("AGENT_COMPATIBILITY.md")
+        protocol = self.read("PROTOCOL_INTEGRATION.md")
         readme = self.read("README.md")
         notices = self.read("THIRD_PARTY_NOTICES.md")
         templates = self.read("src/core/templates.js")
 
         self.assertIn("process gates", design)
-        self.assertIn("not proof of a callable", compatibility)
+        self.assertIn("CONFORMANCE_VERIFIED", protocol)
         self.assertIn("LOOP_ENGINEERING.md", readme)
         self.assertIn("### Superpowers", notices)
         self.assertIn("MIT", notices)

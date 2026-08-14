@@ -320,13 +320,13 @@ test("native shims resolve their declared hidden-kit links from their own direct
   for (const adapter of NATIVE_ADAPTER_PATHS) {
     const entry = entries.find((candidate) => candidate.sourcePath === adapter);
     const contents = entry.bytes.toString("utf8");
-    const references = [...contents.matchAll(/(?:\.\.\/|\.\/)*\.forgeloop\/kit\/(?:LOOP_ENGINEERING|AGENT_COMPATIBILITY)\.md/g)]
+    const references = [...contents.matchAll(/(?:\.\.\/|\.\/)*\.forgeloop\/kit\/(?:LOOP_ENGINEERING|PROTOCOL_INTEGRATION)\.md/g)]
       .map((match) => match[0]);
 
     assert.equal(references.length, 2, adapter);
     for (const reference of references) {
       const resolved = path.posix.normalize(path.posix.join(path.posix.dirname(adapter), reference));
-      assert.match(resolved, /^\.forgeloop\/kit\/(?:LOOP_ENGINEERING|AGENT_COMPATIBILITY)\.md$/, adapter);
+      assert.match(resolved, /^\.forgeloop\/kit\/(?:LOOP_ENGINEERING|PROTOCOL_INTEGRATION)\.md$/, adapter);
     }
   }
 });

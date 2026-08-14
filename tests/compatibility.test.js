@@ -107,35 +107,31 @@ test("agent registry uses valid support records and packaged instruction files",
   }
 });
 
-test("compatibility guide mirrors every registry entry", async () => {
-  const guide = await readFile("AGENT_COMPATIBILITY.md", "utf8");
-  for (const agent of AGENT_SUPPORT) {
-    const row = guide
-      .split("\n")
-      .find((line) => line.startsWith(`| ${agent.name} |`));
-    const cells = row?.split("|").slice(1, -1).map((cell) => cell.trim());
-
-    assert.ok(cells, `missing guide row for ${agent.name}`);
-    assert.equal(cells[0], agent.name);
-    assert.equal(
-      cells[1],
-      agent.support === "direct" ? "Direct adapter" : "`AGENTS.md` compatibility",
-    );
-    assert.equal(
-      cells[2],
-      agent.instructionFiles.map((file) => `\`${file}\``).join(", "),
-    );
-    assert.match(cells[3], new RegExp(agent.officialDocs.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
-  }
+test("protocol integration guide defines capability levels and universal applicability", async () => {
+  const guide = await readFile("PROTOCOL_INTEGRATION.md", "utf8");
+  assert.match(guide, /<!-- FORGELOOP_PROJECT_PROTOCOL=REQUIRED -->/);
+  assert.match(guide, /## Universal applicability/);
+  assert.match(guide, /Level 1 — `INSTRUCTION_DISCOVERED`/);
+  assert.match(guide, /Level 2 — `PROTOCOL_CAPABLE`/);
+  assert.match(guide, /Level 3 — `PROTOCOL_LIMITED`/);
+  assert.match(guide, /Level 4 — `CONFORMANCE_VERIFIED`/);
+  assert.match(guide, /## Protocol-owned state and no-simulation policy/);
 });
 
-test("npm package contains the registry and compatibility guide", () => {
+test("legacy compatibility guide provides a deprecation pointer to protocol integration", async () => {
+  const alias = await readFile("AGENT_COMPATIBILITY.md", "utf8");
+  assert.match(alias, /# Deprecated filename/);
+  assert.match(alias, /PROTOCOL_INTEGRATION\.md/);
+});
+
+test("npm package contains the registry, protocol integration, and alias", () => {
   const output = execFileSync(npmCommand, ["pack", "--dry-run", "--json"], {
     encoding: "utf8",
     shell: process.platform === "win32",
   });
   const paths = JSON.parse(output)[0].files.map((entry) => entry.path);
   assert.ok(paths.includes("src/core/agent-support.js"));
+  assert.ok(paths.includes("PROTOCOL_INTEGRATION.md"));
   assert.ok(paths.includes("AGENT_COMPATIBILITY.md"));
 });
 

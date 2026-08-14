@@ -15,13 +15,40 @@ export function nativeShimReferences(relativePath) {
   const prefix = nativeShimPrefix(relativePath);
   return [
     `${prefix}/LOOP_ENGINEERING.md`,
-    `${prefix}/AGENT_COMPATIBILITY.md`,
+    `${prefix}/PROTOCOL_INTEGRATION.md`,
   ];
 }
 
 export function nativeShim(relativePath) {
   const kitPrefix = nativeShimPrefix(relativePath);
-  return `# ForgeLoop native adapter\n\nRead and follow the canonical ForgeLoop protocol in ${kitPrefix}/LOOP_ENGINEERING.md and ${kitPrefix}/AGENT_COMPATIBILITY.md.\nThe canonical guides and schemas are under ${kitPrefix}/; keep this adapter concise and preserve any host-specific instructions.\n`;
+  return `<!-- FORGELOOP_PROJECT_PROTOCOL=REQUIRED -->
+# ForgeLoop Project Protocol
+
+This project is ForgeLoop-enabled.
+
+If your execution environment loaded this file, ForgeLoop applies to work
+performed in this project regardless of model, provider, product, IDE,
+agent name, runtime name, or orchestration environment.
+
+Do not treat ForgeLoop as vendor-specific, harness-specific, optional,
+advisory, or something to follow only "in spirit".
+
+Read and follow:
+- ${kitPrefix}/LOOP_ENGINEERING.md
+- ${kitPrefix}/PROTOCOL_INTEGRATION.md
+
+Before changing product or executable files, establish the ForgeLoop contract,
+route, required gates, and READY preflight.
+
+Use the project-local ForgeLoop CLI for lifecycle-owned protocol state.
+Never manually synthesize lifecycle chronology or assign ForgeLoop COMPLETE.
+
+Before claiming ForgeLoop-verified completion, require
+\`forgeloop complete\` to return \`VALID\`.
+
+If a required capability is unavailable, report that ForgeLoop dimension as
+not verified rather than simulating it.
+`;
 }
 
 export function resolveNativeReference(relativePath, reference) {
@@ -45,6 +72,7 @@ export function inspectNativeAdapter(relativePath, bytes) {
     missingReferences,
     resolvedReferences,
     hasForgeLoopMarker: /forgeloop/i.test(text),
+    hasProtocolMarker: text.includes("FORGELOOP_PROJECT_PROTOCOL=REQUIRED"),
   };
 }
 

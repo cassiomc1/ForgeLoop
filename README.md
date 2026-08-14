@@ -8,13 +8,14 @@ accessibility, design, and web games across web, mobile, and desktop projects.
 
 The files are Markdown and can be used as references, as a foundation for
 `AGENTS.md`, `CLAUDE.md`, `.cursor/rules`, and
-`.github/copilot-instructions.md`. The supported-agent contract is documented
-in [`AGENT_COMPATIBILITY.md`](./AGENT_COMPATIBILITY.md). Adopt only the guides
+`.github/copilot-instructions.md`. The integration contract and capability levels are documented
+in [`PROTOCOL_INTEGRATION.md`](./PROTOCOL_INTEGRATION.md). Adopt only the guides
 relevant to the target project.
 
-ForgeLoop is the portable, evidence-first loop that connects deterministic
-routing, checkpointed state, observable evidence, conformance, and delegation
-for compatible agent harnesses.
+ForgeLoop is a portable, verifiable engineering protocol for AI coding environments
+and developer workflows. It turns intent into contract-driven execution with
+deterministic routing, resumable state, evidence-backed verification, recovery, and
+validator-backed completion.
 
 The npm package also ships the local `forgeloop` CLI. In a target project it
 installs canonical documents under `.forgeloop/kit/`, keeps only small native
@@ -87,11 +88,13 @@ Request → discovery → profile → routing → plan → execution
               └ evidence-only rejection / next cycle
 ```
 
-Thin native adapters support Codex, Claude Code, Cursor, and GitHub Copilot.
-Antigravity, OpenCode, Hermes, Pi, Command Code, and Freebuff use the shared
-`AGENTS.md` entry point. All ten agents delegate to the same canonical
-documents; see [`AGENT_COMPATIBILITY.md`](./AGENT_COMPATIBILITY.md) for the
-official sources and precedence notes.
+ForgeLoop is project-scoped, capability-based, and vendor-neutral. Thin
+native adapters support common discovery surfaces including Codex, Claude Code,
+Cursor, and GitHub Copilot, while Antigravity, OpenCode, Hermes, Pi, Command Code,
+Freebuff, custom agents, and developer workflows discover the shared `AGENTS.md`
+entry point or manual bootstrap. All environments delegate to the same canonical
+protocol; see [`PROTOCOL_INTEGRATION.md`](./PROTOCOL_INTEGRATION.md) for
+capability levels, degradation rules, and precedence notes.
 
 ### Migration recovery and release freeze
 
@@ -324,7 +327,7 @@ are never stored in that file. Status precedence is `INVALID` > `INCONSISTENT`
 All protocol-support commands are local and offline-capable by default; the
 package sends no telemetry and has no central trace service.
 Capability gaps and inline/non-Git degraded mode are defined in
-[`AGENT_COMPATIBILITY.md`](./AGENT_COMPATIBILITY.md); they are reported as
+[`PROTOCOL_INTEGRATION.md`](./PROTOCOL_INTEGRATION.md); they are reported as
 limitations rather than treated as silent successes.
 
 ### Live conformance modes
@@ -479,6 +482,7 @@ must remain thin. The resulting target layout is:
 AGENTS.md
 CLAUDE.md
 .forgeloop/.gitignore
+.forgeloop/kit/PROTOCOL_INTEGRATION.md
 .forgeloop/kit/AGENT_COMPATIBILITY.md
 .forgeloop/kit/LOOP_ENGINEERING.md
 .forgeloop/kit/GUIDE_ROUTER.md
@@ -530,7 +534,7 @@ commands. A generic response that does not mention the loop, router, or sources
 indicates that the adapter was not loaded.
 
 After installation, start the preferred agent from the target project
-directory. Use `AGENT_COMPATIBILITY.md` to confirm which file it should load and
+directory. Use `PROTOCOL_INTEGRATION.md` to confirm which file it should load and
 which native entry point is expected. A live agent session is not required for
 package installation or its automated tests.
 
@@ -620,7 +624,8 @@ adoption. Local rendering requires Node.js 22+ and FFmpeg.
 .
 ├── AGENTS.md                       # shared Codex-compatible entry point
 ├── CLAUDE.md                       # Claude Code entry point
-├── AGENT_COMPATIBILITY.md          # supported agents and official sources
+├── PROTOCOL_INTEGRATION.md         # vendor-neutral capability integration
+├── AGENT_COMPATIBILITY.md          # compatibility alias
 ├── LOOP_ENGINEERING.md             # canonical operating cycle
 ├── GUIDE_ROUTER.md                 # contextual guide selection
 ├── PROJECT_PROFILE.md              # source profile (target copy is under .forgeloop/kit/)

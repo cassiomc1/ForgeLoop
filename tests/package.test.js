@@ -33,6 +33,7 @@ test("npm tarball contains the CLI, templates, and license notices only", () => 
     "schemas/evidence.schema.json",
     "THREAT_MODEL.md",
     "CONTRACT_COVERAGE.md",
+    "PROTOCOL_INTEGRATION.md",
     "LICENSE",
     "LICENSE-DOCS.md",
   ]) {
@@ -45,6 +46,20 @@ test("npm tarball contains the CLI, templates, and license notices only", () => 
     "docs/superpowers/plans/2026-08-11-10-of-10-roadmap-implementation.md",
   ]) {
     assert.equal(listing.includes(excluded), false, `unexpected ${excluded}`);
+  }
+
+  const forbiddenOraclePatterns = [
+    /EXPECTED_ROUTE/i,
+    /REQUIRED_EVIDENCE/i,
+    /REQUIRED_GATES/i,
+    /blind-premium-website/i,
+    /^conformance\//i,
+  ];
+
+  for (const packagedPath of listing) {
+    for (const pattern of forbiddenOraclePatterns) {
+      assert.equal(pattern.test(packagedPath), false, `oracle leakage in tarball: ${packagedPath}`);
+    }
   }
 });
 
