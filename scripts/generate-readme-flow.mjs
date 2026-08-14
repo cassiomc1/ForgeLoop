@@ -684,27 +684,36 @@ svg.add(`
     <text x="18" y="56" fill="${THEME.textSecondary}" font-size="10.5">Deterministic cross-artifact hashing prevents silent drift and stale state execution</text>
 
     <!-- Fingerprint Badges Grid -->
-    <g transform="translate(18, 70)">
+    <g transform="translate(18, 68)">
       <!-- Contract Fingerprint -->
-      <rect x="0" y="0" width="205" height="42" rx="6" fill="${THEME.panelSecondary}" stroke="${THEME.border}" stroke-width="1" />
-      <text x="12" y="17" fill="${THEME.blue}" font-size="9.5" font-weight="600">Contract Fingerprint</text>
-      <text x="12" y="32" fill="${THEME.muted}" font-size="8.5" font-mono="true">SHA-256 (key-order invariant)</text>
+      <g transform="translate(0, 0)">
+        <rect x="0" y="0" width="208" height="46" rx="6" fill="${THEME.panelSecondary}" stroke="${THEME.border}" stroke-width="1" />
+        <rect x="0" y="0" width="3" height="46" rx="1.5" fill="${THEME.blue}" />
+        <text x="12" y="18" fill="${THEME.blue}" font-size="10" font-weight="700">Contract Fingerprint</text>
+        <text x="12" y="34" fill="${THEME.muted}" font-size="9" font-family="monospace">SHA-256 (key-order invariant)</text>
+      </g>
 
       <!-- Repository Fingerprint -->
-      <rect x="220" y="0" width="205" height="42" rx="6" fill="${THEME.panelSecondary}" stroke="${THEME.border}" stroke-width="1" />
-      <text x="12" y="17" fill="${THEME.purple}" font-size="9.5" font-weight="600">Repository Fingerprint</text>
-      <text x="12" y="32" fill="${THEME.muted}" font-size="8.5" font-mono="true">Git branch + HEAD commit SHA</text>
+      <g transform="translate(222, 0)">
+        <rect x="0" y="0" width="208" height="46" rx="6" fill="${THEME.panelSecondary}" stroke="${THEME.border}" stroke-width="1" />
+        <rect x="0" y="0" width="3" height="46" rx="1.5" fill="${THEME.purple}" />
+        <text x="12" y="18" fill="${THEME.purple}" font-size="10" font-weight="700">Repository Fingerprint</text>
+        <text x="12" y="34" fill="${THEME.muted}" font-size="9" font-family="monospace">Git branch + HEAD commit SHA</text>
+      </g>
 
       <!-- Event Ledger Hash Chain -->
-      <rect x="440" y="0" width="210" height="42" rx="6" fill="${THEME.panelSecondary}" stroke="${THEME.border}" stroke-width="1" />
-      <text x="12" y="17" fill="${THEME.teal}" font-size="9.5" font-weight="600">Ledger Hash Chain</text>
-      <text x="12" y="32" fill="${THEME.muted}" font-size="8.5" font-mono="true">Append-only SHA-256 chain</text>
+      <g transform="translate(444, 0)">
+        <rect x="0" y="0" width="210" height="46" rx="6" fill="${THEME.panelSecondary}" stroke="${THEME.border}" stroke-width="1" />
+        <rect x="0" y="0" width="3" height="46" rx="1.5" fill="${THEME.teal}" />
+        <text x="12" y="18" fill="${THEME.teal}" font-size="10" font-weight="700">Ledger Hash Chain</text>
+        <text x="12" y="34" fill="${THEME.muted}" font-size="9" font-family="monospace">Append-only SHA-256 chain</text>
+      </g>
     </g>
 
     <!-- Bottom summary line -->
-    <g transform="translate(18, 124)">
-      <rect x="0" y="0" width="650" height="36" rx="6" fill="#121826" stroke="${THEME.blue}" stroke-width="0.75" />
-      <text x="14" y="22" fill="${THEME.textSecondary}" font-size="10">Revalidation Trigger: Changed Contract · Changed Git HEAD · Missing Required Artifacts → <tspan fill="${THEME.yellow}" font-weight="700">REVALIDATION_REQUIRED</tspan></text>
+    <g transform="translate(18, 126)">
+      <rect x="0" y="0" width="654" height="34" rx="6" fill="#121826" stroke="${THEME.blue}" stroke-width="0.75" />
+      <text x="14" y="21" fill="${THEME.textSecondary}" font-size="10">Revalidation Trigger: Changed Contract · Changed Git HEAD · Missing Required Artifacts → <tspan fill="${THEME.yellow}" font-weight="700">REVALIDATION_REQUIRED</tspan></text>
     </g>
   </g>
 `);
@@ -727,27 +736,36 @@ svg.add(`
     <text x="18" y="56" fill="${THEME.textSecondary}" font-size="10.5">Structured multi-agent delegation bundles with explicit scope, required artifacts &amp; contract assumptions</text>
 
     <!-- Delegation Artifacts Grid -->
-    <g transform="translate(18, 70)">
+    <g transform="translate(18, 68)">
       <!-- Task Brief -->
-      <rect x="0" y="0" width="245" height="42" rx="6" fill="${THEME.panelSecondary}" stroke="${THEME.border}" stroke-width="1" />
-      <text x="12" y="17" fill="${THEME.cyan}" font-size="9.5" font-weight="600">Task Brief Schema</text>
-      <text x="12" y="32" fill="${THEME.muted}" font-size="8.5" font-mono="true">task-brief.schema.json</text>
+      <g transform="translate(0, 0)">
+        <rect x="0" y="0" width="248" height="46" rx="6" fill="${THEME.panelSecondary}" stroke="${THEME.border}" stroke-width="1" />
+        <rect x="0" y="0" width="3" height="46" rx="1.5" fill="${THEME.cyan}" />
+        <text x="12" y="18" fill="${THEME.cyan}" font-size="10" font-weight="700">Task Brief Schema</text>
+        <text x="12" y="34" fill="${THEME.muted}" font-size="9" font-family="monospace">task-brief.schema.json</text>
+      </g>
 
       <!-- Task Bundle -->
-      <rect x="260" y="0" width="245" height="42" rx="6" fill="${THEME.panelSecondary}" stroke="${THEME.border}" stroke-width="1" />
-      <text x="12" y="17" fill="${THEME.teal}" font-size="9.5" font-weight="600">Task Bundle Manifest</text>
-      <text x="12" y="32" fill="${THEME.muted}" font-size="8.5" font-mono="true">task-bundle.schema.json</text>
+      <g transform="translate(262, 0)">
+        <rect x="0" y="0" width="248" height="46" rx="6" fill="${THEME.panelSecondary}" stroke="${THEME.border}" stroke-width="1" />
+        <rect x="0" y="0" width="3" height="46" rx="1.5" fill="${THEME.teal}" />
+        <text x="12" y="18" fill="${THEME.teal}" font-size="10" font-weight="700">Task Bundle Manifest</text>
+        <text x="12" y="34" fill="${THEME.muted}" font-size="9" font-family="monospace">task-bundle.schema.json</text>
+      </g>
 
       <!-- Delegated Result -->
-      <rect x="520" y="0" width="250" height="42" rx="6" fill="${THEME.panelSecondary}" stroke="${THEME.border}" stroke-width="1" />
-      <text x="12" y="17" fill="${THEME.purple}" font-size="9.5" font-weight="600">Delegated Result Receipt</text>
-      <text x="12" y="32" fill="${THEME.muted}" font-size="8.5" font-mono="true">delegated-result.schema.json</text>
+      <g transform="translate(524, 0)">
+        <rect x="0" y="0" width="250" height="46" rx="6" fill="${THEME.panelSecondary}" stroke="${THEME.border}" stroke-width="1" />
+        <rect x="0" y="0" width="3" height="46" rx="1.5" fill="${THEME.purple}" />
+        <text x="12" y="18" fill="${THEME.purple}" font-size="10" font-weight="700">Delegated Result Receipt</text>
+        <text x="12" y="34" fill="${THEME.muted}" font-size="9" font-family="monospace">delegated-result.schema.json</text>
+      </g>
     </g>
 
     <!-- Compatible Agent Ecosystem Footer -->
-    <g transform="translate(18, 124)">
-      <rect x="0" y="0" width="770" height="36" rx="6" fill="#161c28" stroke="${THEME.cyan}" stroke-width="0.75" />
-      <text x="14" y="22" fill="${THEME.textSecondary}" font-size="10">Supported Harnesses: <tspan fill="${THEME.cyan}" font-weight="600">Codex · Claude Code · Cursor · Copilot · Antigravity · OpenCode · Hermes · Pi · Command Code · Freebuff</tspan></text>
+    <g transform="translate(18, 126)">
+      <rect x="0" y="0" width="774" height="34" rx="6" fill="#161c28" stroke="${THEME.cyan}" stroke-width="0.75" />
+      <text x="14" y="21" fill="${THEME.textSecondary}" font-size="10">Supported Harnesses: <tspan fill="${THEME.cyan}" font-weight="600">Codex · Claude Code · Cursor · Copilot · Antigravity · OpenCode · Hermes · Pi · Command Code · Freebuff</tspan></text>
     </g>
   </g>
 `);
