@@ -1,3 +1,4 @@
+import path from "node:path";
 import {
   ARTIFACT_PATHS,
   canonicalFingerprint,
@@ -17,7 +18,7 @@ import { readPersistedRoute } from "./route-artifact.js";
 import { createReceipt, validateReceipt } from "./receipt.js";
 import { readWorkState, writeWorkState } from "./work-state.js";
 import { assertExecutionPrerequisites, hasExecutionStarted } from "./execution-prerequisites.js";
-import { normalizeRequirements } from "./evidence-readiness.js";
+import { normalizeRequirements, classifyRequirement } from "./evidence-readiness.js";
 
 function artifactError(code, message, artifacts = []) {
   const error = new Error(message);
@@ -337,6 +338,158 @@ export async function recordCheck({
     check,
     evidence,
     coverage,
+    event,
+  };
+}
+
+export async function recordTerminalResult({
+  target,
+  packageRoot,
+  requirement,
+  type,
+  status,
+  source,
+  result,
+  details = {},
+} = {}) {
+  if (!target || !requirement || !type || !status || !source || !result) {
+    throw artifactError("E_CHECK_INVALID", "record-terminal-result requires target, requirement, type, status, source, and result", [ARTIFACT_PATHS.state]);
+  }
+  if (!["PUBLICATION", "PRODUCTION_READINESS"].includes(type)) {
+    throw artifactError("E_FUTURE_TERMINAL_EVIDENCE", `record-terminal-result does not support type ${type}`, [ARTIFACT_PATHS.state]);
+  }
+  if (type === "PUBLICATION" && !["committed", "pushed", "published", "deployed"].includes(status)) {
+    throw artifactError("E_CHECK_INVALID", `Invalid publication status for record-terminal-result: ${status}`, [ARTIFACT_PATHS.state]);
+  }
+  if (type === "PRODUCTION_READINESS" && !["ready", "blocked"].includes(status)) {
+    throw artifactError("E_CHECK_INVALID", `Invalid production readiness status for record-terminal-result: ${status}`, [ARTIFACT_PATHS.state]);
+  }
+
+  const state = await readWorkState(target, packageRoot);
+  if (!state) throw artifactError("E_STATE_MISSING", "Work state is required before recording a terminal result", [ARTIFACT_PATHS.state]);
+  if (["COMPLETE", "BLOCKED"].includes(state.phase)) {
+    throw artifactError("E_PHASE_TRANSITION_INVALID", `Cannot record a terminal result in ${state.phase}`, [ARTIFACT_PATHS.state]);
+  }
+  await assertExecutionPrerequisites({ target, state, packageRoot });
+
+  const contract = await readContract(target, packageRoot);
+  const route = await readPersistedRoute(target, packageRoot);
+  const preflight = await evaluatePreflight({ target, packageRoot });
+  const requiredEvidence = await requiredEvidenceForTarget({
+    target,
+    contract,
+    route,
+    packageRoot,
+    additionalEvidence: preflight.policy?.requiredEvidence ?? [],
+  });
+
+  const requested = normalizeRequirements(requiredEvidence).find((item) => (
+    item.id === requirement || item.text === requirement
+  )) ?? classifyRequirement(requirement);
+
+  const existingReceipt = await readCurrentReceipt(target, packageRoot);
+  await validateReceipt(existingReceipt.value, packageRoot);
+
+  const cycle = state.verificationCycle ?? 1;
+
+  // Idempotency check:
+  const isIdentical = (existingReceipt.value.evidence ?? []).some((item) => (
+    item.kind === "OBSERVED"
+    && item.source === source.trim()
+    && item.result === result.trim()
+    && (item.verificationCycle ?? 1) === cycle
+    && item.details?.requirementId === requested.id
+    && item.details?.terminalType === type
+    && item.details?.terminalStatus === status
+  ));
+
+  if (isIdentical) {
+    return {
+      path: path.join(target, ARTIFACT_PATHS.receipt),
+      receipt: existingReceipt.value,
+      requirementId: requested.id,
+      type,
+      status,
+      idempotent: true,
+    };
+  }
+
+  const terminalEvidence = createEvidence({
+    kind: "OBSERVED",
+    source: source.trim(),
+    result: result.trim(),
+    verificationCycle: cycle,
+    details: {
+      requirementId: requested.id,
+      requirementText: requested.text,
+      terminalType: type,
+      terminalStatus: status,
+      ...(details === undefined ? {} : structuredClone(details)),
+      verificationCycle: cycle,
+    },
+  });
+
+  const evidenceList = appendUniqueEvidence(existingReceipt.value.evidence ?? [], terminalEvidence);
+  const nextState = {
+    ...state,
+    verificationEvidence: evidenceList,
+    lastUpdated: new Date().toISOString(),
+  };
+
+  const receiptUpdates = {
+    ...existingReceipt.value,
+    evidence: evidenceList,
+    verificationCycle: cycle,
+  };
+
+  if (type === "PUBLICATION") {
+    receiptUpdates.publicationStatus = status;
+    receiptUpdates.publication = {
+      ...(existingReceipt.value.publication ?? {}),
+      committed: existingReceipt.value.publication?.committed ?? false,
+      pushed: existingReceipt.value.publication?.pushed ?? false,
+      deployed: status === "deployed" || (existingReceipt.value.publication?.deployed ?? false),
+    };
+    if (status === "committed") receiptUpdates.publication.committed = true;
+    if (status === "pushed") receiptUpdates.publication.pushed = true;
+  } else if (type === "PRODUCTION_READINESS") {
+    receiptUpdates.productionReadiness = status;
+  }
+
+  const nextReceipt = await createReceipt({
+    ...receiptUpdates,
+    stateFingerprint: canonicalFingerprint(nextState),
+  }, packageRoot);
+
+  await writeWorkState(target, nextState, { packageRoot });
+  await writeJsonArtifact(
+    target,
+    ARTIFACT_PATHS.receipt,
+    nextReceipt,
+    "execution-receipt",
+    packageRoot,
+  );
+
+  const event = await appendProtocolEvent(target, {
+    taskId: state.taskId,
+    event: "TERMINAL_RESULT_RECORDED",
+    details: {
+      requirementId: requested.id,
+      type,
+      status,
+      verificationCycle: cycle,
+      source: source.trim(),
+      result: result.trim(),
+    },
+  }, packageRoot);
+
+  return {
+    path: path.join(target, ARTIFACT_PATHS.receipt),
+    receipt: nextReceipt,
+    requirementId: requested.id,
+    type,
+    status,
+    evidence: terminalEvidence,
     event,
   };
 }

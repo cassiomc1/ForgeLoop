@@ -164,7 +164,18 @@ export async function advanceWorkState(target, toPhase, options = {}) {
   const eventType = PHASE_EVENTS[toPhase];
   const reenteringVerification = toPhase === "VERIFYING" && ["CORRECTING", "REVIEWING"].includes(state.phase);
   if (toPhase === "VERIFYING" && state.phase === "REVIEWING") {
-    const recoveryAuth = validateCompletionRecoveryAuthorization({ state, events: ledger.events });
+    let currentReceipt = null;
+    try {
+      const receiptArtifact = await readJsonArtifact(target, ARTIFACT_PATHS.receipt, "execution-receipt", packageRoot);
+      currentReceipt = receiptArtifact?.value;
+    } catch {
+      // If receipt is not present, pass null
+    }
+    const recoveryAuth = validateCompletionRecoveryAuthorization({
+      state,
+      receipt: currentReceipt,
+      events: ledger.events,
+    });
     if (!recoveryAuth.authorized) {
       const firstError = recoveryAuth.errors[0] ?? {};
       throw phaseError(

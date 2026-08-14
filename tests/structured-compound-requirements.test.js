@@ -12,6 +12,20 @@ import { readSchema, validateSchema } from "../src/core/schema-validation.js";
 
 const packageRoot = getPackageRoot();
 
+async function withTarget(run) {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-compound-"));
+  try {
+    await run(target);
+  } finally {
+    await rm(target, {
+      recursive: true,
+      force: true,
+      maxRetries: 10,
+      retryDelay: 100,
+    });
+  }
+}
+
 test("backward compatibility with string array verification requirements", async () => {
   const contract = createContract({
     taskId: "task-string-reqs",
@@ -192,3 +206,192 @@ test("compound complete verification passes readiness (Matrix M)", () => {
   assert.equal(result.partial.length, 0);
   assert.equal(result.missing.length, 0);
 });
+
+test("compound child FAIL drives DIAGNOSE (P1-5 Test A)", async () => {
+  const { getNextAction, NEXT_ACTIONS } = await import("../src/core/next-action.js");
+  const { advanceWorkState } = await import("../src/core/phase.js");
+  const { persistRoute } = await import("../src/core/route-artifact.js");
+  const { evaluateRoute } = await import("../src/core/router.js");
+  const { runPreflight } = await import("../src/commands/preflight.js");
+  const { appendProtocolEvent } = await import("../src/core/events.js");
+  const { createWorkState, writeWorkState } = await import("../src/core/work-state.js");
+  const { prepareCompletion, recordCheck } = await import("../src/core/completion-artifacts.js");
+
+  await withTarget(async (target) => {
+    const contract = createContract({
+      taskId: "task-compound-fail",
+      objective: "Exercise compound child failure next action",
+      deliverables: ["src/app.js"],
+      constraints: [],
+      risks: [],
+      verification: ["test"],
+      successCriteria: [
+        {
+          id: "SC_COMPOUND",
+          text: "Compound verification",
+          type: "VERIFICATION",
+          operator: "ALL",
+          requirements: [
+            { id: "SC_CHILD_1", text: "Child 1 pass" },
+            { id: "SC_CHILD_2", text: "Child 2 fail" },
+          ],
+        },
+      ],
+      stopConditions: [],
+      unresolvedDecisions: [],
+      sourceRefs: [],
+    });
+    const contractHash = contractFingerprint(contract);
+    await writeContract(target, contract, packageRoot);
+    const route = evaluateRoute({ workType: "code", surfaces: ["config"], platforms: [] });
+    const persistedRoute = await persistRoute(target, route, packageRoot, {
+      contractFingerprint: contractHash,
+    });
+    const state = createWorkState({
+      taskId: contract.taskId,
+      contractFingerprint: contractHash,
+      routeFingerprint: persistedRoute.fingerprint,
+      repositoryFingerprint: { branch: null, head: null },
+      phase: "PLANNED",
+      selectedGuides: [...persistedRoute.value.guides],
+      requiredGates: [],
+      satisfiedGates: [],
+      completedSteps: ["planning"],
+      pendingSteps: ["execute"],
+      requiredArtifacts: [],
+      checks: [],
+      failures: [],
+      blockers: [],
+      verificationEvidence: [],
+    });
+    await writeWorkState(target, state, { packageRoot });
+    await appendProtocolEvent(target, { taskId: contract.taskId, event: "CONTRACT_VALIDATED" }, packageRoot);
+    await appendProtocolEvent(target, { taskId: contract.taskId, event: "ROUTE_VALIDATED" }, packageRoot);
+    await runPreflight({ target, packageRoot });
+    await advanceWorkState(target, "EXECUTING", { packageRoot });
+    await advanceWorkState(target, "VERIFYING", { packageRoot });
+    await prepareCompletion({ target, packageRoot });
+
+    // Child 1 passes
+    await recordCheck({
+      target,
+      packageRoot,
+      id: "chk-c1",
+      requirement: "SC_CHILD_1",
+      status: "passed",
+      evidenceKind: "OBSERVED",
+      command: "test1",
+      result: "passed",
+    });
+
+    // Child 2 fails
+    await recordCheck({
+      target,
+      packageRoot,
+      id: "chk-c2",
+      requirement: "SC_CHILD_2",
+      status: "failed",
+      evidenceKind: "OBSERVED",
+      command: "test2",
+      result: "failed",
+    });
+
+    const next = await getNextAction(target, packageRoot);
+    assert.equal(next.nextAction, NEXT_ACTIONS.DIAGNOSE);
+  });
+});
+
+test("compound child BLOCKED drives RESOLVE_BLOCKER (P1-5 Test B)", async () => {
+  const { getNextAction, NEXT_ACTIONS } = await import("../src/core/next-action.js");
+  const { advanceWorkState } = await import("../src/core/phase.js");
+  const { persistRoute } = await import("../src/core/route-artifact.js");
+  const { evaluateRoute } = await import("../src/core/router.js");
+  const { runPreflight } = await import("../src/commands/preflight.js");
+  const { appendProtocolEvent } = await import("../src/core/events.js");
+  const { createWorkState, writeWorkState } = await import("../src/core/work-state.js");
+  const { prepareCompletion, recordCheck } = await import("../src/core/completion-artifacts.js");
+
+  await withTarget(async (target) => {
+    const contract = createContract({
+      taskId: "task-compound-block",
+      objective: "Exercise compound child blocked next action",
+      deliverables: ["src/app.js"],
+      constraints: [],
+      risks: [],
+      verification: ["test"],
+      successCriteria: [
+        {
+          id: "SC_COMPOUND",
+          text: "Compound verification",
+          type: "VERIFICATION",
+          operator: "ALL",
+          requirements: [
+            { id: "SC_CHILD_1", text: "Child 1 pass" },
+            { id: "SC_CHILD_2", text: "Child 2 block" },
+          ],
+        },
+      ],
+      stopConditions: [],
+      unresolvedDecisions: [],
+      sourceRefs: [],
+    });
+    const contractHash = contractFingerprint(contract);
+    await writeContract(target, contract, packageRoot);
+    const route = evaluateRoute({ workType: "code", surfaces: ["config"], platforms: [] });
+    const persistedRoute = await persistRoute(target, route, packageRoot, {
+      contractFingerprint: contractHash,
+    });
+    const state = createWorkState({
+      taskId: contract.taskId,
+      contractFingerprint: contractHash,
+      routeFingerprint: persistedRoute.fingerprint,
+      repositoryFingerprint: { branch: null, head: null },
+      phase: "PLANNED",
+      selectedGuides: [...persistedRoute.value.guides],
+      requiredGates: [],
+      satisfiedGates: [],
+      completedSteps: ["planning"],
+      pendingSteps: ["execute"],
+      requiredArtifacts: [],
+      checks: [],
+      failures: [],
+      blockers: [],
+      verificationEvidence: [],
+    });
+    await writeWorkState(target, state, { packageRoot });
+    await appendProtocolEvent(target, { taskId: contract.taskId, event: "CONTRACT_VALIDATED" }, packageRoot);
+    await appendProtocolEvent(target, { taskId: contract.taskId, event: "ROUTE_VALIDATED" }, packageRoot);
+    await runPreflight({ target, packageRoot });
+    await advanceWorkState(target, "EXECUTING", { packageRoot });
+    await advanceWorkState(target, "VERIFYING", { packageRoot });
+    await prepareCompletion({ target, packageRoot });
+
+    // Child 1 passes
+    await recordCheck({
+      target,
+      packageRoot,
+      id: "chk-c1",
+      requirement: "SC_CHILD_1",
+      status: "passed",
+      evidenceKind: "OBSERVED",
+      command: "test1",
+      result: "passed",
+    });
+
+    // Child 2 blocked
+    await recordCheck({
+      target,
+      packageRoot,
+      id: "chk-c2",
+      requirement: "SC_CHILD_2",
+      status: "blocked",
+      evidenceKind: "BLOCKED",
+      command: "test2",
+      result: "blocked",
+    });
+
+    const next = await getNextAction(target, packageRoot);
+    assert.equal(next.nextAction, NEXT_ACTIONS.RESOLVE_BLOCKER);
+  });
+});
+

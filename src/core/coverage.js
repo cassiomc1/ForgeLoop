@@ -81,7 +81,7 @@ export function coverageForRequirements(requirements, checks, { blockedIds = [] 
   const partial = new Set(readiness.partial.map((item) => item.id));
   const invalid = new Set(readiness.invalid.map((item) => item.id));
   const blocked = new Set(blockedIds);
-  return normalizedRequirements.filter((requirement) => !requirement.lifecycleOwned).map((requirement) => createCoverage({
+  return normalizedRequirements.filter((requirement) => !requirement.terminalOwned).map((requirement) => createCoverage({
     requirement: requirement.text,
     requiredEvidence: [requirement.text],
     observedEvidence: covered.has(requirement.id) ? [requirement.text] : [],

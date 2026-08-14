@@ -65,7 +65,10 @@ export function evidenceMatches(evidence, terms) {
     .filter((term) => typeof term === "string" && term.length > 0)
     .map((term) => term.toLowerCase());
   return (evidence ?? []).some((item) => {
-    const haystack = `${item.source} ${item.result}`.toLowerCase();
+    const detailsText = item.details
+      ? `${item.details.requirementText ?? ""} ${String(item.details.terminalType ?? "").replace(/_/g, " ")}`
+      : "";
+    const haystack = `${item.source} ${item.result} ${detailsText}`.toLowerCase();
     return normalizedTerms.some((term) => haystack.includes(term));
   });
 }

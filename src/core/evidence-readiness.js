@@ -16,7 +16,7 @@ export const TERMINAL_OWNED_TYPES = Object.freeze([
 
 const LIFECYCLE_TERMS = /\b(?:lifecycle reaches|forgeloop reaches|complete returns|validator-backed complete|completion validated|review is approved)\b/i;
 const PUBLICATION_TERMS = /\b(?:publication succeeds|release (?:is )?published|package (?:is )?published|published to|published package)\b/i;
-const PRODUCTION_TERMS = /\b(?:deployment succeeds|production deployment|production readiness|deployed to)\b/i;
+const PRODUCTION_TERMS = /\b(?:deployment succeeds|production deployment|production readiness|production validation|production smoke|deployed to)\b/i;
 const NON_TERMINAL_TERMS = /\b(?:tests?|lint|build|typecheck|types?|coverage|keyboard|zoom|contrast|motion|checks?|unit|e2e|integration|suite|regression|browser|responsive|html|css|js|component|api)\b/i;
 const CONJUNCTION_TERMS = /\b(?:and|with|then|plus|also|after)\b/i;
 
@@ -29,6 +29,32 @@ export function isMixedTerminalRequirement(text) {
 
 function stableId(text) {
   return `REQ_${sha256(Buffer.from(text.trim().replace(/\s+/g, " ").toLowerCase())).slice(0, 16).toUpperCase()}`;
+}
+
+export function isPublicationStatusSatisfied(actual, required) {
+  const levels = {
+    "not-published": 0,
+    "local-only": 1,
+    "committed": 2,
+    "pushed": 3,
+    "published": 4,
+    "deployed": 5,
+  };
+  const actualLevel = levels[actual] ?? -1;
+  const requiredLevel = levels[required] ?? -1;
+  if (required === "published") {
+    return actual === "published" || actual === "deployed";
+  }
+  if (required === "deployed") {
+    return actual === "deployed";
+  }
+  if (required === "pushed") {
+    return actualLevel >= levels.pushed;
+  }
+  if (required === "committed") {
+    return actualLevel >= levels.committed;
+  }
+  return actual === required;
 }
 
 export function classifyRequirement(input) {
@@ -44,6 +70,20 @@ export function classifyRequirement(input) {
           : PRODUCTION_TERMS.test(text)
             ? "PRODUCTION_READINESS"
             : "VERIFICATION";
+    let requiredPublicationStatus = undefined;
+    if (type === "PUBLICATION") {
+      if (/\b(?:publish|published|release published|published package)\b/i.test(text)) {
+        requiredPublicationStatus = "published";
+      } else if (/\b(?:deploy|deployed)\b/i.test(text)) {
+        requiredPublicationStatus = "deployed";
+      } else if (/\b(?:push|pushed)\b/i.test(text)) {
+        requiredPublicationStatus = "pushed";
+      } else if (/\b(?:commit|committed)\b/i.test(text)) {
+        requiredPublicationStatus = "committed";
+      } else {
+        requiredPublicationStatus = "published";
+      }
+    }
     return {
       id: stableId(text),
       text,
@@ -53,6 +93,7 @@ export function classifyRequirement(input) {
       terminalOwned: TERMINAL_OWNED_TYPES.includes(type),
       mixedTerminal: isMixed,
       requiredEvidenceKind: "OBSERVED",
+      requiredPublicationStatus,
       requirements: [],
     };
   }
@@ -74,6 +115,7 @@ export function classifyRequirement(input) {
     terminalOwned: input.terminalOwned ?? TERMINAL_OWNED_TYPES.includes(type),
     mixedTerminal: isMixed,
     requiredEvidenceKind: input.requiredEvidenceKind ?? "OBSERVED",
+    requiredPublicationStatus: input.requiredPublicationStatus ?? classified.requiredPublicationStatus,
     requirements: (input.requirements ?? []).map(classifyRequirement),
   };
 }
@@ -91,6 +133,24 @@ export function ordinaryRequirements(requirements = []) {
   return normalizeRequirements(requirements).filter((requirement) => !requirement.terminalOwned);
 }
 
+export function ordinaryLeafRequirements(requirements = []) {
+  const result = [];
+  function visit(requirement) {
+    if (requirement.terminalOwned) return;
+    if (requirement.operator === "ALL" && Array.isArray(requirement.requirements) && requirement.requirements.length > 0) {
+      for (const child of requirement.requirements) {
+        visit(child);
+      }
+      return;
+    }
+    result.push(requirement);
+  }
+  for (const req of normalizeRequirements(requirements)) {
+    visit(req);
+  }
+  return result;
+}
+
 export function terminalRequirements(requirements = []) {
   return normalizeRequirements(requirements).filter((requirement) => requirement.terminalOwned);
 }
@@ -105,6 +165,49 @@ export function publicationRequirements(requirements = []) {
 
 export function productionReadinessRequirements(requirements = []) {
   return normalizeRequirements(requirements).filter((requirement) => requirement.type === "PRODUCTION_READINESS");
+}
+
+export function evaluateTerminalRequirements({ requirements = [], receipt = null } = {}) {
+  const normalized = normalizeRequirements(requirements);
+  const terminal = terminalRequirements(normalized);
+  const result = {
+    covered: [],
+    pending: [],
+    invalid: [],
+    errors: [],
+  };
+  const pubStatus = receipt ? (receipt.publicationStatus ?? "not-published") : "not-published";
+  const prodStatus = receipt ? (receipt.productionReadiness ?? "not-verified") : "not-verified";
+
+  for (const req of terminal) {
+    if (req.type === "LIFECYCLE") {
+      result.covered.push(req);
+    } else if (req.type === "PUBLICATION") {
+      const requiredLevel = req.requiredPublicationStatus ?? "published";
+      if (isPublicationStatusSatisfied(pubStatus, requiredLevel)) {
+        result.covered.push(req);
+      } else {
+        result.pending.push(req);
+        result.errors.push({
+          code: "E_PUBLICATION_REQUIREMENT_PENDING",
+          message: `The contract explicitly requires publication status '${requiredLevel}', but publication status is '${pubStatus}': ${req.text}`,
+          requirementId: req.id,
+        });
+      }
+    } else if (req.type === "PRODUCTION_READINESS") {
+      if (prodStatus === "ready" || prodStatus === "verified") {
+        result.covered.push(req);
+      } else {
+        result.pending.push(req);
+        result.errors.push({
+          code: "E_PRODUCTION_REQUIREMENT_PENDING",
+          message: `The contract explicitly requires production readiness, but production readiness is '${prodStatus}': ${req.text}`,
+          requirementId: req.id,
+        });
+      }
+    }
+  }
+  return result;
 }
 
 export function matchesRequirement(check, requirement) {
@@ -213,6 +316,9 @@ export function evaluateRequiredEvidence({ requirements = [], checks = [] } = {}
   }
   if (result.missing.length) result.reasonCodes.push("E_EVIDENCE_REQUIRED");
   if (result.partial.length) result.reasonCodes.push("E_EVIDENCE_PARTIAL");
-  result.reasonCodes = [...new Set(result.reasonCodes)];
+  const leaves = ordinaryLeafRequirements(normalized);
+  const authoritativeLeaves = authoritativeChecksForRequirements({ requirements: leaves, checks });
+  result.authoritativeFailures = authoritativeLeaves.filter(({ check }) => check?.status === "failed");
+  result.authoritativeBlocked = authoritativeLeaves.filter(({ check }) => check?.status === "blocked");
   return result;
 }

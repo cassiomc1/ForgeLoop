@@ -30,6 +30,10 @@
         "lifecycleOwned": { "type": "boolean" },
         "terminalOwned": { "type": "boolean" },
         "mixedTerminal": { "type": "boolean" },
+        "requiredPublicationStatus": {
+          "type": "string",
+          "enum": ["committed", "pushed", "published", "deployed"]
+        },
         "requirements": {
           "type": "array",
           "items": {
