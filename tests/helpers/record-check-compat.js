@@ -4,12 +4,12 @@ import path from "node:path";
 import { runCommandExecution } from "../../src/core/execution.js";
 import { readWorkState } from "../../src/core/work-state.js";
 
-function windowsCommandArgv(fakeNpx, tokens) {
+function windowsCommandArgv(target, fakeNpx, tokens) {
   if (process.platform !== "win32") return [fakeNpx, ...tokens.slice(1)];
 
   const command = [
     "call",
-    `"${fakeNpx.replaceAll('"', '""')}"`,
+    path.relative(target, fakeNpx),
     ...tokens.slice(1),
   ].join(" ");
   return [process.env.ComSpec ?? "cmd.exe", "/d", "/c", command];
@@ -48,7 +48,7 @@ export async function recordManualCheck(recordCheck, input) {
       checkId: input.id,
       requirement: input.requirement,
       verificationCycle: state.verificationCycle ?? 1,
-      argv: windowsCommandArgv(fakeNpx, tokens),
+      argv: windowsCommandArgv(input.target, fakeNpx, tokens),
       details: input.details,
       authorityContext: input.authorityContext,
       runtimeContext: input.runtimeContext,
