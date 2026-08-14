@@ -7,7 +7,7 @@ import { test } from "node:test";
 import { runComplete } from "../src/commands/complete.js";
 import { runPreflight } from "../src/commands/preflight.js";
 import { prepareCompletion, recordCheck } from "../src/core/completion-artifacts.js";
-import { ARTIFACT_PATHS } from "../src/core/artifacts.js";
+import { ARTIFACT_PATHS, readJsonArtifact } from "../src/core/artifacts.js";
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { appendProtocolEvent, validateCompletionRecoveryAuthorization, validateEventLedger } from "../src/core/events.js";
 import { advanceWorkState } from "../src/core/phase.js";
@@ -119,7 +119,8 @@ test("completion rejection binds to ledger and authorizes REVIEWING -> VERIFYING
     assert.equal(rejectionEvent.details?.verificationCycle, 1);
 
     // Recovery is authorized
-    const auth = validateCompletionRecoveryAuthorization({ state, events: ledger.events });
+    const receipt = await readJsonArtifact(target, ARTIFACT_PATHS.receipt, "execution-receipt", packageRoot);
+    const auth = validateCompletionRecoveryAuthorization({ state, receipt: receipt.value, events: ledger.events });
     assert.equal(auth.authorized, true);
 
     // nextAction should offer ENTER_VERIFYING
@@ -285,35 +286,124 @@ test("canonical recoverable completion evidence codes consistency", async () => 
   assert.equal(isRecoverableCompletionEvidenceCode("E_GATE_UNVERIFIED"), false);
 });
 
-test("state or receipt fingerprint mismatch in lastCompletionAttempt is rejected (P1-4)", async () => {
-  const state = {
-    taskId: "task-1",
+test("actual state and receipt fingerprint validation against ledger rejection event (P0-1)", async () => {
+  const { canonicalFingerprint } = await import("../src/core/artifacts.js");
+
+  const baseState = {
+    taskId: "task-fp-1",
     verificationCycle: 1,
+    phase: "REVIEWING",
+    completedSteps: ["step1"],
     lastCompletionAttempt: {
       status: "REJECTED",
       verificationCycle: 1,
       reasonCodes: ["E_EVIDENCE_REQUIRED"],
       missingRequirementIds: ["REQ_1"],
-      stateFingerprint: "fingerprint-state-mutated",
-      receiptFingerprint: "fingerprint-receipt-1",
     },
   };
+  const baseReceipt = {
+    taskId: "task-fp-1",
+    status: "incomplete",
+    verificationCycle: 1,
+  };
+
+  const stateFp = canonicalFingerprint(baseState);
+  const receiptFp = canonicalFingerprint(baseReceipt);
+
   const events = [
     {
-      taskId: "task-1",
+      taskId: "task-fp-1",
       event: "COMPLETION_REJECTED",
       details: {
         verificationCycle: 1,
         reasonCodes: ["E_EVIDENCE_REQUIRED"],
         missingRequirementIds: ["REQ_1"],
-        stateFingerprint: "fingerprint-state-original",
-        receiptFingerprint: "fingerprint-receipt-1",
+        stateFingerprint: stateFp,
+        receiptFingerprint: receiptFp,
       },
     },
   ];
 
-  const auth = validateCompletionRecoveryAuthorization({ state, events });
-  assert.equal(auth.authorized, false);
-  assert.ok(auth.errors.some((e) => e.code === "E_COMPLETION_REJECTION_LEDGER_MISMATCH"));
+  // Test A: Legitimate unchanged state and receipt -> Authorized
+  const validAuth = validateCompletionRecoveryAuthorization({
+    state: baseState,
+    receipt: baseReceipt,
+    events,
+  });
+  assert.equal(validAuth.authorized, true);
+
+  // Test B: Work-state tampering -> Rejected
+  const tamperedState = { ...baseState, completedSteps: ["step1", "unauthorized-step"] };
+  const stateTamperAuth = validateCompletionRecoveryAuthorization({
+    state: tamperedState,
+    receipt: baseReceipt,
+    events,
+  });
+  assert.equal(stateTamperAuth.authorized, false);
+  assert.ok(stateTamperAuth.errors.some((e) => e.code === "E_COMPLETION_REJECTION_STATE_FINGERPRINT_MISMATCH"));
+
+  // Test C: Receipt tampering -> Rejected
+  const tamperedReceipt = { ...baseReceipt, notes: "tampered" };
+  const receiptTamperAuth = validateCompletionRecoveryAuthorization({
+    state: baseState,
+    receipt: tamperedReceipt,
+    events,
+  });
+  assert.equal(receiptTamperAuth.authorized, false);
+  assert.ok(receiptTamperAuth.errors.some((e) => e.code === "E_COMPLETION_REJECTION_RECEIPT_FINGERPRINT_MISMATCH"));
+
+  // Test D: Cycle mismatch -> Rejected
+  const cycleMismatchState = {
+    ...baseState,
+    verificationCycle: 2,
+    lastCompletionAttempt: {
+      ...baseState.lastCompletionAttempt,
+      verificationCycle: 1,
+    },
+  };
+  const cycleAuth = validateCompletionRecoveryAuthorization({
+    state: cycleMismatchState,
+    receipt: baseReceipt,
+    events,
+  });
+  assert.equal(cycleAuth.authorized, false);
+  assert.ok(cycleAuth.errors.some((e) => e.code === "E_COMPLETION_REJECTION_LEDGER_MISMATCH"));
+
+  // Test E: Reason mismatch -> Rejected
+  const reasonMismatchState = {
+    ...baseState,
+    lastCompletionAttempt: {
+      ...baseState.lastCompletionAttempt,
+      reasonCodes: ["E_EVIDENCE_INVALID"],
+    },
+  };
+  const reasonAuth = validateCompletionRecoveryAuthorization({
+    state: reasonMismatchState,
+    receipt: baseReceipt,
+    events,
+  });
+  assert.equal(reasonAuth.authorized, false);
+  assert.ok(reasonAuth.errors.some((e) => e.code === "E_COMPLETION_REJECTION_LEDGER_MISMATCH"));
+
+  // Test F: Legitimate rejection without receipt (receiptFingerprint undefined in event)
+  const noReceiptEvents = [
+    {
+      taskId: "task-fp-1",
+      event: "COMPLETION_REJECTED",
+      details: {
+        verificationCycle: 1,
+        reasonCodes: ["E_EVIDENCE_REQUIRED"],
+        missingRequirementIds: ["REQ_1"],
+        stateFingerprint: stateFp,
+      },
+    },
+  ];
+  const noReceiptAuth = validateCompletionRecoveryAuthorization({
+    state: baseState,
+    receipt: null,
+    events: noReceiptEvents,
+  });
+  assert.equal(noReceiptAuth.authorized, true);
 });
+
 

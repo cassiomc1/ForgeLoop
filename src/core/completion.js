@@ -10,7 +10,7 @@ import { completionRelationshipErrors } from "./completion-relationships.js";
 import { assertSafePath, ensureWithin, fileExists } from "./filesystem.js";
 import { evaluateStartExecutionPrerequisites, hasExecutionStarted } from "./execution-prerequisites.js";
 import { isRecoverableCompletionEvidenceCode } from "./completion-recovery.js";
-import { classifyRequirement } from "./evidence-readiness.js";
+import { classifyRequirement, evaluateTerminalRequirements } from "./evidence-readiness.js";
 
 function issue(code, message, artifacts = [], details = {}) {
   return { code, message, artifacts, ...details };
@@ -61,7 +61,9 @@ function repairNext(error) {
       return "Do not edit work-state or receipt manually; recover through supported lifecycle commands.";
     case "E_COMPLETION_RECOVERY_UNAUTHORIZED":
     case "E_COMPLETION_REJECTION_LEDGER_MISMATCH":
-      return "Ensure a matching completion rejection exists in the protocol ledger before recovery.";
+    case "E_COMPLETION_REJECTION_STATE_FINGERPRINT_MISMATCH":
+    case "E_COMPLETION_REJECTION_RECEIPT_FINGERPRINT_MISMATCH":
+      return "Ensure a matching completion rejection exists in the protocol ledger and artifacts remain unmodified before recovery.";
     case "E_GATE_UNVERIFIED":
     case "E_GATE_STALE":
       return "Satisfy or refresh the named gate, then rerun forgeloop preflight.";
@@ -247,28 +249,17 @@ export async function evaluateCompletion({ target, packageRoot, strict = false }
       ...(contract.value.verification ?? []),
       ...(contract.value.successCriteria ?? []),
     ];
-    for (const raw of allContractReqs) {
-      const req = classifyRequirement(raw);
-      if (req.type === "PUBLICATION") {
-        if (publication === "not-published" || publication === "local-only") {
-          errors.push(issue(
-            "E_PUBLICATION_REQUIREMENT_PENDING",
-            `The contract explicitly requires publication, but publication status is ${publication}: ${req.text}`,
-            [ARTIFACT_PATHS.contract, ARTIFACT_PATHS.receipt],
-            { requirementId: req.id },
-          ));
-        }
-      } else if (req.type === "PRODUCTION_READINESS") {
-        const prodStatus = receiptValue?.productionReadiness ?? "not-verified";
-        if (prodStatus !== "ready" && prodStatus !== "verified") {
-          errors.push(issue(
-            "E_PRODUCTION_REQUIREMENT_PENDING",
-            `The contract explicitly requires production readiness, but production readiness is ${prodStatus}: ${req.text}`,
-            [ARTIFACT_PATHS.contract, ARTIFACT_PATHS.receipt],
-            { requirementId: req.id },
-          ));
-        }
-      }
+    const terminalEval = evaluateTerminalRequirements({
+      requirements: allContractReqs,
+      receipt: receiptValue,
+    });
+    for (const termErr of terminalEval.errors) {
+      errors.push(issue(
+        termErr.code,
+        termErr.message,
+        [ARTIFACT_PATHS.contract, ARTIFACT_PATHS.receipt],
+        { requirementId: termErr.requirementId },
+      ));
     }
   }
 

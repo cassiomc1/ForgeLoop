@@ -90,13 +90,15 @@ flowchart TB
   checks --> readiness{"canonical evidence<br/>readiness"}
   readiness -->|covered| review["REVIEWING<br/>cycle N"]
   readiness -->|failed| diagnose["DIAGNOSING →<br/>CORRECTING"]
-  diagnose --> checks
   review --> complete["complete<br/>validator"]
+  review --> terminal_result["record-terminal-result<br/>(publication / production)"]
+  terminal_result --> complete
   complete -->|VALID| terminal["COMPLETE"]
   complete -->|evidence-only rejection| rejected["COMPLETION_REJECTED"]
   rejected --> cycle["VERIFYING<br/>cycle N + 1"]
   cycle --> prepare
   checks --> receipt["updated execution<br/>receipt"]
+  terminal_result --> receipt
   complete --> audit["audit +<br/>validate-protocol"]
   events --> audit
 
@@ -244,6 +246,7 @@ npx @cassiomc1/forgeloop advance --to EXECUTING
 npx @cassiomc1/forgeloop advance --to VERIFYING
 npx @cassiomc1/forgeloop prepare-completion --json
 npx @cassiomc1/forgeloop record-check --id tests --requirement tests --status passed --evidence-kind OBSERVED --command "npm test" --result "exit 0" --exit-code 0 --json
+npx @cassiomc1/forgeloop record-terminal-result --requirement "Package published" --type PUBLICATION --status published --source "npm publish" --result "Published package to npm" --json
 npx @cassiomc1/forgeloop advance --to REVIEWING
 npx @cassiomc1/forgeloop audit --json
 npx @cassiomc1/forgeloop complete --json
@@ -276,6 +279,7 @@ implementation
 → forgeloop next
 → advance --to REVIEWING
 → forgeloop next
+→ (record-terminal-result if publication/production required)
 → complete
 ```
 

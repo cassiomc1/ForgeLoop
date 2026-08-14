@@ -24,13 +24,14 @@ import { formatPolicyResult, runPolicy } from "./commands/policy.js";
 import { formatBundleResult, runBundle } from "./commands/bundle.js";
 import { formatPrepareCompletionResult, runPrepareCompletion } from "./commands/prepare-completion.js";
 import { formatRecordCheckResult, runRecordCheck } from "./commands/record-check.js";
+import { formatRecordTerminalResult, runRecordTerminalResult } from "./commands/record-terminal-result.js";
 import { formatNextActionResult, runNext } from "./commands/next.js";
 import { resolveTarget } from "./core/filesystem.js";
 import { getPackageRoot } from "./core/templates.js";
 import { ARTIFACT_PATHS } from "./core/artifacts.js";
 
 function usage(command = null) {
-  const commands = "init|doctor|update|activate|route|preflight|advance|next|prepare-completion|record-check|complete|audit|report|policy|bundle|inspect|status|validate-state|clear-state|validate-receipt|validate-protocol";
+  const commands = "init|doctor|update|activate|route|preflight|advance|next|prepare-completion|record-check|record-terminal-result|complete|audit|report|policy|bundle|inspect|status|validate-state|clear-state|validate-receipt|validate-protocol";
   const options = ["  --path <directory>  target project directory (default: current directory)"];
   if (!command || command === "init" || command === "update") {
     options.push("  --dry-run           show planned writes without changing files");
@@ -52,7 +53,7 @@ function usage(command = null) {
   if (!command || command === "advance") {
     options.push("  --to <phase>        destination workflow phase");
   }
-  if (!command || ["activate", "advance", "next", "prepare-completion", "record-check", "preflight", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"].includes(command)) {
+  if (!command || ["activate", "advance", "next", "prepare-completion", "record-check", "record-terminal-result", "preflight", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"].includes(command)) {
     options.push("  --json              emit structured output as JSON");
   }
   if (!command || ["preflight", "complete", "audit", "report"].includes(command)) {
@@ -87,6 +88,14 @@ function usage(command = null) {
     options.push("  --result <text>      observed result supplied by the agent");
     options.push("  --exit-code <number> observed process exit code");
     options.push("  --details <json>     additional structured check details");
+  }
+  if (!command || command === "record-terminal-result") {
+    options.push("  --requirement <id>   terminal requirement covered by the result");
+    options.push("  --type <type>        PUBLICATION or PRODUCTION_READINESS");
+    options.push("  --status <status>    observed terminal status");
+    options.push("  --source <text>      external action source (e.g. npm publish, git push)");
+    options.push("  --result <text>      observed external result description");
+    options.push("  --details <json>     additional structured result details");
   }
   options.push("  --version           show the installed package version");
   options.push("  --help              show this help");
@@ -124,6 +133,8 @@ export function parseArgs(argv) {
     checkResult: null,
     checkExitCode: null,
     checkDetails: null,
+    checkType: null,
+    checkSource: null,
     policy: null,
     task: null,
     help: false,
@@ -133,7 +144,7 @@ export function parseArgs(argv) {
 
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
-    if (["init", "doctor", "update", "activate", "route", "preflight", "advance", "next", "prepare-completion", "record-check", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"].includes(argument)) {
+    if (["init", "doctor", "update", "activate", "route", "preflight", "advance", "next", "prepare-completion", "record-check", "record-terminal-result", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"].includes(argument)) {
       if (command) throw new Error(`Multiple commands are not supported: ${argument}`);
       command = argument;
     } else if (argument === "--help" || argument === "-h") {
@@ -248,6 +259,24 @@ export function parseArgs(argv) {
       if (!commandText || commandText.startsWith("-")) throw new Error("--command requires recorded text");
       options.checkCommand = commandText;
       index += 1;
+    } else if (argument === "--source") {
+      const sourceText = argv[index + 1];
+      if (!sourceText || sourceText.startsWith("-")) throw new Error("--source requires recorded text");
+      options.checkSource = sourceText;
+      index += 1;
+    } else if (argument.startsWith("--source=")) {
+      const sourceText = argument.slice("--source=".length);
+      if (!sourceText) throw new Error("--source requires recorded text");
+      options.checkSource = sourceText;
+    } else if (argument === "--type") {
+      const typeValue = argv[index + 1];
+      if (!typeValue || typeValue.startsWith("-")) throw new Error("--type requires a terminal type");
+      options.checkType = typeValue;
+      index += 1;
+    } else if (argument.startsWith("--type=")) {
+      const typeValue = argument.slice("--type=".length);
+      if (!typeValue) throw new Error("--type requires a terminal type");
+      options.checkType = typeValue;
     } else if (argument === "--result") {
       const resultText = argv[index + 1];
       if (!resultText || resultText.startsWith("-")) throw new Error("--result requires recorded text");
@@ -295,7 +324,7 @@ export function parseArgs(argv) {
 
   if (!command) return { command: null, options };
 
-  const jsonCommands = ["doctor", "route", "activate", "advance", "next", "prepare-completion", "record-check", "preflight", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"];
+  const jsonCommands = ["doctor", "route", "activate", "advance", "next", "prepare-completion", "record-check", "record-terminal-result", "preflight", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"];
   if (!jsonCommands.includes(command) && options.json) {
     throw new Error(`Option --json is not valid for ${command}`);
   }
@@ -476,6 +505,21 @@ export async function main(argv = process.argv.slice(2)) {
         details: options.checkDetails ?? undefined,
       });
       console.log(options.json ? JSON.stringify(result, null, 2) : formatRecordCheckResult(result));
+      return 0;
+    }
+
+    if (command === "record-terminal-result") {
+      const result = await runRecordTerminalResult({
+        target,
+        packageRoot,
+        requirement: options.checkRequirement,
+        type: options.checkType,
+        status: options.checkStatus,
+        source: options.checkSource ?? options.checkCommand,
+        result: options.checkResult,
+        details: options.checkDetails ?? undefined,
+      });
+      console.log(options.json ? JSON.stringify(result, null, 2) : formatRecordTerminalResult(result));
       return 0;
     }
 

@@ -28,7 +28,12 @@ export const ACTIVATION_EVENT_MATRIX = Object.freeze([
   Object.freeze({ stage: "preflight blocked", event: "PREFLIGHT_BLOCKED", requiredFor: "blocked activation" }),
   Object.freeze({ stage: "preflight ready", event: "PREFLIGHT_READY", requiredFor: "resumable readiness" }),
 ]);
-const REPEATABLE_MILESTONES = new Set(["VERIFICATION_STARTED", "VERIFICATION_RECORDED", "REVIEW_STARTED"]);
+const REPEATABLE_MILESTONES = new Set([
+  "VERIFICATION_STARTED",
+  "VERIFICATION_RECORDED",
+  "REVIEW_STARTED",
+  "TERMINAL_RESULT_RECORDED",
+]);
 
 function eventHash(event) {
   const { hash, ...body } = event;
@@ -230,12 +235,12 @@ export function validateStateLedgerCoherence(state, events) {
   return errors;
 }
 
-export function validateCompletionRecoveryAuthorization({ state, events } = {}) {
+export function validateCompletionRecoveryAuthorization({ state, receipt, events } = {}) {
   const errors = [];
-  if (!state || typeof state !== "object") {
+  if (!state) {
     return {
       authorized: false,
-      errors: [{ code: "E_COMPLETION_RECOVERY_UNAUTHORIZED", message: "Work state is required for recovery authorization" }],
+      errors: [{ code: "E_STATE_MISSING", message: "Work-state is required for recovery validation" }],
     };
   }
   const attempt = state.lastCompletionAttempt;
@@ -317,18 +322,22 @@ export function validateCompletionRecoveryAuthorization({ state, events } = {}) 
     });
   }
 
-  if (attempt.stateFingerprint && eventDetails.stateFingerprint && attempt.stateFingerprint !== eventDetails.stateFingerprint) {
+  const currentStateFingerprint = canonicalFingerprint(state);
+  if (eventDetails.stateFingerprint && eventDetails.stateFingerprint !== currentStateFingerprint) {
     errors.push({
-      code: "E_COMPLETION_REJECTION_LEDGER_MISMATCH",
-      message: "Work-state rejection stateFingerprint does not match ledger COMPLETION_REJECTED event",
+      code: "E_COMPLETION_REJECTION_STATE_FINGERPRINT_MISMATCH",
+      message: "Current work-state no longer matches the rejected completion snapshot",
     });
   }
 
-  if (attempt.receiptFingerprint !== undefined && eventDetails.receiptFingerprint !== undefined && attempt.receiptFingerprint !== eventDetails.receiptFingerprint) {
-    errors.push({
-      code: "E_COMPLETION_REJECTION_LEDGER_MISMATCH",
-      message: "Work-state rejection receiptFingerprint does not match ledger COMPLETION_REJECTED event",
-    });
+  if (eventDetails.receiptFingerprint !== undefined) {
+    const currentReceiptFingerprint = receipt ? canonicalFingerprint(receipt) : undefined;
+    if (currentReceiptFingerprint !== eventDetails.receiptFingerprint) {
+      errors.push({
+        code: "E_COMPLETION_REJECTION_RECEIPT_FINGERPRINT_MISMATCH",
+        message: "Current receipt no longer matches the rejected completion snapshot",
+      });
+    }
   }
 
   return {

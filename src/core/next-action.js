@@ -11,7 +11,7 @@ import { assertCheckList } from "./checks.js";
 import { completionRelationshipErrors } from "./completion-relationships.js";
 import { classifyLoadedWorkState, readWorkState } from "./work-state.js";
 import { sha256 } from "./manifest.js";
-import { evaluateRequiredEvidence, authoritativeChecksForRequirements } from "./evidence-readiness.js";
+import { evaluateRequiredEvidence, authoritativeChecksForRequirements, ordinaryLeafRequirements, classifyRequirement } from "./evidence-readiness.js";
 import {
   evaluateStartExecutionPrerequisites,
   PREFLIGHT_ROUTE_IDENTITY_ERROR_MESSAGE,
@@ -31,6 +31,7 @@ export const NEXT_ACTIONS = Object.freeze({
   DIAGNOSE: "DIAGNOSE",
   CORRECT: "CORRECT",
   ENTER_REVIEWING: "ENTER_REVIEWING",
+  RECORD_TERMINAL_RESULT: "RECORD_TERMINAL_RESULT",
   PREPARE_COMPLETION: "PREPARE_COMPLETION",
   RUN_COMPLETE: "RUN_COMPLETE",
   RESOLVE_STALE_ROUTE: "RESOLVE_STALE_ROUTE",
@@ -101,6 +102,7 @@ function commandFor(action) {
     [NEXT_ACTIONS.DIAGNOSE]: "forgeloop advance --to DIAGNOSING",
     [NEXT_ACTIONS.CORRECT]: "forgeloop advance --to CORRECTING",
     [NEXT_ACTIONS.ENTER_REVIEWING]: "forgeloop advance --to REVIEWING",
+    [NEXT_ACTIONS.RECORD_TERMINAL_RESULT]: "forgeloop record-terminal-result",
     [NEXT_ACTIONS.PREPARE_COMPLETION]: "forgeloop prepare-completion --json",
     [NEXT_ACTIONS.RUN_COMPLETE]: "forgeloop complete --json",
   }[action];
@@ -118,6 +120,23 @@ function recordCheckCommandSpec(requirement) {
       { name: "evidenceKind", option: "--evidence-kind=<OBSERVED|INFERRED|NOT_VERIFIED|BLOCKED>" },
       { name: "result", option: "--result=<text>" },
       { name: "exitCode", option: "--exit-code=<number>", optional: true },
+    ],
+  };
+}
+
+function recordTerminalResultCommandSpec(requirement) {
+  const reqId = requirement.id ?? requirement;
+  const type = requirement.type ?? "PUBLICATION";
+  const status = requirement.requiredPublicationStatus ?? (type === "PUBLICATION" ? "published" : "ready");
+  return {
+    commandId: "record-terminal-result",
+    executable: "forgeloop",
+    subcommand: "record-terminal-result",
+    argv: ["record-terminal-result", `--requirement=${reqId}`, `--type=${type}`, `--status=${status}`],
+    requiredInputs: [
+      { name: "source", option: "--source=<text>" },
+      { name: "result", option: "--result=<text>" },
+      { name: "details", option: "--details=<json>", optional: true },
     ],
   };
 }
@@ -527,7 +546,7 @@ export async function getNextAction(targetOrOptions = {}, packageRootOption) {
       additionalEvidence: preflight.policy?.requiredEvidence ?? [],
     });
     const authoritative = authoritativeChecksForRequirements({
-      requirements: evidence.requirements,
+      requirements: ordinaryLeafRequirements(evidence.requirements),
       checks: state.checks,
     });
     const failed = authoritative.find(({ check }) => check?.status === "failed");
@@ -658,7 +677,16 @@ export async function getNextAction(targetOrOptions = {}, packageRootOption) {
       if (state.lastCompletionAttempt?.status === "REJECTED") {
         try {
           const ledger = await validateEventLedger(target, packageRoot);
-          const recoveryAuth = validateCompletionRecoveryAuthorization({ state, events: ledger.events });
+          let currentReceipt = null;
+          try {
+            const receiptArtifact = await readJsonArtifact(target, ARTIFACT_PATHS.receipt, "execution-receipt", packageRoot);
+            currentReceipt = receiptArtifact?.value;
+          } catch {}
+          const recoveryAuth = validateCompletionRecoveryAuthorization({
+            state,
+            receipt: currentReceipt,
+            events: ledger.events,
+          });
           recoveryAuthorized = recoveryAuth.authorized;
         } catch {
           recoveryAuthorized = false;
@@ -735,6 +763,25 @@ export async function getNextAction(targetOrOptions = {}, packageRootOption) {
     }
     const completion = await evaluateCompletion({ target, packageRoot });
     if (completion.status !== "VALID") {
+      const terminalPendingErrors = completion.errors.filter((err) => (
+        err.code === "E_PUBLICATION_REQUIREMENT_PENDING" || err.code === "E_PRODUCTION_REQUIREMENT_PENDING"
+      ));
+      if (terminalPendingErrors.length > 0 && terminalPendingErrors.length === completion.errors.length) {
+        const terminalPendingReqs = terminalPendingErrors.map((err) => {
+          const reqId = err.requirementId;
+          const matchingReq = evidence.requirements.find((r) => r.id === reqId || r.text === reqId)
+            ?? classifyRequirement(reqId ?? err.message);
+          return matchingReq;
+        });
+        return result({
+          ...context,
+          nextAction: NEXT_ACTIONS.RECORD_TERMINAL_RESULT,
+          commands: ["forgeloop record-terminal-result"],
+          commandSpecs: terminalPendingReqs.map(recordTerminalResultCommandSpec),
+          reasons: completion.errors,
+          requiredArtifacts: [...requiredArtifacts, ARTIFACT_PATHS.receipt, ARTIFACT_PATHS.events],
+        });
+      }
       return result({
         ...context,
         nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
