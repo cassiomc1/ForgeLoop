@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { access, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { access, chmod, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -353,6 +353,48 @@ test("runCommandExecution throws E_COMMAND_RESOLUTION_AMBIGUOUS for unclassified
       assert.equal(err.code, E_COMMAND_RESOLUTION_AMBIGUOUS);
       assert.equal(err.resolution.reason, "NPM_COMMAND_UNCLASSIFIED");
     }
+  });
+});
+
+test("npm version fails closed before process launch", async () => {
+  await withTarget(async (target) => {
+    const sentinel = path.join(target, "npm-version-spawned.txt");
+    const fakeNpm = path.join(target, process.platform === "win32" ? "npm.cmd" : "npm");
+    const script = process.platform === "win32"
+      ? `@echo spawned>"${sentinel}"\r\n@exit /b 0\r\n`
+      : `#!/bin/sh\nprintf spawned > "${sentinel}"\n`;
+    await writeFile(fakeNpm, script, "utf8");
+    if (process.platform !== "win32") await chmod(fakeNpm, 0o755);
+
+    let rejection;
+    try {
+      await runCommandExecution({
+        target,
+        packageRoot,
+        taskId: "task-version",
+        checkId: "check-npm-version",
+        requirement: "npm version remains fail closed",
+        argv: [fakeNpm, "version", "patch"],
+      });
+    } catch (error) {
+      rejection = error;
+    }
+
+    await assert.rejects(() => access(sentinel), (error) => error.code === "ENOENT");
+    await assert.rejects(
+      () => access(path.join(target, ".forgeloop", "executions")),
+      (error) => error.code === "ENOENT",
+    );
+    await assert.rejects(
+      () => access(path.join(target, ".forgeloop", "work-state.json")),
+      (error) => error.code === "ENOENT",
+    );
+    await assert.rejects(
+      () => access(path.join(target, ".forgeloop", "execution-receipt.json")),
+      (error) => error.code === "ENOENT",
+    );
+    assert.equal(rejection?.code, E_COMMAND_RESOLUTION_AMBIGUOUS);
+    assert.equal(rejection?.resolution?.reason, "NPM_COMMAND_UNCLASSIFIED");
   });
 });
 

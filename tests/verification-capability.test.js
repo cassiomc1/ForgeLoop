@@ -1452,6 +1452,25 @@ test("semantic npm classifier regression - audit", () => {
   });
 });
 
+test("semantic npm classifier fails closed for npm version", () => {
+  assert.deepEqual(classifyCommandResolution(["npm", "version", "patch"]), {
+    resolutionMode: "UNKNOWN",
+    mayInstall: true,
+    installer: "npm",
+    tool: null,
+    reason: "NPM_COMMAND_UNCLASSIFIED",
+  });
+});
+
+test("npm v remains the view alias and is non-installing", () => {
+  assert.deepEqual(classifyCommandResolution(["npm", "v", "react", "version"]), {
+    resolutionMode: "LOCAL_PACKAGE_BINARY",
+    mayInstall: false,
+    installer: null,
+    tool: null,
+  });
+});
+
 test("semantic npm classifier regression - unknown", () => {
   assert.deepEqual(classifyCommandResolution("npm frobnicate"), {
     resolutionMode: "UNKNOWN",
