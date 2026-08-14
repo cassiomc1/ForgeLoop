@@ -55,8 +55,30 @@ The canonical system map, including the routing/state/evidence architecture, is
 in [`LOOP_SYSTEM_DESIGN.md`](./LOOP_SYSTEM_DESIGN.md).
 
 ```mermaid
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'darkMode': true,
+    'background': '#0f1117',
+    'primaryColor': '#1a1b26',
+    'primaryTextColor': '#c0caf5',
+    'primaryBorderColor': '#7aa2f7',
+    'lineColor': '#565f89',
+    'secondaryColor': '#16161e',
+    'tertiaryColor': '#13141c',
+    'fontFamily': 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    'fontSize': '13px',
+    'mainBkg': '#1a1b26',
+    'nodeBorder': '#7aa2f7',
+    'clusterBkg': '#13141c',
+    'clusterBorder': '#292e42',
+    'defaultLinkColor': '#7aa2f7',
+    'titleColor': '#7aa2f7',
+    'edgeLabelBackground': '#16161e'
+  }
+}}%%
 flowchart TB
-  subgraph INIT["1. Bootstrap & Adaptation"]
+  subgraph BOOTSTRAP["1. Bootstrap & Adaptation"]
     root["FORGELOOP"]
     entry["native adapters<br/>+ .forgeloop/kit/"]
     migration{"target<br/>layout"}
@@ -65,7 +87,7 @@ flowchart TB
     verified["verify hidden<br/>bytes"]
     authority["atomic manifest<br/>authority switch"]
     cleanup["hash-checked<br/>legacy cleanup"]
-    recovered["healthy or<br/>recoverable"]
+    recovered["healthy / recoverable"]
     incomplete["doctor:<br/>E_MIGRATION_INCOMPLETE"]
     retry["update + retry<br/>owned cleanup"]
   end
@@ -166,28 +188,31 @@ flowchart TB
   verdict --> handoff
   blocker --> handoff
 
-  classDef root fill:#08090C,stroke:#6E6AF5,stroke-width:3px,color:#EDEEF0;
-  classDef entry fill:#101218,stroke:#3EDBB8,stroke-width:2px,color:#EDEEF0;
-  classDef migration fill:#0F766E,stroke:#5EEAD4,stroke-width:2px,color:#FFFFFF;
-  classDef routing fill:#4F46E5,stroke:#A5B4FC,stroke-width:2px,color:#FFFFFF;
-  classDef state fill:#373A46,stroke:#A1A1AA,stroke-width:2px,color:#FFFFFF;
-  classDef evidence fill:#3EDBB8,stroke:#99F6E4,stroke-width:2px,color:#08090C;
-  classDef fact fill:#181B24,stroke:#6E6AF5,stroke-width:1px,color:#EDEEF0;
-  classDef gate fill:#3730A3,stroke:#A5B4FC,stroke-width:2px,color:#FFFFFF;
-  classDef result fill:#C9A876,stroke:#F5D9A6,stroke-width:2px,color:#08090C;
-  classDef harness fill:#101218,stroke:#3EDBB8,stroke-width:2px,color:#EDEEF0;
+  classDef root fill:#16161e,stroke:#bb9af7,stroke-width:2px,color:#c0caf5;
+  classDef entry fill:#16161e,stroke:#7dcfff,stroke-width:1.5px,color:#c0caf5;
+  classDef migration fill:#16161e,stroke:#2ac3de,stroke-width:1.5px,color:#c0caf5;
+  classDef routing fill:#16161e,stroke:#7aa2f7,stroke-width:1.5px,color:#c0caf5;
+  classDef state fill:#16161e,stroke:#a9b1d6,stroke-width:1.5px,color:#c0caf5;
+  classDef evidence fill:#16161e,stroke:#73daca,stroke-width:1.5px,color:#73daca;
+  classDef gate fill:#16161e,stroke:#e0af68,stroke-width:1.5px,color:#e0af68;
+  classDef danger fill:#16161e,stroke:#f7768e,stroke-width:1.5px,color:#f7768e;
+  classDef result fill:#16161e,stroke:#9ece6a,stroke-width:2px,color:#9ece6a;
+  classDef fact fill:#16161e,stroke:#565f89,stroke-width:1px,color:#a9b1d6;
+  classDef harness fill:#16161e,stroke:#7dcfff,stroke-width:1.5px,color:#c0caf5;
 
   class root root;
   class entry,discovery,delegation entry;
-  class migration,plan,hidden,verified,authority,cleanup,recovered,retry,incomplete migration;
+  class migration,plan,hidden,verified,authority,cleanup,recovered,retry migration;
+  class incomplete danger;
   class routing,preflight,ready routing;
   class state,events,lifecycle,review state;
   class checks,readiness,receipt,complete,audit,terminal_result evidence;
-  class diagnose,rejected,gates,blocker gate;
+  class gates,blocker gate;
+  class diagnose,rejected danger;
   class terminal,verdict result;
   class contract,freshness,conformance fact;
   class handoff harness;
-  linkStyle default stroke:#8A8F98,stroke-width:1.5px;
+  linkStyle default stroke:#565f89,stroke-width:1.5px;
 ```
 
 Equivalent reading for text-only environments: adapters load the canonical kit;
