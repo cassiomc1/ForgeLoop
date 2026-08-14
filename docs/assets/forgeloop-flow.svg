@@ -93,9 +93,9 @@
       <rect x="58" y="155" width="284" height="60" rx="8" fill="#1a1b26" stroke="#292e42" stroke-width="1" />
       <rect x="58" y="155" width="4" height="60" rx="2" fill="#7dcfff" />
       
-      <text x="74" y="175" fill="#c0caf5" font-size="12" font-weight="600">Native Agent Entry</text>
-      <text x="74" y="191" fill="#a9b1d6" font-size="10.5" font-weight="400">Codex · Claude · Cursor · Copilot · Antigravity</text>
-      <text x="74" y="205" fill="#565f89" font-size="9.5" font-mono="true">CLAUDE.md · .cursor/rules · AGENTS.md</text>
+      <text x="74" y="175" fill="#c0caf5" font-size="12" font-weight="600">Universal Discovery &amp; Adapters</text>
+      <text x="74" y="191" fill="#a9b1d6" font-size="10.5" font-weight="400">Capability-based integration · Vendor-neutral</text>
+      <text x="74" y="205" fill="#565f89" font-size="9.5" font-mono="true">AGENTS.md · CLAUDE.md · PROTOCOL_INTEGRATION.md</text>
     </g>
   
   
@@ -575,7 +575,7 @@
 
     <!-- Compatible Agent Ecosystem Footer -->
     <rect x="768" y="881" width="774" height="34" rx="6" fill="#161c28" stroke="#7dcfff" stroke-width="0.75" />
-    <text x="782" y="902" fill="#a9b1d6" font-size="10">Supported Harnesses: <tspan fill="#7dcfff" font-weight="600">Codex · Claude Code · Cursor · Copilot · Antigravity · OpenCode · Hermes · Pi · Command Code · Freebuff</tspan></text>
+    <text x="782" y="902" fill="#a9b1d6" font-size="10">Universal Integration: <tspan fill="#7dcfff" font-weight="600">Codex · Claude Code · Cursor · Copilot · Antigravity · OpenCode · Hermes · Pi · Custom AI Agents &amp; Devs</tspan></text>
   </g>
 
 </svg>

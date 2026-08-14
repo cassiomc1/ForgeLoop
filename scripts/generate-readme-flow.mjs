@@ -228,9 +228,9 @@ svg.add(drawCard({
   y: 155,
   width: 284,
   height: 60,
-  title: "Native Agent Entry",
-  subtitle: "Codex · Claude · Cursor · Copilot · Antigravity",
-  meta: "CLAUDE.md · .cursor/rules · AGENTS.md",
+  title: "Universal Discovery & Adapters",
+  subtitle: "Capability-based integration · Vendor-neutral",
+  meta: "AGENTS.md · CLAUDE.md · PROTOCOL_INTEGRATION.md",
   accent: THEME.cyan,
 }));
 
@@ -748,7 +748,7 @@ svg.add(`
 
     <!-- Compatible Agent Ecosystem Footer -->
     <rect x="768" y="881" width="774" height="34" rx="6" fill="#161c28" stroke="${THEME.cyan}" stroke-width="0.75" />
-    <text x="782" y="902" fill="${THEME.textSecondary}" font-size="10">Supported Harnesses: <tspan fill="${THEME.cyan}" font-weight="600">Codex · Claude Code · Cursor · Copilot · Antigravity · OpenCode · Hermes · Pi · Command Code · Freebuff</tspan></text>
+    <text x="782" y="902" fill="${THEME.textSecondary}" font-size="10">Universal Integration: <tspan fill="${THEME.cyan}" font-weight="600">Codex · Claude Code · Cursor · Copilot · Antigravity · OpenCode · Hermes · Pi · Custom AI Agents &amp; Devs</tspan></text>
   </g>
 `);
 
