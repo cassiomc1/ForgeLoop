@@ -121,6 +121,87 @@ requirement-specific terminal result recording, legal repeated verification
 cycles, future-result and compound-evidence safeguards, and lifecycle-ledger
 divergence detection.
 
+## How to prompt ForgeLoop
+
+You do not need a perfect prompt to use ForgeLoop.
+
+Describe the outcome you want. ForgeLoop is designed to structure the execution around that request: resolve safe ambiguities, create an execution contract, route the relevant guides, satisfy gates, run preflight checks, implement, verify, correct, and repeat until the work is complete.
+
+> **Don't engineer the perfect prompt. Define the outcome and let ForgeLoop engineer the feedback loop.**
+
+### Minimal
+
+A short request should be enough for ordinary work:
+
+```text
+Create a premium website for a law firm.
+```
+
+### Recommended
+
+Add the important outcome and product constraints:
+
+```text
+Create a premium website for a law firm.
+
+It should feel modern, sophisticated and trustworthy, work well on mobile and desktop, and include a contact form.
+```
+
+### Structured
+
+For larger or more constrained tasks, you can optionally use a lightweight task brief:
+
+```text
+Build: Premium law firm website
+
+Goal:
+Create a modern, sophisticated and trustworthy experience.
+
+Requirements:
+- Responsive on mobile and desktop
+- Accessible navigation
+- Contact form
+- Premium visual design
+- Good performance
+
+Done when:
+- The implementation is complete
+- Required verification passes
+- Mobile and desktop layouts are verified
+- The contact form works
+```
+
+The structured format is optional. It gives ForgeLoop more explicit constraints and success criteria, but it should not be necessary for ordinary tasks.
+
+### What not to put in the prompt
+
+Avoid recreating the ForgeLoop process inside the prompt:
+
+```text
+First analyze the task.
+Then create a plan.
+Then inspect the files.
+Then choose the guides.
+Then implement.
+Then run tests.
+If tests fail, fix them.
+Then review everything.
+Then produce a report.
+```
+
+That workflow belongs to ForgeLoop.
+
+Your prompt should primarily describe:
+
+```text
+what you want
+important requirements
+real constraints
+observable success conditions
+```
+
+ForgeLoop should determine how to execute and verify the work.
+
 ### Use with npm
 
 The npm CLI targets Node.js 20 or newer and installs the kit into an existing
