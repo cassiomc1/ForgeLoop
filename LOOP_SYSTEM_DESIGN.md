@@ -10,11 +10,13 @@ The system should use every guide that materially helps the task without loading
 
 ## Primary decisions
 
-- The package supports Codex, Claude Code, Cursor, GitHub Copilot, Antigravity,
-  OpenCode, Hermes, Pi, Command Code, and Freebuff.
-- Codex, Claude Code, Cursor, and GitHub Copilot use native entry files; the
-  other six agents consume the shared `AGENTS.md` entry point.
-- The portable instruction layer uses Markdown and each agent's native instruction mechanism; the optional local Node CLI validates and installs the kit without an agent runtime or third-party dependency.
+- The protocol is vendor-neutral, project-scoped, and capability-based,
+  supporting any AI agent, coding assistant, IDE runtime, or developer workflow.
+- Common discovery surfaces (e.g. `AGENTS.md`, `CLAUDE.md`, `.cursor/rules/`,
+  `.github/copilot-instructions.md`) use project-local shims delegating to the
+  canonical protocol under `.forgeloop/kit/`, while other environments use the
+  shared `AGENTS.md` entry point or manual bootstrap.
+- The portable instruction layer uses Markdown and each environment's native instruction mechanism; the optional local Node CLI validates and installs the kit without an agent runtime or third-party dependency.
 - English is the only language used by repository content and guide metadata.
 - The agent uses all applicable guides, not every file indiscriminately.
 - Design, planning, test-first, and review process gates live in the canonical loop and scale with task risk instead of becoming unconditional boilerplate in every adapter or architecture note.
@@ -389,8 +391,8 @@ update practice.
 ## Acceptance criteria
 
 - The repository and its maintained content are English-only.
-- All ten supported agents have a documented entry into one canonical loop,
-  with native adapters distinguished from shared `AGENTS.md` compatibility.
+- Common project instruction surfaces and generic bootstrap mechanisms have a
+  documented entry into one canonical loop.
 - The router selects every relevant guide and excludes irrelevant guides in the six defined scenarios.
 - The profile contains verifiable facts, sources, and real commands without secrets.
 - The loop requires evidence before completion claims and exits safely when blocked.

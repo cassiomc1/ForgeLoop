@@ -1,26 +1,18 @@
-# ForgeLoop — Instruction Guides for AI Agents
+# ForgeLoop — Verifiable Engineering Protocol
 
 [![Docs quality](https://github.com/cassiomc1/forgeloop/actions/workflows/docs-quality.yml/badge.svg?branch=main)](https://github.com/cassiomc1/forgeloop/actions/workflows/docs-quality.yml)
 
-An English-only collection of operational guides for AI agents and developers.
-It covers product strategy, code, testing, security, performance,
-accessibility, design, and web games across web, mobile, and desktop projects.
+ForgeLoop is a portable, verifiable engineering protocol for AI-assisted development and developer workflows.
 
-The files are Markdown and can be used as references, as a foundation for
-`AGENTS.md`, `CLAUDE.md`, `.cursor/rules`, and
-`.github/copilot-instructions.md`. The integration contract and capability levels are documented
-in [`PROTOCOL_INTEGRATION.md`](./PROTOCOL_INTEGRATION.md). Adopt only the guides
-relevant to the target project.
+It is project-scoped, capability-based, and vendor-neutral. It turns intent into contract-driven execution with deterministic routing, resumable state, evidence-backed verification, recovery, and validator-backed completion.
 
-ForgeLoop is a portable, verifiable engineering protocol for AI coding environments
-and developer workflows. It turns intent into contract-driven execution with
-deterministic routing, resumable state, evidence-backed verification, recovery, and
-validator-backed completion.
+ForgeLoop does not depend on a specific model, provider, agent product, IDE, or orchestration runtime.
 
-The npm package also ships the local `forgeloop` CLI. In a target project it
-installs canonical documents under `.forgeloop/kit/`, keeps only small native
-discovery shims at the root, and stores mutable protocol artifacts under
-`.forgeloop/`.
+The repository also provides an English-only collection of operational engineering guides covering product strategy, clean code, testing, security, performance, accessibility, visual design, and web games across web, mobile, and desktop projects.
+
+Project-local discovery surfaces (`AGENTS.md`, `CLAUDE.md`, `.cursor/rules/project-loop.mdc`, `.github/copilot-instructions.md`) and manual bootstrap paths delegate to the same canonical protocol in `.forgeloop/kit/`. The capability levels and integration contract are documented in [`PROTOCOL_INTEGRATION.md`](./PROTOCOL_INTEGRATION.md). Adopt only the guides relevant to the target project.
+
+The npm package also ships the local `forgeloop` CLI. In a target project it installs canonical documents under `.forgeloop/kit/`, keeps only small native discovery shims at the root, and stores mutable protocol artifacts under `.forgeloop/`.
 
 ## Catalog
 
@@ -88,13 +80,13 @@ Request → discovery → profile → routing → plan → execution
               └ evidence-only rejection / next cycle
 ```
 
-ForgeLoop is project-scoped, capability-based, and vendor-neutral. Thin
-native adapters support common discovery surfaces including Codex, Claude Code,
-Cursor, and GitHub Copilot, while Antigravity, OpenCode, Hermes, Pi, Command Code,
-Freebuff, custom agents, and developer workflows discover the shared `AGENTS.md`
-entry point or manual bootstrap. All environments delegate to the same canonical
-protocol; see [`PROTOCOL_INTEGRATION.md`](./PROTOCOL_INTEGRATION.md) for
-capability levels, degradation rules, and precedence notes.
+ForgeLoop is project-scoped, capability-based, and vendor-neutral.
+
+Project-local discovery surfaces delegate to the same canonical ForgeLoop protocol. Execution environments that automatically discover one of those instruction surfaces can use it directly, while custom runtimes, automation systems, and developer workflows can use the manual bootstrap path.
+
+Capabilities determine execution. Runtime names do not determine protocol applicability.
+
+See [`PROTOCOL_INTEGRATION.md`](./PROTOCOL_INTEGRATION.md) for discovery, capability levels, degradation rules, and precedence.
 
 ### Migration recovery and release freeze
 
@@ -577,8 +569,8 @@ installed automatically.
 
 ## Optional multimodal capabilities
 
-[Qwen-MM-Plugins](https://github.com/QwenLM/Qwen-MM-Plugins) can extend a
-supported agent harness with skills and optional MCP servers. Before using a
+[Qwen-MM-Plugins](https://github.com/QwenLM/Qwen-MM-Plugins) can extend an
+execution environment with skills and optional MCP servers. Before using a
 multimodal or media operation, the agent checks the model and harness for a
 callable native capability. If the task requires a missing keyless capability,
 the agent installs only the smallest matching `qwen-mm-plugins-<cap>` capability

@@ -746,9 +746,9 @@ svg.add(`
     <text x="1304" y="841" fill="${THEME.purple}" font-size="10" font-weight="700">Delegated Result Receipt</text>
     <text x="1304" y="857" fill="${THEME.muted}" font-size="9" font-family="monospace">delegated-result.schema.json</text>
 
-    <!-- Compatible Agent Ecosystem Footer -->
+    <!-- Universal Integration Footer -->
     <rect x="768" y="881" width="774" height="34" rx="6" fill="#161c28" stroke="${THEME.cyan}" stroke-width="0.75" />
-    <text x="782" y="902" fill="${THEME.textSecondary}" font-size="10">Universal Integration: <tspan fill="${THEME.cyan}" font-weight="600">Codex · Claude Code · Cursor · Copilot · Antigravity · OpenCode · Hermes · Pi · Custom AI Agents &amp; Devs</tspan></text>
+    <text x="782" y="902" fill="${THEME.textSecondary}" font-size="10">Universal Integration: <tspan fill="${THEME.cyan}" font-weight="600">Standard Discovery Surfaces · Native Shims · Custom AI Runtimes · Developer Workflows</tspan></text>
   </g>
 `);
 
