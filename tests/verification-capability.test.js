@@ -409,6 +409,8 @@ test("evaluateRequiredEvidence rejects unauthorized install-capable verification
     status: "passed",
     evidenceKind: "OBSERVED",
     source: "npx @liustack/modlens",
+    executionRef: "exec-test",
+    provenance: "FORGELOOP_EXECUTED",
     details: {
       command: "npx @liustack/modlens",
       installationAuthorized: true, // self-asserted boolean must NOT pass
@@ -437,6 +439,8 @@ function authorityCheck() {
       command: "npx @liustack/modlens",
       installationAuthorityRef: "auth-modlens",
     },
+    executionRef: "exec-test",
+    provenance: "FORGELOOP_EXECUTED",
   };
 }
 

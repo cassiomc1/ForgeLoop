@@ -6,7 +6,9 @@ import { test } from "node:test";
 
 import { exportTaskBundle, readTaskBundle } from "../src/core/bundles.js";
 import { ARTIFACT_PATHS, writeJsonArtifact } from "../src/core/artifacts.js";
+import { createCheck } from "../src/core/checks.js";
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
+import { runCommandExecution } from "../src/core/execution.js";
 import { evaluateRoute } from "../src/core/router.js";
 import { persistRoute } from "../src/core/route-artifact.js";
 import { getPackageRoot } from "../src/core/templates.js";
@@ -90,6 +92,62 @@ test("portable task bundles copy only canonical protocol artifacts", async () =>
     const loaded = await readTaskBundle(target, contract.taskId, packageRoot);
     assert.deepEqual(loaded.manifest.artifacts.sort(), ["contract.json", "route.json", "state.json"]);
     assert.match(await readFile(path.join(target, ".forgeloop", "tasks", contract.taskId, "bundle.json"), "utf8"), /bundle-001/);
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
+test("portable task bundles revalidate execution references against bundled artifacts", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-bundle-execution-"));
+  try {
+    const contract = createContract({
+      taskId: "bundle-execution-001",
+      objective: "bundle command provenance",
+      deliverables: [],
+      constraints: [],
+      risks: [],
+      verification: ["tests"],
+      successCriteria: ["tests"],
+      stopConditions: [],
+      unresolvedDecisions: [],
+      sourceRefs: [],
+    });
+    await writeContract(target, contract, packageRoot);
+    await prepareRouteAndState(target, contract);
+    const execution = await runCommandExecution({
+      target,
+      packageRoot,
+      taskId: contract.taskId,
+      checkId: "tests",
+      requirement: "tests",
+      argv: [process.execPath, "-e", "process.exit(0)"],
+    });
+    const check = createCheck({
+      id: "tests",
+      kind: "command",
+      requirement: "tests",
+      status: "passed",
+      evidenceKind: "OBSERVED",
+      source: execution.execution.argv.join(" "),
+      executionRef: execution.execution.executionId,
+      provenance: "FORGELOOP_EXECUTED",
+      exitCode: 0,
+      details: { verificationCycle: 1 },
+    }, {
+      target,
+      taskId: contract.taskId,
+      packageRoot,
+      requireCommandProvenance: true,
+    });
+    const state = JSON.parse(await readFile(path.join(target, ARTIFACT_PATHS.state), "utf8"));
+    state.checks = [check];
+    await writeJsonArtifact(target, ARTIFACT_PATHS.state, state, "work-state", packageRoot);
+
+    const bundle = await exportTaskBundle(target, contract.taskId, packageRoot);
+    const loaded = await readTaskBundle(target, contract.taskId, packageRoot);
+    assert.ok(bundle.artifacts.includes(`executions/${execution.execution.executionId}.json`));
+    assert.equal(loaded.artifacts.executions[execution.execution.executionId].executionId, execution.execution.executionId);
+    assert.equal(loaded.artifacts.state.checks[0].executionRef, execution.execution.executionId);
   } finally {
     await rm(target, { recursive: true, force: true });
   }

@@ -53,8 +53,10 @@ function executeProcess(argv, cwd) {
       const child = spawn(argv[0], argv.slice(1), {
         cwd,
         shell: false,
-        stdio: "inherit",
+        stdio: ["ignore", "pipe", "pipe"],
       });
+      child.stdout?.resume();
+      child.stderr?.resume();
       child.once("error", (error) => {
         spawnError = error;
       });

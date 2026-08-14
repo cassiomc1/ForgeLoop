@@ -7,7 +7,10 @@ import { test } from "node:test";
 
 import { runComplete } from "../src/commands/complete.js";
 import { runPreflight } from "../src/commands/preflight.js";
-import { prepareCompletion, recordCheck } from "../src/core/completion-artifacts.js";
+import { prepareCompletion, recordCheck as recordCheckArtifact } from "../src/core/completion-artifacts.js";
+import { recordManualCheck } from "./helpers/record-check-compat.js";
+
+const recordCheck = (input) => recordManualCheck(recordCheckArtifact, input);
 import { ARTIFACT_PATHS, canonicalFingerprint } from "../src/core/artifacts.js";
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { appendProtocolEvent, validateEventLedger } from "../src/core/events.js";

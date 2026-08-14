@@ -59,6 +59,7 @@ export const TEMPLATE_PATHS = [
   "schemas/config.schema.json",
   "schemas/preflight.schema.json",
   "schemas/check.schema.json",
+  "schemas/execution.schema.json",
   "schemas/evidence-coverage.schema.json",
   "schemas/event.schema.json",
   "schemas/activation.schema.json",

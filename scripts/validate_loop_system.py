@@ -76,6 +76,7 @@ SCHEMA_FILES = (
     "config.schema.json",
     "preflight.schema.json",
     "check.schema.json",
+    "execution.schema.json",
     "evidence-coverage.schema.json",
     "event.schema.json",
     "activation.schema.json",

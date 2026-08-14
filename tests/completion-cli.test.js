@@ -10,7 +10,8 @@ import { ARTIFACT_PATHS } from "../src/core/artifacts.js";
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { appendProtocolEvent } from "../src/core/events.js";
 import { advanceWorkState } from "../src/core/phase.js";
-import { recordCheck } from "../src/core/completion-artifacts.js";
+import { recordCheck as recordCheckArtifact } from "../src/core/completion-artifacts.js";
+import { recordManualCheck } from "./helpers/record-check-compat.js";
 import { runComplete } from "../src/commands/complete.js";
 import { evaluateRoute } from "../src/core/router.js";
 import { persistRoute } from "../src/core/route-artifact.js";
@@ -20,6 +21,7 @@ import { createWorkState, writeWorkState } from "../src/core/work-state.js";
 const root = path.resolve(".");
 const cliPath = path.join(root, "src", "cli.js");
 const packageRoot = getPackageRoot();
+const recordCheck = (input) => recordManualCheck(recordCheckArtifact, input);
 
 function runCli(target, ...args) {
   return spawnSync(process.execPath, [cliPath, ...args, "--path", target], {
@@ -115,6 +117,7 @@ test("completion CLI records supplied evidence without executing command text", 
       target,
       "record-check",
       "--id", "tests",
+      "--kind", "manual-review",
       "--requirement", "tests",
       "--status", "passed",
       "--evidence-kind", "OBSERVED",
@@ -129,6 +132,57 @@ test("completion CLI records supplied evidence without executing command text", 
     assert.equal(report.coverage[0].status, "COVERED");
     await assert.rejects(() => readFile(sentinel));
     await readFile(path.join(target, ARTIFACT_PATHS.receipt), "utf8");
+  });
+});
+
+test("record-check rejects friendly command descriptions without execution provenance", async () => {
+  await withTarget(async (target) => {
+    await setupTarget(target);
+    const prepared = runCli(target, "prepare-completion", "--json");
+    assert.equal(prepared.status, 0, prepared.stderr);
+    const before = await readFile(path.join(target, ARTIFACT_PATHS.receipt), "utf8");
+    const rejected = runCli(
+      target,
+      "record-check",
+      "--id", "visual-check",
+      "--requirement", "tests",
+      "--status", "passed",
+      "--evidence-kind", "OBSERVED",
+      "--command", "screenshot analysis (modlens vision bridge)",
+      "--result", "visual check",
+      "--exit-code", "0",
+      "--json",
+    );
+    assert.equal(rejected.status, 1);
+    assert.match(`${rejected.stdout}\n${rejected.stderr}`, /E_COMMAND_PROVENANCE_UNATTESTED/);
+    assert.equal(await readFile(path.join(target, ARTIFACT_PATHS.receipt), "utf8"), before);
+  });
+});
+
+test("run-check records the exact executed argv as observed evidence", async () => {
+  await withTarget(async (target) => {
+    await setupTarget(target);
+    const prepared = runCli(target, "prepare-completion", "--json");
+    assert.equal(prepared.status, 0, prepared.stderr);
+    const result = spawnSync(process.execPath, [
+      cliPath,
+      "run-check",
+      "--path", target,
+      "--id", "tests",
+      "--requirement", "tests",
+      "--json",
+      "--",
+      process.execPath,
+      "-e",
+      "process.exit(0)",
+    ], { cwd: root, encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+    const output = JSON.parse(result.stdout);
+    assert.equal(output.check.provenance, "FORGELOOP_EXECUTED");
+    assert.ok(output.check.executionRef);
+    assert.deepEqual(output.execution.argv, [process.execPath, "-e", "process.exit(0)"]);
+    assert.equal(output.execution.exitCode, 0);
+    assert.equal(output.coverage[0].status, "COVERED");
   });
 });
 
@@ -192,7 +246,7 @@ test("standalone completion CLI rejects actor-selected authority sources", async
         "--json",
       );
       assert.equal(rejectedRecord.status, 1);
-      assert.match(`${rejectedRecord.stdout}\n${rejectedRecord.stderr}`, /does not attest host authority/);
+      assert.match(`${rejectedRecord.stdout}\n${rejectedRecord.stderr}`, /E_COMMAND_PROVENANCE_UNATTESTED/);
 
       const authorityContext = {
         trustMode: "HOST_ATTESTED",

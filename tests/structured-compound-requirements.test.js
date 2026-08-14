@@ -9,6 +9,7 @@ import { createCheck } from "../src/core/checks.js";
 import { classifyRequirement, evaluateRequiredEvidence } from "../src/core/evidence-readiness.js";
 import { getPackageRoot } from "../src/core/templates.js";
 import { readSchema, validateSchema } from "../src/core/schema-validation.js";
+import { recordManualCheck } from "./helpers/record-check-compat.js";
 
 const packageRoot = getPackageRoot();
 
@@ -120,7 +121,7 @@ test("compound partial verification fails readiness (Matrix L)", () => {
   const checks = [
     createCheck({
       id: "chk-keyboard",
-      kind: "command",
+      kind: "manual-review",
       requirement: "SC_KEYBOARD",
       status: "passed",
       evidenceKind: "OBSERVED",
@@ -128,7 +129,7 @@ test("compound partial verification fails readiness (Matrix L)", () => {
     }),
     createCheck({
       id: "chk-zoom",
-      kind: "command",
+      kind: "manual-review",
       requirement: "SC_ZOOM",
       status: "not-run",
       evidenceKind: "NOT_VERIFIED",
@@ -136,7 +137,7 @@ test("compound partial verification fails readiness (Matrix L)", () => {
     }),
     createCheck({
       id: "chk-motion",
-      kind: "command",
+      kind: "manual-review",
       requirement: "SC_MOTION",
       status: "passed",
       evidenceKind: "OBSERVED",
@@ -171,7 +172,7 @@ test("compound complete verification passes readiness (Matrix M)", () => {
   const checks = [
     createCheck({
       id: "chk-keyboard",
-      kind: "command",
+      kind: "manual-review",
       requirement: "SC_KEYBOARD",
       status: "passed",
       evidenceKind: "OBSERVED",
@@ -179,7 +180,7 @@ test("compound complete verification passes readiness (Matrix M)", () => {
     }),
     createCheck({
       id: "chk-zoom",
-      kind: "command",
+      kind: "manual-review",
       requirement: "SC_ZOOM",
       status: "passed",
       evidenceKind: "OBSERVED",
@@ -187,7 +188,7 @@ test("compound complete verification passes readiness (Matrix M)", () => {
     }),
     createCheck({
       id: "chk-motion",
-      kind: "command",
+      kind: "manual-review",
       requirement: "SC_MOTION",
       status: "passed",
       evidenceKind: "OBSERVED",
@@ -215,7 +216,8 @@ test("compound child FAIL drives DIAGNOSE (P1-5 Test A)", async () => {
   const { runPreflight } = await import("../src/commands/preflight.js");
   const { appendProtocolEvent } = await import("../src/core/events.js");
   const { createWorkState, writeWorkState } = await import("../src/core/work-state.js");
-  const { prepareCompletion, recordCheck } = await import("../src/core/completion-artifacts.js");
+  const { prepareCompletion, recordCheck: recordCheckArtifact } = await import("../src/core/completion-artifacts.js");
+  const recordCheck = (input) => recordManualCheck(recordCheckArtifact, input);
 
   await withTarget(async (target) => {
     const contract = createContract({
@@ -309,7 +311,8 @@ test("compound child BLOCKED drives RESOLVE_BLOCKER (P1-5 Test B)", async () => 
   const { runPreflight } = await import("../src/commands/preflight.js");
   const { appendProtocolEvent } = await import("../src/core/events.js");
   const { createWorkState, writeWorkState } = await import("../src/core/work-state.js");
-  const { prepareCompletion, recordCheck } = await import("../src/core/completion-artifacts.js");
+  const { prepareCompletion, recordCheck: recordCheckArtifact } = await import("../src/core/completion-artifacts.js");
+  const recordCheck = (input) => recordManualCheck(recordCheckArtifact, input);
 
   await withTarget(async (target) => {
     const contract = createContract({
@@ -394,4 +397,3 @@ test("compound child BLOCKED drives RESOLVE_BLOCKER (P1-5 Test B)", async () => 
     assert.equal(next.nextAction, NEXT_ACTIONS.RESOLVE_BLOCKER);
   });
 });
-

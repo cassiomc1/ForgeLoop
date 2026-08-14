@@ -52,6 +52,7 @@ the supported ForgeLoop lifecycle commands or canonical ForgeLoop APIs:
 - `.forgeloop/work-state.json`
 - `.forgeloop/events.ndjson`
 - `.forgeloop/execution-receipt.json`
+- `.forgeloop/executions/<executionId>.json`
 - completion recovery metadata
 - canonical check/evidence state
 - terminal-result lifecycle state
@@ -121,6 +122,23 @@ Every verification command path is classified by resolution mode:
 | `EXPLICIT_INSTALLATION` | `npm install tool`, `pnpm add tool`, `pip install tool`, `cargo install tool` | Yes | Yes (`E_INSTALLATION_AUTHORITY_REQUIRED`) |
 
 **Validator-enforced rule**: Any verification command executed via an installation-capable or explicit-installation resolution mode without a valid canonical installation authority grant is rejected by `record-check`, `audit`, and `complete` with error code `E_INSTALLATION_AUTHORITY_REQUIRED`, `E_AUTHORITY_INVALID`, `E_AUTHORITY_SCOPE_MISMATCH`, or `E_AUTHORITY_UNTRUSTED_SOURCE` and cannot contribute to `VALID` completion.
+
+Use `forgeloop run-check --id <id> --requirement <requirement> -- <argv>` for
+observed command evidence. ForgeLoop preserves the exact argv vector, target
+cwd, resolution classification, timestamps, exit status, and task/check
+binding in `.forgeloop/executions/<executionId>.json` before recording the
+check. Resolution is classified before process launch; install-capable
+resolution is rejected without a valid host-attested authority, while
+`npx --no-install` remains a non-installing path and may fail honestly when a
+tool is absent. `run-check` launches the supplied argv without a shell.
+
+`forgeloop record-check` is serialization-only. Its `--command` value is
+metadata and is never executed. A `kind: command`, `evidenceKind: OBSERVED`
+check must carry `provenance: FORGELOOP_EXECUTED` and a valid `executionRef`;
+manual or actor-reported observations must use an explicit non-command kind or
+provenance and must not be upgraded to command execution evidence. Completion,
+audit, protocol validation, and bundles revalidate the referenced artifact and
+its task, check, requirement, cycle, cwd, status, and exit-code binding.
 
 Authority cannot be self-issued by the actor consuming it. Boolean fields inside verification evidence (such as `installationAuthorized: true`) are not sufficient proof of installation authority. Installation authority must be established via a canonical authority grant supplied by a host/operator trust boundary and referenced via `installationAuthorityRef`.
 
@@ -509,7 +527,7 @@ prepare-completion
     ↓
 run applicable project checks
     ↓
-record observed results with record-check
+run commands with run-check; record manual observations with record-check
     ↓ forgeloop next
 advance --to REVIEWING
     ↓ forgeloop next
@@ -524,10 +542,11 @@ subsequent `record-check` operations; completion remains invalid until required
 observed evidence, review state, chronology, and validator requirements are
 satisfied.
 
-The host agent runs applicable checks after the receipt exists, records their
-observed results with `record-check`, and queries `forgeloop next` before each
-subsequent lifecycle action. `record-check` records results already observed by
-the agent; it never executes the supplied command text.
+The host agent runs applicable checks after the receipt exists, uses `run-check`
+for commands, and uses `record-check` for manual or non-command observations.
+`run-check` records exact command provenance; `record-check` records supplied
+metadata only and never executes its `--command` value. Query `forgeloop next`
+before each subsequent lifecycle action.
 
 Continue until the terminal outcome is either validator-backed `COMPLETE` or
 an explicitly reported `BLOCKED` / `PARTIALLY VERIFIED` result with exact

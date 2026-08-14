@@ -128,6 +128,7 @@ The following protocol artifacts are strictly owned by ForgeLoop:
 - `.forgeloop/work-state.json`
 - `.forgeloop/events.ndjson`
 - `.forgeloop/execution-receipt.json`
+- `.forgeloop/executions/<executionId>.json`
 - Canonical check, evidence, and terminal-result state
 
 If the required CLI or API capability cannot be resolved:
@@ -139,6 +140,31 @@ If the required CLI or API capability cannot be resolved:
 - **Do not** rewrite `events.ndjson` to simulate chronology.
 
 Report the corresponding ForgeLoop dimension as `NOT_VERIFIED` / `E_FORGELOOP_CLI_UNAVAILABLE`.
+
+## Trusted command provenance
+
+Command verification has two explicit paths:
+
+- `forgeloop run-check --id <id> --requirement <requirement> -- <argv>` owns
+  execution. It classifies the exact argv before launch, uses a non-shell
+  process boundary, records the target cwd, resolution mode, timestamps,
+  exit status, and task/check binding in
+  `.forgeloop/executions/<executionId>.json`, then records an `OBSERVED` check
+  with `provenance: FORGELOOP_EXECUTED`.
+- `forgeloop record-check` owns serialization only. `--command` is metadata and
+  is never launched. A `kind: command` check with `evidenceKind: OBSERVED`
+  requires both `executionRef` and `FORGELOOP_EXECUTED`; manual or actor-reported
+  observations use their explicit non-command/provenance values and remain
+  distinguishable from process execution.
+
+`run-check` rejects install-capable resolution before process launch unless the
+host supplies a valid trusted authority context. `npx --no-install` is an
+allowed non-installing resolution and can return a normal failed result when
+the requested tool is unavailable. Completion, audit, `validate-protocol`, and
+task bundles revalidate execution references rather than trusting duplicated
+check metadata. Invalid or missing references return
+`E_EXECUTION_REF_INVALID`; an observed command without ForgeLoop provenance
+returns `E_COMMAND_PROVENANCE_UNATTESTED`.
 
 ## Missing tool capability
 

@@ -8,7 +8,7 @@ import {
 import { readContract } from "./contract.js";
 import { appendProtocolEvent, validateEventLedger } from "./events.js";
 import { completionEvidenceForGuides } from "./guide-metadata.js";
-import { createCheck } from "./checks.js";
+import { CHECK_PROVENANCE, createCheck } from "./checks.js";
 import { createEvidence } from "./evidence.js";
 import { coverageForRequirements } from "./coverage.js";
 import { assertCompletionRelationships, assertStateIdentity } from "./completion-relationships.js";
@@ -20,6 +20,7 @@ import { readWorkState, writeWorkState } from "./work-state.js";
 import { assertExecutionPrerequisites, hasExecutionStarted } from "./execution-prerequisites.js";
 import { normalizeRequirements, classifyRequirement } from "./evidence-readiness.js";
 import { classifyCommandResolution, validateVerificationAuthority } from "./verification-capability.js";
+import { readExecutionArtifact, validateExecutionBinding } from "./execution.js";
 
 function artifactError(code, message, artifacts = []) {
   const error = new Error(message);
@@ -57,6 +58,102 @@ async function readOptionalConfig(target, packageRoot) {
     if (error.code === "ARTIFACT_MISSING") return {};
     throw error;
   }
+}
+
+function formatArgv(argv) {
+  return argv.map((argument) => /[\s"']/u.test(argument)
+    ? JSON.stringify(argument)
+    : argument).join(" ");
+}
+
+function commandProvenanceError(message = "Observed command evidence requires a ForgeLoop execution artifact") {
+  return artifactError("E_COMMAND_PROVENANCE_UNATTESTED", message, [ARTIFACT_PATHS.receipt]);
+}
+
+/**
+ * Revalidate the ForgeLoop-owned execution artifact behind an observed command
+ * check. This is intentionally asynchronous so completion and audit can verify
+ * the artifact instead of trusting duplicated check metadata.
+ */
+export async function validateCheckExecutionProvenance(check, {
+  target,
+  packageRoot,
+  taskId,
+  executionArtifacts,
+  allowForeignCwd = false,
+} = {}) {
+  if (check?.kind !== "command" || check.evidenceKind !== "OBSERVED") return null;
+  if (check.provenance !== "FORGELOOP_EXECUTED" || !check.executionRef) {
+    throw commandProvenanceError();
+  }
+  const artifact = executionArtifacts
+    ? { value: executionArtifacts[check.executionRef] }
+    : await readExecutionArtifact({
+      target,
+      executionRef: check.executionRef,
+      packageRoot,
+    });
+  if (!artifact.value) {
+    throw artifactError(
+      "E_EXECUTION_REF_INVALID",
+      "Execution reference does not resolve to an execution artifact in this bundle",
+      [ARTIFACT_PATHS.executionDirectory],
+    );
+  }
+  const execution = validateExecutionBinding({
+    execution: artifact.value,
+    taskId,
+    checkId: check.id,
+    requirement: check.requirement,
+    verificationCycle: check.details?.verificationCycle ?? 1,
+  });
+  if (!allowForeignCwd && path.resolve(execution.cwd) !== path.resolve(target)) {
+    throw artifactError(
+      "E_EXECUTION_REF_INVALID",
+      "Execution artifact cwd does not match the current target",
+      [ARTIFACT_PATHS.executionDirectory],
+    );
+  }
+  if (check.status === "passed" && (execution.status !== "passed" || execution.exitCode !== 0)) {
+    throw artifactError(
+      "E_EXECUTION_REF_INVALID",
+      "A passed command check must reference a successful execution artifact",
+      [ARTIFACT_PATHS.executionDirectory],
+    );
+  }
+  if (check.status === "failed" && execution.status !== "failed") {
+    throw artifactError(
+      "E_EXECUTION_REF_INVALID",
+      "A failed command check must reference a failed execution artifact",
+      [ARTIFACT_PATHS.executionDirectory],
+    );
+  }
+  if (check.exitCode !== undefined && check.exitCode !== execution.exitCode) {
+    throw artifactError(
+      "E_EXECUTION_REF_INVALID",
+      "Check exitCode does not match its execution artifact",
+      [ARTIFACT_PATHS.executionDirectory],
+    );
+  }
+  return execution;
+}
+
+export async function validateChecksExecutionProvenance(checks, options = {}) {
+  const errors = [];
+  for (const check of Array.isArray(checks) ? checks : []) {
+    try {
+      await validateCheckExecutionProvenance(check, options);
+    } catch (error) {
+      errors.push({
+        code: error.code ?? "E_EXECUTION_REF_INVALID",
+        message: error.message,
+        artifacts: error.artifacts ?? [options.artifactPath ?? ARTIFACT_PATHS.receipt],
+        checkId: check?.id,
+        requirementId: check?.requirement,
+      });
+    }
+  }
+  return errors;
 }
 
 export async function requiredEvidenceForTarget({ target, contract, route, packageRoot, additionalEvidence = [] }) {
@@ -196,42 +293,20 @@ function appendUniqueEvidence(evidence, nextEvidence) {
   return exists ? [...evidence] : [...evidence, nextEvidence];
 }
 
-export async function recordCheck({
+/**
+ * Read-only lifecycle checks shared by run-check and record-check. Keeping
+ * these checks before process launch prevents a command from running when the
+ * target is not ready to receive verification evidence.
+ */
+export async function assertRecordCheckPrerequisites({
   target,
   packageRoot,
-  id,
-  kind = "command",
   requirement,
   status,
   evidenceKind,
-  command,
-  result,
-  exitCode,
-  details,
   authorityContext,
   runtimeContext,
-}) {
-  requiredString(id, "check id");
-  requiredString(kind, "check kind");
-  requiredString(requirement, "check requirement");
-  requiredString(status, "check status");
-  requiredString(evidenceKind, "evidence kind");
-  if (command !== undefined && typeof command !== "string") {
-    throw artifactError("E_CHECK_INVALID", "command must be a string when supplied");
-  }
-  if (result !== undefined && typeof result !== "string") {
-    throw artifactError("E_CHECK_INVALID", "result must be a string when supplied");
-  }
-  if (details !== undefined && (!details || typeof details !== "object" || Array.isArray(details))) {
-    throw artifactError("E_CHECK_INVALID", "check details must be a JSON object");
-  }
-  if ((typeof command !== "string" || command.trim() === "")
-    && (typeof result !== "string" || result.trim() === "")) {
-    throw artifactError("E_CHECK_INVALID", "record-check requires --command or --result");
-  }
-
-  const commandSpec = typeof command === "string" && command.trim() !== "" ? command.trim() : undefined;
-
+} = {}) {
   const state = await readWorkState(target, packageRoot);
   if (!state) throw artifactError("E_STATE_MISSING", "Work state is required before recording a check", [ARTIFACT_PATHS.state]);
   if (["COMPLETE", "BLOCKED"].includes(state.phase)) {
@@ -274,9 +349,114 @@ export async function recordCheck({
     authorityContext,
     runtimeContext,
   });
-  const source = commandSpec || `check:${id}`;
-  const recordedResult = result?.trim() || `recorded command: ${commandSpec || source}`;
-  const classification = commandSpec !== undefined ? classifyCommandResolution(commandSpec) : null;
+  const ledger = await validateEventLedger(target, packageRoot);
+  if (!ledger.valid) {
+    const first = ledger.errors[0];
+    throw artifactError(first.code, first.message, [ARTIFACT_PATHS.events]);
+  }
+  if (!ledger.events.some((event) => event.taskId === state.taskId && event.event === "VERIFICATION_STARTED")) {
+    throw artifactError(
+      "E_PHASE_CHRONOLOGY_INVALID",
+      "record-check requires VERIFICATION_STARTED in the current task ledger",
+      [ARTIFACT_PATHS.events],
+    );
+  }
+  return {
+    state,
+    contract,
+    route,
+    preflight,
+    requiredEvidence,
+    existingReceipt,
+    ledger,
+  };
+}
+
+export async function recordCheck({
+  target,
+  packageRoot,
+  id,
+  kind = "command",
+  requirement,
+  status,
+  evidenceKind,
+  command,
+  result,
+  exitCode,
+  details,
+  executionRef,
+  provenance,
+  authorityContext,
+  runtimeContext,
+}) {
+  requiredString(id, "check id");
+  requiredString(kind, "check kind");
+  requiredString(requirement, "check requirement");
+  requiredString(status, "check status");
+  requiredString(evidenceKind, "evidence kind");
+  if (command !== undefined && typeof command !== "string") {
+    throw artifactError("E_CHECK_INVALID", "command must be a string when supplied");
+  }
+  if (result !== undefined && typeof result !== "string") {
+    throw artifactError("E_CHECK_INVALID", "result must be a string when supplied");
+  }
+  if (details !== undefined && (!details || typeof details !== "object" || Array.isArray(details))) {
+    throw artifactError("E_CHECK_INVALID", "check details must be a JSON object");
+  }
+  if (executionRef !== undefined && (typeof executionRef !== "string" || executionRef.trim() === "")) {
+    throw artifactError("E_EXECUTION_REF_INVALID", "executionRef must be a non-empty string when supplied");
+  }
+  if (provenance !== undefined && !CHECK_PROVENANCE.includes(provenance)) {
+    throw artifactError("E_CHECK_INVALID", `provenance must be one of ${CHECK_PROVENANCE.join(", ")}`);
+  }
+  if ((typeof command !== "string" || command.trim() === "")
+    && (typeof result !== "string" || result.trim() === "")) {
+    throw artifactError("E_CHECK_INVALID", "record-check requires --command or --result");
+  }
+
+  const context = await assertRecordCheckPrerequisites({
+    target,
+    packageRoot,
+    requirement,
+    status,
+    evidenceKind,
+    authorityContext,
+    runtimeContext,
+  });
+  const {
+    state,
+    contract,
+    route,
+    requiredEvidence,
+    existingReceipt,
+  } = context;
+
+  const commandSpec = typeof command === "string" && command.trim() !== "" ? command.trim() : undefined;
+  const observedCommand = kind === "command" && evidenceKind === "OBSERVED";
+  if (observedCommand && (!executionRef || provenance !== "FORGELOOP_EXECUTED")) {
+    throw commandProvenanceError();
+  }
+  const execution = executionRef
+    ? await validateCheckExecutionProvenance({
+      kind,
+      evidenceKind,
+      provenance,
+      executionRef,
+      status,
+      exitCode,
+      id,
+      requirement,
+      details: { ...(details ?? {}), verificationCycle: state.verificationCycle ?? 1 },
+    }, {
+      target,
+      packageRoot,
+      taskId: contract.value.taskId,
+    })
+    : null;
+  const effectiveCommand = execution ? formatArgv(execution.argv) : commandSpec;
+  const source = effectiveCommand || `check:${id}`;
+  const recordedResult = result?.trim() || `recorded command: ${effectiveCommand || source}`;
+  const classification = execution?.resolution ?? (effectiveCommand !== undefined ? classifyCommandResolution(effectiveCommand) : null);
   const installationAuthorized = Boolean(
     details?.installationAuthorized
     || details?.authority?.softwareInstallation === "AUTHORIZED"
@@ -289,15 +469,28 @@ export async function recordCheck({
     status,
     evidenceKind,
     source,
+    ...(executionRef === undefined ? {} : { executionRef }),
+    ...(provenance === undefined ? {} : { provenance }),
     timestamp: new Date().toISOString(),
-    ...(exitCode === undefined ? {} : { exitCode }),
+    ...(execution?.exitCode !== null && execution?.exitCode !== undefined
+      ? { exitCode: execution.exitCode }
+      : exitCode === undefined ? {} : { exitCode }),
     details: {
-      ...(command === undefined ? {} : { command }),
+      ...(effectiveCommand === undefined ? {} : { command: effectiveCommand }),
       ...(result === undefined ? {} : { result }),
       ...(details === undefined ? {} : details),
       verificationCycle: state.verificationCycle ?? 1,
       ...(classification ? {
         execution: {
+          ...(details?.execution ?? {}),
+          ...(execution ? {
+            executionRef: execution.executionId,
+            argv: [...execution.argv],
+            cwd: execution.cwd,
+            resolution: execution.resolution,
+            status: execution.status,
+            exitCode: execution.exitCode,
+          } : {}),
           resolutionMode: classification.resolutionMode,
           mayInstall: classification.mayInstall,
           installationAuthorized,
@@ -310,6 +503,7 @@ export async function recordCheck({
     packageRoot,
     authorityContext,
     runtimeContext,
+    requireCommandProvenance: observedCommand,
   });
   const evidence = createEvidence({
     kind: evidenceKind,
@@ -349,18 +543,6 @@ export async function recordCheck({
     authorityContext,
     runtimeContext,
   });
-  const ledger = await validateEventLedger(target, packageRoot);
-  if (!ledger.valid) {
-    const first = ledger.errors[0];
-    throw artifactError(first.code, first.message, [ARTIFACT_PATHS.events]);
-  }
-  if (!ledger.events.some((event) => event.taskId === state.taskId && event.event === "VERIFICATION_STARTED")) {
-    throw artifactError(
-      "E_PHASE_CHRONOLOGY_INVALID",
-      "record-check requires VERIFICATION_STARTED in the current task ledger",
-      [ARTIFACT_PATHS.events],
-    );
-  }
   const coverage = coverageForRequirements(requiredEvidence, checks, {
     target,
     taskId: contract.value.taskId,
