@@ -189,6 +189,13 @@ test("classifyCommandResolution classifies resolution modes deterministically", 
   });
 });
 
+test("classifyCommandResolution preserves string behavior while accepting argv", () => {
+  assert.deepEqual(
+    classifyCommandResolution(["node", "scripts/verify.js"]),
+    classifyCommandResolution("node scripts/verify.js"),
+  );
+});
+
 test("observed command checks require ForgeLoop execution provenance", () => {
   assert.throws(
     () => assertCheck({

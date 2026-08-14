@@ -155,8 +155,8 @@ function extractToolFromArgs(args) {
   return null;
 }
 
-function classifySingleCommand(commandString) {
-  const tokens = tokenizeCommand(commandString);
+function classifySingleCommand(commandInput) {
+  const tokens = Array.isArray(commandInput) ? [...commandInput] : tokenizeCommand(commandInput);
   if (tokens.length === 0) {
     return { resolutionMode: "UNKNOWN", mayInstall: false, installer: null, tool: null };
   }
@@ -360,12 +360,25 @@ function classifySingleCommand(commandString) {
   return { resolutionMode: "LOCAL_EXECUTABLE", mayInstall: false, installer: null, tool: null };
 }
 
-export function classifyCommandResolution(commandString) {
-  if (typeof commandString !== "string" || commandString.trim() === "") {
+export function classifyCommandResolution(commandInput) {
+  if (Array.isArray(commandInput)) {
+    if (commandInput.length === 0 || commandInput.some((item) => typeof item !== "string" || item.trim() === "")) {
+      return { resolutionMode: "UNKNOWN", mayInstall: false, installer: null, tool: null };
+    }
+    const binary = path.basename(commandInput[0]).toLowerCase();
+    if (["sh", "bash", "zsh", "dash", "ksh"].includes(binary)) {
+      const shellFlagIndex = commandInput.findIndex((item, index) => index > 0 && /^-.*c/.test(item));
+      const shellCommand = shellFlagIndex >= 0 ? commandInput[shellFlagIndex + 1] : null;
+      if (shellCommand) return classifyCommandResolution(shellCommand);
+    }
+    return classifySingleCommand(commandInput);
+  }
+
+  if (typeof commandInput !== "string" || commandInput.trim() === "") {
     return { resolutionMode: "UNKNOWN", mayInstall: false, installer: null, tool: null };
   }
 
-  const subcommands = splitCommandPipeline(commandString);
+  const subcommands = splitCommandPipeline(commandInput);
   for (const subcommand of subcommands) {
     const res = classifySingleCommand(subcommand);
     if (res.mayInstall) {
@@ -373,7 +386,7 @@ export function classifyCommandResolution(commandString) {
     }
   }
 
-  return classifySingleCommand(subcommands[0] || commandString);
+  return classifySingleCommand(subcommands[0] || commandInput);
 }
 
 export function getInstallationAuthorityRef(check) {
@@ -489,16 +502,17 @@ export function validateAuthorityGrant({ authority, taskId, type = "SOFTWARE_INS
 }
 
 export function validateVerificationAuthority(check, options = {}) {
+  const canonicalResolution = check?.execution?.resolution ?? check?.details?.execution?.resolution;
   const command = check?.details?.command
     ?? (check?.kind === "command" && typeof check?.source === "string" && !check.source.startsWith("check:")
       ? check.source
       : null);
 
-  if (!command || typeof command !== "string") {
+  if (!canonicalResolution && (!command || typeof command !== "string")) {
     return { valid: true, error: null };
   }
 
-  const classification = classifyCommandResolution(command);
+  const classification = canonicalResolution ?? classifyCommandResolution(command);
   if (!classification.mayInstall) {
     return { valid: true, error: null };
   }

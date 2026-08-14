@@ -26,6 +26,7 @@ test("execution schema accepts a ForgeLoop-owned command execution artifact", as
     taskId: "task-1",
     checkId: "tests",
     requirement: "tests",
+    verificationCycle: 1,
     kind: "COMMAND_EXECUTION",
     argv: ["npm", "test"],
     cwd: "/target/project",

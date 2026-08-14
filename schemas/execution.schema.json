@@ -10,6 +10,7 @@
     "taskId",
     "checkId",
     "requirement",
+    "verificationCycle",
     "kind",
     "argv",
     "cwd",
@@ -26,6 +27,7 @@
     "taskId": { "type": "string", "minLength": 1 },
     "checkId": { "type": "string", "minLength": 1 },
     "requirement": { "type": "string", "minLength": 1 },
+    "verificationCycle": { "type": "integer", "minimum": 1 },
     "kind": { "const": "COMMAND_EXECUTION" },
     "argv": {
       "type": "array",
