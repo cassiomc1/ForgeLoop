@@ -48,6 +48,7 @@
   "scripts": {
     "test": "node scripts/run-tests.js",
     "pack:check": "node --test tests/package.test.js",
-    "release:identity": "node scripts/verify_release_identity.mjs"
+    "release:identity": "node scripts/verify_release_identity.mjs",
+    "docs:flow": "node scripts/generate-readme-flow.mjs"
   }
 }
