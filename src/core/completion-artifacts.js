@@ -383,12 +383,55 @@ export async function recordTerminalResult({
     additionalEvidence: preflight.policy?.requiredEvidence ?? [],
   });
 
-  const requested = normalizeRequirements(requiredEvidence).find((item) => (
+  const normalized = normalizeRequirements(requiredEvidence);
+  const requested = normalized.find((item) => (
     item.id === requirement || item.text === requirement
-  )) ?? classifyRequirement(requirement);
+  ));
+
+  if (!requested) {
+    throw artifactError(
+      "E_TERMINAL_REQUIREMENT_UNKNOWN",
+      `Terminal results must reference an existing canonical terminal requirement: ${requirement}`,
+      [ARTIFACT_PATHS.contract, ARTIFACT_PATHS.receipt],
+    );
+  }
+
+  if (!requested.terminalOwned) {
+    throw artifactError(
+      "E_TERMINAL_REQUIREMENT_NOT_TERMINAL",
+      `record-terminal-result may only target terminal-owned requirements; found ${requested.type}: ${requested.text}`,
+      [ARTIFACT_PATHS.contract, ARTIFACT_PATHS.receipt],
+    );
+  }
+
+  if (requested.type !== type) {
+    throw artifactError(
+      "E_TERMINAL_REQUIREMENT_TYPE_MISMATCH",
+      `Requirement ${requested.id} is ${requested.type}, not ${type}.`,
+      [ARTIFACT_PATHS.contract, ARTIFACT_PATHS.receipt],
+    );
+  }
 
   const existingReceipt = await readCurrentReceipt(target, packageRoot);
   await validateReceipt(existingReceipt.value, packageRoot);
+
+  if (type === "PUBLICATION") {
+    const rank = {
+      "not-published": 0,
+      "local-only": 1,
+      "committed": 2,
+      "pushed": 3,
+      "published": 4,
+    };
+    const prev = existingReceipt.value.publicationStatus ?? "not-published";
+    if (prev in rank && status in rank && rank[status] < rank[prev]) {
+      throw artifactError(
+        "E_TERMINAL_STATUS_REGRESSION",
+        `Publication status cannot regress from ${prev} to ${status}.`,
+        [ARTIFACT_PATHS.receipt],
+      );
+    }
+  }
 
   const cycle = state.verificationCycle ?? 1;
 
@@ -404,6 +447,42 @@ export async function recordTerminalResult({
   ));
 
   if (isIdentical) {
+    const ledger = await validateEventLedger(target, packageRoot);
+    const matchingEvent = ledger.events.find((event) => (
+      event.taskId === state.taskId
+      && event.event === "TERMINAL_RESULT_RECORDED"
+      && event.details?.requirementId === requested.id
+      && event.details?.type === type
+      && event.details?.status === status
+      && event.details?.verificationCycle === cycle
+    ));
+
+    if (matchingEvent) {
+      return {
+        path: path.join(target, ARTIFACT_PATHS.receipt),
+        receipt: existingReceipt.value,
+        requirementId: requested.id,
+        type,
+        status,
+        idempotent: true,
+        repaired: false,
+        event: matchingEvent,
+      };
+    }
+
+    const repairedEvent = await appendProtocolEvent(target, {
+      taskId: state.taskId,
+      event: "TERMINAL_RESULT_RECORDED",
+      details: {
+        requirementId: requested.id,
+        type,
+        status,
+        verificationCycle: cycle,
+        source: source.trim(),
+        result: result.trim(),
+      },
+    }, packageRoot);
+
     return {
       path: path.join(target, ARTIFACT_PATHS.receipt),
       receipt: existingReceipt.value,
@@ -411,6 +490,8 @@ export async function recordTerminalResult({
       type,
       status,
       idempotent: true,
+      repaired: true,
+      event: repairedEvent,
     };
   }
 
@@ -446,12 +527,10 @@ export async function recordTerminalResult({
     receiptUpdates.publicationStatus = status;
     receiptUpdates.publication = {
       ...(existingReceipt.value.publication ?? {}),
-      committed: existingReceipt.value.publication?.committed ?? false,
-      pushed: existingReceipt.value.publication?.pushed ?? false,
+      committed: status === "committed" || (existingReceipt.value.publication?.committed ?? false),
+      pushed: status === "pushed" || (existingReceipt.value.publication?.pushed ?? false),
       deployed: status === "deployed" || (existingReceipt.value.publication?.deployed ?? false),
     };
-    if (status === "committed") receiptUpdates.publication.committed = true;
-    if (status === "pushed") receiptUpdates.publication.pushed = true;
   } else if (type === "PRODUCTION_READINESS") {
     receiptUpdates.productionReadiness = status;
   }

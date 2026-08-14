@@ -32,27 +32,17 @@ function stableId(text) {
 }
 
 export function isPublicationStatusSatisfied(actual, required) {
-  const levels = {
-    "not-published": 0,
-    "local-only": 1,
-    "committed": 2,
-    "pushed": 3,
-    "published": 4,
-    "deployed": 5,
-  };
-  const actualLevel = levels[actual] ?? -1;
-  const requiredLevel = levels[required] ?? -1;
+  if (required === "committed") {
+    return ["committed", "pushed", "published"].includes(actual);
+  }
+  if (required === "pushed") {
+    return ["pushed", "published"].includes(actual);
+  }
   if (required === "published") {
-    return actual === "published" || actual === "deployed";
+    return actual === "published";
   }
   if (required === "deployed") {
     return actual === "deployed";
-  }
-  if (required === "pushed") {
-    return actualLevel >= levels.pushed;
-  }
-  if (required === "committed") {
-    return actualLevel >= levels.committed;
   }
   return actual === required;
 }
@@ -178,30 +168,59 @@ export function evaluateTerminalRequirements({ requirements = [], receipt = null
   };
   const pubStatus = receipt ? (receipt.publicationStatus ?? "not-published") : "not-published";
   const prodStatus = receipt ? (receipt.productionReadiness ?? "not-verified") : "not-verified";
+  const receiptEvidence = Array.isArray(receipt?.evidence) ? receipt.evidence : [];
 
   for (const req of terminal) {
     if (req.type === "LIFECYCLE") {
       result.covered.push(req);
     } else if (req.type === "PUBLICATION") {
       const requiredLevel = req.requiredPublicationStatus ?? "published";
-      if (isPublicationStatusSatisfied(pubStatus, requiredLevel)) {
+      const matchingEvidence = receiptEvidence
+        .filter((item) => item.kind === "OBSERVED")
+        .filter((item) => (
+          item.details?.requirementId === req.id
+          || item.details?.requirementText === req.text
+          || item.requirement === req.id
+          || item.requirement === req.text
+        ))
+        .filter((item) => item.details?.terminalType === "PUBLICATION");
+      const latestEvidence = latestAuthoritativeCheck(matchingEvidence);
+      const evidenceStatus = latestEvidence?.details?.terminalStatus;
+      const evidenceSatisfied = isPublicationStatusSatisfied(evidenceStatus, requiredLevel);
+      const globalSatisfied = isPublicationStatusSatisfied(pubStatus, requiredLevel);
+
+      if (globalSatisfied && evidenceSatisfied) {
         result.covered.push(req);
       } else {
         result.pending.push(req);
         result.errors.push({
           code: "E_PUBLICATION_REQUIREMENT_PENDING",
-          message: `The contract explicitly requires publication status '${requiredLevel}', but publication status is '${pubStatus}': ${req.text}`,
+          message: `The contract explicitly requires publication status '${requiredLevel}', but publication evidence/status is insufficient for requirement: ${req.text}`,
           requirementId: req.id,
         });
       }
     } else if (req.type === "PRODUCTION_READINESS") {
-      if (prodStatus === "ready" || prodStatus === "verified") {
+      const matchingEvidence = receiptEvidence
+        .filter((item) => item.kind === "OBSERVED")
+        .filter((item) => (
+          item.details?.requirementId === req.id
+          || item.details?.requirementText === req.text
+          || item.requirement === req.id
+          || item.requirement === req.text
+        ))
+        .filter((item) => item.details?.terminalType === "PRODUCTION_READINESS");
+      const latestEvidence = latestAuthoritativeCheck(matchingEvidence);
+      const evidenceStatus = latestEvidence?.details?.terminalStatus;
+      const evidenceSatisfied = evidenceStatus === "ready" || evidenceStatus === "verified";
+      const globalSatisfied = prodStatus === "ready" || prodStatus === "verified";
+
+      if (globalSatisfied && evidenceSatisfied) {
         result.covered.push(req);
       } else {
         result.pending.push(req);
         result.errors.push({
           code: "E_PRODUCTION_REQUIREMENT_PENDING",
-          message: `The contract explicitly requires production readiness, but production readiness is '${prodStatus}': ${req.text}`,
+          message: `The contract explicitly requires production readiness, but production readiness evidence/status is insufficient for requirement: ${req.text}`,
           requirementId: req.id,
         });
       }
