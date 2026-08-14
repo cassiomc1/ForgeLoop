@@ -158,13 +158,17 @@ Command verification has two explicit paths:
   distinguishable from process execution.
 
 `run-check` rejects install-capable resolution before process launch unless the
-host supplies a valid trusted authority context. `npx --no-install` is an
-allowed non-installing resolution and can return a normal failed result when
-the requested tool is unavailable. Completion, audit, `validate-protocol`, and
-task bundles revalidate execution references rather than trusting duplicated
-check metadata. Invalid or missing references return
-`E_EXECUTION_REF_INVALID`; an observed command without ForgeLoop provenance
-returns `E_COMMAND_PROVENANCE_UNATTESTED`.
+host supplies a valid trusted authority context. `npm exec` and `npm x` are
+installation-capable resolution paths. Recognized command dispatchers (such as
+`npm test` or `npm run`) are classified by their effective package resolution
+behavior across recognized lifecycle scripts before launch, not only by the
+top-level executable name. `npx --no-install` is an allowed non-installing
+resolution and can return a normal failed result when the requested tool is
+unavailable. Completion, audit, `validate-protocol`, and task bundles
+revalidate execution references rather than trusting duplicated check metadata.
+Invalid or missing references return `E_EXECUTION_REF_INVALID`; an observed
+command without ForgeLoop provenance returns
+`E_COMMAND_PROVENANCE_UNATTESTED`.
 
 ## Missing tool capability
 

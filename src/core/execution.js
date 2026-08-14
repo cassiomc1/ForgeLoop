@@ -7,7 +7,11 @@ import {
   readJsonArtifact,
   writeJsonArtifact,
 } from "./artifacts.js";
-import { classifyCommandResolution, validateVerificationAuthority } from "./verification-capability.js";
+import {
+  classifyCommandResolution,
+  resolveExecutionResolution,
+  validateVerificationAuthority,
+} from "./verification-capability.js";
 
 export const EXECUTION_KIND = "COMMAND_EXECUTION";
 
@@ -82,7 +86,10 @@ export async function runCommandExecution({
   runtimeContext,
 } = {}) {
   const commandArgv = normalizeArgv(argv);
-  const resolution = classifyCommandResolution(commandArgv);
+  const resolution = await resolveExecutionResolution({
+    argv: commandArgv,
+    cwd: target,
+  });
   validateAuthorityBeforeLaunch({
     target,
     taskId,
@@ -108,7 +115,13 @@ export async function runCommandExecution({
     kind: EXECUTION_KIND,
     argv: commandArgv,
     cwd: target,
-    resolution,
+    resolution: {
+      resolutionMode: resolution.resolutionMode,
+      mayInstall: resolution.mayInstall,
+      installer: resolution.installer,
+      tool: resolution.tool,
+    },
+    ...(resolution.dispatch ? { dispatch: resolution.dispatch } : {}),
     startedAt,
     finishedAt,
     status: processResult.exitCode === 0 && !processResult.spawnError ? "passed" : "failed",

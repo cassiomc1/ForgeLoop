@@ -118,10 +118,12 @@ Every verification command path is classified by resolution mode:
 | `LOCAL_EXECUTABLE` | `node scripts/test.js`, `python3 -m unittest`, `./bin/check` | No | No |
 | `LOCAL_PACKAGE_BINARY` | `./node_modules/.bin/tool`, `npm test`, `pnpm test`, `yarn test` | No | No |
 | `NON_INSTALLING_RESOLUTION` | `npx --no-install tool`, `npx --no tool` | No | No |
-| `INSTALL_CAPABLE_RESOLUTION` | `npx tool`, `pnpm dlx tool`, `yarn dlx tool`, `bunx tool`, `uvx tool`, `pipx run tool` | Yes | Yes (`E_INSTALLATION_AUTHORITY_REQUIRED`) |
+| `INSTALL_CAPABLE_RESOLUTION` | `npx tool`, `npm exec tool`, `npm x tool`, `pnpm dlx tool`, `yarn dlx tool`, `bunx tool`, `uvx tool`, `pipx run tool` | Yes | Yes (`E_INSTALLATION_AUTHORITY_REQUIRED`) |
 | `EXPLICIT_INSTALLATION` | `npm install tool`, `pnpm add tool`, `pip install tool`, `cargo install tool` | Yes | Yes (`E_INSTALLATION_AUTHORITY_REQUIRED`) |
 
 **Validator-enforced rule**: Any verification command executed via an installation-capable or explicit-installation resolution mode without a valid canonical installation authority grant is rejected by `record-check`, `audit`, and `complete` with error code `E_INSTALLATION_AUTHORITY_REQUIRED`, `E_AUTHORITY_INVALID`, `E_AUTHORITY_SCOPE_MISMATCH`, or `E_AUTHORITY_UNTRUSTED_SOURCE` and cannot contribute to `VALID` completion.
+
+Recognized command dispatchers (such as `npm test`, `npm start`, `npm stop`, `npm restart`, `npm run <script>`, `npm run-script <script>`) are classified by their effective package resolution behavior across recognized lifecycle scripts (`pre<script>`, `<script>`, `post<script>`) before process launch. If any nested lifecycle script invokes an installation-capable command (such as `npx` or `npm exec`), the execution is elevated to `INSTALL_CAPABLE_RESOLUTION` and blocked before launch without authority.
 
 Use `forgeloop run-check --id <id> --requirement <requirement> -- <argv>` for
 observed command evidence. ForgeLoop preserves the exact argv vector, target

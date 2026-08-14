@@ -46,6 +46,14 @@
       },
       "additionalProperties": false
     },
+    "dispatch": {
+      "type": "object",
+      "properties": {
+        "kind": { "type": "string", "minLength": 1 },
+        "scriptName": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
     "startedAt": { "type": "string", "minLength": 1 },
     "finishedAt": { "type": "string", "minLength": 1 },
     "status": { "enum": ["passed", "failed"] },

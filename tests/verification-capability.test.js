@@ -7,6 +7,8 @@ import { test } from "node:test";
 import {
   classifyVerificationCapability,
   classifyCommandResolution,
+  resolveExecutionResolution,
+  getNpmScriptName,
   validateVerificationAuthority,
   E_VERIFICATION_TOOL_UNAVAILABLE,
   E_INSTALLATION_AUTHORITY_REQUIRED,
@@ -122,6 +124,86 @@ test("classifyCommandResolution classifies resolution modes deterministically", 
     tool: "flake8",
   });
 
+  // npm exec and npm x variants (P0)
+  assert.deepEqual(classifyCommandResolution(["npm", "exec", "--", "@liustack/modlens", "image.png"]), {
+    resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+    mayInstall: true,
+    installer: "npm exec",
+    tool: "@liustack/modlens",
+  });
+  assert.deepEqual(classifyCommandResolution("npm exec package"), {
+    resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+    mayInstall: true,
+    installer: "npm exec",
+    tool: "package",
+  });
+  assert.deepEqual(classifyCommandResolution("npm exec -- package"), {
+    resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+    mayInstall: true,
+    installer: "npm exec",
+    tool: "package",
+  });
+  assert.deepEqual(classifyCommandResolution("npm exec --package=@liustack/modlens -- modlens"), {
+    resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+    mayInstall: true,
+    installer: "npm exec",
+    tool: "@liustack/modlens",
+  });
+  assert.deepEqual(classifyCommandResolution("npm exec --package @liustack/modlens -- modlens"), {
+    resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+    mayInstall: true,
+    installer: "npm exec",
+    tool: "@liustack/modlens",
+  });
+  assert.deepEqual(classifyCommandResolution("npm exec -p @liustack/modlens -- modlens"), {
+    resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+    mayInstall: true,
+    installer: "npm exec",
+    tool: "@liustack/modlens",
+  });
+  assert.deepEqual(classifyCommandResolution("npm x @liustack/modlens"), {
+    resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+    mayInstall: true,
+    installer: "npm x",
+    tool: "@liustack/modlens",
+  });
+  assert.deepEqual(classifyCommandResolution("npm exec --yes @liustack/modlens"), {
+    resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+    mayInstall: true,
+    installer: "npm exec",
+    tool: "@liustack/modlens",
+  });
+  assert.deepEqual(classifyCommandResolution("npm exec --no @liustack/modlens"), {
+    resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+    mayInstall: true,
+    installer: "npm exec",
+    tool: "@liustack/modlens",
+  });
+  assert.deepEqual(classifyCommandResolution(["npm.cmd", "exec", "@liustack/modlens"]), {
+    resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+    mayInstall: true,
+    installer: "npm exec",
+    tool: "@liustack/modlens",
+  });
+  assert.deepEqual(classifyCommandResolution(["npm.cmd", "x", "@liustack/modlens"]), {
+    resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+    mayInstall: true,
+    installer: "npm x",
+    tool: "@liustack/modlens",
+  });
+  assert.deepEqual(classifyCommandResolution(["npx.cmd", "@liustack/modlens"]), {
+    resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+    mayInstall: true,
+    installer: "npx",
+    tool: "@liustack/modlens",
+  });
+  assert.deepEqual(classifyCommandResolution("npm exec"), {
+    resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+    mayInstall: true,
+    installer: "npm exec",
+    tool: null,
+  });
+
   // Non-installing resolution
   assert.deepEqual(classifyCommandResolution("npx --no-install @liustack/modlens"), {
     resolutionMode: "NON_INSTALLING_RESOLUTION",
@@ -196,7 +278,7 @@ test("classifyCommandResolution preserves string behavior while accepting argv",
   );
 });
 
-test("classifyCommandResolution inspects explicit Windows cmd wrappers", () => {
+test("classifyCommandResolution inspects explicit Windows cmd wrappers and shell strings", () => {
   assert.deepEqual(classifyCommandResolution([
     "cmd.exe",
     "/d",
@@ -208,6 +290,139 @@ test("classifyCommandResolution inspects explicit Windows cmd wrappers", () => {
     installer: "npx",
     tool: "@liustack/modlens",
   });
+  assert.deepEqual(classifyCommandResolution(["sh", "-lc", "npx package"]), {
+    resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+    mayInstall: true,
+    installer: "npx",
+    tool: "package",
+  });
+  assert.deepEqual(classifyCommandResolution(["bash", "-c", "npm exec -- package"]), {
+    resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+    mayInstall: true,
+    installer: "npm exec",
+    tool: "package",
+  });
+  assert.deepEqual(classifyCommandResolution(["cmd", "/c", "npm x package"]), {
+    resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+    mayInstall: true,
+    installer: "npm x",
+    tool: "package",
+  });
+});
+
+test("resolveExecutionResolution handles npm script lifecycle and nested dispatchers", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-npm-script-"));
+  try {
+    // 1. Safe script
+    await writeFile(path.join(target, "package.json"), JSON.stringify({
+      scripts: {
+        test: "node tests/run.js",
+      },
+    }), "utf8");
+
+    const safeResult = await resolveExecutionResolution({
+      argv: ["npm", "test"],
+      cwd: target,
+    });
+    assert.equal(safeResult.mayInstall, false);
+
+    // 2. Nested npx inside test
+    await writeFile(path.join(target, "package.json"), JSON.stringify({
+      scripts: {
+        test: "npx @liustack/modlens image.png",
+      },
+    }), "utf8");
+
+    const nestedNpxResult = await resolveExecutionResolution({
+      argv: ["npm", "test"],
+      cwd: target,
+    });
+    assert.equal(nestedNpxResult.mayInstall, true);
+    assert.equal(nestedNpxResult.resolutionMode, "INSTALL_CAPABLE_RESOLUTION");
+    assert.equal(nestedNpxResult.tool, "@liustack/modlens");
+    assert.deepEqual(nestedNpxResult.dispatch, {
+      kind: "npm-script",
+      scriptName: "test",
+    });
+
+    // 3. pretest install-capable elevates top-level
+    await writeFile(path.join(target, "package.json"), JSON.stringify({
+      scripts: {
+        pretest: "npx package-x",
+        test: "node tests.js",
+      },
+    }), "utf8");
+
+    const pretestResult = await resolveExecutionResolution({
+      argv: ["npm", "test"],
+      cwd: target,
+    });
+    assert.equal(pretestResult.mayInstall, true);
+    assert.equal(pretestResult.tool, "package-x");
+    assert.deepEqual(pretestResult.dispatch, {
+      kind: "npm-script",
+      scriptName: "pretest",
+    });
+
+    // 4. posttest install-capable elevates top-level
+    await writeFile(path.join(target, "package.json"), JSON.stringify({
+      scripts: {
+        test: "node tests.js",
+        posttest: "npm exec -- package-y",
+      },
+    }), "utf8");
+
+    const posttestResult = await resolveExecutionResolution({
+      argv: ["npm", "test"],
+      cwd: target,
+    });
+    assert.equal(posttestResult.mayInstall, true);
+    assert.equal(posttestResult.tool, "package-y");
+    assert.deepEqual(posttestResult.dispatch, {
+      kind: "npm-script",
+      scriptName: "posttest",
+    });
+
+    // 5. npm run / npm run-script
+    await writeFile(path.join(target, "package.json"), JSON.stringify({
+      scripts: {
+        verify: "pnpm dlx package-z",
+      },
+    }), "utf8");
+
+    const runVerifyResult = await resolveExecutionResolution({
+      argv: ["npm", "run", "verify"],
+      cwd: target,
+    });
+    assert.equal(runVerifyResult.mayInstall, true);
+    assert.equal(runVerifyResult.tool, "package-z");
+    assert.deepEqual(runVerifyResult.dispatch, {
+      kind: "npm-script",
+      scriptName: "verify",
+    });
+
+    const runScriptVerifyResult = await resolveExecutionResolution({
+      argv: ["npm", "run-script", "verify"],
+      cwd: target,
+    });
+    assert.equal(runScriptVerifyResult.mayInstall, true);
+    assert.equal(runScriptVerifyResult.tool, "package-z");
+
+    // 6. Missing package.json or missing script does not crash
+    const missingPkgResult = await resolveExecutionResolution({
+      argv: ["npm", "test"],
+      cwd: path.join(target, "nonexistent"),
+    });
+    assert.equal(missingPkgResult.mayInstall, false);
+
+    const missingScriptResult = await resolveExecutionResolution({
+      argv: ["npm", "run", "missing-script"],
+      cwd: target,
+    });
+    assert.equal(missingScriptResult.mayInstall, false);
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
 });
 
 test("observed command checks require ForgeLoop execution provenance", () => {

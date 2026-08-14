@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { access, mkdtemp, rm } from "node:fs/promises";
+import { access, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -85,6 +85,92 @@ test("install-capable commands are blocked before process launch without authori
     await assert.rejects(
       () => access(path.join(target, executionArtifactPath("exec-blocked"))),
       (error) => error.code === "ENOENT",
+    );
+  });
+});
+
+test("npm exec and npm x without authority are blocked before process launch", async () => {
+  await withTarget(async (target) => {
+    await assert.rejects(
+      () => runCommandExecution({
+        target,
+        packageRoot,
+        taskId: "task-1",
+        checkId: "visual",
+        requirement: "visual-verification",
+        verificationCycle: 1,
+        argv: ["npm", "exec", "--", "@liustack/modlens", "image.png"],
+      }),
+      (error) => error.code === E_INSTALLATION_AUTHORITY_REQUIRED,
+    );
+    await assert.rejects(
+      () => runCommandExecution({
+        target,
+        packageRoot,
+        taskId: "task-1",
+        checkId: "visual",
+        requirement: "visual-verification",
+        verificationCycle: 1,
+        argv: ["npm", "x", "@liustack/modlens"],
+      }),
+      (error) => error.code === E_INSTALLATION_AUTHORITY_REQUIRED,
+    );
+  });
+});
+
+test("positive authorized npm exec proceeds when host authority matches", async () => {
+  await withTarget(async (target) => {
+    const validAuthority = {
+      schemaVersion: 1,
+      protocolVersion: 1,
+      authorityId: "auth-modlens",
+      taskId: "task-1",
+      type: "SOFTWARE_INSTALLATION",
+      status: "AUTHORIZED",
+      scope: { tool: "@liustack/modlens" },
+      source: "operator",
+    };
+
+    const result = await runCommandExecution({
+      target,
+      packageRoot,
+      taskId: "task-1",
+      checkId: "visual",
+      requirement: "visual-verification",
+      verificationCycle: 1,
+      argv: [process.execPath, "-e", "process.exit(0)"],
+      details: {
+        installationAuthorityRef: "auth-modlens",
+      },
+      authorityContext: {
+        trustMode: "HOST_ATTESTED",
+        authorities: { "auth-modlens": validAuthority },
+      },
+    });
+
+    assert.equal(result.execution.status, "passed");
+  });
+});
+
+test("nested install-capable npm script without authority is blocked before process launch", async () => {
+  await withTarget(async (target) => {
+    await writeFile(path.join(target, "package.json"), JSON.stringify({
+      scripts: {
+        test: "npx @liustack/modlens image.png",
+      },
+    }), "utf8");
+
+    await assert.rejects(
+      () => runCommandExecution({
+        target,
+        packageRoot,
+        taskId: "task-1",
+        checkId: "tests",
+        requirement: "tests",
+        verificationCycle: 1,
+        argv: ["npm", "test"],
+      }),
+      (error) => error.code === E_INSTALLATION_AUTHORITY_REQUIRED,
     );
   });
 });

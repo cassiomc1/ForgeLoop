@@ -1,3 +1,4 @@
+import fs from "node:fs/promises";
 import {
   E_AUTHORITY_UNTRUSTED_SOURCE,
   resolveTrustedAuthority,
@@ -149,6 +150,36 @@ function extractToolFromArgs(args) {
       return arg.split("=")[1];
     }
     if (!arg.startsWith("-")) {
+      return arg;
+    }
+  }
+  return null;
+}
+
+function extractNpmExecTool(args) {
+  if (!Array.isArray(args) || args.length === 0) return null;
+  for (let idx = 0; idx < args.length; idx++) {
+    const arg = args[idx];
+    if (arg === "-p" || arg === "--package") {
+      if (args[idx + 1] && !args[idx + 1].startsWith("-")) {
+        return args[idx + 1];
+      }
+    }
+    if (arg.startsWith("--package=")) {
+      return arg.slice("--package=".length);
+    }
+  }
+  let afterDoubleDash = false;
+  for (let idx = 0; idx < args.length; idx++) {
+    const arg = args[idx];
+    if (arg === "--") {
+      afterDoubleDash = true;
+      if (args[idx + 1] && !args[idx + 1].startsWith("-")) {
+        return args[idx + 1];
+      }
+      continue;
+    }
+    if (!afterDoubleDash && !arg.startsWith("-")) {
       return arg;
     }
   }
@@ -309,6 +340,15 @@ function classifySingleCommand(commandInput) {
 
   // Check npm
   if (binary === "npm") {
+    if (["exec", "x"].includes(rest[0])) {
+      const execArgs = rest.slice(1);
+      return {
+        resolutionMode: "INSTALL_CAPABLE_RESOLUTION",
+        mayInstall: true,
+        installer: `npm ${rest[0]}`,
+        tool: extractNpmExecTool(execArgs),
+      };
+    }
     if (["install", "i", "add"].includes(rest[0])) {
       return {
         resolutionMode: "EXPLICIT_INSTALLATION",
@@ -401,6 +441,110 @@ export function classifyCommandResolution(commandInput) {
   }
 
   return classifySingleCommand(subcommands[0] || commandInput);
+}
+
+function unwrapCommandArgv(argv) {
+  if (!Array.isArray(argv) || argv.length === 0) return null;
+  let i = 0;
+  while (i < argv.length && /^[A-Za-z_][A-Za-z0-9_]*=/.test(argv[i])) {
+    i++;
+  }
+  if (i >= argv.length) return null;
+  const binary = normalizeExecutableName(argv[i]);
+  if (["sh", "bash", "zsh", "dash", "ksh"].includes(binary)) {
+    const shellFlagIndex = argv.findIndex((item, index) => index > i && /^-.*c/.test(item));
+    const shellCommand = shellFlagIndex >= 0 ? argv[shellFlagIndex + 1] : null;
+    if (shellCommand) return tokenizeCommand(shellCommand);
+  }
+  if (binary === "cmd") {
+    const shellFlagIndex = argv.findIndex((item, index) => index > i && /^\/c$/iu.test(item));
+    const shellCommand = shellFlagIndex >= 0 ? argv.slice(shellFlagIndex + 1).join(" ") : null;
+    if (shellCommand) return tokenizeCommand(shellCommand);
+  }
+  if (binary === "call") {
+    return argv.slice(i + 1);
+  }
+  return argv.slice(i);
+}
+
+export function getNpmScriptName(argv) {
+  const tokens = unwrapCommandArgv(Array.isArray(argv) ? argv : tokenizeCommand(argv));
+  if (!tokens || tokens.length < 2) return null;
+  const binary = normalizeExecutableName(tokens[0]);
+  if (binary !== "npm") return null;
+
+  const rest = tokens.slice(1);
+  const sub = rest[0]?.toLowerCase();
+  if (sub === "test" || sub === "t" || sub === "tst") return "test";
+  if (sub === "start" || sub === "stop" || sub === "restart") return sub;
+  if (sub === "run" || sub === "run-script") {
+    let afterDoubleDash = false;
+    for (let idx = 1; idx < rest.length; idx++) {
+      const arg = rest[idx];
+      if (arg === "--") {
+        afterDoubleDash = true;
+        if (rest[idx + 1] && !rest[idx + 1].startsWith("-")) {
+          return rest[idx + 1];
+        }
+        continue;
+      }
+      if (!afterDoubleDash && !arg.startsWith("-")) {
+        return arg;
+      }
+    }
+  }
+  return null;
+}
+
+async function readPackageJsonIfPresent(cwd) {
+  if (!cwd || typeof cwd !== "string") return null;
+  try {
+    const pkgPath = path.resolve(cwd, "package.json");
+    const raw = await fs.readFile(pkgPath, "utf8");
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+export async function resolveExecutionResolution({ argv, cwd } = {}) {
+  const direct = classifyCommandResolution(argv);
+  if (direct.mayInstall) return direct;
+
+  const scriptName = getNpmScriptName(argv);
+  if (!scriptName) return direct;
+
+  const packageJson = await readPackageJsonIfPresent(cwd);
+  if (!packageJson || typeof packageJson.scripts !== "object" || packageJson.scripts === null) {
+    return direct;
+  }
+
+  const lifecycleCandidates = [
+    `pre${scriptName}`,
+    scriptName,
+    `post${scriptName}`,
+  ];
+
+  for (const candidate of lifecycleCandidates) {
+    const scriptBody = packageJson.scripts[candidate];
+    if (typeof scriptBody === "string" && scriptBody.trim() !== "") {
+      const nested = classifyCommandResolution(scriptBody);
+      if (nested.mayInstall) {
+        return {
+          resolutionMode: nested.resolutionMode,
+          mayInstall: true,
+          installer: nested.installer ?? "npm-script",
+          tool: nested.tool,
+          dispatch: {
+            kind: "npm-script",
+            scriptName: candidate,
+          },
+        };
+      }
+    }
+  }
+
+  return direct;
 }
 
 export function getInstallationAuthorityRef(check) {
