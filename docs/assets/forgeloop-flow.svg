@@ -501,99 +501,81 @@
   <path d="M 1405 598 L 1405 612" stroke="#73daca" stroke-width="1.5" marker-end="url(#arrow-teal)" />
 
   
-  <g transform="translate(40, 755)">
-    <rect x="0" y="0" width="690" height="175" rx="10" fill="#16161e" stroke="#292e42" stroke-width="1" />
+  <!-- Panel: Freshness & Cryptographic Provenance -->
+  <g filter="url(#glow-panel)">
+    <rect x="40" y="755" width="690" height="175" rx="10" fill="#16161e" stroke="#292e42" stroke-width="1" />
     
-    <!-- Header -->
-    <path d="M 0 10 A 10 10 0 0 1 10 0 L 680 0 A 10 10 0 0 1 690 10 L 690 36 L 0 36 Z" fill="#13141c" />
-    <line x1="0" y1="36" x2="690" y2="36" stroke="#292e42" stroke-width="1" />
-    <circle cx="18" cy="18" r="4" fill="#7aa2f7" />
-    <text x="30" y="22" fill="#c0caf5" font-size="11.5" font-weight="700" letter-spacing="1">FRESHNESS &amp; CRYPTOGRAPHIC FINGERPRINTING</text>
+    <!-- Header Bar -->
+    <path d="M 40 765 A 10 10 0 0 1 50 755 L 720 755 A 10 10 0 0 1 730 765 L 730 791 L 40 791 Z" fill="#13141c" />
+    <line x1="40" y1="791" x2="730" y2="791" stroke="#292e42" stroke-width="1" />
     
-    <text x="18" y="56" fill="#a9b1d6" font-size="10.5">Deterministic cross-artifact hashing prevents silent drift and stale state execution</text>
+    <circle cx="58" cy="773" r="4" fill="#7aa2f7" />
+    <text x="70" y="777" fill="#c0caf5" font-size="11.5" font-weight="700" letter-spacing="1">FRESHNESS &amp; CRYPTOGRAPHIC FINGERPRINTING</text>
+    
+    <text x="58" y="811" fill="#a9b1d6" font-size="10.5">Deterministic cross-artifact hashing prevents silent drift and stale state execution</text>
 
-    <!-- Fingerprint Badges Grid -->
-    <g transform="translate(18, 68)">
-      <!-- Contract Fingerprint -->
-      <g transform="translate(0, 0)">
-        <rect x="0" y="0" width="208" height="46" rx="6" fill="#1a1b26" stroke="#292e42" stroke-width="1" />
-        <rect x="0" y="0" width="3" height="46" rx="1.5" fill="#7aa2f7" />
-        <text x="12" y="18" fill="#7aa2f7" font-size="10" font-weight="700">Contract Fingerprint</text>
-        <text x="12" y="34" fill="#565f89" font-size="9" font-family="monospace">SHA-256 (key-order invariant)</text>
-      </g>
+    <!-- Card 1: Contract Fingerprint -->
+    <rect x="58" y="823" width="210" height="46" rx="6" fill="#1a1b26" stroke="#292e42" stroke-width="1" />
+    <rect x="58" y="823" width="3" height="46" rx="1.5" fill="#7aa2f7" />
+    <text x="70" y="841" fill="#7aa2f7" font-size="10" font-weight="700">Contract Fingerprint</text>
+    <text x="70" y="857" fill="#565f89" font-size="9" font-family="monospace">SHA-256 (key-order invariant)</text>
 
-      <!-- Repository Fingerprint -->
-      <g transform="translate(222, 0)">
-        <rect x="0" y="0" width="208" height="46" rx="6" fill="#1a1b26" stroke="#292e42" stroke-width="1" />
-        <rect x="0" y="0" width="3" height="46" rx="1.5" fill="#bb9af7" />
-        <text x="12" y="18" fill="#bb9af7" font-size="10" font-weight="700">Repository Fingerprint</text>
-        <text x="12" y="34" fill="#565f89" font-size="9" font-family="monospace">Git branch + HEAD commit SHA</text>
-      </g>
+    <!-- Card 2: Repository Fingerprint -->
+    <rect x="280" y="823" width="210" height="46" rx="6" fill="#1a1b26" stroke="#292e42" stroke-width="1" />
+    <rect x="280" y="823" width="3" height="46" rx="1.5" fill="#bb9af7" />
+    <text x="292" y="841" fill="#bb9af7" font-size="10" font-weight="700">Repository Fingerprint</text>
+    <text x="292" y="857" fill="#565f89" font-size="9" font-family="monospace">Git branch + HEAD commit SHA</text>
 
-      <!-- Event Ledger Hash Chain -->
-      <g transform="translate(444, 0)">
-        <rect x="0" y="0" width="210" height="46" rx="6" fill="#1a1b26" stroke="#292e42" stroke-width="1" />
-        <rect x="0" y="0" width="3" height="46" rx="1.5" fill="#73daca" />
-        <text x="12" y="18" fill="#73daca" font-size="10" font-weight="700">Ledger Hash Chain</text>
-        <text x="12" y="34" fill="#565f89" font-size="9" font-family="monospace">Append-only SHA-256 chain</text>
-      </g>
-    </g>
+    <!-- Card 3: Ledger Hash Chain -->
+    <rect x="502" y="823" width="210" height="46" rx="6" fill="#1a1b26" stroke="#292e42" stroke-width="1" />
+    <rect x="502" y="823" width="3" height="46" rx="1.5" fill="#73daca" />
+    <text x="514" y="841" fill="#73daca" font-size="10" font-weight="700">Ledger Hash Chain</text>
+    <text x="514" y="857" fill="#565f89" font-size="9" font-family="monospace">Append-only SHA-256 chain</text>
 
-    <!-- Bottom summary line -->
-    <g transform="translate(18, 126)">
-      <rect x="0" y="0" width="654" height="34" rx="6" fill="#121826" stroke="#7aa2f7" stroke-width="0.75" />
-      <text x="14" y="21" fill="#a9b1d6" font-size="10">Revalidation Trigger: Changed Contract · Changed Git HEAD · Missing Required Artifacts → <tspan fill="#e0af68" font-weight="700">REVALIDATION_REQUIRED</tspan></text>
-    </g>
+    <!-- Bottom summary banner -->
+    <rect x="58" y="881" width="654" height="34" rx="6" fill="#121826" stroke="#7aa2f7" stroke-width="0.75" />
+    <text x="72" y="902" fill="#a9b1d6" font-size="10">Revalidation Trigger: Changed Contract · Changed Git HEAD · Missing Required Artifacts → <tspan fill="#e0af68" font-weight="700">REVALIDATION_REQUIRED</tspan></text>
   </g>
 
   
-  <g transform="translate(750, 755)">
-    <rect x="0" y="0" width="810" height="175" rx="10" fill="#16161e" stroke="#292e42" stroke-width="1" />
+  <!-- Panel: Delegation & Compatible Harness Handoff -->
+  <g filter="url(#glow-panel)">
+    <rect x="750" y="755" width="810" height="175" rx="10" fill="#16161e" stroke="#292e42" stroke-width="1" />
     
-    <!-- Header -->
-    <path d="M 0 10 A 10 10 0 0 1 10 0 L 800 0 A 10 10 0 0 1 810 10 L 810 36 L 0 36 Z" fill="#13141c" />
-    <line x1="0" y1="36" x2="810" y2="36" stroke="#292e42" stroke-width="1" />
-    <circle cx="18" cy="18" r="4" fill="#73daca" />
-    <text x="30" y="22" fill="#c0caf5" font-size="11.5" font-weight="700" letter-spacing="1">DELEGATION &amp; COMPATIBLE HARNESS HANDOFF</text>
+    <!-- Header Bar -->
+    <path d="M 750 765 A 10 10 0 0 1 760 755 L 1550 755 A 10 10 0 0 1 1560 765 L 1560 791 L 750 791 Z" fill="#13141c" />
+    <line x1="750" y1="791" x2="1560" y2="791" stroke="#292e42" stroke-width="1" />
+    
+    <circle cx="768" cy="773" r="4" fill="#73daca" />
+    <text x="780" y="777" fill="#c0caf5" font-size="11.5" font-weight="700" letter-spacing="1">DELEGATION &amp; COMPATIBLE HARNESS HANDOFF</text>
     
     <!-- Key distinction badge -->
-    <rect x="490" y="8" width="310" height="20" rx="10" fill="#132326" stroke="#73daca" stroke-width="0.75" />
-    <text x="645" y="22" fill="#73daca" font-size="9.5" font-weight="600" text-anchor="middle">ForgeLoop is a protocol, not an agent runtime</text>
+    <rect x="1240" y="763" width="310" height="20" rx="10" fill="#132326" stroke="#73daca" stroke-width="0.75" />
+    <text x="1395" y="777" fill="#73daca" font-size="9.5" font-weight="600" text-anchor="middle">ForgeLoop is a protocol, not an agent runtime</text>
 
-    <text x="18" y="56" fill="#a9b1d6" font-size="10.5">Structured multi-agent delegation bundles with explicit scope, required artifacts &amp; contract assumptions</text>
+    <text x="768" y="811" fill="#a9b1d6" font-size="10.5">Structured multi-agent delegation bundles with explicit scope, required artifacts &amp; contract assumptions</text>
 
-    <!-- Delegation Artifacts Grid -->
-    <g transform="translate(18, 68)">
-      <!-- Task Brief -->
-      <g transform="translate(0, 0)">
-        <rect x="0" y="0" width="248" height="46" rx="6" fill="#1a1b26" stroke="#292e42" stroke-width="1" />
-        <rect x="0" y="0" width="3" height="46" rx="1.5" fill="#7dcfff" />
-        <text x="12" y="18" fill="#7dcfff" font-size="10" font-weight="700">Task Brief Schema</text>
-        <text x="12" y="34" fill="#565f89" font-size="9" font-family="monospace">task-brief.schema.json</text>
-      </g>
+    <!-- Card 1: Task Brief -->
+    <rect x="768" y="823" width="250" height="46" rx="6" fill="#1a1b26" stroke="#292e42" stroke-width="1" />
+    <rect x="768" y="823" width="3" height="46" rx="1.5" fill="#7dcfff" />
+    <text x="780" y="841" fill="#7dcfff" font-size="10" font-weight="700">Task Brief Schema</text>
+    <text x="780" y="857" fill="#565f89" font-size="9" font-family="monospace">task-brief.schema.json</text>
 
-      <!-- Task Bundle -->
-      <g transform="translate(262, 0)">
-        <rect x="0" y="0" width="248" height="46" rx="6" fill="#1a1b26" stroke="#292e42" stroke-width="1" />
-        <rect x="0" y="0" width="3" height="46" rx="1.5" fill="#73daca" />
-        <text x="12" y="18" fill="#73daca" font-size="10" font-weight="700">Task Bundle Manifest</text>
-        <text x="12" y="34" fill="#565f89" font-size="9" font-family="monospace">task-bundle.schema.json</text>
-      </g>
+    <!-- Card 2: Task Bundle -->
+    <rect x="1030" y="823" width="250" height="46" rx="6" fill="#1a1b26" stroke="#292e42" stroke-width="1" />
+    <rect x="1030" y="823" width="3" height="46" rx="1.5" fill="#73daca" />
+    <text x="1042" y="841" fill="#73daca" font-size="10" font-weight="700">Task Bundle Manifest</text>
+    <text x="1042" y="857" fill="#565f89" font-size="9" font-family="monospace">task-bundle.schema.json</text>
 
-      <!-- Delegated Result -->
-      <g transform="translate(524, 0)">
-        <rect x="0" y="0" width="250" height="46" rx="6" fill="#1a1b26" stroke="#292e42" stroke-width="1" />
-        <rect x="0" y="0" width="3" height="46" rx="1.5" fill="#bb9af7" />
-        <text x="12" y="18" fill="#bb9af7" font-size="10" font-weight="700">Delegated Result Receipt</text>
-        <text x="12" y="34" fill="#565f89" font-size="9" font-family="monospace">delegated-result.schema.json</text>
-      </g>
-    </g>
+    <!-- Card 3: Delegated Result -->
+    <rect x="1292" y="823" width="250" height="46" rx="6" fill="#1a1b26" stroke="#292e42" stroke-width="1" />
+    <rect x="1292" y="823" width="3" height="46" rx="1.5" fill="#bb9af7" />
+    <text x="1304" y="841" fill="#bb9af7" font-size="10" font-weight="700">Delegated Result Receipt</text>
+    <text x="1304" y="857" fill="#565f89" font-size="9" font-family="monospace">delegated-result.schema.json</text>
 
     <!-- Compatible Agent Ecosystem Footer -->
-    <g transform="translate(18, 126)">
-      <rect x="0" y="0" width="774" height="34" rx="6" fill="#161c28" stroke="#7dcfff" stroke-width="0.75" />
-      <text x="14" y="21" fill="#a9b1d6" font-size="10">Supported Harnesses: <tspan fill="#7dcfff" font-weight="600">Codex · Claude Code · Cursor · Copilot · Antigravity · OpenCode · Hermes · Pi · Command Code · Freebuff</tspan></text>
-    </g>
+    <rect x="768" y="881" width="774" height="34" rx="6" fill="#161c28" stroke="#7dcfff" stroke-width="0.75" />
+    <text x="782" y="902" fill="#a9b1d6" font-size="10">Supported Harnesses: <tspan fill="#7dcfff" font-weight="600">Codex · Claude Code · Cursor · Copilot · Antigravity · OpenCode · Hermes · Pi · Command Code · Freebuff</tspan></text>
   </g>
 
 </svg>
