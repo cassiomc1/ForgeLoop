@@ -221,7 +221,7 @@ const NPM_SCRIPT_COMMANDS = new Set([
 ]);
 
 const NPM_KNOWN_NON_INSTALLING_COMMANDS = new Set([
-  "version", "v", "view", "info", "show", "list", "ls", "outdated", "config", "help", "help-search", "doctor", "ping", "root", "prefix", "bin", "whoami",
+  "v", "view", "info", "show", "list", "ls", "outdated", "config", "help", "help-search", "doctor", "ping", "root", "prefix", "bin", "whoami",
 ]);
 
 const NPM_KNOWN_BOOLEAN_OPTIONS = new Set([
