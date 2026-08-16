@@ -17,7 +17,9 @@ test("quality workflows install the lockfile and enforce the local toolchain", a
   assert.match(docs, /npm run dependency:policy/);
   assert.match(docs, /npm run lint/);
   assert.match(docs, /npm run coverage/);
-  assert.match(docs, /git diff --exit-code -- docs\/assets\/forgeloop-flow\.svg/);
+  assert.match(docs, /npm run docs:flow -- --output/);
+  assert.match(docs, /npm run docs:check/);
+  assert.match(docs, /!\*\*\/node_modules\/\*\*/);
   assert.match(audit, /npm ci --ignore-scripts/);
   assert.doesNotMatch(audit, /npx @cassiomc1\/forgeloop/);
   assert.match(publish, /npm ci --ignore-scripts/);

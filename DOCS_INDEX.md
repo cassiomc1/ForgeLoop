@@ -51,8 +51,9 @@ uses trusted OIDC publishing and is not implied by local verification.
 
 - Keep lifecycle prose, the Mermaid source, and the text-only README fallback
   synchronized.
-- Keep generated `docs/assets/forgeloop-flow.svg` reproducible from the Mermaid
-  source with `npm run docs:flow`.
+- Keep generated `docs/assets/forgeloop-flow.svg` synchronized with the Mermaid
+  source by running `npm run docs:flow` and `npm run docs:check`. CI validates
+  the source fingerprint instead of comparing renderer-specific SVG geometry.
 - Preserve the distinction between implemented behavior, local evidence, and
   external publication or production state.
 - Run `npm run lint`, `npm run coverage`, `npm run pack:check`, and the Python

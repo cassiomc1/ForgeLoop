@@ -22,7 +22,7 @@ contratos históricos; isso é uma decisão documentada, não uma migração par
 | 4 | Refatorar dispatch do CLI | ✅ Implementado | `COMMANDS`, `COMMAND_HANDLERS` e `COMMAND_TABLE` em `src/cli.js`; `main()` despacha pela tabela |
 | 5 | Enxugar README e indexar documentação | ✅ Implementado | README de catálogo/quickstart, `DOCS_INDEX.md`, ownership explícito e limites do pacote atualizados |
 | 6 | Consolidar validadores Python | ✅ Implementado como decisão CI-only | `scripts/CI_VALIDATORS.md` registra escopo, comandos, motivo do congelamento e separação Node/Python |
-| 7 | Substituir desenho manual do fluxo | ✅ Implementado | `docs/forgeloop-flow.mmd` é a fonte canônica; `scripts/generate-readme-flow.mjs` chama Mermaid CLI; CI rejeita SVG divergente |
+| 7 | Substituir desenho manual do fluxo | ✅ Implementado | `docs/forgeloop-flow.mmd` é a fonte canônica; `scripts/generate-readme-flow.mjs` chama Mermaid CLI e grava fingerprint da fonte; CI valida o SVG sem exigir geometria idêntica entre sistemas |
 | 8 | Centralizar fixture/retry Windows | ✅ Implementado | `tests/helpers/rm-safe.js` é o único helper de remoção temporária; sem retries inline nos testes |
 | 9 | Refinar CI e portabilidade | ✅ Implementado | `npm ci`, política de dependências, matriz macOS/Linux/Windows, CodeQL, dependency review, release notes e auditoria sem `npx` implícito |
 
@@ -31,7 +31,9 @@ contratos históricos; isso é uma decisão documentada, não uma migração par
 - `dependencies`, `optionalDependencies` e `peerDependencies` permanecem
   vazios; apenas ESLint, c8 e Mermaid CLI são `devDependencies` aprovadas.
 - O Mermaid CLI é ferramenta de desenvolvimento e o SVG versionado é gerado
-  localmente e verificado por diff no CI.
+  localmente; `npm run docs:check` e o CI validam a fingerprint da fonte,
+  preservando a sincronização sem transformar diferenças de fonte/renderizador
+  entre macOS, Linux e Windows em falso positivo.
 - Os validadores Python não foram duplicados em Node: continuam CI-only para
   evitar alterar silenciosamente os contratos textuais históricos.
 - CodeQL, dependency review, release notes e publicação npm dependem do estado
@@ -47,7 +49,7 @@ npm run lint
 npm run coverage
 npm run dependency:policy
 npm run docs:flow
-git diff --exit-code -- docs/assets/forgeloop-flow.svg
+npm run docs:check
 npm run pack:check
 python3 -m unittest discover -s tests -v
 python3 scripts/validate_markdown.py --self-test

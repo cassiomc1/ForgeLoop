@@ -39,8 +39,10 @@ test("the Mermaid source is canonical and the renderer consumes it", async () =>
   assert.match(source, /PREFLIGHT_READY/);
   assert.match(renderer, /mermaid-cli|mmdc/);
   assert.match(renderer, /forgeloop-flow\.mmd/);
+  assert.match(renderer, /data-forgeloop-source-sha256/);
   assert.match(renderer, /mermaid-puppeteer-ci\.json/);
   assert.match(puppeteerConfig, /no-sandbox/);
   assert.match(rendered, /<svg[\s>]/);
+  assert.match(rendered, /data-forgeloop-source-sha256="[a-f0-9]{64}"/);
   assert.match(rendered, /PREFLIGHT_READY/);
 });

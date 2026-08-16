@@ -217,6 +217,7 @@ npm run coverage
 npm run pack:check
 npm run dependency:policy
 npm run docs:flow
+npm run docs:check
 ```
 
 ## Repository structure

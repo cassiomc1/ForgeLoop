@@ -17,6 +17,7 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         node-version: [20, 22, 24]
     timeout-minutes: 15
@@ -49,6 +50,14 @@ jobs:
 
       - name: Lint Markdown
         uses: DavidAnson/markdownlint-cli2-action@21c1be1b93ad9ed58fa840aacc3f279cde2a72ff # v24.2.0
+        with:
+          globs: |
+            **/*.{md,markdown}
+            !**/.worktrees/**
+            !**/.superpowers/**
+            !**/docs/superpowers/**
+            !**/node_modules/**
+            !**/coverage/**
 
       - name: Check links
         # Link checking is independent of the Node matrix; avoid three
@@ -79,6 +88,7 @@ jobs:
     name: CLI portability (${{ matrix.os }}, Node ${{ matrix.node-version }})
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         node-version: [20, 24]
@@ -121,7 +131,9 @@ jobs:
         run: npm ci
 
       - name: Render canonical Mermaid source
-        run: npm run docs:flow
+        run: npm run docs:flow -- --output "$RUNNER_TEMP/forgeloop-flow.svg"
 
-      - name: Reject stale committed SVG
-        run: git diff --exit-code -- docs/assets/forgeloop-flow.svg
+      - name: Verify generated and committed diagram fingerprints
+        run: |
+          npm run docs:check -- "$RUNNER_TEMP/forgeloop-flow.svg"
+          npm run docs:check
