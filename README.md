@@ -4,9 +4,9 @@
 
 ForgeLoop is a portable, vendor-neutral protocol for AI-assisted development
 and developer workflows. It turns an outcome into a contract, deterministic
-routing, resumable state, evidence-backed verification, recovery, and
-validator-backed completion. It is a protocol/support CLI, not an agent or LLM
-runtime.
+routing, resumable state, evidence-backed verification, recovery, cross-harness
+continuity, and validator-backed completion. It is a protocol/support CLI, not
+an agent or LLM runtime, not an agent framework, and not a graph orchestrator.
 
 The operational sources are indexed in [`DOCS_INDEX.md`](./DOCS_INDEX.md).
 [`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md) is the canonical process;
@@ -14,6 +14,19 @@ The operational sources are indexed in [`DOCS_INDEX.md`](./DOCS_INDEX.md).
 levels and discovery; [`PROJECT_PROFILE.md`](./PROJECT_PROFILE.md) stores
 durable project facts; and [`GUIDE_ROUTER.md`](./GUIDE_ROUTER.md) selects only
 relevant guides.
+
+## Where should I start?
+
+- **New to ForgeLoop** → [`docs/GETTING_STARTED.md`](./docs/GETTING_STARTED.md)
+- **Full protocol specification** → [`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md)
+- **Integrating an AI harness** → [`PROTOCOL_INTEGRATION.md`](./PROTOCOL_INTEGRATION.md)
+- **Continuing another harness's task** → [`docs/CROSS_HARNESS_CONTINUITY.md`](./docs/CROSS_HARNESS_CONTINUITY.md)
+- **CLI command reference** → [`docs/CLI_REFERENCE.md`](./docs/CLI_REFERENCE.md)
+- **Artifact & schema reference** → [`docs/ARTIFACT_REFERENCE.md`](./docs/ARTIFACT_REFERENCE.md)
+- **Operational recipes** → [`docs/RECIPES.md`](./docs/RECIPES.md)
+- **Troubleshooting & error codes** → [`docs/TROUBLESHOOTING.md`](./docs/TROUBLESHOOTING.md)
+- **System architecture & safety** → [`LOOP_SYSTEM_DESIGN.md`](./LOOP_SYSTEM_DESIGN.md) & [`THREAT_MODEL.md`](./THREAT_MODEL.md)
+- **Documentation index & ownership** → [`DOCS_INDEX.md`](./DOCS_INDEX.md)
 
 ## Catalog
 
@@ -102,6 +115,19 @@ missing, `forgeloop next` returns `RESOLVE_BLOCKER` rather than silently
 falling back to discovery. Delegation artifacts are required only when
 delegation is present in the execution history; ForgeLoop does not provide a
 graph runtime, agent runtime, or hidden prompt store.
+
+### Cross-harness continuity
+
+ForgeLoop preserves task state when switching between AI coding tools, IDEs, or terminals:
+
+```bash
+forgeloop status --json
+forgeloop continuity --json
+forgeloop reconcile-continuity --json
+forgeloop next --json
+```
+
+See [`docs/CROSS_HARNESS_CONTINUITY.md`](./docs/CROSS_HARNESS_CONTINUITY.md) for full handoff and recovery procedures.
 
 ## Architecture flow
 

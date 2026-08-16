@@ -1,0 +1,180 @@
+# ForgeLoop Operational Recipes
+
+Concise, copy-paste friendly recipes for common ForgeLoop tasks.
+
+---
+
+## Recipe Index
+
+1. [Start a New Task](#recipe-1--start-a-new-task)
+2. [Resume an Active Task in a New Session](#recipe-2--resume-an-active-task-in-a-new-session)
+3. [Switch to Another AI Harness or IDE](#recipe-3--switch-to-another-ai-harness-or-ide)
+4. [Recover and Continue After a Failed Test](#recipe-4--recover-and-continue-after-a-failed-test)
+5. [Record Manual Review Evidence](#recipe-5--record-manual-review-evidence)
+6. [Run Automated Checks with Attested Provenance](#recipe-6--run-automated-checks-with-attested-provenance)
+7. [Fix Stale State or Stale Receipt](#recipe-7--fix-stale-state-or-stale-receipt)
+8. [Inspect Why Completion is Blocked](#recipe-8--inspect-why-completion-is-blocked)
+9. [Export a Portable Task Bundle](#recipe-9--export-a-portable-task-bundle)
+10. [Final Verification Before Pull Request](#recipe-10--final-verification-before-pull-request)
+
+---
+
+### Recipe 1 — Start a New Task
+
+```bash
+# 1. Define .forgeloop/current-contract.json with your task intent
+# 2. Route engineering guides
+forgeloop route --work code --surface api --risk untrusted-input --json
+
+# 3. Verify preflight
+forgeloop preflight --json
+
+# 4. Activate lifecycle and plan
+forgeloop activate
+forgeloop advance --to PLANNED
+forgeloop advance --to EXECUTING
+```
+
+---
+
+### Recipe 2 — Resume an Active Task in a New Session
+
+```bash
+# 1. Discover task state
+forgeloop status --json
+
+# 2. Reconcile continuity notes
+forgeloop reconcile-continuity --json
+
+# 3. Check modified files
+forgeloop inspect --json
+
+# 4. Get next action from ForgeLoop
+forgeloop next --json
+```
+
+---
+
+### Recipe 3 — Switch to Another AI Harness or IDE
+
+In Harness A (before stopping):
+```bash
+forgeloop record-continuity \
+  --focus-id api-endpoints \
+  --focus-summary "Finished GET /users, working on POST /users" \
+  --remaining "tests:Add validation test for POST /users" \
+  --inspect-first src/api/users.js \
+  --resume-note "Endpoint logic is in src/api/users.js. Next step is validation."
+```
+
+In Harness B (after starting):
+```bash
+forgeloop status --json
+forgeloop continuity --json
+forgeloop reconcile-continuity --json
+forgeloop next --json
+```
+
+---
+
+### Recipe 4 — Recover and Continue After a Failed Test
+
+```bash
+# 1. Test failed in run-check
+forgeloop run-check --id unit-tests --requirement "All tests pass" -- npm test
+# Output: status = failed
+
+# 2. Query next action (directs to DIAGNOSE)
+forgeloop next --json
+
+# 3. Formulate diagnosis and apply code fix in checkout
+
+# 4. Re-run verification check
+forgeloop run-check --id unit-tests --requirement "All tests pass" -- npm test
+
+# 5. Check audit
+forgeloop audit --json
+```
+
+---
+
+### Recipe 5 — Record Manual Review Evidence
+
+```bash
+# For non-automated criteria (design review, UX inspection, security review)
+forgeloop record-check \
+  --id manual-contrast-review \
+  --requirement "WCAG AA contrast compliant" \
+  --status passed \
+  --kind manual-review \
+  --evidence-kind OBSERVED \
+  --result "Manually tested light and dark modes; text contrast >= 4.5:1."
+```
+
+---
+
+### Recipe 6 — Run Automated Checks with Attested Provenance
+
+```bash
+# Prepare receipt slots in VERIFYING phase
+forgeloop advance --to VERIFYING
+forgeloop prepare-completion --json
+
+# Run checks via forgeloop to record cryptographic execution provenance
+forgeloop run-check --id unit-tests --requirement "Unit tests" -- npm test
+forgeloop run-check --id linter --requirement "Linting" -- npm run lint
+forgeloop run-check --id typecheck --requirement "Typecheck" -- npm run typecheck
+```
+
+---
+
+### Recipe 7 — Fix Stale State or Stale Receipt
+
+```bash
+# If contract or files were modified out of band:
+forgeloop route --work <type> [options] --json
+forgeloop preflight --json
+forgeloop prepare-completion --json
+forgeloop validate-protocol --json
+```
+
+---
+
+### Recipe 8 — Inspect Why Completion is Blocked
+
+```bash
+# Run read-only audit to inspect unsatisfied coverage
+forgeloop audit --json
+
+# Inspect protocol next guidance
+forgeloop next --json
+```
+
+---
+
+### Recipe 9 — Export a Portable Task Bundle
+
+```bash
+# Bundles contract, route, state, receipt, executions, and ledger into a single archive
+forgeloop bundle --task task-001 --json
+```
+
+---
+
+### Recipe 10 — Final Verification Before Pull Request
+
+```bash
+# 1. Ensure all checks passed in VERIFYING
+# 2. Advance to REVIEWING
+forgeloop advance --to REVIEWING
+
+# 3. Run audit
+forgeloop audit --json
+
+# 4. Authorize completion
+forgeloop complete --json
+
+# 5. Confirm terminal state
+forgeloop next --json
+# Expected: "terminal": true, "nextAction": "NONE"
+```

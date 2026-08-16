@@ -47,6 +47,13 @@
     "DOCS_INDEX.md",
     "docs/forgeloop-flow.mmd",
     "docs/assets/forgeloop-flow.svg",
+    "docs/GETTING_STARTED.md",
+    "docs/CROSS_HARNESS_CONTINUITY.md",
+    "docs/CLI_REFERENCE.md",
+    "docs/ARTIFACT_REFERENCE.md",
+    "docs/TROUBLESHOOTING.md",
+    "docs/RECIPES.md",
+    "docs/DOCUMENTATION_GUIDE.md",
     "scripts/CI_VALIDATORS.md"
   ],
   "scripts": {

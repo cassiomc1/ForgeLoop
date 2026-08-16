@@ -1,5 +1,9 @@
 # Execution state and resume protocol
 
+> Looking for a practical resume tutorial? See [`docs/CROSS_HARNESS_CONTINUITY.md`](./docs/CROSS_HARNESS_CONTINUITY.md).
+> Looking for artifact field definitions? See [`docs/ARTIFACT_REFERENCE.md`](./docs/ARTIFACT_REFERENCE.md).
+> Looking for stale-state recovery? See [`docs/TROUBLESHOOTING.md`](./docs/TROUBLESHOOTING.md).
+
 Compatible agents may persist a handoff checkpoint at:
 
 ```text
@@ -121,3 +125,15 @@ required artifact fingerprints. `.forgeloop/continuity.json` is an optional
 companion containing only granular implementation-resume context. It is bound
 to the current task, contract fingerprint, work-state fingerprint, phase, and
 repository context and is always operational context rather than evidence.
+
+## Resume decision table
+
+| Work State | Continuity | Repository HEAD | Action |
+|---|---|---|---|
+| Valid / Fresh | Fresh | Matches | Continue execution directly via `forgeloop next` |
+| Valid / Fresh | Missing | Matches | Continue from work-state checkpoint (continuity is optional) |
+| Valid / Fresh | Stale | Matches / Drifted | Run `forgeloop reconcile-continuity --json`, inspect diff, continue |
+| Stale | Any | Changed | Run `forgeloop route` and `forgeloop preflight` to revalidate |
+| Invalid / Corrupted | Any | Any | Fail closed; inspect errors via `forgeloop doctor --json` |
+| Different Task ID | Present | Any | Do not merge contexts; clear or finish previous task first |
+

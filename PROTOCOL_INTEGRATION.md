@@ -309,3 +309,7 @@ A compatible environment reopening a resumable task SHOULD inspect the current
 work state, reconcile optional execution continuity, inspect the checkout, and
 continue the existing lifecycle instead of replacing the contract merely
 because the executor changed.
+
+For the practical handoff and multi-tool takeover sequence, see
+[`docs/CROSS_HARNESS_CONTINUITY.md`](./docs/CROSS_HARNESS_CONTINUITY.md).
+

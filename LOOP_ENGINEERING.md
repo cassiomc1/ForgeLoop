@@ -4,6 +4,30 @@
 > technical rules remain in the guides selected through
 > [`GUIDE_ROUTER.md`](./GUIDE_ROUTER.md).
 
+## Navigation
+
+- [Protocol Applicability](#protocol-applicability)
+- [Blocking vs Non-Blocking Decisions](#blocking-vs-non-blocking-decisions)
+- [External Workflow Compatibility](#external-workflow-compatibility)
+- [Serialized Protocol Preparation](#serialized-protocol-preparation)
+- [Completion Validation & Chronology](#completion-validation-and-chronology)
+- [Post-Implementation Closure](#post-implementation-closure)
+- [Independent Completion Dimensions](#independent-completion-dimensions)
+- [Failure Taxonomy & Invariants](#failure-taxonomy-retry-and-loop-invariants)
+- [Workflow State Semantics](#workflow-state-semantics)
+- [Execution Contract](#execution-contract)
+- [Project Discovery](#project-discovery)
+- [Capability Discovery & Authority](#capability-discovery-and-on-demand-extensions)
+- [Guide Selection](#guide-selection)
+- [Design & Implementation Gates](#design-and-implementation-gates)
+- [Proportional Planning](#proportional-planning)
+- [Execution Loop](#execution-loop)
+- [Verification & Regression](#verification-and-regression)
+- [Evidence-Driven Correction](#evidence-driven-correction)
+- [Precedence & Stop Conditions](#precedence)
+- [Final Delivery](#final-delivery)
+- [Cross-Harness Continuity](#cross-harness-execution-continuity)
+
 ## Protocol applicability
 
 ForgeLoop is a project-local engineering protocol.

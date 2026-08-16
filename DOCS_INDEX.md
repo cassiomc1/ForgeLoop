@@ -7,6 +7,13 @@ integration and guide context. Use this map before editing documentation.
 
 | Need | Canonical source | Boundary |
 | --- | --- | --- |
+| Getting started tutorial | [`docs/GETTING_STARTED.md`](./docs/GETTING_STARTED.md) | First-time walkthrough from init to completion |
+| Cross-harness continuity | [`docs/CROSS_HARNESS_CONTINUITY.md`](./docs/CROSS_HARNESS_CONTINUITY.md) | Operational handoff and multi-tool resumption |
+| CLI command reference | [`docs/CLI_REFERENCE.md`](./docs/CLI_REFERENCE.md) | Full syntax, options, and JSON examples for all commands |
+| Artifact and schema reference | [`docs/ARTIFACT_REFERENCE.md`](./docs/ARTIFACT_REFERENCE.md) | Purpose, mutability, and trust classifications of `.forgeloop/` |
+| Troubleshooting and recovery | [`docs/TROUBLESHOOTING.md`](./docs/TROUBLESHOOTING.md) | Symptom-first recovery and stable error code reference |
+| Operational recipes | [`docs/RECIPES.md`](./docs/RECIPES.md) | Short copy-paste recipes for daily workflows |
+| Documentation guide | [`docs/DOCUMENTATION_GUIDE.md`](./docs/DOCUMENTATION_GUIDE.md) | Rules and checklist for modifying documentation |
 | Lifecycle, gates, planning, verification, and recovery | [`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md) | Normative process for agents and developer workflows |
 | Capability levels, discovery, and degradation | [`PROTOCOL_INTEGRATION.md`](./PROTOCOL_INTEGRATION.md) | Vendor-neutral harness contract |
 | Durable project facts | [`PROJECT_PROFILE.md`](./PROJECT_PROFILE.md) | Target-specific facts only; no prompts or secrets |
@@ -16,6 +23,35 @@ integration and guide context. Use this map before editing documentation.
 | CLI/package behavior | [`src/`](./src/) and [`tests/`](./tests/) | Executable implementation and regression evidence |
 | Guide content | [`ENG/`](./ENG/) | Context-specific, English-only operational guides |
 | Diagram | [`docs/forgeloop-flow.mmd`](./docs/forgeloop-flow.mmd) | Canonical Mermaid source; SVG is generated output |
+
+## Audience map
+
+| I am a... | Start here |
+| --- | --- |
+| **First-time user or developer** | [`docs/GETTING_STARTED.md`](./docs/GETTING_STARTED.md) |
+| **AI coding agent / harness** | [`AGENTS.md`](./AGENTS.md) → [`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md) |
+| **Harness integrator** | [`PROTOCOL_INTEGRATION.md`](./PROTOCOL_INTEGRATION.md) |
+| **Resuming another tool / session** | [`docs/CROSS_HARNESS_CONTINUITY.md`](./docs/CROSS_HARNESS_CONTINUITY.md) |
+| **Looking up CLI commands** | [`docs/CLI_REFERENCE.md`](./docs/CLI_REFERENCE.md) |
+| **Inspecting `.forgeloop/` files** | [`docs/ARTIFACT_REFERENCE.md`](./docs/ARTIFACT_REFERENCE.md) |
+| **Fixing a broken or stale state** | [`docs/TROUBLESHOOTING.md`](./docs/TROUBLESHOOTING.md) |
+| **Looking for quick recipes** | [`docs/RECIPES.md`](./docs/RECIPES.md) |
+| **Documentation contributor** | [`docs/DOCUMENTATION_GUIDE.md`](./docs/DOCUMENTATION_GUIDE.md) |
+| **Protocol architect / maintainer** | [`LOOP_SYSTEM_DESIGN.md`](./LOOP_SYSTEM_DESIGN.md) + [`schemas/`](./schemas/) |
+| **Security auditor** | [`THREAT_MODEL.md`](./THREAT_MODEL.md) |
+| **Engineering guide author** | [`GUIDE_ROUTER.md`](./GUIDE_ROUTER.md) + [`ENG/`](./ENG/) |
+
+## Task map
+
+- **Start my first task**: [`docs/GETTING_STARTED.md`](./docs/GETTING_STARTED.md)
+- **Resume after switching tools**: [`docs/CROSS_HARNESS_CONTINUITY.md`](./docs/CROSS_HARNESS_CONTINUITY.md)
+- **Check CLI options and syntax**: [`docs/CLI_REFERENCE.md`](./docs/CLI_REFERENCE.md)
+- **Understand what `.forgeloop/` stores**: [`docs/ARTIFACT_REFERENCE.md`](./docs/ARTIFACT_REFERENCE.md)
+- **Fix a blocked, stale, or invalid state**: [`docs/TROUBLESHOOTING.md`](./docs/TROUBLESHOOTING.md)
+- **Find operational copy-paste commands**: [`docs/RECIPES.md`](./docs/RECIPES.md)
+- **Read the normative protocol specification**: [`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md)
+- **Integrate a new AI environment**: [`PROTOCOL_INTEGRATION.md`](./PROTOCOL_INTEGRATION.md)
+- **Edit documentation safely**: [`docs/DOCUMENTATION_GUIDE.md`](./docs/DOCUMENTATION_GUIDE.md)
 
 `README.md` is intentionally a catalog and quickstart. Do not copy the full
 process into adapters or README sections; link to the canonical source.
