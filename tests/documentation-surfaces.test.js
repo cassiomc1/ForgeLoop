@@ -31,6 +31,7 @@ test("README keeps the lifecycle contract and accessible flow fallback", async (
 test("the Mermaid source is canonical and the renderer consumes it", async () => {
   const source = await readFile("docs/forgeloop-flow.mmd", "utf8");
   const renderer = await readFile("scripts/generate-readme-flow.mjs", "utf8");
+  const puppeteerConfig = await readFile("scripts/mermaid-puppeteer-ci.json", "utf8");
   const rendered = await readFile("docs/assets/forgeloop-flow.svg", "utf8");
   assert.match(source, /flowchart/);
   assert.match(source, /subgraph/);
@@ -38,6 +39,8 @@ test("the Mermaid source is canonical and the renderer consumes it", async () =>
   assert.match(source, /PREFLIGHT_READY/);
   assert.match(renderer, /mermaid-cli|mmdc/);
   assert.match(renderer, /forgeloop-flow\.mmd/);
+  assert.match(renderer, /mermaid-puppeteer-ci\.json/);
+  assert.match(puppeteerConfig, /no-sandbox/);
   assert.match(rendered, /<svg[\s>]/);
   assert.match(rendered, /PREFLIGHT_READY/);
 });

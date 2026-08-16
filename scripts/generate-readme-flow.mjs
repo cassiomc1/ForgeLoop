@@ -11,6 +11,10 @@ const sourcePath = path.join(repositoryRoot, "docs", "forgeloop-flow.mmd");
 const outputPath = path.join(repositoryRoot, "docs", "assets", "forgeloop-flow.svg");
 const binaryName = process.platform === "win32" ? "mmdc.cmd" : "mmdc";
 const mermaidCli = path.join(repositoryRoot, "node_modules", ".bin", binaryName);
+const puppeteerCiConfig = path.join(repositoryRoot, "scripts", "mermaid-puppeteer-ci.json");
+const puppeteerArgs = process.platform === "linux" && process.env.CI === "true"
+  ? ["--puppeteerConfigFile", puppeteerCiConfig]
+  : [];
 
 if (!existsSync(sourcePath)) {
   console.error(`Refusing to render: missing Mermaid source ${sourcePath}`);
@@ -22,7 +26,7 @@ if (!existsSync(sourcePath)) {
   await mkdir(path.dirname(outputPath), { recursive: true });
   const result = spawnSync(
     mermaidCli,
-    ["-i", sourcePath, "-o", outputPath, "-t", "dark", "-b", "transparent"],
+    ["-i", sourcePath, "-o", outputPath, "-t", "dark", "-b", "transparent", ...puppeteerArgs],
     {
       cwd: repositoryRoot,
       encoding: "utf8",
