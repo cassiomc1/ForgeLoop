@@ -301,3 +301,11 @@ External planning, interview, or review workflows (such as `/grill-me`, `/plan`,
 review gates) may assist in clarifying requirements, but they must not silently
 redefine ForgeLoop `NON_BLOCKING` decisions as `BLOCKING` in autonomous mode.
 Consult `LOOP_ENGINEERING.md#external-workflow-interaction` for the complete boundary.
+
+## Harness and session continuity
+
+Harness identity is not task identity. Session identity is not task identity.
+A compatible environment reopening a resumable task SHOULD inspect the current
+work state, reconcile optional execution continuity, inspect the checkout, and
+continue the existing lifecycle instead of replacing the contract merely
+because the executor changed.

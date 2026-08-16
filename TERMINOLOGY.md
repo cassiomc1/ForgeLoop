@@ -21,3 +21,7 @@
 | Conformance | Relationship validation across route, state, receipt, task brief, and delegated-result artifacts. |
 | Universal applicability | ForgeLoop applies whenever an execution environment discovers a project adapter, regardless of model, provider, agent, IDE, or tool name. |
 | Integration level | The capability tier of an execution environment (`INSTRUCTION_DISCOVERED`, `PROTOCOL_CAPABLE`, `PROTOCOL_LIMITED`, `CONFORMANCE_VERIFIED`). |
+
+| Execution continuity | Bounded current-task implementation context used to resume the same ForgeLoop task across sessions or harnesses. |
+| Continuity artifact | `.forgeloop/continuity.json`; non-evidence operational context bound to canonical work state. |
+| Continuity reconciliation | Read-only comparison of continuity bindings and path hints against current canonical state and checkout. |

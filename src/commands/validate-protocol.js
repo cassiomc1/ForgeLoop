@@ -10,6 +10,8 @@ import { ARTIFACT_PATHS, readJsonArtifact } from "../core/artifacts.js";
 import { evaluatePreflight, validateReadyProtocolConsistency } from "../core/preflight.js";
 import { validateEventLedger, validateStateLedgerCoherence } from "../core/events.js";
 import { validateChecksExecutionProvenance } from "../core/completion-artifacts.js";
+import { assertContinuitySemantics } from "../core/continuity.js";
+import { currentChangedPaths, currentRepositoryFingerprint } from "../core/repository.js";
 
 async function readArtifact(target, relativePath, label) {
   if (!relativePath) return null;
@@ -48,6 +50,7 @@ export async function runValidateProtocol({
   stateFile = null,
   receiptFile = null,
   contractFile = null,
+  continuityFile = null,
   taskBriefFiles = [],
   delegatedResultFiles = [],
 }) {
@@ -55,6 +58,7 @@ export async function runValidateProtocol({
     ["route", routeFile],
     ["state", stateFile],
     ["receipt", receiptFile],
+    ["continuity", continuityFile],
     ...taskBriefFiles.map((file) => [`task brief:${file}`, file]),
     ...delegatedResultFiles.map((file) => [`delegated result:${file}`, file]),
   ];
@@ -68,6 +72,7 @@ export async function runValidateProtocol({
   const route = loaded.find((item) => item.label === "route")?.value ?? null;
   const state = loaded.find((item) => item.label === "state")?.value ?? null;
   const receipt = loaded.find((item) => item.label === "receipt")?.value ?? null;
+  const continuity = loaded.find((item) => item.label === "continuity")?.value ?? null;
   const taskBriefs = loaded.filter((item) => item.label.startsWith("task brief:") && item.value).map((item) => item.value);
   const delegatedResults = loaded.filter((item) => item.label.startsWith("delegated result:") && item.value).map((item) => item.value);
   const schemaErrors = [];
@@ -88,6 +93,7 @@ export async function runValidateProtocol({
   await validateLoaded(loaded.find((item) => item.label === "route"), "routing-result", async (value) => assertRouteInvariants(value));
   await validateLoaded(loaded.find((item) => item.label === "state"), "work-state", async (value) => assertWorkStateSemantics(value));
   await validateLoaded(loaded.find((item) => item.label === "receipt"), "execution-receipt", async (value) => validateReceipt(value, packageRoot));
+  await validateLoaded(loaded.find((item) => item.label === "continuity"), "continuity", async (value) => assertContinuitySemantics(value));
   for (const [value, artifactPath] of [
     [state, stateFile],
     [receipt, receiptFile],
@@ -142,11 +148,20 @@ export async function runValidateProtocol({
       })),
     ];
   }
+  const continuityContext = continuity && state && !stateValidationError
+    ? {
+      contractFingerprint: state.contractFingerprint,
+      repositoryFingerprint: await currentRepositoryFingerprint(target),
+      changedPaths: await currentChangedPaths(target),
+    }
+    : {};
   const result = validateTaskArtifactSet({
     route,
     state,
     stateClassification,
     receipt,
+    continuity,
+    continuityContext,
     taskBriefs,
     delegatedResults,
     events: ledgerEvents,
@@ -164,6 +179,10 @@ export async function runValidateProtocol({
 
 export function formatValidateProtocolResult(result) {
   const lines = [`Protocol: ${result.status}`];
+  if (result.continuity) {
+    lines.push(`Continuity: ${result.continuity.status}`);
+    lines.push(`Continuity authority: ${result.continuity.authority}`);
+  }
   if (result.stale) {
     lines.push(`Repository: ${result.stale.repositoryComparison}`);
     lines.push(`Contract: ${result.stale.contractComparison}`);

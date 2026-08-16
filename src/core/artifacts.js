@@ -16,6 +16,7 @@ export const ARTIFACT_PATHS = Object.freeze({
   config: ".forgeloop/config.json",
   gates: ".forgeloop/gates",
   state: ".forgeloop/work-state.json",
+  continuity: ".forgeloop/continuity.json",
   receipt: ".forgeloop/execution-receipt.json",
   executionDirectory: ".forgeloop/executions",
 });

@@ -49,6 +49,7 @@ export const TEMPLATE_PATHS = [
   "schemas/routing-input.schema.json",
   "schemas/routing-result.schema.json",
   "schemas/work-state.schema.json",
+  "schemas/continuity.schema.json",
   "schemas/execution-receipt.schema.json",
   "schemas/task-brief.schema.json",
   "schemas/delegated-result.schema.json",

@@ -25,6 +25,7 @@ test("next-action responsibilities have explicit internal module boundaries", as
     "src/core/next-action-model.js",
     "src/core/next-action-artifacts.js",
     "src/core/next-action-phases.js",
+    "src/core/next-action-continuity.js",
   ]) {
     await access(path.join(repositoryRoot, file));
   }

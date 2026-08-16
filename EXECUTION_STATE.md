@@ -112,3 +112,12 @@ forgeloop clear-state
 `clear-state` affects only `.forgeloop/work-state.json` and prints the exact
 relative path it removed; it never deletes the directory, manifest, or project
 files.
+
+## Execution continuity companion
+
+`.forgeloop/work-state.json` remains the canonical checkpoint and owns phase,
+`completedSteps`, `pendingSteps`, failures, blockers, verification cycles, and
+required artifact fingerprints. `.forgeloop/continuity.json` is an optional
+companion containing only granular implementation-resume context. It is bound
+to the current task, contract fingerprint, work-state fingerprint, phase, and
+repository context and is always operational context rather than evidence.

@@ -1,6 +1,7 @@
 import { PROTOCOL_VERSION } from "./protocol.js";
 import { createEvidence } from "./evidence.js";
 import { canonicalFingerprint } from "./artifacts.js";
+import { evaluateContinuityConformance } from "./continuity-conformance.js";
 
 function error(code, message, artifacts = []) {
   return { code, message, artifacts };
@@ -49,9 +50,13 @@ export function validateTaskArtifactSet({
   taskBriefs = [],
   delegatedResults = [],
   events = [],
+  continuity = null,
+  continuityContext = {},
 } = {}) {
   const errors = [];
   const incomplete = [];
+  const continuityResult = evaluateContinuityConformance({ continuity, state, ...continuityContext });
+  errors.push(...continuityResult.errors);
 
   addVersionErrors(route, "route", errors);
   addVersionErrors(state, "state", errors);
@@ -122,11 +127,11 @@ export function validateTaskArtifactSet({
 
   const sortedErrors = sortErrors(errors);
   let status = "VALID";
-  if (sortedErrors.some((item) => item.code === "UNSUPPORTED_PROTOCOL_VERSION")) {
+  if (sortedErrors.some((item) => item.code === "UNSUPPORTED_PROTOCOL_VERSION") || continuityResult.status === "INVALID") {
     status = "INVALID";
   } else if (sortedErrors.length > 0) {
     status = "INCONSISTENT";
-  } else if (stateClassification?.status === "REVALIDATION_REQUIRED") {
+  } else if (stateClassification?.status === "REVALIDATION_REQUIRED" || continuityResult.status === "STALE") {
     status = "STALE";
   } else if (incomplete.length > 0) {
     status = "INCOMPLETE";
@@ -173,6 +178,7 @@ export function validateTaskArtifactSet({
     incomplete: [...new Set(incomplete)].sort(),
     stale,
     delegation,
+    continuity: continuityResult,
     evidence: [createEvidence({
       kind: evidenceKind,
       source: "ForgeLoop protocol conformance",

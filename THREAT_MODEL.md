@@ -59,3 +59,12 @@ remaining trust boundaries and their executable evidence.
 - Credentials remain outside Git and outside protocol artifacts.
 - `preflight`, `audit`, `report`, and `complete` never execute commands copied
   from a profile, contract, receipt, state, gate, policy, or bundle.
+
+## Stale or malicious execution continuity
+
+A stale or malicious continuity artifact may claim unfinished work is complete,
+point at misleading files, claim verification/publication occurred, encode
+secret material, attempt path traversal, or imply authority. Mitigations are a
+bounded strict schema, secret-free writes, relative safe paths, task/contract/
+work-state fingerprint binding, current-checkout reconciliation, explicit
+non-evidence semantics, and complete separation from authority grants.

@@ -30,6 +30,7 @@ import {
   staleReasons,
 } from "./next-action-artifacts.js";
 import { PHASES_REQUIRING_EXECUTION_CHRONOLOGY } from "./next-action-phases.js";
+import { evaluateContinuityNextAction } from "./next-action-continuity.js";
 
 export { NEXT_ACTIONS } from "./next-action-model.js";
 
@@ -311,6 +312,8 @@ export async function getNextAction(targetOrOptions = {}, packageRootOption) {
     return decision(context, NEXT_ACTIONS.START_EXECUTION, artifactError("PHASE_PLANNED", "The persisted preflight is READY"));
   }
   if (state.phase === "EXECUTING") {
+    const continuityAction = await evaluateContinuityNextAction({ target, packageRoot, context });
+    if (continuityAction) return continuityAction;
     return decision(context, NEXT_ACTIONS.ENTER_VERIFYING, artifactError("PHASE_EXECUTING", "Execution is complete enough to enter verification"));
   }
   if (state.phase === "VERIFYING") {

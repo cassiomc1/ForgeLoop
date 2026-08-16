@@ -399,3 +399,11 @@ update practice.
 - Structural, Markdown, link, and secret checks pass locally and in CI.
 - Portable-copy instructions always include third-party notices.
 - The package does not alter destination commands, dependencies, or behavior without need and applicable authority.
+
+## Cross-harness continuity boundary
+
+Execution continuity is intentionally a companion artifact, not a second state
+machine and not a general memory subsystem. Work state owns lifecycle truth;
+the checkout owns implementation truth; checks/executions own verification
+truth; completion owns certification. Continuity only narrows what a receiving
+executor should inspect and continue.

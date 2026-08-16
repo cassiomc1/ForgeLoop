@@ -27,6 +27,11 @@ import { formatRecordCheckResult, runRecordCheck } from "./commands/record-check
 import { formatRunCheckResult, runCheck } from "./commands/run-check.js";
 import { formatRecordTerminalResult, runRecordTerminalResult } from "./commands/record-terminal-result.js";
 import { formatNextActionResult, runNext } from "./commands/next.js";
+import { formatContinuityResult, runContinuity } from "./commands/continuity.js";
+import { formatRecordContinuityResult, runRecordContinuity } from "./commands/record-continuity.js";
+import { formatReconcileContinuityResult, runReconcileContinuity } from "./commands/reconcile-continuity.js";
+import { formatClearContinuityResult, runClearContinuity } from "./commands/clear-continuity.js";
+import { continuityOptionDefaults, consumeContinuityOption, validateContinuityOptions } from "./core/continuity-cli-options.js";
 import { resolveTarget } from "./core/filesystem.js";
 import { getPackageRoot } from "./core/templates.js";
 import { ARTIFACT_PATHS } from "./core/artifacts.js";
@@ -40,6 +45,10 @@ export const COMMANDS = Object.freeze([
   "preflight",
   "advance",
   "next",
+  "continuity",
+  "record-continuity",
+  "reconcile-continuity",
+  "clear-continuity",
   "prepare-completion",
   "run-check",
   "record-check",
@@ -84,6 +93,15 @@ function usage(command = null) {
   if (!command || command === "advance") {
     options.push("  --to <phase>        destination workflow phase");
   }
+  if (!command || command === "record-continuity") {
+    options.push("  --focus-id <id>            current implementation focus ID");
+    options.push("  --focus-summary <text>    current implementation focus summary");
+    options.push("  --remaining <id:summary>  remaining implementation item (repeatable)");
+    options.push("  --known-issue <id:summary> known implementation issue (repeatable)");
+    options.push("  --changed-area <path>     changed project area (repeatable)");
+    options.push("  --inspect-first <path>    suggested inspection path (repeatable)");
+    options.push("  --resume-note <text>      bounded operational resume note");
+  }
   if (!command || !GENERIC_JSON_EXCLUDED_COMMANDS.has(command)) {
     options.push("  --json              emit structured output as JSON");
   }
@@ -103,6 +121,7 @@ function usage(command = null) {
     options.push("  --route-file <path>  routing-result JSON relative to target");
     options.push("  --state-file <path>  work-state JSON relative to target");
     options.push("  --receipt-file <path>  execution-receipt JSON relative to target");
+    options.push("  --continuity-file <path>  optional execution-continuity JSON relative to target");
     options.push("  --task-brief-file <path>  task brief JSON (repeatable)");
     options.push("  --delegated-result-file <path>  delegated result JSON (repeatable)");
   }
@@ -160,6 +179,8 @@ export function parseArgs(argv) {
     routeFile: null,
     stateFile: null,
     receiptFile: null,
+    continuityFile: null,
+    ...continuityOptionDefaults(),
     taskBriefFiles: [],
     delegatedResultFiles: [],
     checkId: null,
@@ -245,12 +266,13 @@ export function parseArgs(argv) {
       if (!contractFile || contractFile.startsWith("-")) throw new Error("--contract-file requires a path");
       options.contractFile = contractFile;
       index += 1;
-    } else if (["--route-file", "--state-file", "--receipt-file"].includes(argument)) {
+    } else if (["--route-file", "--state-file", "--receipt-file", "--continuity-file"].includes(argument)) {
       const file = argv[index + 1];
       if (!file || file.startsWith("-")) throw new Error(`${argument} requires a path`);
       if (argument === "--route-file") options.routeFile = file;
       if (argument === "--state-file") options.stateFile = file;
       if (argument === "--receipt-file") options.receiptFile = file;
+      if (argument === "--continuity-file") options.continuityFile = file;
       index += 1;
     } else if (argument === "--task-brief-file") {
       const file = argv[index + 1];
@@ -358,6 +380,17 @@ export function parseArgs(argv) {
     } else if (argument === "--" && command === "run-check") {
       options.commandArgv = argv.slice(index + 1);
       break;
+    } else if ([
+      "--focus-id",
+      "--focus-summary",
+      "--remaining",
+      "--known-issue",
+      "--changed-area",
+      "--inspect-first",
+      "--resume-note",
+    ].includes(argument)) {
+      const consumed = consumeContinuityOption({ argument, argv, index, options });
+      index = consumed.index;
     } else if (argument === "--path") {
       options.path = argv[index + 1];
       if (!options.path || options.path.startsWith("-")) throw new Error("--path requires a directory");
@@ -378,7 +411,7 @@ export function parseArgs(argv) {
 
   if (!command) return { command: null, options };
 
-  const jsonCommands = ["doctor", "route", "activate", "advance", "next", "prepare-completion", "run-check", "record-check", "record-terminal-result", "preflight", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"];
+  const jsonCommands = ["doctor", "route", "activate", "advance", "next", "continuity", "record-continuity", "reconcile-continuity", "clear-continuity", "prepare-completion", "run-check", "record-check", "record-terminal-result", "preflight", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"];
   if (!jsonCommands.includes(command) && options.json) {
     throw new Error(`Option --json is not valid for ${command}`);
   }
@@ -418,7 +451,7 @@ export function parseArgs(argv) {
   if (!["status", "inspect", "validate-protocol"].includes(command) && options.contractFile) {
     throw new Error(`Option --contract-file is not valid for ${command}`);
   }
-  if (command !== "validate-protocol" && (options.routeFile || options.stateFile || options.receiptFile || options.taskBriefFiles.length > 0 || options.delegatedResultFiles.length > 0)) {
+  if (command !== "validate-protocol" && (options.routeFile || options.stateFile || options.receiptFile || options.continuityFile || options.taskBriefFiles.length > 0 || options.delegatedResultFiles.length > 0)) {
     throw new Error(`Protocol artifact options are not valid for ${command}`);
   }
   const checkOptions = [
@@ -437,6 +470,7 @@ export function parseArgs(argv) {
   if (!["record-check", "run-check"].includes(command) && checkOptions.some((value) => value !== null)) {
     throw new Error(`Check recording options are not valid for ${command}`);
   }
+  validateContinuityOptions(command, options);
   if (command === "record-check" && !options.help) {
     if (!options.checkId) throw new Error("record-check requires --id");
     if (!options.checkRequirement) throw new Error("record-check requires --requirement");
@@ -527,6 +561,35 @@ export const COMMAND_HANDLERS = Object.freeze({
   next: async ({ target, packageRoot, options }) => {
     const result = await runNext({ target, packageRoot });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatNextActionResult(result));
+    return 0;
+  },
+  continuity: async ({ target, packageRoot, options }) => {
+    const result = await runContinuity({ target, packageRoot });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatContinuityResult(result));
+    return 0;
+  },
+  "record-continuity": async ({ target, packageRoot, options }) => {
+    const result = await runRecordContinuity({
+      target, packageRoot,
+      focusId: options.continuityFocusId,
+      focusSummary: options.continuityFocusSummary,
+      remaining: options.continuityRemaining,
+      knownIssues: options.continuityKnownIssues,
+      changedAreas: options.continuityChangedAreas,
+      inspectFirst: options.continuityInspectFirst,
+      resumeNote: options.continuityResumeNote,
+    });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatRecordContinuityResult(result));
+    return 0;
+  },
+  "reconcile-continuity": async ({ target, packageRoot, options }) => {
+    const result = await runReconcileContinuity({ target, packageRoot });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatReconcileContinuityResult(result));
+    return 0;
+  },
+  "clear-continuity": async ({ target, options }) => {
+    const result = await runClearContinuity({ target });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatClearContinuityResult(result));
     return 0;
   },
   "prepare-completion": async ({ target, packageRoot, options }) => {
@@ -622,6 +685,7 @@ export const COMMAND_HANDLERS = Object.freeze({
       receiptFile: options.receiptFile ?? ARTIFACT_PATHS.receipt,
       routeFile: options.routeFile ?? ARTIFACT_PATHS.route,
       contractFile: options.contractFile,
+      continuityFile: options.continuityFile,
       taskBriefFiles: options.taskBriefFiles,
       delegatedResultFiles: options.delegatedResultFiles,
     });
