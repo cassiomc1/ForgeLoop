@@ -6,6 +6,7 @@ import { assertSafePath, ensureWithin, fileExists, readBytes, writeFileAtomic } 
 import { PROTOCOL_VERSION } from "./protocol.js";
 import { validateChecksExecutionProvenance } from "./completion-artifacts.js";
 import { readExecutionArtifact } from "./execution.js";
+import { assertContinuitySemantics } from "./continuity.js";
 
 export const BUNDLE_SCHEMA_VERSION = 1;
 const BUNDLE_ROOT = ".forgeloop/tasks";
@@ -89,6 +90,7 @@ export async function exportTaskBundle(target, taskId, packageRoot) {
     [ARTIFACT_PATHS.receipt, "receipt.json", "execution-receipt"],
     [ARTIFACT_PATHS.sources, "sources.json", "source-registry"],
     [ARTIFACT_PATHS.config, "config.json", "config"],
+    [ARTIFACT_PATHS.continuity, "continuity.json", "continuity"],
   ];
   for (const [sourcePath, destinationName, schemaName] of optional) {
     const copied = await copyJson(target, sourcePath, `${directory}/${destinationName}`, schemaName, packageRoot, artifacts, destinationName);
@@ -146,6 +148,7 @@ export async function readTaskBundle(target, taskId, packageRoot) {
     "receipt.json": ["receipt", "execution-receipt"],
     "sources.json": ["sources", "source-registry"],
     "config.json": ["config", "config"],
+    "continuity.json": ["continuity", "continuity"],
   };
   const executions = {};
   for (const artifact of manifest.value.artifacts) {
@@ -159,6 +162,9 @@ export async function readTaskBundle(target, taskId, packageRoot) {
     const loadedArtifact = await readJsonArtifact(target, `${directory}/${artifact}`, mapping[1], packageRoot);
     if (mapping[1] === "current-contract") {
       await validateContract(loadedArtifact.value, packageRoot);
+    }
+    if (mapping[1] === "continuity") {
+      assertContinuitySemantics(loadedArtifact.value);
     }
     loaded[mapping[0]] = loadedArtifact.value;
   }

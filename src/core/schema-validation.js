@@ -9,6 +9,7 @@ export const SHIPPED_SCHEMA_NAMES = Object.freeze([
   "routing-input",
   "routing-result",
   "work-state",
+  "continuity",
   "execution-receipt",
   "task-brief",
   "delegated-result",

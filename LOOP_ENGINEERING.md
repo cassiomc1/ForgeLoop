@@ -1163,3 +1163,18 @@ Publication:
 Never claim that a test, build, platform, device, or integration passed without
 a compatible check. The final response must distinguish local implementation
 from external publication.
+
+## Cross-harness execution continuity
+
+A change of model, provider, IDE, process, terminal, or context window does not
+create a new task when a valid resumable ForgeLoop task already exists.
+`work-state.json` remains the sole owner of lifecycle progress. An optional
+`.forgeloop/continuity.json` may record bounded granular implementation context
+such as current focus, remaining implementation work, known issues, and paths
+to inspect first.
+
+`CONTINUITY_CONTEXT_IS_NOT_EVIDENCE`: continuity may guide inspection but can
+never satisfy verification coverage, publication, production readiness, or
+completion. `CONTINUITY_CANNOT_GRANT_AUTHORITY`: continuity cannot authorize an
+installation or external action. The receiving harness MUST reconcile
+continuity against the current work state and checkout before acting on it.

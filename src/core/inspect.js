@@ -9,6 +9,8 @@ import { runDoctor } from "../commands/doctor.js";
 import { findProfilePath } from "./profile.js";
 import { FORGELOOP_KIT_DIR } from "./target-layout.js";
 import { trustedAuthorityConfiguration } from "./trusted-authority.js";
+import { reconcileContinuity } from "./continuity-reconciliation.js";
+import { continuityFinding, continuityIsHealthy } from "./continuity-observability.js";
 
 function profileMetadata(bytes) {
   const text = bytes.toString("utf8");
@@ -35,6 +37,7 @@ export async function inspectTarget({ target, packageRoot, contractFile = null, 
   const statePath = ensureWithin(target, WORK_STATE_PATH);
   const statePresent = await fileExists(statePath);
   const state = await readAndClassifyWorkState({ target, packageRoot, contractFile });
+  const continuity = await reconcileContinuity({ target, packageRoot });
   const schemaRoot = manifest?.layoutVersion >= 2
     ? ensureWithin(target, FORGELOOP_KIT_DIR)
     : target;
@@ -69,6 +72,9 @@ export async function inspectTarget({ target, packageRoot, contractFile = null, 
       });
     }
   }
+  const continuityIssue = continuityFinding(continuity);
+  if (continuityIssue) findings.push(continuityIssue);
+
   if (state.status === "INVALID") {
     findings.push({
       code: "state-invalid",
@@ -123,6 +129,7 @@ export async function inspectTarget({ target, packageRoot, contractFile = null, 
       evidence: protocolEvidence,
     },
     state: { ...state, path: WORK_STATE_PATH, present: statePresent },
+    continuity,
     compatibility: {
       deprecated: true,
       agents: [],
@@ -132,6 +139,7 @@ export async function inspectTarget({ target, packageRoot, contractFile = null, 
     ok: doctor.ok
       && !manifestError
       && schemaHealth.status === "valid"
-      && !["INVALID", "REVALIDATION_REQUIRED"].includes(state.status),
+      && !["INVALID", "REVALIDATION_REQUIRED"].includes(state.status)
+      && continuityIsHealthy(continuity),
   };
 }

@@ -189,6 +189,15 @@ configuration file, never in Git, `.forgeloop/kit/PROJECT_PROFILE.md`, or
 copied instruction files. ForgeLoop does not vendor Qwen code or install it
 through `init`, `update`, or `doctor`.
 
+## Cross-harness continuity
+
+ForgeLoop can optionally persist bounded execution-continuity context for a
+resumable task so another compatible harness can reconcile the current checkout
+and continue without replacing the task contract. Continuity is operational
+context only; it is never verification evidence or authority. See
+[`EXECUTION_STATE.md`](./EXECUTION_STATE.md) and
+[`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md).
+
 ## Release and maintenance
 
 The release workflow uses [npm trusted publishing](https://docs.npmjs.com/trusted-publishers)
