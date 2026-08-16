@@ -27,6 +27,7 @@ import { runPreflight } from "../src/commands/preflight.js";
 import { advanceWorkState } from "../src/core/phase.js";
 import { prepareCompletion, recordCheck as recordCheckArtifact } from "../src/core/completion-artifacts.js";
 import { recordManualCheck } from "./helpers/record-check-compat.js";
+import { removeTempTree } from "./helpers/rm-safe.js";
 
 const recordCheck = (input) => recordManualCheck(recordCheckArtifact, input);
 
@@ -43,8 +44,8 @@ async function withTargetAndAuthority(run) {
   } finally {
     if (previousAuthorityFile === undefined) delete process.env.FORGELOOP_AUTHORITY_FILE;
     else process.env.FORGELOOP_AUTHORITY_FILE = previousAuthorityFile;
-    await rm(target, { recursive: true, force: true });
-    await rm(authorityRoot, { recursive: true, force: true });
+    await removeTempTree(target);
+    await removeTempTree(authorityRoot);
   }
 }
 
