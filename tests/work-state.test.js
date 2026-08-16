@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -13,6 +13,7 @@ import {
   readWorkState,
   writeWorkState,
 } from "../src/core/work-state.js";
+import { removeTempTree } from "./helpers/rm-safe.js";
 
 function input(overrides = {}) {
   return {
@@ -36,12 +37,7 @@ async function withTarget(run) {
   try {
     await run(target);
   } finally {
-    await rm(target, {
-      recursive: true,
-      force: true,
-      maxRetries: 5,
-      retryDelay: 100,
-    });
+    await removeTempTree(target);
   }
 }
 

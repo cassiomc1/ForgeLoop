@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 
+import { removeTempTree } from "./helpers/rm-safe.js";
 import { prepareCompletion, recordCheck as recordCheckArtifact } from "../src/core/completion-artifacts.js";
 import { recordManualCheck } from "./helpers/record-check-compat.js";
 
@@ -28,12 +29,7 @@ async function withTarget(run) {
   try {
     await run(target);
   } finally {
-    await rm(target, {
-      recursive: true,
-      force: true,
-      maxRetries: 10,
-      retryDelay: 100,
-    });
+    await removeTempTree(target);
   }
 }
 
@@ -49,8 +45,8 @@ async function withTargetAndAuthority(run, { configure = true } = {}) {
   } finally {
     if (previousAuthorityFile === undefined) delete process.env.FORGELOOP_AUTHORITY_FILE;
     else process.env.FORGELOOP_AUTHORITY_FILE = previousAuthorityFile;
-    await rm(target, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
-    await rm(authorityRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+    await removeTempTree(target);
+    await removeTempTree(authorityRoot);
   }
 }
 

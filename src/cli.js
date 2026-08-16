@@ -31,8 +31,38 @@ import { resolveTarget } from "./core/filesystem.js";
 import { getPackageRoot } from "./core/templates.js";
 import { ARTIFACT_PATHS } from "./core/artifacts.js";
 
+const COMMANDS = Object.freeze([
+  "init",
+  "doctor",
+  "update",
+  "activate",
+  "route",
+  "preflight",
+  "advance",
+  "next",
+  "prepare-completion",
+  "run-check",
+  "record-check",
+  "record-terminal-result",
+  "complete",
+  "audit",
+  "report",
+  "policy",
+  "bundle",
+  "inspect",
+  "status",
+  "validate-state",
+  "clear-state",
+  "validate-receipt",
+  "validate-protocol",
+]);
+
+// Commands whose usage blocks already describe --json (doctor, route) or that
+// accept no --json at all (init, update).
+const GENERIC_JSON_EXCLUDED_COMMANDS = new Set(["init", "doctor", "update", "route"]);
+
 function usage(command = null) {
-  const commands = "init|doctor|update|activate|route|preflight|advance|next|prepare-completion|run-check|record-check|record-terminal-result|complete|audit|report|policy|bundle|inspect|status|validate-state|clear-state|validate-receipt|validate-protocol";
+  const commands = COMMANDS.join("|");
   const options = ["  --path <directory>  target project directory (default: current directory)"];
   if (!command || command === "init" || command === "update") {
     options.push("  --dry-run           show planned writes without changing files");
@@ -54,7 +84,7 @@ function usage(command = null) {
   if (!command || command === "advance") {
     options.push("  --to <phase>        destination workflow phase");
   }
-  if (!command || ["activate", "advance", "next", "prepare-completion", "run-check", "record-check", "record-terminal-result", "preflight", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"].includes(command)) {
+  if (!command || !GENERIC_JSON_EXCLUDED_COMMANDS.has(command)) {
     options.push("  --json              emit structured output as JSON");
   }
   if (!command || ["preflight", "complete", "audit", "report"].includes(command)) {
@@ -155,7 +185,7 @@ export function parseArgs(argv) {
 
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
-    if (["init", "doctor", "update", "activate", "route", "preflight", "advance", "next", "prepare-completion", "run-check", "record-check", "record-terminal-result", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"].includes(argument)) {
+    if (COMMANDS.includes(argument)) {
       if (command) throw new Error(`Multiple commands are not supported: ${argument}`);
       command = argument;
     } else if (argument === "--help" || argument === "-h") {

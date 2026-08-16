@@ -11,7 +11,11 @@ const outputSvgPath = path.join(repositoryRoot, "docs", "assets", "forgeloop-flo
 
 // Read package version dynamically
 const pkg = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
-const version = pkg.version || "0.1.15";
+if (typeof pkg.version !== "string" || pkg.version.length === 0) {
+  console.error(`Refusing to render: ${packageJsonPath} has no version to embed.`);
+  process.exit(1);
+}
+const version = pkg.version;
 
 // Theme constants - Tokyo Night / Modern Engineering Dark
 const THEME = {
