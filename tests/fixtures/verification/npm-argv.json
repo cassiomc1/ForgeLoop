@@ -1,0 +1,87 @@
+[
+  {
+    "name": "npm test script",
+    "argv": ["npm", "test"],
+    "expected": {
+      "resolutionMode": "LOCAL_PACKAGE_BINARY",
+      "mayInstall": false,
+      "installer": null,
+      "tool": null,
+      "dispatch": { "kind": "npm-script-command" }
+    }
+  },
+  {
+    "name": "npm install",
+    "argv": ["npm", "install"],
+    "expected": {
+      "resolutionMode": "EXPLICIT_INSTALLATION",
+      "mayInstall": true,
+      "installer": "npm",
+      "tool": null
+    }
+  },
+  {
+    "name": "npm exec after double dash",
+    "argv": ["npm", "exec", "--", "package-x"],
+    "expected": {
+      "resolutionMode": "INSTALL_CAPABLE_RESOLUTION",
+      "mayInstall": true,
+      "installer": "npm exec",
+      "tool": "package-x"
+    }
+  },
+  {
+    "name": "npm leading option script",
+    "argv": ["npm", "--silent", "run", "visual"],
+    "expected": {
+      "resolutionMode": "LOCAL_PACKAGE_BINARY",
+      "mayInstall": false,
+      "installer": null,
+      "tool": null,
+      "dispatch": { "kind": "npm-script-command" }
+    }
+  },
+  {
+    "name": "npm workspace script",
+    "argv": ["npm", "--workspace=a", "test"],
+    "expected": {
+      "resolutionMode": "LOCAL_PACKAGE_BINARY",
+      "mayInstall": false,
+      "installer": null,
+      "tool": null,
+      "dispatch": { "kind": "npm-script-command" }
+    }
+  },
+  {
+    "name": "npm version fails closed",
+    "argv": ["npm", "version"],
+    "expected": {
+      "resolutionMode": "UNKNOWN",
+      "mayInstall": true,
+      "installer": "npm",
+      "tool": null,
+      "reason": "NPM_COMMAND_UNCLASSIFIED"
+    }
+  },
+  {
+    "name": "npm missing subcommand",
+    "argv": ["npm"],
+    "expected": {
+      "resolutionMode": "UNKNOWN",
+      "mayInstall": true,
+      "installer": "npm",
+      "tool": null,
+      "reason": "NPM_SUBCOMMAND_AMBIGUOUS"
+    }
+  },
+  {
+    "name": "npm x package alias",
+    "argv": ["npm", "x", "package-x"],
+    "expected": {
+      "resolutionMode": "INSTALL_CAPABLE_RESOLUTION",
+      "mayInstall": true,
+      "installer": "npm x",
+      "tool": "package-x"
+    }
+  }
+]

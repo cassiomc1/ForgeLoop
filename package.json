@@ -43,12 +43,24 @@
     "LICENSE-DOCS.md",
     ".cursor",
     ".github/copilot-instructions.md",
-    "README.md"
+    "README.md",
+    "DOCS_INDEX.md",
+    "docs/forgeloop-flow.mmd",
+    "docs/assets/forgeloop-flow.svg",
+    "scripts/CI_VALIDATORS.md"
   ],
   "scripts": {
     "test": "node scripts/run-tests.js",
     "pack:check": "node --test tests/package.test.js",
     "release:identity": "node scripts/verify_release_identity.mjs",
-    "docs:flow": "node scripts/generate-readme-flow.mjs"
+    "docs:flow": "node scripts/generate-readme-flow.mjs",
+    "lint": "eslint .",
+    "coverage": "c8 --all --include=src/**/*.js --reporter=text --reporter=lcov --check-coverage --lines=80 --functions=75 --branches=70 --statements=80 node scripts/run-tests.js",
+    "dependency:policy": "node scripts/check-dependency-policy.mjs"
+  },
+  "devDependencies": {
+    "@mermaid-js/mermaid-cli": "^11.16.0",
+    "c8": "^12.0.0",
+    "eslint": "^9.39.5"
   }
 }

@@ -1,0 +1,52 @@
+const nodeGlobals = Object.freeze({
+  AbortController: "readonly",
+  Buffer: "readonly",
+  URL: "readonly",
+  URLSearchParams: "readonly",
+  clearTimeout: "readonly",
+  console: "readonly",
+  fetch: "readonly",
+  process: "readonly",
+  setTimeout: "readonly",
+  structuredClone: "readonly",
+});
+
+export default [
+  {
+    ignores: [
+      "node_modules/**",
+      "coverage/**",
+      ".worktrees/**",
+      "docs/assets/**",
+      "tests/fixtures/**",
+    ],
+  },
+  {
+    files: ["src/**/*.js", "scripts/**/*.mjs", "tests/**/*.js", "eslint.config.js"],
+    languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "module",
+      globals: nodeGlobals,
+    },
+    rules: {
+      "constructor-super": "error",
+      "getter-return": "error",
+      "no-constant-condition": "error",
+      "no-dupe-args": "error",
+      "no-dupe-keys": "error",
+      "no-func-assign": "error",
+      "no-import-assign": "error",
+      "no-new-native-nonconstructor": "error",
+      "no-obj-calls": "error",
+      "no-setter-return": "error",
+      "no-sparse-arrays": "error",
+      "no-this-before-super": "error",
+      "no-undef": "error",
+      "no-unexpected-multiline": "error",
+      "no-unreachable": "error",
+      "no-unused-vars": ["warn", { args: "none", caughtErrors: "none", ignoreRestSiblings: true }],
+      "no-useless-backreference": "error",
+      "valid-typeof": "error",
+    },
+  },
+];

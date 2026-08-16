@@ -29,8 +29,20 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
+      - name: Install locked Node toolchain
+        run: npm ci --ignore-scripts
+
       - name: Test npm CLI
         run: npm test
+
+      - name: Enforce dependency policy
+        run: npm run dependency:policy
+
+      - name: Lint JavaScript
+        run: npm run lint
+
+      - name: Measure test coverage
+        run: npm run coverage
 
       - name: Verify npm package contents
         run: npm run pack:check
@@ -80,12 +92,36 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Guard zero-dependency posture
-        run: |
-          node -e "const p=require('./package.json'); const depGroups=['dependencies','optionalDependencies','peerDependencies','devDependencies']; const found=depGroups.flatMap(g=>Object.keys(p[g]||{}).map(d=>g+':'+d)); if(found.length){ console.error('Unexpected dependencies declared: '+found.join(', ')); process.exit(1);} console.log('OK: no runtime or dev dependencies declared');"
+      - name: Install locked Node toolchain
+        run: npm ci --ignore-scripts
+
+      - name: Enforce dependency policy
+        run: npm run dependency:policy
 
       - name: Test npm CLI and portability fixtures
         run: npm test
 
       - name: Verify npm package contents
         run: npm run pack:check
+
+  docs-diagram:
+    name: Verify generated Mermaid diagram
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+
+      - name: Install locked Node toolchain
+        run: npm ci
+
+      - name: Render canonical Mermaid source
+        run: npm run docs:flow
+
+      - name: Reject stale committed SVG
+        run: git diff --exit-code -- docs/assets/forgeloop-flow.svg
