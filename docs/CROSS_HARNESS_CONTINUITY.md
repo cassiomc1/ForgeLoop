@@ -27,20 +27,28 @@ Switching between execution environments (for example Codex $\rightarrow$ Claude
          └───────────────────────────┘
 ```
 
-When a new harness starts in a repository where an active task exists, it must discover the existing task, reconcile continuity, and proceed from the recorded state rather than overwriting the contract.
+When a new harness starts in a repository where an active task exists, it must discover the existing task, reconcile continuity when present, inspect the checkout, and proceed from the recorded state rather than overwriting the contract.
+
+Key continuity invariants:
+
+- **Continuity is optional**: A missing `.forgeloop/continuity.json` file does not invalidate an otherwise resumable task.
+- **Continuity is non-authoritative**: It provides operational resume hints, not lifecycle truth.
+- **Continuity is not evidence**: It cannot satisfy contract verification requirements.
+- **Task identity survives harness changes**: Work state remains the single source of lifecycle truth.
+- **Stale continuity cannot authorize transitions**: Forward lifecycle progression requires valid work-state checkpoints.
 
 ---
 
 ## 2. Source-of-Truth Hierarchy
 
 | Layer | File / Source | Responsibility | Trust Level |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | **Lifecycle Checkpoint** | `.forgeloop/work-state.json` | Current phase, cycle, active guides, preflight binding | Canonical lifecycle truth |
 | **Operational Continuity** | `.forgeloop/continuity.json` | Active focus, remaining items, known issues, inspect-first paths | Operational context only (non-evidence) |
 | **Implementation Truth** | Git checkout / filesystem | Actual source code and files | Ground truth for changes |
 | **Task Intent** | `.forgeloop/current-contract.json` | Objectives, constraints, deliverables, verification requirements | Contract authority |
 | **Execution Guidance** | `.forgeloop/routing-result.json` | Deterministically selected engineering guides | Guidance |
-| **Verification Provenance**| `.forgeloop/executions/*.json` | Attested process execution records | Verification truth |
+| **Verification Provenance** | `.forgeloop/executions/*.json` | Attested process execution records | Verification truth |
 | **Next Action** | `forgeloop next` | Deterministic computation of the valid next command | Control authority |
 
 > [!IMPORTANT]
@@ -110,33 +118,43 @@ forgeloop record-continuity \
 When Harness B starts in the repository:
 
 ### Step 1: Check Current Status
+
 ```bash
 forgeloop status --json
 ```
+
 Verify that an active task exists and observe the current lifecycle phase (e.g. `EXECUTING` or `VERIFYING`).
 
 ### Step 2: Read Continuity Context
+
 ```bash
 forgeloop continuity --json
 ```
+
 Examine the handoff note, focus ID, remaining items, and inspect-first recommendations.
 
 ### Step 3: Reconcile Continuity with Work State
+
 ```bash
 forgeloop reconcile-continuity --json
 ```
+
 Reconciliation validates that `continuity.json` matches the current `work-state.json` fingerprint and was not corrupted by external changes.
 
 ### Step 4: Inspect Checkout Changes
+
 ```bash
 forgeloop inspect --json
 ```
+
 Review modified and newly created files against the contract deliverables.
 
 ### Step 5: Query Next Lifecycle Action
+
 ```bash
 forgeloop next --json
 ```
+
 Follow the deterministic action returned by ForgeLoop (e.g. `CONTINUE_IMPLEMENTATION`, `ENTER_VERIFYING`, or `RECORD_CHECK`).
 
 ---
@@ -146,7 +164,7 @@ Follow the deterministic action returned by ForgeLoop (e.g. `CONTINUE_IMPLEMENTA
 ForgeLoop handles edge cases deterministically:
 
 | Scenario | Condition | Protocol Behavior | Recommended Action |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | **Fresh Handoff** | Matching state fingerprint & clean checkout | `VALID` | Continue directly via `forgeloop next` |
 | **Checkout Drift** | State fresh, but files modified out-of-band | `CONTINUITY_RECONCILED` | Run `reconcile-continuity`, inspect diff, continue |
 | **Stale Continuity** | Continuity references older work-state | `STALE_CONTINUITY` | Reconcile or clear continuity (`clear-continuity`), rely on `work-state.json` |
@@ -158,6 +176,8 @@ ForgeLoop handles edge cases deterministically:
 
 ## 7. Discovery Adapter Integration
 
-Every discovery adapter (`AGENTS.md`, `CLAUDE.md`, `.cursor/rules/`, `.github/copilot-instructions.md`) reinforces this invariant:
+Every discovery adapter (`AGENTS.md`, `CLAUDE.md`, `.cursor/rules/project-loop.mdc`, `.github/copilot-instructions.md`) reinforces this invariant:
 
-> Before creating a contract or starting new task state, check whether `.forgeloop/work-state.json` exists. If active state exists, reconcile continuity, inspect checkout, and run `forgeloop next`. A change of agent, harness, or session does not create a new task.
+> Before creating or activating new lifecycle state:
+> If `.forgeloop/work-state.json` exists, inspect the existing task, reconcile continuity when present, inspect the checkout, and run `forgeloop next`.
+> A change of harness, model, provider, IDE, process, terminal, or session does not create a new task.

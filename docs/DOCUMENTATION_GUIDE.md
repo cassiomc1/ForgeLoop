@@ -9,7 +9,7 @@ This guide explains how to maintain, write, and safely modify ForgeLoop document
 ForgeLoop strictly separates normative protocol definitions from operational documentation to avoid contradictory rules.
 
 | Area | Location | Responsibility | Rule |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | **Normative Protocol** | Root (`LOOP_ENGINEERING.md`, `PROTOCOL_INTEGRATION.md`, `LOOP_SYSTEM_DESIGN.md`, `THREAT_MODEL.md`, `EXECUTION_STATE.md`) | Canonical authority for protocol rules, schemas, state transitions, and security | Never duplicate normative rules in sub-documents; link back to root files. |
 | **Operational & Reference** | `docs/` (`GETTING_STARTED.md`, `CROSS_HARNESS_CONTINUITY.md`, `CLI_REFERENCE.md`, `ARTIFACT_REFERENCE.md`, `TROUBLESHOOTING.md`, `RECIPES.md`) | Tutorials, command reference, handoff workflows, and troubleshooting | Explains how to operate the system. Links to normative sources for formal specifications. |
 | **Domain Engineering** | `ENG/` (`clean-code-eng.md`, `design-code-eng.md`, `test-code-eng.md`, etc.) | Domain-specific implementation and quality standards | Frontmatter must adhere to `validate_loop_system.py` standards. |
@@ -18,7 +18,24 @@ ForgeLoop strictly separates normative protocol definitions from operational doc
 
 ---
 
-## 2. Normative Language Conventions
+## 2. Documentation Source-of-Truth Rules
+
+When updating documentation, always derive content from its authoritative source:
+
+```text
+CLI syntax truth        -> CLI registry / parser (src/cli.js)
+Artifact shape truth    -> JSON schemas (schemas/*.schema.json)
+Lifecycle truth         -> protocol / state machine (src/core/protocol.js)
+Reason-code truth       -> exported protocol constants (src/core/protocol.js, errors.js)
+Package contents truth  -> package.json + package tests (tests/package.test.js)
+Documentation routing   -> DOCS_INDEX.md
+```
+
+Operational documentation must explain canonical behavior, not redefine it.
+
+---
+
+## 3. Normative Language Conventions
 
 When writing documentation, use precise terms:
 
@@ -31,7 +48,7 @@ Avoid ambiguous phrases like *"should generally"* or *"usually"* for behaviors t
 
 ---
 
-## 3. Linking Conventions
+## 4. Linking Conventions
 
 - **Relative Links Only**: Always use relative markdown links for repository files (e.g. `[`LOOP_ENGINEERING.md`](../LOOP_ENGINEERING.md)`).
 - **Valid Targets**: Every relative link must point to an existing file and is validated by `python3 scripts/validate_markdown.py`.
@@ -39,7 +56,7 @@ Avoid ambiguous phrases like *"should generally"* or *"usually"* for behaviors t
 
 ---
 
-## 4. Mermaid Diagrams and SVG Generation
+## 5. Mermaid Diagrams and SVG Generation
 
 1. **Source is Canonical**: Diagram source files live in `.mmd` files (e.g. `docs/forgeloop-flow.mmd`). Never modify SVG files directly.
 2. **Local Committed SVGs**: Generated SVGs are committed locally in `docs/assets/`. Never hotlink externally rendered diagram images.
@@ -47,15 +64,17 @@ Avoid ambiguous phrases like *"should generally"* or *"usually"* for behaviors t
 
 ---
 
-## 5. Documentation Change Checklist
+## 6. Documentation Change Checklist for Pull Requests
 
-Before opening a pull request with documentation changes:
+For documentation-impacting changes, verify each item before merging:
 
-- [ ] Identified the canonical owner of the documented behavior.
-- [ ] Did not duplicate normative protocol rules unnecessarily.
-- [ ] Updated `DOCS_INDEX.md` if new documents were added.
-- [ ] All relative links point to existing files (`python3 scripts/validate_markdown.py`).
-- [ ] Python loop system validator passes (`python3 scripts/validate_loop_system.py`).
-- [ ] Secret scanner passes (`python3 scripts/scan_secrets.py`).
-- [ ] Diagram fingerprint valid (`npm run docs:check`).
-- [ ] Node tests pass (`npm test`).
+- [ ] Did CLI behavior change?
+- [ ] Did any schema field change?
+- [ ] Did any enum or status change?
+- [ ] Did any lifecycle transition change?
+- [ ] Did any artifact mutation rule change?
+- [ ] Did any stable reason/error code change?
+- [ ] Did cross-harness resume behavior change?
+- [ ] Did package-shipped documentation change?
+- [ ] Were generated/reference docs updated?
+- [ ] Did documentation conformance CI pass?

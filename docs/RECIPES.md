@@ -29,7 +29,7 @@ forgeloop route --work code --surface api --risk untrusted-input --json
 # 3. Verify preflight
 forgeloop preflight --json
 
-# 4. Activate lifecycle and plan
+# 4. Activate session and plan
 forgeloop activate
 forgeloop advance --to PLANNED
 forgeloop advance --to EXECUTING
@@ -58,6 +58,7 @@ forgeloop next --json
 ### Recipe 3 — Switch to Another AI Harness or IDE
 
 In Harness A (before stopping):
+
 ```bash
 forgeloop record-continuity \
   --focus-id api-endpoints \
@@ -68,6 +69,7 @@ forgeloop record-continuity \
 ```
 
 In Harness B (after starting):
+
 ```bash
 forgeloop status --json
 forgeloop continuity --json

@@ -61,6 +61,8 @@ test("all discovery surfaces contain the protocol required marker and universal 
     assert.match(content, /regardless of model, provider/i);
     assert.match(content, /in spirit/i);
     assert.match(content, /missing verification tool/i);
+    assert.match(content, /work-state\.json`?\s+exists/i);
+    assert.match(content, /forgeloop next/i);
   }
 });
 
@@ -73,6 +75,8 @@ test("native shim generator emits protocol required marker and references", () =
     assert.match(shim, /regardless of model, provider, product, IDE/i);
     assert.match(shim, /in spirit/i);
     assert.match(shim, /missing verification tool/i);
+    assert.match(shim, /work-state\.json`?\s+exists/i);
+    assert.match(shim, /forgeloop next/i);
   }
 });
 

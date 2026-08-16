@@ -17,11 +17,12 @@ Do not treat ForgeLoop as vendor-specific, optional, or to follow only "in spiri
 5. Make the minimum change, run specific checks, and run proportional regression checks.
 6. Diagnose failures before fixing them; do not repeat attempts without new evidence.
 7. Request authority for unrelated actions, installations, and publications. Do not install a missing verification tool merely to satisfy a check. For missing Qwen-MM-Plugins, follow `LOOP_ENGINEERING.md`.
-8. After implementation begins, do not return a final result in `EXECUTING`: advance through `VERIFYING` → structured evidence → `REVIEWING` → execution receipt → validator-backed `COMPLETE`. If closure cannot be reached, report `BLOCKED` or `PARTIALLY VERIFIED`.
+8. Before creating or activating new lifecycle state: if `.forgeloop/work-state.json` exists, inspect the existing task, reconcile continuity when present, inspect the checkout, and run `forgeloop next`. A change of harness, model, provider, IDE, process, terminal, or session does not create a new task.
+9. After implementation begins, do not return a final result in `EXECUTING`: advance through `VERIFYING` → structured evidence → `REVIEWING` → execution receipt → validator-backed `COMPLETE`. If closure cannot be reached, report `BLOCKED` or `PARTIALLY VERIFIED`.
 
 After implementation work for the current task is complete, run `forgeloop next` before returning a final result. Follow the returned lifecycle action until ForgeLoop reaches a terminal state or an explicit blocker.
 
-9. Report only demonstrated results and checks.
+10. Report only demonstrated results and checks.
 
 Do not stop for non-blocking missing product details. When a safe, reversible
 local default exists, record it as an agent assumption and follow the Blocking vs Non-Blocking Decisions policy in `LOOP_ENGINEERING.md`.

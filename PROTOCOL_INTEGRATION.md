@@ -312,4 +312,3 @@ because the executor changed.
 
 For the practical handoff and multi-tool takeover sequence, see
 [`docs/CROSS_HARNESS_CONTINUITY.md`](./docs/CROSS_HARNESS_CONTINUITY.md).
-

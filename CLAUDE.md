@@ -14,6 +14,7 @@ When working in this repository:
 1. Make small changes, run specific checks, and run proportional regression checks.
 1. Investigate root causes before fixing failures; do not make unverified attempts.
 1. Request authority for unrelated installations, publications, deletions, or migrations. Do not install a missing verification tool merely to satisfy a check. For missing Qwen-MM-Plugins, follow `LOOP_ENGINEERING.md`.
+1. Before creating or activating new lifecycle state: if `.forgeloop/work-state.json` exists, inspect the existing task, reconcile continuity when present, inspect the checkout, and run `forgeloop next`. A change of harness, model, provider, IDE, process, terminal, or session does not create a new task.
 1. After implementation begins, do not return a final result in `EXECUTING`: advance through `VERIFYING` → structured evidence → `REVIEWING` → execution receipt → validator-backed `COMPLETE`. If closure cannot be reached, report `BLOCKED` or `PARTIALLY VERIFIED`.
 1. After implementation work for the current task is complete, run `forgeloop next` before returning a final result. Follow the returned lifecycle action until ForgeLoop reaches a terminal state or an explicit blocker.
 1. Report current evidence, limitations, and publication state without claiming checks that were not run.

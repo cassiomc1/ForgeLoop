@@ -129,11 +129,10 @@ repository context and is always operational context rather than evidence.
 ## Resume decision table
 
 | Work State | Continuity | Repository HEAD | Action |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Valid / Fresh | Fresh | Matches | Continue execution directly via `forgeloop next` |
 | Valid / Fresh | Missing | Matches | Continue from work-state checkpoint (continuity is optional) |
 | Valid / Fresh | Stale | Matches / Drifted | Run `forgeloop reconcile-continuity --json`, inspect diff, continue |
 | Stale | Any | Changed | Run `forgeloop route` and `forgeloop preflight` to revalidate |
 | Invalid / Corrupted | Any | Any | Fail closed; inspect errors via `forgeloop doctor --json` |
 | Different Task ID | Present | Any | Do not merge contexts; clear or finish previous task first |
-

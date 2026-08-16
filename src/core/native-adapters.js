@@ -40,6 +40,12 @@ Read and follow:
 Before changing product or executable files, establish the ForgeLoop contract,
 route, required gates, and READY preflight.
 
+Before creating or activating new lifecycle state:
+If \`.forgeloop/work-state.json\` exists, inspect the existing task,
+reconcile continuity when present, inspect the checkout, and run
+\`forgeloop next\`. A change of harness, model, provider, IDE, process,
+terminal, or session does not create a new task.
+
 Use the project-local ForgeLoop CLI for lifecycle-owned protocol state.
 Never manually synthesize lifecycle chronology or assign ForgeLoop COMPLETE.
 

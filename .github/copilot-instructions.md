@@ -14,6 +14,7 @@ Use these instructions across the repository while preserving local rules.
 - Make the smallest coherent change; validate with specific and regression checks.
 - Diagnose causes before fixing failures; do not make unverified attempts.
 - Do not install software, publish, delete, or alter external state without authority. Do not install a missing verification tool merely to satisfy a check. For missing Qwen-MM-Plugins, follow `LOOP_ENGINEERING.md`.
+- Before creating or activating new lifecycle state: if `.forgeloop/work-state.json` exists, inspect the existing task, reconcile continuity when present, inspect the checkout, and run `forgeloop next`. A change of harness, model, provider, IDE, process, terminal, or session does not create a new task.
 - After implementation begins, do not return a final result in `EXECUTING`: advance through `VERIFYING` → structured evidence → `REVIEWING` → execution receipt → validator-backed `COMPLETE`. If closure cannot be reached, report `BLOCKED` or `PARTIALLY VERIFIED`.
 
 After implementation work for the current task is complete, run `forgeloop next` before returning a final result. Follow the returned lifecycle action until ForgeLoop reaches a terminal state or an explicit blocker.

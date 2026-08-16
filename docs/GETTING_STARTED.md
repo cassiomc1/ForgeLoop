@@ -17,6 +17,15 @@ ForgeLoop is a portable, vendor-neutral engineering protocol for AI-assisted cod
 
 ForgeLoop is **not** an LLM runtime, agent framework, or graph orchestrator. It is a deterministic protocol and CLI that guides execution environments safely.
 
+Core mental model:
+
+- `work-state = lifecycle truth`
+- `continuity = operational handoff context`
+- `checkout = implementation truth`
+- `execution artifacts = process provenance`
+- `checks = verification truth`
+- `receipt = completion/publication record`
+
 ---
 
 ## 2. Prerequisites
@@ -39,6 +48,7 @@ npx @cassiomc1/forgeloop doctor
 ```
 
 What `init` does:
+
 - Installs the canonical instruction kit under `.forgeloop/kit/`;
 - Places native discovery shims at the project root (`AGENTS.md`, `CLAUDE.md`, `.cursor/rules/`, `.github/copilot-instructions.md`);
 - Creates `.forgeloop/` for mutable contract, route, state, and execution artifacts.
@@ -59,7 +69,7 @@ Discovery & Contract
 Route Guides
      │
      ▼
-Satisfy Preflight Gates
+Preflight & Gate Validation
      │
      ▼
 Plan & Implement
@@ -138,13 +148,14 @@ This generates `.forgeloop/routing-result.json` referencing selected guides (e.g
 
 ### Step 3 — Run Preflight
 
-Before writing code, ensure all prerequisites and required pre-implementation gates are satisfied:
+Before writing code, validate readiness and establish the canonical resumable work state:
 
 ```bash
 forgeloop preflight --json
 ```
 
 Output:
+
 ```json
 {
   "status": "READY",
@@ -153,13 +164,13 @@ Output:
 }
 ```
 
-If preflight reports `BLOCKED`, inspect the required gates in the output and satisfy them first.
+When preflight returns `READY`, ForgeLoop synchronizes resumable work state (`.forgeloop/work-state.json`) and preflight status (`.forgeloop/preflight.json`). If preflight reports `BLOCKED`, inspect the required gates in the output and satisfy them first.
 
 ---
 
-### Step 4 — Activate and Plan
+### Step 4 — Activate Session and Plan
 
-Activate the work state and transition to `PLANNED`:
+Create a session activation marker and transition to `PLANNED`:
 
 ```bash
 forgeloop activate
@@ -193,13 +204,14 @@ Execute your verification checks through ForgeLoop so provenance is recorded:
 
 ```bash
 # Run unit tests and record evidence
-forgeloop run-check --id unit-tests --requirement unit-tests -- npm test
+forgeloop run-check --id unit-tests --requirement "npm test passes for contact form" -- npm test
 
 # Run linter and record evidence
-forgeloop run-check --id lint --requirement lint -- npm run lint
+forgeloop run-check --id lint --requirement "npm run lint passes" -- npm run lint
 ```
 
 If a check fails:
+
 1. Do not repeat the failed check blindly.
 2. Formulate a diagnostic hypothesis.
 3. Apply the correction.
@@ -229,11 +241,12 @@ forgeloop complete --json
 ```
 
 Output:
+
 ```json
 {
   "status": "VALID",
   "taskStatus": "COMPLETE",
-  "verificationStatus": "VALID"
+  "verificationStatus": "valid"
 }
 ```
 
@@ -250,8 +263,11 @@ When `terminal: true` and `nextAction: "NONE"` are returned, your task is protoc
 ## 5. What ForgeLoop Created
 
 Inside `.forgeloop/`:
+
 - `current-contract.json`: task intent, deliverables, and success criteria;
 - `routing-result.json`: deterministic guide selections;
+- `preflight.json`: pre-implementation authorization checkpoint;
+- `session.json`: harness session activation marker;
 - `work-state.json`: lifecycle phase and resumption checkpoint;
 - `events.ndjson`: hash-chained append-only event ledger;
 - `executions/*.json`: provenance records for executed verification commands;
