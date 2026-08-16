@@ -1,0 +1,7 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { validateTaskArtifactSet } from "../src/core/conformance.js";
+import { canonicalFingerprint } from "../src/core/artifacts.js";
+function base(){const state={schemaVersion:1,protocolVersion:1,taskId:"t",contractFingerprint:"b".repeat(64),phase:"EXECUTING",selectedGuides:[]};const route={schemaVersion:1,protocolVersion:1,guides:[]};state.routeFingerprint=canonicalFingerprint(route);const receipt={schemaVersion:1,protocolVersion:1,taskId:"t",contractFingerprint:state.contractFingerprint,selectedGuides:[]};return {state,route,receipt};}
+test("artifact-set conformance keeps continuity optional",()=>{const x=base();const r=validateTaskArtifactSet(x);assert.equal(r.status,"VALID");assert.equal(r.continuity.status,"NOT_APPLICABLE");});
+test("artifact-set conformance reports stale continuity as STALE",()=>{const x=base();const continuity={schemaVersion:1,protocolVersion:1,taskId:"t",workStateFingerprint:"a".repeat(64),contractFingerprint:x.state.contractFingerprint,phase:"EXECUTING",repositoryFingerprint:{branch:null,head:null},updatedAt:"2026-08-16T17:00:00Z",remainingWork:[],knownIssues:[],changedAreas:[],inspectFirst:[]};const r=validateTaskArtifactSet({...x,continuity,continuityContext:{contractFingerprint:x.state.contractFingerprint,repositoryFingerprint:{branch:null,head:null},changedPaths:null}});assert.equal(r.status,"STALE");assert.equal(r.continuity.evidenceAuthority,"NONE");});
