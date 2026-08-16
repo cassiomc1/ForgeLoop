@@ -20,6 +20,8 @@
     "**/*.md",
     "!**/.worktrees/**",
     "!**/.superpowers/**",
-    "!docs/superpowers/**"
+    "!docs/superpowers/**",
+    "!**/node_modules/**",
+    "!**/coverage/**"
   ]
 }
