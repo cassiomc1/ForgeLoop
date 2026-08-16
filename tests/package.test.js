@@ -35,6 +35,10 @@ test("npm tarball contains the CLI, templates, and license notices only", () => 
     "THREAT_MODEL.md",
     "CONTRACT_COVERAGE.md",
     "PROTOCOL_INTEGRATION.md",
+    "DOCS_INDEX.md",
+    "docs/forgeloop-flow.mmd",
+    "docs/assets/forgeloop-flow.svg",
+    "scripts/CI_VALIDATORS.md",
     "LICENSE",
     "LICENSE-DOCS.md",
   ]) {

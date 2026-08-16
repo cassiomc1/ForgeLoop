@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 
+import { removeTempTree } from "./helpers/rm-safe.js";
 import { runComplete } from "../src/commands/complete.js";
 import { runPreflight } from "../src/commands/preflight.js";
 import { runRecordTerminalResult } from "../src/commands/record-terminal-result.js";
@@ -29,12 +30,7 @@ async function withTarget(run) {
   try {
     await run(target);
   } finally {
-    await rm(target, {
-      recursive: true,
-      force: true,
-      maxRetries: 10,
-      retryDelay: 100,
-    });
+    await removeTempTree(target);
   }
 }
 

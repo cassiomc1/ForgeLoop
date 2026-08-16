@@ -17,6 +17,7 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         node-version: [20, 22, 24]
     timeout-minutes: 15
@@ -29,14 +30,28 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
+      - name: Install locked Node toolchain
+        run: npm ci --ignore-scripts
+
       - name: Test npm CLI
         run: npm test
+
+      - name: Enforce dependency policy
+        run: npm run dependency:policy
+
+      - name: Lint JavaScript
+        run: npm run lint
+
+      - name: Measure test coverage
+        run: npm run coverage
 
       - name: Verify npm package contents
         run: npm run pack:check
 
       - name: Lint Markdown
         uses: DavidAnson/markdownlint-cli2-action@21c1be1b93ad9ed58fa840aacc3f279cde2a72ff # v24.2.0
+        with:
+          globs: "**/*.{md,markdown}"
 
       - name: Check links
         # Link checking is independent of the Node matrix; avoid three
@@ -44,7 +59,14 @@ jobs:
         if: matrix.node-version == 24
         uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
         with:
-          args: --config .lychee.toml './**/*.md'
+          args: >-
+            --config .lychee.toml
+            --exclude-path '(^|/)node_modules(/|$)'
+            --exclude-path '(^|/)coverage(/|$)'
+            --exclude-path '(^|/)\.worktrees(/|$)'
+            --exclude-path '(^|/)\.superpowers(/|$)'
+            --exclude-path '(^|/)docs/superpowers(/|$)'
+            './**/*.md'
           fail: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -64,23 +86,55 @@ jobs:
         run: python3 -m unittest tests.test_scan_secrets -v && python3 scripts/scan_secrets.py
 
   cli-portability:
-    name: CLI portability (${{ matrix.os }})
+    name: CLI portability (${{ matrix.os }}, Node ${{ matrix.node-version }})
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+        node-version: [20, 24]
     timeout-minutes: 10
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Set up Node.js 20
+      - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 20
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install locked Node toolchain
+        run: npm ci --ignore-scripts
+
+      - name: Enforce dependency policy
+        run: npm run dependency:policy
 
       - name: Test npm CLI and portability fixtures
         run: npm test
 
       - name: Verify npm package contents
         run: npm run pack:check
+
+  docs-diagram:
+    name: Verify generated Mermaid diagram
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+
+      - name: Install locked Node toolchain
+        run: npm ci
+
+      - name: Render canonical Mermaid source
+        run: npm run docs:flow -- --output "$RUNNER_TEMP/forgeloop-flow.svg"
+
+      - name: Verify generated and committed diagram fingerprints
+        run: |
+          npm run docs:check -- "$RUNNER_TEMP/forgeloop-flow.svg"
+          npm run docs:check

@@ -1,267 +1,37 @@
 import { ARTIFACT_PATHS, readJsonArtifact } from "./artifacts.js";
 import { completionIdentityErrors, evaluateCompletion } from "./completion.js";
-import { requiredEvidenceForTarget } from "./completion-artifacts.js";
-import { coverageForRequirements } from "./coverage.js";
 import { readContract } from "./contract.js";
 import { evaluatePreflight, validatePersistedPreflight, validateReadyProtocolConsistency } from "./preflight.js";
-import { PROTOCOL_VERSION } from "./protocol.js";
 import { validateReceipt } from "./receipt.js";
 import { readPersistedRoute } from "./route-artifact.js";
-import { assertCheckList } from "./checks.js";
 import { completionRelationshipErrors } from "./completion-relationships.js";
 import { classifyLoadedWorkState, readWorkState } from "./work-state.js";
-import { sha256 } from "./manifest.js";
 import { evaluateRequiredEvidence, authoritativeChecksForRequirements, ordinaryLeafRequirements, classifyRequirement } from "./evidence-readiness.js";
 import {
   evaluateStartExecutionPrerequisites,
   PREFLIGHT_ROUTE_IDENTITY_ERROR_MESSAGE,
 } from "./execution-prerequisites.js";
 import { validateEventLedger, validateCompletionRecoveryAuthorization } from "./events.js";
+import {
+  NEXT_ACTIONS,
+  commandFor,
+  decision,
+  recordCheckCommandSpec,
+  recordTerminalResultCommandSpec,
+  result,
+  uniqueSorted,
+} from "./next-action-model.js";
+import {
+  artifactError,
+  checkListReasons,
+  freshnessReasons,
+  loadArtifact,
+  requirementsAndCoverage,
+  staleReasons,
+} from "./next-action-artifacts.js";
+import { PHASES_REQUIRING_EXECUTION_CHRONOLOGY } from "./next-action-phases.js";
 
-export const NEXT_ACTIONS = Object.freeze({
-  DISCOVER: "DISCOVER",
-  CREATE_CONTRACT: "CREATE_CONTRACT",
-  ROUTE: "ROUTE",
-  SATISFY_GATES: "SATISFY_GATES",
-  RUN_PREFLIGHT: "RUN_PREFLIGHT",
-  PLAN: "PLAN",
-  START_EXECUTION: "START_EXECUTION",
-  ENTER_VERIFYING: "ENTER_VERIFYING",
-  RECORD_VERIFICATION: "RECORD_VERIFICATION",
-  DIAGNOSE: "DIAGNOSE",
-  CORRECT: "CORRECT",
-  ENTER_REVIEWING: "ENTER_REVIEWING",
-  RECORD_TERMINAL_RESULT: "RECORD_TERMINAL_RESULT",
-  PREPARE_COMPLETION: "PREPARE_COMPLETION",
-  RUN_COMPLETE: "RUN_COMPLETE",
-  RESOLVE_STALE_ROUTE: "RESOLVE_STALE_ROUTE",
-  RESOLVE_BLOCKER: "RESOLVE_BLOCKER",
-  NONE: "NONE",
-});
-
-const PHASES_REQUIRING_EXECUTION_CHRONOLOGY = new Set([
-  "EXECUTING",
-  "VERIFYING",
-  "DIAGNOSING",
-  "CORRECTING",
-  "REVIEWING",
-  "COMPLETE",
-]);
-
-function artifactError(code, message, artifacts = []) {
-  return { code, message, artifacts };
-}
-
-function uniqueSorted(values) {
-  return [...new Set(values.filter(Boolean))].sort();
-}
-
-function result({
-  taskId = "unknown",
-  currentPhase = "RECEIVED",
-  nextAction,
-  reasons = [],
-  commands = [],
-  commandSpecs = [],
-  requiredArtifacts = [],
-  missingArtifacts = [],
-}) {
-  const normalizedReasons = reasons
-    .map((reason) => ({
-      code: reason.code ?? "E_NEXT_ACTION_BLOCKED",
-      message: reason.message ?? String(reason),
-      artifacts: uniqueSorted(reason.artifacts ?? []),
-    }))
-    .sort((left, right) => left.code.localeCompare(right.code)
-      || left.artifacts.join("\0").localeCompare(right.artifacts.join("\0"))
-      || left.message.localeCompare(right.message));
-
-  return {
-    schemaVersion: 1,
-    protocolVersion: PROTOCOL_VERSION,
-    taskId,
-    currentPhase,
-    nextAction,
-    terminal: nextAction === NEXT_ACTIONS.NONE,
-    reasonCodes: uniqueSorted(normalizedReasons.map((reason) => reason.code)),
-    reasons: normalizedReasons,
-    commands: uniqueSorted(commands),
-    commandSpecs: [...new Map(commandSpecs.map((spec) => [JSON.stringify(spec), spec])).values()]
-      .sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right))),
-    requiredArtifacts: uniqueSorted(requiredArtifacts),
-    missingArtifacts: uniqueSorted(missingArtifacts),
-  };
-}
-
-function commandFor(action) {
-  return {
-    [NEXT_ACTIONS.PLAN]: "forgeloop advance --to PLANNED",
-    [NEXT_ACTIONS.RUN_PREFLIGHT]: "forgeloop preflight --json",
-    [NEXT_ACTIONS.START_EXECUTION]: "forgeloop advance --to EXECUTING",
-    [NEXT_ACTIONS.ENTER_VERIFYING]: "forgeloop advance --to VERIFYING",
-    [NEXT_ACTIONS.DIAGNOSE]: "forgeloop advance --to DIAGNOSING",
-    [NEXT_ACTIONS.CORRECT]: "forgeloop advance --to CORRECTING",
-    [NEXT_ACTIONS.ENTER_REVIEWING]: "forgeloop advance --to REVIEWING",
-    [NEXT_ACTIONS.RECORD_TERMINAL_RESULT]: "forgeloop record-terminal-result",
-    [NEXT_ACTIONS.PREPARE_COMPLETION]: "forgeloop prepare-completion --json",
-    [NEXT_ACTIONS.RUN_COMPLETE]: "forgeloop complete --json",
-  }[action];
-}
-
-function recordCheckCommandSpec(requirement) {
-  const checkId = `requirement-${sha256(Buffer.from(requirement)).slice(0, 16)}`;
-  return {
-    commandId: "record-check",
-    executable: "forgeloop",
-    subcommand: "record-check",
-    argv: ["record-check", `--id=${checkId}`, `--requirement=${requirement}`],
-    requiredInputs: [
-      { name: "status", option: "--status=<passed|failed|blocked|not-run>" },
-      { name: "evidenceKind", option: "--evidence-kind=<OBSERVED|INFERRED|NOT_VERIFIED|BLOCKED>" },
-      { name: "result", option: "--result=<text>" },
-      { name: "exitCode", option: "--exit-code=<number>", optional: true },
-    ],
-  };
-}
-
-function recordTerminalResultCommandSpec(requirement) {
-  const reqId = requirement.id ?? requirement;
-  const type = requirement.type ?? "PUBLICATION";
-  const status = requirement.requiredPublicationStatus ?? (type === "PUBLICATION" ? "published" : "ready");
-  return {
-    commandId: "record-terminal-result",
-    executable: "forgeloop",
-    subcommand: "record-terminal-result",
-    argv: ["record-terminal-result", `--requirement=${reqId}`, `--type=${type}`, `--status=${status}`],
-    requiredInputs: [
-      { name: "source", option: "--source=<text>" },
-      { name: "result", option: "--result=<text>" },
-      { name: "details", option: "--details=<json>", optional: true },
-    ],
-  };
-}
-
-function decision(input, action, reason, requiredArtifacts = [], missingArtifacts = []) {
-  const command = commandFor(action);
-  return result({
-    ...input,
-    nextAction: action,
-    reasons: [reason],
-    ...(command ? { commands: [command] } : {}),
-    requiredArtifacts,
-    missingArtifacts,
-  });
-}
-
-function missingArtifact(error, fallback) {
-  return error?.code === "ARTIFACT_MISSING"
-    ? (error.artifacts?.length ? error.artifacts : [fallback])
-    : [];
-}
-
-function staleReasons(state, contract, route) {
-  const reasons = [];
-  if (state.contractFingerprint !== contract.fingerprint) {
-    reasons.push(artifactError(
-      "E_CONTRACT_STALE",
-      "Work state references a different current contract",
-      [ARTIFACT_PATHS.state, ARTIFACT_PATHS.contract],
-    ));
-  }
-  if (route.value.contractFingerprint !== undefined && route.value.contractFingerprint !== contract.fingerprint) {
-    reasons.push(artifactError(
-      "E_ROUTE_STALE",
-      "Routing result references a different current contract",
-      [ARTIFACT_PATHS.route, ARTIFACT_PATHS.contract],
-    ));
-  }
-  if (state.routeFingerprint !== route.fingerprint) {
-    reasons.push(artifactError(
-      "E_ROUTE_STALE",
-      "Work state references a different routing result",
-      [ARTIFACT_PATHS.state, ARTIFACT_PATHS.route],
-    ));
-  }
-  if (JSON.stringify(state.selectedGuides) !== JSON.stringify(route.value.guides)) {
-    reasons.push(artifactError(
-      "E_ROUTE_STALE",
-      "Work state guides do not match the persisted routing result",
-      [ARTIFACT_PATHS.state, ARTIFACT_PATHS.route],
-    ));
-  }
-  return reasons;
-}
-
-function freshnessReasons(state, classification) {
-  const requiredArtifactPaths = state.requiredArtifacts?.map((artifact) => artifact.path) ?? [];
-  const reasons = [artifactError(
-    "E_STATE_REVALIDATION_REQUIRED",
-    `Work-state checkpoint requires revalidation: ${classification.reasons.join(", ")}`,
-    [ARTIFACT_PATHS.state],
-  )];
-  for (const reason of classification.reasons) {
-    const contractRelated = ["CONTRACT_CHANGED", "CONTRACT_INVALID", "CONTRACT_NOT_VERIFIED"].includes(reason);
-    const artifactRelated = reason.startsWith("REQUIRED_ARTIFACT");
-    reasons.push(artifactError(
-      contractRelated ? "E_CONTRACT_STALE" : artifactRelated ? "E_REQUIRED_ARTIFACT_STALE" : "E_REPOSITORY_CHANGED",
-      `Work-state freshness check failed: ${reason}`,
-      uniqueSorted([
-        ARTIFACT_PATHS.state,
-        ...(contractRelated ? [ARTIFACT_PATHS.contract] : []),
-        ...(artifactRelated ? requiredArtifactPaths : []),
-      ]),
-    ));
-  }
-  return reasons;
-}
-
-function checkListReasons(state) {
-  try {
-    assertCheckList(state.checks, "work-state.checks");
-    return [];
-  } catch (error) {
-    return [artifactError(
-      error.code ?? "E_CHECK_INVALID",
-      error.message,
-      [ARTIFACT_PATHS.state],
-    )];
-  }
-}
-
-async function loadArtifact(loader, fallback) {
-  try {
-    return { value: await loader(), error: null, missingArtifacts: [] };
-  } catch (error) {
-    return { value: null, error, missingArtifacts: missingArtifact(error, fallback) };
-  }
-}
-
-async function requirementsAndCoverage({
-  target,
-  packageRoot,
-  contract,
-  route,
-  checks,
-  additionalEvidence = [],
-  authorityContext,
-  runtimeContext,
-}) {
-  const requirements = await requiredEvidenceForTarget({
-    target,
-    contract,
-    route,
-    packageRoot,
-    additionalEvidence,
-  });
-  return {
-    requirements,
-    coverage: coverageForRequirements(requirements, checks, {
-      target,
-      taskId: contract?.value?.taskId,
-      options: { authorityContext, runtimeContext },
-    }),
-  };
-}
+export { NEXT_ACTIONS } from "./next-action-model.js";
 
 export async function getNextAction(targetOrOptions = {}, packageRootOption) {
   const normalized = typeof targetOrOptions === "string"

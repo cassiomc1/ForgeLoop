@@ -17,9 +17,13 @@
     "MD040": false
   },
   "globs": [
-    "**/*.md",
-    "!**/.worktrees/**",
-    "!**/.superpowers/**",
-    "!docs/superpowers/**"
+    "**/*.md"
+  ],
+  "ignores": [
+    "**/.worktrees/**",
+    "**/.superpowers/**",
+    "**/docs/superpowers/**",
+    "**/node_modules/**",
+    "**/coverage/**"
   ]
 }

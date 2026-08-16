@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 
+import { removeTempTree } from "./helpers/rm-safe.js";
 import { ARTIFACT_PATHS } from "../src/core/artifacts.js";
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { validateEventLedger } from "../src/core/events.js";
@@ -25,12 +26,7 @@ async function withTarget(run) {
   try {
     await run(target);
   } finally {
-    await rm(target, {
-      recursive: true,
-      force: true,
-      maxRetries: 10,
-      retryDelay: 100,
-    });
+    await removeTempTree(target);
   }
 }
 

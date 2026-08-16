@@ -9,9 +9,8 @@ import {
   writeManifest,
 } from "../core/manifest.js";
 import { readTemplateEntries } from "../core/templates.js";
-import { isNativeAdapterPath, LAYOUT_VERSION } from "../core/target-layout.js";
+import { isNativeAdapterPath, LAYOUT_VERSION, LEGACY_PROFILE_PATH } from "../core/target-layout.js";
 
-const PROFILE_PATH = "PROJECT_PROFILE.md";
 const LEGACY_CLEANUP_DIRECTORIES = Object.freeze(["ENG", "schemas"]);
 
 function migrationConflict(code, path, message) {
@@ -169,7 +168,7 @@ async function migrateLegacyLayout({ target, dryRun, packageVersion, currentMani
       const legacyHash = legacyBytes ? sha256(legacyBytes) : null;
       const unchangedManagedLegacy = Boolean(legacyRecord) && legacyHash === legacyRecord.sha256;
 
-      if (entry.sourcePath === PROFILE_PATH
+      if (entry.sourcePath === LEGACY_PROFILE_PATH
         && legacyExists
         && legacyRecord
         && currentHash === legacyHash) {
@@ -179,7 +178,7 @@ async function migrateLegacyLayout({ target, dryRun, packageVersion, currentMani
         continue;
       }
 
-      if (!hiddenMatchesSource && !destinationRecord && entry.sourcePath !== PROFILE_PATH) {
+      if (!hiddenMatchesSource && !destinationRecord && entry.sourcePath !== LEGACY_PROFILE_PATH) {
         conflicts.push(migrationConflict(
           "E_HIDDEN_KIT_MIGRATION_CONFLICT",
           entry.relativePath,
@@ -191,12 +190,12 @@ async function migrateLegacyLayout({ target, dryRun, packageVersion, currentMani
         addLegacyCleanup(cleanupFiles, cleanupDirectories, entry.legacyRelativePath, legacyHash);
         nextManifest.files[entry.relativePath] = manifestRecord(
           sourceHash,
-          entry.sourcePath === PROFILE_PATH,
+          entry.sourcePath === LEGACY_PROFILE_PATH,
           legacyHash,
         );
         continue;
       } else if (hiddenMatchesSource && legacyExists) {
-        const conflict = entry.sourcePath === PROFILE_PATH
+        const conflict = entry.sourcePath === LEGACY_PROFILE_PATH
           ? migrationConflict(
             "E_PROFILE_MIGRATION_CONFLICT",
             entry.legacyRelativePath,
@@ -214,7 +213,7 @@ async function migrateLegacyLayout({ target, dryRun, packageVersion, currentMani
       }
       nextManifest.files[entry.relativePath] = manifestRecord(
         currentHash,
-        entry.sourcePath === PROFILE_PATH
+        entry.sourcePath === LEGACY_PROFILE_PATH
           || !destinationRecord
           || Boolean(destinationRecord.preserve),
       );
@@ -224,7 +223,7 @@ async function migrateLegacyLayout({ target, dryRun, packageVersion, currentMani
     if (!legacyExists) {
       addAction(actions, dryRun, "create", entry.relativePath);
       writes.push({ destination, bytes: entry.bytes });
-      nextManifest.files[entry.relativePath] = manifestRecord(sourceHash, entry.sourcePath === PROFILE_PATH);
+      nextManifest.files[entry.relativePath] = manifestRecord(sourceHash, entry.sourcePath === LEGACY_PROFILE_PATH);
       continue;
     }
 
@@ -232,7 +231,7 @@ async function migrateLegacyLayout({ target, dryRun, packageVersion, currentMani
     const legacyHash = sha256(legacyBytes);
     const unchangedManaged = Boolean(legacyRecord) && legacyHash === legacyRecord.sha256;
 
-    if (entry.sourcePath === PROFILE_PATH && legacyRecord) {
+    if (entry.sourcePath === LEGACY_PROFILE_PATH && legacyRecord) {
       addAction(actions, dryRun, "move-profile", entry.legacyRelativePath, { to: entry.relativePath });
       writes.push({ destination, bytes: legacyBytes });
       addLegacyCleanup(cleanupFiles, cleanupDirectories, entry.legacyRelativePath, legacyHash);
@@ -256,7 +255,7 @@ async function migrateLegacyLayout({ target, dryRun, packageVersion, currentMani
       continue;
     }
 
-    const conflict = entry.sourcePath === PROFILE_PATH
+    const conflict = entry.sourcePath === LEGACY_PROFILE_PATH
       ? migrationConflict(
         "E_PROFILE_MIGRATION_CONFLICT",
         entry.legacyRelativePath,
@@ -275,7 +274,7 @@ async function migrateLegacyLayout({ target, dryRun, packageVersion, currentMani
       reason: legacyRecord ? "managed-modified" : "unmanaged",
     });
     writes.push({ destination, bytes: entry.bytes });
-    nextManifest.files[entry.relativePath] = manifestRecord(sourceHash, entry.sourcePath === PROFILE_PATH);
+    nextManifest.files[entry.relativePath] = manifestRecord(sourceHash, entry.sourcePath === LEGACY_PROFILE_PATH);
   }
 
   // Apply all hidden writes and verify their bytes before changing manifest authority.
@@ -364,7 +363,7 @@ export async function runUpdate({ target, dryRun, packageRoot, packageVersion, h
         entry,
         record: {
           sha256: sourceHash,
-          preserve: entry.sourcePath === PROFILE_PATH,
+          preserve: entry.sourcePath === LEGACY_PROFILE_PATH,
           ...(record?.legacySha256 ? { legacySha256: record.legacySha256 } : {}),
         },
       });
@@ -376,7 +375,7 @@ export async function runUpdate({ target, dryRun, packageRoot, packageVersion, h
       continue;
     }
 
-    if (record.preserve || entry.sourcePath === PROFILE_PATH) {
+    if (record.preserve || entry.sourcePath === LEGACY_PROFILE_PATH) {
       actions.push({ action: "skip", path: entry.relativePath, reason: "preserved" });
       continue;
     }

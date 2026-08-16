@@ -23,7 +23,11 @@ test("ForgeLoop audit checks for a receipt only after checkout", async () => {
   );
   assert.match(
     workflow,
-    /- name: Audit ForgeLoop receipt\n\s+if: \$\{\{ hashFiles\('\.forgeloop\/execution-receipt\.json'\) != '' \}\}\n\s+run: npx @cassiomc1\/forgeloop audit --strict/,
+    /- name: Install locked Node toolchain\n\s+run: npm ci --ignore-scripts/,
+  );
+  assert.match(
+    workflow,
+    /- name: Audit ForgeLoop receipt\n\s+if: \$\{\{ hashFiles\('\.forgeloop\/execution-receipt\.json'\) != '' \}\}\n\s+run: node src\/cli\.js audit --strict/,
   );
 });
 

@@ -31,8 +31,38 @@ import { resolveTarget } from "./core/filesystem.js";
 import { getPackageRoot } from "./core/templates.js";
 import { ARTIFACT_PATHS } from "./core/artifacts.js";
 
+export const COMMANDS = Object.freeze([
+  "init",
+  "doctor",
+  "update",
+  "activate",
+  "route",
+  "preflight",
+  "advance",
+  "next",
+  "prepare-completion",
+  "run-check",
+  "record-check",
+  "record-terminal-result",
+  "complete",
+  "audit",
+  "report",
+  "policy",
+  "bundle",
+  "inspect",
+  "status",
+  "validate-state",
+  "clear-state",
+  "validate-receipt",
+  "validate-protocol",
+]);
+
+// Commands whose usage blocks already describe --json (doctor, route) or that
+// accept no --json at all (init, update).
+const GENERIC_JSON_EXCLUDED_COMMANDS = new Set(["init", "doctor", "update", "route"]);
+
 function usage(command = null) {
-  const commands = "init|doctor|update|activate|route|preflight|advance|next|prepare-completion|run-check|record-check|record-terminal-result|complete|audit|report|policy|bundle|inspect|status|validate-state|clear-state|validate-receipt|validate-protocol";
+  const commands = COMMANDS.join("|");
   const options = ["  --path <directory>  target project directory (default: current directory)"];
   if (!command || command === "init" || command === "update") {
     options.push("  --dry-run           show planned writes without changing files");
@@ -54,7 +84,7 @@ function usage(command = null) {
   if (!command || command === "advance") {
     options.push("  --to <phase>        destination workflow phase");
   }
-  if (!command || ["activate", "advance", "next", "prepare-completion", "run-check", "record-check", "record-terminal-result", "preflight", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"].includes(command)) {
+  if (!command || !GENERIC_JSON_EXCLUDED_COMMANDS.has(command)) {
     options.push("  --json              emit structured output as JSON");
   }
   if (!command || ["preflight", "complete", "audit", "report"].includes(command)) {
@@ -155,7 +185,7 @@ export function parseArgs(argv) {
 
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
-    if (["init", "doctor", "update", "activate", "route", "preflight", "advance", "next", "prepare-completion", "run-check", "record-check", "record-terminal-result", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"].includes(argument)) {
+    if (COMMANDS.includes(argument)) {
       if (command) throw new Error(`Multiple commands are not supported: ${argument}`);
       command = argument;
     } else if (argument === "--help" || argument === "-h") {
@@ -442,6 +472,196 @@ function printActions(actions) {
   }
 }
 
+export const COMMAND_HANDLERS = Object.freeze({
+  init: async ({ target, packageRoot, packageVersion, options }) => {
+    const result = await runInit({ target, dryRun: options.dryRun, packageRoot, packageVersion });
+    printActions(result.actions);
+    return 0;
+  },
+  doctor: async ({ target, packageRoot, options }) => {
+    const result = await runDoctor({
+      target,
+      packageRoot,
+      adoptPaths: options.adopt,
+      strict: options.strict,
+    });
+    if (options.json) {
+      console.log(JSON.stringify(result, null, 2));
+    } else {
+      for (const item of result.findings) {
+        console.log(`${item.severity}: ${item.code}: ${item.path} - ${item.message}`);
+      }
+      console.log(result.ok ? "healthy: ForgeLoop target is ready" : "unhealthy: ForgeLoop target needs attention");
+    }
+    return result.ok ? 0 : 1;
+  },
+  route: async ({ target, packageRoot, options }) => {
+    const result = await runRoute({
+      target,
+      packageRoot,
+      workType: options.work,
+      surfaces: options.surfaces,
+      risks: options.risks,
+      platforms: options.platforms,
+      behaviorChange: options.behaviorChange,
+      executableChange: options.executableChange,
+    });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatRouteResult(result));
+    return 0;
+  },
+  activate: async ({ target, packageRoot, options }) => {
+    const result = await runActivate({ target, packageRoot });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatActivateResult(result));
+    return 0;
+  },
+  preflight: async ({ target, packageRoot, options }) => {
+    const result = await runPreflight({ target, packageRoot, strict: options.strict });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatPreflightResult(result));
+    return result.status === "READY" ? 0 : 1;
+  },
+  advance: async ({ target, packageRoot, options }) => {
+    const result = await runAdvance({ target, packageRoot, to: options.to });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatAdvanceResult(result));
+    return 0;
+  },
+  next: async ({ target, packageRoot, options }) => {
+    const result = await runNext({ target, packageRoot });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatNextActionResult(result));
+    return 0;
+  },
+  "prepare-completion": async ({ target, packageRoot, options }) => {
+    const result = await runPrepareCompletion({ target, packageRoot });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatPrepareCompletionResult(result));
+    return 0;
+  },
+  "run-check": async ({ target, packageRoot, options }) => {
+    const result = await runCheck({
+      target,
+      packageRoot,
+      id: options.checkId,
+      requirement: options.checkRequirement,
+      argv: options.commandArgv,
+      details: options.checkDetails ?? undefined,
+    });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatRunCheckResult(result));
+    return result.check.status === "passed" ? 0 : 1;
+  },
+  "record-check": async ({ target, packageRoot, options }) => {
+    const result = await runRecordCheck({
+      target,
+      packageRoot,
+      id: options.checkId,
+      kind: options.checkKind ?? "command",
+      requirement: options.checkRequirement,
+      status: options.checkStatus,
+      evidenceKind: options.checkEvidenceKind,
+      command: options.checkCommand ?? undefined,
+      result: options.checkResult ?? undefined,
+      ...(options.checkExitCode === null ? {} : { exitCode: options.checkExitCode }),
+      details: options.checkDetails ?? undefined,
+      executionRef: options.checkExecutionRef ?? undefined,
+      provenance: options.checkProvenance ?? undefined,
+    });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatRecordCheckResult(result));
+    return 0;
+  },
+  "record-terminal-result": async ({ target, packageRoot, options }) => {
+    const result = await runRecordTerminalResult({
+      target,
+      packageRoot,
+      requirement: options.checkRequirement,
+      type: options.checkType,
+      status: options.checkStatus,
+      source: options.checkSource ?? options.checkCommand,
+      result: options.checkResult,
+      details: options.checkDetails ?? undefined,
+    });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatRecordTerminalResult(result));
+    return 0;
+  },
+  complete: async ({ target, packageRoot, options }) => {
+    const result = await runComplete({ target, packageRoot, strict: options.strict });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatCompleteResult(result));
+    return result.status === "VALID" ? 0 : 1;
+  },
+  audit: async ({ target, packageRoot, options }) => {
+    const result = await runAudit({ target, packageRoot, strict: options.strict });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatAuditResult(result));
+    return result.status === "VALID" ? 0 : 1;
+  },
+  report: async ({ target, packageRoot, options }) => {
+    const result = await runReport({ target, packageRoot, strict: options.strict });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatReportResult(result));
+    return result.verdict === "VALID" ? 0 : 1;
+  },
+  policy: async ({ target, packageRoot, options }) => {
+    const result = await runPolicy({ target, packageRoot, name: options.policy });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatPolicyResult(result));
+    return 0;
+  },
+  bundle: async ({ target, packageRoot, options }) => {
+    const result = await runBundle({ target, packageRoot, taskId: options.task });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatBundleResult(result));
+    return 0;
+  },
+  inspect: async ({ target, packageRoot, options }) => {
+    const result = await inspectTarget({ target, packageRoot, contractFile: options.contractFile });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatInspectResult(result));
+    return result.ok ? 0 : 1;
+  },
+  "validate-receipt": async ({ target, packageRoot, options }) => {
+    const result = await runValidateReceipt({ target, packageRoot, file: options.file });
+    console.log(options.json ? JSON.stringify(result, null, 2) : "valid: execution receipt");
+    return 0;
+  },
+  "validate-protocol": async ({ target, packageRoot, options }) => {
+    const result = await runValidateProtocol({
+      target,
+      packageRoot,
+      stateFile: options.stateFile ?? ARTIFACT_PATHS.state,
+      receiptFile: options.receiptFile ?? ARTIFACT_PATHS.receipt,
+      routeFile: options.routeFile ?? ARTIFACT_PATHS.route,
+      contractFile: options.contractFile,
+      taskBriefFiles: options.taskBriefFiles,
+      delegatedResultFiles: options.delegatedResultFiles,
+    });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatValidateProtocolResult(result));
+    return result.status === "VALID" ? 0 : 1;
+  },
+  status: async ({ target, packageRoot, options }) => {
+    const result = await runStatus({ target, packageRoot, contractFile: options.contractFile });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatStatusResult(result));
+    return 0;
+  },
+  "validate-state": async ({ target, packageRoot, options }) => {
+    const result = await runValidateState({ target, packageRoot });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatValidateStateResult(result));
+    return result.ok ? 0 : 1;
+  },
+  "clear-state": async ({ target, options }) => {
+    const result = await runClearState({ target });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatClearStateResult(result));
+    return 0;
+  },
+  update: async ({ target, packageRoot, packageVersion, options }) => {
+    const result = await runUpdate({ target, dryRun: options.dryRun, packageRoot, packageVersion });
+    printActions(result.actions);
+    for (const conflict of result.conflicts) {
+      const code = conflict.code ? `${conflict.code}: ` : "";
+      console.log(`conflict: ${code}${conflict.path} - ${conflict.message}`);
+    }
+    return result.conflicts.length === 0 ? 0 : 1;
+  },
+});
+
+export const COMMAND_TABLE = Object.freeze(
+  COMMANDS.map((name) => Object.freeze({
+    name,
+    handler: COMMAND_HANDLERS[name],
+    usage: usage(name),
+  })),
+);
+
 export async function main(argv = process.argv.slice(2)) {
   try {
     const { command, options } = parseArgs(argv);
@@ -458,205 +678,16 @@ export async function main(argv = process.argv.slice(2)) {
     const packageRoot = getPackageRoot();
     const version = await packageVersion(packageRoot);
 
-    if (command === "init") {
-      const result = await runInit({ target, dryRun: options.dryRun, packageRoot, packageVersion: version });
-      printActions(result.actions);
-      return 0;
+    const handler = COMMAND_HANDLERS[command];
+    if (typeof handler !== "function") {
+      throw new Error(`Unsupported command: ${command}`);
     }
-
-    if (command === "doctor") {
-      const result = await runDoctor({
-        target,
-        packageRoot,
-        adoptPaths: options.adopt,
-        strict: options.strict,
-      });
-      if (options.json) {
-        console.log(JSON.stringify(result, null, 2));
-      } else {
-        for (const item of result.findings) {
-          console.log(`${item.severity}: ${item.code}: ${item.path} - ${item.message}`);
-        }
-        console.log(result.ok ? "healthy: ForgeLoop target is ready" : "unhealthy: ForgeLoop target needs attention");
-      }
-      return result.ok ? 0 : 1;
-    }
-
-    if (command === "route") {
-      const result = await runRoute({
-        target,
-        packageRoot,
-        workType: options.work,
-        surfaces: options.surfaces,
-        risks: options.risks,
-        platforms: options.platforms,
-        behaviorChange: options.behaviorChange,
-        executableChange: options.executableChange,
-      });
-      console.log(options.json ? JSON.stringify(result, null, 2) : formatRouteResult(result));
-      return 0;
-    }
-
-    if (command === "activate") {
-      const result = await runActivate({ target, packageRoot });
-      console.log(options.json ? JSON.stringify(result, null, 2) : formatActivateResult(result));
-      return 0;
-    }
-
-    if (command === "preflight") {
-      const result = await runPreflight({ target, packageRoot, strict: options.strict });
-      console.log(options.json ? JSON.stringify(result, null, 2) : formatPreflightResult(result));
-      return result.status === "READY" ? 0 : 1;
-    }
-
-    if (command === "advance") {
-      const result = await runAdvance({ target, packageRoot, to: options.to });
-      console.log(options.json ? JSON.stringify(result, null, 2) : formatAdvanceResult(result));
-      return 0;
-    }
-
-    if (command === "next") {
-      const result = await runNext({ target, packageRoot });
-      console.log(options.json ? JSON.stringify(result, null, 2) : formatNextActionResult(result));
-      return 0;
-    }
-
-    if (command === "prepare-completion") {
-      const result = await runPrepareCompletion({ target, packageRoot });
-      console.log(options.json ? JSON.stringify(result, null, 2) : formatPrepareCompletionResult(result));
-      return 0;
-    }
-
-    if (command === "run-check") {
-      const result = await runCheck({
-        target,
-        packageRoot,
-        id: options.checkId,
-        requirement: options.checkRequirement,
-        argv: options.commandArgv,
-        details: options.checkDetails ?? undefined,
-      });
-      console.log(options.json ? JSON.stringify(result, null, 2) : formatRunCheckResult(result));
-      return result.check.status === "passed" ? 0 : 1;
-    }
-
-    if (command === "record-check") {
-      const result = await runRecordCheck({
-        target,
-        packageRoot,
-        id: options.checkId,
-        kind: options.checkKind ?? "command",
-        requirement: options.checkRequirement,
-        status: options.checkStatus,
-        evidenceKind: options.checkEvidenceKind,
-        command: options.checkCommand ?? undefined,
-        result: options.checkResult ?? undefined,
-        ...(options.checkExitCode === null ? {} : { exitCode: options.checkExitCode }),
-        details: options.checkDetails ?? undefined,
-        executionRef: options.checkExecutionRef ?? undefined,
-        provenance: options.checkProvenance ?? undefined,
-      });
-      console.log(options.json ? JSON.stringify(result, null, 2) : formatRecordCheckResult(result));
-      return 0;
-    }
-
-    if (command === "record-terminal-result") {
-      const result = await runRecordTerminalResult({
-        target,
-        packageRoot,
-        requirement: options.checkRequirement,
-        type: options.checkType,
-        status: options.checkStatus,
-        source: options.checkSource ?? options.checkCommand,
-        result: options.checkResult,
-        details: options.checkDetails ?? undefined,
-      });
-      console.log(options.json ? JSON.stringify(result, null, 2) : formatRecordTerminalResult(result));
-      return 0;
-    }
-
-    if (command === "complete") {
-      const result = await runComplete({ target, packageRoot, strict: options.strict });
-      console.log(options.json ? JSON.stringify(result, null, 2) : formatCompleteResult(result));
-      return result.status === "VALID" ? 0 : 1;
-    }
-
-    if (command === "audit") {
-      const result = await runAudit({ target, packageRoot, strict: options.strict });
-      console.log(options.json ? JSON.stringify(result, null, 2) : formatAuditResult(result));
-      return result.status === "VALID" ? 0 : 1;
-    }
-
-    if (command === "report") {
-      const result = await runReport({ target, packageRoot, strict: options.strict });
-      console.log(options.json ? JSON.stringify(result, null, 2) : formatReportResult(result));
-      return result.verdict === "VALID" ? 0 : 1;
-    }
-
-    if (command === "policy") {
-      const result = await runPolicy({ target, packageRoot, name: options.policy });
-      console.log(options.json ? JSON.stringify(result, null, 2) : formatPolicyResult(result));
-      return 0;
-    }
-
-    if (command === "bundle") {
-      const result = await runBundle({ target, packageRoot, taskId: options.task });
-      console.log(options.json ? JSON.stringify(result, null, 2) : formatBundleResult(result));
-      return 0;
-    }
-
-    if (command === "inspect") {
-      const result = await inspectTarget({ target, packageRoot, contractFile: options.contractFile });
-      console.log(options.json ? JSON.stringify(result, null, 2) : formatInspectResult(result));
-      return result.ok ? 0 : 1;
-    }
-
-    if (command === "validate-receipt") {
-      const result = await runValidateReceipt({ target, packageRoot, file: options.file });
-      console.log(options.json ? JSON.stringify(result, null, 2) : "valid: execution receipt");
-      return 0;
-    }
-
-    if (command === "validate-protocol") {
-      const result = await runValidateProtocol({
-        target,
-        packageRoot,
-        stateFile: options.stateFile ?? ARTIFACT_PATHS.state,
-        receiptFile: options.receiptFile ?? ARTIFACT_PATHS.receipt,
-        routeFile: options.routeFile ?? ARTIFACT_PATHS.route,
-        contractFile: options.contractFile,
-        taskBriefFiles: options.taskBriefFiles,
-        delegatedResultFiles: options.delegatedResultFiles,
-      });
-      console.log(options.json ? JSON.stringify(result, null, 2) : formatValidateProtocolResult(result));
-      return result.status === "VALID" ? 0 : 1;
-    }
-
-    if (command === "status") {
-      const result = await runStatus({ target, packageRoot, contractFile: options.contractFile });
-      console.log(options.json ? JSON.stringify(result, null, 2) : formatStatusResult(result));
-      return 0;
-    }
-
-    if (command === "validate-state") {
-      const result = await runValidateState({ target, packageRoot });
-      console.log(options.json ? JSON.stringify(result, null, 2) : formatValidateStateResult(result));
-      return result.ok ? 0 : 1;
-    }
-
-    if (command === "clear-state") {
-      const result = await runClearState({ target });
-      console.log(options.json ? JSON.stringify(result, null, 2) : formatClearStateResult(result));
-      return 0;
-    }
-
-    const result = await runUpdate({ target, dryRun: options.dryRun, packageRoot, packageVersion: version });
-    printActions(result.actions);
-    for (const conflict of result.conflicts) {
-      const code = conflict.code ? `${conflict.code}: ` : "";
-      console.log(`conflict: ${code}${conflict.path} - ${conflict.message}`);
-    }
-    return result.conflicts.length === 0 ? 0 : 1;
+    return await handler({
+      target,
+      packageRoot,
+      packageVersion: version,
+      options,
+    });
   } catch (error) {
     console.error(`error: ${error.code ? `${error.code}: ` : ""}${error.message}`);
     return 1;

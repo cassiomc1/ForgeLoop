@@ -16,6 +16,8 @@ jobs:
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 20
+      - name: Install locked Node toolchain
+        run: npm ci --ignore-scripts
       - name: Audit ForgeLoop receipt
         if: ${{ hashFiles('.forgeloop/execution-receipt.json') != '' }}
-        run: npx @cassiomc1/forgeloop audit --strict
+        run: node src/cli.js audit --strict
