@@ -1,4 +1,4 @@
-import { assertSafePath, fileExists, ensureWithin, readBytes } from "../core/filesystem.js";
+import { assertSafePath, fileExists, ensureWithin, readBytes, writeFileAtomic } from "../core/filesystem.js";
 import { readManifest, sha256, writeManifest } from "../core/manifest.js";
 import { readTemplateEntries } from "../core/templates.js";
 import { createEvidence } from "../core/evidence.js";
@@ -113,9 +113,10 @@ async function adoptAdapters({ target, manifest, adoptPaths, findings }) {
   return nextManifest;
 }
 
-export async function runDoctor({ target, packageRoot, adoptPaths = [], strict = false }) {
+export async function runDoctor({ target, packageRoot, adoptPaths = [], strict = false, fix = false }) {
   const findings = [];
   let manifest = null;
+  let manifestChanged = false;
   try {
     manifest = await readManifest(target);
     if (!manifest) {
@@ -184,6 +185,16 @@ export async function runDoctor({ target, packageRoot, adoptPaths = [], strict =
           "Canonical file remains in the legacy root layout; migration is incomplete and the legacy copy was preserved.",
           "Run forgeloop update; it removes the root copy only when the recorded ownership hash still matches.",
         ));
+        continue;
+      }
+      if (fix && manifest && (layoutVersion >= LAYOUT_VERSION || managedPath.startsWith(".forgeloop/"))) {
+        await writeFileAtomic(destination, entry.bytes);
+        manifest.files[managedPath] = {
+          sha256: sha256(entry.bytes),
+          preserve: entry.sourcePath === "PROJECT_PROFILE.md",
+        };
+        manifestChanged = true;
+        findings.push(finding("file-restored", "info", managedPath, "Restored missing managed template file.", "No action required."));
         continue;
       }
       findings.push(finding("file-missing", "error", managedPath, "Managed file is missing."));
@@ -278,6 +289,10 @@ export async function runDoctor({ target, packageRoot, adoptPaths = [], strict =
         ),
       );
     }
+  }
+
+  if (manifestChanged && manifest) {
+    await writeManifest(target, manifest);
   }
 
   const ok = findings.every((item) => item.severity !== "error")

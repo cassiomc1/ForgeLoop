@@ -83,3 +83,14 @@ test("release identity does not fetch or write when supplied frozen metadata", a
   assert.equal(result.status, "RELEASE_IDENTITY_VALID");
   assert.equal(fetchCalled, false);
 });
+
+test("verify_release_identity.mjs CLI responds to --help and rejects invalid args", async () => {
+  const { execFileSync } = await import("node:child_process");
+  const scriptPath = "scripts/verify_release_identity.mjs";
+  const helpOutput = execFileSync(process.execPath, [scriptPath, "--help"], { encoding: "utf8" });
+  assert.match(helpOutput, /Usage: npm run release:identity/i);
+
+  assert.throws(() => {
+    execFileSync(process.execPath, [scriptPath, "--unknown-flag"], { encoding: "utf8", stdio: "pipe" });
+  });
+});

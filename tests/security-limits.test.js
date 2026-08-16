@@ -33,6 +33,24 @@ test("untrusted JSON has bounded depth, arrays, strings, and bytes", () => {
   assert.throws(() => assertJsonLimits(nested), /depth/i);
 });
 
+test("assertJsonLimits accepts non-circular DAGs and rejects genuine circular references", () => {
+  const sharedChild = { name: "shared-node", values: [1, 2, 3] };
+  const dag = {
+    branchA: { child: sharedChild },
+    branchB: { child: sharedChild },
+    list: [sharedChild, sharedChild],
+  };
+  assert.doesNotThrow(() => assertJsonLimits(dag));
+
+  const circular = { name: "root" };
+  circular.self = circular;
+  assert.throws(() => assertJsonLimits(circular), /circular reference/i);
+
+  const nestedCircular = { a: { b: {} } };
+  nestedCircular.a.b.link = nestedCircular.a;
+  assert.throws(() => assertJsonLimits(nestedCircular), /circular reference/i);
+});
+
 test("receipt validation applies resource limits before semantic scanning", async () => {
   await assert.rejects(
     () => validateReceipt({ ...baseReceipt, limitations: ["x".repeat(JSON_LIMITS.maxStringLength + 1)] }, packageRoot),

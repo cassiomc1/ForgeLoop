@@ -79,6 +79,7 @@ function usage(command = null) {
   if (!command || command === "doctor") {
     options.push("  --json              emit doctor findings as JSON");
     options.push("  --strict            treat warnings as unhealthy");
+    options.push("  --fix               restore missing managed template files");
     options.push("  --adopt <path>      preserve an existing adapter in the manifest");
   }
   if (!command || command === "route") {
@@ -166,6 +167,7 @@ export function parseArgs(argv) {
     dryRun: false,
     json: false,
     strict: false,
+    fix: false,
     adopt: [],
     work: null,
     surfaces: [],
@@ -217,6 +219,8 @@ export function parseArgs(argv) {
       options.json = true;
     } else if (argument === "--strict") {
       options.strict = true;
+    } else if (argument === "--fix") {
+      options.fix = true;
     } else if (argument === "--adopt") {
       const relativePath = argv[index + 1];
       if (!relativePath || relativePath.startsWith("-")) throw new Error("--adopt requires a path");
@@ -427,6 +431,9 @@ export function parseArgs(argv) {
   if (command !== "doctor" && options.adopt.length > 0) {
     throw new Error(`Option --adopt is not valid for ${command}`);
   }
+  if (command !== "doctor" && options.fix) {
+    throw new Error(`Option --fix is not valid for ${command}`);
+  }
   if (command !== "route" && (options.work || options.surfaces.length || options.risks.length || options.platforms.length || options.behaviorChange || options.executableChange)) {
     throw new Error(`Route options are not valid for ${command}`);
   }
@@ -518,6 +525,7 @@ export const COMMAND_HANDLERS = Object.freeze({
       packageRoot,
       adoptPaths: options.adopt,
       strict: options.strict,
+      fix: options.fix,
     });
     if (options.json) {
       console.log(JSON.stringify(result, null, 2));

@@ -301,6 +301,30 @@ test("doctor adopts a pre-existing adapter as preserved", async () => {
   });
 });
 
+test("doctor --fix restores missing managed template files and updates manifest", async () => {
+  await withTarget(async (target) => {
+    assert.equal(runCli(target, "init").status, 0);
+    const missingFile = path.join(target, ".forgeloop", "kit", "schemas", "authority.schema.json");
+    await rm(missingFile, { force: true });
+
+    const doctorBefore = runCli(target, "doctor", "--json");
+    const reportBefore = JSON.parse(doctorBefore.stdout);
+    assert.equal(reportBefore.ok, false);
+    assert.ok(reportBefore.findings.some((f) => f.code === "file-missing"));
+
+    const doctorFix = runCli(target, "doctor", "--fix", "--json");
+    const reportFix = JSON.parse(doctorFix.stdout);
+    assert.equal(doctorFix.status, 0, doctorFix.stderr);
+    assert.equal(reportFix.ok, true);
+    assert.ok(reportFix.findings.some((f) => f.code === "file-restored"));
+
+    const doctorAfter = runCli(target, "doctor", "--json");
+    const reportAfter = JSON.parse(doctorAfter.stdout);
+    assert.equal(reportAfter.ok, true);
+    assert.ok(!reportAfter.findings.some((f) => f.code === "file-missing"));
+  });
+});
+
 test("doctor reports manifest entries for templates that are no longer shipped", async () => {
   await withTarget(async (target) => {
     assert.equal(runCli(target, "init").status, 0);

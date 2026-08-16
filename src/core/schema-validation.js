@@ -26,6 +26,7 @@ export const SHIPPED_SCHEMA_NAMES = Object.freeze([
   "policy",
   "task-bundle",
   "execution",
+  "authority",
 ]);
 
 export class SchemaValidationError extends Error {
@@ -162,10 +163,22 @@ export function assertSchema(value, schema, label = "value") {
   return value;
 }
 
+const SCHEMA_CACHE = new Map();
+
+export function clearSchemaCache() {
+  SCHEMA_CACHE.clear();
+}
+
 export async function readSchema(name, packageRoot = getPackageRoot()) {
   const filename = name.endsWith(".schema.json") ? name : `${name}.schema.json`;
   const schemaPath = path.join(packageRoot, "schemas", filename);
-  return JSON.parse(await readFile(schemaPath, "utf8"));
+  const cacheKey = `${packageRoot}:${filename}`;
+  if (SCHEMA_CACHE.has(cacheKey)) {
+    return SCHEMA_CACHE.get(cacheKey);
+  }
+  const schema = JSON.parse(await readFile(schemaPath, "utf8"));
+  SCHEMA_CACHE.set(cacheKey, schema);
+  return schema;
 }
 
 export async function inspectSchemaHealth(packageRoot = getPackageRoot()) {

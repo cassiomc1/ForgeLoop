@@ -25,6 +25,10 @@ contratos históricos; isso é uma decisão documentada, não uma migração par
 | 7 | Substituir desenho manual do fluxo | ✅ Implementado | `docs/forgeloop-flow.mmd` é a fonte canônica; `scripts/generate-readme-flow.mjs` chama Mermaid CLI e grava fingerprint da fonte; CI valida o SVG sem exigir geometria idêntica entre sistemas |
 | 8 | Centralizar fixture/retry Windows | ✅ Implementado | `tests/helpers/rm-safe.js` é o único helper de remoção temporária; sem retries inline nos testes |
 | 9 | Refinar CI e portabilidade | ✅ Implementado | `npm ci`, política de dependências, matriz macOS/Linux/Windows, CodeQL, dependency review, release notes e auditoria sem `npx` implícito |
+| 10 | Sincronizar schema de autoridade (`authority.schema.json`) | ✅ Implementado | `authority` adicionado a `SHIPPED_SCHEMA_NAMES` (`schema-validation.js`) e `TEMPLATE_PATHS` (`templates.js`); teste de inventário exato em `tests/schema-health.test.js` |
+| 11 | Suporte a DAGs e ciclos estritos em `assertJsonLimits` | ✅ Implementado | Rastreamento por pilha de ancestrais ativos com `try/finally` em `src/core/json-safety.js`; testes em `tests/security-limits.test.js` |
+| 12 | Cache em memória para `readSchema` | ✅ Implementado | `SCHEMA_CACHE` e `clearSchemaCache()` em `src/core/schema-validation.js`; testes em `tests/schema-health.test.js` |
+| 13 | Auto-remediação segura no `forgeloop doctor` (`--fix`) | ✅ Implementado | Flag `--fix` em `src/commands/doctor.js` e `src/cli.js`; testes em `tests/cli.test.js` |
 
 ## Limites preservados
 
@@ -64,7 +68,7 @@ evidências observadas pelo ForgeLoop, `forgeloop next`, revisão, e
 `forgeloop complete` em `VALID`. A publicação somente é considerada concluída
 após o estado remoto do GitHub ser verificado separadamente.
 
-Última execução local: `npm test` passou com 545/545 testes; `npm run coverage`
-passou com 88% de statements/linhas, 78,45% de branches e 93,21% de funções;
-os validadores Python passaram com 42 testes e os checks de documentação,
-dependência, pacote e render Mermaid também passaram.
+Última execução local: `npm test` passou com 587/587 testes; os validadores
+Python passaram com 42 testes e os checks de documentação, integridade de
+segredos, política de dependências, pacote e render Mermaid passaram com 100%
+de sucesso.

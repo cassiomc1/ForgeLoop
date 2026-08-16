@@ -66,6 +66,7 @@ export const TEMPLATE_PATHS = [
   "schemas/activation.schema.json",
   "schemas/policy.schema.json",
   "schemas/task-bundle.schema.json",
+  "schemas/authority.schema.json",
 ];
 
 export function getPackageRoot() {

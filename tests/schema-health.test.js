@@ -4,17 +4,50 @@ import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 
-import { assertSchema, inspectSchemaHealth, readSchema } from "../src/core/schema-validation.js";
-import { getPackageRoot } from "../src/core/templates.js";
+import { readdir } from "node:fs/promises";
+import { assertSchema, clearSchemaCache, inspectSchemaHealth, readSchema, SHIPPED_SCHEMA_NAMES } from "../src/core/schema-validation.js";
+import { getPackageRoot, TEMPLATE_PATHS } from "../src/core/templates.js";
+
+test("schema inventory is fully synchronized with SHIPPED_SCHEMA_NAMES and TEMPLATE_PATHS", async () => {
+  const schemaDir = path.join(getPackageRoot(), "schemas");
+  const files = await readdir(schemaDir);
+  const diskSchemaNames = files
+    .filter((file) => file.endsWith(".schema.json"))
+    .map((file) => file.replace(/\.schema\.json$/, ""))
+    .sort();
+
+  const shippedSorted = [...SHIPPED_SCHEMA_NAMES].sort();
+  assert.deepEqual(shippedSorted, diskSchemaNames, "SHIPPED_SCHEMA_NAMES must match disk schemas exactly");
+
+  for (const name of diskSchemaNames) {
+    const templateEntry = `schemas/${name}.schema.json`;
+    assert.ok(
+      TEMPLATE_PATHS.includes(templateEntry),
+      `TEMPLATE_PATHS must include ${templateEntry}`,
+    );
+  }
+});
 
 test("schema health parses every shipped schema and reports valid status", async () => {
   const report = await inspectSchemaHealth(getPackageRoot());
   assert.equal(report.status, "valid");
-  assert.ok(report.schemas.length >= 7);
+  assert.equal(report.schemas.length, SHIPPED_SCHEMA_NAMES.length);
   for (const schema of report.schemas) {
     assert.equal(schema.status, "valid", schema.name);
     assert.equal(schema.version, 1, schema.name);
   }
+});
+
+test("readSchema caches parsed schemas in memory and clearSchemaCache resets the cache", async () => {
+  clearSchemaCache();
+  const first = await readSchema("authority", getPackageRoot());
+  const second = await readSchema("authority", getPackageRoot());
+  assert.equal(first, second, "readSchema should return cached object instance");
+
+  clearSchemaCache();
+  const third = await readSchema("authority", getPackageRoot());
+  assert.notEqual(first, third, "readSchema should return fresh object after clearSchemaCache");
+  assert.deepEqual(first, third);
 });
 
 test("execution schema accepts a ForgeLoop-owned command execution artifact", async () => {

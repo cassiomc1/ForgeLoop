@@ -23,7 +23,7 @@ export function assertJsonBytes(bytes, label = "JSON artifact", limits = JSON_LI
 }
 
 export function assertJsonLimits(value, label = "JSON artifact", limits = JSON_LIMITS) {
-  const visited = new WeakSet();
+  const ancestors = new Set();
 
   function visit(current, depth, location) {
     if (typeof current === "string") {
@@ -33,19 +33,23 @@ export function assertJsonLimits(value, label = "JSON artifact", limits = JSON_L
       return;
     }
     if (!current || typeof current !== "object") return;
-    if (visited.has(current)) throw new JsonLimitError(`${location} contains a circular reference`);
-    visited.add(current);
-    if (depth > limits.maxDepth) throw new JsonLimitError(`${location} exceeds the JSON depth limit`);
-    if (Array.isArray(current)) {
-      if (current.length > limits.maxArrayLength) throw new JsonLimitError(`${location} exceeds the array length limit`);
-      current.forEach((item, index) => visit(item, depth + 1, `${location}[${index}]`));
-    } else {
-      const keys = Object.keys(current);
-      if (keys.length > limits.maxObjectKeys) throw new JsonLimitError(`${location} exceeds the object key limit`);
-      for (const key of keys) {
-        if (key.length > limits.maxStringLength) throw new JsonLimitError(`${location} contains an oversized key`);
-        visit(current[key], depth + 1, `${location}.${key}`);
+    if (ancestors.has(current)) throw new JsonLimitError(`${location} contains a circular reference`);
+    ancestors.add(current);
+    try {
+      if (depth > limits.maxDepth) throw new JsonLimitError(`${location} exceeds the JSON depth limit`);
+      if (Array.isArray(current)) {
+        if (current.length > limits.maxArrayLength) throw new JsonLimitError(`${location} exceeds the array length limit`);
+        current.forEach((item, index) => visit(item, depth + 1, `${location}[${index}]`));
+      } else {
+        const keys = Object.keys(current);
+        if (keys.length > limits.maxObjectKeys) throw new JsonLimitError(`${location} exceeds the object key limit`);
+        for (const key of keys) {
+          if (key.length > limits.maxStringLength) throw new JsonLimitError(`${location} contains an oversized key`);
+          visit(current[key], depth + 1, `${location}.${key}`);
+        }
       }
+    } finally {
+      ancestors.delete(current);
     }
   }
 
