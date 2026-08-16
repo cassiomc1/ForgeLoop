@@ -19,6 +19,8 @@ test("quality workflows install the lockfile and enforce the local toolchain", a
   assert.match(docs, /npm run coverage/);
   assert.match(docs, /npm run docs:flow -- --output/);
   assert.match(docs, /npm run docs:check/);
+  assert.match(docs, /--exclude-path '\(\^\|\/\)node_modules\(\/\|\$\)'/);
+  assert.match(docs, /--exclude-path '\(\^\|\/\)coverage\(\/\|\$\)'/);
   assert.match(await readFile(".markdownlint-cli2.jsonc", "utf8"), /"ignores"/);
   assert.match(await readFile(".markdownlint-cli2.jsonc", "utf8"), /"\*\*\/node_modules\/\*\*"/);
   assert.match(audit, /npm ci --ignore-scripts/);

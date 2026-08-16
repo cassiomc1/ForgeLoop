@@ -59,7 +59,14 @@ jobs:
         if: matrix.node-version == 24
         uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
         with:
-          args: --config .lychee.toml './**/*.md'
+          args: >-
+            --config .lychee.toml
+            --exclude-path '(^|/)node_modules(/|$)'
+            --exclude-path '(^|/)coverage(/|$)'
+            --exclude-path '(^|/)\.worktrees(/|$)'
+            --exclude-path '(^|/)\.superpowers(/|$)'
+            --exclude-path '(^|/)docs/superpowers(/|$)'
+            './**/*.md'
           fail: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
