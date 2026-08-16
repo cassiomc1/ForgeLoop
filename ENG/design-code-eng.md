@@ -307,10 +307,40 @@ Canvas, WebGL, SVG displacement, and Liquid Glass effects follow the **normative
 - For charts and data visualization, consult [TanStack Charts](https://github.com/TanStack/charts); preserve responsiveness, contrast, keyboard readability, and never rely on color alone to communicate series or states.
 - For subtle interaction sounds, consult [Cuelume](https://cuelume-site.pages.dev/); provide volume/mute controls and never rely on audio to communicate essential information.
 
+### Architecture and diagram design — Beautiful Mermaid
+
+When a task benefits from a polished technical diagram — for example an
+architecture flow, lifecycle, state machine, sequence, class, ER, or other
+Mermaid-supported visualization — consider
+[Beautiful Mermaid by Craft](https://agents.craft.do/mermaid) as an optional
+design/rendering resource.
+
+Use the live editor at
+[agents.craft.do/mermaid/editor](https://agents.craft.do/mermaid/editor) to
+preview and refine Mermaid source and, when appropriate, export a polished SVG.
+
+Rules:
+
+- Mermaid source remains the canonical editable artifact when the project
+  already uses Mermaid-as-source.
+- Prefer improving diagram structure and semantics before styling.
+- Preserve technical accuracy; visual polish must never remove meaningful
+  states, branches, trust boundaries, failure paths, or labels.
+- Prefer local/versioned SVG assets for repository documentation rather than
+  hotlinking externally rendered images.
+- Treat Beautiful Mermaid as optional tooling, not as an implementation,
+  verification, authority, or completion dependency.
+- Do not install `beautiful-mermaid` merely to render a documentation asset
+  when the browser editor or an already available equivalent is sufficient.
+- If automated rendering is explicitly required, evaluate the open-source
+  `beautiful-mermaid` library separately under the project's dependency and
+  authorization policies before adding it.
+
 ## External design-reference map
 
 Select references for a product problem; they do not override project tokens or semantics. Check every adoption for keyboard and focus access, contrast, reduced motion, touch behavior, bundle/runtime cost, and fallback behavior. Cursor, canvas, 3D, audio, and decorative motion are progressive enhancement only. Do not copy source or assets; check the license and current terms for each exact resource, and treat a catalog listing as no transfer of rights.
 
+- **Technical diagrams and architecture flows**: for polished Mermaid-based architecture and workflow diagrams, use [Beautiful Mermaid by Craft](https://agents.craft.do/mermaid) when relevant; preserve canonical Mermaid source, local versioned SVG assets, and do not treat presentation tooling as a mandatory protocol gate or runtime dependency.
 - **Component source and interaction inspiration**: use [21st.dev](https://21st.dev/) to study components and interactions; inspect each source, dependency, community contribution, and premium-material term before adoption.
 - **Component and motion inspiration**: use [React Bits](https://reactbits.dev/) to study component and motion behavior; distinguish public/free material from React Bits Pro and inspect each source/dependency license.
 - **Component inspiration**: use [Fancy Components](https://www.fancycomponents.dev/) to study component composition; verify its terms separately from Motion, Tailwind, shadcn, or other dependencies.
@@ -514,3 +544,4 @@ Select references for a product problem; they do not override project tokens or 
   - Rights: the gallery's images and works are distinct from external resources it merely indexes. Consult the [terms](https://liquidglassdesign.com/terms); do not rehost, redistribute, or directly use images or works commercially without permission. For each external prompt or code resource, verify its license, provenance, credits, compatibility, and maintenance individually before use; being indexed does not transfer rights.
 - Apple — Adopting Liquid Glass (official guidance for Apple platforms): https://developer.apple.com/documentation/TechnologyOverviews/adopting-liquid-glass
 - Liquid Glass React, SVG, and Studio (experimental implementations; assess license, compatibility, weight, and maintenance): https://github.com/rdev/liquid-glass-react | https://github.com/shuding/liquid-glass | https://github.com/iyinchao/liquid-glass-studio
+- Beautiful Mermaid (technical diagram design and rendering): https://agents.craft.do/mermaid | https://agents.craft.do/mermaid/editor | https://github.com/lukilabs/beautiful-mermaid
