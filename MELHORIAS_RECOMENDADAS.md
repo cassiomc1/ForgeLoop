@@ -1,4 +1,4 @@
-# Melhorias recomendadas — ForgeLoop v0.1.15
+# Melhorias recomendadas — ForgeLoop v0.1.16
 
 Data da revisão: 2026-08-16
 

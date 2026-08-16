@@ -22,6 +22,7 @@ import { persistRoute } from "../src/core/route-artifact.js";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const cliPath = path.join(repositoryRoot, "src", "cli.js");
+const currentPackageVersion = JSON.parse(await readFile(path.join(repositoryRoot, "package.json"), "utf8")).version;
 
 async function withTarget(run) {
   const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-cli-"));
@@ -122,7 +123,7 @@ test("init copies canonical files and creates a manifest", async () => {
       await readFile(path.join(target, ".forgeloop", "manifest.json"), "utf8"),
     );
     assert.equal(manifest.schemaVersion, 1);
-    assert.equal(manifest.packageVersion, "0.1.15");
+    assert.equal(manifest.packageVersion, currentPackageVersion);
     assert.equal(manifest.layoutVersion, 2);
     assert.equal(manifest.files[".forgeloop/kit/PROJECT_PROFILE.md"].preserve, true);
     assert.ok(manifest.files["AGENTS.md"].sha256);
@@ -377,7 +378,7 @@ test("top-level help succeeds without a command", async () => {
 test("CLI supports version output and equals-form paths", async () => {
   const version = runCliDirect(repositoryRoot, "--version");
   assert.equal(version.status, 0, version.stderr);
-  assert.equal(version.stdout.trim(), "0.1.15");
+  assert.equal(version.stdout.trim(), currentPackageVersion);
 
   await withTarget(async (target) => {
     const result = runCliDirect(repositoryRoot, "init", `--path=${target}`);
@@ -433,7 +434,7 @@ test("CLI runs when invoked through an npm-style symlink", async () => {
     });
 
     assert.equal(result.status, 0, result.stderr);
-    assert.equal(result.stdout.trim(), "0.1.15");
+    assert.equal(result.stdout.trim(), currentPackageVersion);
   } finally {
     await rm(binDirectory, { recursive: true, force: true });
   }

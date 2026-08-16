@@ -13,6 +13,7 @@ import { runUpdate } from "../src/commands/update.js";
 const packageRoot = getPackageRoot();
 const cliPath = path.join(packageRoot, "src", "cli.js");
 const realLegacyFixture = path.join(packageRoot, "tests", "fixtures", "legacy-0.1.6");
+const currentPackageVersion = JSON.parse(await readFile(path.join(packageRoot, "package.json"), "utf8")).version;
 
 function runCli(target, ...args) {
   return spawnSync(process.execPath, [cliPath, ...args], {
@@ -627,7 +628,7 @@ test("the frozen published 0.1.6 installation migrates without network access", 
     );
     const manifest = JSON.parse(await readFile(path.join(target, ".forgeloop/manifest.json"), "utf8"));
     assert.equal(manifest.layoutVersion, 2);
-    assert.equal(manifest.packageVersion, "0.1.15");
+    assert.equal(manifest.packageVersion, currentPackageVersion);
     assert.deepEqual(await readFile(path.join(target, ".forgeloop/kit/PROJECT_PROFILE.md")), profileBefore);
 
     for (const entry of await readTemplateEntries(packageRoot)) {
