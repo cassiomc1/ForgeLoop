@@ -1,4 +1,0 @@
-{
-  "status": "REJECTED",
-  "errors": ["E_GATE_UNVERIFIED", "E_PREFLIGHT_NOT_READY"]
-}

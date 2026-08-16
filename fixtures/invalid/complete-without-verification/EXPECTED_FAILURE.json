@@ -1,4 +1,0 @@
-{
-  "status": "REJECTED",
-  "errors": ["E_EVIDENCE_REQUIRED", "E_PHASE_EVIDENCE_MISSING"]
-}
