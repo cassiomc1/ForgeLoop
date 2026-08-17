@@ -5,6 +5,19 @@ import { COMMANDS, parseArgs, parseCliSyntax } from "../src/cli.js";
 import { CLI_COMMAND_DEFINITIONS } from "../src/core/cli-command-definitions.js";
 import { generateCliOptionsForCommand } from "../scripts/generate_documentation_reference.mjs";
 
+test("CLI definitions are syntactically complete", () => {
+  for (const [command, definition] of Object.entries(CLI_COMMAND_DEFINITIONS)) {
+    for (const [optionName, optionDef] of Object.entries(definition.options)) {
+      assert.ok(optionDef.targetKey, `${command} ${optionName} missing targetKey`);
+      assert.ok(optionDef.parseType, `${command} ${optionName} missing parseType`);
+
+      if (optionDef.takesValue && optionDef.parseType !== "argv") {
+        assert.ok(optionDef.valueName, `${command} ${optionName} missing valueName`);
+      }
+    }
+  }
+});
+
 test("CLI parser parity: every declared option is recognized for each command", () => {
   for (const [cmdName, def] of Object.entries(CLI_COMMAND_DEFINITIONS)) {
     for (const [optName, optDef] of Object.entries(def.options)) {
@@ -83,31 +96,115 @@ test("CLI parser parity: foreign options are rejected for each command", () => {
   }
 });
 
-test("CLI parser parity: equals syntax (--opt=val) works for supported options", () => {
-  const parsedPath = parseCliSyntax(["status", "--path=/custom/target"]);
-  assert.equal(parsedPath.options.path, "/custom/target");
+test("CLI parser does not reinterpret option values as commands", () => {
+  const bundle = parseArgs(["bundle", "--task", "status"]);
+  assert.equal(bundle.command, "bundle");
+  assert.equal(bundle.options.task, "status");
 
-  const parsedId = parseCliSyntax(["record-check", "--id=chk-custom", "--requirement=req-custom", "--status=passed", "--evidence-kind=OBSERVED", "--command=test"]);
-  assert.equal(parsedId.options.checkId, "chk-custom");
-  assert.equal(parsedId.options.checkRequirement, "req-custom");
-  assert.equal(parsedId.options.checkStatus, "passed");
+  const status = parseArgs(["status", "--path", "update"]);
+  assert.equal(status.command, "status");
+  assert.equal(status.options.path, "update");
 
-  const parsedExit = parseCliSyntax(["record-check", "--id=chk-1", "--requirement=req-1", "--status=passed", "--evidence-kind=OBSERVED", "--command=test", "--exit-code=42"]);
-  assert.equal(parsedExit.options.checkExitCode, 42);
+  const policy = parseArgs(["policy", "report"]);
+  assert.equal(policy.command, "policy");
+  assert.equal(policy.options.policy, "report");
 });
 
-test("CLI parser parity: aliases -h and -v are recognized", () => {
-  const parsedHelp = parseCliSyntax(["init", "-h"]);
-  assert.equal(parsedHelp.options.help, true);
+test("command names are valid values where syntax allows arbitrary strings", () => {
+  for (const commandName of COMMANDS) {
+    const bundle = parseArgs(["bundle", "--task", commandName]);
+    assert.equal(bundle.command, "bundle");
+    assert.equal(bundle.options.task, commandName);
 
-  const parsedVersion = parseCliSyntax(["doctor", "-v"]);
-  assert.equal(parsedVersion.options.version, true);
+    const status = parseArgs(["status", "--path", commandName]);
+    assert.equal(status.command, "status");
+    assert.equal(status.options.path, commandName);
+
+    const policy = parseArgs(["policy", commandName]);
+    assert.equal(policy.command, "policy");
+    assert.equal(policy.options.policy, commandName);
+  }
 });
 
-test("CLI parser parity: policy positional argument is captured cleanly", () => {
-  const parsed = parseCliSyntax(["policy", "enterprise-strict"]);
-  assert.equal(parsed.command, "policy");
-  assert.equal(parsed.options.policy, "enterprise-strict");
+test("all value-taking long options support equals syntax", () => {
+  for (const [command, definition] of Object.entries(CLI_COMMAND_DEFINITIONS)) {
+    for (const [optionName, optionDef] of Object.entries(definition.options)) {
+      if (optionName === "--" || optionDef.isPositional || !optionDef.takesValue) {
+        continue;
+      }
+
+      let sample = "sample";
+      if (optionDef.parseType === "json-object") sample = "{}";
+      if (optionDef.parseType === "non-negative-integer") sample = "0";
+
+      assert.doesNotThrow(
+        () => parseCliSyntax([command, `${optionName}=${sample}`]),
+        `${command} ${optionName}=${sample} threw unexpectedly`,
+      );
+    }
+  }
+});
+
+test("all declared aliases are recognized", () => {
+  for (const [command, definition] of Object.entries(CLI_COMMAND_DEFINITIONS)) {
+    for (const [canonical, optionDef] of Object.entries(definition.options)) {
+      for (const alias of optionDef.aliases ?? []) {
+        const parsed = parseCliSyntax([command, alias]);
+        assert.equal(
+          parsed.options[optionDef.targetKey],
+          true,
+          `${command} alias ${alias} for ${canonical} failed`,
+        );
+      }
+    }
+  }
+});
+
+test("all repeatable CLI options accumulate values", () => {
+  for (const [command, definition] of Object.entries(CLI_COMMAND_DEFINITIONS)) {
+    for (const [optionName, optionDef] of Object.entries(definition.options)) {
+      if (!optionDef.repeatable) continue;
+
+      const parsed = parseCliSyntax([
+        command,
+        optionName,
+        "one",
+        optionName,
+        "two",
+      ]);
+
+      assert.deepEqual(
+        parsed.options[optionDef.targetKey],
+        ["one", "two"],
+        `${command} ${optionName} failed to accumulate values`,
+      );
+    }
+  }
+});
+
+test("CLI parser parity: JSON and integer options validate correctly", () => {
+  // Valid JSON object
+  const validJson = parseCliSyntax(["record-check", "--id", "chk-1", "--requirement", "req-1", "--details", '{"k":"v"}']);
+  assert.deepEqual(validJson.options.checkDetails, { k: "v" });
+
+  // Invalid JSON (syntax)
+  assert.throws(() => parseCliSyntax(["record-check", "--id", "chk-1", "--requirement", "req-1", "--details", 'invalid-json']), /must be valid JSON/);
+
+  // Invalid JSON (array instead of object)
+  assert.throws(() => parseCliSyntax(["record-check", "--id", "chk-1", "--requirement", "req-1", "--details", '[1,2,3]']), /must be a JSON object/);
+
+  // Valid integer
+  const validInt = parseCliSyntax(["record-check", "--id", "chk-1", "--requirement", "req-1", "--exit-code", "0"]);
+  assert.equal(validInt.options.checkExitCode, 0);
+
+  // Invalid integer
+  assert.throws(() => parseCliSyntax(["record-check", "--id", "chk-1", "--requirement", "req-1", "--exit-code", "-1"]), /requires a non-negative integer/);
+  assert.throws(() => parseCliSyntax(["record-check", "--id", "chk-1", "--requirement", "req-1", "--exit-code", "abc"]), /requires a non-negative integer/);
+});
+
+test("CLI parser parity: argv passthrough preserves exact remaining tokens", () => {
+  const parsed = parseCliSyntax(["run-check", "--id", "chk-1", "--requirement", "req-1", "--", "npm", "test", "--", "--json", "status"]);
+  assert.deepEqual(parsed.options.commandArgv, ["npm", "test", "--", "--json", "status"]);
 });
 
 test("CLI parser parity: semantic validation remains enforced", () => {

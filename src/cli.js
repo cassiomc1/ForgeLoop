@@ -35,7 +35,7 @@ import { continuityOptionDefaults, consumeContinuityOption, validateContinuityOp
 import { resolveTarget } from "./core/filesystem.js";
 import { getPackageRoot } from "./core/templates.js";
 import { ARTIFACT_PATHS } from "./core/artifacts.js";
-import { CLI_COMMAND_DEFINITIONS, buildOptionLookup } from "./core/cli-command-definitions.js";
+import { CLI_COMMAND_DEFINITIONS, buildOptionLookup, getPositionalDefinitions } from "./core/cli-command-definitions.js";
 
 export const COMMANDS = Object.freeze(Object.keys(CLI_COMMAND_DEFINITIONS));
 
@@ -93,34 +93,11 @@ function applyOption({ canonicalName, optionDef, inlineValue, argv, index, optio
     }
     case "string": {
       const value = inlineValue ?? argv[index + 1];
-      if (value === undefined || (value.startsWith("-") && inlineValue === undefined)) {
-        if (canonicalName === "--path") throw new Error("--path requires a directory");
-        if (canonicalName === "--adopt") throw new Error("--adopt requires a path");
-        if (canonicalName === "--work") throw new Error("--work requires a type");
-        if (canonicalName === "--surface") throw new Error("--surface requires a value");
-        if (canonicalName === "--risk") throw new Error("--risk requires a value");
-        if (canonicalName === "--platform") throw new Error("--platform requires a value");
-        if (canonicalName === "--to") throw new Error("--to requires a phase");
-        if (canonicalName === "--task") throw new Error("--task requires an ID");
-        if (canonicalName === "--file") throw new Error("--file requires a path");
-        if (canonicalName === "--contract-file") throw new Error("--contract-file requires a path");
-        if (canonicalName === "--route-file" || canonicalName === "--state-file" || canonicalName === "--receipt-file" || canonicalName === "--continuity-file") {
-          throw new Error(`${canonicalName} requires a path`);
-        }
-        if (canonicalName === "--task-brief-file") throw new Error("--task-brief-file requires a path");
-        if (canonicalName === "--delegated-result-file") throw new Error("--delegated-result-file requires a path");
-        if (canonicalName === "--id") throw new Error("--id requires a check ID");
-        if (canonicalName === "--kind") throw new Error("--kind requires a check kind");
-        if (canonicalName === "--requirement") throw new Error("--requirement requires an evidence target");
-        if (canonicalName === "--status") throw new Error("--status requires a check status");
-        if (canonicalName === "--evidence-kind") throw new Error("--evidence-kind requires an evidence kind");
-        if (canonicalName === "--command") throw new Error("--command requires recorded text");
-        if (canonicalName === "--source") throw new Error("--source requires recorded text");
-        if (canonicalName === "--type") throw new Error("--type requires a terminal type");
-        if (canonicalName === "--result") throw new Error("--result requires recorded text");
-        if (canonicalName === "--execution-ref") throw new Error("--execution-ref requires an execution ID");
-        if (canonicalName === "--provenance") throw new Error("--provenance requires a provenance value");
-        throw new Error(`${canonicalName} requires a value`);
+      if (
+        value === undefined ||
+        (value.startsWith("-") && inlineValue === undefined && !optionDef.allowLeadingHyphen)
+      ) {
+        throw new Error(optionDef.missingValueMessage ?? `${canonicalName} requires a value`);
       }
       if (optionDef.repeatable) {
         options[key].push(value);
@@ -132,7 +109,7 @@ function applyOption({ canonicalName, optionDef, inlineValue, argv, index, optio
     case "non-negative-integer": {
       const value = inlineValue ?? argv[index + 1];
       if (value === undefined || !/^\d+$/.test(value)) {
-        throw new Error(`${canonicalName} requires a non-negative integer`);
+        throw new Error(optionDef.missingValueMessage ?? `${canonicalName} requires a non-negative integer`);
       }
       options[key] = Number(value);
       return { index: inlineValue === undefined ? index + 1 : index };
@@ -140,7 +117,7 @@ function applyOption({ canonicalName, optionDef, inlineValue, argv, index, optio
     case "json-object": {
       const raw = inlineValue ?? argv[index + 1];
       if (!raw || (raw.startsWith("-") && inlineValue === undefined)) {
-        throw new Error(`${canonicalName} requires a JSON object`);
+        throw new Error(optionDef.missingValueMessage ?? `${canonicalName} requires a JSON object`);
       }
       let parsed;
       try {
@@ -162,6 +139,36 @@ function applyOption({ canonicalName, optionDef, inlineValue, argv, index, optio
     default:
       throw new Error(`Unsupported option type: ${optionDef.parseType}`);
   }
+}
+
+const ALL_VALUE_TAKING_FLAGS = new Set();
+for (const def of Object.values(CLI_COMMAND_DEFINITIONS)) {
+  for (const [optName, optDef] of Object.entries(def.options)) {
+    if (optDef.takesValue && optName.startsWith("-")) {
+      ALL_VALUE_TAKING_FLAGS.add(optName);
+    }
+  }
+}
+
+export function discoverCommand(argv) {
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i];
+    if (arg === "--") break;
+
+    if (arg.startsWith("-")) {
+      const eqIdx = arg.indexOf("=");
+      const optName = eqIdx === -1 ? arg : arg.slice(0, eqIdx);
+      if (eqIdx === -1 && ALL_VALUE_TAKING_FLAGS.has(optName)) {
+        i += 1; // Skip the option's value so it is never scanned as a candidate command
+      }
+      continue;
+    }
+
+    if (COMMANDS.includes(arg)) {
+      return arg;
+    }
+  }
+  return null;
 }
 
 export function parseCliSyntax(argv) {
@@ -208,56 +215,34 @@ export function parseCliSyntax(argv) {
     version: false,
   };
 
-  let command = null;
+  const command = discoverCommand(argv);
+  const optionLookup = buildOptionLookup(command);
+  const positionalDefs = getPositionalDefinitions(command);
+  let positionalCursor = 0;
   const suppliedFlags = new Set();
-
-  for (let i = 0; i < argv.length; i += 1) {
-    const candidateArg = argv[i];
-    if (candidateArg === "--") break;
-    if (COMMANDS.includes(candidateArg)) {
-      if (command) throw new Error(`Multiple commands are not supported: ${candidateArg}`);
-      command = candidateArg;
-    }
-  }
-
-  const optionLookup = command ? buildOptionLookup(command) : new Map();
+  let commandSeen = false;
 
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
 
-    if (COMMANDS.includes(argument)) {
-      continue;
-    }
-
-    if (argument === "--help" || argument === "-h") {
-      options.help = true;
-      continue;
-    }
-    if (argument === "--version" || argument === "-v") {
-      options.version = true;
+    if (argument === command && !commandSeen) {
+      commandSeen = true;
       continue;
     }
 
     if (argument === "--") {
-      if (command === "run-check") {
-        options.commandArgv = argv.slice(index + 1);
-        suppliedFlags.add("--");
-        break;
+      const passthrough = optionLookup.get("--");
+      if (!passthrough) {
+        throw new Error(`Unknown option: --`);
       }
-      throw new Error(`Unknown option: ${argument}`);
+      options[passthrough.optionDef.targetKey] = argv.slice(index + 1);
+      suppliedFlags.add("--");
+      break;
     }
 
     const { name: optName, inlineValue } = splitLongOption(argument);
-
-    if (optName === "--path") {
-      const val = inlineValue ?? argv[index + 1];
-      if (!val || (val.startsWith("-") && inlineValue === undefined)) throw new Error("--path requires a directory");
-      options.path = val;
-      if (inlineValue === undefined) index += 1;
-      continue;
-    }
-
     const matched = optionLookup.get(optName);
+
     if (matched) {
       const res = applyOption({
         canonicalName: matched.canonicalName,
@@ -273,9 +258,13 @@ export function parseCliSyntax(argv) {
       continue;
     }
 
-    if (!argument.startsWith("-") && command === "policy" && !options.policy) {
-      options.policy = argument;
-      continue;
+    if (command && !argument.startsWith("-")) {
+      const positional = positionalDefs[positionalCursor];
+      if (positional) {
+        options[positional.targetKey] = argument;
+        positionalCursor += 1;
+        continue;
+      }
     }
 
     if (command) {

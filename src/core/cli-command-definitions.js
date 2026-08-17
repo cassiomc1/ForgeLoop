@@ -2,6 +2,10 @@
  * Canonical, declarative definition of all 27 ForgeLoop CLI commands.
  * This is the machine source of truth for CLI option parsing, help text,
  * metadata, documentation generation, and conformance validation.
+ *
+ * All value-taking long options accept both:
+ *   --option value
+ *   --option=value
  */
 export const CLI_COMMAND_DEFINITIONS = Object.freeze({
   init: Object.freeze({
@@ -9,7 +13,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     category: "project-maintenance",
     mutation: "MUTATING",
     options: Object.freeze({
-      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", supportsEquals: true, description: "target project directory (default: current directory)" }),
+      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", missingValueMessage: "--path requires a directory", description: "target project directory (default: current directory)" }),
       "--dry-run": Object.freeze({ targetKey: "dryRun", parseType: "boolean", takesValue: false, description: "show planned writes without changing files" }),
       "--help": Object.freeze({ targetKey: "help", parseType: "boolean", takesValue: false, aliases: ["-h"], description: "show this help" }),
       "--version": Object.freeze({ targetKey: "version", parseType: "boolean", takesValue: false, aliases: ["-v"], description: "show the installed package version" }),
@@ -24,11 +28,11 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     category: "diagnostics",
     mutation: "MUTATING",
     options: Object.freeze({
-      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", supportsEquals: true, description: "target project directory (default: current directory)" }),
+      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", missingValueMessage: "--path requires a directory", description: "target project directory (default: current directory)" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit doctor findings as JSON" }),
       "--strict": Object.freeze({ targetKey: "strict", parseType: "boolean", takesValue: false, description: "treat warnings as unhealthy" }),
       "--fix": Object.freeze({ targetKey: "fix", parseType: "boolean", takesValue: false, description: "restore missing managed template files" }),
-      "--adopt": Object.freeze({ targetKey: "adopt", parseType: "string", takesValue: true, repeatable: true, valueName: "path", description: "preserve an existing adapter in the manifest" }),
+      "--adopt": Object.freeze({ targetKey: "adopt", parseType: "string", takesValue: true, repeatable: true, valueName: "path", missingValueMessage: "--adopt requires a path", description: "preserve an existing adapter in the manifest" }),
       "--help": Object.freeze({ targetKey: "help", parseType: "boolean", takesValue: false, aliases: ["-h"], description: "show this help" }),
       "--version": Object.freeze({ targetKey: "version", parseType: "boolean", takesValue: false, aliases: ["-v"], description: "show the installed package version" }),
     }),
@@ -42,7 +46,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     category: "project-maintenance",
     mutation: "MUTATING",
     options: Object.freeze({
-      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", supportsEquals: true, description: "target project directory (default: current directory)" }),
+      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", missingValueMessage: "--path requires a directory", description: "target project directory (default: current directory)" }),
       "--dry-run": Object.freeze({ targetKey: "dryRun", parseType: "boolean", takesValue: false, description: "show planned writes without changing files" }),
       "--help": Object.freeze({ targetKey: "help", parseType: "boolean", takesValue: false, aliases: ["-h"], description: "show this help" }),
       "--version": Object.freeze({ targetKey: "version", parseType: "boolean", takesValue: false, aliases: ["-v"], description: "show the installed package version" }),
@@ -57,7 +61,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     category: "lifecycle",
     mutation: "MUTATING",
     options: Object.freeze({
-      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", supportsEquals: true, description: "target project directory (default: current directory)" }),
+      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", missingValueMessage: "--path requires a directory", description: "target project directory (default: current directory)" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
       "--help": Object.freeze({ targetKey: "help", parseType: "boolean", takesValue: false, aliases: ["-h"], description: "show this help" }),
       "--version": Object.freeze({ targetKey: "version", parseType: "boolean", takesValue: false, aliases: ["-v"], description: "show the installed package version" }),
@@ -72,11 +76,11 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     category: "lifecycle",
     mutation: "MUTATING",
     options: Object.freeze({
-      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", supportsEquals: true, description: "target project directory (default: current directory)" }),
-      "--work": Object.freeze({ targetKey: "work", parseType: "string", takesValue: true, valueName: "type", description: "declared work type" }),
-      "--surface": Object.freeze({ targetKey: "surfaces", parseType: "string", takesValue: true, valueName: "value", repeatable: true, description: "affected surface" }),
-      "--risk": Object.freeze({ targetKey: "risks", parseType: "string", takesValue: true, valueName: "value", repeatable: true, description: "task risk" }),
-      "--platform": Object.freeze({ targetKey: "platforms", parseType: "string", takesValue: true, valueName: "value", repeatable: true, description: "affected platform" }),
+      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", missingValueMessage: "--path requires a directory", description: "target project directory (default: current directory)" }),
+      "--work": Object.freeze({ targetKey: "work", parseType: "string", takesValue: true, valueName: "type", missingValueMessage: "--work requires a type", description: "declared work type" }),
+      "--surface": Object.freeze({ targetKey: "surfaces", parseType: "string", takesValue: true, valueName: "value", repeatable: true, missingValueMessage: "--surface requires a value", description: "affected surface" }),
+      "--risk": Object.freeze({ targetKey: "risks", parseType: "string", takesValue: true, valueName: "value", repeatable: true, missingValueMessage: "--risk requires a value", description: "task risk" }),
+      "--platform": Object.freeze({ targetKey: "platforms", parseType: "string", takesValue: true, valueName: "value", repeatable: true, missingValueMessage: "--platform requires a value", description: "affected platform" }),
       "--behavior-change": Object.freeze({ targetKey: "behaviorChange", parseType: "boolean", takesValue: false, description: "declare behavior change" }),
       "--executable-change": Object.freeze({ targetKey: "executableChange", parseType: "boolean", takesValue: false, description: "declare executable/configuration change" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit route result as JSON" }),
@@ -93,7 +97,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     category: "lifecycle",
     mutation: "MUTATING",
     options: Object.freeze({
-      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", supportsEquals: true, description: "target project directory (default: current directory)" }),
+      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", missingValueMessage: "--path requires a directory", description: "target project directory (default: current directory)" }),
       "--strict": Object.freeze({ targetKey: "strict", parseType: "boolean", takesValue: false, description: "require strict protocol compliance" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
       "--help": Object.freeze({ targetKey: "help", parseType: "boolean", takesValue: false, aliases: ["-h"], description: "show this help" }),
@@ -109,8 +113,8 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     category: "lifecycle",
     mutation: "MUTATING",
     options: Object.freeze({
-      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", supportsEquals: true, description: "target project directory (default: current directory)" }),
-      "--to": Object.freeze({ targetKey: "to", parseType: "string", takesValue: true, valueName: "phase", description: "destination workflow phase" }),
+      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", missingValueMessage: "--path requires a directory", description: "target project directory (default: current directory)" }),
+      "--to": Object.freeze({ targetKey: "to", parseType: "string", takesValue: true, valueName: "phase", missingValueMessage: "--to requires a phase", description: "destination workflow phase" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
       "--help": Object.freeze({ targetKey: "help", parseType: "boolean", takesValue: false, aliases: ["-h"], description: "show this help" }),
       "--version": Object.freeze({ targetKey: "version", parseType: "boolean", takesValue: false, aliases: ["-v"], description: "show the installed package version" }),
@@ -125,7 +129,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     category: "lifecycle",
     mutation: "READ_ONLY",
     options: Object.freeze({
-      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", supportsEquals: true, description: "target project directory (default: current directory)" }),
+      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", missingValueMessage: "--path requires a directory", description: "target project directory (default: current directory)" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
       "--help": Object.freeze({ targetKey: "help", parseType: "boolean", takesValue: false, aliases: ["-h"], description: "show this help" }),
       "--version": Object.freeze({ targetKey: "version", parseType: "boolean", takesValue: false, aliases: ["-v"], description: "show the installed package version" }),
@@ -140,7 +144,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     category: "continuity",
     mutation: "READ_ONLY",
     options: Object.freeze({
-      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", supportsEquals: true, description: "target project directory (default: current directory)" }),
+      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", missingValueMessage: "--path requires a directory", description: "target project directory (default: current directory)" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
       "--help": Object.freeze({ targetKey: "help", parseType: "boolean", takesValue: false, aliases: ["-h"], description: "show this help" }),
       "--version": Object.freeze({ targetKey: "version", parseType: "boolean", takesValue: false, aliases: ["-v"], description: "show the installed package version" }),
@@ -155,14 +159,14 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     category: "continuity",
     mutation: "MUTATING",
     options: Object.freeze({
-      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", supportsEquals: true, description: "target project directory (default: current directory)" }),
-      "--focus-id": Object.freeze({ targetKey: "continuityFocusId", parseType: "string", takesValue: true, valueName: "id", description: "current implementation focus ID" }),
-      "--focus-summary": Object.freeze({ targetKey: "continuityFocusSummary", parseType: "string", takesValue: true, valueName: "text", description: "current implementation focus summary" }),
-      "--remaining": Object.freeze({ targetKey: "continuityRemaining", parseType: "string", takesValue: true, valueName: "id:summary", repeatable: true, description: "remaining implementation item" }),
-      "--known-issue": Object.freeze({ targetKey: "continuityKnownIssues", parseType: "string", takesValue: true, valueName: "id:summary", repeatable: true, description: "known implementation issue" }),
-      "--changed-area": Object.freeze({ targetKey: "continuityChangedAreas", parseType: "string", takesValue: true, valueName: "path", repeatable: true, description: "changed project area" }),
-      "--inspect-first": Object.freeze({ targetKey: "continuityInspectFirst", parseType: "string", takesValue: true, valueName: "path", repeatable: true, description: "suggested inspection path" }),
-      "--resume-note": Object.freeze({ targetKey: "continuityResumeNote", parseType: "string", takesValue: true, valueName: "text", description: "bounded operational resume note" }),
+      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", missingValueMessage: "--path requires a directory", description: "target project directory (default: current directory)" }),
+      "--focus-id": Object.freeze({ targetKey: "continuityFocusId", parseType: "string", takesValue: true, valueName: "id", missingValueMessage: "--focus-id requires a value", description: "current implementation focus ID" }),
+      "--focus-summary": Object.freeze({ targetKey: "continuityFocusSummary", parseType: "string", takesValue: true, valueName: "text", missingValueMessage: "--focus-summary requires a value", description: "current implementation focus summary" }),
+      "--remaining": Object.freeze({ targetKey: "continuityRemaining", parseType: "string", takesValue: true, valueName: "id:summary", repeatable: true, missingValueMessage: "--remaining requires a value", description: "remaining implementation item" }),
+      "--known-issue": Object.freeze({ targetKey: "continuityKnownIssues", parseType: "string", takesValue: true, valueName: "id:summary", repeatable: true, missingValueMessage: "--known-issue requires a value", description: "known implementation issue" }),
+      "--changed-area": Object.freeze({ targetKey: "continuityChangedAreas", parseType: "string", takesValue: true, valueName: "path", repeatable: true, missingValueMessage: "--changed-area requires a value", description: "changed project area" }),
+      "--inspect-first": Object.freeze({ targetKey: "continuityInspectFirst", parseType: "string", takesValue: true, valueName: "path", repeatable: true, missingValueMessage: "--inspect-first requires a value", description: "suggested inspection path" }),
+      "--resume-note": Object.freeze({ targetKey: "continuityResumeNote", parseType: "string", takesValue: true, valueName: "text", missingValueMessage: "--resume-note requires a value", description: "bounded operational resume note" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
       "--help": Object.freeze({ targetKey: "help", parseType: "boolean", takesValue: false, aliases: ["-h"], description: "show this help" }),
       "--version": Object.freeze({ targetKey: "version", parseType: "boolean", takesValue: false, aliases: ["-v"], description: "show the installed package version" }),
@@ -177,7 +181,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     category: "continuity",
     mutation: "READ_ONLY",
     options: Object.freeze({
-      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", supportsEquals: true, description: "target project directory (default: current directory)" }),
+      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", missingValueMessage: "--path requires a directory", description: "target project directory (default: current directory)" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
       "--help": Object.freeze({ targetKey: "help", parseType: "boolean", takesValue: false, aliases: ["-h"], description: "show this help" }),
       "--version": Object.freeze({ targetKey: "version", parseType: "boolean", takesValue: false, aliases: ["-v"], description: "show the installed package version" }),
@@ -192,7 +196,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     category: "continuity",
     mutation: "MUTATING",
     options: Object.freeze({
-      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", supportsEquals: true, description: "target project directory (default: current directory)" }),
+      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", missingValueMessage: "--path requires a directory", description: "target project directory (default: current directory)" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
       "--help": Object.freeze({ targetKey: "help", parseType: "boolean", takesValue: false, aliases: ["-h"], description: "show this help" }),
       "--version": Object.freeze({ targetKey: "version", parseType: "boolean", takesValue: false, aliases: ["-v"], description: "show the installed package version" }),
@@ -207,7 +211,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     category: "verification",
     mutation: "MUTATING",
     options: Object.freeze({
-      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", supportsEquals: true, description: "target project directory (default: current directory)" }),
+      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", missingValueMessage: "--path requires a directory", description: "target project directory (default: current directory)" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
       "--help": Object.freeze({ targetKey: "help", parseType: "boolean", takesValue: false, aliases: ["-h"], description: "show this help" }),
       "--version": Object.freeze({ targetKey: "version", parseType: "boolean", takesValue: false, aliases: ["-v"], description: "show the installed package version" }),
@@ -222,10 +226,10 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     category: "verification",
     mutation: "EXTERNAL_EXECUTION",
     options: Object.freeze({
-      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", supportsEquals: true, description: "target project directory (default: current directory)" }),
-      "--id": Object.freeze({ targetKey: "checkId", parseType: "string", takesValue: true, valueName: "id", supportsEquals: true, description: "stable check identifier" }),
-      "--requirement": Object.freeze({ targetKey: "checkRequirement", parseType: "string", takesValue: true, valueName: "id", supportsEquals: true, description: "completion requirement covered by the check" }),
-      "--details": Object.freeze({ targetKey: "checkDetails", parseType: "json-object", takesValue: true, valueName: "json", description: "additional structured check details" }),
+      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", missingValueMessage: "--path requires a directory", description: "target project directory (default: current directory)" }),
+      "--id": Object.freeze({ targetKey: "checkId", parseType: "string", takesValue: true, valueName: "id", missingValueMessage: "--id requires a check ID", description: "stable check identifier" }),
+      "--requirement": Object.freeze({ targetKey: "checkRequirement", parseType: "string", takesValue: true, valueName: "id", missingValueMessage: "--requirement requires an evidence target", description: "completion requirement covered by the check" }),
+      "--details": Object.freeze({ targetKey: "checkDetails", parseType: "json-object", takesValue: true, valueName: "json", missingValueMessage: "--details requires a JSON object", description: "additional structured check details" }),
       "--": Object.freeze({ targetKey: "commandArgv", parseType: "argv", takesValue: true, valueName: "argv...", description: "exact command argv to classify, execute, and attest" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
       "--help": Object.freeze({ targetKey: "help", parseType: "boolean", takesValue: false, aliases: ["-h"], description: "show this help" }),
@@ -241,18 +245,18 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     category: "verification",
     mutation: "MUTATING",
     options: Object.freeze({
-      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", supportsEquals: true, description: "target project directory (default: current directory)" }),
-      "--id": Object.freeze({ targetKey: "checkId", parseType: "string", takesValue: true, valueName: "id", supportsEquals: true, description: "stable check identifier" }),
-      "--requirement": Object.freeze({ targetKey: "checkRequirement", parseType: "string", takesValue: true, valueName: "id", supportsEquals: true, description: "completion requirement covered by the check" }),
-      "--kind": Object.freeze({ targetKey: "checkKind", parseType: "string", takesValue: true, valueName: "kind", description: "check kind (default: command; use manual-review for manual evidence)" }),
-      "--status": Object.freeze({ targetKey: "checkStatus", parseType: "string", takesValue: true, valueName: "status", description: "passed, failed, blocked, or not-run" }),
-      "--evidence-kind": Object.freeze({ targetKey: "checkEvidenceKind", parseType: "string", takesValue: true, valueName: "kind", description: "OBSERVED, INFERRED, NOT_VERIFIED, or BLOCKED" }),
-      "--command": Object.freeze({ targetKey: "checkCommand", parseType: "string", takesValue: true, valueName: "text", description: "recorded only as metadata; it is never executed" }),
-      "--result": Object.freeze({ targetKey: "checkResult", parseType: "string", takesValue: true, valueName: "text", supportsEquals: true, description: "observed result supplied by the actor" }),
-      "--exit-code": Object.freeze({ targetKey: "checkExitCode", parseType: "non-negative-integer", takesValue: true, valueName: "number", supportsEquals: true, description: "observed process exit code" }),
-      "--execution-ref": Object.freeze({ targetKey: "checkExecutionRef", parseType: "string", takesValue: true, valueName: "id", description: "ForgeLoop execution artifact reference" }),
-      "--provenance": Object.freeze({ targetKey: "checkProvenance", parseType: "string", takesValue: true, valueName: "value", description: "FORGELOOP_EXECUTED, ACTOR_REPORTED, or MANUAL_OBSERVATION" }),
-      "--details": Object.freeze({ targetKey: "checkDetails", parseType: "json-object", takesValue: true, valueName: "json", description: "additional structured check details" }),
+      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", missingValueMessage: "--path requires a directory", description: "target project directory (default: current directory)" }),
+      "--id": Object.freeze({ targetKey: "checkId", parseType: "string", takesValue: true, valueName: "id", missingValueMessage: "--id requires a check ID", description: "stable check identifier" }),
+      "--requirement": Object.freeze({ targetKey: "checkRequirement", parseType: "string", takesValue: true, valueName: "id", missingValueMessage: "--requirement requires an evidence target", description: "completion requirement covered by the check" }),
+      "--kind": Object.freeze({ targetKey: "checkKind", parseType: "string", takesValue: true, valueName: "kind", missingValueMessage: "--kind requires a check kind", description: "check kind (default: command; use manual-review for manual evidence)" }),
+      "--status": Object.freeze({ targetKey: "checkStatus", parseType: "string", takesValue: true, valueName: "status", missingValueMessage: "--status requires a check status", description: "passed, failed, blocked, or not-run" }),
+      "--evidence-kind": Object.freeze({ targetKey: "checkEvidenceKind", parseType: "string", takesValue: true, valueName: "kind", missingValueMessage: "--evidence-kind requires an evidence kind", description: "OBSERVED, INFERRED, NOT_VERIFIED, or BLOCKED" }),
+      "--command": Object.freeze({ targetKey: "checkCommand", parseType: "string", takesValue: true, valueName: "text", missingValueMessage: "--command requires recorded text", description: "recorded only as metadata; it is never executed" }),
+      "--result": Object.freeze({ targetKey: "checkResult", parseType: "string", takesValue: true, valueName: "text", missingValueMessage: "--result requires recorded text", description: "observed result supplied by the actor" }),
+      "--exit-code": Object.freeze({ targetKey: "checkExitCode", parseType: "non-negative-integer", takesValue: true, valueName: "number", missingValueMessage: "--exit-code requires a non-negative integer", description: "observed process exit code" }),
+      "--execution-ref": Object.freeze({ targetKey: "checkExecutionRef", parseType: "string", takesValue: true, valueName: "id", missingValueMessage: "--execution-ref requires an execution ID", description: "ForgeLoop execution artifact reference" }),
+      "--provenance": Object.freeze({ targetKey: "checkProvenance", parseType: "string", takesValue: true, valueName: "value", missingValueMessage: "--provenance requires a provenance value", description: "FORGELOOP_EXECUTED, ACTOR_REPORTED, or MANUAL_OBSERVATION" }),
+      "--details": Object.freeze({ targetKey: "checkDetails", parseType: "json-object", takesValue: true, valueName: "json", missingValueMessage: "--details requires a JSON object", description: "additional structured check details" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
       "--help": Object.freeze({ targetKey: "help", parseType: "boolean", takesValue: false, aliases: ["-h"], description: "show this help" }),
       "--version": Object.freeze({ targetKey: "version", parseType: "boolean", takesValue: false, aliases: ["-v"], description: "show the installed package version" }),
@@ -267,13 +271,13 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     category: "verification",
     mutation: "MUTATING",
     options: Object.freeze({
-      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", supportsEquals: true, description: "target project directory (default: current directory)" }),
-      "--requirement": Object.freeze({ targetKey: "checkRequirement", parseType: "string", takesValue: true, valueName: "id", supportsEquals: true, description: "terminal requirement covered by the result" }),
-      "--type": Object.freeze({ targetKey: "checkType", parseType: "string", takesValue: true, valueName: "type", supportsEquals: true, description: "PUBLICATION or PRODUCTION_READINESS" }),
-      "--status": Object.freeze({ targetKey: "checkStatus", parseType: "string", takesValue: true, valueName: "status", description: "observed terminal status" }),
-      "--source": Object.freeze({ targetKey: "checkSource", parseType: "string", takesValue: true, valueName: "text", supportsEquals: true, description: "external action source (e.g. npm publish, git push)" }),
-      "--result": Object.freeze({ targetKey: "checkResult", parseType: "string", takesValue: true, valueName: "text", supportsEquals: true, description: "observed external result description" }),
-      "--details": Object.freeze({ targetKey: "checkDetails", parseType: "json-object", takesValue: true, valueName: "json", description: "additional structured result details" }),
+      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", missingValueMessage: "--path requires a directory", description: "target project directory (default: current directory)" }),
+      "--requirement": Object.freeze({ targetKey: "checkRequirement", parseType: "string", takesValue: true, valueName: "id", missingValueMessage: "--requirement requires an evidence target", description: "terminal requirement covered by the result" }),
+      "--type": Object.freeze({ targetKey: "checkType", parseType: "string", takesValue: true, valueName: "type", missingValueMessage: "--type requires a terminal type", description: "PUBLICATION or PRODUCTION_READINESS" }),
+      "--status": Object.freeze({ targetKey: "checkStatus", parseType: "string", takesValue: true, valueName: "status", missingValueMessage: "--status requires a check status", description: "observed terminal status" }),
+      "--source": Object.freeze({ targetKey: "checkSource", parseType: "string", takesValue: true, valueName: "text", missingValueMessage: "--source requires recorded text", description: "external action source (e.g. npm publish, git push)" }),
+      "--result": Object.freeze({ targetKey: "checkResult", parseType: "string", takesValue: true, valueName: "text", missingValueMessage: "--result requires recorded text", description: "observed external result description" }),
+      "--details": Object.freeze({ targetKey: "checkDetails", parseType: "json-object", takesValue: true, valueName: "json", missingValueMessage: "--details requires a JSON object", description: "additional structured result details" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
       "--help": Object.freeze({ targetKey: "help", parseType: "boolean", takesValue: false, aliases: ["-h"], description: "show this help" }),
       "--version": Object.freeze({ targetKey: "version", parseType: "boolean", takesValue: false, aliases: ["-v"], description: "show the installed package version" }),
@@ -288,7 +292,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     category: "lifecycle",
     mutation: "MUTATING",
     options: Object.freeze({
-      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", supportsEquals: true, description: "target project directory (default: current directory)" }),
+      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", missingValueMessage: "--path requires a directory", description: "target project directory (default: current directory)" }),
       "--strict": Object.freeze({ targetKey: "strict", parseType: "boolean", takesValue: false, description: "require strict protocol compliance" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
       "--help": Object.freeze({ targetKey: "help", parseType: "boolean", takesValue: false, aliases: ["-h"], description: "show this help" }),
@@ -304,7 +308,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     category: "verification",
     mutation: "READ_ONLY",
     options: Object.freeze({
-      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", supportsEquals: true, description: "target project directory (default: current directory)" }),
+      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", missingValueMessage: "--path requires a directory", description: "target project directory (default: current directory)" }),
       "--strict": Object.freeze({ targetKey: "strict", parseType: "boolean", takesValue: false, description: "require strict protocol compliance" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
       "--help": Object.freeze({ targetKey: "help", parseType: "boolean", takesValue: false, aliases: ["-h"], description: "show this help" }),
@@ -320,7 +324,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     category: "verification",
     mutation: "READ_ONLY",
     options: Object.freeze({
-      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", supportsEquals: true, description: "target project directory (default: current directory)" }),
+      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", missingValueMessage: "--path requires a directory", description: "target project directory (default: current directory)" }),
       "--strict": Object.freeze({ targetKey: "strict", parseType: "boolean", takesValue: false, description: "require strict protocol compliance" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
       "--help": Object.freeze({ targetKey: "help", parseType: "boolean", takesValue: false, aliases: ["-h"], description: "show this help" }),
@@ -336,7 +340,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     category: "policy-audit",
     mutation: "READ_ONLY",
     options: Object.freeze({
-      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", supportsEquals: true, description: "target project directory (default: current directory)" }),
+      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", missingValueMessage: "--path requires a directory", description: "target project directory (default: current directory)" }),
       "<name>": Object.freeze({ targetKey: "policy", parseType: "string", takesValue: true, isPositional: true, valueName: "name", description: "policy pack name" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
       "--help": Object.freeze({ targetKey: "help", parseType: "boolean", takesValue: false, aliases: ["-h"], description: "show this help" }),
@@ -352,8 +356,8 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     category: "policy-audit",
     mutation: "READ_ONLY",
     options: Object.freeze({
-      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", supportsEquals: true, description: "target project directory (default: current directory)" }),
-      "--task": Object.freeze({ targetKey: "task", parseType: "string", takesValue: true, valueName: "id", description: "task ID to export as a portable bundle" }),
+      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", missingValueMessage: "--path requires a directory", description: "target project directory (default: current directory)" }),
+      "--task": Object.freeze({ targetKey: "task", parseType: "string", takesValue: true, valueName: "id", missingValueMessage: "--task requires an ID", description: "task ID to export as a portable bundle" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
       "--help": Object.freeze({ targetKey: "help", parseType: "boolean", takesValue: false, aliases: ["-h"], description: "show this help" }),
       "--version": Object.freeze({ targetKey: "version", parseType: "boolean", takesValue: false, aliases: ["-v"], description: "show the installed package version" }),
@@ -368,8 +372,8 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     category: "diagnostics",
     mutation: "READ_ONLY",
     options: Object.freeze({
-      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", supportsEquals: true, description: "target project directory (default: current directory)" }),
-      "--contract-file": Object.freeze({ targetKey: "contractFile", parseType: "string", takesValue: true, valueName: "path", description: "current JSON contract used for freshness comparison" }),
+      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", missingValueMessage: "--path requires a directory", description: "target project directory (default: current directory)" }),
+      "--contract-file": Object.freeze({ targetKey: "contractFile", parseType: "string", takesValue: true, valueName: "path", missingValueMessage: "--contract-file requires a path", description: "current JSON contract used for freshness comparison" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
       "--help": Object.freeze({ targetKey: "help", parseType: "boolean", takesValue: false, aliases: ["-h"], description: "show this help" }),
       "--version": Object.freeze({ targetKey: "version", parseType: "boolean", takesValue: false, aliases: ["-v"], description: "show the installed package version" }),
@@ -384,8 +388,8 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     category: "diagnostics",
     mutation: "READ_ONLY",
     options: Object.freeze({
-      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", supportsEquals: true, description: "target project directory (default: current directory)" }),
-      "--contract-file": Object.freeze({ targetKey: "contractFile", parseType: "string", takesValue: true, valueName: "path", description: "current JSON contract used for freshness comparison" }),
+      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", missingValueMessage: "--path requires a directory", description: "target project directory (default: current directory)" }),
+      "--contract-file": Object.freeze({ targetKey: "contractFile", parseType: "string", takesValue: true, valueName: "path", missingValueMessage: "--contract-file requires a path", description: "current JSON contract used for freshness comparison" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
       "--help": Object.freeze({ targetKey: "help", parseType: "boolean", takesValue: false, aliases: ["-h"], description: "show this help" }),
       "--version": Object.freeze({ targetKey: "version", parseType: "boolean", takesValue: false, aliases: ["-v"], description: "show the installed package version" }),
@@ -400,7 +404,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     category: "diagnostics",
     mutation: "READ_ONLY",
     options: Object.freeze({
-      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", supportsEquals: true, description: "target project directory (default: current directory)" }),
+      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", missingValueMessage: "--path requires a directory", description: "target project directory (default: current directory)" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
       "--help": Object.freeze({ targetKey: "help", parseType: "boolean", takesValue: false, aliases: ["-h"], description: "show this help" }),
       "--version": Object.freeze({ targetKey: "version", parseType: "boolean", takesValue: false, aliases: ["-v"], description: "show the installed package version" }),
@@ -415,7 +419,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     category: "lifecycle",
     mutation: "MUTATING",
     options: Object.freeze({
-      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", supportsEquals: true, description: "target project directory (default: current directory)" }),
+      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", missingValueMessage: "--path requires a directory", description: "target project directory (default: current directory)" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
       "--help": Object.freeze({ targetKey: "help", parseType: "boolean", takesValue: false, aliases: ["-h"], description: "show this help" }),
       "--version": Object.freeze({ targetKey: "version", parseType: "boolean", takesValue: false, aliases: ["-v"], description: "show the installed package version" }),
@@ -430,8 +434,8 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     category: "verification",
     mutation: "READ_ONLY",
     options: Object.freeze({
-      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", supportsEquals: true, description: "target project directory (default: current directory)" }),
-      "--file": Object.freeze({ targetKey: "file", parseType: "string", takesValue: true, valueName: "path", description: "receipt file relative to target" }),
+      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", missingValueMessage: "--path requires a directory", description: "target project directory (default: current directory)" }),
+      "--file": Object.freeze({ targetKey: "file", parseType: "string", takesValue: true, valueName: "path", missingValueMessage: "--file requires a path", description: "receipt file relative to target" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
       "--help": Object.freeze({ targetKey: "help", parseType: "boolean", takesValue: false, aliases: ["-h"], description: "show this help" }),
       "--version": Object.freeze({ targetKey: "version", parseType: "boolean", takesValue: false, aliases: ["-v"], description: "show the installed package version" }),
@@ -446,14 +450,14 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     category: "diagnostics",
     mutation: "READ_ONLY",
     options: Object.freeze({
-      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", supportsEquals: true, description: "target project directory (default: current directory)" }),
-      "--contract-file": Object.freeze({ targetKey: "contractFile", parseType: "string", takesValue: true, valueName: "path", description: "current JSON contract used for freshness comparison" }),
-      "--route-file": Object.freeze({ targetKey: "routeFile", parseType: "string", takesValue: true, valueName: "path", description: "routing-result JSON relative to target" }),
-      "--state-file": Object.freeze({ targetKey: "stateFile", parseType: "string", takesValue: true, valueName: "path", description: "work-state JSON relative to target" }),
-      "--receipt-file": Object.freeze({ targetKey: "receiptFile", parseType: "string", takesValue: true, valueName: "path", description: "execution-receipt JSON relative to target" }),
-      "--continuity-file": Object.freeze({ targetKey: "continuityFile", parseType: "string", takesValue: true, valueName: "path", description: "optional execution-continuity JSON relative to target" }),
-      "--task-brief-file": Object.freeze({ targetKey: "taskBriefFiles", parseType: "string", takesValue: true, valueName: "path", repeatable: true, description: "task brief JSON file" }),
-      "--delegated-result-file": Object.freeze({ targetKey: "delegatedResultFiles", parseType: "string", takesValue: true, valueName: "path", repeatable: true, description: "delegated result JSON file" }),
+      "--path": Object.freeze({ targetKey: "path", parseType: "string", takesValue: true, valueName: "directory", missingValueMessage: "--path requires a directory", description: "target project directory (default: current directory)" }),
+      "--contract-file": Object.freeze({ targetKey: "contractFile", parseType: "string", takesValue: true, valueName: "path", missingValueMessage: "--contract-file requires a path", description: "current JSON contract used for freshness comparison" }),
+      "--route-file": Object.freeze({ targetKey: "routeFile", parseType: "string", takesValue: true, valueName: "path", missingValueMessage: "--route-file requires a path", description: "routing-result JSON relative to target" }),
+      "--state-file": Object.freeze({ targetKey: "stateFile", parseType: "string", takesValue: true, valueName: "path", missingValueMessage: "--state-file requires a path", description: "work-state JSON relative to target" }),
+      "--receipt-file": Object.freeze({ targetKey: "receiptFile", parseType: "string", takesValue: true, valueName: "path", missingValueMessage: "--receipt-file requires a path", description: "execution-receipt JSON relative to target" }),
+      "--continuity-file": Object.freeze({ targetKey: "continuityFile", parseType: "string", takesValue: true, valueName: "path", missingValueMessage: "--continuity-file requires a path", description: "optional execution-continuity JSON relative to target" }),
+      "--task-brief-file": Object.freeze({ targetKey: "taskBriefFiles", parseType: "string", takesValue: true, valueName: "path", repeatable: true, missingValueMessage: "--task-brief-file requires a path", description: "task brief JSON file" }),
+      "--delegated-result-file": Object.freeze({ targetKey: "delegatedResultFiles", parseType: "string", takesValue: true, valueName: "path", repeatable: true, missingValueMessage: "--delegated-result-file requires a path", description: "delegated result JSON file" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
       "--help": Object.freeze({ targetKey: "help", parseType: "boolean", takesValue: false, aliases: ["-h"], description: "show this help" }),
       "--version": Object.freeze({ targetKey: "version", parseType: "boolean", takesValue: false, aliases: ["-v"], description: "show the installed package version" }),
@@ -466,12 +470,40 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
 });
 
 /**
- * Builds an option lookup map for a given command, resolving aliases to canonical options.
- * @param {string} command - Command name
+ * Bootstrap options accepted before a command is discovered.
+ */
+export const CLI_BOOTSTRAP_OPTIONS = Object.freeze({
+  "--path": Object.freeze({
+    targetKey: "path",
+    parseType: "string",
+    takesValue: true,
+    valueName: "directory",
+    missingValueMessage: "--path requires a directory",
+    description: "target project directory (default: current directory)",
+  }),
+  "--help": Object.freeze({
+    targetKey: "help",
+    parseType: "boolean",
+    takesValue: false,
+    aliases: ["-h"],
+    description: "show this help",
+  }),
+  "--version": Object.freeze({
+    targetKey: "version",
+    parseType: "boolean",
+    takesValue: false,
+    aliases: ["-v"],
+    description: "show the installed package version",
+  }),
+});
+
+/**
+ * Builds an option lookup map for a given command or bootstrap options, resolving aliases to canonical options.
+ * @param {string|null} command - Command name, or null for bootstrap options
  * @returns {Map<string, { canonicalName: string, optionDef: Object }>}
  */
-export function buildOptionLookup(command) {
-  const definition = CLI_COMMAND_DEFINITIONS[command];
+export function buildOptionLookup(command = null) {
+  const definition = command ? CLI_COMMAND_DEFINITIONS[command] : { options: CLI_BOOTSTRAP_OPTIONS };
   if (!definition) return new Map();
 
   const lookup = new Map();
@@ -482,4 +514,18 @@ export function buildOptionLookup(command) {
     }
   }
   return lookup;
+}
+
+/**
+ * Gets positional parameter definitions for a command.
+ * @param {string} command - Command name
+ * @returns {Array<Object>} List of positional option definitions
+ */
+export function getPositionalDefinitions(command) {
+  const definition = CLI_COMMAND_DEFINITIONS[command];
+  if (!definition) return [];
+
+  return Object.entries(definition.options)
+    .filter(([, optDef]) => optDef.isPositional)
+    .map(([name, optDef]) => ({ name, ...optDef }));
 }
