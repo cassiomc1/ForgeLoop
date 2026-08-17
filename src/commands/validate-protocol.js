@@ -44,6 +44,7 @@ async function readArtifact(target, relativePath, label) {
 }
 
 import { taskArtifactPath } from "../core/task-paths.js";
+import { withResolvedTask } from "../core/task-command.js";
 
 export async function runValidateProtocol({
   target,
@@ -58,14 +59,15 @@ export async function runValidateProtocol({
   taskId = null,
   task = null,
 }) {
-  const effectiveTaskId = taskId ?? task ?? null;
-  const effectiveRouteFile = routeFile ?? (effectiveTaskId ? taskArtifactPath(effectiveTaskId, "route") : ARTIFACT_PATHS.route);
-  const effectiveStateFile = stateFile ?? (effectiveTaskId ? taskArtifactPath(effectiveTaskId, "state") : ARTIFACT_PATHS.state);
-  const effectiveReceiptFile = receiptFile ?? (effectiveTaskId ? taskArtifactPath(effectiveTaskId, "receipt") : ARTIFACT_PATHS.receipt);
-  const effectiveContractFile = contractFile ?? (effectiveTaskId ? taskArtifactPath(effectiveTaskId, "contract") : null);
-  const effectiveContinuityFile = continuityFile ?? (effectiveTaskId ? taskArtifactPath(effectiveTaskId, "continuity") : null);
-  const effectiveEventsFile = effectiveTaskId ? taskArtifactPath(effectiveTaskId, "events") : ARTIFACT_PATHS.events;
-  const effectivePreflightFile = effectiveTaskId ? taskArtifactPath(effectiveTaskId, "preflight") : ARTIFACT_PATHS.preflight;
+  return withResolvedTask(target, { taskId: taskId ?? task, packageRoot }, async (ctx) => {
+    const effectiveTaskId = ctx?.taskId ?? null;
+    const effectiveRouteFile = routeFile ?? (effectiveTaskId ? taskArtifactPath(effectiveTaskId, "route") : ARTIFACT_PATHS.route);
+    const effectiveStateFile = stateFile ?? (effectiveTaskId ? taskArtifactPath(effectiveTaskId, "state") : ARTIFACT_PATHS.state);
+    const effectiveReceiptFile = receiptFile ?? (effectiveTaskId ? taskArtifactPath(effectiveTaskId, "receipt") : ARTIFACT_PATHS.receipt);
+    const effectiveContractFile = contractFile ?? (effectiveTaskId ? taskArtifactPath(effectiveTaskId, "contract") : null);
+    const effectiveContinuityFile = continuityFile ?? (effectiveTaskId ? taskArtifactPath(effectiveTaskId, "continuity") : null);
+    const effectiveEventsFile = effectiveTaskId ? taskArtifactPath(effectiveTaskId, "events") : ARTIFACT_PATHS.events;
+    const effectivePreflightFile = effectiveTaskId ? taskArtifactPath(effectiveTaskId, "preflight") : ARTIFACT_PATHS.preflight;
 
   const descriptors = [
     ["route", effectiveRouteFile],
@@ -180,15 +182,16 @@ export async function runValidateProtocol({
     delegatedResults,
     events: ledgerEvents,
   });
-  if (readErrors.length > 0 || schemaErrors.length > 0 || readyConsistencyErrors.length > 0 || ledgerErrors.length > 0) {
-    return {
-      ...result,
-      status: "INVALID",
-      errors: [...result.errors, ...readErrors, ...schemaErrors, ...readyConsistencyErrors, ...ledgerErrors]
-        .sort((left, right) => left.code.localeCompare(right.code) || left.message.localeCompare(right.message)),
-    };
-  }
-  return result;
+    if (readErrors.length > 0 || schemaErrors.length > 0 || readyConsistencyErrors.length > 0 || ledgerErrors.length > 0) {
+      return {
+        ...result,
+        status: "INVALID",
+        errors: [...result.errors, ...readErrors, ...schemaErrors, ...readyConsistencyErrors, ...ledgerErrors]
+          .sort((left, right) => left.code.localeCompare(right.code) || left.message.localeCompare(right.message)),
+      };
+    }
+    return result;
+  });
 }
 
 export function formatValidateProtocolResult(result) {

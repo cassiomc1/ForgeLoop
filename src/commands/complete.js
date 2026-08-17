@@ -1,6 +1,14 @@
 import { runComplete as evaluateAndComplete } from "../core/completion.js";
+import { withTaskMutation } from "../core/task-command.js";
 
-export { evaluateAndComplete as runComplete };
+export async function runComplete(options = {}) {
+  const target = options.target;
+  const packageRoot = options.packageRoot;
+  const taskId = options.taskId ?? options.task ?? null;
+  return withTaskMutation(target, { taskId, packageRoot }, "complete", async (ctx) => {
+    return evaluateAndComplete({ ...options, taskId: ctx?.taskId ?? null });
+  });
+}
 
 export function formatCompleteResult(result) {
   const lines = [`FORGELOOP COMPLETE: ${result.status}`];

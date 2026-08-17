@@ -15,7 +15,7 @@ function taskError(code, message, artifacts = []) {
 }
 
 export async function runTaskShow({ target, packageRoot, taskId } = {}) {
-  const context = await resolveTaskContext(target, { taskOption: taskId, packageRoot });
+  const context = await resolveTaskContext(target, { taskId, packageRoot, explicitRequired: true });
   const effectiveTaskId = context.taskId;
 
   let descriptor = null;

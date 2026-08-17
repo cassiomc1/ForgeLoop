@@ -1,8 +1,10 @@
 import { reconcileContinuity } from "../core/continuity-reconciliation.js";
+import { withResolvedTask } from "../core/task-command.js";
 
 export async function runReconcileContinuity({ target, packageRoot, taskId, task } = {}) {
-  const effectiveTaskId = taskId ?? task ?? null;
-  return reconcileContinuity({ target, packageRoot, taskId: effectiveTaskId });
+  return withResolvedTask(target, { taskId: taskId ?? task, packageRoot }, async (ctx) => {
+    return reconcileContinuity({ target, packageRoot, taskId: ctx?.taskId ?? null });
+  });
 }
 
 export function formatReconcileContinuityResult(result) {

@@ -1,6 +1,14 @@
-import { inspectTarget } from "../core/inspect.js";
+import { inspectTarget as coreInspectTarget } from "../core/inspect.js";
+import { withResolvedTask } from "../core/task-command.js";
 
-export { inspectTarget };
+export async function inspectTarget(options = {}) {
+  const target = options.target;
+  const packageRoot = options.packageRoot;
+  const taskId = options.taskId ?? options.task ?? null;
+  return withResolvedTask(target, { taskId, packageRoot }, async (ctx) => {
+    return coreInspectTarget({ ...options, taskId: ctx?.taskId ?? null });
+  });
+}
 
 export function formatInspectResult(report) {
   const lines = [

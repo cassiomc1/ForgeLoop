@@ -1,31 +1,33 @@
 import { readWorkState, WORK_STATE_PATH } from "../core/work-state.js";
-
+import { withResolvedTask } from "../core/task-command.js";
 import { taskArtifactPath } from "../core/task-paths.js";
 
 export async function runValidateState({ target, packageRoot, taskId, task } = {}) {
-  const effectiveTaskId = taskId ?? task ?? null;
-  const path = effectiveTaskId ? taskArtifactPath(effectiveTaskId, "state") : WORK_STATE_PATH;
-  try {
-    const state = await readWorkState(target, { packageRoot, taskId: effectiveTaskId });
-    if (!state) {
+  return withResolvedTask(target, { taskId: taskId ?? task, packageRoot }, async (ctx) => {
+    const effectiveTaskId = ctx?.taskId ?? null;
+    const path = effectiveTaskId ? taskArtifactPath(effectiveTaskId, "state") : WORK_STATE_PATH;
+    try {
+      const state = await readWorkState(target, { packageRoot, taskId: effectiveTaskId });
+      if (!state) {
+        return {
+          ok: true,
+          path,
+          state: null,
+          errors: [],
+          warnings: ["No work-state checkpoint is present."],
+        };
+      }
+      return { ok: true, path, state, errors: [], warnings: [] };
+    } catch (error) {
       return {
-        ok: true,
+        ok: false,
         path,
         state: null,
-        errors: [],
-        warnings: ["No work-state checkpoint is present."],
+        errors: [error.message],
+        warnings: [],
       };
     }
-    return { ok: true, path, state, errors: [], warnings: [] };
-  } catch (error) {
-    return {
-      ok: false,
-      path,
-      state: null,
-      errors: [error.message],
-      warnings: [],
-    };
-  }
+  });
 }
 
 export function formatValidateStateResult(result) {

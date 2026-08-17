@@ -2,7 +2,7 @@ import { resolveTaskContext } from "../core/task-context.js";
 import { forceUnlockTask, readLockInfo } from "../core/task-lock.js";
 
 export async function runTaskUnlock({ target, packageRoot, taskId, force = false } = {}) {
-  const context = await resolveTaskContext(target, { taskOption: taskId, packageRoot });
+  const context = await resolveTaskContext(target, { taskId, packageRoot, explicitRequired: true });
   const effectiveTaskId = context.taskId;
 
   const lockInfo = await readLockInfo(target, effectiveTaskId);

@@ -1,27 +1,30 @@
 import { evaluateRoute } from "../core/router.js";
 import { persistRoute } from "../core/route-artifact.js";
 import { readContract } from "../core/contract.js";
+import { withTaskMutation } from "../core/task-command.js";
 
 export async function runRoute({ target, packageRoot, workType, surfaces, risks, platforms, behaviorChange, executableChange, taskId, task }) {
-  const effectiveTaskId = taskId ?? task ?? null;
-  const route = evaluateRoute({
-    workType,
-    surfaces,
-    risks,
-    platforms,
-    behaviorChange,
-    executableChange,
-  });
-  if (target && packageRoot) {
-    let contractFingerprint;
-    try {
-      contractFingerprint = (await readContract(target, packageRoot, { taskId: effectiveTaskId })).fingerprint;
-    } catch {
-      contractFingerprint = undefined;
+  return withTaskMutation(target, { taskId: taskId ?? task, packageRoot }, "route", async (ctx) => {
+    const effectiveTaskId = ctx?.taskId ?? null;
+    const route = evaluateRoute({
+      workType,
+      surfaces,
+      risks,
+      platforms,
+      behaviorChange,
+      executableChange,
+    });
+    if (target && packageRoot) {
+      let contractFingerprint;
+      try {
+        contractFingerprint = (await readContract(target, packageRoot, { taskId: effectiveTaskId })).fingerprint;
+      } catch {
+        contractFingerprint = undefined;
+      }
+      await persistRoute(target, route, packageRoot, { contractFingerprint, taskId: effectiveTaskId });
     }
-    await persistRoute(target, route, packageRoot, { contractFingerprint, taskId: effectiveTaskId });
-  }
-  return route;
+    return route;
+  });
 }
 
 export function formatRouteResult(result) {

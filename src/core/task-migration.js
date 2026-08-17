@@ -8,7 +8,7 @@ import {
   taskDirectory,
 } from "./task-paths.js";
 import { assertTaskId, taskStorageKey } from "./task-identity.js";
-import { createTaskDescriptor, writeTaskDescriptor } from "./task-descriptor.js";
+import { createTaskDescriptor, readTaskDescriptor, writeTaskDescriptor } from "./task-descriptor.js";
 import { readJsonArtifact } from "./artifacts.js";
 import {
   E_TASK_MIGRATION_IDENTITY_MISMATCH,
@@ -42,63 +42,59 @@ export async function migrateLegacyLayout(
     };
   }
 
-  // Identify canonical taskId from contract, state, continuity, or receipt
   let canonicalTaskId = null;
   const artifactIdentities = [];
 
-  // Try contract
-  const contractPath = ensureWithin(target, LEGACY_TASK_ARTIFACT_PATHS.contract);
-  if (await fileExists(contractPath)) {
-    try {
-      const contract = await readJsonArtifact(target, LEGACY_TASK_ARTIFACT_PATHS.contract, "current-contract", packageRoot);
-      if (contract.value?.taskId) {
-        canonicalTaskId = contract.value.taskId;
-        artifactIdentities.push({ artifact: "contract", taskId: contract.value.taskId });
+  // Validate all detected legacy artifacts before proceeding
+  for (const item of detection.legacyFiles) {
+    if (item.key === "contract") {
+      try {
+        const contract = await readJsonArtifact(target, item.path, "current-contract", packageRoot);
+        if (contract.value?.taskId) {
+          if (!canonicalTaskId) canonicalTaskId = contract.value.taskId;
+          artifactIdentities.push({ artifact: "contract", taskId: contract.value.taskId });
+        }
+      } catch (err) {
+        const error = new Error(`Legacy contract artifact is invalid: ${err.message}`);
+        error.code = E_TASK_MIGRATION_INVALID;
+        throw error;
       }
-    } catch (err) {
-      // ignore parse err here, will fail validation later
-    }
-  }
-
-  // Try state
-  const statePath = ensureWithin(target, LEGACY_TASK_ARTIFACT_PATHS.state);
-  if (await fileExists(statePath)) {
-    try {
-      const state = await readJsonArtifact(target, LEGACY_TASK_ARTIFACT_PATHS.state, "work-state", packageRoot);
-      if (state.value?.taskId) {
-        if (!canonicalTaskId) canonicalTaskId = state.value.taskId;
-        artifactIdentities.push({ artifact: "state", taskId: state.value.taskId });
+    } else if (item.key === "state") {
+      try {
+        const state = await readJsonArtifact(target, item.path, "work-state", packageRoot);
+        if (state.value?.taskId) {
+          if (!canonicalTaskId) canonicalTaskId = state.value.taskId;
+          artifactIdentities.push({ artifact: "state", taskId: state.value.taskId });
+        }
+      } catch (err) {
+        const error = new Error(`Legacy state artifact is invalid: ${err.message}`);
+        error.code = E_TASK_MIGRATION_INVALID;
+        throw error;
       }
-    } catch {
-      // ignore
-    }
-  }
-
-  // Try continuity
-  const continuityPath = ensureWithin(target, LEGACY_TASK_ARTIFACT_PATHS.continuity);
-  if (await fileExists(continuityPath)) {
-    try {
-      const continuity = await readJsonArtifact(target, LEGACY_TASK_ARTIFACT_PATHS.continuity, "continuity", packageRoot);
-      if (continuity.value?.taskId) {
-        if (!canonicalTaskId) canonicalTaskId = continuity.value.taskId;
-        artifactIdentities.push({ artifact: "continuity", taskId: continuity.value.taskId });
+    } else if (item.key === "continuity") {
+      try {
+        const continuity = await readJsonArtifact(target, item.path, "continuity", packageRoot);
+        if (continuity.value?.taskId) {
+          if (!canonicalTaskId) canonicalTaskId = continuity.value.taskId;
+          artifactIdentities.push({ artifact: "continuity", taskId: continuity.value.taskId });
+        }
+      } catch (err) {
+        const error = new Error(`Legacy continuity artifact is invalid: ${err.message}`);
+        error.code = E_TASK_MIGRATION_INVALID;
+        throw error;
       }
-    } catch {
-      // ignore
-    }
-  }
-
-  // Try receipt
-  const receiptPath = ensureWithin(target, LEGACY_TASK_ARTIFACT_PATHS.receipt);
-  if (await fileExists(receiptPath)) {
-    try {
-      const receipt = await readJsonArtifact(target, LEGACY_TASK_ARTIFACT_PATHS.receipt, "execution-receipt", packageRoot);
-      if (receipt.value?.taskId) {
-        if (!canonicalTaskId) canonicalTaskId = receipt.value.taskId;
-        artifactIdentities.push({ artifact: "receipt", taskId: receipt.value.taskId });
+    } else if (item.key === "receipt") {
+      try {
+        const receipt = await readJsonArtifact(target, item.path, "execution-receipt", packageRoot);
+        if (receipt.value?.taskId) {
+          if (!canonicalTaskId) canonicalTaskId = receipt.value.taskId;
+          artifactIdentities.push({ artifact: "receipt", taskId: receipt.value.taskId });
+        }
+      } catch (err) {
+        const error = new Error(`Legacy receipt artifact is invalid: ${err.message}`);
+        error.code = E_TASK_MIGRATION_INVALID;
+        throw error;
       }
-    } catch {
-      // ignore
     }
   }
 
@@ -199,7 +195,10 @@ export async function migrateLegacyLayout(
     await mkdir(ensureWithin(target, TASK_STATE_ROOT), { recursive: true });
     await rename(tempDirAbs, finalDirAbs);
 
-    // 5. Cleanup legacy task files (only after successful move)
+    // 5. Post-publish validation: verify final namespace is readable and healthy
+    await readTaskDescriptor(target, canonicalTaskId, packageRoot);
+
+    // 6. Cleanup legacy task files (strictly after successful publish and validation)
     for (const item of detection.legacyFiles) {
       const full = ensureWithin(target, item.path);
       try {

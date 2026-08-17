@@ -1243,4 +1243,3 @@ corruption through three fundamental protocol mechanisms:
    variable, or implicit single-task fallback. If multiple active tasks exist without a
    selector, ForgeLoop fails closed with `E_TASK_AMBIGUOUS`. Legacy ForgeLoop 1.0 single-task
    layouts can be migrated into namespaced layout using `forgeloop task-migrate`.
-

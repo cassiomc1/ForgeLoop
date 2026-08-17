@@ -3,7 +3,7 @@ import { readTaskDescriptor, writeTaskDescriptor } from "../core/task-descriptor
 import { normalizeWriteClaims, assertNoScopeConflicts, assertScopeClean, assertScopeNotFrozen } from "../core/task-scope.js";
 import { discoverTasks } from "../core/task-discovery.js";
 import { readWorkState } from "../core/work-state.js";
-import { withTaskLock } from "../core/task-lock.js";
+import { withProjectClaimsLock, withTaskLock } from "../core/task-lock.js";
 import { E_TASK_NOT_FOUND } from "../core/error-codes.js";
 
 function taskError(code, message, artifacts = []) {
@@ -14,7 +14,7 @@ function taskError(code, message, artifacts = []) {
 }
 
 export async function runTaskScope({ target, packageRoot, taskId, claims } = {}) {
-  const context = await resolveTaskContext(target, { taskOption: taskId, packageRoot });
+  const context = await resolveTaskContext(target, { taskId, packageRoot, explicitRequired: true });
   const effectiveTaskId = context.taskId;
 
   let descriptorArtifact;
@@ -30,31 +30,33 @@ export async function runTaskScope({ target, packageRoot, taskId, claims } = {})
   const descriptor = descriptorArtifact.value;
 
   if (claims !== undefined && claims !== null) {
-    const state = await readWorkState(target, { packageRoot, taskId: effectiveTaskId });
-    if (state?.phase) {
-      assertScopeNotFrozen(state.phase);
-    }
+    return withProjectClaimsLock(target, async () => {
+      return withTaskLock(target, effectiveTaskId, "task-scope", async () => {
+        const state = await readWorkState(target, { packageRoot, taskId: effectiveTaskId });
+        if (state?.phase) {
+          assertScopeNotFrozen(state.phase);
+        }
 
-    const normalizedClaims = normalizeWriteClaims(claims);
-    const allTasks = await discoverTasks(target, packageRoot);
-    assertNoScopeConflicts(normalizedClaims, allTasks, effectiveTaskId);
-    if (normalizedClaims.length > 0) {
-      await assertScopeClean(target, normalizedClaims);
-    }
+        const normalizedClaims = normalizeWriteClaims(claims);
+        const allTasks = await discoverTasks(target, packageRoot);
+        assertNoScopeConflicts(normalizedClaims, allTasks, effectiveTaskId);
+        if (normalizedClaims.length > 0) {
+          await assertScopeClean(target, normalizedClaims);
+        }
 
-    return withTaskLock(target, effectiveTaskId, async () => {
-      const updatedDescriptor = {
-        ...descriptor,
-        writeClaims: normalizedClaims,
-        updatedAt: new Date().toISOString(),
-      };
-      await writeTaskDescriptor(target, updatedDescriptor, packageRoot);
-      return {
-        taskId: effectiveTaskId,
-        taskKey: context.taskKey,
-        writeClaims: updatedDescriptor.writeClaims,
-        updated: true,
-      };
+        const updatedDescriptor = {
+          ...descriptor,
+          writeClaims: normalizedClaims,
+          updatedAt: new Date().toISOString(),
+        };
+        await writeTaskDescriptor(target, updatedDescriptor, packageRoot);
+        return {
+          taskId: effectiveTaskId,
+          taskKey: context.taskKey,
+          writeClaims: updatedDescriptor.writeClaims,
+          updated: true,
+        };
+      });
     });
   }
 

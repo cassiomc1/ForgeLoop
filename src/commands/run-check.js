@@ -3,6 +3,7 @@ import {
   recordCheck as recordCheckArtifact,
 } from "../core/completion-artifacts.js";
 import { runCommandExecution } from "../core/execution.js";
+import { withTaskMutation } from "../core/task-command.js";
 
 export async function runCheck({
   target,
@@ -21,54 +22,56 @@ export async function runCheck({
     error.code = "E_CHECK_INVALID";
     throw error;
   }
-  const effectiveTaskId = taskId ?? task ?? null;
-  const ready = await assertRecordCheckPrerequisites({
-    target,
-    packageRoot,
-    requirement,
-    status: "passed",
-    evidenceKind: "OBSERVED",
-    authorityContext,
-    runtimeContext,
-    taskId: effectiveTaskId,
+  return withTaskMutation(target, { taskId: taskId ?? task, packageRoot }, "run-check", async (ctx) => {
+    const effectiveTaskId = ctx?.taskId ?? null;
+    const ready = await assertRecordCheckPrerequisites({
+      target,
+      packageRoot,
+      requirement,
+      status: "passed",
+      evidenceKind: "OBSERVED",
+      authorityContext,
+      runtimeContext,
+      taskId: effectiveTaskId,
+    });
+    const verificationCycle = ready.state.verificationCycle ?? 1;
+    const execution = await runCommandExecution({
+      target,
+      packageRoot,
+      taskId: ready.contract.value.taskId,
+      checkId: id,
+      requirement,
+      verificationCycle,
+      argv,
+      details,
+      authorityContext,
+      runtimeContext,
+    });
+    const status = execution.execution.status === "passed" ? "passed" : "failed";
+    const recorded = await recordCheckArtifact({
+      target,
+      packageRoot,
+      id,
+      kind: "command",
+      requirement,
+      status,
+      evidenceKind: "OBSERVED",
+      command: execution.execution.argv.join(" "),
+      result: execution.result,
+      ...(execution.execution.exitCode === null ? {} : { exitCode: execution.execution.exitCode }),
+      details,
+      executionRef: execution.execution.executionId,
+      provenance: "FORGELOOP_EXECUTED",
+      authorityContext,
+      runtimeContext,
+      taskId: effectiveTaskId,
+    });
+    return {
+      ...recorded,
+      execution: execution.execution,
+      executionPath: execution.path,
+    };
   });
-  const verificationCycle = ready.state.verificationCycle ?? 1;
-  const execution = await runCommandExecution({
-    target,
-    packageRoot,
-    taskId: ready.contract.value.taskId,
-    checkId: id,
-    requirement,
-    verificationCycle,
-    argv,
-    details,
-    authorityContext,
-    runtimeContext,
-  });
-  const status = execution.execution.status === "passed" ? "passed" : "failed";
-  const recorded = await recordCheckArtifact({
-    target,
-    packageRoot,
-    id,
-    kind: "command",
-    requirement,
-    status,
-    evidenceKind: "OBSERVED",
-    command: execution.execution.argv.join(" "),
-    result: execution.result,
-    ...(execution.execution.exitCode === null ? {} : { exitCode: execution.execution.exitCode }),
-    details,
-    executionRef: execution.execution.executionId,
-    provenance: "FORGELOOP_EXECUTED",
-    authorityContext,
-    runtimeContext,
-    taskId: effectiveTaskId,
-  });
-  return {
-    ...recorded,
-    execution: execution.execution,
-    executionPath: execution.path,
-  };
 }
 
 export function formatRunCheckResult(result) {

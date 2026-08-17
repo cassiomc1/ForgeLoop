@@ -1,4 +1,5 @@
 import { writeContinuity } from "../core/continuity.js";
+import { withTaskMutation } from "../core/task-command.js";
 
 function parseWorkItem(value, label) {
   if (typeof value !== "string") throw new Error(`${label} must use <id>:<summary>`);
@@ -33,22 +34,24 @@ export async function runRecordContinuity({
   if ((focusId && !focusSummary) || (!focusId && focusSummary)) {
     throw new Error("record-continuity requires --focus-id and --focus-summary together");
   }
-  const effectiveTaskId = taskId ?? task ?? null;
-  return writeContinuity(target, {
-    ...(focusId ? { currentFocus: { id: focusId, summary: focusSummary } } : {}),
-    remainingWork: remaining.map((item) => parseWorkItem(item, "--remaining")),
-    knownIssues: knownIssues.map((item) => parseWorkItem(item, "--known-issue")),
-    changedAreas,
-    inspectFirst,
-    ...(resumeNote ? { resumeNote } : {}),
-  }, {
-    packageRoot,
-    ...(state ? { state } : {}),
-    ...(contract ? { contract } : {}),
-    ...(repositoryFingerprint ? { repositoryFingerprint } : {}),
-    ...(now ? { now } : {}),
-    dryRun,
-    taskId: effectiveTaskId,
+  return withTaskMutation(target, { taskId: taskId ?? task, packageRoot }, "record-continuity", async (ctx) => {
+    const effectiveTaskId = ctx?.taskId ?? null;
+    return writeContinuity(target, {
+      ...(focusId ? { currentFocus: { id: focusId, summary: focusSummary } } : {}),
+      remainingWork: remaining.map((item) => parseWorkItem(item, "--remaining")),
+      knownIssues: knownIssues.map((item) => parseWorkItem(item, "--known-issue")),
+      changedAreas,
+      inspectFirst,
+      ...(resumeNote ? { resumeNote } : {}),
+    }, {
+      packageRoot,
+      ...(state ? { state } : {}),
+      ...(contract ? { contract } : {}),
+      ...(repositoryFingerprint ? { repositoryFingerprint } : {}),
+      ...(now ? { now } : {}),
+      dryRun,
+      taskId: effectiveTaskId,
+    });
   });
 }
 

@@ -69,9 +69,10 @@ export async function resolveTaskContext(target, {
   }
 
   const tasks = await discoverTasks(target, packageRoot);
+  const healthyTasks = tasks.filter((t) => t.healthy !== false);
 
-  if (tasks.length === 1) {
-    const single = tasks[0];
+  if (healthyTasks.length === 1) {
+    const single = healthyTasks[0];
     return createTaskContext({
       target,
       taskId: single.taskId,
@@ -80,13 +81,38 @@ export async function resolveTaskContext(target, {
     });
   }
 
-  if (tasks.length > 1) {
-    const taskIds = tasks.map((t) => t.taskId);
+  if (healthyTasks.length > 1) {
+    const activeTasks = healthyTasks.filter((t) => t.phase !== "COMPLETE");
+
+    // Exactly one active (non-COMPLETE) task -> select it implicitly
+    if (activeTasks.length === 1) {
+      const single = activeTasks[0];
+      return createTaskContext({
+        target,
+        taskId: single.taskId,
+        descriptor: single.descriptor,
+        packageRoot,
+      });
+    }
+
+    // Zero active and exactly one total task -> select it
+    if (activeTasks.length === 0 && healthyTasks.length === 1) {
+      const single = healthyTasks[0];
+      return createTaskContext({
+        target,
+        taskId: single.taskId,
+        descriptor: single.descriptor,
+        packageRoot,
+      });
+    }
+
+    // Otherwise ambiguous
+    const candidates = (activeTasks.length > 0 ? activeTasks : healthyTasks).map((t) => t.taskId);
     const error = new Error(
-      `Multiple active tasks exist (${taskIds.join(", ")}). Select a task with --task <id> or FORGELOOP_TASK=<id>.`,
+      `Multiple active tasks exist (${candidates.join(", ")}). Select a task with --task <id> or FORGELOOP_TASK=<id>.`,
     );
     error.code = E_TASK_AMBIGUOUS;
-    error.tasks = taskIds;
+    error.tasks = candidates;
     throw error;
   }
 

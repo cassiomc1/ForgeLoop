@@ -440,4 +440,3 @@ Canonical task descriptor declaring task identity, key, timestamps, and write cl
 - `writeClaims` *(array<string>, required)*
 
 <!-- END FORGELOOP GENERATED: schema:task-descriptor -->
-

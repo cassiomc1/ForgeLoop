@@ -7,7 +7,6 @@ import { currentChangedPaths } from "./repository.js";
 import { validateReadyProtocolConsistency } from "./preflight.js";
 import { taskArtifactPath } from "./task-paths.js";
 import { readTaskDescriptor } from "./task-descriptor.js";
-import { assertClaimsCoverChangedPaths } from "./task-scope.js";
 
 function sortErrors(errors) {
   return [...errors].sort((left, right) => left.code.localeCompare(right.code)

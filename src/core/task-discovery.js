@@ -30,6 +30,21 @@ export async function discoverTasks(target, packageRoot = getPackageRoot()) {
       const descriptor = descriptorArtifact.value;
       const taskId = descriptor.taskId;
 
+      // P1-1: Verify descriptor taskKey matches the actual directory name
+      if (descriptor.taskKey !== entry.name) {
+        tasks.push({
+          taskId: descriptor.taskId ?? null,
+          taskKey: entry.name,
+          directory: `${TASK_STATE_ROOT}/${entry.name}`,
+          healthy: false,
+          error: {
+            code: "E_TASK_KEY_MISMATCH",
+            message: `Task directory key "${entry.name}" does not match descriptor taskKey "${descriptor.taskKey}"`,
+          },
+        });
+        continue;
+      }
+
       // Check work-state if available
       let state = null;
       let phase = null;
@@ -63,6 +78,7 @@ export async function discoverTasks(target, packageRoot = getPackageRoot()) {
       tasks.push({
         taskId,
         taskKey: descriptor.taskKey,
+        healthy: true,
         phase,
         locked: lockInfo !== null,
         lockInfo,
@@ -75,16 +91,26 @@ export async function discoverTasks(target, packageRoot = getPackageRoot()) {
         descriptor,
         directory: `${TASK_STATE_ROOT}/${descriptor.taskKey}`,
       });
-    } catch {
-      // Ignore unparseable directories in discovery, or record as unhealthy
+    } catch (err) {
+      // P1-2: Surface corrupt task namespaces instead of silently hiding them
+      tasks.push({
+        taskId: null,
+        taskKey: entry.name,
+        directory: `${TASK_STATE_ROOT}/${entry.name}`,
+        healthy: false,
+        error: {
+          code: err.code ?? "E_TASK_DESCRIPTOR_INVALID",
+          message: err.message ?? String(err),
+        },
+      });
     }
   }
 
-  return tasks.sort((a, b) => a.taskId.localeCompare(b.taskId));
+  return tasks.sort((a, b) => (a.taskId ?? a.taskKey).localeCompare(b.taskId ?? b.taskKey));
 }
 
 export async function findTaskById(target, taskId, packageRoot = getPackageRoot()) {
   const taskKey = taskStorageKey(taskId);
   const tasks = await discoverTasks(target, packageRoot);
-  return tasks.find((t) => t.taskId === taskId || t.taskKey === taskKey) ?? null;
+  return tasks.find((t) => t.healthy !== false && (t.taskId === taskId || t.taskKey === taskKey)) ?? null;
 }

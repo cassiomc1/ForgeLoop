@@ -1,6 +1,5 @@
 import { resolveTaskContext } from "./task-context.js";
 import { withTaskLock } from "./task-lock.js";
-import { E_TASK_REQUIRED } from "./error-codes.js";
 
 export async function withResolvedTask(
   target,
@@ -8,17 +7,12 @@ export async function withResolvedTask(
   callback,
   { explicitRequired = false } = {},
 ) {
+  const taskOption = options.taskId ?? options.task ?? null;
   const taskContext = await resolveTaskContext(target, {
-    taskId: options.task ?? null,
+    taskId: taskOption,
     explicitRequired,
     packageRoot: options.packageRoot,
   });
-
-  if (!taskContext && explicitRequired) {
-    const error = new Error("This command requires an active or specified task. Provide --task <id>.");
-    error.code = E_TASK_REQUIRED;
-    throw error;
-  }
 
   return callback(taskContext);
 }
@@ -28,21 +22,20 @@ export async function withTaskMutation(
   options = {},
   operation = "mutation",
   callback,
-  { explicitRequired = true } = {},
+  { explicitRequired = false } = {},
 ) {
+  const taskOption = options.taskId ?? options.task ?? null;
   const taskContext = await resolveTaskContext(target, {
-    taskId: options.task ?? null,
+    taskId: taskOption,
     explicitRequired,
     packageRoot: options.packageRoot,
   });
 
-  if (!taskContext) {
-    const error = new Error(`Mutation operation "${operation}" requires a target task.`);
-    error.code = E_TASK_REQUIRED;
-    throw error;
+  if (taskContext) {
+    return withTaskLock(target, taskContext.taskId, operation, async () => {
+      return callback(taskContext);
+    });
   }
 
-  return withTaskLock(target, taskContext.taskId, operation, async () => {
-    return callback(taskContext);
-  });
+  return callback(null);
 }

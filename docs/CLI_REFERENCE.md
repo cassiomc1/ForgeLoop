@@ -890,4 +890,3 @@ Forces the release of a stale task lock.
   ```bash
   forgeloop task-unlock --task task-001 --force --json
   ```
-

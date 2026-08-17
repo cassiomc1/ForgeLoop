@@ -1,20 +1,25 @@
 import { readAndClassifyWorkState } from "../core/work-state.js";
 import { inspectSchemaHealth } from "../core/schema-validation.js";
 import { reconcileContinuity } from "../core/continuity-reconciliation.js";
+import { withResolvedTask } from "../core/task-command.js";
 
 export async function runStatus({ target, packageRoot, contractFile = null, taskId, task } = {}) {
-  const effectiveTaskId = taskId ?? task ?? null;
-  const state = await readAndClassifyWorkState({ target, packageRoot, contractFile, taskId: effectiveTaskId });
-  const [protocol, continuity] = await Promise.all([
-    inspectSchemaHealth(target),
-    reconcileContinuity({ target, packageRoot, taskId: effectiveTaskId }),
-  ]);
-  return {
-    ...state,
-    protocol,
-    continuity,
-    evidence: [...(state.evidence ?? []), ...(protocol.evidence ?? [])],
-  };
+  return withResolvedTask(target, { taskId: taskId ?? task, packageRoot }, async (ctx) => {
+    const effectiveTaskId = ctx?.taskId ?? null;
+    const state = await readAndClassifyWorkState({ target, packageRoot, contractFile, taskId: effectiveTaskId });
+    const [protocol, continuity] = await Promise.all([
+      inspectSchemaHealth(target),
+      reconcileContinuity({ target, packageRoot, taskId: effectiveTaskId }),
+    ]);
+    return {
+      ...state,
+      taskId: effectiveTaskId,
+      taskKey: ctx?.taskKey ?? null,
+      protocol,
+      continuity,
+      evidence: [...(state.evidence ?? []), ...(protocol.evidence ?? [])],
+    };
+  });
 }
 
 export function formatStatusResult(result) {

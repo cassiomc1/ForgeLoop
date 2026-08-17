@@ -1,8 +1,10 @@
 import { getNextAction } from "../core/next-action.js";
+import { withResolvedTask } from "../core/task-command.js";
 
 export async function runNext({ target, packageRoot, taskId, task }) {
-  const effectiveTaskId = taskId ?? task ?? null;
-  return getNextAction({ target, packageRoot, taskId: effectiveTaskId });
+  return withResolvedTask(target, { taskId: taskId ?? task, packageRoot }, async (ctx) => {
+    return getNextAction({ target, packageRoot, taskId: ctx?.taskId ?? null });
+  });
 }
 
 export function formatNextActionResult(result) {
