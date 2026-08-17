@@ -77,7 +77,8 @@ test("forgeloop task-create, task-list, task-show, task-scope, task-unlock CLI l
   });
 });
 
-test("forgeloop task-migrate converts 1.0 layout via CLI", async () => {
+test("forgeloop task-migrate converts 1.0 layout via CLI with human and json outputs", async () => {
+  // Test A: Human output on valid legacy state
   await withTarget(async (target) => {
     const contract = createContract({
       taskId: "cli-migrated-task",
@@ -106,10 +107,73 @@ test("forgeloop task-migrate converts 1.0 layout via CLI", async () => {
     });
     await writeWorkState(target, state, { packageRoot });
 
+    const result = runCli(target, "task-migrate");
+    assert.equal(result.status, 0, `task-migrate human failed: ${result.stderr}`);
+    assert.match(result.stdout, /migrated task:\s+cli-migrated-task/);
+    assert.match(result.stdout, /destination:\s+\.forgeloop\/task-state\//);
+    assert.match(result.stdout, /migrated artifacts:/);
+    assert.match(result.stdout, /- contract\.json/);
+    assert.match(result.stdout, /- work-state\.json/);
+    assert.doesNotMatch(result.stdout, /undefined|null|\[object Object\]/);
+  });
+
+  // Test B: Dry run human output
+  await withTarget(async (target) => {
+    const contract = createContract({
+      taskId: "cli-dryrun-task",
+      objective: "Dryrun CLI",
+      deliverables: ["src/index.js"],
+      constraints: ["none"],
+      risks: ["low"],
+      verification: ["tests"],
+      successCriteria: ["tests pass"],
+      stopConditions: ["error"],
+      unresolvedDecisions: [],
+      sourceRefs: ["src"],
+    });
+    await writeContract(target, contract, packageRoot);
+
+    const dryRes = runCli(target, "task-migrate", "--dry-run");
+    assert.equal(dryRes.status, 0, `task-migrate --dry-run failed: ${dryRes.stderr}`);
+    assert.match(dryRes.stdout, /\[dry-run\] task:\s+cli-dryrun-task/);
+    assert.match(dryRes.stdout, /destination:\s+\.forgeloop\/task-state\//);
+    assert.match(dryRes.stdout, /legacy artifacts:/);
+    assert.match(dryRes.stdout, /- \.forgeloop\/current-contract\.json/);
+    assert.doesNotMatch(dryRes.stdout, /undefined|null|\[object Object\]/);
+  });
+
+  // Test C: No legacy state
+  await withTarget(async (target) => {
+    const noStateRes = runCli(target, "task-migrate");
+    assert.equal(noStateRes.status, 0, `task-migrate on empty target failed: ${noStateRes.stderr}`);
+    assert.match(noStateRes.stdout, /No legacy ForgeLoop 1\.0 singleton artifacts found/i);
+    assert.doesNotMatch(noStateRes.stdout, /undefined|null|\[object Object\]/);
+  });
+
+  // Test D: JSON output
+  await withTarget(async (target) => {
+    const contract = createContract({
+      taskId: "cli-json-task",
+      objective: "Migrate JSON CLI",
+      deliverables: ["src/index.js"],
+      constraints: ["none"],
+      risks: ["low"],
+      verification: ["tests"],
+      successCriteria: ["tests pass"],
+      stopConditions: ["error"],
+      unresolvedDecisions: [],
+      sourceRefs: ["src"],
+    });
+    await writeContract(target, contract, packageRoot);
+
     const migrateRes = runCli(target, "task-migrate", "--json");
-    assert.equal(migrateRes.status, 0, `task-migrate failed: ${migrateRes.stderr}`);
+    assert.equal(migrateRes.status, 0, `task-migrate --json failed: ${migrateRes.stderr}`);
     const migrated = JSON.parse(migrateRes.stdout);
     assert.equal(migrated.migrated, true);
-    assert.equal(migrated.taskId, "cli-migrated-task");
+    assert.equal(migrated.taskId, "cli-json-task");
+    assert.ok(migrated.taskKey);
+    assert.ok(migrated.targetDirectory);
+    assert.ok(Array.isArray(migrated.migratedArtifacts));
+    assert.ok(migrated.migratedArtifacts.includes("contract.json"));
   });
 });

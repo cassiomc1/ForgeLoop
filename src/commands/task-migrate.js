@@ -6,17 +6,29 @@ export async function runTaskMigrate({ target, packageRoot, dryRun = false } = {
 }
 
 export function formatTaskMigrateResult(result) {
-  if (!result.migrated && result.actions.length === 0) {
-    return "no legacy layout detected; nothing to migrate\n";
+  if (!result.migrated) {
+    if (result.dryRun) {
+      const lines = [
+        `[dry-run] task: ${result.taskId}`,
+        `key: ${result.taskKey}`,
+        `destination: ${result.targetDirectory}`,
+        "legacy artifacts:",
+        ...(result.legacyFiles ?? []).map((artifact) => `  - ${artifact}`),
+      ];
+
+      return `${lines.join("\n")}\n`;
+    }
+
+    return `${result.message ?? "no legacy layout detected; nothing to migrate"}\n`;
   }
-  const prefix = result.dryRun ? "[dry-run] " : "";
+
   const lines = [
-    `${prefix}migrated task: ${result.taskId} (key: ${result.taskKey})`,
-    `destination: ${result.destinationDirectory}`,
-    "actions:",
+    `migrated task: ${result.taskId}`,
+    `key: ${result.taskKey}`,
+    `destination: ${result.targetDirectory}`,
+    "migrated artifacts:",
+    ...(result.migratedArtifacts ?? []).map((artifact) => `  - ${artifact}`),
   ];
-  for (const action of result.actions) {
-    lines.push(`  - ${action.type}: ${action.from} -> ${action.to}`);
-  }
+
   return `${lines.join("\n")}\n`;
 }
