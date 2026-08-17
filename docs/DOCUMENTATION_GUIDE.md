@@ -117,11 +117,13 @@ Avoid ambiguous phrases like *"should generally"* or *"usually"* for behaviors t
 - Canonical task-scoped paths are defined in `src/core/task-paths.js` under `.forgeloop/task-state/<taskKey>/`.
 - Operational guides (`README.md`, `GETTING_STARTED.md`, `RECIPES.md`, `CROSS_HARNESS_CONTINUITY.md`, `TROUBLESHOOTING.md`) must document namespaced paths by default.
 - Legacy ForgeLoop 1.0 singleton paths (e.g. `.forgeloop/current-contract.json`) are permitted **only** inside explicit legacy migration regions:
+
   ```markdown
   <!-- BEGIN FORGELOOP LEGACY LAYOUT EXAMPLE -->
   ...
   <!-- END FORGELOOP LEGACY LAYOUT EXAMPLE -->
   ```
+
 - `scripts/validate_documentation_conformance.mjs` mechanically rejects any singleton task path outside these markers.
 
 ---
