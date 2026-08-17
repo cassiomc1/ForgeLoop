@@ -34,6 +34,12 @@ test("README keeps the lifecycle contract, modern multi-task layout, and accessi
     readme,
     /<img[^>]+forgeloop-flow\.svg/i,
   );
+  assert.match(readme, /project-scoped configuration/i);
+  assert.match(readme, /task-scoped/i);
+  assert.doesNotMatch(
+    readme,
+    /mutable protocol artifacts remain directly under `?\.forgeloop\/`?/i,
+  );
   assert.ok(readme.length < 30000, "README should remain a catalog and quickstart");
 });
 

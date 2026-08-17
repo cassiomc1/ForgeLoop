@@ -56,8 +56,9 @@ npx @cassiomc1/forgeloop doctor
 ```
 
 The CLI installs canonical documents under `.forgeloop/kit/`, keeps small
-native discovery shims at the project root, and stores mutable contract, route,
-gate, state, event, receipt, and execution artifacts under `.forgeloop/`.
+native discovery shims at the project root, stores project-scoped
+configuration under `.forgeloop/`, and stores task-scoped protocol artifacts
+under `.forgeloop/task-state/<taskKey>/`.
 `update` preserves target-specific profile facts and locally modified files.
 
 Before npm publication, the same source checkout can be exercised without a
@@ -277,16 +278,17 @@ src/                    npm CLI and protocol implementation
 schemas/                versioned artifact schemas
 ENG/                    package-source engineering guides
 docs/forgeloop-flow.mmd canonical Mermaid source
-docs/assets/             committed diagram render
+docs/assets/            committed diagram render
 scripts/                checks, renderer, release identity, CI notes
 tests/                  Node and Python regression coverage
-.forgeloop/              local protocol ledger and mutable artifacts
-DOCS_INDEX.md            documentation map and ownership boundaries
+.forgeloop/             project-scoped ForgeLoop configuration
+.forgeloop/task-state/  isolated live task protocol state
+DOCS_INDEX.md           documentation map and ownership boundaries
 ```
 
-The source repository keeps canonical documents at the root. A bootstrapped
-target uses the hidden kit layout; mutable protocol artifacts remain directly
-under `.forgeloop/`.
+Project-scoped configuration remains under `.forgeloop/`.
+Task-scoped mutable protocol state is stored under
+`.forgeloop/task-state/<taskKey>/`.
 
 For document ownership, guide routing, capability degradation, and integration
 details, start at [`DOCS_INDEX.md`](./DOCS_INDEX.md).
