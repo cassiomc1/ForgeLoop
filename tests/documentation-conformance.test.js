@@ -15,6 +15,15 @@ import { validateDocumentationConformance } from "../scripts/validate_documentat
 
 const packageRoot = getPackageRoot();
 
+/**
+ * Mutation helper that fails if the requested mutation did not modify content.
+ */
+function mustReplace(content, matcher, replacement, label) {
+  const result = content.replace(matcher, replacement);
+  assert.notEqual(result, content, `Mutation did not modify the fixture: ${label}`);
+  return result;
+}
+
 test("validateDocumentationConformance passes on repository docs", async () => {
   const result = await validateDocumentationConformance();
   assert.equal(result.valid, true, `Expected valid documentation conformance, got errors: ${result.errors.join("\n")}`);
@@ -84,7 +93,7 @@ test("PUBLIC_ERROR_CODES covers all documented stable codes", () => {
   }
 });
 
-test("negative fixtures & mutation tests: validateDocumentationConformance detects doc drift", async () => {
+test("negative fixtures & mutation tests: validateDocumentationConformance detects doc drift across LF and CRLF", async () => {
   const tempDir = await mkdtemp(path.join(os.tmpdir(), "forgeloop-doc-test-"));
 
   try {
@@ -104,40 +113,54 @@ test("negative fixtures & mutation tests: validateDocumentationConformance detec
     const docFile = path.join(tempDir, "docs", "ARTIFACT_REFERENCE.md");
     const cliDocFile = path.join(tempDir, "docs", "CLI_REFERENCE.md");
 
-    // Mutation 1: execution.kind corrupted from COMMAND_EXECUTION to command
-    let docContent = await readFile(docFile, "utf8");
-    await writeFile(docFile, docContent.replace("COMMAND_EXECUTION", "command"), "utf8");
-    const mut1 = await validateDocumentationConformance({ rootDir: tempDir });
-    assert.equal(mut1.valid, false);
-    assert.ok(mut1.errors.some((e) => e.includes("DOC_EXECUTION_KIND_CONST_MISMATCH")));
-    await writeFile(docFile, docContent, "utf8");
+    for (const eol of ["\n", "\r\n"]) {
+      // Setup files in target EOL mode
+      let docContent = (await readFile(docFile, "utf8")).replace(/\r?\n/g, eol);
+      let cliContent = (await readFile(cliDocFile, "utf8")).replace(/\r?\n/g, eol);
 
-    // Mutation 2: execution.exitCode corrupted to integer only
-    await writeFile(docFile, docContent.replace("integer or null", "integer"), "utf8");
-    const mut2 = await validateDocumentationConformance({ rootDir: tempDir });
-    assert.equal(mut2.valid, false);
-    assert.ok(mut2.errors.some((e) => e.includes("DOC_EXECUTION_EXIT_CODE_TYPE_MISMATCH")));
-    await writeFile(docFile, docContent, "utf8");
+      // Mutation 1: execution.kind corrupted from COMMAND_EXECUTION to command
+      const mutDoc1 = mustReplace(docContent, "COMMAND_EXECUTION", "command", `execution.kind (${eol === "\n" ? "LF" : "CRLF"})`);
+      await writeFile(docFile, mutDoc1, "utf8");
+      const mut1 = await validateDocumentationConformance({ rootDir: tempDir });
+      assert.equal(mut1.valid, false);
+      assert.ok(mut1.errors.some((e) => e.includes("DOC_EXECUTION_KIND_CONST_MISMATCH")));
+      await writeFile(docFile, docContent, "utf8");
 
-    // Mutation 3: init documented with --adopt
-    let cliContent = await readFile(cliDocFile, "utf8");
-    await writeFile(cliDocFile, cliContent.replace("### `init`\n\nInitializes ForgeLoop in a target repository.\n\n- **Purpose**: Installs canonical instruction templates under `.forgeloop/kit/`, creates discovery shims at root, and prepares `.forgeloop/`.\n- **When to use**: Once when onboarding a new repository to ForgeLoop.\n- **Mutation**: Writes `.forgeloop/kit/`, `.forgeloop/forgeloop.gitignore`, `AGENTS.md`, `CLAUDE.md`, `.cursor/rules/project-loop.mdc`, `.github/copilot-instructions.md`.\n- **Options**:\n  - `--dry-run`: Show planned writes without modifying files.", "### `init`\n\nInitializes ForgeLoop in a target repository.\n\n- **Purpose**: Installs canonical instruction templates under `.forgeloop/kit/`, creates discovery shims at root, and prepares `.forgeloop/`.\n- **When to use**: Once when onboarding a new repository to ForgeLoop.\n- **Mutation**: Writes `.forgeloop/kit/`, `.forgeloop/forgeloop.gitignore`, `AGENTS.md`, `CLAUDE.md`, `.cursor/rules/project-loop.mdc`, `.github/copilot-instructions.md`.\n- **Options**:\n  - `--adopt <path>`: Adopt adapter.\n  - `--dry-run`: Show planned writes without modifying files."), "utf8");
-    const mut3 = await validateDocumentationConformance({ rootDir: tempDir });
-    assert.equal(mut3.valid, false);
-    assert.ok(mut3.errors.some((e) => e.includes("DOC_INIT_ADOPT_EXTRA") || e.includes("DOC_CLI_OPTION_EXTRA")));
-    await writeFile(cliDocFile, cliContent, "utf8");
+      // Mutation 2: execution.exitCode corrupted to integer only
+      const mutDoc2 = mustReplace(docContent, "integer or null", "integer", `execution.exitCode (${eol === "\n" ? "LF" : "CRLF"})`);
+      await writeFile(docFile, mutDoc2, "utf8");
+      const mut2 = await validateDocumentationConformance({ rootDir: tempDir });
+      assert.equal(mut2.valid, false);
+      assert.ok(mut2.errors.some((e) => e.includes("DOC_EXECUTION_EXIT_CODE_TYPE_MISMATCH")));
+      await writeFile(docFile, docContent, "utf8");
 
-    // Mutation 4: current-contract requirement id marked required
-    await writeFile(docFile, docContent.replace("- `id` *(string, optional)*", "- `id` *(string, required)*"), "utf8");
-    const mut4 = await validateDocumentationConformance({ rootDir: tempDir });
-    assert.equal(mut4.valid, false);
-    assert.ok(mut4.errors.some((e) => e.includes("DOC_CONTRACT_REQUIREMENT_ID_REQUIRED_MISMATCH")));
-    await writeFile(docFile, docContent, "utf8");
+      // Mutation 3: init documented with --adopt
+      const mutCli3 = mustReplace(
+        cliContent,
+        /(- \*\*Options\*\*:\r?\n)(\s+- `--dry-run`)/,
+        `$1  - \`--adopt <path>\`: Adopt adapter.${eol}$2`,
+        `init --adopt (${eol === "\n" ? "LF" : "CRLF"})`,
+      );
+      await writeFile(cliDocFile, mutCli3, "utf8");
+      const mut3 = await validateDocumentationConformance({ rootDir: tempDir });
+      assert.equal(mut3.valid, false);
+      assert.ok(mut3.errors.some((e) => e.includes("DOC_INIT_ADOPT_EXTRA") || e.includes("DOC_CLI_OPTION_EXTRA")));
+      await writeFile(cliDocFile, cliContent, "utf8");
+
+      // Mutation 4: current-contract requirement id marked required
+      const mutDoc4 = mustReplace(docContent, "- `id` *(string, optional)*", "- `id` *(string, required)*", `requirement.id (${eol === "\n" ? "LF" : "CRLF"})`);
+      await writeFile(docFile, mutDoc4, "utf8");
+      const mut4 = await validateDocumentationConformance({ rootDir: tempDir });
+      assert.equal(mut4.valid, false);
+      assert.ok(mut4.errors.some((e) => e.includes("DOC_CONTRACT_REQUIREMENT_ID_REQUIRED_MISMATCH")));
+      await writeFile(docFile, docContent, "utf8");
+    }
 
     // Mutation 5: Missing adapter resume rule
     const agentsFile = path.join(tempDir, "AGENTS.md");
     let agentsContent = await readFile(agentsFile, "utf8");
-    await writeFile(agentsFile, agentsContent.replace(/work-state\.json/g, "other-state.json"), "utf8");
+    const mutAgents5 = mustReplace(agentsContent, /work-state\.json/g, "other-state.json", "agents.md resume rule");
+    await writeFile(agentsFile, mutAgents5, "utf8");
     const mut5 = await validateDocumentationConformance({ rootDir: tempDir });
     assert.equal(mut5.valid, false);
     assert.ok(mut5.errors.some((e) => e.includes("DOC_ADAPTER_RESUME_RULE_MISSING")));

@@ -17,14 +17,18 @@ Global options:
 
 ## Command Index by Purpose
 
+<!-- BEGIN FORGELOOP GENERATED: cli-command-index -->
+
 | Category | Commands |
 | --- | --- |
-| **Setup & Maintenance** | [`init`](#init), [`doctor`](#doctor), [`update`](#update) |
-| **Activation & Planning** | [`route`](#route), [`preflight`](#preflight), [`activate`](#activate), [`advance`](#advance), [`next`](#next) |
-| **Continuity & Handoff** | [`continuity`](#continuity), [`record-continuity`](#record-continuity), [`reconcile-continuity`](#reconcile-continuity), [`clear-continuity`](#clear-continuity) |
-| **Verification** | [`run-check`](#run-check), [`record-check`](#record-check), [`validate-state`](#validate-state), [`validate-receipt`](#validate-receipt), [`validate-protocol`](#validate-protocol) |
-| **Completion & Reporting** | [`prepare-completion`](#prepare-completion), [`record-terminal-result`](#record-terminal-result), [`audit`](#audit), [`complete`](#complete), [`report`](#report), [`bundle`](#bundle) |
-| **Inspection & Recovery** | [`status`](#status), [`inspect`](#inspect), [`policy`](#policy), [`clear-state`](#clear-state) |
+| **Setup & Maintenance** | [`init`](#init), [`update`](#update) |
+| **Inspection & Diagnostics** | [`doctor`](#doctor), [`inspect`](#inspect), [`status`](#status), [`validate-state`](#validate-state), [`validate-protocol`](#validate-protocol) |
+| **Lifecycle & State** | [`activate`](#activate), [`route`](#route), [`preflight`](#preflight), [`advance`](#advance), [`next`](#next), [`complete`](#complete), [`clear-state`](#clear-state) |
+| **Cross-Harness Continuity** | [`continuity`](#continuity), [`record-continuity`](#record-continuity), [`reconcile-continuity`](#reconcile-continuity), [`clear-continuity`](#clear-continuity) |
+| **Verification & Completion** | [`prepare-completion`](#prepare-completion), [`run-check`](#run-check), [`record-check`](#record-check), [`record-terminal-result`](#record-terminal-result), [`audit`](#audit), [`report`](#report), [`validate-receipt`](#validate-receipt) |
+| **Policy & Auditing** | [`policy`](#policy), [`bundle`](#bundle) |
+
+<!-- END FORGELOOP GENERATED: cli-command-index -->
 
 ---
 

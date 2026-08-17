@@ -35,130 +35,37 @@ import { continuityOptionDefaults, consumeContinuityOption, validateContinuityOp
 import { resolveTarget } from "./core/filesystem.js";
 import { getPackageRoot } from "./core/templates.js";
 import { ARTIFACT_PATHS } from "./core/artifacts.js";
+import { CLI_COMMAND_DEFINITIONS } from "./core/cli-command-definitions.js";
 
-export const COMMANDS = Object.freeze([
-  "init",
-  "doctor",
-  "update",
-  "activate",
-  "route",
-  "preflight",
-  "advance",
-  "next",
-  "continuity",
-  "record-continuity",
-  "reconcile-continuity",
-  "clear-continuity",
-  "prepare-completion",
-  "run-check",
-  "record-check",
-  "record-terminal-result",
-  "complete",
-  "audit",
-  "report",
-  "policy",
-  "bundle",
-  "inspect",
-  "status",
-  "validate-state",
-  "clear-state",
-  "validate-receipt",
-  "validate-protocol",
-]);
+export const COMMANDS = Object.freeze(Object.keys(CLI_COMMAND_DEFINITIONS));
 
-// Commands whose usage blocks already describe --json (doctor, route) or that
-// accept no --json at all (init, update).
-const GENERIC_JSON_EXCLUDED_COMMANDS = new Set(["init", "doctor", "update", "route"]);
+function formatOptionUsage(optKey, optDef) {
+  let label = optKey;
+  if (optDef.valueName) {
+    label = optKey === "--" ? `-- <${optDef.valueName}>` : `${optKey} <${optDef.valueName}>`;
+  }
+  return `  ${label.padEnd(20)} ${optDef.description}`;
+}
 
-function usage(command = null) {
+export function usage(command = null) {
+  if (command && CLI_COMMAND_DEFINITIONS[command]) {
+    const def = CLI_COMMAND_DEFINITIONS[command];
+    const lines = Object.entries(def.options).map(([optKey, optDef]) => formatOptionUsage(optKey, optDef));
+    return `Usage: forgeloop <${command}> [options]\n\nOptions:\n${lines.join("\n")}\n`;
+  }
+
+  const allOptions = new Map();
+  for (const def of Object.values(CLI_COMMAND_DEFINITIONS)) {
+    for (const [optKey, optDef] of Object.entries(def.options)) {
+      if (!allOptions.has(optKey)) {
+        allOptions.set(optKey, optDef);
+      }
+    }
+  }
+
+  const lines = [...allOptions.entries()].map(([optKey, optDef]) => formatOptionUsage(optKey, optDef));
   const commands = COMMANDS.join("|");
-  const options = ["  --path <directory>  target project directory (default: current directory)"];
-  if (!command || command === "init" || command === "update") {
-    options.push("  --dry-run           show planned writes without changing files");
-  }
-  if (!command || command === "doctor") {
-    options.push("  --json              emit doctor findings as JSON");
-    options.push("  --strict            treat warnings as unhealthy");
-    options.push("  --fix               restore missing managed template files");
-    options.push("  --adopt <path>      preserve an existing adapter in the manifest");
-  }
-  if (!command || command === "route") {
-    options.push("  --work <type>       declared work type");
-    options.push("  --surface <value>   affected surface (repeatable)");
-    options.push("  --risk <value>      task risk (repeatable)");
-    options.push("  --platform <value>  affected platform (repeatable)");
-    options.push("  --behavior-change   declare behavior change");
-    options.push("  --executable-change declare executable/configuration change");
-    options.push("  --json              emit route result as JSON");
-  }
-  if (!command || command === "advance") {
-    options.push("  --to <phase>        destination workflow phase");
-  }
-  if (!command || command === "record-continuity") {
-    options.push("  --focus-id <id>            current implementation focus ID");
-    options.push("  --focus-summary <text>    current implementation focus summary");
-    options.push("  --remaining <id:summary>  remaining implementation item (repeatable)");
-    options.push("  --known-issue <id:summary> known implementation issue (repeatable)");
-    options.push("  --changed-area <path>     changed project area (repeatable)");
-    options.push("  --inspect-first <path>    suggested inspection path (repeatable)");
-    options.push("  --resume-note <text>      bounded operational resume note");
-  }
-  if (!command || !GENERIC_JSON_EXCLUDED_COMMANDS.has(command)) {
-    options.push("  --json              emit structured output as JSON");
-  }
-  if (!command || ["preflight", "complete", "audit", "report"].includes(command)) {
-    options.push("  --strict            require strict protocol compliance");
-  }
-  if (!command || command === "policy") {
-    options.push("  <name>              policy pack name");
-  }
-  if (!command || command === "bundle") {
-    options.push("  --task <id>         task ID to export as a portable bundle");
-  }
-  if (!command || ["status", "inspect", "validate-protocol"].includes(command)) {
-    options.push("  --contract-file <path>  current JSON contract used for freshness comparison");
-  }
-  if (!command || command === "validate-protocol") {
-    options.push("  --route-file <path>  routing-result JSON relative to target");
-    options.push("  --state-file <path>  work-state JSON relative to target");
-    options.push("  --receipt-file <path>  execution-receipt JSON relative to target");
-    options.push("  --continuity-file <path>  optional execution-continuity JSON relative to target");
-    options.push("  --task-brief-file <path>  task brief JSON (repeatable)");
-    options.push("  --delegated-result-file <path>  delegated result JSON (repeatable)");
-  }
-  if (!command || command === "validate-receipt") {
-    options.push("  --file <path>       receipt file relative to target");
-  }
-  if (!command || command === "record-check" || command === "run-check") {
-    options.push("  --id <id>            stable check identifier");
-    options.push("  --requirement <id>   completion requirement covered by the check");
-    options.push("  --details <json>     additional structured check details");
-  }
-  if (!command || command === "record-check") {
-    options.push("  --kind <kind>        check kind (default: command; use manual-review for manual evidence)");
-    options.push("  --status <status>    passed, failed, blocked, or not-run");
-    options.push("  --evidence-kind <kind> OBSERVED, INFERRED, NOT_VERIFIED, or BLOCKED");
-    options.push("  --command <text>     recorded only as metadata; it is never executed");
-    options.push("  --result <text>      observed result supplied by the actor");
-    options.push("  --exit-code <number> observed process exit code");
-    options.push("  --execution-ref <id> ForgeLoop execution artifact reference");
-    options.push("  --provenance <value> FORGELOOP_EXECUTED, ACTOR_REPORTED, or MANUAL_OBSERVATION");
-  }
-  if (!command || command === "run-check") {
-    options.push("  -- <argv>            exact command argv to classify, execute, and attest");
-  }
-  if (!command || command === "record-terminal-result") {
-    options.push("  --requirement <id>   terminal requirement covered by the result");
-    options.push("  --type <type>        PUBLICATION or PRODUCTION_READINESS");
-    options.push("  --status <status>    observed terminal status");
-    options.push("  --source <text>      external action source (e.g. npm publish, git push)");
-    options.push("  --result <text>      observed external result description");
-    options.push("  --details <json>     additional structured result details");
-  }
-  options.push("  --version           show the installed package version");
-  options.push("  --help              show this help");
-
-  return `Usage: forgeloop <${command ?? commands}> [options]\n\nOptions:\n${options.join("\n")}\n`;
+  return `Usage: forgeloop <${commands}> [options]\n\nOptions:\n${lines.join("\n")}\n`;
 }
 
 export function parseArgs(argv) {

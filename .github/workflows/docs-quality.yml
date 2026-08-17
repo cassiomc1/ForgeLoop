@@ -136,5 +136,5 @@ jobs:
 
       - name: Verify generated and committed diagram fingerprints
         run: |
-          npm run docs:check -- "$RUNNER_TEMP/forgeloop-flow.svg"
+          npm run docs:diagram:check -- "$RUNNER_TEMP/forgeloop-flow.svg"
           npm run docs:check

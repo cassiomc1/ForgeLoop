@@ -284,18 +284,22 @@ forgeloop next --json
 
 ## Stable Error and Reason Codes
 
+<!-- BEGIN FORGELOOP GENERATED: public-error-codes -->
+
 | Code | Meaning | Safe Resolution |
 | --- | --- | --- |
 | `E_PREFLIGHT_NOT_READY` | Preflight gates or contract validations are incomplete. | Satisfy required gates and check preflight output. |
-| `E_CONTRACT_STALE` | Contract modified after downstream artifacts were generated. | Re-run `forgeloop route` and `forgeloop preflight`. |
-| `E_ROUTE_STALE` | Routing result does not match the active contract fingerprint. | Re-run `forgeloop route`. |
+| `E_CONTRACT_STALE` | Contract modified after downstream artifacts were generated. | Re-run forgeloop route and forgeloop preflight. |
+| `E_ROUTE_STALE` | Routing result does not match the active contract fingerprint. | Re-run forgeloop route. |
 | `E_GATE_STALE` | Referenced gate artifact changed after approval. | Update artifact SHA-256 in gate file. |
-| `E_VERIFICATION_TOOL_UNAVAILABLE` | Required verification executable is missing. | Use local equivalent or record `NOT_VERIFIED`. |
-| `E_INSTALLATION_AUTHORITY_REQUIRED` | Attempted software installation without host authority. | Use local non-installing binaries. |
+| `E_VERIFICATION_TOOL_UNAVAILABLE` | Required verification executable is missing in environment. | Use local equivalent, obtain host authority, or record NOT_VERIFIED. |
+| `E_INSTALLATION_AUTHORITY_REQUIRED` | Attempted software installation without host authority grant. | Use local non-installing binaries or request host authority grant. |
 | `E_AUTHORITY_INVALID` | Authority grant file is malformed or expired. | Obtain a valid authority grant from host operator. |
 | `E_AUTHORITY_SCOPE_MISMATCH` | Authority grant does not cover the requested package. | Request updated authority scope. |
 | `E_AUTHORITY_UNTRUSTED_SOURCE` | Authority file placed inside untrusted project tree. | Place authority file in host-managed trusted location. |
-| `E_EXECUTION_REF_INVALID` | Referenced execution ID does not exist. | Re-run check via `forgeloop run-check`. |
+| `E_EXECUTION_REF_INVALID` | Referenced execution ID does not exist. | Re-run check via forgeloop run-check. |
 | `E_CHECK_INVALID` | Check structure or required parameters are invalid. | Provide valid check ID, requirement, and parameters. |
-| `E_RECEIPT_STATE_MISMATCH` | Receipt does not match current state cycle or work state. | Run `forgeloop prepare-completion --json`. |
-| `E_CONTINUITY_RECONCILIATION_REQUIRED` | Continuity context has drifted from work state. | Run `forgeloop reconcile-continuity --json`. |
+| `E_RECEIPT_STATE_MISMATCH` | Receipt does not match current state cycle or work state. | Run forgeloop prepare-completion --json. |
+| `E_CONTINUITY_RECONCILIATION_REQUIRED` | Continuity context has drifted from work state. | Run forgeloop reconcile-continuity --json. |
+
+<!-- END FORGELOOP GENERATED: public-error-codes -->

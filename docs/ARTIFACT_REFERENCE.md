@@ -8,20 +8,24 @@ All artifact schemas are defined in `schemas/*.schema.json`. Persisted artifact 
 
 ## 1. Artifact Registry Summary
 
+<!-- BEGIN FORGELOOP GENERATED: artifact-registry -->
+
 | Artifact File | Schema | Ownership | Mutability | Trust Role |
 | --- | --- | --- | --- | --- |
-| `current-contract.json` | `current-contract` | Agent-authored | Mutable before execution | Operational specification |
-| `routing-result.json` | `routing-result` | Protocol-generated | Mutable on reroute | Guide routing specification |
-| `preflight.json` | `preflight` | Protocol-generated | Overwritten on preflight | Readiness attestation |
-| `sources.json` | `source-registry` | Operator / Agent | Mutable on discovery | Source attestation |
-| `events.ndjson` | `event` | Protocol-appended | Append-only | Audit ledger |
-| `session.json` | `activation` | Protocol-generated | Overwritten on activate | Session marker |
-| `config.json` | `config` | Operator / Agent | Mutable configuration | Project configuration |
-| `gates/<gate>.json` | `gate` | Agent / Reviewer | Overwritten on gate satisfaction | Gate approval attestation |
-| `work-state.json` | `work-state` | Protocol-managed | Atomic state transitions | Canonical lifecycle state |
-| `continuity.json` | `continuity` | Agent / Harness | Mutable handoff notes | Non-evidence handoff |
-| `execution-receipt.json` | `execution-receipt` | Protocol-compiled | Atomic compilation | Evidence compilation |
-| `executions/exec-<id>.json` | `execution` | Protocol-executed | Immutable once written | Execution provenance |
+| `current-contract.json` | `current-contract` | Agent Authored | Mutable Before Execution | Operational Specification |
+| `routing-result.json` | `routing-result` | Protocol Generated | Mutable On Reroute | Guide Routing Specification |
+| `preflight.json` | `preflight` | Protocol Generated | Overwritten On Preflight | Readiness Attestation |
+| `sources.json` | `source-registry` | Operator Or Agent | Mutable On Discovery | Source Attestation |
+| `events.ndjson` | `event` | Protocol Appended | Append Only | Audit Ledger |
+| `session.json` | `activation` | Protocol Generated | Overwritten On Activate | Session Marker |
+| `config.json` | `config` | Operator Or Agent | Mutable Configuration | Project Configuration |
+| `gates/<gate>.json` | `gate` | Agent Authored Or Reviewer | Overwritten On Gate Satisfaction | Gate Approval Attestation |
+| `work-state.json` | `work-state` | Protocol Managed | Atomic State Transitions | Canonical Lifecycle State |
+| `continuity.json` | `continuity` | Agent Or Harness | Mutable Handoff Notes | Non Evidence Handoff |
+| `execution-receipt.json` | `execution-receipt` | Protocol Compiled | Atomic Compilation | Evidence Compilation |
+| `executions/exec-<id>.json` | `execution` | Protocol Executed | Immutable Once Written | Execution Provenance |
+
+<!-- END FORGELOOP GENERATED: artifact-registry -->
 
 ---
 

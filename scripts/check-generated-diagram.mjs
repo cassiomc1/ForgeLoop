@@ -6,12 +6,18 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const sourcePath = path.join(repositoryRoot, "docs", "forgeloop-flow.mmd");
-const outputPath = process.argv[2]
-  ? path.resolve(process.cwd(), process.argv[2])
-  : path.join(repositoryRoot, "docs", "assets", "forgeloop-flow.svg");
 
-try {
+/**
+ * Validates that an SVG file contains a valid SHA-256 fingerprint matching the canonical Mermaid source.
+ * @param {string} [targetPath] - Optional path to target SVG
+ * @param {string} [rootDir] - Optional root directory
+ */
+export async function checkGeneratedDiagram(targetPath = null, rootDir = repositoryRoot) {
+  const sourcePath = path.join(rootDir, "docs", "forgeloop-flow.mmd");
+  const outputPath = targetPath
+    ? path.resolve(rootDir, targetPath)
+    : path.join(rootDir, "docs", "assets", "forgeloop-flow.svg");
+
   const [source, rendered] = await Promise.all([
     readFile(sourcePath, "utf8"),
     readFile(outputPath, "utf8"),
@@ -26,12 +32,25 @@ try {
   }
   if (actualFingerprint !== expectedFingerprint) {
     throw new Error(
-      `diagram source fingerprint mismatch: expected ${expectedFingerprint}, found ${actualFingerprint ?? "missing"}`,
+      `diagram source fingerprint mismatch: expected ${expectedFingerprint}, found ${actualFingerprint ?? "missing"} (fingerprint does not match canonical source)`,
     );
   }
 
-  console.log(`Diagram source fingerprint valid: ${path.relative(repositoryRoot, outputPath)}`);
-} catch (error) {
-  console.error(`Diagram validation failed: ${error.message}`);
-  process.exitCode = 1;
+  return {
+    valid: true,
+    outputPath,
+    fingerprint: actualFingerprint,
+  };
+}
+
+// CLI runner
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  try {
+    const targetArg = process.argv[2] ? path.resolve(process.cwd(), process.argv[2]) : null;
+    const result = await checkGeneratedDiagram(targetArg);
+    console.log(`Diagram source fingerprint valid: ${path.relative(repositoryRoot, result.outputPath)}`);
+  } catch (error) {
+    console.error(`Diagram validation failed: ${error.message}`);
+    process.exit(1);
+  }
 }

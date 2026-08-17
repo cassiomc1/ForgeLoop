@@ -5,15 +5,23 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const forwardedArgs = process.argv.slice(2);
 
 const steps = [
   {
     name: "Mermaid Diagram Verification",
     script: "scripts/check-generated-diagram.mjs",
+    args: forwardedArgs,
+  },
+  {
+    name: "Generated Documentation Freshness",
+    script: "scripts/generate_documentation_reference.mjs",
+    args: ["--check"],
   },
   {
     name: "Documentation Conformance Validation",
     script: "scripts/validate_documentation_conformance.mjs",
+    args: [],
   },
 ];
 
@@ -21,7 +29,7 @@ console.log("Running ForgeLoop documentation check suite...\n");
 
 for (const step of steps) {
   console.log(`▶ Running ${step.name}...`);
-  const result = spawnSync(process.execPath, [path.join(repositoryRoot, step.script)], {
+  const result = spawnSync(process.execPath, [path.join(repositoryRoot, step.script), ...(step.args || [])], {
     cwd: repositoryRoot,
     stdio: "inherit",
   });
