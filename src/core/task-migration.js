@@ -43,9 +43,38 @@ async function removeLegacyArtifact(target, relativePath) {
   }
 }
 
+function assertMigrationSnapshotsEqual(source, destination, label) {
+  for (const [key, hash] of Object.entries(source.artifactFingerprints)) {
+    if (destination.artifactFingerprints[key] !== hash) {
+      const error = new Error(`Migration fingerprint mismatch in ${label}: ${key}`);
+      error.code = E_TASK_MIGRATION_INVALID;
+      throw error;
+    }
+  }
+
+  for (const [key, hash] of Object.entries(source.directoryFingerprints)) {
+    if (destination.directoryFingerprints[key] !== hash) {
+      const error = new Error(`Migration directory fingerprint mismatch in ${label}: ${key}`);
+      error.code = E_TASK_MIGRATION_INVALID;
+      throw error;
+    }
+  }
+
+  if (destination.eventCount !== source.eventCount) {
+    const error = new Error(`Migration event count mismatch in ${label}`);
+    error.code = E_TASK_MIGRATION_INVALID;
+    throw error;
+  }
+}
+
 export async function migrateLegacyLayout(
   target,
-  { dryRun = false, packageRoot = getPackageRoot(), afterCopyForTest = null } = {},
+  {
+    dryRun = false,
+    packageRoot = getPackageRoot(),
+    afterCopyForTest = null,
+    afterPublishForTest = null,
+  } = {},
 ) {
   const detection = await detectLegacySingletonLayout(target);
   if (!detection.hasLegacy) {
@@ -241,25 +270,16 @@ export async function migrateLegacyLayout(
     });
 
     // 7. Compare copied fingerprints
-    for (const [key, hash] of Object.entries(sourceSnapshot.artifactFingerprints)) {
-      if (tempSnapshot.artifactFingerprints[key] !== hash) {
-        const error = new Error(`Migration corrupted artifact during copy: ${key}`);
-        error.code = E_TASK_MIGRATION_INVALID;
-        throw error;
-      }
-    }
-
-    for (const [key, hash] of Object.entries(sourceSnapshot.directoryFingerprints)) {
-      if (tempSnapshot.directoryFingerprints[key] !== hash) {
-        const error = new Error(`Migration corrupted directory during copy: ${key}`);
-        error.code = E_TASK_MIGRATION_INVALID;
-        throw error;
-      }
-    }
+    assertMigrationSnapshotsEqual(sourceSnapshot, tempSnapshot, "temporary namespace");
 
     // 8. Atomically publish
     await mkdir(ensureWithin(target, TASK_STATE_ROOT), { recursive: true });
     await rename(tempDirAbs, finalDirAbs);
+
+    // Test hook for corruption / failure testing after publication
+    if (typeof afterPublishForTest === "function") {
+      await afterPublishForTest({ finalDirAbs, finalDirRel, target });
+    }
 
     // 9. Post-publish validation: verify final namespace snapshot and task descriptor
     const finalPaths = {
@@ -274,11 +294,12 @@ export async function migrateLegacyLayout(
       executions: taskArtifactPath(canonicalTaskId, "executions"),
     };
 
-    await validateMigrationSnapshot(target, {
+    const finalSnapshot = await validateMigrationSnapshot(target, {
       taskId: canonicalTaskId,
       packageRoot,
       paths: finalPaths,
     });
+    assertMigrationSnapshotsEqual(sourceSnapshot, finalSnapshot, "published namespace");
     await readTaskDescriptor(target, canonicalTaskId, packageRoot);
 
     // 10. Cleanup legacy task files (strictly after successful publish and validation)

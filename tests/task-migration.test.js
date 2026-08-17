@@ -359,3 +359,105 @@ test("migration rejects temp-copy corruption and rolls back cleanly", async () =
     assert.equal(await fileExists(path.join(target, ".forgeloop", "current-contract.json")), true, "Legacy source must remain");
   });
 });
+
+test("migration rejects post-publish corruption when published namespace fingerprints diverge from source", async () => {
+  await withTarget(async (target) => {
+    const contract = createContract({
+      taskId: "post-publish-corrupt-task",
+      objective: "Test post-publish validation",
+      deliverables: ["src/index.js"],
+      constraints: ["none"],
+      risks: ["low"],
+      verification: ["tests"],
+      successCriteria: ["tests pass"],
+      stopConditions: ["error"],
+      unresolvedDecisions: [],
+      sourceRefs: ["src"],
+    });
+    await writeContract(target, contract, packageRoot);
+
+    const state = createWorkState({
+      taskId: "post-publish-corrupt-task",
+      contractFingerprint: "0".repeat(64),
+      repositoryFingerprint: { branch: null, head: null },
+      phase: "PLANNED",
+      completedSteps: [],
+      pendingSteps: [],
+      checks: [],
+      failures: [],
+      blockers: [],
+    });
+    await writeWorkState(target, state, { packageRoot });
+
+    // In afterPublishForTest, corrupt contract.json in the published final directory
+    await assert.rejects(
+      () =>
+        migrateLegacyLayout(target, {
+          packageRoot,
+          afterPublishForTest: async ({ finalDirAbs }) => {
+            await writeFile(path.join(finalDirAbs, "contract.json"), '{"corrupted":true}\n', "utf8");
+          },
+        }),
+      (error) => error.code === E_TASK_MIGRATION_INVALID,
+    );
+  });
+});
+
+test("migration result contract matches exact required keys for success, dry-run, and no-state", async () => {
+  await withTarget(async (target) => {
+    // 1. No legacy state
+    const noLegacyRes = await migrateLegacyLayout(target, { packageRoot });
+    assert.equal(noLegacyRes.migrated, false);
+    assert.equal(noLegacyRes.reason, "NO_LEGACY_STATE");
+    assert.ok(noLegacyRes.message);
+
+    // Setup legacy files
+    const contract = createContract({
+      taskId: "shape-test-task",
+      objective: "Test result shape",
+      deliverables: ["src/index.js"],
+      constraints: ["none"],
+      risks: ["low"],
+      verification: ["tests"],
+      successCriteria: ["tests pass"],
+      stopConditions: ["error"],
+      unresolvedDecisions: [],
+      sourceRefs: ["src"],
+    });
+    await writeContract(target, contract, packageRoot);
+
+    const state = createWorkState({
+      taskId: "shape-test-task",
+      contractFingerprint: "0".repeat(64),
+      repositoryFingerprint: { branch: null, head: null },
+      phase: "PLANNED",
+      completedSteps: [],
+      pendingSteps: [],
+      checks: [],
+      failures: [],
+      blockers: [],
+    });
+    await writeWorkState(target, state, { packageRoot });
+
+    // 2. Dry run result shape
+    const dryRes = await migrateLegacyLayout(target, { packageRoot, dryRun: true });
+    assert.deepEqual(
+      Object.keys(dryRes).sort(),
+      ["dryRun", "legacyFiles", "migrated", "targetDirectory", "taskId", "taskKey"].sort(),
+    );
+    assert.equal(dryRes.migrated, false);
+    assert.equal(dryRes.dryRun, true);
+    assert.equal(dryRes.taskId, "shape-test-task");
+    assert.ok(Array.isArray(dryRes.legacyFiles));
+
+    // 3. Success result shape
+    const successRes = await migrateLegacyLayout(target, { packageRoot, dryRun: false });
+    assert.deepEqual(
+      Object.keys(successRes).sort(),
+      ["migrated", "migratedArtifacts", "targetDirectory", "taskId", "taskKey"].sort(),
+    );
+    assert.equal(successRes.migrated, true);
+    assert.equal(successRes.taskId, "shape-test-task");
+    assert.ok(Array.isArray(successRes.migratedArtifacts));
+  });
+});
