@@ -1,5 +1,9 @@
 # ForgeLoop — Verifiable Engineering Protocol
 
+<p align="center">
+  <img src="./docs/assets/forgeloop-readme-banner.svg" alt="ForgeLoop — Verifiable Engineering Protocol" width="100%">
+</p>
+
 [![Docs quality](https://github.com/cassiomc1/forgeloop/actions/workflows/docs-quality.yml/badge.svg?branch=main)](https://github.com/cassiomc1/forgeloop/actions/workflows/docs-quality.yml)
 
 ForgeLoop is a portable, vendor-neutral protocol for AI-assisted development
