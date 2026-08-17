@@ -42,28 +42,27 @@ test("every supported work type has a canonical executable fixture", async () =>
 
 test("platform semantics strengthen only an already relevant context", () => {
   const mobile = evaluateRoute({ workType: "documentation", surfaces: ["ui"], platforms: ["mobile"] });
-  assert.deepEqual(mobile.guides, ["design", "accessibility", "performance"]);
+  assert.deepEqual(mobile.guides, ["documentation", "design", "accessibility", "performance"]);
   assert.ok(mobile.reasons.performance.includes("PLATFORM_MOBILE"));
   assert.ok(mobile.reasons.design.includes("PLATFORM_MOBILE"));
   assert.ok(mobile.reasons.accessibility.includes("PLATFORM_MOBILE"));
 
   const desktop = evaluateRoute({ workType: "documentation", surfaces: ["ui"], platforms: ["desktop"] });
-  assert.deepEqual(desktop.guides, ["design", "accessibility"]);
+  assert.deepEqual(desktop.guides, ["documentation", "design", "accessibility"]);
   assert.ok(desktop.reasons.design.includes("PLATFORM_DESKTOP"));
   assert.ok(desktop.reasons.accessibility.includes("PLATFORM_DESKTOP"));
   assert.equal(desktop.guides.includes("performance"), false);
 
   const serverAuth = evaluateRoute({ workType: "documentation", surfaces: ["auth"], platforms: ["server"] });
-  assert.deepEqual(serverAuth.guides, ["security", "test"]);
+  assert.deepEqual(serverAuth.guides, ["documentation", "security", "test"]);
   assert.deepEqual(serverAuth.reasons.test, ["PLATFORM_SERVER"]);
 
   const ciExecutable = evaluateRoute({ workType: "documentation", platforms: ["ci"], executableChange: true });
-  assert.deepEqual(ciExecutable.guides, ["clean", "test", "security"]);
+  assert.deepEqual(ciExecutable.guides, ["documentation", "clean", "test", "security"]);
   assert.deepEqual(ciExecutable.reasons.security, ["PLATFORM_CI"]);
 
   const platformOnly = evaluateRoute({ workType: "documentation", platforms: ["mobile", "desktop", "server", "ci"] });
-  assert.deepEqual(platformOnly.guides, []);
-  assert.deepEqual(platformOnly.excluded.documentation, ["DOCUMENTATION_DOMAIN_GUIDE_REQUIRED"]);
+  assert.deepEqual(platformOnly.guides, ["documentation"]);
 });
 
 test("web and cross-platform are explicitly informational-only", () => {
@@ -71,8 +70,8 @@ test("web and cross-platform are explicitly informational-only", () => {
   assert.equal(PLATFORM_SEMANTICS["cross-platform"].mode, "informational-only");
   const web = evaluateRoute({ workType: "documentation", platforms: ["web"] });
   const crossPlatform = evaluateRoute({ workType: "documentation", platforms: ["cross-platform"] });
-  assert.deepEqual(web.guides, []);
-  assert.deepEqual(crossPlatform.guides, []);
+  assert.deepEqual(web.guides, ["documentation"]);
+  assert.deepEqual(crossPlatform.guides, ["documentation"]);
 });
 
 test("routing invariants reject selected and excluded guide overlap", () => {
@@ -85,13 +84,14 @@ test("routing invariants reject selected and excluded guide overlap", () => {
 });
 
 test("routing invariants expose every exclusion reason", () => {
-  const documentation = evaluateRoute({ workType: "documentation" });
-  assert.ok(Object.values(documentation.excluded).flat().includes("DOCUMENTATION_DOMAIN_GUIDE_REQUIRED"));
+  const code = evaluateRoute({ workType: "code" });
+  assert.ok(Object.values(code.excluded).flat().includes("NO_DOCUMENTATION_SURFACE"));
   assert.ok(Object.values(evaluateRoute({ workType: "documentation", surfaces: ["ui"] }).excluded).flat().includes("NO_BEHAVIOR_OR_EXECUTABLE_CHANGE"));
   assert.ok(Object.values(evaluateRoute({ workType: "documentation" }).excluded).flat().includes("NO_TRUST_BOUNDARY"));
   assert.ok(Object.values(evaluateRoute({ workType: "documentation" }).excluded).flat().includes("NO_MEASURABLE_PERFORMANCE_RISK"));
   assert.ok(Object.values(evaluateRoute({ workType: "documentation" }).excluded).flat().includes("NO_UI_SURFACE"));
   assert.ok(Object.values(evaluateRoute({ workType: "documentation" }).excluded).flat().includes("NO_PRIMARY_WORK_TYPE"));
+  assert.ok(Object.values(evaluateRoute({ workType: "code" }).excluded).flat().includes("NO_TASTE_FRONTEND_CONTEXT"));
 });
 
 test("equivalent normalized route inputs have identical JSON", () => {

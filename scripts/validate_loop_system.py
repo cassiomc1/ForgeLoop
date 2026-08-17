@@ -149,6 +149,7 @@ GUIDES = {
     "accessibility": "ENG/accessibility-eng.md",
     "games": "ENG/games-code-design-web-eng.md",
     "taste": "ENG/taste-frontend-eng.md",
+    "documentation": "ENG/documentation-quality-eng.md",
 }
 
 ROUTING_SCENARIOS = {
@@ -157,7 +158,7 @@ ROUTING_SCENARIOS = {
     "bug-without-ui": "clean,test",
     "app-mobile-ui": "clean,test,design,accessibility,security,performance",
     "game-web-multiplayer": "games,clean,test,security,performance,accessibility,design",
-    "documentation": "domain",
+    "documentation": "documentation",
 }
 
 REQUIRED_GUIDE_FRONTMATTER = {
@@ -617,6 +618,7 @@ def _valid_fixture(root: Path) -> None:
         "accessibility": "ENG/accessibility-eng.md",
         "games": "ENG/games-code-design-web-eng.md",
         "taste": "ENG/taste-frontend-eng.md",
+        "documentation": "ENG/documentation-quality-eng.md",
     }
     for guide_path in guides.values():
         path = root / guide_path
@@ -684,7 +686,7 @@ def _valid_fixture(root: Path) -> None:
         "bug-without-ui": "clean,test",
         "app-mobile-ui": "clean,test,design,accessibility,security,performance",
         "game-web-multiplayer": "games,clean,test,security,performance,accessibility,design",
-        "documentation": "domain",
+        "documentation": "documentation",
     }
     markers = "\n".join(
         f"<!-- route:{scenario}={ids} -->" for scenario, ids in scenarios.items()

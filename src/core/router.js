@@ -38,6 +38,7 @@ const SIGNALS = Object.freeze({
     "ci",
     "config",
     "critical-path",
+    "documentation",
   ]),
   risks: new Set([
     "untrusted-input",
@@ -101,13 +102,13 @@ const WORK_GUIDES = Object.freeze({
   performance: ["performance", "test"],
   accessibility: ["accessibility", "test"],
   "test-only": ["test"],
-  documentation: [],
+  documentation: ["documentation"],
 });
 
 const PRIMARY_GUIDES = Object.freeze({
   "complete-website": "premium",
   "web-game": "games",
-  documentation: null,
+  documentation: "documentation",
 });
 
 export class RouteInputError extends Error {
@@ -192,6 +193,9 @@ export function evaluateRoute(input = {}) {
     add("accessibility", "SURFACE_VIDEO");
   }
   if (normalized.surfaces.includes("auth")) add("security", "SURFACE_AUTH");
+  if (normalized.surfaces.includes("documentation")) {
+    add("documentation", "SURFACE_DOCUMENTATION");
+  }
 
   for (const risk of normalized.risks) {
     if (["untrusted-input", "personal-data", "secrets", "external-service", "publication"].includes(risk)) {
@@ -230,10 +234,6 @@ export function evaluateRoute(input = {}) {
     add("security", "PLATFORM_CI");
   }
 
-  if (normalized.workType === "documentation" && selected.size === 0) {
-    excluded.documentation = ["DOCUMENTATION_DOMAIN_GUIDE_REQUIRED"];
-  }
-
   for (const guide of GUIDE_IDS) {
     if (selected.has(guide)) continue;
     if (guide === "security") excluded[guide] = ["NO_TRUST_BOUNDARY"];
@@ -241,6 +241,7 @@ export function evaluateRoute(input = {}) {
     else if (guide === "design" || guide === "accessibility") excluded[guide] = ["NO_UI_SURFACE"];
     else if (guide === "premium" || guide === "games") excluded[guide] = ["NO_PRIMARY_WORK_TYPE"];
     else if (guide === "taste") excluded[guide] = ["NO_TASTE_FRONTEND_CONTEXT"];
+    else if (guide === "documentation") excluded[guide] = ["NO_DOCUMENTATION_SURFACE"];
     else excluded[guide] = ["NO_BEHAVIOR_OR_EXECUTABLE_CHANGE"];
   }
 

@@ -51,6 +51,7 @@ project commands.
 | `performance` | [Performance](./ENG/perf-code-eng.md) | Measurement, diagnosis, budgets, and optimization |
 | `accessibility` | [Accessibility](./ENG/accessibility-eng.md) | WCAG, keyboard access, focus, semantics, and assistive technology |
 | `games` | [Web games](./ENG/games-code-design-web-eng.md) | Architecture and operation of 2D, 3D, and procedural web games |
+| `documentation` | [Documentation quality](./ENG/documentation-quality-eng.md) | Accuracy, architecture, freshness, accessibility, and verifiable technical documentation |
 
 ## Domain rules
 
@@ -190,11 +191,25 @@ rg -n '^## |game loop|procedural|input|assets|audio|multiplayer|WASM|PWA|CI/CD' 
 
 **Expected evidence:** verifiable simulation, determinism when promised, capability fallbacks, budgets, accessibility, and release gates.
 
+### `documentation` — technical documentation quality
+
+**Activate when:** creating, modifying, reviewing, or restructuring README files, tutorials, how-to guides, technical reference, API/CLI/configuration documentation, architecture documentation, troubleshooting, migration guides, runbooks, or other project documentation; also activate when an implementation change explicitly affects a documentation surface.
+
+**Do not activate merely because:** source code contains comments, a task description mentions documentation in passing, or code examples appear in an unrelated domain document without changing project documentation.
+
+**Usually combine with:** the domain whose behavior is documented. Add `test` when commands, examples, generated docs, or executable references need verification; add `security` for authentication, authorization, secrets, privacy, or sensitive examples; use `accessibility` when the published documentation surface itself has accessibility requirements.
+
+```bash
+rg -n '^## |accuracy|completeness|Diátaxis|tutorial|how-to|reference|explanation|README|API|CLI|configuration|architecture|freshness|accessibility|Definition of Done' ENG/documentation-quality-eng.md
+```
+
+**Expected evidence:** documentation purpose and audience are clear, factual claims are cross-checked against canonical project sources, changed documentation surfaces are complete, relevant examples/links/builds are validated when available, and unavailable required checks are recorded as `NOT_VERIFIED`.
+
 ## Work-type matrix
 
 | Work | Primary guide | Common complements | Exclude when |
 | --- | --- | --- | --- |
-| Documentation change | Relevant domain | `test` only for executable examples or commands | No software behavior exists |
+| Documentation change | `documentation` | Relevant domain; `test` for executable examples/commands; `security` for trust-sensitive docs | No documentation artifact or documented contract changes |
 | Code or bug without UI | `clean` | `test`; risk may add `security` or `performance` | The surface is unchanged |
 | Backend, API, or data | `clean` | `test`, `security`; `performance` for a critical path | That layer does not exist |
 | Web, mobile, or desktop UI | `design` | `accessibility`, `clean`, `test`; risk defines the rest | Users cannot observe the change |
@@ -219,7 +234,7 @@ The first routing contract is versioned as `schemaVersion: 1`. It accepts:
   `infrastructure`, `security-review`, `performance`, `accessibility`,
   `test-only`, `dependency-update`, or `release`;
 - `surfaces`: `ui`, `forms`, `api`, `auth`, `data`, `database`, `mobile`,
-  `desktop`, `game`, `video`, `ci`, `config`, or `critical-path`;
+  `desktop`, `game`, `video`, `ci`, `config`, `critical-path`, or `documentation`;
 - `risks`: `untrusted-input`, `personal-data`, `secrets`, `external-service`,
   `publication`, `critical-path`, `performance`, or `accessibility`;
 - `platforms`: `web`, `mobile`, `desktop`, `server`, `ci`, or
@@ -236,9 +251,8 @@ error.
 Every selected guide has stable reason codes such as
 `WORK_COMPLETE_WEBSITE`, `SURFACE_UI`, `RISK_UNTRUSTED_INPUT`, and
 `CHANGE_EXECUTABLE_CONFIG`. Exclusions use stable codes such as
-`NO_TRUST_BOUNDARY` and `NO_MEASURABLE_PERFORMANCE_RISK`. Documentation-only
-input records `DOCUMENTATION_DOMAIN_GUIDE_REQUIRED` instead of activating
-technical guides automatically.
+`NO_TRUST_BOUNDARY`, `NO_MEASURABLE_PERFORMANCE_RISK`, and
+`NO_DOCUMENTATION_SURFACE`.
 
 Platform signals are contextual, not automatic guide activators:
 
@@ -302,9 +316,9 @@ Verify the game loop, authoritative server, reconciliation, input, assets, fallb
 
 ### Documentation
 
-<!-- route:documentation=domain -->
+<!-- route:documentation=documentation -->
 
-`domain` means the single domain guide implicated by the change. Verify Markdown, links, paths, commands, and examples.
+Verify Markdown, links, paths, commands, and examples.
 
 ## Route changes
 

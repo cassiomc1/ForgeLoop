@@ -6,10 +6,11 @@
     "platforms": ["web"],
     "behaviorChange": false
   },
-  "guides": ["design", "accessibility"],
+  "guides": ["documentation", "design", "accessibility"],
   "forbidden": ["security", "performance"],
-  "primary": null,
+  "primary": "documentation",
   "expectedReasons": {
+    "documentation": ["WORK_DOCUMENTATION"],
     "design": ["SURFACE_UI"],
     "accessibility": ["SURFACE_UI"]
   }

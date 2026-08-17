@@ -41,6 +41,7 @@ relevant guides.
 | Performance | [`ENG/perf-code-eng.md`](./ENG/perf-code-eng.md) |
 | Accessibility | [`ENG/accessibility-eng.md`](./ENG/accessibility-eng.md) |
 | Web games | [`ENG/games-code-design-web-eng.md`](./ENG/games-code-design-web-eng.md) |
+| Documentation quality | [`ENG/documentation-quality-eng.md`](./ENG/documentation-quality-eng.md) |
 
 Each guide declares its name, language, version, and review date in
 frontmatter. Repository validators keep the catalog and metadata synchronized.

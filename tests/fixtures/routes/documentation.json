@@ -5,8 +5,14 @@
     "risks": [],
     "platforms": []
   },
-  "guides": [],
-  "primary": null,
+  "guides": [
+    "documentation"
+  ],
+  "primary": "documentation",
   "forbidden": [],
-  "expectedReasons": {}
+  "expectedReasons": {
+    "documentation": [
+      "WORK_DOCUMENTATION"
+    ]
+  }
 }

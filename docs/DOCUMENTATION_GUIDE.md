@@ -13,6 +13,7 @@ ForgeLoop strictly separates normative protocol definitions from operational doc
 | **Normative Protocol** | Root (`LOOP_ENGINEERING.md`, `PROTOCOL_INTEGRATION.md`, `LOOP_SYSTEM_DESIGN.md`, `THREAT_MODEL.md`, `EXECUTION_STATE.md`) | Canonical authority for protocol rules, schemas, state transitions, and security | Never duplicate normative rules in sub-documents; link back to root files. |
 | **Operational & Reference** | `docs/` (`GETTING_STARTED.md`, `CROSS_HARNESS_CONTINUITY.md`, `CLI_REFERENCE.md`, `ARTIFACT_REFERENCE.md`, `TROUBLESHOOTING.md`, `RECIPES.md`) | Tutorials, command reference, handoff workflows, and troubleshooting | Explains how to operate the system. Links to normative sources for formal specifications. |
 | **Domain Engineering** | `ENG/` (`clean-code-eng.md`, `design-code-eng.md`, `test-code-eng.md`, etc.) | Domain-specific implementation and quality standards | Frontmatter must adhere to `validate_loop_system.py` standards. |
+| **Consumer Documentation Quality** | [`ENG/documentation-quality-eng.md`](../ENG/documentation-quality-eng.md) | Quality standards for documentation work in projects using ForgeLoop | Governs client/consumer project documentation tasks via guide routing. |
 | **Visual Architecture** | `docs/forgeloop-flow.mmd` | Canonical architecture diagram source | Rendered SVG committed at `docs/assets/forgeloop-flow.svg`. |
 | **Documentation Index** | `DOCS_INDEX.md` | Single repository index and ownership map | Updated whenever documentation structure changes. |
 

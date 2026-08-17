@@ -40,6 +40,7 @@ export const TEMPLATE_PATHS = [
   "ENG/accessibility-eng.md",
   "ENG/clean-code-eng.md",
   "ENG/design-code-eng.md",
+  "ENG/documentation-quality-eng.md",
   "ENG/games-code-design-web-eng.md",
   "ENG/perf-code-eng.md",
   "ENG/premium-sites-studio-eng.md",

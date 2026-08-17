@@ -11,6 +11,7 @@ const GUIDE_FILES = Object.freeze({
   performance: "ENG/perf-code-eng.md",
   accessibility: "ENG/accessibility-eng.md",
   games: "ENG/games-code-design-web-eng.md",
+  documentation: "ENG/documentation-quality-eng.md",
 });
 
 function parseList(frontmatter, key) {

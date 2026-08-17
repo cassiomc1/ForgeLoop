@@ -56,9 +56,47 @@ test("explicit executable change adds clean and test to documentation work", () 
     platforms: [],
   });
 
-  assert.deepEqual(result.guides, ["clean", "test"]);
+  assert.deepEqual(result.guides, ["documentation", "clean", "test"]);
+  assert.deepEqual(result.reasons.documentation, ["WORK_DOCUMENTATION"]);
   assert.deepEqual(result.reasons.clean, ["CHANGE_EXECUTABLE_CONFIG"]);
   assert.deepEqual(result.reasons.test, ["CHANGE_EXECUTABLE_CONFIG"]);
+});
+
+test("documentation surface adds documentation guide to code work", () => {
+  const result = evaluateRoute({
+    workType: "code",
+    surfaces: ["documentation"],
+    risks: [],
+    platforms: [],
+  });
+
+  assert.deepEqual(result.guides, ["clean", "test", "documentation"]);
+  assert.deepEqual(result.reasons.documentation, ["SURFACE_DOCUMENTATION"]);
+});
+
+test("documentation work selects documentation as its primary guide", () => {
+  const result = evaluateRoute({
+    workType: "documentation",
+    surfaces: [],
+    risks: [],
+    platforms: [],
+  });
+
+  assert.equal(result.primary, "documentation");
+  assert.deepEqual(result.guides, ["documentation"]);
+  assert.deepEqual(result.reasons.documentation, ["WORK_DOCUMENTATION"]);
+});
+
+test("duplicate selection of documentation work and surface is deduplicated and retains both reasons", () => {
+  const result = evaluateRoute({
+    workType: "documentation",
+    surfaces: ["documentation"],
+    risks: [],
+    platforms: [],
+  });
+
+  assert.deepEqual(result.guides, ["documentation"]);
+  assert.deepEqual(result.reasons.documentation, ["WORK_DOCUMENTATION", "SURFACE_DOCUMENTATION"]);
 });
 
 test("duplicate signals and non-boolean change flags are rejected", () => {

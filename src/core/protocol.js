@@ -121,6 +121,7 @@ export const GUIDE_IDS = Object.freeze([
   "accessibility",
   "games",
   "taste",
+  "documentation",
 ]);
 
 export const GUIDE_ORDER = GUIDE_IDS;

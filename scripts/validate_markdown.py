@@ -701,8 +701,8 @@ def _markdown_files(root: Path) -> list[Path]:
 def validate_repository(root: Path) -> None:
     root = root.resolve()
     guides = sorted(root.glob("ENG/*.md"))
-    if len(guides) != 9:
-        raise ValidationError(f"expected 9 English guides, found {len(guides)}")
+    if len(guides) != 10:
+        raise ValidationError(f"expected 10 English guides, found {len(guides)}")
 
     names = set()
     for path in guides:
@@ -738,7 +738,7 @@ def main() -> int:
         else:
             root = args.root.resolve()
             validate_repository(root)
-            print(f"validated 9 guides; fences and relative links in {len(_markdown_files(root))} Markdown files")
+            print(f"validated 10 guides; fences and relative links in {len(_markdown_files(root))} Markdown files")
         return 0
     except (ValidationError, AssertionError) as error:
         print(f"Markdown validation failed: {error}", file=sys.stderr)
