@@ -5,11 +5,13 @@ import { getPackageRoot } from "./templates.js";
 import {
   LEGACY_TASK_ARTIFACT_PATHS,
   TASK_STATE_ROOT,
+  taskArtifactPath,
   taskDirectory,
 } from "./task-paths.js";
 import { assertTaskId, taskStorageKey } from "./task-identity.js";
 import { createTaskDescriptor, readTaskDescriptor, writeTaskDescriptor } from "./task-descriptor.js";
 import { readJsonArtifact } from "./artifacts.js";
+import { validateMigrationSnapshot } from "./task-migration-validation.js";
 import {
   E_TASK_MIGRATION_IDENTITY_MISMATCH,
   E_TASK_MIGRATION_INVALID,
@@ -29,9 +31,21 @@ export async function detectLegacySingletonLayout(target) {
   };
 }
 
+async function removeLegacyArtifact(target, relativePath) {
+  const fullPath = ensureWithin(target, relativePath);
+  await rm(fullPath, { recursive: true, force: true });
+  if (await fileExists(fullPath)) {
+    const error = new Error(
+      `Legacy artifact still exists after migration cleanup: ${relativePath}`,
+    );
+    error.code = E_TASK_MIGRATION_INVALID;
+    throw error;
+  }
+}
+
 export async function migrateLegacyLayout(
   target,
-  { dryRun = false, packageRoot = getPackageRoot() } = {},
+  { dryRun = false, packageRoot = getPackageRoot(), afterCopyForTest = null } = {},
 ) {
   const detection = await detectLegacySingletonLayout(target);
   if (!detection.hasLegacy) {
@@ -45,7 +59,7 @@ export async function migrateLegacyLayout(
   let canonicalTaskId = null;
   const artifactIdentities = [];
 
-  // Validate all detected legacy artifacts before proceeding
+  // Determine candidate canonicalTaskId from known legacy artifacts
   for (const item of detection.legacyFiles) {
     if (item.key === "contract") {
       try {
@@ -57,6 +71,7 @@ export async function migrateLegacyLayout(
       } catch (err) {
         const error = new Error(`Legacy contract artifact is invalid: ${err.message}`);
         error.code = E_TASK_MIGRATION_INVALID;
+        error.cause = err;
         throw error;
       }
     } else if (item.key === "state") {
@@ -69,6 +84,7 @@ export async function migrateLegacyLayout(
       } catch (err) {
         const error = new Error(`Legacy state artifact is invalid: ${err.message}`);
         error.code = E_TASK_MIGRATION_INVALID;
+        error.cause = err;
         throw error;
       }
     } else if (item.key === "continuity") {
@@ -81,6 +97,7 @@ export async function migrateLegacyLayout(
       } catch (err) {
         const error = new Error(`Legacy continuity artifact is invalid: ${err.message}`);
         error.code = E_TASK_MIGRATION_INVALID;
+        error.cause = err;
         throw error;
       }
     } else if (item.key === "receipt") {
@@ -93,6 +110,7 @@ export async function migrateLegacyLayout(
       } catch (err) {
         const error = new Error(`Legacy receipt artifact is invalid: ${err.message}`);
         error.code = E_TASK_MIGRATION_INVALID;
+        error.cause = err;
         throw error;
       }
     }
@@ -116,6 +134,13 @@ export async function migrateLegacyLayout(
     error.mismatches = mismatches;
     throw error;
   }
+
+  // 1. Validate complete legacy source snapshot fail-closed before creating any directories
+  const sourceSnapshot = await validateMigrationSnapshot(target, {
+    taskId: canonicalTaskId,
+    packageRoot,
+    paths: LEGACY_TASK_ARTIFACT_PATHS,
+  });
 
   const taskKey = taskStorageKey(canonicalTaskId);
   const finalDirRel = taskDirectory(canonicalTaskId);
@@ -142,11 +167,11 @@ export async function migrateLegacyLayout(
     };
   }
 
-  // Create temporary migration directory
+  // 2. Create temporary migration directory
   await mkdir(tempDirAbs, { recursive: true });
 
   try {
-    // 1. Create and write task.json descriptor
+    // 3. Create and write task.json descriptor
     const descriptor = createTaskDescriptor({
       taskId: canonicalTaskId,
       writeClaims: [],
@@ -156,7 +181,7 @@ export async function migrateLegacyLayout(
     });
     migratedArtifacts.push("task.json");
 
-    // 2. Copy and map files
+    // 4. Copy and map files into temp namespace
     const fileMapping = [
       [LEGACY_TASK_ARTIFACT_PATHS.contract, "contract.json"],
       [LEGACY_TASK_ARTIFACT_PATHS.route, "routing-result.json"],
@@ -176,7 +201,7 @@ export async function migrateLegacyLayout(
       }
     }
 
-    // 3. Copy directories: gates/ and executions/
+    // 5. Copy directories: gates/ and executions/
     const dirMapping = [
       [LEGACY_TASK_ARTIFACT_PATHS.gates, "gates"],
       [LEGACY_TASK_ARTIFACT_PATHS.executions, "executions"],
@@ -191,21 +216,83 @@ export async function migrateLegacyLayout(
       }
     }
 
-    // 4. Atomically publish
+    // Test hook for corruption / failure testing
+    if (typeof afterCopyForTest === "function") {
+      await afterCopyForTest({ tempDirAbs, tempDirRel, target });
+    }
+
+    // 6. Validate temp snapshot
+    const tempPaths = {
+      contract: `${tempDirRel}/contract.json`,
+      route: `${tempDirRel}/routing-result.json`,
+      preflight: `${tempDirRel}/preflight.json`,
+      state: `${tempDirRel}/work-state.json`,
+      continuity: `${tempDirRel}/continuity.json`,
+      receipt: `${tempDirRel}/execution-receipt.json`,
+      events: `${tempDirRel}/events.ndjson`,
+      gates: `${tempDirRel}/gates`,
+      executions: `${tempDirRel}/executions`,
+    };
+
+    const tempSnapshot = await validateMigrationSnapshot(target, {
+      taskId: canonicalTaskId,
+      packageRoot,
+      paths: tempPaths,
+    });
+
+    // 7. Compare copied fingerprints
+    for (const [key, hash] of Object.entries(sourceSnapshot.artifactFingerprints)) {
+      if (tempSnapshot.artifactFingerprints[key] !== hash) {
+        const error = new Error(`Migration corrupted artifact during copy: ${key}`);
+        error.code = E_TASK_MIGRATION_INVALID;
+        throw error;
+      }
+    }
+
+    for (const [key, hash] of Object.entries(sourceSnapshot.directoryFingerprints)) {
+      if (tempSnapshot.directoryFingerprints[key] !== hash) {
+        const error = new Error(`Migration corrupted directory during copy: ${key}`);
+        error.code = E_TASK_MIGRATION_INVALID;
+        throw error;
+      }
+    }
+
+    // 8. Atomically publish
     await mkdir(ensureWithin(target, TASK_STATE_ROOT), { recursive: true });
     await rename(tempDirAbs, finalDirAbs);
 
-    // 5. Post-publish validation: verify final namespace is readable and healthy
+    // 9. Post-publish validation: verify final namespace snapshot and task descriptor
+    const finalPaths = {
+      contract: taskArtifactPath(canonicalTaskId, "contract"),
+      route: taskArtifactPath(canonicalTaskId, "route"),
+      preflight: taskArtifactPath(canonicalTaskId, "preflight"),
+      state: taskArtifactPath(canonicalTaskId, "state"),
+      continuity: taskArtifactPath(canonicalTaskId, "continuity"),
+      receipt: taskArtifactPath(canonicalTaskId, "receipt"),
+      events: taskArtifactPath(canonicalTaskId, "events"),
+      gates: taskArtifactPath(canonicalTaskId, "gates"),
+      executions: taskArtifactPath(canonicalTaskId, "executions"),
+    };
+
+    await validateMigrationSnapshot(target, {
+      taskId: canonicalTaskId,
+      packageRoot,
+      paths: finalPaths,
+    });
     await readTaskDescriptor(target, canonicalTaskId, packageRoot);
 
-    // 6. Cleanup legacy task files (strictly after successful publish and validation)
-    for (const item of detection.legacyFiles) {
-      const full = ensureWithin(target, item.path);
-      try {
-        await rm(full, { recursive: true, force: true });
-      } catch {
-        // ignore
+    // 10. Cleanup legacy task files (strictly after successful publish and validation)
+    try {
+      for (const item of detection.legacyFiles) {
+        await removeLegacyArtifact(target, item.path);
       }
+    } catch (cleanupErr) {
+      const error = new Error(
+        `Migration published successfully to ${finalDirRel}, but legacy cleanup failed: ${cleanupErr.message}. Manual cleanup required.`,
+      );
+      error.code = E_TASK_MIGRATION_INVALID;
+      error.cause = cleanupErr;
+      throw error;
     }
 
     return {
@@ -216,11 +303,13 @@ export async function migrateLegacyLayout(
       migratedArtifacts,
     };
   } catch (error) {
-    // Cleanup temp dir on failure
-    try {
-      await rm(tempDirAbs, { recursive: true, force: true });
-    } catch {
-      // ignore
+    // Cleanup temp dir on failure if it still exists
+    if (await fileExists(tempDirAbs)) {
+      try {
+        await rm(tempDirAbs, { recursive: true, force: true });
+      } catch {
+        // ignore
+      }
     }
     throw error;
   }
