@@ -190,7 +190,7 @@ export async function validateDocumentationConformance({ rootDir = repositoryRoo
       if (!sectionContent.includes("PRODUCT") || !sectionContent.includes("VERIFICATION") || !sectionContent.includes("LIFECYCLE")) {
         errors.push(`DOC_CONTRACT_REQUIREMENT_TYPES_MISSING: current-contract verification must document all requirement types including PRODUCT`);
       }
-      const reqIdLine = sectionContent.split("\n").find((l) => l.includes("`id`") && l.includes("verification"));
+      const reqIdLine = sectionContent.split("\n").find((l) => l.includes("`id`"));
       if (reqIdLine && /required/i.test(reqIdLine)) {
         errors.push(`DOC_CONTRACT_REQUIREMENT_ID_REQUIRED_MISMATCH: requirement id is optional in schema`);
       }

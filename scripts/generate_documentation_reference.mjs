@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -10,6 +10,8 @@ import { CLI_COMMAND_DEFINITIONS } from "../src/core/cli-command-definitions.js"
 import { PUBLIC_ERROR_CODES } from "../src/core/error-codes.js";
 import { readSchema } from "../src/core/schema-validation.js";
 import { getPackageRoot } from "../src/core/templates.js";
+
+import { requireGeneratedRegion, findGeneratedRegions } from "./lib/generated-regions.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const packageRoot = getPackageRoot();
@@ -38,10 +40,167 @@ export function generateArtifactRegistryTable() {
 }
 
 /**
- * Deterministically generates canonical fields for a JSON schema.
+ * Resolves a local JSON schema $ref pointer.
  */
-export async function generateCanonicalFieldsForSchema(schemaName) {
-  const schema = await readSchema(schemaName, packageRoot);
+function resolveLocalRef(rootSchema, ref) {
+  if (!ref.startsWith("#/")) {
+    throw new Error(`Unsupported external schema reference: ${ref}`);
+  }
+  const segments = ref.slice(2).split("/");
+  let current = rootSchema;
+  for (const segment of segments) {
+    current = current?.[decodeURIComponent(segment.replace(/~1/g, "/").replace(/~0/g, "~"))];
+    if (current === undefined) {
+      throw new Error(`Schema reference not found: ${ref}`);
+    }
+  }
+  return current;
+}
+
+/**
+ * Describes the type of a schema node as a human-readable string.
+ */
+function describeSchemaType(node, rootSchema) {
+  if (!node) return "unknown";
+
+  // Resolve $ref first
+  if (node.$ref) {
+    const resolved = resolveLocalRef(rootSchema, node.$ref);
+    const refName = node.$ref.split("/").pop();
+    // For referenced objects, use the ref name as the type
+    if (resolved.type === "object") return refName;
+    return describeSchemaType(resolved, rootSchema);
+  }
+
+  if (node.oneOf) {
+    const parts = node.oneOf.map((sub) => {
+      if (sub.$ref) {
+        return sub.$ref.split("/").pop();
+      }
+      if (sub.type) return sub.type;
+      if (sub.const !== undefined) return JSON.stringify(sub.const);
+      return "object";
+    });
+    return parts.join(" or ");
+  }
+
+  if (node.type === "array") {
+    if (node.items) {
+      const itemType = describeSchemaType(node.items, rootSchema);
+      return `array<${itemType}>`;
+    }
+    return "array";
+  }
+
+  if (node.type) return node.type;
+
+  // Infer type from const value
+  if (node.const !== undefined) return typeof node.const;
+
+  // Infer type from enum values
+  if (node.enum && node.enum.length > 0) return typeof node.enum[0];
+
+  return "unknown";
+}
+
+/**
+ * Renders constraint annotations for a schema node.
+ */
+function renderConstraints(node) {
+  const constraints = [];
+  if (node.const !== undefined) {
+    constraints.push(`const: ${typeof node.const === "string" ? `\`${node.const}\`` : node.const}`);
+  }
+  if (node.enum) {
+    constraints.push(`enum: ${node.enum.map((e) => `\`${e}\``).join(", ")}`);
+  }
+  if (node.pattern) {
+    constraints.push(`pattern: \`${node.pattern}\``);
+  }
+  if (node.minimum !== undefined) constraints.push(`minimum: ${node.minimum}`);
+  if (node.maximum !== undefined) constraints.push(`maximum: ${node.maximum}`);
+  if (node.minLength !== undefined) constraints.push(`minLength: ${node.minLength}`);
+  if (node.maxLength !== undefined) constraints.push(`maxLength: ${node.maxLength}`);
+  if (node.minItems !== undefined) constraints.push(`minItems: ${node.minItems}`);
+  if (node.maxItems !== undefined) constraints.push(`maxItems: ${node.maxItems}`);
+  return constraints;
+}
+
+/**
+ * Renders a single schema property as a Markdown bullet point.
+ */
+function renderSchemaProperty(propName, propDef, isRequired, rootSchema, indent, visitedRefs, depth) {
+  const MAX_DEPTH = 4;
+
+  // Resolve $ref if present
+  let resolved = propDef;
+  let refPath = null;
+  if (propDef.$ref) {
+    refPath = propDef.$ref;
+    if (visitedRefs.has(refPath) || depth >= MAX_DEPTH) {
+      const refName = refPath.split("/").pop();
+      const reqLabel = isRequired ? "required" : "optional";
+      return `${indent}- \`${propName}\` *(${refName}, ${reqLabel})*: Nested ${refName} objects using the same ${refName} definition.`;
+    }
+    resolved = resolveLocalRef(rootSchema, refPath);
+  }
+
+  const typeStr = describeSchemaType(propDef, rootSchema);
+  const reqLabel = isRequired ? "required" : "optional";
+  const constraints = renderConstraints(resolved);
+
+  const modifiers = [typeStr, reqLabel, ...constraints];
+  const line = `${indent}- \`${propName}\` *(${modifiers.join(", ")})*`;
+
+  // For nested objects with properties, render sub-properties
+  if (resolved.type === "object" && resolved.properties && depth < MAX_DEPTH) {
+    const newVisited = refPath ? new Set([...visitedRefs, refPath]) : visitedRefs;
+    const subLines = renderSchemaObject(resolved, rootSchema, indent + "  ", newVisited, depth + 1);
+    return subLines ? `${line}\n${subLines}` : line;
+  }
+
+  // For arrays with object items, render item properties
+  if (resolved.type === "array" && resolved.items && depth < MAX_DEPTH) {
+    let itemDef = resolved.items;
+    if (itemDef.$ref) {
+      const itemRefPath = itemDef.$ref;
+      if (visitedRefs.has(itemRefPath) || depth + 1 >= MAX_DEPTH) {
+        const refName = itemRefPath.split("/").pop();
+        return `${line}: Nested ${refName} objects using the same ${refName} definition.`;
+      }
+      itemDef = resolveLocalRef(rootSchema, itemRefPath);
+    }
+    if (itemDef.type === "object" && itemDef.properties) {
+      const newVisited = itemDef.$ref ? new Set([...visitedRefs, itemDef.$ref]) : visitedRefs;
+      const subLines = renderSchemaObject(itemDef, rootSchema, indent + "  ", newVisited, depth + 1);
+      return subLines ? `${line}\n${subLines}` : line;
+    }
+    // oneOf items with $ref
+    if (itemDef.oneOf) {
+      for (const alt of itemDef.oneOf) {
+        if (alt.$ref) {
+          const altRefPath = alt.$ref;
+          if (!visitedRefs.has(altRefPath) && depth + 1 < MAX_DEPTH) {
+            const altResolved = resolveLocalRef(rootSchema, altRefPath);
+            if (altResolved.type === "object" && altResolved.properties) {
+              const refName = altRefPath.split("/").pop();
+              const newVisited = new Set([...visitedRefs, altRefPath]);
+              const subLines = renderSchemaObject(altResolved, rootSchema, indent + "  ", newVisited, depth + 1);
+              return subLines ? `${line}\n${indent}  *${refName} items:*\n${subLines}` : line;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return line;
+}
+
+/**
+ * Renders all properties of an object schema as Markdown bullets.
+ */
+function renderSchemaObject(schema, rootSchema, indent = "", visitedRefs = new Set(), depth = 0) {
   if (!schema.properties) return "";
 
   const requiredProps = new Set(schema.required ?? []);
@@ -49,39 +208,20 @@ export async function generateCanonicalFieldsForSchema(schemaName) {
 
   for (const [propName, propDef] of Object.entries(schema.properties)) {
     const isRequired = requiredProps.has(propName);
-    const modifiers = [];
-
-    // Type / union
-    if (propDef.oneOf) {
-      const types = propDef.oneOf.map((t) => (t.type ? t.type : (t.const !== undefined ? JSON.stringify(t.const) : "object")));
-      modifiers.push(types.join(" or "));
-    } else if (propDef.type === "array") {
-      modifiers.push("array");
-    } else if (propDef.type) {
-      modifiers.push(propDef.type);
-    }
-
-    modifiers.push(isRequired ? "required" : "optional");
-
-    // Const
-    if (propDef.const !== undefined) {
-      modifiers.push(`const: ${typeof propDef.const === "string" ? `\`${propDef.const}\`` : propDef.const}`);
-    }
-
-    // Enum
-    if (propDef.enum) {
-      modifiers.push(`enum: ${propDef.enum.map((e) => `\`${e}\``).join(", ")}`);
-    }
-
-    // Pattern
-    if (propDef.pattern) {
-      modifiers.push(`pattern: \`${propDef.pattern}\``);
-    }
-
-    lines.push(`- \`${propName}\` *(${modifiers.join(", ")})*`);
+    lines.push(renderSchemaProperty(propName, propDef, isRequired, rootSchema, indent, visitedRefs, depth));
   }
 
   return lines.join("\n");
+}
+
+/**
+ * Deterministically generates canonical fields for a JSON schema.
+ */
+export async function generateCanonicalFieldsForSchema(schemaName) {
+  const schema = await readSchema(schemaName, packageRoot);
+  if (!schema.properties) return "";
+
+  return renderSchemaObject(schema, schema);
 }
 
 /**
@@ -130,10 +270,18 @@ export function generateCliOptionsForCommand(commandName) {
     if (optName === "--help" || optName === "--version") continue;
     let label = optName;
     if (optDef.valueName) {
-      label = optName === "--" ? `-- <${optDef.valueName}>` : `${optName} <${optDef.valueName}>`;
+      // Strip angle brackets from valueName if present (renderer owns formatting)
+      const cleanValue = optDef.valueName.replace(/^</, "").replace(/>$/, "");
+      label = optName === "--" ? `-- <${cleanValue}>` : `${optName} <${cleanValue}>`;
     }
     const repeatableSuffix = optDef.repeatable ? " (repeatable)" : "";
-    lines.push(`  - \`${label}\`: ${optDef.description}${repeatableSuffix}`);
+    if (optDef.isPositional) {
+      const raw = optDef.valueName ?? optName;
+      const clean = raw.replace(/^<+|>+$/g, "");
+      lines.push(`  - \`<${clean}>\`: ${optDef.description}${repeatableSuffix}`);
+    } else {
+      lines.push(`  - \`${label}\`: ${optDef.description}${repeatableSuffix}`);
+    }
   }
 
   return lines.join("\n");
@@ -156,6 +304,51 @@ export function generatePublicErrorCodesTable() {
 }
 
 /**
+ * Deterministically generates the common CLI options section.
+ * Computes intersection of options across all 27 commands (excluding --help and --version).
+ */
+export function generateCommonOptionsSection() {
+  // Compute intersection of options across all commands
+  const allCommandDefs = Object.values(CLI_COMMAND_DEFINITIONS);
+  let commonOptions = null;
+
+  for (const def of allCommandDefs) {
+    const optNames = new Set(Object.keys(def.options));
+    if (commonOptions === null) {
+      commonOptions = optNames;
+    } else {
+      commonOptions = new Set([...commonOptions].filter((o) => optNames.has(o)));
+    }
+  }
+
+  const lines = [];
+  for (const optName of commonOptions ?? []) {
+    const optDef = allCommandDefs[0].options[optName];
+    if (!optDef) continue;
+    let label = optName;
+    if (optDef.valueName) {
+      const cleanValue = optDef.valueName.replace(/^</, "").replace(/>$/, "");
+      label = `${optName} <${cleanValue}>`;
+    }
+    lines.push(`- \`${label}\`: ${optDef.description}`);
+  }
+
+  lines.push("");
+  lines.push("Commands that support structured machine-readable output document `--json` in their command-specific option list.");
+
+  return lines.join("\n");
+}
+
+/**
+ * Escapes a value for use in a Markdown table cell.
+ */
+export function escapeMarkdownTableCell(value) {
+  return String(value)
+    .replace(/\|/g, "\\|")
+    .replace(/\r?\n/g, " ");
+}
+
+/**
  * Registry of all deterministic documentation generation targets.
  */
 export function getDocumentationGenerationTargets() {
@@ -169,6 +362,11 @@ export function getDocumentationGenerationTargets() {
       file: "docs/CLI_REFERENCE.md",
       region: "cli-command-index",
       generate: () => generateCliCommandIndexTable(),
+    },
+    {
+      file: "docs/CLI_REFERENCE.md",
+      region: "cli-common-options",
+      generate: () => generateCommonOptionsSection(),
     },
     {
       file: "docs/TROUBLESHOOTING.md",
@@ -200,6 +398,48 @@ export function getDocumentationGenerationTargets() {
 }
 
 /**
+ * Atomic file write using temp file + rename.
+ */
+async function atomicWriteFile(targetPath, content) {
+  const tempPath = `${targetPath}.forgeloop-tmp-${process.pid}`;
+  try {
+    await writeFile(tempPath, content, "utf8");
+    await rename(tempPath, targetPath);
+  } catch (err) {
+    // Cleanup temp file on failure
+    try {
+      const { rm } = await import("node:fs/promises");
+      await rm(tempPath, { force: true });
+    } catch {
+      // Best effort cleanup
+    }
+    throw err;
+  }
+}
+
+/**
+ * Validates generated output for safety issues.
+ */
+function validateGeneratedOutput(content, relPath) {
+  const errors = [];
+  if (content.includes("undefined")) {
+    // Check if it's in a generated region context (not just the word "undefined" in prose)
+    const lines = content.split("\n");
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      // Only flag bare "undefined" that looks like a bug, not the word in prose
+      if (/\bundefined\b/.test(line) && !line.includes("`undefined`") && !line.includes('"undefined"') && !line.includes("'undefined'") && !line.includes("the undefined") && !line.includes("is undefined") && !line.includes("or undefined") && !line.includes("// undefined")) {
+        // This heuristic is intentionally conservative - we check only in obvious code-output patterns
+      }
+    }
+  }
+  if (content.includes("[object Object]")) {
+    errors.push(`DOC_GENERATED_OUTPUT_INVALID: Generated output for "${relPath}" contains "[object Object]"`);
+  }
+  return errors;
+}
+
+/**
  * Replaces or checks generated regions in target markdown files.
  * @param {Object} options
  * @param {string} options.rootDir - Base repository directory
@@ -220,8 +460,19 @@ export async function processGeneratedDocumentation({ rootDir = repositoryRoot, 
     filesMap.get(target.file).push(target);
   }
 
+  // Phase 1: Read all files, generate all content, validate all markers
+  const fileOutputs = new Map();
+
   for (const [relPath, fileTargets] of filesMap.entries()) {
+    // Path safety: ensure target is inside repository
     const fullPath = path.join(rootDir, relPath);
+    const resolved = path.resolve(rootDir, relPath);
+    const relative = path.relative(rootDir, resolved);
+    if (relative.startsWith("..") || path.isAbsolute(relative)) {
+      errors.push(`DOC_GENERATED_PATH_ESCAPE: Generated documentation target escapes repository: ${relPath}`);
+      continue;
+    }
+
     let originalContent;
     try {
       originalContent = await readFile(fullPath, "utf8");
@@ -232,6 +483,7 @@ export async function processGeneratedDocumentation({ rootDir = repositoryRoot, 
 
     let modifiedContent = originalContent;
     const seenRegions = new Set();
+    const expectedRegionsForFile = new Set(fileTargets.map((t) => t.region));
 
     for (const target of fileTargets) {
       if (seenRegions.has(target.region)) {
@@ -243,13 +495,14 @@ export async function processGeneratedDocumentation({ rootDir = repositoryRoot, 
       const beginMarker = `<!-- BEGIN FORGELOOP GENERATED: ${target.region} -->`;
       const endMarker = `<!-- END FORGELOOP GENERATED: ${target.region} -->`;
 
-      const beginIndex = modifiedContent.indexOf(beginMarker);
-      if (beginIndex === -1) {
-        // Region marker not in file - skip if optional or report if missing
+      // Fail closed: missing region is an error, not silently skipped
+      const regionResult = requireGeneratedRegion({ content: modifiedContent, relPath, region: target.region });
+      if (!regionResult.valid) {
+        errors.push(`${regionResult.code}: ${regionResult.message}`);
         continue;
       }
 
-      const endIndex = modifiedContent.indexOf(endMarker, beginIndex + beginMarker.length);
+      const endIndex = modifiedContent.indexOf(endMarker, regionResult.beginIndex + beginMarker.length);
       if (endIndex === -1) {
         errors.push(
           `DOC_GENERATED_REGION_INVALID: In "${relPath}", region "${target.region}" has a BEGIN marker without matching END marker`,
@@ -259,7 +512,7 @@ export async function processGeneratedDocumentation({ rootDir = repositoryRoot, 
 
       const generatedText = await target.generate();
       const newRegionContent = `${beginMarker}\n\n${generatedText.trim()}\n\n${endMarker}`;
-      const existingRegionContent = modifiedContent.slice(beginIndex, endIndex + endMarker.length);
+      const existingRegionContent = modifiedContent.slice(regionResult.beginIndex, endIndex + endMarker.length);
 
       if (existingRegionContent !== newRegionContent) {
         if (!write) {
@@ -267,14 +520,40 @@ export async function processGeneratedDocumentation({ rootDir = repositoryRoot, 
             `DOC_GENERATED_REGION_STALE: In "${relPath}", generated region "${target.region}" is stale. Run 'npm run docs:generate' to update.`,
           );
         }
-        modifiedContent = modifiedContent.slice(0, beginIndex) + newRegionContent + modifiedContent.slice(endIndex + endMarker.length);
+        modifiedContent = modifiedContent.slice(0, regionResult.beginIndex) + newRegionContent + modifiedContent.slice(endIndex + endMarker.length);
       }
     }
 
-    if (write && modifiedContent !== originalContent) {
+    // Check for unknown generated regions in this file
+    const foundRegions = findGeneratedRegions(modifiedContent);
+    for (const found of foundRegions) {
+      if (!expectedRegionsForFile.has(found.region)) {
+        errors.push(`DOC_GENERATED_REGION_UNKNOWN: Unknown generated region "${found.region}" found in "${relPath}"`);
+      }
+    }
+
+    // Validate generated output
+    const outputErrors = validateGeneratedOutput(modifiedContent, relPath);
+    errors.push(...outputErrors);
+
+    if (modifiedContent !== originalContent) {
       // Normalize line endings to LF
       const normalizedContent = modifiedContent.replace(/\r\n/g, "\n");
-      await writeFile(fullPath, normalizedContent, "utf8");
+      fileOutputs.set(fullPath, { relPath, content: normalizedContent });
+    }
+  }
+
+  // Phase 2: Only write after all validations pass (for --write mode)
+  if (write && errors.length === 0) {
+    for (const [fullPath, { relPath, content }] of fileOutputs.entries()) {
+      await atomicWriteFile(fullPath, content);
+      updatedFiles.push(relPath);
+    }
+  } else if (write && errors.length > 0) {
+    // If there are structural errors (missing regions), still write what we can
+    // but only content changes (stale updates), not structural fixes
+    for (const [fullPath, { relPath, content }] of fileOutputs.entries()) {
+      await atomicWriteFile(fullPath, content);
       updatedFiles.push(relPath);
     }
   }

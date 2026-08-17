@@ -137,8 +137,8 @@ test("negative fixtures & mutation tests: validateDocumentationConformance detec
       // Mutation 3: init documented with --adopt
       const mutCli3 = mustReplace(
         cliContent,
-        /(- \*\*Options\*\*:\r?\n)(\s+- `--dry-run`)/,
-        `$1  - \`--adopt <path>\`: Adopt adapter.${eol}$2`,
+        /(- `--dry-run`)/,
+        `- \`--adopt <path>\`: Adopt adapter.${eol}  $1`,
         `init --adopt (${eol === "\n" ? "LF" : "CRLF"})`,
       );
       await writeFile(cliDocFile, mutCli3, "utf8");
@@ -148,7 +148,7 @@ test("negative fixtures & mutation tests: validateDocumentationConformance detec
       await writeFile(cliDocFile, cliContent, "utf8");
 
       // Mutation 4: current-contract requirement id marked required
-      const mutDoc4 = mustReplace(docContent, "- `id` *(string, optional)*", "- `id` *(string, required)*", `requirement.id (${eol === "\n" ? "LF" : "CRLF"})`);
+      const mutDoc4 = mustReplace(docContent, "- `id` *(string, optional", "- `id` *(string, required", `requirement.id (${eol === "\n" ? "LF" : "CRLF"})`);
       await writeFile(docFile, mutDoc4, "utf8");
       const mut4 = await validateDocumentationConformance({ rootDir: tempDir });
       assert.equal(mut4.valid, false);

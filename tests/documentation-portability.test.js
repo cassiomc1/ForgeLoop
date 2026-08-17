@@ -98,3 +98,75 @@ test("Mermaid diagram check validates target SVG explicitly", async () => {
     await rm(tempDir, { recursive: true, force: true });
   }
 });
+
+test("generated documentation generator fails closed on missing, duplicate, invalid, or unknown regions", async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "forgeloop-gen-mutation-"));
+
+  try {
+    await cp("docs", path.join(tempDir, "docs"), { recursive: true });
+    await cp("schemas", path.join(tempDir, "schemas"), { recursive: true });
+    await cp("src", path.join(tempDir, "src"), { recursive: true });
+
+    const cliDocPath = path.join(tempDir, "docs", "CLI_REFERENCE.md");
+    const originalCliDoc = await readFile(cliDocPath, "utf8");
+
+    // 1. Missing region marker -> DOC_GENERATED_REGION_MISSING
+    const missingRegionDoc = originalCliDoc.replace(
+      /<!-- BEGIN FORGELOOP GENERATED: cli:init:options -->[\s\S]*?<!-- END FORGELOOP GENERATED: cli:init:options -->/,
+      "- `--dry-run`: manual text",
+    );
+    await writeFile(cliDocPath, missingRegionDoc, "utf8");
+    const missingRes = await processGeneratedDocumentation({ rootDir: tempDir, write: false });
+    assert.equal(missingRes.valid, false);
+    assert.ok(missingRes.errors.some((e) => e.includes("DOC_GENERATED_REGION_MISSING") && e.includes("cli:init:options")));
+
+    // 2. Duplicate BEGIN marker -> DOC_GENERATED_REGION_DUPLICATE
+    const dupRegionDoc = originalCliDoc.replace(
+      "<!-- BEGIN FORGELOOP GENERATED: cli:init:options -->",
+      "<!-- BEGIN FORGELOOP GENERATED: cli:init:options -->\n<!-- BEGIN FORGELOOP GENERATED: cli:init:options -->",
+    );
+    await writeFile(cliDocPath, dupRegionDoc, "utf8");
+    const dupRes = await processGeneratedDocumentation({ rootDir: tempDir, write: false });
+    assert.equal(dupRes.valid, false);
+    assert.ok(dupRes.errors.some((e) => e.includes("DOC_GENERATED_REGION_DUPLICATE") && e.includes("cli:init:options")));
+
+    // 3. Missing END marker -> DOC_GENERATED_REGION_INVALID
+    const invalidRegionDoc = originalCliDoc.replace(
+      "<!-- END FORGELOOP GENERATED: cli:init:options -->",
+      "",
+    );
+    await writeFile(cliDocPath, invalidRegionDoc, "utf8");
+    const invalidRes = await processGeneratedDocumentation({ rootDir: tempDir, write: false });
+    assert.equal(invalidRes.valid, false);
+    assert.ok(invalidRes.errors.some((e) => e.includes("DOC_GENERATED_REGION_INVALID") && e.includes("cli:init:options")));
+
+    // 4. Unknown region marker -> DOC_GENERATED_REGION_UNKNOWN
+    const unknownRegionDoc = originalCliDoc + "\n<!-- BEGIN FORGELOOP GENERATED: non-existent-region -->\nfoo\n<!-- END FORGELOOP GENERATED: non-existent-region -->\n";
+    await writeFile(cliDocPath, unknownRegionDoc, "utf8");
+    const unknownRes = await processGeneratedDocumentation({ rootDir: tempDir, write: false });
+    assert.equal(unknownRes.valid, false);
+    assert.ok(unknownRes.errors.some((e) => e.includes("DOC_GENERATED_REGION_UNKNOWN") && e.includes("non-existent-region")));
+
+    // 5. Stale region in check mode -> DOC_GENERATED_REGION_STALE
+    const staleRegionDoc = originalCliDoc.replace(
+      /<!-- BEGIN FORGELOOP GENERATED: cli:init:options -->[\s\S]*?<!-- END FORGELOOP GENERATED: cli:init:options -->/,
+      "<!-- BEGIN FORGELOOP GENERATED: cli:init:options -->\n\n- `--stale-flag`: completely stale\n\n<!-- END FORGELOOP GENERATED: cli:init:options -->",
+    );
+    await writeFile(cliDocPath, staleRegionDoc, "utf8");
+    const staleRes = await processGeneratedDocumentation({ rootDir: tempDir, write: false });
+    assert.equal(staleRes.valid, false);
+    assert.ok(staleRes.errors.some((e) => e.includes("DOC_GENERATED_REGION_STALE") && e.includes("cli:init:options")));
+
+    // 6. Write mode repairs stale region -> subsequent check passes
+    const repairRes = await processGeneratedDocumentation({ rootDir: tempDir, write: true });
+    assert.equal(repairRes.valid, true);
+    assert.ok(repairRes.updatedFiles.includes("docs/CLI_REFERENCE.md"));
+
+    const postRepairCheck = await processGeneratedDocumentation({ rootDir: tempDir, write: false });
+    assert.equal(postRepairCheck.valid, true);
+    assert.equal(postRepairCheck.errors.length, 0);
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+});
+

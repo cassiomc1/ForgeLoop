@@ -226,7 +226,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
       "--id": Object.freeze({ takesValue: true, valueName: "id", description: "stable check identifier" }),
       "--requirement": Object.freeze({ takesValue: true, valueName: "id", description: "completion requirement covered by the check" }),
       "--details": Object.freeze({ takesValue: true, valueName: "json", description: "additional structured check details" }),
-      "--": Object.freeze({ takesValue: true, valueName: "<argv...>", description: "exact command argv to classify, execute, and attest" }),
+      "--": Object.freeze({ takesValue: true, valueName: "argv...", description: "exact command argv to classify, execute, and attest" }),
       "--json": Object.freeze({ takesValue: false, description: "emit structured output as JSON" }),
       "--help": Object.freeze({ takesValue: false, description: "show this help" }),
       "--version": Object.freeze({ takesValue: false, description: "show the installed package version" }),

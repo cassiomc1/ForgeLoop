@@ -23,7 +23,7 @@ ForgeLoop strictly separates normative protocol definitions from operational doc
 When updating documentation, always derive content from its authoritative source:
 
 ```text
-CLI syntax truth        -> CLI registry / parser (src/cli.js, src/core/cli-metadata.js)
+CLI syntax truth        -> CLI registry / parser (src/cli.js, src/core/cli-command-definitions.js, src/core/cli-metadata.js)
 Artifact shape truth    -> JSON schemas (schemas/*.schema.json, src/core/artifact-registry.js)
 Lifecycle truth         -> protocol / state machine (src/core/protocol.js)
 Reason-code truth       -> exported protocol constants (src/core/error-codes.js, src/core/protocol.js)
@@ -35,7 +35,54 @@ Operational documentation must explain canonical behavior, not redefine it.
 
 ---
 
-## 3. Documentation Conformance Matrix
+## 3. Generated Documentation Provenance & Pipeline
+
+ForgeLoop mechanically enforces documentation freshness using deterministic generator targets. If public facts change and documentation regions are not refreshed, CI fails.
+
+```text
+runtime facts
+    ↓
+canonical registries / schemas
+    ↓
+deterministic generators (scripts/generate_documentation_reference.mjs)
+    ↓
+generated Markdown regions (<!-- BEGIN FORGELOOP GENERATED: ... -->)
+    ↓
+semantic conformance checks (scripts/validate_documentation_conformance.mjs)
+    ↓
+cross-platform CI (.github/workflows/docs-quality.yml)
+```
+
+### Provenance Mapping Table
+
+| Fact Category | Canonical Machine Source | Generated Target File | Generated Region Marker |
+| --- | --- | --- | --- |
+| **Artifact Inventory** | `ARTIFACT_REGISTRY` (`src/core/artifact-registry.js`) | `docs/ARTIFACT_REFERENCE.md` | `<!-- BEGIN FORGELOOP GENERATED: artifact-registry -->` |
+| **Artifact Fields** (12 schemas) | `schemas/*.schema.json` | `docs/ARTIFACT_REFERENCE.md` | `<!-- BEGIN FORGELOOP GENERATED: schema:<name> -->` |
+| **CLI Command Index** | `CLI_COMMAND_DEFINITIONS` (`src/core/cli-command-definitions.js`) | `docs/CLI_REFERENCE.md` | `<!-- BEGIN FORGELOOP GENERATED: cli-command-index -->` |
+| **CLI Common Options** | `CLI_COMMAND_DEFINITIONS` (`src/core/cli-command-definitions.js`) | `docs/CLI_REFERENCE.md` | `<!-- BEGIN FORGELOOP GENERATED: cli-common-options -->` |
+| **CLI Command Options** (27 commands) | `CLI_COMMAND_DEFINITIONS` (`src/core/cli-command-definitions.js`) | `docs/CLI_REFERENCE.md` | `<!-- BEGIN FORGELOOP GENERATED: cli:<command>:options -->` |
+| **Public Error Codes** | `PUBLIC_ERROR_CODES` (`src/core/error-codes.js`) | `docs/TROUBLESHOOTING.md` | `<!-- BEGIN FORGELOOP GENERATED: public-error-codes -->` |
+| **Architecture Flow** | `docs/forgeloop-flow.mmd` | `docs/assets/forgeloop-flow.svg` | Verified via embedded SHA-256 fingerprint |
+
+### Maintenance Workflow
+
+Whenever CLI definitions, schemas, or error codes change:
+
+```bash
+# 1. Regenerate all deterministic documentation regions
+npm run docs:generate
+
+# 2. Run the test suite (includes parser parity and unit tests)
+npm test
+
+# 3. Verify freshness, diagram fingerprints, and semantic conformance
+npm run docs:check
+```
+
+---
+
+## 4. Documentation Conformance Matrix
 
 | Documentation Area | Canonical Machine Source | Conformance Validator |
 | --- | --- | --- |
@@ -51,7 +98,7 @@ Operational documentation must explain canonical behavior, not redefine it.
 
 ---
 
-## 4. Normative Language Conventions
+## 5. Normative Language Conventions
 
 When writing documentation, use precise terms:
 
@@ -64,7 +111,7 @@ Avoid ambiguous phrases like *"should generally"* or *"usually"* for behaviors t
 
 ---
 
-## 5. Linking Conventions
+## 6. Linking Conventions
 
 - **Relative Links Only**: Always use relative markdown links for repository files (e.g. `[`LOOP_ENGINEERING.md`](../LOOP_ENGINEERING.md)`).
 - **Valid Targets**: Every relative link must point to an existing file and is validated by `python3 scripts/validate_markdown.py`.
@@ -72,7 +119,7 @@ Avoid ambiguous phrases like *"should generally"* or *"usually"* for behaviors t
 
 ---
 
-## 6. Mermaid Diagrams and SVG Generation
+## 7. Mermaid Diagrams and SVG Generation
 
 1. **Source is Canonical**: Diagram source files live in `.mmd` files (e.g. `docs/forgeloop-flow.mmd`). Never modify SVG files directly.
 2. **Local Committed SVGs**: Generated SVGs are committed locally in `docs/assets/`. Never hotlink externally rendered diagram images.
@@ -80,7 +127,7 @@ Avoid ambiguous phrases like *"should generally"* or *"usually"* for behaviors t
 
 ---
 
-## 7. Documentation Change Checklist for Pull Requests
+## 8. Documentation Change Checklist for Pull Requests
 
 For documentation-impacting changes, verify each item before merging:
 
@@ -92,5 +139,5 @@ For documentation-impacting changes, verify each item before merging:
 - [ ] Did any stable reason/error code change?
 - [ ] Did cross-harness resume behavior change?
 - [ ] Did package-shipped documentation change?
-- [ ] Were generated/reference docs updated?
+- [ ] Were generated reference docs updated (`npm run docs:generate`)?
 - [ ] Did documentation conformance CI pass (`npm run docs:check`)?

@@ -48,6 +48,12 @@ jobs:
       - name: Verify npm package contents
         run: npm run pack:check
 
+      - name: Verify generated Markdown freshness
+        run: npm run docs:generated:check
+
+      - name: Validate documentation semantics
+        run: npm run docs:conformance
+
       - name: Lint Markdown
         uses: DavidAnson/markdownlint-cli2-action@21c1be1b93ad9ed58fa840aacc3f279cde2a72ff # v24.2.0
         with:

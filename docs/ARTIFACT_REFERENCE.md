@@ -39,34 +39,50 @@ The operational task specification authored before execution begins.
 
 #### Canonical Fields
 
-- `schemaVersion` *(integer, required, const: 1)*: Contract schema version.
-- `protocolVersion` *(integer, required, const: 1)*: ForgeLoop protocol version.
-- `taskId` *(string, required)*: Stable identifier for the task.
-- `objective` *(string, required)*: High-level goal statement.
-- `assumptions` *(array of objects, optional)*: Explicit agent assumptions with safe defaults:
-  - `value` *(string, required)*: Assumed default behavior or choice.
-  - `reason` *(string, required)*: Rationale for the assumption.
-  - `scope` *(string, required)*: Affected module, feature, or subsystem.
-  - `reversible` *(boolean, required)*: Must be `true` for non-blocking local defaults.
-  - `source` *(string, required, const: `"agent-default"`)*: Must be `"agent-default"`.
-- `deliverables` *(array of strings, required)*: Concrete file paths or deliverables promised.
-- `constraints` *(array of strings, required)*: Operational or technical boundaries.
-- `risks` *(array of strings, required)*: Declared risk factors.
-- `verification` *(array of strings or objects, required)*: Planned verification items:
-  - `id` *(string, optional)*: Stable verification requirement identifier.
-  - `text` *(string, required)*: Human-readable verification criteria.
-  - `type` *(string, optional, enum: `PRODUCT`, `VERIFICATION`, `LIFECYCLE`, `PUBLICATION`, `PRODUCTION_READINESS`)*: Requirement classification.
-  - `operator` *(string, optional, enum: `SINGLE`, `ALL`)*: Requirement aggregation operator.
-  - `requiredEvidenceKind` *(string, optional, enum: `OBSERVED`, `INFERRED`, `NOT_VERIFIED`, `BLOCKED`, `HYPOTHESIS`)*: Expected evidence kind.
-  - `lifecycleOwned` *(boolean, optional)*: Whether requirement is lifecycle-managed.
-  - `terminalOwned` *(boolean, optional)*: Whether requirement is terminal-managed.
-  - `mixedTerminal` *(boolean, optional)*: Whether requirement combines terminal and local evidence.
-  - `requiredPublicationStatus` *(string, optional, enum: `committed`, `pushed`, `published`, `deployed`)*: Target publication status.
-  - `requirements` *(array of strings or objects, optional)*: Nested child requirement items.
-- `successCriteria` *(array of strings, required)*: Observable conditions that must be met.
-- `stopConditions` *(array of strings, required)*: Conditions requiring immediate work halt.
-- `unresolvedDecisions` *(array of strings, required)*: Blocking decisions pending operator review.
-- `sourceRefs` *(array of strings, required)*: References to source requirements.
+<!-- BEGIN FORGELOOP GENERATED: schema:current-contract -->
+
+- `schemaVersion` *(number, required, const: 1)*
+- `protocolVersion` *(number, required, const: 1)*
+- `taskId` *(string, required, minLength: 1)*
+- `objective` *(string, required, minLength: 1)*
+- `assumptions` *(array<object>, optional)*
+  - `value` *(string, required, minLength: 1)*
+  - `reason` *(string, required, minLength: 1)*
+  - `scope` *(string, required, minLength: 1)*
+  - `reversible` *(boolean, required, const: true)*
+  - `source` *(string, required, const: `agent-default`)*
+- `deliverables` *(array<string>, required)*
+- `constraints` *(array<string>, required)*
+- `risks` *(array<string>, required)*
+- `verification` *(array<string or requirement>, required)*
+  *requirement items:*
+  - `id` *(string, optional, minLength: 1)*
+  - `text` *(string, required, minLength: 1)*
+  - `type` *(string, optional, enum: `PRODUCT`, `VERIFICATION`, `LIFECYCLE`, `PUBLICATION`, `PRODUCTION_READINESS`)*
+  - `operator` *(string, optional, enum: `SINGLE`, `ALL`)*
+  - `requiredEvidenceKind` *(string, optional, enum: `OBSERVED`, `INFERRED`, `NOT_VERIFIED`, `BLOCKED`, `HYPOTHESIS`)*
+  - `lifecycleOwned` *(boolean, optional)*
+  - `terminalOwned` *(boolean, optional)*
+  - `mixedTerminal` *(boolean, optional)*
+  - `requiredPublicationStatus` *(string, optional, enum: `committed`, `pushed`, `published`, `deployed`)*
+  - `requirements` *(array<string or requirement>, optional)*
+- `successCriteria` *(array<string or requirement>, required)*
+  *requirement items:*
+  - `id` *(string, optional, minLength: 1)*
+  - `text` *(string, required, minLength: 1)*
+  - `type` *(string, optional, enum: `PRODUCT`, `VERIFICATION`, `LIFECYCLE`, `PUBLICATION`, `PRODUCTION_READINESS`)*
+  - `operator` *(string, optional, enum: `SINGLE`, `ALL`)*
+  - `requiredEvidenceKind` *(string, optional, enum: `OBSERVED`, `INFERRED`, `NOT_VERIFIED`, `BLOCKED`, `HYPOTHESIS`)*
+  - `lifecycleOwned` *(boolean, optional)*
+  - `terminalOwned` *(boolean, optional)*
+  - `mixedTerminal` *(boolean, optional)*
+  - `requiredPublicationStatus` *(string, optional, enum: `committed`, `pushed`, `published`, `deployed`)*
+  - `requirements` *(array<string or requirement>, optional)*
+- `stopConditions` *(array<string>, required)*
+- `unresolvedDecisions` *(array<string>, required)*
+- `sourceRefs` *(array<string>, required)*
+
+<!-- END FORGELOOP GENERATED: schema:current-contract -->
 
 ---
 
@@ -78,20 +94,18 @@ The deterministic result of routing task signals against the engineering guide r
 
 #### Canonical Fields
 
-- `schemaVersion` *(integer, required, const: 1)*: Routing schema version.
-- `protocolVersion` *(integer, required, const: 1)*: Protocol version.
-- `contractFingerprint` *(string, optional, pattern: `^[a-f0-9]{64}$`)*: Bound contract SHA-256 fingerprint.
-- `input` *(object, required)*: Echoed routing input signals:
-  - `workType` *(string, required)*: Primary work type.
-  - `surfaces` *(array of strings, optional)*: Activated technical surfaces.
-  - `risks` *(array of strings, optional)*: Declared risk signals.
-  - `platforms` *(array of strings, optional)*: Target execution platforms.
-  - `behaviorChange` *(boolean, optional)*: Declares runtime behavior modification.
-  - `executableChange` *(boolean, optional)*: Declares executable code changes.
-- `primary` *(string or null, required)*: Primary guide ID or `null`.
-- `guides` *(array of strings, required)*: Ordered list of activated engineering guide IDs.
-- `reasons` *(object, required)*: Map of guide IDs to activation rationale strings.
-- `excluded` *(object, required)*: Map of unactivated guide IDs to rejection reason codes.
+<!-- BEGIN FORGELOOP GENERATED: schema:routing-result -->
+
+- `schemaVersion` *(number, required, const: 1)*
+- `protocolVersion` *(number, required, const: 1)*
+- `contractFingerprint` *(string, optional, pattern: `^[a-f0-9]{64}$`)*
+- `input` *(object, required)*
+- `primary` *(string or null, required)*
+- `guides` *(array<string>, required)*
+- `reasons` *(object, required)*
+- `excluded` *(object, required)*
+
+<!-- END FORGELOOP GENERATED: schema:routing-result -->
 
 ---
 
@@ -103,19 +117,23 @@ Readiness attestation evaluated prior to implementation.
 
 #### Canonical Fields
 
-- `schemaVersion` *(integer, required, const: 1)*: Preflight schema version.
-- `protocolVersion` *(integer, required, const: 1)*: Protocol version.
-- `taskId` *(string, required)*: Bound task ID.
-- `status` *(string, required, enum: `READY`, `BLOCKED`)*: Overall preflight readiness status.
-- `profile` *(object, required)*: Project profile evaluation.
-- `contract` *(object, required)*: Contract validation summary.
-- `routing` *(object, required)*: Routing validation summary.
-- `requiredGates` *(array of strings, required)*: Gate IDs required by activated guides.
-- `satisfiedGates` *(array of strings, required)*: Gate IDs satisfied by existing valid gate artifacts.
-- `errors` *(array of objects, required)*: List of preflight failure reasons if not `READY`.
-- `fingerprints` *(object, optional)*: Cryptographic bindings across contract, routing, and profile.
-- `sources` *(object, optional)*: Discovered project sources summary.
-- `policy` *(object, optional)*: Policy evaluation summary.
+<!-- BEGIN FORGELOOP GENERATED: schema:preflight -->
+
+- `schemaVersion` *(number, required, const: 1)*
+- `protocolVersion` *(number, required, const: 1)*
+- `taskId` *(string, required, minLength: 1)*
+- `status` *(string, required, enum: `READY`, `BLOCKED`)*
+- `profile` *(object, required)*
+- `contract` *(object, required)*
+- `routing` *(object, required)*
+- `requiredGates` *(array<string>, required)*
+- `satisfiedGates` *(array<string>, required)*
+- `errors` *(array<object>, required)*
+- `fingerprints` *(object, optional)*
+- `sources` *(object, optional)*
+- `policy` *(object, optional)*
+
+<!-- END FORGELOOP GENERATED: schema:preflight -->
 
 ---
 
@@ -127,16 +145,13 @@ Discovered repository facts, platforms, runtimes, and dependencies.
 
 #### Canonical Fields
 
-- `schemaVersion` *(integer, required, const: 1)*: Source registry schema version.
-- `protocolVersion` *(integer, required, const: 1)*: Protocol version.
-- `sources` *(object, required)*: Map of discovered project facts:
-  - `kind` *(string, required, enum: `user-request`, `repository-fact`, `observation`, `command`, `agent-decision`, `inference`, `unknown`)*: Fact kind.
-  - `summary` *(string, required)*: Description of the fact.
-  - `path` *(string, optional)*: Relative file path.
-  - `sha256` *(string, optional, pattern: `^[a-f0-9]{64}$`)*: File hash.
-  - `command` *(string, optional)*: Discovered tool command.
-  - `result` *(string, optional)*: Execution result summary.
-  - `status` *(string, optional)*: Discovery status.
+<!-- BEGIN FORGELOOP GENERATED: schema:source-registry -->
+
+- `schemaVersion` *(number, required, const: 1)*
+- `protocolVersion` *(number, required, const: 1)*
+- `sources` *(object, required)*
+
+<!-- END FORGELOOP GENERATED: schema:source-registry -->
 
 ---
 
@@ -148,16 +163,20 @@ The append-only cryptographic event ledger. Each line is a single JSON event obj
 
 #### Canonical Line Fields
 
-- `seq` *(integer, required, minimum: 1)*: Strictly monotonically increasing sequence number.
-- `schemaVersion` *(integer, required, const: 1)*: Event schema version.
-- `protocolVersion` *(integer, required, const: 1)*: Protocol version.
-- `taskId` *(string, required)*: Bound task ID.
-- `event` *(string, required)*: Event type name (e.g. `TASK_INITIALIZED`, `PHASE_TRANSITION`, `PREFLIGHT_READY`, `CHECK_EXECUTED`).
-- `at` *(string, required)*: ISO 8601 UTC timestamp string.
-- `fingerprint` *(string, optional, pattern: `^[a-f0-9]{64}$`)*: Optional SHA-256 artifact or state fingerprint.
-- `previousHash` *(string or null, required)*: SHA-256 hash of the preceding event line, or `null` for the genesis event (`seq: 1`).
-- `hash` *(string, optional, pattern: `^[a-f0-9]{64}$`)*: SHA-256 hash of this event line computed over canonicalized fields.
-- `details` *(object, optional)*: Event-specific structured payload.
+<!-- BEGIN FORGELOOP GENERATED: schema:event -->
+
+- `seq` *(integer, required, minimum: 1)*
+- `schemaVersion` *(number, required, const: 1)*
+- `protocolVersion` *(number, required, const: 1)*
+- `taskId` *(string, required, minLength: 1)*
+- `event` *(string, required, minLength: 1)*
+- `at` *(string, required, minLength: 1)*
+- `fingerprint` *(string, optional, pattern: `^[a-f0-9]{64}$`)*
+- `previousHash` *(string or null, required)*
+- `hash` *(string, optional, pattern: `^[a-f0-9]{64}$`)*
+- `details` *(object, optional)*
+
+<!-- END FORGELOOP GENERATED: schema:event -->
 
 ---
 
@@ -169,11 +188,15 @@ The active harness session marker created by `forgeloop activate`.
 
 #### Canonical Fields
 
-- `schemaVersion` *(integer, required, const: 1)*: Activation schema version.
-- `protocolVersion` *(integer, required, const: 1)*: Protocol version.
-- `sessionId` *(string, required)*: UUID identifying the current harness session.
-- `activationMarker` *(string, required)*: Ephemeral marker verifying session initiation.
-- `createdAt` *(string, required)*: ISO 8601 UTC timestamp.
+<!-- BEGIN FORGELOOP GENERATED: schema:activation -->
+
+- `schemaVersion` *(number, required, const: 1)*
+- `protocolVersion` *(number, required, const: 1)*
+- `sessionId` *(string, required, minLength: 1)*
+- `activationMarker` *(string, required, minLength: 1)*
+- `createdAt` *(string, required, minLength: 1)*
+
+<!-- END FORGELOOP GENERATED: schema:activation -->
 
 ---
 
@@ -185,12 +208,16 @@ Local ForgeLoop configuration settings and policy bindings.
 
 #### Canonical Fields
 
-- `schemaVersion` *(integer, required, const: 1)*: Configuration schema version.
-- `protocolVersion` *(integer, required, const: 1)*: Protocol version.
-- `complianceMode` *(string, required, enum: `advisory`, `standard`, `strict`)*: Compliance enforcement mode.
-- `policy` *(string, optional)*: Active policy pack name.
-- `requiredGates` *(array of strings, optional)*: Gate IDs required by configuration.
-- `requiredEvidence` *(array of strings, optional)*: Evidence IDs required by configuration.
+<!-- BEGIN FORGELOOP GENERATED: schema:config -->
+
+- `schemaVersion` *(number, required, const: 1)*
+- `protocolVersion` *(number, required, const: 1)*
+- `complianceMode` *(string, required, enum: `advisory`, `standard`, `strict`)*
+- `policy` *(string, optional, minLength: 1)*
+- `requiredGates` *(array<string>, optional)*
+- `requiredEvidence` *(array<string>, optional)*
+
+<!-- END FORGELOOP GENERATED: schema:config -->
 
 ---
 
@@ -202,19 +229,23 @@ Pre-implementation gate approval artifact recording decisions, bound artifact ha
 
 #### Canonical Fields
 
-- `schemaVersion` *(integer, required, const: 1)*: Gate schema version.
-- `protocolVersion` *(integer, required, const: 1)*: Protocol version.
-- `taskId` *(string, required)*: Bound task ID.
-- `gate` *(string, required)*: Gate name (e.g. `design`, `threat-boundary`, `performance-budget`).
-- `status` *(string, required, enum: `satisfied`, `unverified`, `blocked`)*: Gate status.
-- `requiredBy` *(array of strings, required)*: Guide IDs that mandated this gate.
-- `artifacts` *(array of objects, required)*: Cryptographically bound artifact references:
-  - `path` *(string, required)*: Relative file path to the approved artifact.
-  - `sha256` *(string, required, pattern: `^[a-f0-9]{64}$`)*: SHA-256 hash of the artifact at approval time.
-- `decisions` *(array of strings, required)*: Approved architectural decisions as strings (e.g. `["Use server-side validation", "Preserve public API"]`).
-- `unknowns` *(array of strings, required)*: Known unresolved questions or acceptable unknowns.
-- `approvedAssumptions` *(array of strings, required)*: Assumptions formally approved for this gate.
-- `evidence` *(array of objects, required)*: Evidence supporting gate satisfaction.
+<!-- BEGIN FORGELOOP GENERATED: schema:gate -->
+
+- `schemaVersion` *(number, required, const: 1)*
+- `protocolVersion` *(number, required, const: 1)*
+- `taskId` *(string, required, minLength: 1)*
+- `gate` *(string, required, minLength: 1)*
+- `status` *(string, required, enum: `satisfied`, `unverified`, `blocked`)*
+- `requiredBy` *(array<string>, required)*
+- `artifacts` *(array<object>, required)*
+  - `path` *(string, required, minLength: 1)*
+  - `sha256` *(string, required, pattern: `^[a-f0-9]{64}$`)*
+- `decisions` *(array<string>, required)*
+- `unknowns` *(array<string>, required)*
+- `approvedAssumptions` *(array<string>, required)*
+- `evidence` *(array<object>, required)*
+
+<!-- END FORGELOOP GENERATED: schema:gate -->
 
 ---
 
@@ -226,31 +257,46 @@ The canonical, authoritative lifecycle work state.
 
 #### Canonical Fields
 
-- `schemaVersion` *(integer, required, const: 1)*: Work state schema version.
-- `protocolVersion` *(integer, required, const: 1)*: Protocol version.
-- `taskId` *(string, required)*: Bound task ID.
-- `contractFingerprint` *(string, required, pattern: `^[a-f0-9]{64}$`)*: SHA-256 fingerprint of `current-contract.json`.
-- `routeFingerprint` *(string, optional, pattern: `^[a-f0-9]{64}$`)*: SHA-256 fingerprint of `routing-result.json`.
-- `repositoryFingerprint` *(object, required)*: Git repository state bindings (`branch`, `head`).
-- `phase` *(string, required, enum: `RECEIVED`, `DISCOVERING`, `CONTRACT_READY`, `ROUTED`, `DESIGNING`, `PLANNED`, `EXECUTING`, `VERIFYING`, `DIAGNOSING`, `CORRECTING`, `REVIEWING`, `COMPLETE`, `BLOCKED`)*: Current lifecycle phase.
-- `selectedGuides` *(array of strings, required)*: Activated guide IDs.
-- `requiredGates` *(array of strings, optional)*: Gate IDs required for this task.
-- `satisfiedGates` *(array of strings, optional)*: Gate IDs currently satisfied.
-- `complianceMode` *(string, optional, enum: `advisory`, `standard`, `strict`)*: Active compliance mode.
-- `completedSteps` *(array of strings, required)*: History of completed lifecycle steps.
-- `pendingSteps` *(array of strings, required)*: Remaining required lifecycle steps.
-- `requiredArtifacts` *(array of objects, optional)*: Paths to required artifacts (`path`, `sha256`).
-- `checks` *(array of objects, required)*: Registered verification check results.
-- `failures` *(array of objects, required)*: Recorded failure classifications.
-- `blockers` *(array of objects, required)*: Active blocking conditions.
-- `lastUpdated` *(string, required)*: ISO 8601 UTC timestamp.
-- `previousPhase` *(string, optional)*: Phase immediately preceding current phase.
-- `diagnosedHypothesis` *(string, optional)*: Hypothesis formulated during diagnosis.
-- `verificationEvidence` *(array of objects, optional)*: Observed evidence summaries.
-- `evidenceCoverage` *(array of objects, optional)*: Evidence coverage mapping.
-- `publicationStatus` *(string, optional, enum: `not-published`, `local-only`, `committed`, `pushed`, `published`, `deployed`)*: Current publication status.
-- `verificationCycle` *(integer, optional, minimum: 1)*: Current verification attempt cycle number.
-- `lastCompletionAttempt` *(object, optional)*: Last completion rejection details.
+<!-- BEGIN FORGELOOP GENERATED: schema:work-state -->
+
+- `schemaVersion` *(number, required, const: 1)*
+- `protocolVersion` *(number, required, const: 1)*
+- `taskId` *(string, required, minLength: 1)*
+- `contractFingerprint` *(string, required, pattern: `^[a-f0-9]{64}$`)*
+- `routeFingerprint` *(string, optional, pattern: `^[a-f0-9]{64}$`)*
+- `repositoryFingerprint` *(object, required)*
+  - `branch` *(string or null, required)*
+  - `head` *(string or null, required)*
+- `phase` *(string, required, enum: `RECEIVED`, `DISCOVERING`, `CONTRACT_READY`, `ROUTED`, `DESIGNING`, `PLANNED`, `EXECUTING`, `VERIFYING`, `DIAGNOSING`, `CORRECTING`, `REVIEWING`, `COMPLETE`, `BLOCKED`)*
+- `selectedGuides` *(array<string>, required)*
+- `requiredGates` *(array<string>, optional)*
+- `satisfiedGates` *(array<string>, optional)*
+- `complianceMode` *(string, optional, enum: `advisory`, `standard`, `strict`)*
+- `completedSteps` *(array<string>, required)*
+- `pendingSteps` *(array<string>, required)*
+- `requiredArtifacts` *(array<object>, optional)*
+  - `path` *(string, required, minLength: 1)*
+  - `sha256` *(string, required, pattern: `^[a-f0-9]{64}$`)*
+- `checks` *(array<object>, required)*
+- `failures` *(array<object>, required)*
+- `blockers` *(array<object>, required)*
+- `lastUpdated` *(string, required, minLength: 1)*
+- `previousPhase` *(string, optional)*
+- `diagnosedHypothesis` *(string, optional, minLength: 1)*
+- `verificationEvidence` *(array<object>, optional)*
+- `evidenceCoverage` *(array<object>, optional)*
+- `publicationStatus` *(string, optional, enum: `not-published`, `local-only`, `committed`, `pushed`, `published`, `deployed`)*
+- `verificationCycle` *(integer, optional, minimum: 1)*
+- `lastCompletionAttempt` *(object, optional)*
+  - `status` *(string, required, const: `REJECTED`)*
+  - `reasonCodes` *(array<string>, required)*
+  - `missingRequirementIds` *(array<string>, required)*
+  - `verificationCycle` *(integer, required, minimum: 1)*
+  - `stateFingerprint` *(string, optional, pattern: `^[a-f0-9]{64}$`)*
+  - `receiptFingerprint` *(string or null, optional)*
+  - `timestamp` *(string, required, minLength: 1)*
+
+<!-- END FORGELOOP GENERATED: schema:work-state -->
 
 ---
 
@@ -262,21 +308,33 @@ Cross-harness non-evidence handoff notes.
 
 #### Canonical Fields
 
-- `schemaVersion` *(integer, required, const: 1)*: Continuity schema version.
-- `protocolVersion` *(integer, required, const: 1)*: Protocol version.
-- `taskId` *(string, required)*: Bound task ID.
-- `workStateFingerprint` *(string, required, pattern: `^[a-f0-9]{64}$`)*: Bound work state fingerprint.
-- `contractFingerprint` *(string, required, pattern: `^[a-f0-9]{64}$`)*: Bound contract fingerprint.
-- `phase` *(string, required)*: Active phase at handoff.
-- `verificationCycle` *(integer, optional, minimum: 1)*: Active verification cycle.
-- `repositoryFingerprint` *(object, required)*: Git repository state bindings (`branch`, `head`).
-- `updatedAt` *(string, required)*: ISO 8601 UTC timestamp.
-- `currentFocus` *(object, optional)*: Active implementation focus (`id`, `summary`).
-- `remainingWork` *(array of objects, required)*: Structured remaining items (`id`, `summary`).
-- `knownIssues` *(array of objects, required)*: Unresolved bugs or obstacles (`id`, `summary`).
-- `changedAreas` *(array of strings, required)*: Relative directory or file paths modified.
-- `inspectFirst` *(array of strings, required)*: Suggested file paths for resuming harness to examine first.
-- `resumeNote` *(string, optional)*: Concise operational instructions for resuming harness.
+<!-- BEGIN FORGELOOP GENERATED: schema:continuity -->
+
+- `schemaVersion` *(number, required, const: 1)*
+- `protocolVersion` *(number, required, const: 1)*
+- `taskId` *(string, required, minLength: 1, maxLength: 128)*
+- `workStateFingerprint` *(string, required, pattern: `^[a-f0-9]{64}$`)*
+- `contractFingerprint` *(string, required, pattern: `^[a-f0-9]{64}$`)*
+- `phase` *(string, required, minLength: 1)*
+- `verificationCycle` *(integer, optional, minimum: 1)*
+- `repositoryFingerprint` *(object, required)*
+  - `branch` *(string or null, required)*
+  - `head` *(string or null, required)*
+- `updatedAt` *(string, required, minLength: 1)*
+- `currentFocus` *(workItem, optional)*
+  - `id` *(string, required, minLength: 1, maxLength: 128)*
+  - `summary` *(string, required, minLength: 1, maxLength: 1000)*
+- `remainingWork` *(array<workItem>, required, maxItems: 40)*
+  - `id` *(string, required, minLength: 1, maxLength: 128)*
+  - `summary` *(string, required, minLength: 1, maxLength: 1000)*
+- `knownIssues` *(array<workItem>, required, maxItems: 40)*
+  - `id` *(string, required, minLength: 1, maxLength: 128)*
+  - `summary` *(string, required, minLength: 1, maxLength: 1000)*
+- `changedAreas` *(array<string>, required, maxItems: 80)*
+- `inspectFirst` *(array<string>, required, maxItems: 40)*
+- `resumeNote` *(string, optional, minLength: 1, maxLength: 2000)*
+
+<!-- END FORGELOOP GENERATED: schema:continuity -->
 
 ---
 
@@ -288,29 +346,40 @@ The cryptographically compiled verification receipt required for task completion
 
 #### Canonical Fields
 
-- `schemaVersion` *(integer, required, const: 1)*: Receipt schema version.
-- `protocolVersion` *(integer, required, const: 1)*: Protocol version.
-- `taskId` *(string, required)*: Bound task ID.
-- `contractFingerprint` *(string, required, pattern: `^[a-f0-9]{64}$`)*: Bound contract fingerprint.
-- `routeFingerprint` *(string, optional, pattern: `^[a-f0-9]{64}$`)*: Bound route fingerprint.
-- `stateFingerprint` *(string, optional, pattern: `^[a-f0-9]{64}$`)*: Bound work state fingerprint.
-- `verificationCycle` *(integer, optional, minimum: 1)*: Verification cycle index.
-- `status` *(string, optional, enum: `in-progress`, `complete`, `blocked`, `complete-with-concerns`)*: Receipt evaluation status.
-- `taskStatus` *(string, optional, enum: `in-progress`, `complete`, `blocked`, `incomplete`)*: Lifecycle completion status.
-- `verificationStatus` *(string, optional, enum: `valid`, `invalid`, `not-verified`, `blocked`)*: Verification readiness status.
-- `publicationStatus` *(string, optional, enum: `not-published`, `local-only`, `committed`, `pushed`, `published`, `deployed`)*: Publication status.
-- `productionReadiness` *(string, optional, enum: `ready`, `not-verified`, `blocked`)*: Production readiness status.
-- `selectedGuides` *(array of strings, required)*: Guide IDs evaluated.
-- `changedPaths` *(array of strings, required)*: Paths modified during task.
-- `checks` *(array of objects, required)*: Evaluated checks.
-- `evidence` *(array of objects, optional)*: Bound verification evidence:
-  - `kind` *(string, required, enum: `OBSERVED`, `INFERRED`, `NOT_VERIFIED`, `BLOCKED`)*: Evidence kind.
-  - `source` *(string, required)*: Evidence source.
-  - `result` *(string, required)*: Evidence result description.
-- `evidenceCoverage` *(array of objects, optional)*: Coverage items mapping requirements to observed evidence.
-- `review` *(object, required)*: Manual or independent review summary.
-- `limitations` *(array of strings, required)*: Declared task limitations or unverified dimensions.
-- `publication` *(object, required)*: Publication attestation state (`committed`, `pushed`, `pullRequest`, `deployed`).
+<!-- BEGIN FORGELOOP GENERATED: schema:execution-receipt -->
+
+- `schemaVersion` *(number, required, const: 1)*
+- `protocolVersion` *(number, required, const: 1)*
+- `taskId` *(string, required, minLength: 1)*
+- `contractFingerprint` *(string, required, pattern: `^[a-f0-9]{64}$`)*
+- `routeFingerprint` *(string, optional, pattern: `^[a-f0-9]{64}$`)*
+- `stateFingerprint` *(string, optional, pattern: `^[a-f0-9]{64}$`)*
+- `verificationCycle` *(integer, optional, minimum: 1)*
+- `status` *(string, optional, enum: `in-progress`, `complete`, `blocked`, `complete-with-concerns`)*
+- `taskStatus` *(string, optional, enum: `in-progress`, `complete`, `blocked`, `incomplete`)*
+- `verificationStatus` *(string, optional, enum: `valid`, `invalid`, `not-verified`, `blocked`)*
+- `publicationStatus` *(string, optional, enum: `not-published`, `local-only`, `committed`, `pushed`, `published`, `deployed`)*
+- `productionReadiness` *(string, optional, enum: `ready`, `not-verified`, `blocked`)*
+- `selectedGuides` *(array<string>, required)*
+- `changedPaths` *(array<string>, required)*
+- `checks` *(array<object>, required)*
+- `evidence` *(array<object>, optional)*
+  - `schemaVersion` *(number, optional, const: 1)*
+  - `kind` *(string, required, enum: `OBSERVED`, `INFERRED`, `NOT_VERIFIED`, `BLOCKED`)*
+  - `source` *(string, required, minLength: 1)*
+  - `result` *(string, required, minLength: 1)*
+  - `verificationCycle` *(integer, optional, minimum: 1)*
+  - `details` *(object, optional)*
+- `evidenceCoverage` *(array<object>, optional)*
+- `review` *(object, required)*
+- `limitations` *(array<string>, required)*
+- `publication` *(object, required)*
+  - `committed` *(boolean, required)*
+  - `pushed` *(boolean, required)*
+  - `pullRequest` *(string or null, required)*
+  - `deployed` *(boolean, required)*
+
+<!-- END FORGELOOP GENERATED: schema:execution-receipt -->
 
 ---
 
@@ -322,23 +391,29 @@ Attested command execution provenance artifact generated by `forgeloop run-check
 
 #### Canonical Fields
 
-- `schemaVersion` *(integer, required, const: 1)*: Execution schema version.
-- `protocolVersion` *(integer, required, const: 1)*: Protocol version.
-- `executionId` *(string, required, pattern: `^exec-[A-Za-z0-9_-]+$`)*: Unique execution identifier.
-- `taskId` *(string, required)*: Bound task ID.
-- `checkId` *(string, required)*: Bound check identifier.
-- `requirement` *(string, required)*: Requirement covered by this execution.
-- `verificationCycle` *(integer, required, minimum: 1)*: Active verification cycle.
-- `kind` *(string, required, const: `COMMAND_EXECUTION`)*: Identifies the artifact as an observed ForgeLoop command execution.
-- `argv` *(array of strings, required)*: Exact command arguments executed.
-- `cwd` *(string, required)*: Working directory during execution.
-- `resolution` *(object, required)*: Command safety classification:
-  - `resolutionMode` *(string, required, enum: `LOCAL_EXECUTABLE`, `LOCAL_PACKAGE_BINARY`, `NON_INSTALLING_RESOLUTION`, `INSTALL_CAPABLE_RESOLUTION`, `EXPLICIT_INSTALLATION`, `UNKNOWN`)*: Resolution mode.
-  - `mayInstall` *(boolean, required)*: Whether execution could perform installation.
-  - `installer` *(string or null, required)*: Package manager installer name or null.
-  - `tool` *(string or null, required)*: Executable tool name or null.
-- `startedAt` *(string, required)*: ISO 8601 UTC start timestamp.
-- `finishedAt` *(string, required)*: ISO 8601 UTC finish timestamp.
-- `status` *(string, required, enum: `passed`, `failed`)*: Execution result status based on exit code.
-- `exitCode` *(integer or null, required)*: Process exit code when a process started successfully, or `null` if the process failed before an exit code was available.
-- `dispatch` *(object, optional)*: Optional nested execution dispatcher metadata.
+<!-- BEGIN FORGELOOP GENERATED: schema:execution -->
+
+- `schemaVersion` *(number, required, const: 1)*
+- `protocolVersion` *(number, required, const: 1)*
+- `executionId` *(string, required, minLength: 1)*
+- `taskId` *(string, required, minLength: 1)*
+- `checkId` *(string, required, minLength: 1)*
+- `requirement` *(string, required, minLength: 1)*
+- `verificationCycle` *(integer, required, minimum: 1)*
+- `kind` *(string, required, const: `COMMAND_EXECUTION`)*
+- `argv` *(array<string>, required, minItems: 1)*
+- `cwd` *(string, required, minLength: 1)*
+- `resolution` *(object, required)*
+  - `resolutionMode` *(string, required, minLength: 1)*
+  - `mayInstall` *(boolean, required)*
+  - `installer` *(string or null, required)*
+  - `tool` *(string or null, required)*
+- `dispatch` *(object, optional)*
+  - `kind` *(string, optional, minLength: 1)*
+  - `scriptName` *(string, optional, minLength: 1)*
+- `startedAt` *(string, required, minLength: 1)*
+- `finishedAt` *(string, required, minLength: 1)*
+- `status` *(string, required, enum: `passed`, `failed`)*
+- `exitCode` *(integer or null, required)*
+
+<!-- END FORGELOOP GENERATED: schema:execution -->

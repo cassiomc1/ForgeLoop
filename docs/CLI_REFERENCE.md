@@ -6,12 +6,17 @@ This document provides a complete operational reference for every ForgeLoop CLI 
 Usage: forgeloop <command> [options]
 ```
 
-Global options:
+## Common Options
 
-- `--path <directory>`: Target project directory (default: current directory).
-- `--json`: Output structured JSON for automation and tool integrations.
-- `--help`: Show CLI help and usage information.
-- `--version`: Show the installed package version.
+<!-- BEGIN FORGELOOP GENERATED: cli-common-options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--help`: show this help
+- `--version`: show the installed package version
+
+Commands that support structured machine-readable output document `--json` in their command-specific option list.
+
+<!-- END FORGELOOP GENERATED: cli-common-options -->
 
 ---
 
@@ -42,7 +47,14 @@ Initializes ForgeLoop in a target repository.
 - **When to use**: Once when onboarding a new repository to ForgeLoop.
 - **Mutation**: Writes `.forgeloop/kit/`, `.forgeloop/forgeloop.gitignore`, `AGENTS.md`, `CLAUDE.md`, `.cursor/rules/project-loop.mdc`, `.github/copilot-instructions.md`.
 - **Options**:
-  - `--dry-run`: Show planned writes without modifying files.
+
+<!-- BEGIN FORGELOOP GENERATED: cli:init:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+  - `--dry-run`: show planned writes without changing files
+
+<!-- END FORGELOOP GENERATED: cli:init:options -->
+
 - **Example**:
 
   ```bash
@@ -57,10 +69,17 @@ Inspects repository health, adapter synchronization, and template integrity.
 - **When to use**: After initialization, after git merges, or when troubleshooting.
 - **Mutation**: Read-only (unless `--fix` is passed).
 - **Options**:
-  - `--fix`: Automatically restore missing managed template files.
-  - `--strict`: Treat warnings as unhealthy errors.
-  - `--adopt <path>`: Preserve an existing custom adapter in the manifest.
-  - `--json`: Output findings as structured JSON.
+
+<!-- BEGIN FORGELOOP GENERATED: cli:doctor:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+  - `--json`: emit doctor findings as JSON
+  - `--strict`: treat warnings as unhealthy
+  - `--fix`: restore missing managed template files
+  - `--adopt <path>`: preserve an existing adapter in the manifest
+
+<!-- END FORGELOOP GENERATED: cli:doctor:options -->
+
 - **Example**:
 
   ```bash
@@ -75,7 +94,14 @@ Updates the managed instruction kit to match the current ForgeLoop package versi
 - **When to use**: After upgrading `@cassiomc1/forgeloop` package version.
 - **Mutation**: Updates `.forgeloop/kit/` and adapter shims.
 - **Options**:
-  - `--dry-run`: Preview changes without writing.
+
+<!-- BEGIN FORGELOOP GENERATED: cli:update:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+  - `--dry-run`: show planned writes without changing files
+
+<!-- END FORGELOOP GENERATED: cli:update:options -->
+
 - **Example**:
 
   ```bash
@@ -94,13 +120,20 @@ Calculates and persists deterministic engineering guide routing.
 - **When to use**: During discovery before preflight.
 - **Mutation**: Writes `.forgeloop/routing-result.json`.
 - **Options**:
-  - `--work <type>`: Declared work type (e.g. `complete-website`, `api`, `refactor`, `documentation`).
-  - `--surface <name>`: Affected surface (repeatable: `ui`, `forms`, `api`, `auth`, `data`, `mobile`, `ci`).
-  - `--risk <name>`: Task risk (repeatable: `untrusted-input`, `personal-data`, `secrets`, `publication`).
-  - `--platform <name>`: Target platform (`web`, `mobile`, `desktop`, `server`, `ci`).
-  - `--behavior-change`: Declares behavioral changes to code.
-  - `--executable-change`: Declares configuration or executable changes.
-  - `--json`: Emit route result as JSON.
+
+<!-- BEGIN FORGELOOP GENERATED: cli:route:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+  - `--work <type>`: declared work type
+  - `--surface <value>`: affected surface (repeatable) (repeatable)
+  - `--risk <value>`: task risk (repeatable) (repeatable)
+  - `--platform <value>`: affected platform (repeatable) (repeatable)
+  - `--behavior-change`: declare behavior change
+  - `--executable-change`: declare executable/configuration change
+  - `--json`: emit route result as JSON
+
+<!-- END FORGELOOP GENERATED: cli:route:options -->
+
 - **Example**:
 
   ```bash
@@ -116,8 +149,15 @@ Validates pre-implementation readiness and establishes protocol readiness state.
 - **Mutation**: Persists `.forgeloop/preflight.json` and, when the protocol is ready, may create or synchronize resumable work state and lifecycle events.
 - **Return Status**: `READY` or `BLOCKED`.
 - **Options**:
-  - `--strict`: Require strict protocol compliance.
-  - `--json`: Emit preflight result as JSON.
+
+<!-- BEGIN FORGELOOP GENERATED: cli:preflight:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+  - `--strict`: require strict protocol compliance
+  - `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:preflight:options -->
+
 - **Example**:
 
   ```bash
@@ -132,7 +172,14 @@ Creates a protocol/session activation marker for the current harness session.
 - **When to use**: When starting a session after `preflight` is established.
 - **Mutation**: Writes `.forgeloop/session.json`.
 - **Options**:
-  - `--json`: Emit activation result as JSON.
+
+<!-- BEGIN FORGELOOP GENERATED: cli:activate:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+  - `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:activate:options -->
+
 - **Example**:
 
   ```bash
@@ -147,8 +194,15 @@ Advances the protocol lifecycle phase.
 - **When to use**: To declare transitions between workflow stages.
 - **Mutation**: Updates `.forgeloop/work-state.json` and appends transition event to ledger.
 - **Options**:
-  - `--to <phase>`: Target phase (`PLANNED`, `EXECUTING`, `VERIFYING`, `REVIEWING`).
-  - `--json`: Emit advance result as JSON.
+
+<!-- BEGIN FORGELOOP GENERATED: cli:advance:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+  - `--to <phase>`: destination workflow phase
+  - `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:advance:options -->
+
 - **Example**:
 
   ```bash
@@ -163,7 +217,14 @@ Computes the deterministic next action required by the protocol.
 - **When to use**: Continuously after each step, and upon starting any session.
 - **Mutation**: Read-only.
 - **Options**:
-  - `--json`: Emit next action calculation as JSON.
+
+<!-- BEGIN FORGELOOP GENERATED: cli:next:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+  - `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:next:options -->
+
 - **Example**:
 
   ```bash
@@ -182,7 +243,14 @@ Reads current operational continuity context.
 - **When to use**: When resuming an existing task.
 - **Mutation**: Read-only.
 - **Options**:
-  - `--json`: Emit continuity context as JSON.
+
+<!-- BEGIN FORGELOOP GENERATED: cli:continuity:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+  - `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:continuity:options -->
+
 - **Example**:
 
   ```bash
@@ -197,14 +265,21 @@ Records operational handoff context before pausing or switching tools.
 - **When to use**: Before ending a session or transferring control.
 - **Mutation**: Writes `.forgeloop/continuity.json`.
 - **Options**:
-  - `--focus-id <id>`: Current focus identifier.
-  - `--focus-summary <text>`: Description of active work.
-  - `--remaining <id:summary>`: Remaining work items (repeatable).
-  - `--known-issue <id:summary>`: Discovered issues (repeatable).
-  - `--changed-area <path>`: Modified directories (repeatable).
-  - `--inspect-first <path>`: Suggested starting file (repeatable).
-  - `--resume-note <text>`: Operational resume note.
-  - `--json`: Emit recorded continuity as JSON.
+
+<!-- BEGIN FORGELOOP GENERATED: cli:record-continuity:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+  - `--focus-id <id>`: current implementation focus ID
+  - `--focus-summary <text>`: current implementation focus summary
+  - `--remaining <id:summary>`: remaining implementation item (repeatable) (repeatable)
+  - `--known-issue <id:summary>`: known implementation issue (repeatable) (repeatable)
+  - `--changed-area <path>`: changed project area (repeatable) (repeatable)
+  - `--inspect-first <path>`: suggested inspection path (repeatable) (repeatable)
+  - `--resume-note <text>`: bounded operational resume note
+  - `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:record-continuity:options -->
+
 - **Example**:
 
   ```bash
@@ -224,7 +299,14 @@ Reconciles continuity with the active work state and checkout.
 - **When to use**: When starting a session in an active task.
 - **Mutation**: Read-only.
 - **Options**:
-  - `--json`: Emit reconciliation findings as JSON.
+
+<!-- BEGIN FORGELOOP GENERATED: cli:reconcile-continuity:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+  - `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:reconcile-continuity:options -->
+
 - **Example**:
 
   ```bash
@@ -239,7 +321,14 @@ Clears operational continuity context while preserving canonical work state.
 - **When to use**: When continuity is unrecoverably stale or no longer relevant.
 - **Mutation**: Removes `.forgeloop/continuity.json`.
 - **Options**:
-  - `--json`: Emit clear confirmation as JSON.
+
+<!-- BEGIN FORGELOOP GENERATED: cli:clear-continuity:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+  - `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:clear-continuity:options -->
+
 - **Example**:
 
   ```bash
@@ -258,11 +347,18 @@ Executes a verification command with ForgeLoop-attested provenance.
 - **When to use**: During `VERIFYING` phase to execute test suites, linters, or validators.
 - **Mutation**: Writes `.forgeloop/executions/exec-*.json`, updates `.forgeloop/execution-receipt.json`, appends to ledger.
 - **Options**:
-  - `--id <id>`: Stable check identifier.
-  - `--requirement <id>`: Contract completion requirement covered.
-  - `--details <json>`: Additional structured check details.
-  - `-- <argv...>`: Exact command line to execute.
-  - `--json`: Emit check execution result as JSON.
+
+<!-- BEGIN FORGELOOP GENERATED: cli:run-check:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+  - `--id <id>`: stable check identifier
+  - `--requirement <id>`: completion requirement covered by the check
+  - `--details <json>`: additional structured check details
+  - `-- <argv...>`: exact command argv to classify, execute, and attest
+  - `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:run-check:options -->
+
 - **Example**:
 
   ```bash
@@ -277,18 +373,25 @@ Records an observed or manual verification check result without executing comman
 - **When to use**: For manual reviews, accessibility inspections, or external validations.
 - **Mutation**: Updates `.forgeloop/execution-receipt.json` and appends to ledger.
 - **Options**:
-  - `--id <id>`: Stable check identifier.
-  - `--requirement <id>`: Requirement covered.
-  - `--kind <kind>`: Check kind (`command`, `manual-review`, etc.).
-  - `--status <status>`: `passed`, `failed`, `blocked`, or `not-run`.
-  - `--evidence-kind <kind>`: `OBSERVED`, `INFERRED`, `NOT_VERIFIED`, or `BLOCKED`.
-  - `--command <text>`: Command metadata (never executed).
-  - `--result <text>`: Description of the observed result.
-  - `--exit-code <number>`: Observed process exit code.
-  - `--details <json>`: Additional structured details.
-  - `--execution-ref <id>`: Referenced execution artifact ID.
-  - `--provenance <value>`: `FORGELOOP_EXECUTED`, `ACTOR_REPORTED`, or `MANUAL_OBSERVATION`.
-  - `--json`: Emit recorded check result as JSON.
+
+<!-- BEGIN FORGELOOP GENERATED: cli:record-check:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+  - `--id <id>`: stable check identifier
+  - `--requirement <id>`: completion requirement covered by the check
+  - `--kind <kind>`: check kind (default: command; use manual-review for manual evidence)
+  - `--status <status>`: passed, failed, blocked, or not-run
+  - `--evidence-kind <kind>`: OBSERVED, INFERRED, NOT_VERIFIED, or BLOCKED
+  - `--command <text>`: recorded only as metadata; it is never executed
+  - `--result <text>`: observed result supplied by the actor
+  - `--exit-code <number>`: observed process exit code
+  - `--execution-ref <id>`: ForgeLoop execution artifact reference
+  - `--provenance <value>`: FORGELOOP_EXECUTED, ACTOR_REPORTED, or MANUAL_OBSERVATION
+  - `--details <json>`: additional structured check details
+  - `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:record-check:options -->
+
 - **Example**:
 
   ```bash
@@ -308,7 +411,14 @@ Validates `.forgeloop/work-state.json` structure, hash chain, and repository bin
 - **Purpose**: Integrity check for work state.
 - **Mutation**: Read-only.
 - **Options**:
-  - `--json`: Emit state validation result as JSON.
+
+<!-- BEGIN FORGELOOP GENERATED: cli:validate-state:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+  - `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:validate-state:options -->
+
 - **Example**:
 
   ```bash
@@ -322,8 +432,15 @@ Validates `.forgeloop/execution-receipt.json` schema and check references.
 - **Purpose**: Integrity check for completion receipt.
 - **Mutation**: Read-only.
 - **Options**:
-  - `--file <path>`: Receipt file relative to target.
-  - `--json`: Emit receipt validation result as JSON.
+
+<!-- BEGIN FORGELOOP GENERATED: cli:validate-receipt:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+  - `--file <path>`: receipt file relative to target
+  - `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:validate-receipt:options -->
+
 - **Example**:
 
   ```bash
@@ -337,14 +454,21 @@ Performs comprehensive protocol validation across all active artifacts.
 - **Purpose**: Validates contract, route, state, receipt, executions, and event ledger freshness and consistency.
 - **Mutation**: Read-only.
 - **Options**:
-  - `--contract-file <path>`: Current JSON contract path.
-  - `--route-file <path>`: Routing-result JSON path.
-  - `--state-file <path>`: Work-state JSON path.
-  - `--receipt-file <path>`: Execution-receipt JSON path.
-  - `--continuity-file <path>`: Execution-continuity JSON path.
-  - `--task-brief-file <path>`: Task brief JSON path (repeatable).
-  - `--delegated-result-file <path>`: Delegated result JSON path (repeatable).
-  - `--json`: Emit protocol validation result as JSON.
+
+<!-- BEGIN FORGELOOP GENERATED: cli:validate-protocol:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+  - `--contract-file <path>`: current JSON contract used for freshness comparison
+  - `--route-file <path>`: routing-result JSON relative to target
+  - `--state-file <path>`: work-state JSON relative to target
+  - `--receipt-file <path>`: execution-receipt JSON relative to target
+  - `--continuity-file <path>`: optional execution-continuity JSON relative to target
+  - `--task-brief-file <path>`: task brief JSON (repeatable) (repeatable)
+  - `--delegated-result-file <path>`: delegated result JSON (repeatable) (repeatable)
+  - `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:validate-protocol:options -->
+
 - **Example**:
 
   ```bash
@@ -363,7 +487,14 @@ Initializes or refreshes `.forgeloop/execution-receipt.json`.
 - **When to use**: Upon entering the `VERIFYING` phase before recording checks.
 - **Mutation**: Writes `.forgeloop/execution-receipt.json`.
 - **Options**:
-  - `--json`: Emit prepared receipt as JSON.
+
+<!-- BEGIN FORGELOOP GENERATED: cli:prepare-completion:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+  - `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:prepare-completion:options -->
+
 - **Example**:
 
   ```bash
@@ -378,13 +509,20 @@ Records external publication or production-readiness observations.
 - **When to use**: When the contract contains explicit publication or production-readiness requirements.
 - **Mutation**: Updates work state and receipt with terminal status.
 - **Options**:
-  - `--requirement <id>`: Terminal requirement ID.
-  - `--type <type>`: `PUBLICATION` or `PRODUCTION_READINESS`.
-  - `--status <status>`: `passed`, `failed`, or `blocked`.
-  - `--source <text>`: Source of external action (e.g. `npm publish`).
-  - `--result <text>`: Description of the observed outcome.
-  - `--details <json>`: Additional structured result details.
-  - `--json`: Emit recorded terminal result as JSON.
+
+<!-- BEGIN FORGELOOP GENERATED: cli:record-terminal-result:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+  - `--requirement <id>`: terminal requirement covered by the result
+  - `--type <type>`: PUBLICATION or PRODUCTION_READINESS
+  - `--status <status>`: observed terminal status
+  - `--source <text>`: external action source (e.g. npm publish, git push)
+  - `--result <text>`: observed external result description
+  - `--details <json>`: additional structured result details
+  - `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:record-terminal-result:options -->
+
 - **Example**:
 
   ```bash
@@ -404,8 +542,15 @@ Performs a read-only dry-run evaluation of completion readiness.
 - **When to use**: In `REVIEWING` phase before running `complete`.
 - **Mutation**: Read-only.
 - **Options**:
-  - `--strict`: Require strict protocol compliance.
-  - `--json`: Emit audit findings as JSON.
+
+<!-- BEGIN FORGELOOP GENERATED: cli:audit:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+  - `--strict`: require strict protocol compliance
+  - `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:audit:options -->
+
 - **Example**:
 
   ```bash
@@ -421,8 +566,15 @@ Validates protocol completion and transitions the task to `COMPLETE`.
 - **Mutation**: Updates `.forgeloop/work-state.json` to `COMPLETE` and records completion event.
 - **Return Status**: `VALID`, `INCOMPLETE`, `STALE`, `INCONSISTENT`, or `INVALID`.
 - **Options**:
-  - `--strict`: Require strict protocol compliance.
-  - `--json`: Emit completion verdict as JSON.
+
+<!-- BEGIN FORGELOOP GENERATED: cli:complete:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+  - `--strict`: require strict protocol compliance
+  - `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:complete:options -->
+
 - **Example**:
 
   ```bash
@@ -436,8 +588,15 @@ Emits an independent multi-dimensional status report.
 - **Purpose**: Reports task completion, publication status, and production readiness as independent dimensions.
 - **Mutation**: Read-only.
 - **Options**:
-  - `--strict`: Require strict protocol compliance.
-  - `--json`: Emit multidimensional report as JSON.
+
+<!-- BEGIN FORGELOOP GENERATED: cli:report:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+  - `--strict`: require strict protocol compliance
+  - `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:report:options -->
+
 - **Example**:
 
   ```bash
@@ -451,8 +610,15 @@ Exports a portable, self-contained task bundle.
 - **Purpose**: Bundles contract, route, state, receipt, executions, and ledger for archiving or cross-environment migration.
 - **Mutation**: Writes portable bundle under `.forgeloop/tasks/<taskId>`.
 - **Options**:
-  - `--task <id>`: Task ID to export.
-  - `--json`: Emit bundle result as JSON.
+
+<!-- BEGIN FORGELOOP GENERATED: cli:bundle:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+  - `--task <id>`: task ID to export as a portable bundle
+  - `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:bundle:options -->
+
 - **Example**:
 
   ```bash
@@ -470,8 +636,15 @@ Displays human-readable or structured summary of current task state.
 - **Purpose**: Quick overview of task ID, phase, cycle, active guides, and completion status.
 - **Mutation**: Read-only.
 - **Options**:
-  - `--contract-file <path>`: Current JSON contract used for freshness comparison.
-  - `--json`: Emit status summary as JSON.
+
+<!-- BEGIN FORGELOOP GENERATED: cli:status:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+  - `--contract-file <path>`: current JSON contract used for freshness comparison
+  - `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:status:options -->
+
 - **Example**:
 
   ```bash
@@ -485,8 +658,15 @@ Inspects checkout changes and compares them against contract deliverables.
 - **Purpose**: Shows modified files, untracked files, and deliverable coverage.
 - **Mutation**: Read-only.
 - **Options**:
-  - `--contract-file <path>`: Current JSON contract used for freshness comparison.
-  - `--json`: Emit inspection result as JSON.
+
+<!-- BEGIN FORGELOOP GENERATED: cli:inspect:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+  - `--contract-file <path>`: current JSON contract used for freshness comparison
+  - `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:inspect:options -->
+
 - **Example**:
 
   ```bash
@@ -500,8 +680,15 @@ Evaluates compliance against a named policy pack.
 - **Purpose**: Checks repository conformity against organizational or protocol policy packs.
 - **Mutation**: Read-only.
 - **Options**:
-  - `<name>`: Policy pack name.
-  - `--json`: Emit policy evaluation as JSON.
+
+<!-- BEGIN FORGELOOP GENERATED: cli:policy:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+  - `<name>`: policy pack name
+  - `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:policy:options -->
+
 - **Example**:
 
   ```bash
@@ -517,7 +704,14 @@ Clears canonical work-state checkpoint for the current task.
 - **Mutation**: Removes `.forgeloop/work-state.json` only. Sibling ForgeLoop artifacts (such as contracts, routes, gates, and ledger history) are preserved.
 - **Safety Note**: This is not a full `.forgeloop/` reset command.
 - **Options**:
-  - `--json`: Emit clear confirmation as JSON.
+
+<!-- BEGIN FORGELOOP GENERATED: cli:clear-state:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+  - `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:clear-state:options -->
+
 - **Example**:
 
   ```bash

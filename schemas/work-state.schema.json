@@ -19,7 +19,24 @@
       },
       "additionalProperties": false
     },
-    "phase": { "type": "string", "minLength": 1 },
+    "phase": {
+      "type": "string",
+      "enum": [
+        "RECEIVED",
+        "DISCOVERING",
+        "CONTRACT_READY",
+        "ROUTED",
+        "DESIGNING",
+        "PLANNED",
+        "EXECUTING",
+        "VERIFYING",
+        "DIAGNOSING",
+        "CORRECTING",
+        "REVIEWING",
+        "COMPLETE",
+        "BLOCKED"
+      ]
+    },
     "selectedGuides": { "type": "array", "items": { "type": "string" } },
     "requiredGates": { "type": "array", "items": { "type": "string", "minLength": 1 } },
     "satisfiedGates": { "type": "array", "items": { "type": "string", "minLength": 1 } },
