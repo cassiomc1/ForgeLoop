@@ -112,6 +112,7 @@ export function parseArgs(argv) {
     version: false,
   };
   let command = null;
+  const suppliedFlags = new Set();
 
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
@@ -122,60 +123,75 @@ export function parseArgs(argv) {
       options.help = true;
     } else if (argument === "--dry-run") {
       options.dryRun = true;
+      suppliedFlags.add("--dry-run");
     } else if (argument === "--json") {
       options.json = true;
+      suppliedFlags.add("--json");
     } else if (argument === "--strict") {
       options.strict = true;
+      suppliedFlags.add("--strict");
     } else if (argument === "--fix") {
       options.fix = true;
+      suppliedFlags.add("--fix");
     } else if (argument === "--adopt") {
       const relativePath = argv[index + 1];
       if (!relativePath || relativePath.startsWith("-")) throw new Error("--adopt requires a path");
       options.adopt.push(relativePath);
+      suppliedFlags.add("--adopt");
       index += 1;
     } else if (argument === "--work") {
       const workType = argv[index + 1];
       if (!workType || workType.startsWith("-")) throw new Error("--work requires a type");
       options.work = workType;
+      suppliedFlags.add("--work");
       index += 1;
     } else if (argument === "--surface") {
       const surface = argv[index + 1];
       if (!surface || surface.startsWith("-")) throw new Error("--surface requires a value");
       options.surfaces.push(surface);
+      suppliedFlags.add("--surface");
       index += 1;
     } else if (argument === "--risk") {
       const risk = argv[index + 1];
       if (!risk || risk.startsWith("-")) throw new Error("--risk requires a value");
       options.risks.push(risk);
+      suppliedFlags.add("--risk");
       index += 1;
     } else if (argument === "--platform") {
       const platform = argv[index + 1];
       if (!platform || platform.startsWith("-")) throw new Error("--platform requires a value");
       options.platforms.push(platform);
+      suppliedFlags.add("--platform");
       index += 1;
     } else if (argument === "--behavior-change") {
       options.behaviorChange = true;
+      suppliedFlags.add("--behavior-change");
     } else if (argument === "--executable-change") {
       options.executableChange = true;
+      suppliedFlags.add("--executable-change");
     } else if (argument === "--to") {
       const phase = argv[index + 1];
       if (!phase || phase.startsWith("-")) throw new Error("--to requires a phase");
       options.to = phase;
+      suppliedFlags.add("--to");
       index += 1;
     } else if (argument === "--task") {
       const task = argv[index + 1];
       if (!task || task.startsWith("-")) throw new Error("--task requires an ID");
       options.task = task;
+      suppliedFlags.add("--task");
       index += 1;
     } else if (argument === "--file") {
       const file = argv[index + 1];
       if (!file || file.startsWith("-")) throw new Error("--file requires a path");
       options.file = file;
+      suppliedFlags.add("--file");
       index += 1;
     } else if (argument === "--contract-file") {
       const contractFile = argv[index + 1];
       if (!contractFile || contractFile.startsWith("-")) throw new Error("--contract-file requires a path");
       options.contractFile = contractFile;
+      suppliedFlags.add("--contract-file");
       index += 1;
     } else if (["--route-file", "--state-file", "--receipt-file", "--continuity-file"].includes(argument)) {
       const file = argv[index + 1];
@@ -184,87 +200,105 @@ export function parseArgs(argv) {
       if (argument === "--state-file") options.stateFile = file;
       if (argument === "--receipt-file") options.receiptFile = file;
       if (argument === "--continuity-file") options.continuityFile = file;
+      suppliedFlags.add(argument);
       index += 1;
     } else if (argument === "--task-brief-file") {
       const file = argv[index + 1];
       if (!file || file.startsWith("-")) throw new Error("--task-brief-file requires a path");
       options.taskBriefFiles.push(file);
+      suppliedFlags.add("--task-brief-file");
       index += 1;
     } else if (argument === "--delegated-result-file") {
       const file = argv[index + 1];
       if (!file || file.startsWith("-")) throw new Error("--delegated-result-file requires a path");
       options.delegatedResultFiles.push(file);
+      suppliedFlags.add("--delegated-result-file");
       index += 1;
     } else if (argument === "--id") {
       const id = argv[index + 1];
       if (!id || id.startsWith("-")) throw new Error("--id requires a check ID");
       options.checkId = id;
+      suppliedFlags.add("--id");
       index += 1;
     } else if (argument.startsWith("--id=")) {
       const id = argument.slice("--id=".length);
       if (!id || id.startsWith("-")) throw new Error("--id requires a check ID");
       options.checkId = id;
+      suppliedFlags.add("--id");
     } else if (argument === "--kind") {
       const kind = argv[index + 1];
       if (!kind || kind.startsWith("-")) throw new Error("--kind requires a check kind");
       options.checkKind = kind;
+      suppliedFlags.add("--kind");
       index += 1;
     } else if (argument === "--requirement") {
       const requirement = argv[index + 1];
       if (!requirement || requirement.startsWith("-")) throw new Error("--requirement requires an evidence target");
       options.checkRequirement = requirement;
+      suppliedFlags.add("--requirement");
       index += 1;
     } else if (argument.startsWith("--requirement=")) {
       const requirement = argument.slice("--requirement=".length);
       if (!requirement) throw new Error("--requirement requires an evidence target");
       options.checkRequirement = requirement;
+      suppliedFlags.add("--requirement");
     } else if (argument === "--status") {
       const status = argv[index + 1];
       if (!status || status.startsWith("-")) throw new Error("--status requires a check status");
       options.checkStatus = status;
+      suppliedFlags.add("--status");
       index += 1;
     } else if (argument === "--evidence-kind") {
       const evidenceKind = argv[index + 1];
       if (!evidenceKind || evidenceKind.startsWith("-")) throw new Error("--evidence-kind requires an evidence kind");
       options.checkEvidenceKind = evidenceKind;
+      suppliedFlags.add("--evidence-kind");
       index += 1;
     } else if (argument === "--command") {
       const commandText = argv[index + 1];
       if (!commandText || commandText.startsWith("-")) throw new Error("--command requires recorded text");
       options.checkCommand = commandText;
+      suppliedFlags.add("--command");
       index += 1;
     } else if (argument === "--source") {
       const sourceText = argv[index + 1];
       if (!sourceText || sourceText.startsWith("-")) throw new Error("--source requires recorded text");
       options.checkSource = sourceText;
+      suppliedFlags.add("--source");
       index += 1;
     } else if (argument.startsWith("--source=")) {
       const sourceText = argument.slice("--source=".length);
       if (!sourceText) throw new Error("--source requires recorded text");
       options.checkSource = sourceText;
+      suppliedFlags.add("--source");
     } else if (argument === "--type") {
       const typeValue = argv[index + 1];
       if (!typeValue || typeValue.startsWith("-")) throw new Error("--type requires a terminal type");
       options.checkType = typeValue;
+      suppliedFlags.add("--type");
       index += 1;
     } else if (argument.startsWith("--type=")) {
       const typeValue = argument.slice("--type=".length);
       if (!typeValue) throw new Error("--type requires a terminal type");
       options.checkType = typeValue;
+      suppliedFlags.add("--type");
     } else if (argument === "--result") {
       const resultText = argv[index + 1];
       if (!resultText || resultText.startsWith("-")) throw new Error("--result requires recorded text");
       options.checkResult = resultText;
+      suppliedFlags.add("--result");
       index += 1;
     } else if (argument.startsWith("--result=")) {
       const resultText = argument.slice("--result=".length);
       if (!resultText) throw new Error("--result requires recorded text");
       options.checkResult = resultText;
+      suppliedFlags.add("--result");
     } else if (argument === "--exit-code") {
       const exitCode = argv[index + 1];
       if (!exitCode || exitCode.startsWith("-")) throw new Error("--exit-code requires a non-negative integer");
       if (!/^\d+$/.test(exitCode)) throw new Error("--exit-code requires a non-negative integer");
       options.checkExitCode = Number(exitCode);
+      suppliedFlags.add("--exit-code");
       index += 1;
     } else if (argument === "--details") {
       const details = argv[index + 1];
@@ -277,19 +311,23 @@ export function parseArgs(argv) {
       if (!options.checkDetails || typeof options.checkDetails !== "object" || Array.isArray(options.checkDetails)) {
         throw new Error("--details must be a JSON object");
       }
+      suppliedFlags.add("--details");
       index += 1;
     } else if (argument === "--execution-ref") {
       const executionRef = argv[index + 1];
       if (!executionRef || executionRef.startsWith("-")) throw new Error("--execution-ref requires an execution ID");
       options.checkExecutionRef = executionRef;
+      suppliedFlags.add("--execution-ref");
       index += 1;
     } else if (argument === "--provenance") {
       const provenance = argv[index + 1];
       if (!provenance || provenance.startsWith("-")) throw new Error("--provenance requires a provenance value");
       options.checkProvenance = provenance;
+      suppliedFlags.add("--provenance");
       index += 1;
     } else if (argument === "--" && command === "run-check") {
       options.commandArgv = argv.slice(index + 1);
+      suppliedFlags.add("--");
       break;
     } else if ([
       "--focus-id",
@@ -301,6 +339,7 @@ export function parseArgs(argv) {
       "--resume-note",
     ].includes(argument)) {
       const consumed = consumeContinuityOption({ argument, argv, index, options });
+      suppliedFlags.add(argument);
       index = consumed.index;
     } else if (argument === "--path") {
       options.path = argv[index + 1];
@@ -322,31 +361,17 @@ export function parseArgs(argv) {
 
   if (!command) return { command: null, options };
 
-  const jsonCommands = ["doctor", "route", "activate", "advance", "next", "continuity", "record-continuity", "reconcile-continuity", "clear-continuity", "prepare-completion", "run-check", "record-check", "record-terminal-result", "preflight", "complete", "audit", "report", "policy", "bundle", "inspect", "status", "validate-state", "clear-state", "validate-receipt", "validate-protocol"];
-  if (!jsonCommands.includes(command) && options.json) {
-    throw new Error(`Option --json is not valid for ${command}`);
+  const commandDef = CLI_COMMAND_DEFINITIONS[command];
+  const acceptedOptions = new Set(commandDef ? Object.keys(commandDef.options) : []);
+
+  for (const flag of suppliedFlags) {
+    if (flag === "--path" || flag === "--help" || flag === "--version") continue;
+    if (!acceptedOptions.has(flag)) {
+      if (flag === "--task") throw new Error(`--task is not valid for ${command}`);
+      throw new Error(`Option ${flag} is not valid for ${command}`);
+    }
   }
-  if (![
-    "init",
-    "update",
-  ].includes(command) && options.dryRun) {
-    throw new Error(`Option --dry-run is not valid for ${command}`);
-  }
-  if (!["doctor", "preflight", "complete", "audit", "report"].includes(command) && options.strict) {
-    throw new Error(`Option --strict is not valid for ${command}`);
-  }
-  if (command !== "doctor" && options.adopt.length > 0) {
-    throw new Error(`Option --adopt is not valid for ${command}`);
-  }
-  if (command !== "doctor" && options.fix) {
-    throw new Error(`Option --fix is not valid for ${command}`);
-  }
-  if (command !== "route" && (options.work || options.surfaces.length || options.risks.length || options.platforms.length || options.behaviorChange || options.executableChange)) {
-    throw new Error(`Route options are not valid for ${command}`);
-  }
-  if (command !== "advance" && options.to) {
-    throw new Error(`Option --to is not valid for ${command}`);
-  }
+
   if (command === "policy" && !options.policy) {
     throw new Error("policy requires a name");
   }
