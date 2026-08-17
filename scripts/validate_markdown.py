@@ -698,6 +698,19 @@ def _markdown_files(root: Path) -> list[Path]:
     )
 
 
+def validate_iso_date(value: str, field_name: str, relative_path: str) -> None:
+    if not re.match(r"^\d{4}-\d{2}-\d{2}$", value):
+        raise ValidationError(f"{relative_path}: {field_name} must be in YYYY-MM-DD format, got '{value}'")
+    try:
+        from datetime import date
+        parsed = date.fromisoformat(value)
+    except ValueError as err:
+        raise ValidationError(f"{relative_path}: {field_name} invalid date '{value}': {err}")
+    today = date.today()
+    if parsed > today:
+        raise ValidationError(f"{relative_path}: {field_name} cannot be in the future: '{value}'")
+
+
 def validate_repository(root: Path) -> None:
     root = root.resolve()
     guides = sorted(root.glob("ENG/*.md"))
@@ -714,8 +727,9 @@ def validate_repository(root: Path) -> None:
             raise ValidationError(f"{path}: invalid name or empty description")
         if path.parent.name != "ENG" or metadata["language"] != "en":
             raise ValidationError(f"{path}: expected English guide with language en")
-        if metadata["version"] != GUIDE_VERSION or metadata["last-reviewed"] != GUIDE_LAST_REVIEWED:
-            raise ValidationError(f"{path}: unexpected version or review date")
+        if metadata["version"] != GUIDE_VERSION:
+            raise ValidationError(f"{path}: unexpected version")
+        validate_iso_date(str(metadata["last-reviewed"]), "last-reviewed", str(path))
         if metadata["name"] in names:
             raise ValidationError(f"{path}: duplicate name {metadata['name']}")
         names.add(metadata["name"])

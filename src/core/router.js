@@ -4,6 +4,7 @@ export const ROUTING_SCHEMA_VERSION = 1;
 
 const WORK_TYPES = new Set([
   "documentation",
+  "ui-copy",
   "code",
   "bug",
   "refactor",
@@ -103,12 +104,14 @@ const WORK_GUIDES = Object.freeze({
   accessibility: ["accessibility", "test"],
   "test-only": ["test"],
   documentation: ["documentation"],
+  "ui-copy": ["design", "accessibility"],
 });
 
 const PRIMARY_GUIDES = Object.freeze({
   "complete-website": "premium",
   "web-game": "games",
   documentation: "documentation",
+  "ui-copy": "design",
 });
 
 export class RouteInputError extends Error {
@@ -282,7 +285,7 @@ export function assertRouteInvariants(result) {
     }
   }
   for (const [guide, reasons] of Object.entries(result.excluded ?? {})) {
-    if (guide !== "documentation" && !GUIDE_IDS.includes(guide)) {
+    if (!GUIDE_IDS.includes(guide)) {
       throw invariantError("E_ROUTE_INVALID", `Route result contains unknown excluded guide: ${guide}`);
     }
     if (result.guides.includes(guide)) {

@@ -323,6 +323,19 @@ def parse_guide_frontmatter(path: Path) -> dict[str, object]:
     return metadata
 
 
+def validate_iso_date(value: str, field_name: str, relative_path: str) -> None:
+    if not re.match(r"^\d{4}-\d{2}-\d{2}$", value):
+        raise ValidationError(f"{relative_path}: {field_name} must be in YYYY-MM-DD format, got '{value}'")
+    try:
+        from datetime import date
+        parsed = date.fromisoformat(value)
+    except ValueError as err:
+        raise ValidationError(f"{relative_path}: {field_name} invalid date '{value}': {err}")
+    today = date.today()
+    if parsed > today:
+        raise ValidationError(f"{relative_path}: {field_name} cannot be in the future: '{value}'")
+
+
 def validate_guides(root: Path) -> None:
     names: set[str] = set()
     for relative in GUIDES.values():
@@ -336,8 +349,7 @@ def validate_guides(root: Path) -> None:
             raise ValidationError(f"{relative}: description must not be empty")
         if metadata["version"] != GUIDE_VERSION:
             raise ValidationError(f"{relative}: unexpected version")
-        if metadata["last-reviewed"] != GUIDE_LAST_REVIEWED:
-            raise ValidationError(f"{relative}: unexpected last-reviewed date")
+        validate_iso_date(str(metadata["last-reviewed"]), "last-reviewed", relative)
         if metadata["name"] in names:
             raise ValidationError(f"{relative}: duplicate guide name {metadata['name']}")
         names.add(metadata["name"])

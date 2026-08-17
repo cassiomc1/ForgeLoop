@@ -8,6 +8,7 @@ import {
   targetPathForSource,
 } from "./target-layout.js";
 import { nativeShim } from "./native-adapters.js";
+import { GUIDE_TEMPLATE_PATHS } from "./guide-registry.js";
 
 const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -37,16 +38,7 @@ export const TEMPLATE_PATHS = [
   "THIRD_PARTY_NOTICES.md",
   "LICENSE",
   "LICENSE-DOCS.md",
-  "ENG/accessibility-eng.md",
-  "ENG/clean-code-eng.md",
-  "ENG/design-code-eng.md",
-  "ENG/documentation-quality-eng.md",
-  "ENG/games-code-design-web-eng.md",
-  "ENG/perf-code-eng.md",
-  "ENG/premium-sites-studio-eng.md",
-  "ENG/taste-frontend-eng.md",
-  "ENG/sec-code-eng.md",
-  "ENG/test-code-eng.md",
+  ...GUIDE_TEMPLATE_PATHS,
   "schemas/routing-input.schema.json",
   "schemas/routing-result.schema.json",
   "schemas/work-state.schema.json",

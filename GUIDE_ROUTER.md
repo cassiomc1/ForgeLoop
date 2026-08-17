@@ -210,6 +210,7 @@ rg -n '^## |accuracy|completeness|Diátaxis|tutorial|how-to|reference|explanatio
 | Work | Primary guide | Common complements | Exclude when |
 | --- | --- | --- | --- |
 | Documentation change | `documentation` | Relevant domain; `test` for executable examples/commands; `security` for trust-sensitive docs | No documentation artifact or documented contract changes |
+| UI copy or microcopy | `design` | `accessibility` | Users cannot observe the change |
 | Code or bug without UI | `clean` | `test`; risk may add `security` or `performance` | The surface is unchanged |
 | Backend, API, or data | `clean` | `test`, `security`; `performance` for a critical path | That layer does not exist |
 | Web, mobile, or desktop UI | `design` | `accessibility`, `clean`, `test`; risk defines the rest | Users cannot observe the change |
@@ -229,7 +230,7 @@ the repository.
 
 The first routing contract is versioned as `schemaVersion: 1`. It accepts:
 
-- `workType`: `documentation`, `code`, `bug`, `refactor`, `backend`, `api`,
+- `workType`: `documentation`, `ui-copy`, `code`, `bug`, `refactor`, `backend`, `api`,
   `api-auth`, `complete-website`, `mobile-ui`, `web-game`, `html-video`,
   `infrastructure`, `security-review`, `performance`, `accessibility`,
   `test-only`, `dependency-update`, or `release`;

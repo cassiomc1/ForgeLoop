@@ -99,6 +99,19 @@ test("duplicate selection of documentation work and surface is deduplicated and 
   assert.deepEqual(result.reasons.documentation, ["WORK_DOCUMENTATION", "SURFACE_DOCUMENTATION"]);
 });
 
+test("ui-copy work type routes to design and accessibility", () => {
+  const result = evaluateRoute({
+    workType: "ui-copy",
+    surfaces: ["ui"],
+    platforms: ["web"],
+  });
+
+  assert.equal(result.primary, "design");
+  assert.deepEqual(result.guides, ["design", "accessibility"]);
+  assert.deepEqual(result.reasons.design, ["WORK_UI_COPY", "SURFACE_UI"]);
+  assert.deepEqual(result.reasons.accessibility, ["WORK_UI_COPY", "SURFACE_UI"]);
+});
+
 test("duplicate signals and non-boolean change flags are rejected", () => {
   assert.throws(
     () => evaluateRoute({ workType: "code", surfaces: ["ui", "ui"] }),

@@ -111,18 +111,8 @@ export const WORK_PHASES = Object.freeze([
   "BLOCKED",
 ]);
 
-export const GUIDE_IDS = Object.freeze([
-  "premium",
-  "clean",
-  "test",
-  "security",
-  "design",
-  "performance",
-  "accessibility",
-  "games",
-  "taste",
-  "documentation",
-]);
+import { GUIDE_IDS } from "./guide-registry.js";
+export { GUIDE_IDS };
 
 export const GUIDE_ORDER = GUIDE_IDS;
 

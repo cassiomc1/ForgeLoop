@@ -133,6 +133,24 @@ class LoopSystemValidationTests(unittest.TestCase):
                     validate_repository(self.root)
                 design.write_text("# Design\n", encoding="utf-8")
 
+    def test_rejects_invalid_last_reviewed_format(self) -> None:
+        guide = self.root / "ENG/clean-code-eng.md"
+        guide.write_text(
+            guide.read_text(encoding="utf-8").replace('last-reviewed: "2026-08-10"', 'last-reviewed: "10/08/2026"', 1),
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(ValidationError, "YYYY-MM-DD"):
+            validate_repository(self.root)
+
+    def test_rejects_future_last_reviewed_date(self) -> None:
+        guide = self.root / "ENG/clean-code-eng.md"
+        guide.write_text(
+            guide.read_text(encoding="utf-8").replace('last-reviewed: "2026-08-10"', 'last-reviewed: "2099-01-01"', 1),
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(ValidationError, "cannot be in the future"):
+            validate_repository(self.root)
+
 
 if __name__ == "__main__":
     unittest.main()

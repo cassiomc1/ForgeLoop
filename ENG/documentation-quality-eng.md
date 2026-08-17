@@ -3,7 +3,7 @@ name: documentation-quality-eng
 language: en
 description: "Quality standards for accurate, task-oriented, maintainable, accessible, and verifiable technical documentation."
 version: "2026.09"
-last-reviewed: "2026-08-10"
+last-reviewed: "2026-08-17"
 guide-id: documentation
 ---
 

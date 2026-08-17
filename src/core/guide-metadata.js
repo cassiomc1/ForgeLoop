@@ -1,18 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
-const GUIDE_FILES = Object.freeze({
-  premium: "ENG/premium-sites-studio-eng.md",
-  taste: "ENG/taste-frontend-eng.md",
-  clean: "ENG/clean-code-eng.md",
-  test: "ENG/test-code-eng.md",
-  security: "ENG/sec-code-eng.md",
-  design: "ENG/design-code-eng.md",
-  performance: "ENG/perf-code-eng.md",
-  accessibility: "ENG/accessibility-eng.md",
-  games: "ENG/games-code-design-web-eng.md",
-  documentation: "ENG/documentation-quality-eng.md",
-});
+import { GUIDE_FILES } from "./guide-registry.js";
 
 function parseList(frontmatter, key) {
   const lines = frontmatter.split(/\r?\n/);
