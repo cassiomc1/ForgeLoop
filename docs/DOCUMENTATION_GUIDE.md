@@ -89,12 +89,13 @@ npm run docs:check
 | Documentation Area | Canonical Machine Source | Conformance Validator |
 | --- | --- | --- |
 | **CLI commands & flags** | `CLI_COMMAND_METADATA` (`src/core/cli-metadata.js`) & `src/cli.js` | `scripts/validate_documentation_conformance.mjs` |
-| **Artifact paths** | `ARTIFACT_REGISTRY` (`src/core/artifact-registry.js`) | `scripts/validate_documentation_conformance.mjs` |
+| **Artifact paths** | `ARTIFACT_REGISTRY` & `task-paths.js` | `scripts/validate_documentation_conformance.mjs` |
 | **Artifact fields & types** | `schemas/*.schema.json` | `scripts/validate_documentation_conformance.mjs` |
 | **Enums & consts** | `schemas/*.schema.json` | `scripts/validate_documentation_conformance.mjs` |
 | **Lifecycle phases** | `WORK_PHASES` (`src/core/protocol.js`) | `scripts/validate_documentation_conformance.mjs` |
 | **Stable error codes** | `PUBLIC_ERROR_CODES` (`src/core/error-codes.js`) | `scripts/validate_documentation_conformance.mjs` |
 | **Discovery resume rules** | `DISCOVERY_SURFACES` & `nativeShim` | `scripts/validate_documentation_conformance.mjs` |
+| **Operational path freshness** | `OPERATIONAL_DOCUMENTS` & `task-paths.js` | `scripts/validate_documentation_conformance.mjs` |
 | **Package-shipped docs** | `package.json` (`files`) | `tests/package.test.js` |
 | **Architecture diagram** | `docs/forgeloop-flow.mmd` | `scripts/check-generated-diagram.mjs` |
 
@@ -111,6 +112,18 @@ When writing documentation, use precise terms:
 
 Avoid ambiguous phrases like *"should generally"* or *"usually"* for behaviors that are strictly enforced by the validator.
 
+### Multi-Task Layout Rules
+
+- Canonical task-scoped paths are defined in `src/core/task-paths.js` under `.forgeloop/task-state/<taskKey>/`.
+- Operational guides (`README.md`, `GETTING_STARTED.md`, `RECIPES.md`, `CROSS_HARNESS_CONTINUITY.md`, `TROUBLESHOOTING.md`) must document namespaced paths by default.
+- Legacy ForgeLoop 1.0 singleton paths (e.g. `.forgeloop/current-contract.json`) are permitted **only** inside explicit legacy migration regions:
+  ```markdown
+  <!-- BEGIN FORGELOOP LEGACY LAYOUT EXAMPLE -->
+  ...
+  <!-- END FORGELOOP LEGACY LAYOUT EXAMPLE -->
+  ```
+- `scripts/validate_documentation_conformance.mjs` mechanically rejects any singleton task path outside these markers.
+
 ---
 
 ## 6. Linking Conventions
@@ -125,7 +138,8 @@ Avoid ambiguous phrases like *"should generally"* or *"usually"* for behaviors t
 
 1. **Source is Canonical**: Diagram source files live in `.mmd` files (e.g. `docs/forgeloop-flow.mmd`). Never modify SVG files directly.
 2. **Local Committed SVGs**: Generated SVGs are committed locally in `docs/assets/`. Never hotlink externally rendered diagram images.
-3. **Fingerprint Verification**: Generated SVGs embed a `data-forgeloop-source-sha256` attribute verified by `npm run docs:check`.
+3. **Self-Contained & GitHub-Safe**: Generated SVGs must not import external stylesheets (e.g. `@import url(...)`), must not embed `<script>` or `<foreignObject>`, and must be visible via standard Markdown image syntax (`![alt](./path.svg)`).
+4. **Fingerprint Verification**: Generated SVGs embed a `data-forgeloop-source-sha256` attribute verified by `npm run docs:check`.
 
 ---
 

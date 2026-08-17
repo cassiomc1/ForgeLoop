@@ -11,7 +11,7 @@ import { readPersistedRoute } from "./route-artifact.js";
 import { assertWorkPhase, isValidTransition } from "./protocol.js";
 import { readWorkState, writeWorkState } from "./work-state.js";
 import { evaluateCompletion } from "./completion.js";
-import { evaluatePreflight, validatePersistedPreflight } from "./preflight.js";
+import { evaluatePreflight } from "./preflight.js";
 import { requiredEvidenceForTarget } from "./completion-artifacts.js";
 import { assertCompletionRelationships, assertStateIdentity } from "./completion-relationships.js";
 import { createReceipt, validateReceipt } from "./receipt.js";

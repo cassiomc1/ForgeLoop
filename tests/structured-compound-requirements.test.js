@@ -9,7 +9,6 @@ import { createContract, contractFingerprint, writeContract, validateContract } 
 import { createCheck } from "../src/core/checks.js";
 import { classifyRequirement, evaluateRequiredEvidence } from "../src/core/evidence-readiness.js";
 import { getPackageRoot } from "../src/core/templates.js";
-import { readSchema, validateSchema } from "../src/core/schema-validation.js";
 import { recordManualCheck } from "./helpers/record-check-compat.js";
 
 const packageRoot = getPackageRoot();

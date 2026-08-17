@@ -18,7 +18,6 @@ import { evaluateRoute } from "../src/core/router.js";
 import { persistRoute } from "../src/core/route-artifact.js";
 import { getPackageRoot } from "../src/core/templates.js";
 import { createWorkState, readWorkState, writeWorkState } from "../src/core/work-state.js";
-import { evaluateRequiredEvidence, authoritativeChecksForRequirements } from "../src/core/evidence-readiness.js";
 
 const packageRoot = getPackageRoot();
 

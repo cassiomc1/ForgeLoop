@@ -15,7 +15,6 @@ import {
   validateVerificationAuthority,
   E_VERIFICATION_TOOL_UNAVAILABLE,
   E_INSTALLATION_AUTHORITY_REQUIRED,
-  E_COMMAND_RESOLUTION_AMBIGUOUS,
   E_AUTHORITY_UNTRUSTED_SOURCE,
 } from "../src/core/verification-capability.js";
 import { evaluateRequiredEvidence } from "../src/core/evidence-readiness.js";

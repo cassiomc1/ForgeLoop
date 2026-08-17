@@ -73,11 +73,11 @@ name is unknown.
 Lifecycle-owned ForgeLoop artifacts must be created or mutated only through
 the supported ForgeLoop lifecycle commands or canonical ForgeLoop APIs:
 
-- `.forgeloop/preflight.json`
-- `.forgeloop/work-state.json`
-- `.forgeloop/events.ndjson`
-- `.forgeloop/execution-receipt.json`
-- `.forgeloop/executions/<executionId>.json`
+- `.forgeloop/task-state/<taskKey>/preflight.json`
+- `.forgeloop/task-state/<taskKey>/work-state.json`
+- `.forgeloop/task-state/<taskKey>/events.ndjson`
+- `.forgeloop/task-state/<taskKey>/execution-receipt.json`
+- `.forgeloop/task-state/<taskKey>/executions/<executionId>.json`
 - completion recovery metadata
 - canonical check/evidence state
 - terminal-result lifecycle state
@@ -155,7 +155,7 @@ Recognized command dispatchers (such as `npm test`, `npm start`, `npm stop`, `np
 Use `forgeloop run-check --id <id> --requirement <requirement> -- <argv>` for
 observed command evidence. ForgeLoop preserves the exact argv vector, target
 cwd, resolution classification, timestamps, exit status, and task/check
-binding in `.forgeloop/executions/<executionId>.json` before recording the
+binding in `.forgeloop/task-state/<taskKey>/executions/<executionId>.json` before recording the
 check. Resolution is classified before process launch; install-capable
 resolution is rejected without a valid host-attested authority, while
 `npx --no-install` remains a non-installing path and may fail honestly when a
@@ -182,7 +182,7 @@ ForgeLoop validates authority semantics, while the host defines the trust bounda
 
 ### Stale receipt recovery invariant
 
-Every recovery action returned by `forgeloop next` must be executable from the state that produced it. When work state changes legitimately after preparing a completion receipt, `forgeloop prepare-completion` refreshes the receipt and re-binds it to current state and changed paths without requiring manual deletion of `.forgeloop/execution-receipt.json`.
+Every recovery action returned by `forgeloop next` must be executable from the state that produced it. When work state changes legitimately after preparing a completion receipt, `forgeloop prepare-completion` refreshes the receipt and re-binds it to current state and changed paths without requiring manual deletion of `.forgeloop/task-state/<taskKey>/execution-receipt.json`.
 
 ### Conformance profile escalation policy
 
@@ -460,9 +460,9 @@ If the harness cannot disable a mandatory approval workflow, record
 
 ForgeLoop keeps the agent responsible for implementation while making the
 pre-implementation contract observable. Before executable changes, the target
-should contain a schema-valid `.forgeloop/current-contract.json` and a persisted
-`.forgeloop/routing-result.json`. Guide metadata can declare mandatory gates;
-those gates are recorded under `.forgeloop/gates/` and are checked by:
+should contain a schema-valid task contract (`.forgeloop/task-state/<taskKey>/contract.json`) and a persisted
+`.forgeloop/task-state/<taskKey>/routing-result.json`. Guide metadata can declare mandatory gates;
+those gates are recorded under `.forgeloop/task-state/<taskKey>/gates/` and are checked by:
 
 ```text
 forgeloop preflight
@@ -745,7 +745,7 @@ proportional phases, but:
 Resume rules are conservative: revalidate branch, HEAD, contract fingerprint,
 protocol version, and required artifacts before continuing; never rerun a
 completed destructive or publication action automatically; rerun cheap
-verification when state is stale; and clear only `.forgeloop/work-state.json`
+verification when state is stale; and clear only task work state (`.forgeloop/task-state/<taskKey>/work-state.json`)
 when abandoned state must be removed.
 
 ## Execution contract
@@ -1194,7 +1194,7 @@ from external publication.
 A change of model, provider, IDE, process, terminal, or context window does not
 create a new task when a valid resumable ForgeLoop task already exists.
 `work-state.json` remains the sole owner of lifecycle progress. An optional
-`.forgeloop/continuity.json` may record bounded granular implementation context
+`.forgeloop/task-state/<taskKey>/continuity.json` may record bounded granular implementation context
 such as current focus, remaining implementation work, known issues, and paths
 to inspect first.
 

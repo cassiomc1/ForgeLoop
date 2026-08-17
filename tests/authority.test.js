@@ -5,16 +5,12 @@ import path from "node:path";
 import { test } from "node:test";
 
 import {
-  classifyCommandResolution,
   getInstallationAuthorityRef,
   validateAuthorityGrant,
-  validateVerificationAuthority,
-  E_INSTALLATION_AUTHORITY_REQUIRED,
   E_AUTHORITY_INVALID,
   E_AUTHORITY_UNTRUSTED_SOURCE,
   E_AUTHORITY_SCOPE_MISMATCH,
 } from "../src/core/verification-capability.js";
-import { evaluateRequiredEvidence } from "../src/core/evidence-readiness.js";
 import { evaluateCompletion } from "../src/core/completion.js";
 import { evaluateAudit } from "../src/core/audit.js";
 import { getPackageRoot } from "../src/core/templates.js";

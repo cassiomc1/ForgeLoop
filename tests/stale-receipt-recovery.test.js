@@ -18,8 +18,6 @@ import { persistRoute } from "../src/core/route-artifact.js";
 import { getPackageRoot } from "../src/core/templates.js";
 import { createWorkState, readWorkState, writeWorkState } from "../src/core/work-state.js";
 import { runPreflight } from "../src/commands/preflight.js";
-import { evaluateCompletion } from "../src/core/completion.js";
-import { evaluateAudit } from "../src/core/audit.js";
 import { E_INSTALLATION_AUTHORITY_REQUIRED } from "../src/core/verification-capability.js";
 
 const packageRoot = getPackageRoot();

@@ -39,5 +39,5 @@ test("shipped instructions require querying the next lifecycle action", async ()
     assert.match(await readFile(file, "utf8"), trigger, file);
   }
   assert.match(await readFile("LOOP_ENGINEERING.md", "utf8"), /ACT.*QUERY NEXT.*ACT/s);
-  assert.match(await readFile("README.md", "utf8"), /forgeloop next --json/);
+  assert.match(await readFile("README.md", "utf8"), /forgeloop next(?: --task \S+)? --json/);
 });

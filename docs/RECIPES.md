@@ -24,17 +24,22 @@ Concise, copy-paste friendly recipes for common ForgeLoop tasks.
 ### Recipe 1 — Start a New Task
 
 ```bash
-# 1. Define .forgeloop/current-contract.json with your task intent
-# 2. Route engineering guides
-forgeloop route --work code --surface api --risk untrusted-input --json
+# 1. Create a task with explicit claims
+forgeloop task-create --task task-001 --claim src --claim tests --json
 
-# 3. Verify preflight
-forgeloop preflight --json
+# 2. Discover task state path and author contract under .forgeloop/task-state/<taskKey>/contract.json
+forgeloop task-show --task task-001 --json
 
-# 4. Activate session and plan
-forgeloop activate
-forgeloop advance --to PLANNED
-forgeloop advance --to EXECUTING
+# 3. Route engineering guides
+forgeloop route --task task-001 --work code --surface api --risk untrusted-input --json
+
+# 4. Verify preflight
+forgeloop preflight --task task-001 --json
+
+# 5. Activate session and plan
+forgeloop activate --task task-001
+forgeloop advance --task task-001 --to PLANNED
+forgeloop advance --task task-001 --to EXECUTING
 ```
 
 ---
@@ -42,6 +47,8 @@ forgeloop advance --to EXECUTING
 ### Recipe 2 — Resume an Active Task in a New Session
 
 ```bash
+export FORGELOOP_TASK="task-001"
+
 # 1. Discover task state
 forgeloop status --json
 
@@ -63,6 +70,7 @@ In Harness A (before stopping):
 
 ```bash
 forgeloop record-continuity \
+  --task task-001 \
   --focus-id api-endpoints \
   --focus-summary "Finished GET /users, working on POST /users" \
   --remaining "tests:Add validation test for POST /users" \
@@ -73,10 +81,10 @@ forgeloop record-continuity \
 In Harness B (after starting):
 
 ```bash
-forgeloop status --json
-forgeloop continuity --json
-forgeloop reconcile-continuity --json
-forgeloop next --json
+forgeloop status --task task-001 --json
+forgeloop continuity --task task-001 --json
+forgeloop reconcile-continuity --task task-001 --json
+forgeloop next --task task-001 --json
 ```
 
 ---
@@ -84,6 +92,8 @@ forgeloop next --json
 ### Recipe 4 — Recover and Continue After a Failed Test
 
 ```bash
+export FORGELOOP_TASK="task-001"
+
 # 1. Test failed in run-check
 forgeloop run-check --id unit-tests --requirement "All tests pass" -- npm test
 # Output: status = failed
@@ -107,6 +117,7 @@ forgeloop audit --json
 ```bash
 # For non-automated criteria (design review, UX inspection, security review)
 forgeloop record-check \
+  --task task-001 \
   --id manual-contrast-review \
   --requirement "WCAG AA contrast compliant" \
   --status passed \
@@ -120,6 +131,8 @@ forgeloop record-check \
 ### Recipe 6 — Run Automated Checks with Attested Provenance
 
 ```bash
+export FORGELOOP_TASK="task-001"
+
 # Prepare receipt slots in VERIFYING phase
 forgeloop advance --to VERIFYING
 forgeloop prepare-completion --json
@@ -135,8 +148,10 @@ forgeloop run-check --id typecheck --requirement "Typecheck" -- npm run typechec
 ### Recipe 7 — Fix Stale State or Stale Receipt
 
 ```bash
+export FORGELOOP_TASK="task-001"
+
 # If contract or files were modified out of band:
-forgeloop route --work <type> [options] --json
+forgeloop route --work clean-code --json
 forgeloop preflight --json
 forgeloop prepare-completion --json
 forgeloop validate-protocol --json
@@ -148,10 +163,10 @@ forgeloop validate-protocol --json
 
 ```bash
 # Run read-only audit to inspect unsatisfied coverage
-forgeloop audit --json
+forgeloop audit --task task-001 --json
 
 # Inspect protocol next guidance
-forgeloop next --json
+forgeloop next --task task-001 --json
 ```
 
 ---
@@ -168,6 +183,8 @@ forgeloop bundle --task task-001 --json
 ### Recipe 10 — Final Verification Before Pull Request
 
 ```bash
+export FORGELOOP_TASK="task-001"
+
 # 1. Ensure all checks passed in VERIFYING
 # 2. Advance to REVIEWING
 forgeloop advance --to REVIEWING
@@ -213,6 +230,12 @@ forgeloop task-unlock --task auth-feature --force --json
 ---
 
 ### Recipe 12 — Migrate Legacy 1.0 Single-Task Layout
+
+<!-- BEGIN FORGELOOP LEGACY LAYOUT EXAMPLE -->
+
+Legacy ForgeLoop 1.0 projects stored mutable artifacts directly under `.forgeloop/` (e.g. `.forgeloop/current-contract.json`, `.forgeloop/work-state.json`, `.forgeloop/gates/`, `.forgeloop/executions/`).
+
+<!-- END FORGELOOP LEGACY LAYOUT EXAMPLE -->
 
 ```bash
 # 1. Perform dry-run migration check

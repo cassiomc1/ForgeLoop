@@ -8,7 +8,7 @@ This guide walks through your first complete task with ForgeLoop from initializa
 
 ForgeLoop is a portable, vendor-neutral engineering protocol for AI-assisted coding and automated workflows. It turns a task outcome into:
 
-- **A structured contract** (`.forgeloop/current-contract.json`);
+- **A structured contract** (`.forgeloop/task-state/<taskKey>/contract.json`);
 - **Deterministic guide routing** based on declared work type, surfaces, and risks;
 - **Resumable work state** across different tools, IDEs, and AI harnesses;
 - **Observed verification evidence** linked to ForgeLoop-attested command execution;
@@ -51,7 +51,7 @@ What `init` does:
 
 - Installs the canonical instruction kit under `.forgeloop/kit/`;
 - Places native discovery shims at the project root (`AGENTS.md`, `CLAUDE.md`, `.cursor/rules/`, `.github/copilot-instructions.md`);
-- Creates `.forgeloop/` for mutable contract, route, state, and execution artifacts.
+- Creates `.forgeloop/` for project configuration and `.forgeloop/task-state/` for isolated task execution.
 
 ---
 
@@ -63,7 +63,10 @@ Here is a typical end-to-end task: *"Implement a contact form with input validat
 User Request
      │
      ▼
-Discovery & Contract
+Create Task Namespace
+     │
+     ▼
+Define Task Contract
      │
      ▼
 Route Guides
@@ -86,9 +89,25 @@ Complete Validation (VALID)
 
 ---
 
-### Step 1 — Define the Contract
+### Step 1 — Create the Task Namespace and Contract
 
-Create `.forgeloop/current-contract.json` describing your task objective, deliverables, and completion criteria:
+First, create the task namespace with explicit write claims covering the files this task will touch:
+
+```bash
+forgeloop task-create \
+  --task task-contact-form-001 \
+  --claim src/components \
+  --claim tests \
+  --json
+```
+
+Discover the deterministic task state path using `task-show`:
+
+```bash
+forgeloop task-show --task task-contact-form-001 --json
+```
+
+Then write the task contract to `.forgeloop/task-state/<taskKey>/contract.json`:
 
 ```json
 {
@@ -139,10 +158,16 @@ Create `.forgeloop/current-contract.json` describing your task objective, delive
 Ask ForgeLoop which engineering guides apply to your work:
 
 ```bash
-forgeloop route --work complete-website --surface ui --surface forms --risk untrusted-input --json
+forgeloop route \
+  --task task-contact-form-001 \
+  --work complete-website \
+  --surface ui \
+  --surface forms \
+  --risk untrusted-input \
+  --json
 ```
 
-This generates `.forgeloop/routing-result.json` referencing selected guides (e.g. `clean`, `test`, `security`, `design`, `accessibility`).
+This writes `.forgeloop/task-state/<taskKey>/routing-result.json` referencing selected guides (e.g. `clean`, `test`, `security`, `design`, `accessibility`).
 
 ---
 
@@ -151,7 +176,7 @@ This generates `.forgeloop/routing-result.json` referencing selected guides (e.g
 Before writing code, validate readiness and establish the canonical resumable work state:
 
 ```bash
-forgeloop preflight --json
+forgeloop preflight --task task-contact-form-001 --json
 ```
 
 Output:
@@ -164,7 +189,7 @@ Output:
 }
 ```
 
-When preflight returns `READY`, ForgeLoop synchronizes resumable work state (`.forgeloop/work-state.json`) and preflight status (`.forgeloop/preflight.json`). If preflight reports `BLOCKED`, inspect the required gates in the output and satisfy them first.
+When preflight returns `READY`, ForgeLoop synchronizes resumable work state (`.forgeloop/task-state/<taskKey>/work-state.json`) and preflight status (`.forgeloop/task-state/<taskKey>/preflight.json`). If preflight reports `BLOCKED`, inspect the required gates in the output and satisfy them first.
 
 ---
 
@@ -173,8 +198,8 @@ When preflight returns `READY`, ForgeLoop synchronizes resumable work state (`.f
 Create a session activation marker and transition to `PLANNED`:
 
 ```bash
-forgeloop activate
-forgeloop advance --to PLANNED
+forgeloop activate --task task-contact-form-001
+forgeloop advance --task task-contact-form-001 --to PLANNED
 ```
 
 ---
@@ -184,7 +209,7 @@ forgeloop advance --to PLANNED
 Advance to `EXECUTING` and make your code changes:
 
 ```bash
-forgeloop advance --to EXECUTING
+forgeloop advance --task task-contact-form-001 --to EXECUTING
 ```
 
 Implement your components, styles, and test files according to the activated guides.
@@ -196,18 +221,18 @@ Implement your components, styles, and test files according to the activated gui
 Advance to `VERIFYING` and prepare completion receipt:
 
 ```bash
-forgeloop advance --to VERIFYING
-forgeloop prepare-completion --json
+forgeloop advance --task task-contact-form-001 --to VERIFYING
+forgeloop prepare-completion --task task-contact-form-001 --json
 ```
 
 Execute your verification checks through ForgeLoop so provenance is recorded:
 
 ```bash
 # Run unit tests and record evidence
-forgeloop run-check --id unit-tests --requirement "npm test passes for contact form" -- npm test
+forgeloop run-check --task task-contact-form-001 --id unit-tests --requirement "npm test passes for contact form" -- npm test
 
 # Run linter and record evidence
-forgeloop run-check --id lint --requirement "npm run lint passes" -- npm run lint
+forgeloop run-check --task task-contact-form-001 --id lint --requirement "npm run lint passes" -- npm run lint
 ```
 
 If a check fails:
@@ -224,8 +249,8 @@ If a check fails:
 Advance to `REVIEWING` and perform a read-only audit:
 
 ```bash
-forgeloop advance --to REVIEWING
-forgeloop audit --json
+forgeloop advance --task task-contact-form-001 --to REVIEWING
+forgeloop audit --task task-contact-form-001 --json
 ```
 
 Output checks contract coverage, ledger integrity, and fingerprint freshness.
@@ -237,7 +262,7 @@ Output checks contract coverage, ledger integrity, and fingerprint freshness.
 Run `forgeloop complete` to validate completion:
 
 ```bash
-forgeloop complete --json
+forgeloop complete --task task-contact-form-001 --json
 ```
 
 Output:
@@ -253,7 +278,7 @@ Output:
 Finally, query ForgeLoop for the next action:
 
 ```bash
-forgeloop next --json
+forgeloop next --task task-contact-form-001 --json
 ```
 
 When `terminal: true` and `nextAction: "NONE"` are returned, your task is protocol-verified as complete.
@@ -297,7 +322,24 @@ Shared repository artifacts (`sources.json`, `config.json`) remain at `.forgeloo
 
 ---
 
-## 7. Next Steps
+## 7. Migrating ForgeLoop 1.0 Singleton State
+
+<!-- BEGIN FORGELOOP LEGACY LAYOUT EXAMPLE -->
+
+Legacy ForgeLoop 1.0 releases stored task artifacts directly under `.forgeloop/`, including `.forgeloop/current-contract.json`, `.forgeloop/work-state.json`, `.forgeloop/routing-result.json`, `.forgeloop/preflight.json`, `.forgeloop/execution-receipt.json`, `.forgeloop/events.ndjson`, `.forgeloop/gates/`, and `.forgeloop/executions/`.
+
+<!-- END FORGELOOP LEGACY LAYOUT EXAMPLE -->
+
+To safely migrate legacy singleton state into the modern namespaced layout:
+
+```bash
+forgeloop task-migrate --dry-run --json
+forgeloop task-migrate --json
+```
+
+---
+
+## 8. Next Steps
 
 - Continue a task across different AI harnesses: [`docs/CROSS_HARNESS_CONTINUITY.md`](./CROSS_HARNESS_CONTINUITY.md)
 - Complete command reference: [`docs/CLI_REFERENCE.md`](./CLI_REFERENCE.md)

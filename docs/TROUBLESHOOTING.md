@@ -10,6 +10,7 @@ This guide provides symptom-first recovery procedures for common ForgeLoop proto
 - [`forgeloop next` returns `RESOLVE_BLOCKER`](#symptom-forgeloop-next-returns-resolve_blocker)
 - [Protocol state or contract is `STALE`](#symptom-state-or-contract-is-stale)
 - [Execution continuity is `STALE`](#symptom-continuity-is-stale)
+- [Multiple tasks ambiguous (`E_TASK_AMBIGUOUS`)](#symptom-multiple-tasks-ambiguous)
 - [Verification tool is missing (`E_VERIFICATION_TOOL_UNAVAILABLE`)](#symptom-verification-tool-is-missing)
 - [Installation authority required (`E_INSTALLATION_AUTHORITY_REQUIRED`)](#symptom-installation-authority-required)
 - [Execution reference invalid (`E_EXECUTION_REF_INVALID`)](#symptom-execution-reference-invalid)
@@ -30,21 +31,22 @@ Pre-implementation gates (e.g. `design`, `threat-boundary`) are unsatisfied, mis
 
 #### Likely causes
 
-1. A gate required by an activated guide has no corresponding `.forgeloop/gates/<gate>.json` file.
+1. A gate required by an activated guide has no corresponding `.forgeloop/task-state/<taskKey>/gates/<gate>.json` file.
 2. The gate artifact references files whose SHA-256 hashes changed after the gate was satisfied.
 3. Contract `unresolvedDecisions` contains blocking decisions.
 
 #### Inspect
 
 ```bash
-forgeloop preflight --json
+forgeloop task-show --task <id> --json
+forgeloop preflight --task <id> --json
 ```
 
 #### Safe recovery
 
-1. If a gate is missing, create `.forgeloop/gates/<gate>.json` with status `"satisfied"`.
+1. If a gate is missing, satisfy required gates or create the gate artifact with status `"satisfied"`.
 2. If an artifact hash changed, update the artifact SHA-256 in the gate file.
-3. Re-run `forgeloop preflight --json`.
+3. Re-run `forgeloop preflight --task <id> --json`.
 
 #### Do not
 
@@ -60,15 +62,15 @@ The protocol has encountered a condition that prevents automatic progression unt
 
 #### Likely causes
 
-1. `work-state.json` was deleted or is out of sync with `current-contract.json`.
+1. Task `work-state.json` was deleted or is out of sync with `contract.json`.
 2. A verification check failed and no diagnostic hypothesis was recorded.
 3. A required gate is unsatisfied.
 
 #### Inspect
 
 ```bash
-forgeloop status --json
-forgeloop next --json
+forgeloop status --task <id> --json
+forgeloop next --task <id> --json
 ```
 
 #### Safe recovery
@@ -87,13 +89,14 @@ An upstream artifact was modified, invalidating downstream cryptographic fingerp
 
 #### Likely causes
 
-1. `.forgeloop/current-contract.json` was edited after `work-state.json` or `routing-result.json` was created (`E_CONTRACT_STALE`).
+1. `contract.json` was edited after `work-state.json` or `routing-result.json` was created (`E_CONTRACT_STALE`).
 2. Git `HEAD` changed (commit or checkout) while in `EXECUTING` or `VERIFYING`.
 
 #### Inspect
 
 ```bash
-forgeloop status --json
+forgeloop task-show --task <id> --json
+forgeloop status --task <id> --json
 ```
 
 #### Safe recovery
@@ -101,14 +104,14 @@ forgeloop status --json
 1. If the contract changed intentionally:
 
    ```bash
-   forgeloop route --work <type> [options] --json
-   forgeloop preflight --json
+   forgeloop route --task <id> --work <type> [options] --json
+   forgeloop preflight --task <id> --json
    ```
 
 2. Re-validate state:
 
    ```bash
-   forgeloop validate-protocol --json
+   forgeloop validate-protocol --task <id> --json
    ```
 
 ---
@@ -117,7 +120,7 @@ forgeloop status --json
 
 #### What it means
 
-`.forgeloop/continuity.json` references a previous `work-state.json` fingerprint or older checkout state.
+`.forgeloop/task-state/<taskKey>/continuity.json` references a previous `work-state.json` fingerprint or older checkout state.
 
 #### Likely causes
 
@@ -126,7 +129,7 @@ Another harness or developer committed changes or advanced lifecycle phases with
 #### Inspect
 
 ```bash
-forgeloop continuity --json
+forgeloop continuity --task <id> --json
 ```
 
 #### Safe recovery
@@ -134,16 +137,47 @@ forgeloop continuity --json
 1. Reconcile continuity with current state:
 
    ```bash
-   forgeloop reconcile-continuity --json
+   forgeloop reconcile-continuity --task <id> --json
    ```
 
 2. If continuity is obsolete, clear it:
 
    ```bash
-   forgeloop clear-continuity
+   forgeloop clear-continuity --task <id>
    ```
 
    *Note: Clearing continuity does not lose lifecycle state; `work-state.json` remains intact.*
+
+---
+
+### Symptom: Multiple Tasks Ambiguous
+
+#### Error Code: `E_TASK_AMBIGUOUS`
+
+#### What it means
+
+Multiple active tasks exist in `.forgeloop/task-state/`, but the command was run without an explicit `--task` flag or `FORGELOOP_TASK` environment variable.
+
+#### Inspect
+
+```bash
+forgeloop task-list --json
+```
+
+#### Safe recovery
+
+Specify the task ID explicitly using the `--task` flag:
+
+```bash
+forgeloop status --task <task-id> --json
+forgeloop next --task <task-id> --json
+```
+
+Or set the environment variable for your shell session:
+
+```bash
+export FORGELOOP_TASK="<task-id>"
+```
 
 ---
 
@@ -196,14 +230,14 @@ Use non-installing execution equivalents (e.g. `npm test`, `node <script>`, `./n
 
 #### What it means
 
-A check was claimed with a reference to an execution ID that does not exist in `.forgeloop/executions/`.
+A check was claimed with a reference to an execution ID that does not exist in `.forgeloop/task-state/<taskKey>/executions/`.
 
 #### Safe recovery
 
 Execute the check through ForgeLoop CLI so that execution provenance is attested:
 
 ```bash
-forgeloop run-check --id <check-id> --requirement <requirement-id> -- <command...>
+forgeloop run-check --task <id> --id <check-id> --requirement <requirement-id> -- <command...>
 ```
 
 ---
@@ -217,7 +251,7 @@ One or more contract success criteria have not been covered by passing verificat
 #### Inspect
 
 ```bash
-forgeloop audit --json
+forgeloop audit --task <id> --json
 ```
 
 Inspect the `coverage` array to find items with status `"NOT_VERIFIED"` or `"FAILED"`.
@@ -227,16 +261,16 @@ Inspect the `coverage` array to find items with status `"NOT_VERIFIED"` or `"FAI
 1. Advance to `VERIFYING` if not already there:
 
    ```bash
-   forgeloop advance --to VERIFYING
+   forgeloop advance --task <id> --to VERIFYING
    ```
 
 2. Execute the missing check:
 
    ```bash
-   forgeloop run-check --id <id> --requirement <uncovered-requirement> -- <command...>
+   forgeloop run-check --task <id> --id <id> --requirement <uncovered-requirement> -- <command...>
    ```
 
-3. Advance to `REVIEWING` and retry `forgeloop complete --json`.
+3. Advance to `REVIEWING` and retry `forgeloop complete --task <id> --json`.
 
 ---
 
@@ -249,7 +283,7 @@ Protocol integrity checks failed (e.g. ledger sequence error, missing contract d
 #### Inspect
 
 ```bash
-forgeloop validate-protocol --json
+forgeloop validate-protocol --task <id> --json
 ```
 
 #### Safe recovery
@@ -262,7 +296,7 @@ Inspect the specific error reported in `errors[]` and correct the inconsistent a
 
 #### Likely causes
 
-1. The new harness started by creating a new contract instead of checking `.forgeloop/work-state.json`.
+1. The new harness started by creating a new contract instead of discovering existing tasks via `task-list` or `status`.
 2. State is locked in a terminal or blocked condition.
 
 #### Safe recovery
@@ -271,13 +305,14 @@ In the new harness:
 
 ```bash
 # 1. Discover existing state
-forgeloop status --json
+forgeloop task-list --json
+forgeloop status --task <id> --json
 
 # 2. Reconcile continuity
-forgeloop reconcile-continuity --json
+forgeloop reconcile-continuity --task <id> --json
 
 # 3. Ask for next action
-forgeloop next --json
+forgeloop next --task <id> --json
 ```
 
 ---

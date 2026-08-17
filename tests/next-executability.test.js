@@ -12,7 +12,7 @@ import { recordManualCheck } from "./helpers/record-check-compat.js";
 
 const recordCheck = (input) => recordManualCheck(recordCheckArtifact, input);
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
-import { appendProtocolEvent, validateEventLedger } from "../src/core/events.js";
+import { appendProtocolEvent } from "../src/core/events.js";
 import { advanceWorkState } from "../src/core/phase.js";
 import { NEXT_ACTIONS, getNextAction } from "../src/core/next-action.js";
 import { evaluateRoute } from "../src/core/router.js";

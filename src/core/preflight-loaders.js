@@ -6,7 +6,7 @@ import { assertSourceProvenance } from "./sources.js";
 import { readPersistedRoute } from "./route-artifact.js";
 import { ensureWithin, readBytes } from "./filesystem.js";
 import { sha256 } from "./manifest.js";
-import { findProfilePath, validateProfileSources } from "./profile.js";
+import { findProfilePath } from "./profile.js";
 import { issue } from "./preflight-model.js";
 import { taskGatePath, taskArtifactPath } from "./task-paths.js";
 

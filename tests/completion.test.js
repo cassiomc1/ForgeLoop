@@ -12,8 +12,6 @@ import { createCheck } from "../src/core/checks.js";
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { coverageForRequirements, createCoverage } from "../src/core/coverage.js";
 import { appendProtocolEvent } from "../src/core/events.js";
-import { createGate } from "../src/core/gates.js";
-import { persistGate } from "../src/core/gate-artifact.js";
 import { evaluateRoute } from "../src/core/router.js";
 import { persistRoute } from "../src/core/route-artifact.js";
 import { createEvidence } from "../src/core/evidence.js";
@@ -299,7 +297,7 @@ test("complete requires the ordered verification milestones before writing", asy
   for (const [name, events] of cases) {
     await t.test(name, async () => {
       await withTarget(async (target) => {
-        const { contract } = await prepareValidTask(target, { events });
+        await prepareValidTask(target, { events });
         const before = await artifactHashes(target);
 
         const result = await runComplete({ target, packageRoot, persist: true });

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -29,6 +29,36 @@ export function normalizeCliOption(rawOption) {
   if (cleaned.startsWith("-- ")) return "--";
   if (cleaned.startsWith("<") && cleaned.endsWith(">")) return cleaned;
   return cleaned.split(" ")[0];
+}
+
+export const OPERATIONAL_DOCUMENTS = Object.freeze([
+  "README.md",
+  "docs/GETTING_STARTED.md",
+  "docs/CROSS_HARNESS_CONTINUITY.md",
+  "docs/RECIPES.md",
+  "docs/TROUBLESHOOTING.md",
+  "LOOP_ENGINEERING.md",
+  "EXECUTION_STATE.md",
+  "PROTOCOL_INTEGRATION.md",
+]);
+
+export const LEGACY_TASK_PATH_PATTERNS = Object.freeze([
+  /\.forgeloop\/current-contract\.json/g,
+  /\.forgeloop\/routing-result\.json/g,
+  /\.forgeloop\/preflight\.json/g,
+  /\.forgeloop\/work-state\.json/g,
+  /\.forgeloop\/continuity\.json/g,
+  /\.forgeloop\/execution-receipt\.json/g,
+  /\.forgeloop\/events\.ndjson/g,
+  /\.forgeloop\/gates(?:\/|`|\b)/g,
+  /\.forgeloop\/executions(?:\/|`|\b)/g,
+]);
+
+export function stripLegacyLayoutExamples(content) {
+  return content.replace(
+    /<!-- BEGIN FORGELOOP LEGACY LAYOUT EXAMPLE -->[\s\S]*?<!-- END FORGELOOP LEGACY LAYOUT EXAMPLE -->/g,
+    "",
+  );
 }
 
 /**
@@ -326,6 +356,63 @@ export async function validateDocumentationConformance({ rootDir = repositoryRoo
     const shim = nativeShim(surface.path);
     if (!resumePattern.test(shim)) {
       errors.push(`DOC_NATIVE_SHIM_RESUME_RULE_MISSING: nativeShim for "${surface.path}" is missing cross-harness resume rule`);
+    }
+  }
+
+  // =========================================================================
+  // 6. Validate Operational Documents and Legacy Path Guard
+  // =========================================================================
+  for (const relativePath of OPERATIONAL_DOCUMENTS) {
+    const docPath = path.join(rootDir, relativePath);
+    let content = "";
+    try {
+      content = await readFile(docPath, "utf8");
+    } catch {
+      continue;
+    }
+    const sanitized = stripLegacyLayoutExamples(content);
+    for (const pattern of LEGACY_TASK_PATH_PATTERNS) {
+      pattern.lastIndex = 0;
+      if (pattern.test(sanitized)) {
+        errors.push(
+          `DOC_LEGACY_TASK_PATH_OUTSIDE_MIGRATION: ${relativePath} documents a ForgeLoop 1.0 singleton task path outside an explicit legacy migration region`,
+        );
+      }
+    }
+  }
+
+  // README duplicate heading & diagram reference checks
+  const readmePath = path.join(rootDir, "README.md");
+  let readmeContent = "";
+  try {
+    readmeContent = await readFile(readmePath, "utf8");
+  } catch {
+    // ignore
+  }
+
+  if (readmeContent) {
+    const headings = (readmeContent.match(/^#{1,6}\s+(.+)$/gm) || []).map((h) =>
+      h.replace(/^#{1,6}\s+/, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()
+    );
+    const crossHarnessHeadings = headings.filter((h) => h === "cross harness continuity");
+    if (crossHarnessHeadings.length > 1) {
+      errors.push(`DOC_README_DUPLICATE_TOPIC: README.md contains duplicate "Cross-harness continuity" heading`);
+    }
+
+    const diagramMatch = readmeContent.match(/!\[.*?\]\(((\.\/)?docs\/assets\/forgeloop-flow\.svg)\)/);
+    if (!diagramMatch) {
+      errors.push(`DOC_README_DIAGRAM_REFERENCE_INVALID: README.md must reference ./docs/assets/forgeloop-flow.svg via Markdown image syntax`);
+    } else {
+      const diagramRelPath = diagramMatch[1];
+      const diagramAbsPath = path.resolve(rootDir, diagramRelPath);
+      try {
+        const stats = await stat(diagramAbsPath);
+        if (!stats.isFile() || stats.size === 0) {
+          errors.push(`DOC_README_DIAGRAM_REFERENCE_INVALID: Diagram asset ${diagramRelPath} is empty or not a regular file`);
+        }
+      } catch {
+        errors.push(`DOC_README_DIAGRAM_REFERENCE_INVALID: Diagram asset ${diagramRelPath} does not exist`);
+      }
     }
   }
 

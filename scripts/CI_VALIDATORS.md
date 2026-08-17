@@ -30,3 +30,10 @@ python3 scripts/scan_secrets.py
 The Node suite and Python suite have separate ownership: Node tests cover CLI,
 protocol behavior, schemas, and execution evidence; Python remains the
 compatibility gate for these repository-wide textual invariants.
+
+## Distinguishing CI Link vs Infrastructure Failures
+
+Maintainers should distinguish between actual documentation link failures and external CI/action infrastructure errors:
+
+- **Link-content failure (`Lychee`)**: The link checking step runs with `--verbose` and outputs the exact failing URL along with the HTTP status code (e.g. 404, 403). If a documentation URL is broken, update the link in the source Markdown. If a legitimate external host blocks shared CI runners or aggressively rate-limits CI automation, add a minimal, targeted exclusion in `.lychee.toml` with an explanatory comment.
+- **Action-download / Runner infrastructure failure (GitHub 429/502/503)**: When GitHub Actions fails during action checkout or tool download before running the test steps, this is a transient infrastructure issue rather than a project defect. Rerun the workflow without modifying project files.

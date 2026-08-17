@@ -67,6 +67,8 @@ jobs:
         with:
           args: >-
             --config .lychee.toml
+            --verbose
+            --no-progress
             --exclude-path '(^|/)node_modules(/|$)'
             --exclude-path '(^|/)coverage(/|$)'
             --exclude-path '(^|/)\.worktrees(/|$)'

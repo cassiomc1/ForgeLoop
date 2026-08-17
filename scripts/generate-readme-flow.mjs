@@ -17,10 +17,23 @@ const outputPath = outputArgument
   : path.join(repositoryRoot, "docs", "assets", "forgeloop-flow.svg");
 const binaryName = process.platform === "win32" ? "mmdc.cmd" : "mmdc";
 const mermaidCli = path.join(repositoryRoot, "node_modules", ".bin", binaryName);
+const mermaidConfigFile = path.join(repositoryRoot, "scripts", "mermaid-config.json");
 const puppeteerCiConfig = path.join(repositoryRoot, "scripts", "mermaid-puppeteer-ci.json");
 const puppeteerArgs = process.platform === "linux" && process.env.CI === "true"
   ? ["--puppeteerConfigFile", puppeteerCiConfig]
   : [];
+
+export function sanitizeGeneratedSvg(svg) {
+  return svg
+    .replace(
+      /@import\s+url\([^)]*\)\s*;?/gi,
+      "",
+    )
+    .replace(
+      /font-family:\s*['"]?Inter['"]?[^;}]*[;}]/gi,
+      "font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;",
+    );
+}
 
 if (!existsSync(sourcePath)) {
   console.error(`Refusing to render: missing Mermaid source ${sourcePath}`);
@@ -36,9 +49,10 @@ if (!existsSync(sourcePath)) {
   const sourceFingerprint = fingerprintText(source);
   const isWin = process.platform === "win32";
   const cmd = isWin ? process.env.ComSpec || "cmd.exe" : mermaidCli;
+  const configArgs = existsSync(mermaidConfigFile) ? ["-c", mermaidConfigFile] : [];
   const args = isWin
-    ? ["/d", "/s", "/c", mermaidCli, "-i", sourcePath, "-o", outputPath, "-t", "dark", "-b", "transparent", ...puppeteerArgs]
-    : ["-i", sourcePath, "-o", outputPath, "-t", "dark", "-b", "transparent", ...puppeteerArgs];
+    ? ["/d", "/s", "/c", mermaidCli, "-i", sourcePath, "-o", outputPath, "-t", "dark", "-b", "transparent", ...configArgs, ...puppeteerArgs]
+    : ["-i", sourcePath, "-o", outputPath, "-t", "dark", "-b", "transparent", ...configArgs, ...puppeteerArgs];
 
   const result = spawnSync(
     cmd,
@@ -57,11 +71,12 @@ if (!existsSync(sourcePath)) {
     process.exitCode = result.status ?? 1;
   } else {
     const rendered = await readFile(outputPath, "utf8");
-    const stamped = rendered.replace(
+    const sanitized = sanitizeGeneratedSvg(rendered);
+    const stamped = sanitized.replace(
       /<svg\b/,
       `<svg data-forgeloop-source-sha256="${sourceFingerprint}"`,
     );
-    if (stamped === rendered) {
+    if (stamped === sanitized) {
       console.error(`Refusing to stamp: Mermaid output is not an SVG document at ${outputPath}`);
       process.exitCode = 1;
     } else {

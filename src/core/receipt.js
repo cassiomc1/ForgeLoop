@@ -2,7 +2,7 @@ import { GUIDE_IDS, PROTOCOL_VERSION } from "./protocol.js";
 import { assertSchema, readSchema } from "./schema-validation.js";
 import { assertEvidenceList, evidenceMatches } from "./evidence.js";
 import { assertJsonLimits } from "./json-safety.js";
-import { assertCheck, assertCheckList } from "./checks.js";
+import { assertCheck } from "./checks.js";
 import { assertCoverageList } from "./coverage.js";
 
 const RECEIPT_SCHEMA_VERSION = 1;

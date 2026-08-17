@@ -124,11 +124,11 @@ The resolved CLI must match the installed project's package identity.
 
 The following protocol artifacts are strictly owned by ForgeLoop:
 
-- `.forgeloop/preflight.json`
-- `.forgeloop/work-state.json`
-- `.forgeloop/events.ndjson`
-- `.forgeloop/execution-receipt.json`
-- `.forgeloop/executions/<executionId>.json`
+- `.forgeloop/task-state/<taskKey>/preflight.json`
+- `.forgeloop/task-state/<taskKey>/work-state.json`
+- `.forgeloop/task-state/<taskKey>/events.ndjson`
+- `.forgeloop/task-state/<taskKey>/execution-receipt.json`
+- `.forgeloop/task-state/<taskKey>/executions/<executionId>.json`
 - Canonical check, evidence, and terminal-result state
 
 If the required CLI or API capability cannot be resolved:
@@ -149,7 +149,7 @@ Command verification has two explicit paths:
   execution. It classifies the exact argv before launch, uses a non-shell
   process boundary, records the target cwd, resolution mode, timestamps,
   exit status, and task/check binding in
-  `.forgeloop/executions/<executionId>.json`, then records an `OBSERVED` check
+  `.forgeloop/task-state/<taskKey>/executions/<executionId>.json`, then records an `OBSERVED` check
   with `provenance: FORGELOOP_EXECUTED`.
 - `forgeloop record-check` owns serialization only. `--command` is metadata and
   is never launched. A `kind: command` check with `evidenceKind: OBSERVED`

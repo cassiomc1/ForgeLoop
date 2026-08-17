@@ -28,6 +28,44 @@ export function fingerprintText(text) {
 }
 
 /**
+ * Validates that an SVG string is self-contained and GitHub-safe.
+ * @param {string} rendered
+ */
+export function assertGitHubSafeSvg(rendered) {
+  if (!/<svg\b/.test(rendered) || !/<\/svg>\s*$/.test(rendered)) {
+    throw new Error("diagram is not a complete SVG document");
+  }
+
+  if (!/\bviewBox="[^"]+"/.test(rendered)) {
+    throw new Error("diagram SVG must define a viewBox");
+  }
+
+  if (/@import\s+url\(/i.test(rendered)) {
+    throw new Error("diagram SVG must not import external stylesheets");
+  }
+
+  if (/<script\b/i.test(rendered)) {
+    throw new Error("diagram SVG must not contain scripts");
+  }
+
+  if (/<foreignObject\b/i.test(rendered)) {
+    throw new Error("diagram SVG must not contain foreignObject");
+  }
+
+  const externalReferences = [
+    ...rendered.matchAll(
+      /(?:href|src)=["'](https?:\/\/[^"']+)["']/gi,
+    ),
+  ];
+
+  if (externalReferences.length > 0) {
+    throw new Error(
+      `diagram SVG contains external resource: ${externalReferences[0][1]}`,
+    );
+  }
+}
+
+/**
  * Validates that an SVG file contains a valid SHA-256 fingerprint matching the canonical Mermaid source.
  * @param {string} [targetPath] - Optional path to target SVG
  * @param {string} [rootDir] - Optional root directory
@@ -42,14 +80,14 @@ export async function checkGeneratedDiagram(targetPath = null, rootDir = reposit
     readFile(sourcePath, "utf8"),
     readFile(outputPath, "utf8"),
   ]);
+
+  assertGitHubSafeSvg(rendered);
+
   const expectedFingerprint = fingerprintText(source);
   const actualFingerprint = rendered.match(
     /<svg\b[^>]*data-forgeloop-source-sha256="([a-f0-9]{64})"/,
   )?.[1];
 
-  if (!/<svg\b/.test(rendered)) {
-    throw new Error(`diagram is not an SVG document: ${outputPath}`);
-  }
   if (actualFingerprint !== expectedFingerprint) {
     throw new Error(
       `diagram source fingerprint mismatch: expected ${expectedFingerprint}, found ${actualFingerprint ?? "missing"} (fingerprint does not match canonical source)`,

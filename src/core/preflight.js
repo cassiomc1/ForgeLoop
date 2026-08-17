@@ -8,7 +8,6 @@ import {
   issue,
   preflightError,
   sortIssues,
-  validatePersistedPreflight,
 } from "./preflight-model.js";
 import {
   loadContract,

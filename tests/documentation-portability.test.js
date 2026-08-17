@@ -6,7 +6,7 @@ import { test } from "node:test";
 
 import { processGeneratedDocumentation } from "../scripts/generate_documentation_reference.mjs";
 import { validateDocumentationConformance } from "../scripts/validate_documentation_conformance.mjs";
-import { checkGeneratedDiagram, fingerprintText, normalizeTextForFingerprint } from "../scripts/check-generated-diagram.mjs";
+import { assertGitHubSafeSvg, checkGeneratedDiagram, fingerprintText, normalizeTextForFingerprint } from "../scripts/check-generated-diagram.mjs";
 
 test("fingerprint is independent of line-ending representation", () => {
   const lf = "flowchart TD\nA --> B\n";
@@ -40,6 +40,7 @@ test("documentation reference generator is deterministic and idempotent", async 
     await cp("docs", path.join(tempDir, "docs"), { recursive: true });
     await cp("schemas", path.join(tempDir, "schemas"), { recursive: true });
     await cp("src", path.join(tempDir, "src"), { recursive: true });
+    await cp("README.md", path.join(tempDir, "README.md"));
     await cp("AGENTS.md", path.join(tempDir, "AGENTS.md"));
     await cp("CLAUDE.md", path.join(tempDir, "CLAUDE.md"));
     await cp(".cursor", path.join(tempDir, ".cursor"), { recursive: true });
@@ -94,6 +95,7 @@ test("documentation generation and validation succeed in directory paths contain
     await cp("docs", path.join(tempDir, "docs"), { recursive: true });
     await cp("schemas", path.join(tempDir, "schemas"), { recursive: true });
     await cp("src", path.join(tempDir, "src"), { recursive: true });
+    await cp("README.md", path.join(tempDir, "README.md"));
     await cp("AGENTS.md", path.join(tempDir, "AGENTS.md"));
     await cp("CLAUDE.md", path.join(tempDir, "CLAUDE.md"));
     await cp(".cursor", path.join(tempDir, ".cursor"), { recursive: true });
@@ -115,6 +117,30 @@ test("documentation generation and validation succeed in directory paths contain
   } finally {
     await rm(tempDir, { recursive: true, force: true });
   }
+});
+
+test("assertGitHubSafeSvg enforces GitHub-safe diagram constraints", async () => {
+  const validSvg = await readFile("docs/assets/forgeloop-flow.svg", "utf8");
+  assert.doesNotThrow(() => assertGitHubSafeSvg(validSvg));
+
+  // Rejects missing/truncated SVG
+  assert.throws(() => assertGitHubSafeSvg("<div>not svg</div>"), /not an?.*SVG document/i);
+  assert.throws(() => assertGitHubSafeSvg("<svg viewBox=\"0 0 10 10\">incomplete"), /not a complete SVG document/i);
+
+  // Rejects missing viewBox
+  assert.throws(() => assertGitHubSafeSvg("<svg width=\"100\" height=\"100\"></svg>"), /must define a viewBox/i);
+
+  // Rejects @import
+  assert.throws(() => assertGitHubSafeSvg(validSvg.replace("<svg", "<svg><style>@import url('https://fonts.googleapis.com/css');</style>")), /must not import external stylesheets/i);
+
+  // Rejects <script>
+  assert.throws(() => assertGitHubSafeSvg(validSvg.replace("</svg>", "<script>alert(1)</script></svg>")), /must not contain scripts/i);
+
+  // Rejects <foreignObject>
+  assert.throws(() => assertGitHubSafeSvg(validSvg.replace("</svg>", "<foreignObject width=\"10\" height=\"10\"></foreignObject></svg>")), /must not contain foreignObject/i);
+
+  // Rejects external resource links
+  assert.throws(() => assertGitHubSafeSvg(validSvg.replace("</svg>", "<image href=\"https://example.com/img.png\" /></svg>")), /contains external resource/i);
 });
 
 test("Mermaid diagram check validates target SVG explicitly", async () => {

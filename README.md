@@ -80,26 +80,28 @@ request → discovery → contract → routing → plan → execution
               └──── evidence-only rejection / next cycle
 ```
 
-The harness writes a schema-valid `.forgeloop/current-contract.json`, required
-gate artifacts, and routing. `preflight` must return `PREFLIGHT_READY` before
-implementation. ForgeLoop then records an append-only event ledger and protects
-the lifecycle with contract, route, repository, and artifact fingerprints.
+The harness writes a schema-valid task contract under
+`.forgeloop/task-state/<taskKey>/contract.json`, required gate artifacts, and
+routing. `preflight` must return `PREFLIGHT_READY` before implementation.
+ForgeLoop then records an append-only event ledger and protects the lifecycle
+with contract, route, repository, and artifact fingerprints.
 
 Typical local commands are:
 
 ```bash
-forgeloop route --work complete-website --surface ui --risk untrusted-input
-forgeloop activate
-forgeloop preflight --json
-forgeloop next --json
-forgeloop advance --to PLANNED
-forgeloop advance --to EXECUTING
-forgeloop advance --to VERIFYING
-forgeloop prepare-completion --json
-forgeloop run-check --json --id tests --requirement tests -- npm test
-forgeloop advance --to REVIEWING
-forgeloop audit --json
-forgeloop complete --json
+forgeloop task-create --task example-task --claim src --claim tests --json
+forgeloop route --task example-task --work complete-website --surface ui --risk untrusted-input
+forgeloop activate --task example-task
+forgeloop preflight --task example-task --json
+forgeloop next --task example-task --json
+forgeloop advance --task example-task --to PLANNED
+forgeloop advance --task example-task --to EXECUTING
+forgeloop advance --task example-task --to VERIFYING
+forgeloop prepare-completion --task example-task --json
+forgeloop run-check --task example-task --json --id tests --requirement tests -- npm test
+forgeloop advance --task example-task --to REVIEWING
+forgeloop audit --task example-task --json
+forgeloop complete --task example-task --json
 ```
 
 `advance` changes protocol phase only; it never runs target commands.
@@ -122,10 +124,10 @@ graph runtime, agent runtime, or hidden prompt store.
 ForgeLoop preserves task state when switching between AI coding tools, IDEs, or terminals:
 
 ```bash
-forgeloop status --json
-forgeloop continuity --json
-forgeloop reconcile-continuity --json
-forgeloop next --json
+forgeloop status --task example-task --json
+forgeloop continuity --task example-task --json
+forgeloop reconcile-continuity --task example-task --json
+forgeloop next --task example-task --json
 ```
 
 See [`docs/CROSS_HARNESS_CONTINUITY.md`](./docs/CROSS_HARNESS_CONTINUITY.md) for full handoff and recovery procedures.
@@ -160,9 +162,7 @@ and the committed render is [`docs/assets/forgeloop-flow.svg`](./docs/assets/for
 The broader architecture and boundaries are in
 [`LOOP_SYSTEM_DESIGN.md`](./LOOP_SYSTEM_DESIGN.md).
 
-<p align="center">
-  <img src="./docs/assets/forgeloop-flow.svg" alt="ForgeLoop evidence-first engineering flow" width="100%" />
-</p>
+![ForgeLoop evidence-first engineering flow](./docs/assets/forgeloop-flow.svg)
 
 Text-only fallback: discovery creates the contract and route; required gates
 and `PREFLIGHT_READY` authorize execution; verification creates structured
@@ -238,15 +238,6 @@ Credentials belong in the process environment or the official Qwen
 configuration file, never in Git, `.forgeloop/kit/PROJECT_PROFILE.md`, or
 copied instruction files. ForgeLoop does not vendor Qwen code or install it
 through `init`, `update`, or `doctor`.
-
-## Cross-harness continuity
-
-ForgeLoop can optionally persist bounded execution-continuity context for a
-resumable task so another compatible harness can reconcile the current checkout
-and continue without replacing the task contract. Continuity is operational
-context only; it is never verification evidence or authority. See
-[`EXECUTION_STATE.md`](./EXECUTION_STATE.md) and
-[`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md).
 
 ## Release and maintenance
 

@@ -101,6 +101,7 @@ test("negative fixtures & mutation tests: validateDocumentationConformance detec
     await cp("docs", path.join(tempDir, "docs"), { recursive: true });
     await cp("schemas", path.join(tempDir, "schemas"), { recursive: true });
     await cp("src", path.join(tempDir, "src"), { recursive: true });
+    await cp("README.md", path.join(tempDir, "README.md"));
     await cp("AGENTS.md", path.join(tempDir, "AGENTS.md"));
     await cp("CLAUDE.md", path.join(tempDir, "CLAUDE.md"));
     await cp(".cursor", path.join(tempDir, ".cursor"), { recursive: true });
@@ -164,6 +165,39 @@ test("negative fixtures & mutation tests: validateDocumentationConformance detec
     const mut5 = await validateDocumentationConformance({ rootDir: tempDir });
     assert.equal(mut5.valid, false);
     assert.ok(mut5.errors.some((e) => e.includes("DOC_ADAPTER_RESUME_RULE_MISSING")));
+    await writeFile(agentsFile, agentsContent, "utf8");
+
+    // Mutation 6: Legacy singleton path outside migration marker in docs/RECIPES.md
+    const recipesFile = path.join(tempDir, "docs", "RECIPES.md");
+    const recipesContent = await readFile(recipesFile, "utf8");
+    const mutRecipes6 = recipesContent + "\n\nSee .forgeloop/current-contract.json directly.\n";
+    await writeFile(recipesFile, mutRecipes6, "utf8");
+    const mut6 = await validateDocumentationConformance({ rootDir: tempDir });
+    assert.equal(mut6.valid, false);
+    assert.ok(mut6.errors.some((e) => e.includes("DOC_LEGACY_TASK_PATH_OUTSIDE_MIGRATION")));
+    await writeFile(recipesFile, recipesContent, "utf8");
+
+    // Mutation 7: Duplicate README topic
+    const readmeFile = path.join(tempDir, "README.md");
+    const readmeContent = await readFile(readmeFile, "utf8");
+    const mutReadme7 = readmeContent + "\n\n## Cross-harness continuity\nDuplicate section\n";
+    await writeFile(readmeFile, mutReadme7, "utf8");
+    const mut7 = await validateDocumentationConformance({ rootDir: tempDir });
+    assert.equal(mut7.valid, false);
+    assert.ok(mut7.errors.some((e) => e.includes("DOC_README_DUPLICATE_TOPIC")));
+    await writeFile(readmeFile, readmeContent, "utf8");
+
+    // Mutation 8: Invalid diagram reference
+    const mutReadme8 = mustReplace(
+      readmeContent,
+      /!\[.*?\]\(\.\/docs\/assets\/forgeloop-flow\.svg\)/,
+      '<img src="./docs/assets/forgeloop-flow.svg" />',
+      "readme diagram reference",
+    );
+    await writeFile(readmeFile, mutReadme8, "utf8");
+    const mut8 = await validateDocumentationConformance({ rootDir: tempDir });
+    assert.equal(mut8.valid, false);
+    assert.ok(mut8.errors.some((e) => e.includes("DOC_README_DIAGRAM_REFERENCE_INVALID")));
   } finally {
     await rm(tempDir, { recursive: true, force: true });
   }
