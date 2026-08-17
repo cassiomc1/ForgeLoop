@@ -1,0 +1,42 @@
+{
+  "premium": {
+    "path": "ENG/premium-sites-studio-eng.md",
+    "install": true
+  },
+  "clean": {
+    "path": "ENG/clean-code-eng.md",
+    "install": true
+  },
+  "test": {
+    "path": "ENG/test-code-eng.md",
+    "install": true
+  },
+  "security": {
+    "path": "ENG/sec-code-eng.md",
+    "install": true
+  },
+  "design": {
+    "path": "ENG/design-code-eng.md",
+    "install": true
+  },
+  "taste": {
+    "path": "ENG/taste-frontend-eng.md",
+    "install": true
+  },
+  "performance": {
+    "path": "ENG/perf-code-eng.md",
+    "install": true
+  },
+  "accessibility": {
+    "path": "ENG/accessibility-eng.md",
+    "install": true
+  },
+  "games": {
+    "path": "ENG/games-code-design-web-eng.md",
+    "install": true
+  },
+  "documentation": {
+    "path": "ENG/documentation-quality-eng.md",
+    "install": true
+  }
+}

@@ -711,11 +711,21 @@ def validate_iso_date(value: str, field_name: str, relative_path: str) -> None:
         raise ValidationError(f"{relative_path}: {field_name} cannot be in the future: '{value}'")
 
 
+def load_guide_registry(root: Path) -> dict[str, dict]:
+    registry_path = root / "src" / "config" / "guides.json"
+    if registry_path.is_file():
+        return json.loads(registry_path.read_text(encoding="utf-8"))
+    return {}
+
+
 def validate_repository(root: Path) -> None:
     root = root.resolve()
+    registry = load_guide_registry(root)
     guides = sorted(root.glob("ENG/*.md"))
-    if len(guides) != 10:
-        raise ValidationError(f"expected 10 English guides, found {len(guides)}")
+    if not guides:
+        raise ValidationError("expected English guides in ENG/, found none")
+    if registry and len(guides) != len(registry):
+        raise ValidationError(f"expected {len(registry)} English guides matching registry, found {len(guides)}")
 
     names = set()
     for path in guides:
@@ -752,7 +762,8 @@ def main() -> int:
         else:
             root = args.root.resolve()
             validate_repository(root)
-            print(f"validated 10 guides; fences and relative links in {len(_markdown_files(root))} Markdown files")
+            guide_count = len(sorted(root.glob("ENG/*.md")))
+            print(f"validated {guide_count} guides; fences and relative links in {len(_markdown_files(root))} Markdown files")
         return 0
     except (ValidationError, AssertionError) as error:
         print(f"Markdown validation failed: {error}", file=sys.stderr)

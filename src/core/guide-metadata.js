@@ -20,8 +20,12 @@ function parseFrontmatter(text, relativePath) {
   if (!match) throw new Error(`${relativePath} is missing YAML frontmatter`);
   const frontmatter = match[1];
   const guideId = frontmatter.match(/^guide-id:\s*([^\s]+)\s*$/m)?.[1] ?? null;
+  const lastReviewed = frontmatter.match(/^last-reviewed:\s*"?([^"\r\n]+)"?\s*$/m)?.[1] ?? null;
+  const version = frontmatter.match(/^version:\s*"?([^"\r\n]+)"?\s*$/m)?.[1] ?? null;
   return {
     guideId,
+    lastReviewed,
+    version,
     requiresGates: parseList(frontmatter, "requires-gates"),
     completionEvidence: parseList(frontmatter, "completion-evidence"),
   };
@@ -34,6 +38,8 @@ export async function readGuideMetadata(packageRoot) {
     const parsed = parseFrontmatter(text, relativePath);
     metadata[id] = {
       guideId: parsed.guideId ?? id,
+      lastReviewed: parsed.lastReviewed,
+      version: parsed.version,
       requiresGates: [...parsed.requiresGates],
       completionEvidence: [...parsed.completionEvidence],
       path: relativePath,

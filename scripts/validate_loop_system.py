@@ -336,9 +336,18 @@ def validate_iso_date(value: str, field_name: str, relative_path: str) -> None:
         raise ValidationError(f"{relative_path}: {field_name} cannot be in the future: '{value}'")
 
 
+def load_guide_registry(root: Path) -> dict[str, str]:
+    registry_path = root / "src" / "config" / "guides.json"
+    if registry_path.is_file():
+        data = json.loads(registry_path.read_text(encoding="utf-8"))
+        return {guide_id: def_data["path"] for guide_id, def_data in data.items()}
+    return GUIDES
+
+
 def validate_guides(root: Path) -> None:
+    guides = load_guide_registry(root)
     names: set[str] = set()
-    for relative in GUIDES.values():
+    for relative in guides.values():
         path = root / relative
         metadata = parse_guide_frontmatter(path)
         if metadata["name"] != path.stem:
@@ -358,8 +367,9 @@ def validate_guides(root: Path) -> None:
 def validate_router(root: Path) -> None:
     path = root / "GUIDE_ROUTER.md"
     text = path.read_text(encoding="utf-8")
+    guides = load_guide_registry(root)
 
-    for guide_id, relative in GUIDES.items():
+    for guide_id, relative in guides.items():
         if f"`{guide_id}`" not in text:
             raise ValidationError(f"GUIDE_ROUTER.md: missing guide ID {guide_id}")
         if relative not in text:
@@ -383,21 +393,20 @@ def validate_router(root: Path) -> None:
             raise ValidationError(f"GUIDE_ROUTER.md: duplicate routing scenario {scenario}")
         parsed[scenario] = guide_ids
 
-    allowed = set(GUIDES) | {"domain"}
+    allowed = set(guides) | {"domain"}
     for scenario, guide_ids in parsed.items():
         unknown = set(guide_ids.split(",")) - allowed
         if unknown:
             raise ValidationError(
-                f"GUIDE_ROUTER.md: scenario {scenario} has unknown IDs: {sorted(unknown)}"
+                f"GUIDE_ROUTER.md: scenario {scenario} references unknown IDs: {','.join(sorted(unknown))}"
             )
 
     for scenario, expected_ids in ROUTING_SCENARIOS.items():
-        actual = parsed.get(scenario)
-        if actual is None:
+        if scenario not in parsed:
             raise ValidationError(f"GUIDE_ROUTER.md: missing routing scenario {scenario}")
-        if actual != expected_ids:
+        if parsed[scenario] != expected_ids:
             raise ValidationError(
-                f"GUIDE_ROUTER.md: scenario {scenario} expected {expected_ids}, got {actual}"
+                f"GUIDE_ROUTER.md: scenario {scenario} expected {expected_ids}, got {parsed[scenario]}"
             )
 
 
@@ -831,7 +840,7 @@ def run_self_tests() -> None:
         root = Path(directory)
         _valid_fixture(root)
         router = (root / "GUIDE_ROUTER.md").read_text(encoding="utf-8")
-        router = router.replace("<!-- route:documentation=domain -->", "")
+        router = router.replace("<!-- route:documentation=documentation -->", "")
         _write(root / "GUIDE_ROUTER.md", router)
         _expect_invalid(root, "missing routing scenario")
         cases += 1
