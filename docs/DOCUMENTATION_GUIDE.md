@@ -23,10 +23,10 @@ ForgeLoop strictly separates normative protocol definitions from operational doc
 When updating documentation, always derive content from its authoritative source:
 
 ```text
-CLI syntax truth        -> CLI registry / parser (src/cli.js)
-Artifact shape truth    -> JSON schemas (schemas/*.schema.json)
+CLI syntax truth        -> CLI registry / parser (src/cli.js, src/core/cli-metadata.js)
+Artifact shape truth    -> JSON schemas (schemas/*.schema.json, src/core/artifact-registry.js)
 Lifecycle truth         -> protocol / state machine (src/core/protocol.js)
-Reason-code truth       -> exported protocol constants (src/core/protocol.js, errors.js)
+Reason-code truth       -> exported protocol constants (src/core/error-codes.js, src/core/protocol.js)
 Package contents truth  -> package.json + package tests (tests/package.test.js)
 Documentation routing   -> DOCS_INDEX.md
 ```
@@ -35,7 +35,23 @@ Operational documentation must explain canonical behavior, not redefine it.
 
 ---
 
-## 3. Normative Language Conventions
+## 3. Documentation Conformance Matrix
+
+| Documentation Area | Canonical Machine Source | Conformance Validator |
+| --- | --- | --- |
+| **CLI commands & flags** | `CLI_COMMAND_METADATA` (`src/core/cli-metadata.js`) & `src/cli.js` | `scripts/validate_documentation_conformance.mjs` |
+| **Artifact paths** | `ARTIFACT_REGISTRY` (`src/core/artifact-registry.js`) | `scripts/validate_documentation_conformance.mjs` |
+| **Artifact fields & types** | `schemas/*.schema.json` | `scripts/validate_documentation_conformance.mjs` |
+| **Enums & consts** | `schemas/*.schema.json` | `scripts/validate_documentation_conformance.mjs` |
+| **Lifecycle phases** | `WORK_PHASES` (`src/core/protocol.js`) | `scripts/validate_documentation_conformance.mjs` |
+| **Stable error codes** | `PUBLIC_ERROR_CODES` (`src/core/error-codes.js`) | `scripts/validate_documentation_conformance.mjs` |
+| **Discovery resume rules** | `DISCOVERY_SURFACES` & `nativeShim` | `scripts/validate_documentation_conformance.mjs` |
+| **Package-shipped docs** | `package.json` (`files`) | `tests/package.test.js` |
+| **Architecture diagram** | `docs/forgeloop-flow.mmd` | `scripts/check-generated-diagram.mjs` |
+
+---
+
+## 4. Normative Language Conventions
 
 When writing documentation, use precise terms:
 
@@ -48,7 +64,7 @@ Avoid ambiguous phrases like *"should generally"* or *"usually"* for behaviors t
 
 ---
 
-## 4. Linking Conventions
+## 5. Linking Conventions
 
 - **Relative Links Only**: Always use relative markdown links for repository files (e.g. `[`LOOP_ENGINEERING.md`](../LOOP_ENGINEERING.md)`).
 - **Valid Targets**: Every relative link must point to an existing file and is validated by `python3 scripts/validate_markdown.py`.
@@ -56,7 +72,7 @@ Avoid ambiguous phrases like *"should generally"* or *"usually"* for behaviors t
 
 ---
 
-## 5. Mermaid Diagrams and SVG Generation
+## 6. Mermaid Diagrams and SVG Generation
 
 1. **Source is Canonical**: Diagram source files live in `.mmd` files (e.g. `docs/forgeloop-flow.mmd`). Never modify SVG files directly.
 2. **Local Committed SVGs**: Generated SVGs are committed locally in `docs/assets/`. Never hotlink externally rendered diagram images.
@@ -64,7 +80,7 @@ Avoid ambiguous phrases like *"should generally"* or *"usually"* for behaviors t
 
 ---
 
-## 6. Documentation Change Checklist for Pull Requests
+## 7. Documentation Change Checklist for Pull Requests
 
 For documentation-impacting changes, verify each item before merging:
 
@@ -77,4 +93,4 @@ For documentation-impacting changes, verify each item before merging:
 - [ ] Did cross-harness resume behavior change?
 - [ ] Did package-shipped documentation change?
 - [ ] Were generated/reference docs updated?
-- [ ] Did documentation conformance CI pass?
+- [ ] Did documentation conformance CI pass (`npm run docs:check`)?

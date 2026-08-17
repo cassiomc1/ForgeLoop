@@ -251,7 +251,7 @@ Clears operational continuity context while preserving canonical work state.
 
 Executes a verification command with ForgeLoop-attested provenance.
 
-- **Purpose**: Runs an exact command line, captures exit code and output, stores execution provenance in `.forgeloop/executions/`, and records check evidence.
+- **Purpose**: Runs an exact command, records the execution artifact in `.forgeloop/executions/`, and binds the resulting observed check evidence to that execution through `executionRef`.
 - **When to use**: During `VERIFYING` phase to execute test suites, linters, or validators.
 - **Mutation**: Writes `.forgeloop/executions/exec-*.json`, updates `.forgeloop/execution-receipt.json`, appends to ledger.
 - **Options**:
