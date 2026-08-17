@@ -2,17 +2,53 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { COMMANDS, parseArgs, parseCliSyntax } from "../src/cli.js";
-import { CLI_COMMAND_DEFINITIONS } from "../src/core/cli-command-definitions.js";
+import { CLI_COMMAND_DEFINITIONS, buildOptionLookup } from "../src/core/cli-command-definitions.js";
 import { generateCliOptionsForCommand } from "../scripts/generate_documentation_reference.mjs";
 
-test("CLI definitions are syntactically complete", () => {
+test("CLI definitions satisfy strict registry invariants", () => {
   for (const [command, definition] of Object.entries(CLI_COMMAND_DEFINITIONS)) {
+    assert.ok(definition.name, `${command} missing name`);
+    assert.ok(definition.category, `${command} missing category`);
+    assert.ok(definition.mutation, `${command} missing mutation`);
+    assert.ok(definition.options, `${command} missing options`);
+    assert.ok(definition.description, `${command} missing description`);
+
     for (const [optionName, optionDef] of Object.entries(definition.options)) {
       assert.ok(optionDef.targetKey, `${command} ${optionName} missing targetKey`);
       assert.ok(optionDef.parseType, `${command} ${optionName} missing parseType`);
+      assert.equal(typeof optionDef.takesValue, "boolean", `${command} ${optionName} takesValue must be boolean`);
 
-      if (optionDef.takesValue && optionDef.parseType !== "argv") {
+      if (optionDef.takesValue && optionDef.parseType !== "argv" && !optionDef.isPositional) {
         assert.ok(optionDef.valueName, `${command} ${optionName} missing valueName`);
+      }
+
+      if (optionDef.parseType === "boolean") {
+        assert.equal(optionDef.takesValue, false, `${command} ${optionName} boolean option must not take a value`);
+      }
+
+      if (optionDef.repeatable) {
+        assert.equal(optionDef.takesValue, true, `${command} ${optionName} repeatable option must take a value`);
+        assert.notEqual(optionDef.parseType, "boolean", `${command} ${optionName} repeatable option cannot be boolean`);
+      }
+
+      if (optionDef.isPositional) {
+        assert.equal(optionName.startsWith("-"), false, `${command} positional ${optionName} must not start with -`);
+        assert.equal(optionDef.aliases, undefined, `${command} positional ${optionName} cannot have aliases`);
+      }
+
+      if (optionDef.parseType === "argv") {
+        assert.equal(optionName, "--", `${command} argv parseType must have canonical name --`);
+      }
+    }
+  }
+});
+
+test("positional definitions are not exposed as option lookup entries", () => {
+  for (const [command, definition] of Object.entries(CLI_COMMAND_DEFINITIONS)) {
+    const lookup = buildOptionLookup(command);
+    for (const [name, optionDef] of Object.entries(definition.options)) {
+      if (optionDef.isPositional) {
+        assert.equal(lookup.has(name), false, `${command} lookup unexpectedly contains positional ${name}`);
       }
     }
   }
@@ -110,6 +146,20 @@ test("CLI parser does not reinterpret option values as commands", () => {
   assert.equal(policy.options.policy, "report");
 });
 
+test("bootstrap command discovery skips bootstrap option values", () => {
+  const p1 = parseCliSyntax(["--path", "status", "doctor"]);
+  assert.equal(p1.command, "doctor");
+  assert.equal(p1.options.path, "status");
+
+  const p2 = parseCliSyntax(["--path", "update", "status"]);
+  assert.equal(p2.command, "status");
+  assert.equal(p2.options.path, "update");
+
+  const p3 = parseCliSyntax(["--path", "bundle", "report"]);
+  assert.equal(p3.command, "report");
+  assert.equal(p3.options.path, "bundle");
+});
+
 test("command names are valid values where syntax allows arbitrary strings", () => {
   for (const commandName of COMMANDS) {
     const bundle = parseArgs(["bundle", "--task", commandName]);
@@ -140,6 +190,25 @@ test("all value-taking long options support equals syntax", () => {
       assert.doesNotThrow(
         () => parseCliSyntax([command, `${optionName}=${sample}`]),
         `${command} ${optionName}=${sample} threw unexpectedly`,
+      );
+    }
+  }
+});
+
+test("all boolean CLI options reject equals syntax", () => {
+  for (const [command, definition] of Object.entries(CLI_COMMAND_DEFINITIONS)) {
+    for (const [optionName, optionDef] of Object.entries(definition.options)) {
+      if (optionDef.parseType !== "boolean") continue;
+
+      assert.throws(
+        () => parseCliSyntax([command, `${optionName}=false`]),
+        /does not accept a value/,
+        `${command} ${optionName}=false must fail`,
+      );
+      assert.throws(
+        () => parseCliSyntax([command, `${optionName}=true`]),
+        /does not accept a value/,
+        `${command} ${optionName}=true must fail`,
       );
     }
   }

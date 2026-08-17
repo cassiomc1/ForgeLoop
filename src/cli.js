@@ -86,6 +86,10 @@ function applyOption({ canonicalName, optionDef, inlineValue, argv, index, optio
   const key = optionDef.targetKey;
   suppliedFlags.add(canonicalName);
 
+  if (inlineValue !== undefined && !optionDef.takesValue) {
+    throw new Error(`${canonicalName} does not accept a value`);
+  }
+
   switch (optionDef.parseType) {
     case "boolean": {
       options[key] = true;
