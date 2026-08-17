@@ -10,6 +10,8 @@ import { assertSecretFree } from "./receipt.js";
 import { PROTOCOL_VERSION } from "./protocol.js";
 import { isRecoverableCompletionEvidenceCode } from "./completion-recovery.js";
 
+import { taskArtifactPath } from "./task-paths.js";
+
 const EVENT_SCHEMA_VERSION = 1;
 export const LIFECYCLE_MILESTONES = Object.freeze([
   "CONTRACT_VALIDATED",
@@ -47,22 +49,23 @@ function protocolError(code, message, artifacts = [ARTIFACT_PATHS.events]) {
   return error;
 }
 
-async function readEvents(target, packageRoot) {
-  await assertSafePath(target, ARTIFACT_PATHS.events);
-  const eventsPath = ensureWithin(target, ARTIFACT_PATHS.events);
+export async function readEvents(target, packageRoot, options = {}) {
+  const relPath = options?.eventsPath ?? options?.relativePath ?? (options?.taskId ? taskArtifactPath(options.taskId, "events") : ARTIFACT_PATHS.events);
+  await assertSafePath(target, relPath);
+  const eventsPath = ensureWithin(target, relPath);
   if (!(await fileExists(eventsPath))) return [];
   const text = await readFile(eventsPath, "utf8");
-  assertJsonBytes(text, ARTIFACT_PATHS.events);
+  assertJsonBytes(text, relPath);
   const schema = await readSchema("event", packageRoot);
   const lines = text.split(/\r?\n/).filter((line) => line.trim() !== "");
   return lines.map((line, index) => {
     let event;
     try {
       event = JSON.parse(line);
-      assertJsonLimits(event, `${ARTIFACT_PATHS.events}[${index}]`);
-      assertSchema(event, schema, `${ARTIFACT_PATHS.events}[${index}]`);
+      assertJsonLimits(event, `${relPath}[${index}]`);
+      assertSchema(event, schema, `${relPath}[${index}]`);
     } catch (error) {
-      throw protocolError("E_EVENT_INVALID", `${ARTIFACT_PATHS.events} line ${index + 1}: ${error.message}`);
+      throw protocolError("E_EVENT_INVALID", `${relPath} line ${index + 1}: ${error.message}`, [relPath]);
     }
     return event;
   });
@@ -71,7 +74,8 @@ async function readEvents(target, packageRoot) {
 export async function appendProtocolEvent(target, input, packageRoot, options = {}) {
   if (typeof input?.taskId !== "string" || !input.taskId) throw protocolError("E_EVENT_INVALID", "event taskId is required");
   if (typeof input?.event !== "string" || !input.event) throw protocolError("E_EVENT_INVALID", "event type is required");
-  const events = await readEvents(target, packageRoot);
+  const relPath = options?.eventsPath ?? options?.relativePath ?? (options?.taskId ? taskArtifactPath(options.taskId, "events") : ARTIFACT_PATHS.events);
+  const events = await readEvents(target, packageRoot, { ...options, eventsPath: relPath });
   const previous = events.at(-1) ?? null;
   const event = {
     seq: events.length + 1,
@@ -86,9 +90,9 @@ export async function appendProtocolEvent(target, input, packageRoot, options = 
   };
   assertSecretFree(event);
   const schema = await readSchema("event", packageRoot);
-  assertSchema(event, schema, ARTIFACT_PATHS.events);
+  assertSchema(event, schema, relPath);
   event.hash = eventHash(event);
-  const eventsPath = ensureWithin(target, ARTIFACT_PATHS.events);
+  const eventsPath = ensureWithin(target, relPath);
   if (!options.dryRun) {
     await mkdir(path.dirname(eventsPath), { recursive: true });
     await appendFile(eventsPath, `${JSON.stringify(event)}\n`, { encoding: "utf8" });
@@ -96,12 +100,13 @@ export async function appendProtocolEvent(target, input, packageRoot, options = 
   return event;
 }
 
-export async function validateEventLedger(target, packageRoot) {
+export async function validateEventLedger(target, packageRoot, options = {}) {
+  const relPath = options?.eventsPath ?? options?.relativePath ?? (options?.taskId ? taskArtifactPath(options.taskId, "events") : ARTIFACT_PATHS.events);
   let events;
   try {
-    events = await readEvents(target, packageRoot);
+    events = await readEvents(target, packageRoot, { ...options, eventsPath: relPath });
   } catch (error) {
-    return { valid: false, events: [], errors: [{ code: error.code ?? "E_EVENT_INVALID", message: error.message }] };
+    return { valid: false, events: [], errors: [{ code: error.code ?? "E_EVENT_INVALID", message: error.message, artifacts: [relPath] }] };
   }
   const errors = [];
   let taskId = null;

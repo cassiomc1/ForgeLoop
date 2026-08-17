@@ -1,7 +1,8 @@
 import { clearContinuity } from "../core/continuity.js";
 
-export async function runClearContinuity({ target } = {}) {
-  return clearContinuity(target);
+export async function runClearContinuity({ target, taskId, task } = {}) {
+  const effectiveTaskId = taskId ?? task ?? null;
+  return clearContinuity(target, { taskId: effectiveTaskId });
 }
 
 export function formatClearContinuityResult(result) {

@@ -1,5 +1,6 @@
 import { PROTOCOL_VERSION } from "./protocol.js";
 import { ARTIFACT_PATHS, canonicalFingerprint, readJsonArtifact, writeJsonArtifact } from "./artifacts.js";
+import { taskArtifactPath } from "./task-paths.js";
 import { assertSchema, readSchema } from "./schema-validation.js";
 import { assertSecretFree } from "./receipt.js";
 import { REQUIREMENT_TYPES, isMixedTerminalRequirement } from "./evidence-readiness.js";
@@ -199,8 +200,9 @@ export async function validateContract(contract, packageRoot) {
   return contract;
 }
 
-export async function readContract(target, packageRoot) {
-  const artifact = await readJsonArtifact(target, ARTIFACT_PATHS.contract, "current-contract", packageRoot);
+export async function readContract(target, packageRoot, options = {}) {
+  const contractPath = options.contractPath ?? options.contractFile ?? options.relativePath ?? (options.taskId ? taskArtifactPath(options.taskId, "contract") : ARTIFACT_PATHS.contract);
+  const artifact = await readJsonArtifact(target, contractPath, "current-contract", packageRoot);
   await validateContract(artifact.value, packageRoot);
   return artifact;
 }
@@ -208,9 +210,10 @@ export async function readContract(target, packageRoot) {
 export async function writeContract(target, contract, packageRoot, options = {}) {
   assertSecretFree(contract);
   assertAssumptions(contract.assumptions ?? []);
+  const contractPath = options.contractPath ?? options.contractFile ?? options.relativePath ?? (options.taskId ? taskArtifactPath(options.taskId, "contract") : ARTIFACT_PATHS.contract);
   return writeJsonArtifact(
     target,
-    ARTIFACT_PATHS.contract,
+    contractPath,
     contract,
     "current-contract",
     packageRoot,

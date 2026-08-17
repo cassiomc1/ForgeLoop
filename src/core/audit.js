@@ -5,20 +5,41 @@ import { PROTOCOL_VERSION } from "./protocol.js";
 import { readJsonArtifact } from "./artifacts.js";
 import { currentChangedPaths } from "./repository.js";
 import { validateReadyProtocolConsistency } from "./preflight.js";
+import { taskArtifactPath } from "./task-paths.js";
+import { readTaskDescriptor } from "./task-descriptor.js";
+import { assertClaimsCoverChangedPaths } from "./task-scope.js";
 
 function sortErrors(errors) {
   return [...errors].sort((left, right) => left.code.localeCompare(right.code)
     || left.message.localeCompare(right.message));
 }
 
-async function compareChangedPaths(target, packageRoot) {
+async function compareChangedPaths(target, packageRoot, options = {}) {
+  const receiptRel = options.receiptPath ?? (options.taskId ? taskArtifactPath(options.taskId, "receipt") : ARTIFACT_PATHS.receipt);
   let receipt;
   try {
-    receipt = (await readJsonArtifact(target, ARTIFACT_PATHS.receipt, "execution-receipt", packageRoot)).value;
+    receipt = (await readJsonArtifact(target, receiptRel, "execution-receipt", packageRoot)).value;
   } catch {
     return { status: "NOT_VERIFIED", expected: [], observed: [], missing: [], unexpected: [] };
   }
-  const observed = await currentChangedPaths(target);
+
+  let writeClaims = [];
+  if (options.taskId) {
+    try {
+      const desc = await readTaskDescriptor(target, options.taskId, packageRoot);
+      writeClaims = desc.value.writeClaims ?? [];
+    } catch {
+      // ignore
+    }
+  }
+
+  let observed;
+  if (writeClaims.length > 0) {
+    observed = await currentChangedPaths(target, { paths: writeClaims });
+  } else {
+    observed = await currentChangedPaths(target);
+  }
+
   if (observed === null) {
     return { status: "NOT_VERIFIED", expected: receipt.changedPaths ?? [], observed: [], missing: [], unexpected: [] };
   }
@@ -34,8 +55,40 @@ async function compareChangedPaths(target, packageRoot) {
   };
 }
 
-export async function evaluateAudit({ target, packageRoot, strict = false, authorityContext, runtimeContext } = {}) {
-  const completion = await evaluateCompletion({ target, packageRoot, strict, authorityContext, runtimeContext });
+export async function evaluateAudit({
+  target,
+  packageRoot,
+  strict = false,
+  authorityContext,
+  runtimeContext,
+  taskId = null,
+  contractPath = null,
+  routePath = null,
+  statePath = null,
+  receiptPath = null,
+  eventsPath = null,
+  preflightPath = null,
+} = {}) {
+  const completion = await evaluateCompletion({
+    target,
+    packageRoot,
+    strict,
+    authorityContext,
+    runtimeContext,
+    taskId,
+    contractPath,
+    routePath,
+    statePath,
+    receiptPath,
+    eventsPath,
+    preflightPath,
+  });
+  const preflightRel = preflightPath ?? (taskId ? taskArtifactPath(taskId, "preflight") : ARTIFACT_PATHS.preflight);
+  const receiptRel = receiptPath ?? (taskId ? taskArtifactPath(taskId, "receipt") : ARTIFACT_PATHS.receipt);
+  const stateRel = statePath ?? (taskId ? taskArtifactPath(taskId, "state") : ARTIFACT_PATHS.state);
+  const contractRel = contractPath ?? (taskId ? taskArtifactPath(taskId, "contract") : ARTIFACT_PATHS.contract);
+  const routeRel = routePath ?? (taskId ? taskArtifactPath(taskId, "route") : ARTIFACT_PATHS.route);
+
   let manifest = null;
   let manifestError = null;
   try {
@@ -45,25 +98,26 @@ export async function evaluateAudit({ target, packageRoot, strict = false, autho
   }
   let readyConsistencyErrors = [];
   try {
-    const persistedPreflight = await readJsonArtifact(target, ARTIFACT_PATHS.preflight, "preflight", packageRoot);
+    const persistedPreflight = await readJsonArtifact(target, preflightRel, "preflight", packageRoot);
     if (persistedPreflight.value.status === "READY") {
       readyConsistencyErrors = await validateReadyProtocolConsistency({
         target,
         packageRoot,
         persisted: persistedPreflight.value,
         current: completion.preflight,
+        taskId,
       });
     }
   } catch {
     // Completion already reports missing or invalid preflight artifacts.
   }
   const errors = sortErrors([...completion.errors, ...readyConsistencyErrors]);
-  const changedPaths = await compareChangedPaths(target, packageRoot);
+  const changedPaths = await compareChangedPaths(target, packageRoot, { taskId, receiptPath });
   if (changedPaths.status === "MISMATCH") {
     errors.push({
       code: "E_RECEIPT_PATH_MISMATCH",
       message: "Receipt changedPaths do not match observed repository paths",
-      artifacts: [ARTIFACT_PATHS.receipt],
+      artifacts: [receiptRel],
       missing: changedPaths.missing,
       unexpected: changedPaths.unexpected,
       next: "Run forgeloop prepare-completion to refresh changed paths, then rerun audit.",
@@ -94,10 +148,10 @@ export async function evaluateAudit({ target, packageRoot, strict = false, autho
     publicationStatus: completion.publicationStatus,
     productionReadiness: completion.productionReadiness,
     artifacts: {
-      contract: ARTIFACT_PATHS.contract,
-      route: ARTIFACT_PATHS.route,
-      state: ARTIFACT_PATHS.state,
-      receipt: ARTIFACT_PATHS.receipt,
+      contract: contractRel,
+      route: routeRel,
+      state: stateRel,
+      receipt: receiptRel,
     },
   };
 }

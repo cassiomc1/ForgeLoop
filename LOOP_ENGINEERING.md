@@ -27,6 +27,7 @@
 - [Precedence & Stop Conditions](#precedence)
 - [Final Delivery](#final-delivery)
 - [Cross-Harness Continuity](#cross-harness-execution-continuity)
+- [Multi-Task Concurrent Project State](#multi-task-concurrent-project-state)
 
 ## Protocol applicability
 
@@ -1202,3 +1203,44 @@ never satisfy verification coverage, publication, production readiness, or
 completion. `CONTINUITY_CANNOT_GRANT_AUTHORITY`: continuity cannot authorize an
 installation or external action. The receiving harness MUST reconcile
 continuity against the current work state and checkout before acting on it.
+
+## Multi-task concurrent project state
+
+ForgeLoop supports isolated, concurrent tasks within the same repository workspace.
+Multiple active tasks can progress simultaneously without artifact collisions or state
+corruption through three fundamental protocol mechanisms:
+
+1. **Deterministic Task Namespacing**:
+   Each task is identified by a canonical string `taskId` and an immutable, filesystem-safe
+   `taskKey` derived as `SHA-256(taskId)` in 64 lowercase hexadecimal characters. All
+   task-scoped artifacts (`task.json`, `contract.json`, `routing-result.json`,
+   `preflight.json`, `work-state.json`, `events.ndjson`, `execution-receipt.json`,
+   `continuity.json`, gates, and execution records) are stored strictly under
+   `.forgeloop/task-state/<taskKey>/`. Shared repository configuration and sources
+   (`config.json`, `sources.json`) remain at `.forgeloop/`.
+
+2. **Scoped Write Claims & Conflict Prevention**:
+   Every task declares explicit project-relative directory or file path prefixes
+   (`writeClaims`) in its `task.json` descriptor.
+   - When creating a task (`forgeloop task-create --task <id> --claim <path>`),
+     ForgeLoop asserts that claimed paths have no pre-existing uncommitted changes
+     (`E_TASK_SCOPE_DIRTY`) and do not overlap with active write claims of any other
+     non-`COMPLETE` task (`E_TASK_SCOPE_CONFLICT`).
+   - Once execution begins (`EXECUTING` through `COMPLETE`), write claims are immutable
+     (`E_TASK_SCOPE_FROZEN`).
+   - At verification and completion, Git modifications are validated to ensure no changes
+     escaped the task's declared scope (`E_TASK_CHANGE_OUTSIDE_SCOPE`).
+
+3. **Per-Task Exclusive Mutex Locking**:
+   Mutating lifecycle commands (`advance`, `preflight`, `run-check`, `complete`, etc.)
+   acquire an exclusive filesystem lock at `.forgeloop/task-state/<taskKey>/.lock` using
+   atomic creation flags (`wx`). Concurrent mutations on the same task reject with
+   `E_TASK_LOCKED`. Read-only commands (`status`, `audit`, `inspect`, `continuity`) bypass
+   locking. Stale locks can be cleared with `forgeloop task-unlock --task <id> --force`.
+
+4. **Task Resolution & Legacy Migration**:
+   Commands select their target task via `--task <id>`, the `FORGELOOP_TASK` environment
+   variable, or implicit single-task fallback. If multiple active tasks exist without a
+   selector, ForgeLoop fails closed with `E_TASK_AMBIGUOUS`. Legacy ForgeLoop 1.0 single-task
+   layouts can be migrated into namespaced layout using `forgeloop task-migrate`.
+

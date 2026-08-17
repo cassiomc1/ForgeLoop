@@ -13,12 +13,15 @@ export async function runCheck({
   details,
   authorityContext,
   runtimeContext,
+  taskId,
+  task,
 }) {
   if (typeof id !== "string" || id.trim() === "" || typeof requirement !== "string" || requirement.trim() === "") {
     const error = new Error("run-check requires non-empty id and requirement");
     error.code = "E_CHECK_INVALID";
     throw error;
   }
+  const effectiveTaskId = taskId ?? task ?? null;
   const ready = await assertRecordCheckPrerequisites({
     target,
     packageRoot,
@@ -27,6 +30,7 @@ export async function runCheck({
     evidenceKind: "OBSERVED",
     authorityContext,
     runtimeContext,
+    taskId: effectiveTaskId,
   });
   const verificationCycle = ready.state.verificationCycle ?? 1;
   const execution = await runCommandExecution({
@@ -58,6 +62,7 @@ export async function runCheck({
     provenance: "FORGELOOP_EXECUTED",
     authorityContext,
     runtimeContext,
+    taskId: effectiveTaskId,
   });
   return {
     ...recorded,

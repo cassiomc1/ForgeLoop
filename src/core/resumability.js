@@ -3,9 +3,9 @@ import { createWorkState, readWorkState, writeWorkState } from "./work-state.js"
 
 const DEFAULT_PENDING_STEPS = ["planning", "implementation", "verification"];
 
-export async function ensureResumableState({ target, packageRoot, contract, route }) {
+export async function ensureResumableState({ target, packageRoot, contract, route, taskId, statePath }) {
   if (!contract || !route) return null;
-  const existing = await readWorkState(target, packageRoot);
+  const existing = await readWorkState(target, { packageRoot, taskId, statePath });
   if (existing) return existing;
 
   const state = createWorkState({
@@ -22,7 +22,7 @@ export async function ensureResumableState({ target, packageRoot, contract, rout
     blockers: [],
     verificationEvidence: [],
   });
-  await writeWorkState(target, state, { packageRoot });
+  await writeWorkState(target, state, { packageRoot, taskId, statePath });
   return state;
 }
 
@@ -35,6 +35,8 @@ export async function synchronizePreflightState({
   requiredGates,
   satisfiedGates,
   complianceMode,
+  statePath,
+  taskId,
 }) {
   const candidate = createWorkState({
     ...state,
@@ -56,6 +58,6 @@ export async function synchronizePreflightState({
     return state;
   }
   const next = { ...candidate, lastUpdated: new Date().toISOString() };
-  await writeWorkState(target, next, { packageRoot });
+  await writeWorkState(target, next, { packageRoot, taskId, statePath });
   return next;
 }

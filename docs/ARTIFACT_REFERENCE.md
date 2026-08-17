@@ -12,18 +12,19 @@ All artifact schemas are defined in `schemas/*.schema.json`. Persisted artifact 
 
 | Artifact File | Schema | Ownership | Mutability | Trust Role |
 | --- | --- | --- | --- | --- |
-| `current-contract.json` | `current-contract` | Agent Authored | Mutable Before Execution | Operational Specification |
-| `routing-result.json` | `routing-result` | Protocol Generated | Mutable On Reroute | Guide Routing Specification |
-| `preflight.json` | `preflight` | Protocol Generated | Overwritten On Preflight | Readiness Attestation |
+| `task-state/<task-key>/task.json` | `task-descriptor` | Protocol Managed | Mutable Before Execution | Task Descriptor |
+| `task-state/<task-key>/contract.json` | `current-contract` | Agent Authored | Mutable Before Execution | Operational Specification |
+| `task-state/<task-key>/routing-result.json` | `routing-result` | Protocol Generated | Mutable On Reroute | Guide Routing Specification |
+| `task-state/<task-key>/preflight.json` | `preflight` | Protocol Generated | Overwritten On Preflight | Readiness Attestation |
 | `sources.json` | `source-registry` | Operator Or Agent | Mutable On Discovery | Source Attestation |
-| `events.ndjson` | `event` | Protocol Appended | Append Only | Audit Ledger |
-| `session.json` | `activation` | Protocol Generated | Overwritten On Activate | Session Marker |
+| `task-state/<task-key>/events.ndjson` | `event` | Protocol Appended | Append Only | Audit Ledger |
+| `sessions/<session-id>.json` | `activation` | Protocol Generated | Overwritten On Activate | Session Marker |
 | `config.json` | `config` | Operator Or Agent | Mutable Configuration | Project Configuration |
-| `gates/<gate>.json` | `gate` | Agent Authored Or Reviewer | Overwritten On Gate Satisfaction | Gate Approval Attestation |
-| `work-state.json` | `work-state` | Protocol Managed | Atomic State Transitions | Canonical Lifecycle State |
-| `continuity.json` | `continuity` | Agent Or Harness | Mutable Handoff Notes | Non Evidence Handoff |
-| `execution-receipt.json` | `execution-receipt` | Protocol Compiled | Atomic Compilation | Evidence Compilation |
-| `executions/exec-<id>.json` | `execution` | Protocol Executed | Immutable Once Written | Execution Provenance |
+| `task-state/<task-key>/gates/<gate>.json` | `gate` | Agent Authored Or Reviewer | Overwritten On Gate Satisfaction | Gate Approval Attestation |
+| `task-state/<task-key>/work-state.json` | `work-state` | Protocol Managed | Atomic State Transitions | Canonical Lifecycle State |
+| `task-state/<task-key>/continuity.json` | `continuity` | Agent Or Harness | Mutable Handoff Notes | Non Evidence Handoff |
+| `task-state/<task-key>/execution-receipt.json` | `execution-receipt` | Protocol Compiled | Atomic Compilation | Evidence Compilation |
+| `task-state/<task-key>/executions/exec-<id>.json` | `execution` | Protocol Executed | Immutable Once Written | Execution Provenance |
 
 <!-- END FORGELOOP GENERATED: artifact-registry -->
 
@@ -31,9 +32,9 @@ All artifact schemas are defined in `schemas/*.schema.json`. Persisted artifact 
 
 ## 2. Canonical Artifact Specifications
 
-### 2.1 `current-contract.json`
+### 2.1 `task-state/<taskKey>/contract.json`
 
-<!-- forgeloop-doc: schema=current-contract artifact=.forgeloop/current-contract.json -->
+<!-- forgeloop-doc: schema=current-contract artifact=.forgeloop/task-state/<task-key>/contract.json -->
 
 The operational task specification authored before execution begins.
 
@@ -86,9 +87,9 @@ The operational task specification authored before execution begins.
 
 ---
 
-### 2.2 `routing-result.json`
+### 2.2 `task-state/<taskKey>/routing-result.json`
 
-<!-- forgeloop-doc: schema=routing-result artifact=.forgeloop/routing-result.json -->
+<!-- forgeloop-doc: schema=routing-result artifact=.forgeloop/task-state/<task-key>/routing-result.json -->
 
 The deterministic result of routing task signals against the engineering guide router.
 
@@ -109,9 +110,9 @@ The deterministic result of routing task signals against the engineering guide r
 
 ---
 
-### 2.3 `preflight.json`
+### 2.3 `task-state/<taskKey>/preflight.json`
 
-<!-- forgeloop-doc: schema=preflight artifact=.forgeloop/preflight.json -->
+<!-- forgeloop-doc: schema=preflight artifact=.forgeloop/task-state/<task-key>/preflight.json -->
 
 Readiness attestation evaluated prior to implementation.
 
@@ -155,9 +156,9 @@ Discovered repository facts, platforms, runtimes, and dependencies.
 
 ---
 
-### 2.5 `events.ndjson`
+### 2.5 `task-state/<taskKey>/events.ndjson`
 
-<!-- forgeloop-doc: schema=event artifact=.forgeloop/events.ndjson -->
+<!-- forgeloop-doc: schema=event artifact=.forgeloop/task-state/<task-key>/events.ndjson -->
 
 The append-only cryptographic event ledger. Each line is a single JSON event object.
 
@@ -180,9 +181,9 @@ The append-only cryptographic event ledger. Each line is a single JSON event obj
 
 ---
 
-### 2.6 `session.json`
+### 2.6 `sessions/<sessionId>.json`
 
-<!-- forgeloop-doc: schema=activation artifact=.forgeloop/session.json -->
+<!-- forgeloop-doc: schema=activation artifact=.forgeloop/sessions/<session-id>.json -->
 
 The active harness session marker created by `forgeloop activate`.
 
@@ -221,9 +222,9 @@ Local ForgeLoop configuration settings and policy bindings.
 
 ---
 
-### 2.8 `gates/<gate>.json`
+### 2.8 `task-state/<taskKey>/gates/<gate>.json`
 
-<!-- forgeloop-doc: schema=gate artifact=.forgeloop/gates/<gate>.json -->
+<!-- forgeloop-doc: schema=gate artifact=.forgeloop/task-state/<task-key>/gates/<gate>.json -->
 
 Pre-implementation gate approval artifact recording decisions, bound artifact hashes, and evidence.
 
@@ -249,9 +250,9 @@ Pre-implementation gate approval artifact recording decisions, bound artifact ha
 
 ---
 
-### 2.9 `work-state.json`
+### 2.9 `task-state/<taskKey>/work-state.json`
 
-<!-- forgeloop-doc: schema=work-state artifact=.forgeloop/work-state.json -->
+<!-- forgeloop-doc: schema=work-state artifact=.forgeloop/task-state/<task-key>/work-state.json -->
 
 The canonical, authoritative lifecycle work state.
 
@@ -300,9 +301,9 @@ The canonical, authoritative lifecycle work state.
 
 ---
 
-### 2.10 `continuity.json`
+### 2.10 `task-state/<taskKey>/continuity.json`
 
-<!-- forgeloop-doc: schema=continuity artifact=.forgeloop/continuity.json -->
+<!-- forgeloop-doc: schema=continuity artifact=.forgeloop/task-state/<task-key>/continuity.json -->
 
 Cross-harness non-evidence handoff notes.
 
@@ -338,9 +339,9 @@ Cross-harness non-evidence handoff notes.
 
 ---
 
-### 2.11 `execution-receipt.json`
+### 2.11 `task-state/<taskKey>/execution-receipt.json`
 
-<!-- forgeloop-doc: schema=execution-receipt artifact=.forgeloop/execution-receipt.json -->
+<!-- forgeloop-doc: schema=execution-receipt artifact=.forgeloop/task-state/<task-key>/execution-receipt.json -->
 
 The cryptographically compiled verification receipt required for task completion.
 
@@ -383,9 +384,9 @@ The cryptographically compiled verification receipt required for task completion
 
 ---
 
-### 2.12 `executions/exec-<id>.json`
+### 2.12 `task-state/<taskKey>/executions/exec-<id>.json`
 
-<!-- forgeloop-doc: schema=execution artifact=.forgeloop/executions/exec-<id>.json -->
+<!-- forgeloop-doc: schema=execution artifact=.forgeloop/task-state/<task-key>/executions/exec-<id>.json -->
 
 Attested command execution provenance artifact generated by `forgeloop run-check`.
 
@@ -417,3 +418,26 @@ Attested command execution provenance artifact generated by `forgeloop run-check
 - `exitCode` *(integer or null, required)*
 
 <!-- END FORGELOOP GENERATED: schema:execution -->
+
+---
+
+### 2.13 `task-state/<taskKey>/task.json`
+
+<!-- forgeloop-doc: schema=task-descriptor artifact=.forgeloop/task-state/<task-key>/task.json -->
+
+Canonical task descriptor declaring task identity, key, timestamps, and write claims.
+
+#### Canonical Fields
+
+<!-- BEGIN FORGELOOP GENERATED: schema:task-descriptor -->
+
+- `schemaVersion` *(integer, required, const: 1)*
+- `protocolVersion` *(integer, required, const: 1)*
+- `taskId` *(string, required, minLength: 1)*
+- `taskKey` *(string, required, pattern: `^[a-f0-9]{64}$`)*
+- `createdAt` *(string, required)*
+- `updatedAt` *(string, required)*
+- `writeClaims` *(array<string>, required)*
+
+<!-- END FORGELOOP GENERATED: schema:task-descriptor -->
+

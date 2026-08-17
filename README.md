@@ -130,6 +130,29 @@ forgeloop next --json
 
 See [`docs/CROSS_HARNESS_CONTINUITY.md`](./docs/CROSS_HARNESS_CONTINUITY.md) for full handoff and recovery procedures.
 
+### Multi-task concurrent project state
+
+ForgeLoop supports isolated, concurrent tasks within the same repository via deterministic SHA-256 namespacing, per-task mutex locking, and write-claim conflict detection:
+
+```bash
+# Create an isolated task claiming specific directories
+forgeloop task-create --task auth-feature --claim src/auth --claim tests/auth --json
+
+# List active and completed tasks
+forgeloop task-list --json
+
+# Run standard lifecycle commands targeting the task
+forgeloop route --task auth-feature --work clean-code --surface backend
+forgeloop preflight --task auth-feature --json
+forgeloop advance --task auth-feature --to EXECUTING
+forgeloop complete --task auth-feature --json
+
+# Migrate legacy 1.0 single-task layout
+forgeloop task-migrate --json
+```
+
+See [`docs/CLI_REFERENCE.md`](./docs/CLI_REFERENCE.md) and [`LOOP_SYSTEM_DESIGN.md`](./LOOP_SYSTEM_DESIGN.md) for architecture details.
+
 ## Architecture flow
 
 The canonical source is [`docs/forgeloop-flow.mmd`](./docs/forgeloop-flow.mmd),

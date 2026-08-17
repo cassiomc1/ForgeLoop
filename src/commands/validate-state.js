@@ -1,22 +1,26 @@
 import { readWorkState, WORK_STATE_PATH } from "../core/work-state.js";
 
-export async function runValidateState({ target, packageRoot }) {
+import { taskArtifactPath } from "../core/task-paths.js";
+
+export async function runValidateState({ target, packageRoot, taskId, task } = {}) {
+  const effectiveTaskId = taskId ?? task ?? null;
+  const path = effectiveTaskId ? taskArtifactPath(effectiveTaskId, "state") : WORK_STATE_PATH;
   try {
-    const state = await readWorkState(target, packageRoot);
+    const state = await readWorkState(target, { packageRoot, taskId: effectiveTaskId });
     if (!state) {
       return {
         ok: true,
-        path: WORK_STATE_PATH,
+        path,
         state: null,
         errors: [],
         warnings: ["No work-state checkpoint is present."],
       };
     }
-    return { ok: true, path: WORK_STATE_PATH, state, errors: [], warnings: [] };
+    return { ok: true, path, state, errors: [], warnings: [] };
   } catch (error) {
     return {
       ok: false,
-      path: WORK_STATE_PATH,
+      path,
       state: null,
       errors: [error.message],
       warnings: [],

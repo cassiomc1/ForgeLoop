@@ -1,12 +1,15 @@
 import { randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
-
+import { readdir } from "node:fs/promises";
+import path from "node:path";
+import { fileExists } from "./filesystem.js";
 import {
   ARTIFACT_PATHS,
   executionArtifactPath,
   readJsonArtifact,
   writeJsonArtifact,
 } from "./artifacts.js";
+import { taskExecutionPath } from "./task-paths.js";
 import {
   classifyCommandResolution,
   resolveExecutionResolution,
@@ -86,6 +89,7 @@ export async function runCommandExecution({
   details,
   authorityContext,
   runtimeContext,
+  executionPath,
 } = {}) {
   const commandArgv = normalizeArgv(argv);
   const resolution = await resolveExecutionResolution({
@@ -150,8 +154,8 @@ export async function runCommandExecution({
     status: processResult.exitCode === 0 && !processResult.spawnError ? "passed" : "failed",
     exitCode: processResult.exitCode,
   };
-  const path = executionArtifactPath(executionId);
-  const written = await writeJsonArtifact(target, path, execution, "execution", packageRoot);
+  const execPath = executionPath ?? (taskId ? taskExecutionPath(taskId, executionId) : executionArtifactPath(executionId));
+  const written = await writeJsonArtifact(target, execPath, execution, "execution", packageRoot);
   return {
     path: written.path,
     execution: written.value,
@@ -161,14 +165,43 @@ export async function runCommandExecution({
   };
 }
 
-export async function readExecutionArtifact({ target, executionRef, packageRoot } = {}) {
+export async function readExecutionArtifact({ target, executionRef, packageRoot, taskId } = {}) {
   let relativePath;
   try {
-    relativePath = executionArtifactPath(executionRef);
+    relativePath = taskId ? taskExecutionPath(taskId, executionRef) : executionArtifactPath(executionRef);
     const artifact = await readJsonArtifact(target, relativePath, "execution", packageRoot);
     return artifact;
   } catch (error) {
     if (error.code === "E_EXECUTION_REF_INVALID") throw error;
+    if (error.code === "ARTIFACT_MISSING") {
+      if (taskId) {
+        try {
+          const fallbackPath = executionArtifactPath(executionRef);
+          const artifact = await readJsonArtifact(target, fallbackPath, "execution", packageRoot);
+          return artifact;
+        } catch {
+          // ignore fallback failure
+        }
+      } else {
+        try {
+          const taskStateDir = path.join(target, ".forgeloop", "task-state");
+          if (await fileExists(taskStateDir)) {
+            const entries = await readdir(taskStateDir, { withFileTypes: true });
+            for (const entry of entries) {
+              if (entry.isDirectory()) {
+                const execFile = path.join(taskStateDir, entry.name, "executions", `${executionRef}.json`);
+                if (await fileExists(execFile)) {
+                  const rel = path.relative(target, execFile).replaceAll("\\", "/");
+                  return await readJsonArtifact(target, rel, "execution", packageRoot);
+                }
+              }
+            }
+          }
+        } catch {
+          // ignore scan failure
+        }
+      }
+    }
     throw executionError("E_EXECUTION_REF_INVALID", "Execution reference does not resolve to a valid ForgeLoop artifact", [relativePath ?? ARTIFACT_PATHS.executionDirectory]);
   }
 }

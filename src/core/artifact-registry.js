@@ -1,15 +1,28 @@
-import { ARTIFACT_PATHS } from "./artifacts.js";
+import { TASK_STATE_ROOT, TASK_ARTIFACT_FILES, PROJECT_ARTIFACT_PATHS, SESSIONS_ROOT } from "./task-paths.js";
 
 /**
  * Canonical registry of ForgeLoop artifacts, defining filesystem paths,
- * schema bindings, ownership, mutability, and trust classifications.
+ * schema bindings, ownership, mutability, trust classifications, and scopes.
  *
  * Schema field shapes remain strictly owned by JSON schemas in `schemas/`.
  */
 export const ARTIFACT_REGISTRY = Object.freeze({
+  descriptor: Object.freeze({
+    key: "descriptor",
+    scope: "TASK",
+    path: `${TASK_STATE_ROOT}/<task-key>/${TASK_ARTIFACT_FILES.descriptor}`,
+    schema: "task-descriptor",
+    owner: "PROTOCOL_MANAGED",
+    mutability: "MUTABLE_BEFORE_EXECUTION",
+    trustRole: "TASK_DESCRIPTOR",
+    isPublic: true,
+    isPersisted: true,
+    description: "Canonical task descriptor declaring task ID, hash key, timestamps, and write claims.",
+  }),
   contract: Object.freeze({
     key: "contract",
-    path: ARTIFACT_PATHS.contract,
+    scope: "TASK",
+    path: `${TASK_STATE_ROOT}/<task-key>/${TASK_ARTIFACT_FILES.contract}`,
     schema: "current-contract",
     owner: "AGENT_AUTHORED",
     mutability: "MUTABLE_BEFORE_EXECUTION",
@@ -20,7 +33,8 @@ export const ARTIFACT_REGISTRY = Object.freeze({
   }),
   route: Object.freeze({
     key: "route",
-    path: ARTIFACT_PATHS.route,
+    scope: "TASK",
+    path: `${TASK_STATE_ROOT}/<task-key>/${TASK_ARTIFACT_FILES.route}`,
     schema: "routing-result",
     owner: "PROTOCOL_GENERATED",
     mutability: "MUTABLE_ON_REROUTE",
@@ -31,7 +45,8 @@ export const ARTIFACT_REGISTRY = Object.freeze({
   }),
   preflight: Object.freeze({
     key: "preflight",
-    path: ARTIFACT_PATHS.preflight,
+    scope: "TASK",
+    path: `${TASK_STATE_ROOT}/<task-key>/${TASK_ARTIFACT_FILES.preflight}`,
     schema: "preflight",
     owner: "PROTOCOL_GENERATED",
     mutability: "OVERWRITTEN_ON_PREFLIGHT",
@@ -42,7 +57,8 @@ export const ARTIFACT_REGISTRY = Object.freeze({
   }),
   sources: Object.freeze({
     key: "sources",
-    path: ARTIFACT_PATHS.sources,
+    scope: "PROJECT",
+    path: PROJECT_ARTIFACT_PATHS.sources,
     schema: "source-registry",
     owner: "OPERATOR_OR_AGENT",
     mutability: "MUTABLE_ON_DISCOVERY",
@@ -53,7 +69,8 @@ export const ARTIFACT_REGISTRY = Object.freeze({
   }),
   events: Object.freeze({
     key: "events",
-    path: ARTIFACT_PATHS.events,
+    scope: "TASK",
+    path: `${TASK_STATE_ROOT}/<task-key>/${TASK_ARTIFACT_FILES.events}`,
     schema: "event",
     owner: "PROTOCOL_APPENDED",
     mutability: "APPEND_ONLY",
@@ -64,7 +81,8 @@ export const ARTIFACT_REGISTRY = Object.freeze({
   }),
   session: Object.freeze({
     key: "session",
-    path: ARTIFACT_PATHS.session,
+    scope: "SESSION",
+    path: `${SESSIONS_ROOT}/<session-id>.json`,
     schema: "activation",
     owner: "PROTOCOL_GENERATED",
     mutability: "OVERWRITTEN_ON_ACTIVATE",
@@ -75,7 +93,8 @@ export const ARTIFACT_REGISTRY = Object.freeze({
   }),
   config: Object.freeze({
     key: "config",
-    path: ARTIFACT_PATHS.config,
+    scope: "PROJECT",
+    path: PROJECT_ARTIFACT_PATHS.config,
     schema: "config",
     owner: "OPERATOR_OR_AGENT",
     mutability: "MUTABLE_CONFIGURATION",
@@ -86,7 +105,8 @@ export const ARTIFACT_REGISTRY = Object.freeze({
   }),
   gates: Object.freeze({
     key: "gates",
-    path: ".forgeloop/gates/<gate>.json",
+    scope: "TASK",
+    path: `${TASK_STATE_ROOT}/<task-key>/gates/<gate>.json`,
     schema: "gate",
     owner: "AGENT_AUTHORED_OR_REVIEWER",
     mutability: "OVERWRITTEN_ON_GATE_SATISFACTION",
@@ -97,7 +117,8 @@ export const ARTIFACT_REGISTRY = Object.freeze({
   }),
   state: Object.freeze({
     key: "state",
-    path: ARTIFACT_PATHS.state,
+    scope: "TASK",
+    path: `${TASK_STATE_ROOT}/<task-key>/${TASK_ARTIFACT_FILES.state}`,
     schema: "work-state",
     owner: "PROTOCOL_MANAGED",
     mutability: "ATOMIC_STATE_TRANSITIONS",
@@ -108,7 +129,8 @@ export const ARTIFACT_REGISTRY = Object.freeze({
   }),
   continuity: Object.freeze({
     key: "continuity",
-    path: ARTIFACT_PATHS.continuity,
+    scope: "TASK",
+    path: `${TASK_STATE_ROOT}/<task-key>/${TASK_ARTIFACT_FILES.continuity}`,
     schema: "continuity",
     owner: "AGENT_OR_HARNESS",
     mutability: "MUTABLE_HANDOFF_NOTES",
@@ -119,7 +141,8 @@ export const ARTIFACT_REGISTRY = Object.freeze({
   }),
   receipt: Object.freeze({
     key: "receipt",
-    path: ARTIFACT_PATHS.receipt,
+    scope: "TASK",
+    path: `${TASK_STATE_ROOT}/<task-key>/${TASK_ARTIFACT_FILES.receipt}`,
     schema: "execution-receipt",
     owner: "PROTOCOL_COMPILED",
     mutability: "ATOMIC_COMPILATION",
@@ -130,7 +153,8 @@ export const ARTIFACT_REGISTRY = Object.freeze({
   }),
   executions: Object.freeze({
     key: "executions",
-    path: ".forgeloop/executions/exec-<id>.json",
+    scope: "TASK",
+    path: `${TASK_STATE_ROOT}/<task-key>/executions/exec-<id>.json`,
     schema: "execution",
     owner: "PROTOCOL_EXECUTED",
     mutability: "IMMUTABLE_ONCE_WRITTEN",

@@ -50,6 +50,8 @@ export function createGate(input = {}) {
   };
 }
 
-export function requiredGatePaths(gates) {
-  return [...new Set(gates)].sort().map((gate) => `.forgeloop/gates/${gate}.json`);
+import { taskGatePath } from "./task-paths.js";
+
+export function requiredGatePaths(gates, { taskId } = {}) {
+  return [...new Set(gates)].sort().map((gate) => (taskId ? taskGatePath(taskId, gate) : `.forgeloop/gates/${gate}.json`));
 }

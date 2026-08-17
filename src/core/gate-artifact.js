@@ -1,9 +1,8 @@
-import path from "node:path";
-
 import { assertSafePath, ensureWithin, fileExists, readBytes } from "./filesystem.js";
 import { ARTIFACT_PATHS, readJsonArtifact, writeJsonArtifact } from "./artifacts.js";
 import { assertSchema, readSchema } from "./schema-validation.js";
 import { sha256 } from "./manifest.js";
+import { taskGatePath } from "./task-paths.js";
 
 function gateName(value) {
   if (typeof value !== "string" || !/^[a-z0-9][a-z0-9-]*$/.test(value)) {
@@ -14,22 +13,26 @@ function gateName(value) {
   return value;
 }
 
-export function gatePath(gate) {
-  return `${ARTIFACT_PATHS.gates ?? ".forgeloop/gates"}/${gateName(gate)}.json`;
+export function gatePath(gate, options = {}) {
+  const name = gateName(gate);
+  if (options?.taskId) {
+    return taskGatePath(options.taskId, name);
+  }
+  return `${ARTIFACT_PATHS.gates ?? ".forgeloop/gates"}/${name}.json`;
 }
 
 export async function persistGate(target, gate, packageRoot, options = {}) {
-  const relativePath = gatePath(gate.gate);
+  const relativePath = options?.gatePath ?? (options?.taskId ? taskGatePath(options.taskId, gate.gate) : gatePath(gate.gate, options));
   return writeJsonArtifact(target, relativePath, gate, "gate", packageRoot, options);
 }
 
-export async function readGate(target, gate, packageRoot) {
-  const relativePath = gatePath(gate);
+export async function readGate(target, gate, packageRoot, options = {}) {
+  const relativePath = options?.gatePath ?? (options?.taskId ? taskGatePath(options.taskId, gate) : gatePath(gate, options));
   return readJsonArtifact(target, relativePath, "gate", packageRoot);
 }
 
-export async function readGateIfPresent(target, gate, packageRoot) {
-  const relativePath = gatePath(gate);
+export async function readGateIfPresent(target, gate, packageRoot, options = {}) {
+  const relativePath = options?.gatePath ?? (options?.taskId ? taskGatePath(options.taskId, gate) : gatePath(gate, options));
   await assertSafePath(target, relativePath);
   const filePath = ensureWithin(target, relativePath);
   if (!(await fileExists(filePath))) return null;

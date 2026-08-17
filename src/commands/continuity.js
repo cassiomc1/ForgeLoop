@@ -1,7 +1,8 @@
 import { reconcileContinuity } from "../core/continuity-reconciliation.js";
 
-export async function runContinuity({ target, packageRoot } = {}) {
-  return reconcileContinuity({ target, packageRoot });
+export async function runContinuity({ target, packageRoot, taskId, task } = {}) {
+  const effectiveTaskId = taskId ?? task ?? null;
+  return reconcileContinuity({ target, packageRoot, taskId: effectiveTaskId });
 }
 
 export function formatContinuityResult(result) {

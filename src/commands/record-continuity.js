@@ -27,10 +27,13 @@ export async function runRecordContinuity({
   repositoryFingerprint,
   now,
   dryRun = false,
+  taskId,
+  task,
 } = {}) {
   if ((focusId && !focusSummary) || (!focusId && focusSummary)) {
     throw new Error("record-continuity requires --focus-id and --focus-summary together");
   }
+  const effectiveTaskId = taskId ?? task ?? null;
   return writeContinuity(target, {
     ...(focusId ? { currentFocus: { id: focusId, summary: focusSummary } } : {}),
     remainingWork: remaining.map((item) => parseWorkItem(item, "--remaining")),
@@ -45,6 +48,7 @@ export async function runRecordContinuity({
     ...(repositoryFingerprint ? { repositoryFingerprint } : {}),
     ...(now ? { now } : {}),
     dryRun,
+    taskId: effectiveTaskId,
   });
 }
 

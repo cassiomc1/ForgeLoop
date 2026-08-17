@@ -2,8 +2,9 @@ import { clearWorkState } from "../core/work-state.js";
 
 export { clearWorkState };
 
-export async function runClearState({ target }) {
-  return clearWorkState(target);
+export async function runClearState({ target, taskId, task } = {}) {
+  const effectiveTaskId = taskId ?? task ?? null;
+  return clearWorkState(target, { taskId: effectiveTaskId });
 }
 
 export function formatClearStateResult(result) {

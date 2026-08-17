@@ -2,11 +2,12 @@ import { readAndClassifyWorkState } from "../core/work-state.js";
 import { inspectSchemaHealth } from "../core/schema-validation.js";
 import { reconcileContinuity } from "../core/continuity-reconciliation.js";
 
-export async function runStatus({ target, packageRoot, contractFile = null }) {
-  const state = await readAndClassifyWorkState({ target, packageRoot, contractFile });
+export async function runStatus({ target, packageRoot, contractFile = null, taskId, task } = {}) {
+  const effectiveTaskId = taskId ?? task ?? null;
+  const state = await readAndClassifyWorkState({ target, packageRoot, contractFile, taskId: effectiveTaskId });
   const [protocol, continuity] = await Promise.all([
     inspectSchemaHealth(target),
-    reconcileContinuity({ target, packageRoot }),
+    reconcileContinuity({ target, packageRoot, taskId: effectiveTaskId }),
   ]);
   return {
     ...state,

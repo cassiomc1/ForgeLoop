@@ -31,10 +31,15 @@ import { formatContinuityResult, runContinuity } from "./commands/continuity.js"
 import { formatRecordContinuityResult, runRecordContinuity } from "./commands/record-continuity.js";
 import { formatReconcileContinuityResult, runReconcileContinuity } from "./commands/reconcile-continuity.js";
 import { formatClearContinuityResult, runClearContinuity } from "./commands/clear-continuity.js";
-import { continuityOptionDefaults, consumeContinuityOption, validateContinuityOptions } from "./core/continuity-cli-options.js";
+import { formatTaskCreateResult, runTaskCreate } from "./commands/task-create.js";
+import { formatTaskListResult, runTaskList } from "./commands/task-list.js";
+import { formatTaskShowResult, runTaskShow } from "./commands/task-show.js";
+import { formatTaskScopeResult, runTaskScope } from "./commands/task-scope.js";
+import { formatTaskMigrateResult, runTaskMigrate } from "./commands/task-migrate.js";
+import { formatTaskUnlockResult, runTaskUnlock } from "./commands/task-unlock.js";
+import { continuityOptionDefaults, validateContinuityOptions } from "./core/continuity-cli-options.js";
 import { resolveTarget } from "./core/filesystem.js";
 import { getPackageRoot } from "./core/templates.js";
-import { ARTIFACT_PATHS } from "./core/artifacts.js";
 import { CLI_COMMAND_DEFINITIONS, buildOptionLookup, getPositionalDefinitions } from "./core/cli-command-definitions.js";
 
 export const COMMANDS = Object.freeze(Object.keys(CLI_COMMAND_DEFINITIONS));
@@ -105,6 +110,7 @@ function applyOption({ canonicalName, optionDef, inlineValue, argv, index, optio
         throw new Error(optionDef.missingValueMessage ?? `${canonicalName} requires a value`);
       }
       if (optionDef.repeatable) {
+        if (!Array.isArray(options[key])) options[key] = [];
         options[key].push(value);
       } else {
         options[key] = value;
@@ -306,8 +312,8 @@ export function validateCliSemantics({ command, options } = {}) {
   if (command === "bundle" && !options.task) {
     throw new Error("bundle requires --task");
   }
-  if (command !== "bundle" && options.task) {
-    throw new Error(`--task is not valid for ${command}`);
+  if (command === "task-create" && !options.task) {
+    throw new Error("task-create requires --task");
   }
 
   validateContinuityOptions(command, options);
@@ -386,6 +392,7 @@ export const COMMAND_HANDLERS = Object.freeze({
       platforms: options.platforms,
       behaviorChange: options.behaviorChange,
       executableChange: options.executableChange,
+      taskId: options.task,
     });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatRouteResult(result));
     return 0;
@@ -396,22 +403,22 @@ export const COMMAND_HANDLERS = Object.freeze({
     return 0;
   },
   preflight: async ({ target, packageRoot, options }) => {
-    const result = await runPreflight({ target, packageRoot, strict: options.strict });
+    const result = await runPreflight({ target, packageRoot, strict: options.strict, taskId: options.task });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatPreflightResult(result));
     return result.status === "READY" ? 0 : 1;
   },
   advance: async ({ target, packageRoot, options }) => {
-    const result = await runAdvance({ target, packageRoot, to: options.to });
+    const result = await runAdvance({ target, packageRoot, to: options.to, taskId: options.task });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatAdvanceResult(result));
     return 0;
   },
   next: async ({ target, packageRoot, options }) => {
-    const result = await runNext({ target, packageRoot });
+    const result = await runNext({ target, packageRoot, taskId: options.task });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatNextActionResult(result));
     return 0;
   },
   continuity: async ({ target, packageRoot, options }) => {
-    const result = await runContinuity({ target, packageRoot });
+    const result = await runContinuity({ target, packageRoot, taskId: options.task });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatContinuityResult(result));
     return 0;
   },
@@ -425,22 +432,23 @@ export const COMMAND_HANDLERS = Object.freeze({
       changedAreas: options.continuityChangedAreas,
       inspectFirst: options.continuityInspectFirst,
       resumeNote: options.continuityResumeNote,
+      taskId: options.task,
     });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatRecordContinuityResult(result));
     return 0;
   },
   "reconcile-continuity": async ({ target, packageRoot, options }) => {
-    const result = await runReconcileContinuity({ target, packageRoot });
+    const result = await runReconcileContinuity({ target, packageRoot, taskId: options.task });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatReconcileContinuityResult(result));
     return 0;
   },
   "clear-continuity": async ({ target, options }) => {
-    const result = await runClearContinuity({ target });
+    const result = await runClearContinuity({ target, taskId: options.task });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatClearContinuityResult(result));
     return 0;
   },
   "prepare-completion": async ({ target, packageRoot, options }) => {
-    const result = await runPrepareCompletion({ target, packageRoot });
+    const result = await runPrepareCompletion({ target, packageRoot, taskId: options.task });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatPrepareCompletionResult(result));
     return 0;
   },
@@ -452,6 +460,7 @@ export const COMMAND_HANDLERS = Object.freeze({
       requirement: options.checkRequirement,
       argv: options.commandArgv,
       details: options.checkDetails ?? undefined,
+      taskId: options.task,
     });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatRunCheckResult(result));
     return result.check.status === "passed" ? 0 : 1;
@@ -471,6 +480,7 @@ export const COMMAND_HANDLERS = Object.freeze({
       details: options.checkDetails ?? undefined,
       executionRef: options.checkExecutionRef ?? undefined,
       provenance: options.checkProvenance ?? undefined,
+      taskId: options.task,
     });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatRecordCheckResult(result));
     return 0;
@@ -485,27 +495,28 @@ export const COMMAND_HANDLERS = Object.freeze({
       source: options.checkSource ?? options.checkCommand,
       result: options.checkResult,
       details: options.checkDetails ?? undefined,
+      taskId: options.task,
     });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatRecordTerminalResult(result));
     return 0;
   },
   complete: async ({ target, packageRoot, options }) => {
-    const result = await runComplete({ target, packageRoot, strict: options.strict });
+    const result = await runComplete({ target, packageRoot, strict: options.strict, taskId: options.task });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatCompleteResult(result));
     return result.status === "VALID" ? 0 : 1;
   },
   audit: async ({ target, packageRoot, options }) => {
-    const result = await runAudit({ target, packageRoot, strict: options.strict });
+    const result = await runAudit({ target, packageRoot, strict: options.strict, taskId: options.task });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatAuditResult(result));
     return result.status === "VALID" ? 0 : 1;
   },
   report: async ({ target, packageRoot, options }) => {
-    const result = await runReport({ target, packageRoot, strict: options.strict });
+    const result = await runReport({ target, packageRoot, strict: options.strict, taskId: options.task });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatReportResult(result));
     return result.verdict === "VALID" ? 0 : 1;
   },
   policy: async ({ target, packageRoot, options }) => {
-    const result = await runPolicy({ target, packageRoot, name: options.policy });
+    const result = await runPolicy({ target, packageRoot, name: options.policy, taskId: options.task });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatPolicyResult(result));
     return 0;
   },
@@ -515,7 +526,7 @@ export const COMMAND_HANDLERS = Object.freeze({
     return 0;
   },
   inspect: async ({ target, packageRoot, options }) => {
-    const result = await inspectTarget({ target, packageRoot, contractFile: options.contractFile });
+    const result = await inspectTarget({ target, packageRoot, contractFile: options.contractFile, taskId: options.task });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatInspectResult(result));
     return result.ok ? 0 : 1;
   },
@@ -528,30 +539,72 @@ export const COMMAND_HANDLERS = Object.freeze({
     const result = await runValidateProtocol({
       target,
       packageRoot,
-      stateFile: options.stateFile ?? ARTIFACT_PATHS.state,
-      receiptFile: options.receiptFile ?? ARTIFACT_PATHS.receipt,
-      routeFile: options.routeFile ?? ARTIFACT_PATHS.route,
+      stateFile: options.stateFile,
+      receiptFile: options.receiptFile,
+      routeFile: options.routeFile,
       contractFile: options.contractFile,
       continuityFile: options.continuityFile,
       taskBriefFiles: options.taskBriefFiles,
       delegatedResultFiles: options.delegatedResultFiles,
+      taskId: options.task,
     });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatValidateProtocolResult(result));
     return result.status === "VALID" ? 0 : 1;
   },
   status: async ({ target, packageRoot, options }) => {
-    const result = await runStatus({ target, packageRoot, contractFile: options.contractFile });
+    const result = await runStatus({ target, packageRoot, contractFile: options.contractFile, taskId: options.task });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatStatusResult(result));
     return 0;
   },
   "validate-state": async ({ target, packageRoot, options }) => {
-    const result = await runValidateState({ target, packageRoot });
+    const result = await runValidateState({ target, packageRoot, taskId: options.task });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatValidateStateResult(result));
     return result.ok ? 0 : 1;
   },
   "clear-state": async ({ target, options }) => {
-    const result = await runClearState({ target });
+    const result = await runClearState({ target, taskId: options.task });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatClearStateResult(result));
+    return 0;
+  },
+  "task-create": async ({ target, packageRoot, options }) => {
+    const result = await runTaskCreate({
+      target,
+      packageRoot,
+      taskId: options.task,
+      claims: options.claims,
+      contractFile: options.contractFile,
+    });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatTaskCreateResult(result));
+    return 0;
+  },
+  "task-list": async ({ target, packageRoot, options }) => {
+    const result = await runTaskList({ target, packageRoot });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatTaskListResult(result));
+    return 0;
+  },
+  "task-show": async ({ target, packageRoot, options }) => {
+    const result = await runTaskShow({ target, packageRoot, taskId: options.task });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatTaskShowResult(result));
+    return 0;
+  },
+  "task-scope": async ({ target, packageRoot, options }) => {
+    const result = await runTaskScope({
+      target,
+      packageRoot,
+      taskId: options.task,
+      claims: options.claims,
+    });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatTaskScopeResult(result));
+    return 0;
+  },
+  "task-migrate": async ({ target, packageRoot, options }) => {
+    const result = await runTaskMigrate({ target, packageRoot, dryRun: options.dryRun });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatTaskMigrateResult(result));
+    return 0;
+  },
+  "task-unlock": async ({ target, packageRoot, options }) => {
+    const result = await runTaskUnlock({ target, packageRoot, taskId: options.task, force: options.force });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatTaskUnlockResult(result));
     return 0;
   },
   update: async ({ target, packageRoot, packageVersion, options }) => {

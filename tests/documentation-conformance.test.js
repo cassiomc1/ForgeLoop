@@ -28,8 +28,8 @@ test("validateDocumentationConformance passes on repository docs", async () => {
   const result = await validateDocumentationConformance();
   assert.equal(result.valid, true, `Expected valid documentation conformance, got errors: ${result.errors.join("\n")}`);
   assert.equal(result.errors.length, 0);
-  assert.ok(result.summary.taggedArtifactsCount >= 12);
-  assert.equal(result.summary.commandsCount, 27);
+  assert.ok(result.summary.taggedArtifactsCount >= 13);
+  assert.equal(result.summary.commandsCount, 33);
   assert.ok(result.summary.publicErrorCodesCount >= 13);
   assert.equal(result.summary.discoverySurfacesCount, 4);
 });
@@ -49,9 +49,9 @@ test("ARTIFACT_REGISTRY covers all public schemas and matches ARTIFACT_REFERENCE
   }
 });
 
-test("CLI_COMMAND_DEFINITIONS and CLI_COMMAND_METADATA cover all 27 commands with valid options", () => {
-  assert.equal(Object.keys(CLI_COMMAND_DEFINITIONS).length, 27);
-  assert.equal(Object.keys(CLI_COMMAND_METADATA).length, 27);
+test("CLI_COMMAND_DEFINITIONS and CLI_COMMAND_METADATA cover all 33 commands with valid options", () => {
+  assert.equal(Object.keys(CLI_COMMAND_DEFINITIONS).length, 33);
+  assert.equal(Object.keys(CLI_COMMAND_METADATA).length, 33);
   for (const command of COMMANDS) {
     const def = CLI_COMMAND_DEFINITIONS[command];
     const meta = CLI_COMMAND_METADATA[command];
@@ -59,7 +59,7 @@ test("CLI_COMMAND_DEFINITIONS and CLI_COMMAND_METADATA cover all 27 commands wit
     assert.ok(meta, `Command ${command} must exist in CLI_COMMAND_METADATA`);
     assert.equal(def.name, command);
     assert.equal(meta.name, command);
-    assert.ok(["lifecycle", "continuity", "verification", "policy-audit", "project-maintenance", "diagnostics"].includes(def.category));
+    assert.ok(["lifecycle", "continuity", "verification", "policy-audit", "project-maintenance", "diagnostics", "task"].includes(def.category));
     assert.ok(["READ_ONLY", "MUTATING", "EXTERNAL_EXECUTION"].includes(def.mutation));
     assert.ok(Array.isArray(meta.options));
     assert.ok(meta.options.includes("--help"));

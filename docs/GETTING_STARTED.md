@@ -260,22 +260,44 @@ When `terminal: true` and `nextAction: "NONE"` are returned, your task is protoc
 
 ---
 
-## 5. What ForgeLoop Created
+## 5. Multi-Task Concurrency
 
-Inside `.forgeloop/`:
+ForgeLoop supports multiple parallel tasks in the same project without collision:
 
-- `current-contract.json`: task intent, deliverables, and success criteria;
+```bash
+# Create an isolated task with explicit write claims
+forgeloop task-create --task auth-feature --claim src/auth --claim tests/auth --json
+
+# Run all commands against that specific task
+forgeloop route --task auth-feature --work clean-code --surface backend
+forgeloop preflight --task auth-feature --json
+forgeloop advance --task auth-feature --to EXECUTING
+forgeloop complete --task auth-feature --json
+
+# Inspect active tasks
+forgeloop task-list --json
+```
+
+---
+
+## 6. What ForgeLoop Creates
+
+Under `.forgeloop/task-state/<taskKey>/`:
+
+- `task.json`: task descriptor and write claims;
+- `contract.json`: task intent, deliverables, and success criteria;
 - `routing-result.json`: deterministic guide selections;
 - `preflight.json`: pre-implementation authorization checkpoint;
-- `session.json`: harness session activation marker;
 - `work-state.json`: lifecycle phase and resumption checkpoint;
 - `events.ndjson`: hash-chained append-only event ledger;
 - `executions/*.json`: provenance records for executed verification commands;
 - `execution-receipt.json`: completion evidence and coverage mapping.
 
+Shared repository artifacts (`sources.json`, `config.json`) remain at `.forgeloop/`.
+
 ---
 
-## 6. Next Steps
+## 7. Next Steps
 
 - Continue a task across different AI harnesses: [`docs/CROSS_HARNESS_CONTINUITY.md`](./CROSS_HARNESS_CONTINUITY.md)
 - Complete command reference: [`docs/CLI_REFERENCE.md`](./CLI_REFERENCE.md)

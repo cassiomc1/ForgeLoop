@@ -17,8 +17,8 @@ function section(id, label, status, details = null) {
   return { id, label, status, ...(details ? { details } : {}) };
 }
 
-export async function evaluateReport({ target, packageRoot, strict = false } = {}) {
-  const audit = await evaluateAudit({ target, packageRoot, strict });
+export async function evaluateReport({ target, packageRoot, strict = false, ...options } = {}) {
+  const audit = await evaluateAudit({ target, packageRoot, strict, ...options });
   const completion = audit.completion;
   const preflight = completion.preflight;
   const errorCodes = new Set(audit.errors.map((error) => error.code));

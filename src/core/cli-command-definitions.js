@@ -1,5 +1,5 @@
 /**
- * Canonical, declarative definition of all 27 ForgeLoop CLI commands.
+ * Canonical, declarative definition of all 33 ForgeLoop CLI commands.
  * This is the machine source of truth for CLI option parsing, help text,
  * metadata, documentation generation, and conformance validation.
  *
@@ -35,6 +35,20 @@ export const CLI_COMMON_OPTIONS = Object.freeze({
     takesValue: false,
     aliases: ["-v"],
     description: "show the installed package version",
+  }),
+});
+
+/**
+ * Canonical task selector option present on all task-aware commands.
+ */
+export const CLI_TASK_OPTION = Object.freeze({
+  "--task": Object.freeze({
+    targetKey: "task",
+    parseType: "string",
+    takesValue: true,
+    valueName: "id",
+    missingValueMessage: "--task requires an ID",
+    description: "task ID to operate on (when omitted, resolved from context or single active task)",
   }),
 });
 
@@ -94,7 +108,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
       ...CLI_COMMON_OPTIONS,
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
     }),
-    writes: [".forgeloop/session.json"],
+    writes: [".forgeloop/sessions/<sessionId>.json"],
     removes: [],
     mayExecuteExternalProcess: false,
     description: "Emits an active session marker recording sessionId and activationMarker.",
@@ -105,6 +119,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     mutation: "MUTATING",
     options: Object.freeze({
       ...CLI_COMMON_OPTIONS,
+      ...CLI_TASK_OPTION,
       "--work": Object.freeze({ targetKey: "work", parseType: "string", takesValue: true, valueName: "type", missingValueMessage: "--work requires a type", description: "declared work type" }),
       "--surface": Object.freeze({ targetKey: "surfaces", parseType: "string", takesValue: true, valueName: "value", repeatable: true, missingValueMessage: "--surface requires a value", description: "affected surface" }),
       "--risk": Object.freeze({ targetKey: "risks", parseType: "string", takesValue: true, valueName: "value", repeatable: true, missingValueMessage: "--risk requires a value", description: "task risk" }),
@@ -113,7 +128,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
       "--executable-change": Object.freeze({ targetKey: "executableChange", parseType: "boolean", takesValue: false, description: "declare executable/configuration change" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit route result as JSON" }),
     }),
-    writes: [".forgeloop/routing-result.json"],
+    writes: [".forgeloop/task-state/<taskKey>/routing-result.json"],
     removes: [],
     mayExecuteExternalProcess: false,
     description: "Evaluates task characteristics and deterministically routes required engineering guides.",
@@ -124,10 +139,11 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     mutation: "MUTATING",
     options: Object.freeze({
       ...CLI_COMMON_OPTIONS,
+      ...CLI_TASK_OPTION,
       "--strict": Object.freeze({ targetKey: "strict", parseType: "boolean", takesValue: false, description: "require strict protocol compliance" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
     }),
-    writes: [".forgeloop/preflight.json", ".forgeloop/work-state.json", ".forgeloop/events.ndjson"],
+    writes: [".forgeloop/task-state/<taskKey>/preflight.json", ".forgeloop/task-state/<taskKey>/work-state.json", ".forgeloop/task-state/<taskKey>/events.ndjson"],
     removes: [],
     mayExecuteExternalProcess: false,
     description: "Evaluates pre-implementation contract, routing, and gates; synchronizes work state when READY.",
@@ -138,10 +154,11 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     mutation: "MUTATING",
     options: Object.freeze({
       ...CLI_COMMON_OPTIONS,
+      ...CLI_TASK_OPTION,
       "--to": Object.freeze({ targetKey: "to", parseType: "string", takesValue: true, valueName: "phase", missingValueMessage: "--to requires a phase", description: "destination workflow phase" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
     }),
-    writes: [".forgeloop/work-state.json", ".forgeloop/events.ndjson"],
+    writes: [".forgeloop/task-state/<taskKey>/work-state.json", ".forgeloop/task-state/<taskKey>/events.ndjson"],
     removes: [],
     mayExecuteExternalProcess: false,
     description: "Transitions the canonical lifecycle work state to an allowed target phase.",
@@ -152,6 +169,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     mutation: "READ_ONLY",
     options: Object.freeze({
       ...CLI_COMMON_OPTIONS,
+      ...CLI_TASK_OPTION,
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
     }),
     writes: [],
@@ -165,6 +183,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     mutation: "READ_ONLY",
     options: Object.freeze({
       ...CLI_COMMON_OPTIONS,
+      ...CLI_TASK_OPTION,
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
     }),
     writes: [],
@@ -178,6 +197,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     mutation: "MUTATING",
     options: Object.freeze({
       ...CLI_COMMON_OPTIONS,
+      ...CLI_TASK_OPTION,
       "--focus-id": Object.freeze({ targetKey: "continuityFocusId", parseType: "string", takesValue: true, valueName: "id", missingValueMessage: "--focus-id requires a value", description: "current implementation focus ID" }),
       "--focus-summary": Object.freeze({ targetKey: "continuityFocusSummary", parseType: "string", takesValue: true, valueName: "text", missingValueMessage: "--focus-summary requires a value", description: "current implementation focus summary" }),
       "--remaining": Object.freeze({ targetKey: "continuityRemaining", parseType: "string", takesValue: true, valueName: "id:summary", repeatable: true, missingValueMessage: "--remaining requires a value", description: "remaining implementation item" }),
@@ -187,7 +207,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
       "--resume-note": Object.freeze({ targetKey: "continuityResumeNote", parseType: "string", takesValue: true, valueName: "text", missingValueMessage: "--resume-note requires a value", description: "bounded operational resume note" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
     }),
-    writes: [".forgeloop/continuity.json"],
+    writes: [".forgeloop/task-state/<taskKey>/continuity.json"],
     removes: [],
     mayExecuteExternalProcess: false,
     description: "Persists cross-harness operational continuity handoff notes bound to current state fingerprints.",
@@ -198,6 +218,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     mutation: "READ_ONLY",
     options: Object.freeze({
       ...CLI_COMMON_OPTIONS,
+      ...CLI_TASK_OPTION,
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
     }),
     writes: [],
@@ -211,12 +232,13 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     mutation: "MUTATING",
     options: Object.freeze({
       ...CLI_COMMON_OPTIONS,
+      ...CLI_TASK_OPTION,
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
     }),
     writes: [],
-    removes: [".forgeloop/continuity.json"],
+    removes: [".forgeloop/task-state/<taskKey>/continuity.json"],
     mayExecuteExternalProcess: false,
-    description: "Removes .forgeloop/continuity.json without affecting lifecycle work state.",
+    description: "Removes continuity.json for the active task without affecting lifecycle work state.",
   }),
   "prepare-completion": Object.freeze({
     name: "prepare-completion",
@@ -224,9 +246,10 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     mutation: "MUTATING",
     options: Object.freeze({
       ...CLI_COMMON_OPTIONS,
+      ...CLI_TASK_OPTION,
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
     }),
-    writes: [".forgeloop/execution-receipt.json"],
+    writes: [".forgeloop/task-state/<taskKey>/execution-receipt.json"],
     removes: [],
     mayExecuteExternalProcess: false,
     description: "Initializes execution-receipt.json with empty requirement evidence slots for the active cycle.",
@@ -237,13 +260,14 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     mutation: "EXTERNAL_EXECUTION",
     options: Object.freeze({
       ...CLI_COMMON_OPTIONS,
+      ...CLI_TASK_OPTION,
       "--id": Object.freeze({ targetKey: "checkId", parseType: "string", takesValue: true, valueName: "id", missingValueMessage: "--id requires a check ID", description: "stable check identifier" }),
       "--requirement": Object.freeze({ targetKey: "checkRequirement", parseType: "string", takesValue: true, valueName: "id", missingValueMessage: "--requirement requires an evidence target", description: "completion requirement covered by the check" }),
       "--details": Object.freeze({ targetKey: "checkDetails", parseType: "json-object", takesValue: true, valueName: "json", missingValueMessage: "--details requires a JSON object", description: "additional structured check details" }),
       "--": Object.freeze({ targetKey: "commandArgv", parseType: "argv", takesValue: true, valueName: "argv...", description: "exact command argv to classify, execute, and attest" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
     }),
-    writes: [".forgeloop/executions/exec-<id>.json", ".forgeloop/work-state.json", ".forgeloop/execution-receipt.json", ".forgeloop/events.ndjson"],
+    writes: [".forgeloop/task-state/<taskKey>/executions/exec-<id>.json", ".forgeloop/task-state/<taskKey>/work-state.json", ".forgeloop/task-state/<taskKey>/execution-receipt.json", ".forgeloop/task-state/<taskKey>/events.ndjson"],
     removes: [],
     mayExecuteExternalProcess: true,
     description: "Runs an exact command, records the execution provenance artifact, and binds observed check evidence.",
@@ -254,6 +278,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     mutation: "MUTATING",
     options: Object.freeze({
       ...CLI_COMMON_OPTIONS,
+      ...CLI_TASK_OPTION,
       "--id": Object.freeze({ targetKey: "checkId", parseType: "string", takesValue: true, valueName: "id", missingValueMessage: "--id requires a check ID", description: "stable check identifier" }),
       "--requirement": Object.freeze({ targetKey: "checkRequirement", parseType: "string", takesValue: true, valueName: "id", missingValueMessage: "--requirement requires an evidence target", description: "completion requirement covered by the check" }),
       "--kind": Object.freeze({ targetKey: "checkKind", parseType: "string", takesValue: true, valueName: "kind", missingValueMessage: "--kind requires a check kind", description: "check kind (default: command; use manual-review for manual evidence)" }),
@@ -267,7 +292,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
       "--details": Object.freeze({ targetKey: "checkDetails", parseType: "json-object", takesValue: true, valueName: "json", missingValueMessage: "--details requires a JSON object", description: "additional structured check details" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
     }),
-    writes: [".forgeloop/work-state.json", ".forgeloop/execution-receipt.json", ".forgeloop/events.ndjson"],
+    writes: [".forgeloop/task-state/<taskKey>/work-state.json", ".forgeloop/task-state/<taskKey>/execution-receipt.json", ".forgeloop/task-state/<taskKey>/events.ndjson"],
     removes: [],
     mayExecuteExternalProcess: false,
     description: "Records structured verification evidence (command, manual review, or test output) against a requirement.",
@@ -278,6 +303,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     mutation: "MUTATING",
     options: Object.freeze({
       ...CLI_COMMON_OPTIONS,
+      ...CLI_TASK_OPTION,
       "--requirement": Object.freeze({ targetKey: "checkRequirement", parseType: "string", takesValue: true, valueName: "id", missingValueMessage: "--requirement requires an evidence target", description: "terminal requirement covered by the result" }),
       "--type": Object.freeze({ targetKey: "checkType", parseType: "string", takesValue: true, valueName: "type", missingValueMessage: "--type requires a terminal type", description: "PUBLICATION or PRODUCTION_READINESS" }),
       "--status": Object.freeze({ targetKey: "checkStatus", parseType: "string", takesValue: true, valueName: "status", missingValueMessage: "--status requires a check status", description: "observed terminal status" }),
@@ -286,7 +312,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
       "--details": Object.freeze({ targetKey: "checkDetails", parseType: "json-object", takesValue: true, valueName: "json", missingValueMessage: "--details requires a JSON object", description: "additional structured result details" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
     }),
-    writes: [".forgeloop/work-state.json", ".forgeloop/execution-receipt.json", ".forgeloop/events.ndjson"],
+    writes: [".forgeloop/task-state/<taskKey>/work-state.json", ".forgeloop/task-state/<taskKey>/execution-receipt.json", ".forgeloop/task-state/<taskKey>/events.ndjson"],
     removes: [],
     mayExecuteExternalProcess: false,
     description: "Records external terminal result evidence (PUBLICATION or PRODUCTION_READINESS) into receipt.",
@@ -297,10 +323,11 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     mutation: "MUTATING",
     options: Object.freeze({
       ...CLI_COMMON_OPTIONS,
+      ...CLI_TASK_OPTION,
       "--strict": Object.freeze({ targetKey: "strict", parseType: "boolean", takesValue: false, description: "require strict protocol compliance" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
     }),
-    writes: [".forgeloop/work-state.json", ".forgeloop/events.ndjson"],
+    writes: [".forgeloop/task-state/<taskKey>/work-state.json", ".forgeloop/task-state/<taskKey>/events.ndjson"],
     removes: [],
     mayExecuteExternalProcess: false,
     description: "Evaluates verification receipt coverage, gates, and ledger integrity to authorize task completion.",
@@ -311,6 +338,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     mutation: "READ_ONLY",
     options: Object.freeze({
       ...CLI_COMMON_OPTIONS,
+      ...CLI_TASK_OPTION,
       "--strict": Object.freeze({ targetKey: "strict", parseType: "boolean", takesValue: false, description: "require strict protocol compliance" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
     }),
@@ -325,6 +353,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     mutation: "READ_ONLY",
     options: Object.freeze({
       ...CLI_COMMON_OPTIONS,
+      ...CLI_TASK_OPTION,
       "--strict": Object.freeze({ targetKey: "strict", parseType: "boolean", takesValue: false, description: "require strict protocol compliance" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
     }),
@@ -339,6 +368,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     mutation: "READ_ONLY",
     options: Object.freeze({
       ...CLI_COMMON_OPTIONS,
+      ...CLI_TASK_OPTION,
       "<name>": Object.freeze({ targetKey: "policy", parseType: "string", takesValue: true, isPositional: true, valueName: "name", description: "policy pack name" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
     }),
@@ -353,7 +383,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     mutation: "READ_ONLY",
     options: Object.freeze({
       ...CLI_COMMON_OPTIONS,
-      "--task": Object.freeze({ targetKey: "task", parseType: "string", takesValue: true, valueName: "id", missingValueMessage: "--task requires an ID", description: "task ID to export as a portable bundle" }),
+      ...CLI_TASK_OPTION,
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
     }),
     writes: [],
@@ -367,6 +397,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     mutation: "READ_ONLY",
     options: Object.freeze({
       ...CLI_COMMON_OPTIONS,
+      ...CLI_TASK_OPTION,
       "--contract-file": Object.freeze({ targetKey: "contractFile", parseType: "string", takesValue: true, valueName: "path", missingValueMessage: "--contract-file requires a path", description: "current JSON contract used for freshness comparison" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
     }),
@@ -381,6 +412,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     mutation: "READ_ONLY",
     options: Object.freeze({
       ...CLI_COMMON_OPTIONS,
+      ...CLI_TASK_OPTION,
       "--contract-file": Object.freeze({ targetKey: "contractFile", parseType: "string", takesValue: true, valueName: "path", missingValueMessage: "--contract-file requires a path", description: "current JSON contract used for freshness comparison" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
     }),
@@ -395,6 +427,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     mutation: "READ_ONLY",
     options: Object.freeze({
       ...CLI_COMMON_OPTIONS,
+      ...CLI_TASK_OPTION,
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
     }),
     writes: [],
@@ -408,12 +441,13 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     mutation: "MUTATING",
     options: Object.freeze({
       ...CLI_COMMON_OPTIONS,
+      ...CLI_TASK_OPTION,
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
     }),
     writes: [],
-    removes: [".forgeloop/work-state.json"],
+    removes: [".forgeloop/task-state/<taskKey>/work-state.json"],
     mayExecuteExternalProcess: false,
-    description: "Removes .forgeloop/work-state.json only, preserving sibling contract, routing, and ledger files.",
+    description: "Removes work-state.json for the active task only, preserving sibling contract, routing, and ledger files.",
   }),
   "validate-receipt": Object.freeze({
     name: "validate-receipt",
@@ -435,6 +469,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     mutation: "READ_ONLY",
     options: Object.freeze({
       ...CLI_COMMON_OPTIONS,
+      ...CLI_TASK_OPTION,
       "--contract-file": Object.freeze({ targetKey: "contractFile", parseType: "string", takesValue: true, valueName: "path", missingValueMessage: "--contract-file requires a path", description: "current JSON contract used for freshness comparison" }),
       "--route-file": Object.freeze({ targetKey: "routeFile", parseType: "string", takesValue: true, valueName: "path", missingValueMessage: "--route-file requires a path", description: "routing-result JSON relative to target" }),
       "--state-file": Object.freeze({ targetKey: "stateFile", parseType: "string", takesValue: true, valueName: "path", missingValueMessage: "--state-file requires a path", description: "work-state JSON relative to target" }),
@@ -448,6 +483,93 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     removes: [],
     mayExecuteExternalProcess: false,
     description: "Validates end-to-end cryptographic freshness, fingerprint bindings, and ledger integrity.",
+  }),
+  "task-create": Object.freeze({
+    name: "task-create",
+    category: "lifecycle",
+    mutation: "MUTATING",
+    options: Object.freeze({
+      ...CLI_COMMON_OPTIONS,
+      ...CLI_TASK_OPTION,
+      "--claim": Object.freeze({ targetKey: "claims", parseType: "string", takesValue: true, repeatable: true, valueName: "path", missingValueMessage: "--claim requires a path", description: "scoped file path or directory prefix claimed for mutation" }),
+      "--contract-file": Object.freeze({ targetKey: "contractFile", parseType: "string", takesValue: true, valueName: "path", missingValueMessage: "--contract-file requires a path", description: "path to initial contract file" }),
+      "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
+    }),
+    writes: [".forgeloop/task-state/<taskKey>/task.json", ".forgeloop/task-state/<taskKey>/current-contract.json"],
+    removes: [],
+    mayExecuteExternalProcess: false,
+    description: "Creates a new task descriptor and initializes its isolated task state namespace.",
+  }),
+  "task-list": Object.freeze({
+    name: "task-list",
+    category: "lifecycle",
+    mutation: "READ_ONLY",
+    options: Object.freeze({
+      ...CLI_COMMON_OPTIONS,
+      "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
+    }),
+    writes: [],
+    removes: [],
+    mayExecuteExternalProcess: false,
+    description: "Lists all discovered task descriptors and their current lifecycle phases.",
+  }),
+  "task-show": Object.freeze({
+    name: "task-show",
+    category: "lifecycle",
+    mutation: "READ_ONLY",
+    options: Object.freeze({
+      ...CLI_COMMON_OPTIONS,
+      ...CLI_TASK_OPTION,
+      "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
+    }),
+    writes: [],
+    removes: [],
+    mayExecuteExternalProcess: false,
+    description: "Shows details of a specific task descriptor and its scoped artifacts.",
+  }),
+  "task-scope": Object.freeze({
+    name: "task-scope",
+    category: "lifecycle",
+    mutation: "MUTATING",
+    options: Object.freeze({
+      ...CLI_COMMON_OPTIONS,
+      ...CLI_TASK_OPTION,
+      "--claim": Object.freeze({ targetKey: "claims", parseType: "string", takesValue: true, repeatable: true, valueName: "path", missingValueMessage: "--claim requires a path", description: "scoped file path or directory prefix claimed for mutation" }),
+      "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
+    }),
+    writes: [".forgeloop/task-state/<taskKey>/task.json"],
+    removes: [],
+    mayExecuteExternalProcess: false,
+    description: "Updates or inspects write claims for a task before execution.",
+  }),
+  "task-migrate": Object.freeze({
+    name: "task-migrate",
+    category: "project-maintenance",
+    mutation: "MUTATING",
+    options: Object.freeze({
+      ...CLI_COMMON_OPTIONS,
+      "--dry-run": Object.freeze({ targetKey: "dryRun", parseType: "boolean", takesValue: false, description: "show planned migration actions without moving files" }),
+      "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
+    }),
+    writes: [".forgeloop/task-state/<taskKey>/*"],
+    removes: [".forgeloop/current-contract.json", ".forgeloop/routing-result.json", ".forgeloop/work-state.json", ".forgeloop/preflight.json", ".forgeloop/execution-receipt.json", ".forgeloop/events.ndjson", ".forgeloop/continuity.json", ".forgeloop/gates", ".forgeloop/executions"],
+    mayExecuteExternalProcess: false,
+    description: "Migrates a legacy 1.0 singleton task state layout into a task-namespaced layout.",
+  }),
+  "task-unlock": Object.freeze({
+    name: "task-unlock",
+    category: "project-maintenance",
+    mutation: "MUTATING",
+    options: Object.freeze({
+      ...CLI_COMMON_OPTIONS,
+      ...CLI_TASK_OPTION,
+      "--force": Object.freeze({ targetKey: "force", parseType: "boolean", takesValue: false, description: "force release of an orphaned task lock" }),
+      "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
+    }),
+    writes: [],
+    removes: [".forgeloop/task-state/<taskKey>/.lock"],
+    mayExecuteExternalProcess: false,
+    description: "Removes an orphaned task lock file to recover an interrupted task.",
   }),
 });
 

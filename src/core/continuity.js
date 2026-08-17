@@ -11,6 +11,7 @@ import { assertSafePath, ensureWithin, fileExists } from "./filesystem.js";
 import { PROTOCOL_VERSION, WORK_PHASES } from "./protocol.js";
 import { assertSecretFree } from "./receipt.js";
 import { getPackageRoot } from "./templates.js";
+import { taskArtifactPath } from "./task-paths.js";
 
 export const CONTINUITY_PATH = ARTIFACT_PATHS.continuity;
 export const CONTINUITY_SCHEMA_VERSION = 1;
@@ -182,8 +183,12 @@ export function createContinuity(input) {
   });
 }
 
-export async function readContinuity(target, packageRoot = getPackageRoot()) {
-  const artifact = await readJsonArtifact(target, CONTINUITY_PATH, "continuity", packageRoot);
+export async function readContinuity(target, options = {}) {
+  const packageRoot = typeof options === "string" ? options : (options?.packageRoot ?? getPackageRoot());
+  const relPath = typeof options === "object" && options !== null
+    ? (options.continuityPath ?? options.relativePath ?? (options.taskId ? taskArtifactPath(options.taskId, "continuity") : CONTINUITY_PATH))
+    : CONTINUITY_PATH;
+  const artifact = await readJsonArtifact(target, relPath, "continuity", packageRoot);
   return { ...artifact, value: assertContinuitySemantics(artifact.value) };
 }
 
@@ -192,25 +197,25 @@ export async function writeContinuity(target, operationalInput = {}, options = {
   let state = options.state;
   if (!state) {
     const { readWorkState } = await import("./work-state.js");
-    state = await readWorkState(target, packageRoot);
+    state = await readWorkState(target, { packageRoot, taskId: options.taskId, statePath: options.statePath });
   }
-  if (!state) throw continuityError("E_CONTINUITY_STATE_MISSING", "Cannot record continuity without work state", [ARTIFACT_PATHS.state]);
+  if (!state) throw continuityError("E_CONTINUITY_STATE_MISSING", "Cannot record continuity without work state", [options.statePath ?? (options.taskId ? taskArtifactPath(options.taskId, "state") : ARTIFACT_PATHS.state)]);
 
   let contract = options.contract;
   if (!contract) {
     const { readContract } = await import("./contract.js");
-    contract = await readContract(target, packageRoot);
+    contract = await readContract(target, packageRoot, { taskId: options.taskId, contractPath: options.contractPath });
   }
   const currentContractFingerprint = contract?.fingerprint
     ?? (contract ? canonicalFingerprint(contract.value ?? contract) : null);
   if (!currentContractFingerprint) {
-    throw continuityError("E_CONTINUITY_CONTRACT_MISMATCH", "Cannot bind continuity to the current contract", [ARTIFACT_PATHS.contract]);
+    throw continuityError("E_CONTINUITY_CONTRACT_MISMATCH", "Cannot bind continuity to the current contract", [options.contractPath ?? (options.taskId ? taskArtifactPath(options.taskId, "contract") : ARTIFACT_PATHS.contract)]);
   }
   if (state.contractFingerprint !== currentContractFingerprint) {
     throw continuityError(
       "E_CONTINUITY_CONTRACT_MISMATCH",
       "Work state contract fingerprint does not match the current contract",
-      [ARTIFACT_PATHS.state, ARTIFACT_PATHS.contract],
+      [options.statePath ?? (options.taskId ? taskArtifactPath(options.taskId, "state") : ARTIFACT_PATHS.state), options.contractPath ?? (options.taskId ? taskArtifactPath(options.taskId, "contract") : ARTIFACT_PATHS.contract)],
     );
   }
   const value = createContinuity({
@@ -231,15 +236,17 @@ export async function writeContinuity(target, operationalInput = {}, options = {
     inspectFirst: operationalInput.inspectFirst ?? [],
     ...(operationalInput.resumeNote !== undefined ? { resumeNote: operationalInput.resumeNote } : {}),
   });
-  return writeJsonArtifact(target, CONTINUITY_PATH, value, "continuity", packageRoot, {
+  const relPath = options.continuityPath ?? options.relativePath ?? (options.taskId ? taskArtifactPath(options.taskId, "continuity") : CONTINUITY_PATH);
+  return writeJsonArtifact(target, relPath, value, "continuity", packageRoot, {
     dryRun: options.dryRun ?? false,
   });
 }
 
-export async function clearContinuity(target) {
-  await assertSafePath(target, CONTINUITY_PATH);
-  const artifactPath = ensureWithin(target, CONTINUITY_PATH);
-  if (!(await fileExists(artifactPath))) return { removed: false, path: CONTINUITY_PATH };
+export async function clearContinuity(target, options = {}) {
+  const relPath = options.continuityPath ?? options.relativePath ?? (options.taskId ? taskArtifactPath(options.taskId, "continuity") : CONTINUITY_PATH);
+  await assertSafePath(target, relPath);
+  const artifactPath = ensureWithin(target, relPath);
+  if (!(await fileExists(artifactPath))) return { removed: false, path: relPath };
   await unlink(artifactPath);
-  return { removed: true, path: CONTINUITY_PATH };
+  return { removed: true, path: relPath };
 }

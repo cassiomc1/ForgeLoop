@@ -39,9 +39,9 @@ ForgeLoop uses a definition-driven command-line parser:
 
 | Category | Commands |
 | --- | --- |
-| **Setup & Maintenance** | [`init`](#init), [`update`](#update) |
+| **Setup & Maintenance** | [`init`](#init), [`update`](#update), [`task-migrate`](#task-migrate), [`task-unlock`](#task-unlock) |
 | **Inspection & Diagnostics** | [`doctor`](#doctor), [`inspect`](#inspect), [`status`](#status), [`validate-state`](#validate-state), [`validate-protocol`](#validate-protocol) |
-| **Lifecycle & State** | [`activate`](#activate), [`route`](#route), [`preflight`](#preflight), [`advance`](#advance), [`next`](#next), [`complete`](#complete), [`clear-state`](#clear-state) |
+| **Lifecycle & State** | [`activate`](#activate), [`route`](#route), [`preflight`](#preflight), [`advance`](#advance), [`next`](#next), [`complete`](#complete), [`clear-state`](#clear-state), [`task-create`](#task-create), [`task-list`](#task-list), [`task-show`](#task-show), [`task-scope`](#task-scope) |
 | **Cross-Harness Continuity** | [`continuity`](#continuity), [`record-continuity`](#record-continuity), [`reconcile-continuity`](#reconcile-continuity), [`clear-continuity`](#clear-continuity) |
 | **Verification & Completion** | [`prepare-completion`](#prepare-completion), [`run-check`](#run-check), [`record-check`](#record-check), [`record-terminal-result`](#record-terminal-result), [`audit`](#audit), [`report`](#report), [`validate-receipt`](#validate-receipt) |
 | **Policy & Auditing** | [`policy`](#policy), [`bundle`](#bundle) |
@@ -137,6 +137,7 @@ Calculates and persists deterministic engineering guide routing.
 <!-- BEGIN FORGELOOP GENERATED: cli:route:options -->
 
 - `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
 - `--work <type>`: declared work type
 - `--surface <value>`: affected surface (repeatable)
 - `--risk <value>`: task risk (repeatable)
@@ -166,6 +167,7 @@ Validates pre-implementation readiness and establishes protocol readiness state.
 <!-- BEGIN FORGELOOP GENERATED: cli:preflight:options -->
 
 - `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
 - `--strict`: require strict protocol compliance
 - `--json`: emit structured output as JSON
 
@@ -211,6 +213,7 @@ Advances the protocol lifecycle phase.
 <!-- BEGIN FORGELOOP GENERATED: cli:advance:options -->
 
 - `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
 - `--to <phase>`: destination workflow phase
 - `--json`: emit structured output as JSON
 
@@ -234,6 +237,7 @@ Computes the deterministic next action required by the protocol.
 <!-- BEGIN FORGELOOP GENERATED: cli:next:options -->
 
 - `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
 - `--json`: emit structured output as JSON
 
 <!-- END FORGELOOP GENERATED: cli:next:options -->
@@ -260,6 +264,7 @@ Reads current operational continuity context.
 <!-- BEGIN FORGELOOP GENERATED: cli:continuity:options -->
 
 - `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
 - `--json`: emit structured output as JSON
 
 <!-- END FORGELOOP GENERATED: cli:continuity:options -->
@@ -282,6 +287,7 @@ Records operational handoff context before pausing or switching tools.
 <!-- BEGIN FORGELOOP GENERATED: cli:record-continuity:options -->
 
 - `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
 - `--focus-id <id>`: current implementation focus ID
 - `--focus-summary <text>`: current implementation focus summary
 - `--remaining <id:summary>`: remaining implementation item (repeatable)
@@ -316,6 +322,7 @@ Reconciles continuity with the active work state and checkout.
 <!-- BEGIN FORGELOOP GENERATED: cli:reconcile-continuity:options -->
 
 - `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
 - `--json`: emit structured output as JSON
 
 <!-- END FORGELOOP GENERATED: cli:reconcile-continuity:options -->
@@ -338,6 +345,7 @@ Clears operational continuity context while preserving canonical work state.
 <!-- BEGIN FORGELOOP GENERATED: cli:clear-continuity:options -->
 
 - `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
 - `--json`: emit structured output as JSON
 
 <!-- END FORGELOOP GENERATED: cli:clear-continuity:options -->
@@ -364,6 +372,7 @@ Executes a verification command with ForgeLoop-attested provenance.
 <!-- BEGIN FORGELOOP GENERATED: cli:run-check:options -->
 
 - `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
 - `--id <id>`: stable check identifier
 - `--requirement <id>`: completion requirement covered by the check
 - `--details <json>`: additional structured check details
@@ -390,6 +399,7 @@ Records an observed or manual verification check result without executing comman
 <!-- BEGIN FORGELOOP GENERATED: cli:record-check:options -->
 
 - `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
 - `--id <id>`: stable check identifier
 - `--requirement <id>`: completion requirement covered by the check
 - `--kind <kind>`: check kind (default: command; use manual-review for manual evidence)
@@ -428,6 +438,7 @@ Validates `.forgeloop/work-state.json` structure, hash chain, and repository bin
 <!-- BEGIN FORGELOOP GENERATED: cli:validate-state:options -->
 
 - `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
 - `--json`: emit structured output as JSON
 
 <!-- END FORGELOOP GENERATED: cli:validate-state:options -->
@@ -471,6 +482,7 @@ Performs comprehensive protocol validation across all active artifacts.
 <!-- BEGIN FORGELOOP GENERATED: cli:validate-protocol:options -->
 
 - `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
 - `--contract-file <path>`: current JSON contract used for freshness comparison
 - `--route-file <path>`: routing-result JSON relative to target
 - `--state-file <path>`: work-state JSON relative to target
@@ -504,6 +516,7 @@ Initializes or refreshes `.forgeloop/execution-receipt.json`.
 <!-- BEGIN FORGELOOP GENERATED: cli:prepare-completion:options -->
 
 - `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
 - `--json`: emit structured output as JSON
 
 <!-- END FORGELOOP GENERATED: cli:prepare-completion:options -->
@@ -526,6 +539,7 @@ Records external publication or production-readiness observations.
 <!-- BEGIN FORGELOOP GENERATED: cli:record-terminal-result:options -->
 
 - `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
 - `--requirement <id>`: terminal requirement covered by the result
 - `--type <type>`: PUBLICATION or PRODUCTION_READINESS
 - `--status <status>`: observed terminal status
@@ -559,6 +573,7 @@ Performs a read-only dry-run evaluation of completion readiness.
 <!-- BEGIN FORGELOOP GENERATED: cli:audit:options -->
 
 - `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
 - `--strict`: require strict protocol compliance
 - `--json`: emit structured output as JSON
 
@@ -583,6 +598,7 @@ Validates protocol completion and transitions the task to `COMPLETE`.
 <!-- BEGIN FORGELOOP GENERATED: cli:complete:options -->
 
 - `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
 - `--strict`: require strict protocol compliance
 - `--json`: emit structured output as JSON
 
@@ -605,6 +621,7 @@ Emits an independent multi-dimensional status report.
 <!-- BEGIN FORGELOOP GENERATED: cli:report:options -->
 
 - `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
 - `--strict`: require strict protocol compliance
 - `--json`: emit structured output as JSON
 
@@ -627,7 +644,7 @@ Exports a portable, self-contained task bundle.
 <!-- BEGIN FORGELOOP GENERATED: cli:bundle:options -->
 
 - `--path <directory>`: target project directory (default: current directory)
-- `--task <id>`: task ID to export as a portable bundle
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
 - `--json`: emit structured output as JSON
 
 <!-- END FORGELOOP GENERATED: cli:bundle:options -->
@@ -653,6 +670,7 @@ Displays human-readable or structured summary of current task state.
 <!-- BEGIN FORGELOOP GENERATED: cli:status:options -->
 
 - `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
 - `--contract-file <path>`: current JSON contract used for freshness comparison
 - `--json`: emit structured output as JSON
 
@@ -675,6 +693,7 @@ Inspects checkout changes and compares them against contract deliverables.
 <!-- BEGIN FORGELOOP GENERATED: cli:inspect:options -->
 
 - `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
 - `--contract-file <path>`: current JSON contract used for freshness comparison
 - `--json`: emit structured output as JSON
 
@@ -697,6 +716,7 @@ Evaluates compliance against a named policy pack.
 <!-- BEGIN FORGELOOP GENERATED: cli:policy:options -->
 
 - `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
 - `<name>`: policy pack name
 - `--json`: emit structured output as JSON
 
@@ -721,6 +741,7 @@ Clears canonical work-state checkpoint for the current task.
 <!-- BEGIN FORGELOOP GENERATED: cli:clear-state:options -->
 
 - `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
 - `--json`: emit structured output as JSON
 
 <!-- END FORGELOOP GENERATED: cli:clear-state:options -->
@@ -730,3 +751,143 @@ Clears canonical work-state checkpoint for the current task.
   ```bash
   forgeloop clear-state
   ```
+
+---
+
+## 7. Multi-Task Management
+
+### `task-create`
+
+Initializes a new isolated task namespace with write claims and contract.
+
+- **Purpose**: Creates `.forgeloop/task-state/<taskKey>/task.json` descriptor.
+- **Mutation**: Writes task descriptor.
+- **Options**:
+
+<!-- BEGIN FORGELOOP GENERATED: cli:task-create:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--claim <path>`: scoped file path or directory prefix claimed for mutation (repeatable)
+- `--contract-file <path>`: path to initial contract file
+- `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:task-create:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop task-create --id task-001 --claim src/auth --prompt "Add auth module" --json
+  ```
+
+### `task-list`
+
+Lists all tasks discovered in `.forgeloop/task-state/`.
+
+- **Purpose**: Discovers tasks, their keys, phases, write claims, and lock status.
+- **Mutation**: Read-only.
+- **Options**:
+
+<!-- BEGIN FORGELOOP GENERATED: cli:task-list:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:task-list:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop task-list --json
+  ```
+
+### `task-show`
+
+Displays details of a specific task by ID or storage key.
+
+- **Purpose**: Inspects task descriptor, write claims, active lock, and lifecycle state.
+- **Mutation**: Read-only.
+- **Options**:
+
+<!-- BEGIN FORGELOOP GENERATED: cli:task-show:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:task-show:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop task-show --task task-001 --json
+  ```
+
+### `task-scope`
+
+Updates or inspects write claims for a task.
+
+- **Purpose**: Modifies write claims before execution starts.
+- **Mutation**: Updates `task.json`.
+- **Options**:
+
+<!-- BEGIN FORGELOOP GENERATED: cli:task-scope:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--claim <path>`: scoped file path or directory prefix claimed for mutation (repeatable)
+- `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:task-scope:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop task-scope --task task-001 --claim src/auth tests/auth --json
+  ```
+
+### `task-migrate`
+
+Migrates a legacy 1.0 single-task `.forgeloop/` layout into a namespaced task directory.
+
+- **Purpose**: Converts root `.forgeloop/` artifacts into `.forgeloop/task-state/<taskKey>/`.
+- **Mutation**: Moves task artifacts into task state subfolder.
+- **Options**:
+
+<!-- BEGIN FORGELOOP GENERATED: cli:task-migrate:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--dry-run`: show planned migration actions without moving files
+- `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:task-migrate:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop task-migrate --json
+  ```
+
+### `task-unlock`
+
+Forces the release of a stale task lock.
+
+- **Purpose**: Removes `.lock` file from the task directory when process crashed.
+- **Mutation**: Deletes task lock file.
+- **Options**:
+
+<!-- BEGIN FORGELOOP GENERATED: cli:task-unlock:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--force`: force release of an orphaned task lock
+- `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:task-unlock:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop task-unlock --task task-001 --force --json
+  ```
+

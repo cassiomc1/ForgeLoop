@@ -14,6 +14,8 @@ import {
   validatePersistedPreflight,
 } from "./preflight-model.js";
 
+import { taskArtifactPath } from "./task-paths.js";
+
 async function readOptionalIdentityArtifact(readArtifact, invalidCode, artifactPath) {
   try {
     return await readArtifact();
@@ -23,36 +25,44 @@ async function readOptionalIdentityArtifact(readArtifact, invalidCode, artifactP
   }
 }
 
-export async function assertPreflightPersistenceSafety(target, packageRoot, taskId) {
+export async function assertPreflightPersistenceSafety(target, packageRoot, taskIdOrOptions = {}, maybeOptions = {}) {
+  const options = typeof taskIdOrOptions === "object" && taskIdOrOptions !== null ? taskIdOrOptions : maybeOptions;
+  const taskId = typeof taskIdOrOptions === "string" ? taskIdOrOptions : (options.taskId ?? null);
+  const contractRel = options.contractPath ?? (taskId && taskId !== "unknown" ? taskArtifactPath(taskId, "contract") : ARTIFACT_PATHS.contract);
+  const routeRel = options.routePath ?? (taskId && taskId !== "unknown" ? taskArtifactPath(taskId, "route") : ARTIFACT_PATHS.route);
+  const stateRel = options.statePath ?? (taskId && taskId !== "unknown" ? taskArtifactPath(taskId, "state") : ARTIFACT_PATHS.state);
+  const eventsRel = options.eventsPath ?? (taskId && taskId !== "unknown" ? taskArtifactPath(taskId, "events") : ARTIFACT_PATHS.events);
+
   let state;
   try {
-    state = await readWorkState(target, packageRoot);
+    state = await readWorkState(target, { packageRoot, taskId, statePath: options.statePath });
   } catch (error) {
-    throw preflightError("E_STATE_INVALID", error.message, [ARTIFACT_PATHS.state]);
+    throw preflightError("E_STATE_INVALID", error.message, [stateRel]);
   }
   const contract = await readOptionalIdentityArtifact(
-    () => readContract(target, packageRoot),
+    () => readContract(target, packageRoot, { taskId, contractPath: options.contractPath }),
     "E_CONTRACT_INVALID",
-    ARTIFACT_PATHS.contract,
+    contractRel,
   );
   const route = await readOptionalIdentityArtifact(
-    () => readPersistedRoute(target, packageRoot),
+    () => readPersistedRoute(target, packageRoot, { taskId, routePath: options.routePath }),
     "E_ROUTE_INVALID",
-    ARTIFACT_PATHS.route,
+    routeRel,
   );
   if (state && (contract || route)) assertStateIdentity({ contract, route, state });
 
-  if (taskId === "unknown") return null;
-  const ledger = await validateEventLedger(target, packageRoot);
+  const effectiveTaskId = taskId ?? contract?.value?.taskId ?? state?.taskId ?? null;
+  if (effectiveTaskId === "unknown" || !effectiveTaskId) return null;
+  const ledger = await validateEventLedger(target, packageRoot, { taskId, eventsPath: options.eventsPath });
   if (!ledger.valid) {
     const first = ledger.errors[0];
-    throw preflightError(first.code, first.message, [ARTIFACT_PATHS.events]);
+    throw preflightError(first.code, first.message, [eventsRel]);
   }
-  if (ledger.events.some((event) => event.taskId !== taskId)) {
+  if (ledger.events.some((event) => event.taskId !== effectiveTaskId)) {
     throw preflightError(
       "E_PHASE_CHRONOLOGY_INVALID",
       "Preflight cannot append events to a ledger owned by a different task",
-      [ARTIFACT_PATHS.events, ARTIFACT_PATHS.contract],
+      [eventsRel, contractRel],
     );
   }
   return ledger;
@@ -159,11 +169,11 @@ export function assertExistingReadyLifecycleCompatibility(ledger, result) {
   }
 }
 
-export async function appendActivationEvents(target, packageRoot, ledger, result) {
+export async function appendActivationEvents(target, packageRoot, ledger, result, options = {}) {
   const events = [...(ledger?.events ?? [])];
   const hasEvent = (eventName) => events.some((event) => event.event === eventName && event.taskId === result.taskId);
   const append = async (input) => {
-    const event = await appendProtocolEvent(target, input, packageRoot);
+    const event = await appendProtocolEvent(target, input, packageRoot, options);
     events.push(event);
   };
 

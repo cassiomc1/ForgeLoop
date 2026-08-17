@@ -8,6 +8,7 @@ import { ensureWithin, readBytes } from "./filesystem.js";
 import { sha256 } from "./manifest.js";
 import { findProfilePath, validateProfileSources } from "./profile.js";
 import { issue } from "./preflight-model.js";
+import { taskGatePath, taskArtifactPath } from "./task-paths.js";
 
 export async function readProfile(target) {
   const relativePath = await findProfilePath(target);
@@ -36,23 +37,25 @@ export async function optionalConfig(target, packageRoot, errors) {
   }
 }
 
-export async function loadContract(target, packageRoot, errors) {
+export async function loadContract(target, packageRoot, errors, options = {}) {
   try {
-    return await readContract(target, packageRoot);
+    return await readContract(target, packageRoot, options);
   } catch (error) {
-    errors.push(issue(error.code === "ARTIFACT_MISSING" ? "E_CONTRACT_MISSING" : "E_CONTRACT_INVALID", error.message, [ARTIFACT_PATHS.contract]));
+    const path = options.contractPath ?? (options.taskId ? taskArtifactPath(options.taskId, "contract") : ARTIFACT_PATHS.contract);
+    errors.push(issue(error.code === "ARTIFACT_MISSING" ? "E_CONTRACT_MISSING" : "E_CONTRACT_INVALID", error.message, [path]));
     return null;
   }
 }
 
-export async function loadRoute(target, packageRoot, errors) {
+export async function loadRoute(target, packageRoot, errors, options = {}) {
   try {
-    return await readPersistedRoute(target, packageRoot);
+    return await readPersistedRoute(target, packageRoot, options);
   } catch (error) {
+    const path = options.routePath ?? (options.taskId ? taskArtifactPath(options.taskId, "route") : ARTIFACT_PATHS.route);
     const code = error.code === "ARTIFACT_MISSING"
       ? "E_ROUTE_MISSING"
       : ["E_ROUTE_REASON_MISSING", "E_ROUTE_INVALID"].includes(error.code) ? error.code : "E_ROUTE_INVALID";
-    errors.push(issue(code, error.message, [ARTIFACT_PATHS.route]));
+    errors.push(issue(code, error.message, [path]));
     return null;
   }
 }
@@ -74,22 +77,24 @@ export async function loadSources(target, contract, packageRoot, errors) {
   return registry;
 }
 
-export async function inspectGates(target, contract, route, packageRoot, errors, config = {}) {
+export async function inspectGates(target, contract, route, packageRoot, errors, config = {}, options = {}) {
   if (!route) return { required: [], satisfied: [], records: {} };
   const guideGates = await requiredGatesForGuides(route.value.guides, packageRoot);
   const required = [...new Set([...guideGates, ...(config.requiredGates ?? [])])].sort();
   const satisfied = [];
   const records = {};
+  const taskId = options.taskId ?? null;
   for (const gate of required) {
     let artifact;
+    const defaultGateRel = taskId ? taskGatePath(taskId, gate) : `${ARTIFACT_PATHS.gates}/${gate}.json`;
     try {
-      artifact = await readGateIfPresent(target, gate, packageRoot);
+      artifact = await readGateIfPresent(target, gate, packageRoot, { ...options, taskId });
     } catch (error) {
-      errors.push(issue(error.code === "ARTIFACT_MISSING" ? "E_GATE_UNVERIFIED" : "E_GATE_INVALID", error.message, [`${ARTIFACT_PATHS.gates}/${gate}.json`], { gate }));
+      errors.push(issue(error.code === "ARTIFACT_MISSING" ? "E_GATE_UNVERIFIED" : "E_GATE_INVALID", error.message, [defaultGateRel], { gate }));
       continue;
     }
     if (!artifact) {
-      errors.push(issue("E_GATE_UNVERIFIED", `Required gate is missing or unverified: ${gate}`, [`${ARTIFACT_PATHS.gates}/${gate}.json`], { gate }));
+      errors.push(issue("E_GATE_UNVERIFIED", `Required gate is missing or unverified: ${gate}`, [defaultGateRel], { gate }));
       continue;
     }
     records[gate] = artifact;

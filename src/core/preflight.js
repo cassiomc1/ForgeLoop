@@ -28,31 +28,36 @@ import {
 import { PROFILE_PATH } from "./target-layout.js";
 import { readPersistedRoute } from "./route-artifact.js";
 import { validateEventLedger } from "./events.js";
+import { taskArtifactPath } from "./task-paths.js";
 
 const PREVIEW_DECISION_LIMIT = 10;
 const PREVIEW_DECISION_MAX_LENGTH = 240;
 
 export { validatePersistedPreflight } from "./preflight-model.js";
 
-export async function evaluatePreflight({ target, packageRoot, strict = false } = {}) {
+export async function evaluatePreflight({ target, packageRoot, strict = false, taskId = null, contractPath = null, routePath = null, statePath = null } = {}) {
   const errors = [];
   const profile = await readProfile(target);
   const profileProvenance = await validateProfileSources(target, packageRoot);
   errors.push(...(profileProvenance.errors ?? []));
-  const contract = await loadContract(target, packageRoot, errors);
-  const route = await loadRoute(target, packageRoot, errors);
+  const contract = await loadContract(target, packageRoot, errors, { taskId, contractPath });
+  const route = await loadRoute(target, packageRoot, errors, { taskId, routePath });
   const config = await optionalConfig(target, packageRoot, errors);
   const effectiveStrict = strict || config.complianceMode === "strict";
   if (effectiveStrict && profile.status !== "verified") {
     errors.push(issue("E_PROFILE_UNVERIFIED", "Strict preflight requires a verified project profile", [PROFILE_PATH]));
   }
 
+  const contractRelPath = contractPath ?? (taskId ? taskArtifactPath(taskId, "contract") : ARTIFACT_PATHS.contract);
+  const routeRelPath = routePath ?? (taskId ? taskArtifactPath(taskId, "route") : ARTIFACT_PATHS.route);
+  const stateRelPath = statePath ?? (taskId ? taskArtifactPath(taskId, "state") : ARTIFACT_PATHS.state);
+
   const unresolvedDecisions = contract?.value?.unresolvedDecisions ?? [];
   if (unresolvedDecisions.length > 0) {
     errors.push(issue(
       "E_CONTRACT_UNRESOLVED_DECISION",
       "The current contract contains unresolved blocking decisions.",
-      [ARTIFACT_PATHS.contract],
+      [contractRelPath],
       {
         decisions: unresolvedDecisions
           .slice(0, PREVIEW_DECISION_LIMIT)
@@ -67,32 +72,32 @@ export async function evaluatePreflight({ target, packageRoot, strict = false } 
   if (route && contract) {
     assertRouteInvariants(route.value);
     if (route.value.contractFingerprint !== undefined && route.value.contractFingerprint !== contract.fingerprint) {
-      errors.push(issue("E_ROUTE_STALE", "Routing result was created for a different contract", [ARTIFACT_PATHS.route, ARTIFACT_PATHS.contract]));
+      errors.push(issue("E_ROUTE_STALE", "Routing result was created for a different contract", [routeRelPath, contractRelPath]));
     }
   }
 
   const sources = await loadSources(target, contract, packageRoot, errors);
-  const gates = await inspectGates(target, contract, route, packageRoot, errors, config);
+  const gates = await inspectGates(target, contract, route, packageRoot, errors, config, { taskId });
 
   let state = null;
   try {
-    state = await readWorkState(target, packageRoot);
+    state = await readWorkState(target, { packageRoot, taskId, statePath });
   } catch (error) {
-    errors.push(issue("E_STATE_INVALID", error.message, [ARTIFACT_PATHS.state]));
+    errors.push(issue("E_STATE_INVALID", error.message, [stateRelPath]));
   }
   if (state && route && JSON.stringify(state.selectedGuides) !== JSON.stringify(route.value.guides)) {
-    errors.push(issue("E_ROUTE_GUIDE_MISMATCH", "work-state.selectedGuides must equal routing-result.guides", [ARTIFACT_PATHS.route, ARTIFACT_PATHS.state]));
+    errors.push(issue("E_ROUTE_GUIDE_MISMATCH", "work-state.selectedGuides must equal routing-result.guides", [routeRelPath, stateRelPath]));
   }
   if (state && contract && state.contractFingerprint !== contract.fingerprint) {
-    errors.push(issue("E_CONTRACT_STALE", "work-state references a different contract", [ARTIFACT_PATHS.contract, ARTIFACT_PATHS.state]));
+    errors.push(issue("E_CONTRACT_STALE", "work-state references a different contract", [contractRelPath, stateRelPath]));
   }
 
   const sortedErrors = sortIssues(errors);
-  const taskId = contract?.value?.taskId ?? state?.taskId ?? "unknown";
+  const effectiveTaskId = taskId ?? contract?.value?.taskId ?? state?.taskId ?? "unknown";
   return {
     schemaVersion: 1,
     protocolVersion: 1,
-    taskId,
+    taskId: effectiveTaskId,
     status: sortedErrors.length === 0 ? "READY" : "BLOCKED",
     profile: { ...profile, provenance: profileProvenance.status },
     contract: contract
@@ -128,20 +133,31 @@ export async function validateReadyProtocolConsistency(options = {}) {
   });
 }
 
-export async function runPreflight({ target, packageRoot, strict = false, persist = true } = {}) {
-  let result = await evaluatePreflight({ target, packageRoot, strict });
+export async function runPreflight({
+  target,
+  packageRoot,
+  strict = false,
+  persist = true,
+  taskId = null,
+  contractPath = null,
+  routePath = null,
+  statePath = null,
+  preflightPath = null,
+  eventsPath = null,
+} = {}) {
+  let result = await evaluatePreflight({ target, packageRoot, strict, taskId, contractPath, routePath, statePath });
   if (!persist) return result;
 
-  let ledger = await assertPreflightPersistenceSafety(target, packageRoot, result.taskId);
+  let ledger = await assertPreflightPersistenceSafety(target, packageRoot, { taskId, eventsPath });
   assertPreflightResultPersistenceSafety(result);
   assertExistingReadyLifecycleCompatibility(ledger, result);
 
   let contract = null;
   let route = null;
   if (result.contract.status === "valid" && result.routing.status === "valid") {
-    contract = await readContract(target, packageRoot);
-    route = await readPersistedRoute(target, packageRoot);
-    const state = await ensureResumableState({ target, packageRoot, contract, route });
+    contract = await readContract(target, packageRoot, { taskId, contractPath });
+    route = await readPersistedRoute(target, packageRoot, { taskId, routePath });
+    const state = await ensureResumableState({ target, packageRoot, contract, route, taskId, statePath });
     if (state) {
       await synchronizePreflightState({
         target,
@@ -152,22 +168,26 @@ export async function runPreflight({ target, packageRoot, strict = false, persis
         requiredGates: result.requiredGates,
         satisfiedGates: result.satisfiedGates,
         complianceMode: result.policy?.complianceMode,
+        statePath,
+        taskId,
       });
-      result = await evaluatePreflight({ target, packageRoot, strict });
+      result = await evaluatePreflight({ target, packageRoot, strict, taskId, contractPath, routePath, statePath });
       assertPreflightResultPersistenceSafety(result);
       assertExistingReadyLifecycleCompatibility(ledger, result);
-      ledger = await assertPreflightPersistenceSafety(target, packageRoot, result.taskId);
+      ledger = await assertPreflightPersistenceSafety(target, packageRoot, { taskId, eventsPath });
     }
   }
 
   if (result.taskId !== "unknown") {
-    await appendActivationEvents(target, packageRoot, ledger, result);
-    const afterEvents = await validateEventLedger(target, packageRoot);
+    await appendActivationEvents(target, packageRoot, ledger, result, { eventsPath, taskId });
+    const afterEvents = await validateEventLedger(target, packageRoot, { eventsPath, taskId });
     if (!afterEvents.valid) {
       const first = afterEvents.errors[0];
-      throw preflightError(first.code, first.message, [ARTIFACT_PATHS.events]);
+      const evRel = eventsPath ?? (taskId ? taskArtifactPath(taskId, "events") : ARTIFACT_PATHS.events);
+      throw preflightError(first.code, first.message, [evRel]);
     }
   }
-  await writeJsonArtifact(target, ARTIFACT_PATHS.preflight, result, "preflight", packageRoot);
+  const relPath = preflightPath ?? (taskId ? taskArtifactPath(taskId, "preflight") : ARTIFACT_PATHS.preflight);
+  await writeJsonArtifact(target, relPath, result, "preflight", packageRoot);
   return result;
 }

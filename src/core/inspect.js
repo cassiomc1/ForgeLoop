@@ -20,7 +20,9 @@ function profileMetadata(bytes) {
   };
 }
 
-export async function inspectTarget({ target, packageRoot, contractFile = null, authorityContext, runtimeContext }) {
+import { taskArtifactPath } from "./task-paths.js";
+
+export async function inspectTarget({ target, packageRoot, contractFile = null, authorityContext, runtimeContext, taskId = null, stateFile = null } = {}) {
   let manifest = null;
   let manifestError = null;
   try {
@@ -34,10 +36,11 @@ export async function inspectTarget({ target, packageRoot, contractFile = null, 
   const profile = (profilePath && await fileExists(profilePath))
     ? { ...profileMetadata(await readBytes(profilePath)), path: profileRelativePath }
     : { mode: null, status: null };
-  const statePath = ensureWithin(target, WORK_STATE_PATH);
+  const effectiveStateRel = stateFile ?? (taskId ? taskArtifactPath(taskId, "state") : WORK_STATE_PATH);
+  const statePath = ensureWithin(target, effectiveStateRel);
   const statePresent = await fileExists(statePath);
-  const state = await readAndClassifyWorkState({ target, packageRoot, contractFile });
-  const continuity = await reconcileContinuity({ target, packageRoot });
+  const state = await readAndClassifyWorkState({ target, packageRoot, contractFile, taskId, stateFile: effectiveStateRel });
+  const continuity = await reconcileContinuity({ target, packageRoot, taskId });
   const schemaRoot = manifest?.layoutVersion >= 2
     ? ensureWithin(target, FORGELOOP_KIT_DIR)
     : target;

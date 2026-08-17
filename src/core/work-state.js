@@ -18,6 +18,7 @@ import { createEvidence } from "./evidence.js";
 import { assertJsonBytes } from "./json-safety.js";
 import { assertCoverageList } from "./coverage.js";
 import { canonicalFingerprint } from "./artifacts.js";
+import { taskArtifactPath } from "./task-paths.js";
 
 export const WORK_STATE_PATH = ".forgeloop/work-state.json";
 
@@ -229,17 +230,22 @@ async function validateStoredState(state, packageRoot = getPackageRoot()) {
   return assertWorkStateSemantics(state);
 }
 
-export async function readWorkState(target, packageRoot = getPackageRoot()) {
-  await assertSafePath(target, WORK_STATE_PATH);
-  const statePath = ensureWithin(target, WORK_STATE_PATH);
+export async function readWorkState(target, options = {}) {
+  const packageRoot = typeof options === "string" ? options : (options?.packageRoot ?? getPackageRoot());
+  const relPath = typeof options === "object" && options !== null
+    ? (options.statePath ?? options.relativePath ?? (options.taskId ? taskArtifactPath(options.taskId, "state") : (options.taskContext ? options.taskContext.paths.state : WORK_STATE_PATH)))
+    : WORK_STATE_PATH;
+
+  await assertSafePath(target, relPath);
+  const statePath = ensureWithin(target, relPath);
   if (!(await fileExists(statePath))) return null;
   let state;
   try {
     const bytes = await readBytes(statePath);
-    assertJsonBytes(bytes, WORK_STATE_PATH);
+    assertJsonBytes(bytes, relPath);
     state = JSON.parse(bytes.toString("utf8"));
   } catch (error) {
-    throw new WorkStateError(`Unable to parse ${WORK_STATE_PATH}: ${error.message}`);
+    throw new WorkStateError(`Unable to parse ${relPath}: ${error.message}`);
   }
   try {
     return await validateStoredState(state, packageRoot);
@@ -263,20 +269,25 @@ export async function readContractFingerprint(target, contractFile) {
   return { path: contractFile, fingerprint: contractFingerprint(contract) };
 }
 
-export async function writeWorkState(target, state, { dryRun = false, packageRoot = getPackageRoot() } = {}) {
+export async function writeWorkState(target, state, options = {}) {
+  const packageRoot = options?.packageRoot ?? getPackageRoot();
+  const dryRun = options?.dryRun ?? false;
+  const relPath = options?.statePath ?? options?.relativePath ?? (options?.taskId ? taskArtifactPath(options.taskId, "state") : WORK_STATE_PATH);
+
   await validateStoredState(state, packageRoot);
-  await assertSafePath(target, WORK_STATE_PATH);
-  const statePath = ensureWithin(target, WORK_STATE_PATH);
+  await assertSafePath(target, relPath);
+  const statePath = ensureWithin(target, relPath);
   await writeFileAtomic(statePath, `${JSON.stringify(state, null, 2)}\n`, { dryRun });
   return state;
 }
 
-export async function clearWorkState(target) {
-  await assertSafePath(target, WORK_STATE_PATH);
-  const statePath = ensureWithin(target, WORK_STATE_PATH);
-  if (!(await fileExists(statePath))) return { removed: false, path: WORK_STATE_PATH };
+export async function clearWorkState(target, options = {}) {
+  const relPath = options?.statePath ?? options?.relativePath ?? (options?.taskId ? taskArtifactPath(options.taskId, "state") : WORK_STATE_PATH);
+  await assertSafePath(target, relPath);
+  const statePath = ensureWithin(target, relPath);
+  if (!(await fileExists(statePath))) return { removed: false, path: relPath };
   await unlink(statePath);
-  return { removed: true, path: WORK_STATE_PATH };
+  return { removed: true, path: relPath };
 }
 
 export async function readRequiredArtifactFingerprints(target, artifacts) {

@@ -11,6 +11,7 @@ import { assertSafePath, ensureWithin, fileExists } from "./filesystem.js";
 import { evaluateStartExecutionPrerequisites, hasExecutionStarted } from "./execution-prerequisites.js";
 import { isRecoverableCompletionEvidenceCode } from "./completion-recovery.js";
 import { classifyRequirement, evaluateTerminalRequirements } from "./evidence-readiness.js";
+import { taskArtifactPath } from "./task-paths.js";
 
 function issue(code, message, artifacts = [], details = {}) {
   return { code, message, artifacts, ...details };
@@ -56,6 +57,7 @@ function repairNext(error) {
       return "Split ordinary verification from terminal lifecycle criteria.";
     case "E_PUBLICATION_REQUIREMENT_PENDING":
       return "The contract explicitly requires publication. Record authoritative publication evidence or revise the contract if publication is not in scope.";
+    case "E_PRODUCTION_READINESS_REQUIREMENT_PENDING":
     case "E_PRODUCTION_REQUIREMENT_PENDING":
       return "The contract explicitly requires production readiness. Record authoritative deployment/readiness evidence before completion.";
     case "E_TERMINAL_REQUIREMENT_PENDING":
@@ -99,28 +101,25 @@ function withRepairGuidance(error) {
     message: error.message ?? String(error),
     artifacts: error.artifacts ?? [],
   };
-  if (!normalized.next) normalized.next = repairNext(normalized);
-  return normalized;
+  if (normalized.next) return normalized;
+  return { ...normalized, next: repairNext(normalized) };
 }
 
-function sortIssues(errors) {
-  const unique = [...new Map(errors.map((rawError) => {
-    const error = withRepairGuidance(rawError);
-    return [
-      `${error.code}\0${(error.artifacts ?? []).join("\0")}\0${error.message}`,
-      error,
-    ];
-  })).values()];
-  return unique.sort((left, right) => left.code.localeCompare(right.code)
-    || left.artifacts.join("\0").localeCompare(right.artifacts.join("\0"))
-    || left.message.localeCompare(right.message));
+function sortIssues(issues) {
+  return issues
+    .map(withRepairGuidance)
+    .sort((a, b) => (a.code || "").localeCompare(b.code || "") || (a.message || "").localeCompare(b.message || ""));
 }
 
-async function loadRequired(loader, code, message, artifacts, errors) {
+async function loadRequired(readArtifact, errorCode, errorMessage, artifacts, errors) {
   try {
-    return await loader();
+    return await readArtifact();
   } catch (error) {
-    errors.push(issue(error.code === "ARTIFACT_MISSING" ? code : `${code.replace(/_MISSING$/, "")}_INVALID`, `${message}: ${error.message}`, artifacts));
+    if (error.code === "ARTIFACT_MISSING") {
+      errors.push(issue(errorCode, errorMessage, artifacts));
+      return null;
+    }
+    errors.push(issue(error.code ?? errorCode, error.message ?? errorMessage, artifacts));
     return null;
   }
 }
@@ -133,54 +132,75 @@ function publicationStatus(receipt) {
   return receipt.changedPaths?.length > 0 ? "local-only" : "not-published";
 }
 
-async function validateLedger(target, taskId, state, errors, packageRoot) {
-  await assertSafePath(target, ARTIFACT_PATHS.events);
-  const eventsPath = ensureWithin(target, ARTIFACT_PATHS.events);
-  if (!(await fileExists(eventsPath))) {
-    errors.push(issue("E_PHASE_CHRONOLOGY_INVALID", "Protocol event ledger is required before completion", [ARTIFACT_PATHS.events]));
+async function validateLedger(target, scopedTaskId, contractTaskId, state, errors, packageRoot, options = {}) {
+  const eventsRel = options.eventsPath ?? (scopedTaskId ? taskArtifactPath(scopedTaskId, "events") : ARTIFACT_PATHS.events);
+  const stateRel = options.statePath ?? (scopedTaskId ? taskArtifactPath(scopedTaskId, "state") : ARTIFACT_PATHS.state);
+  await assertSafePath(target, eventsRel);
+  const eventsFilePath = ensureWithin(target, eventsRel);
+  if (!(await fileExists(eventsFilePath))) {
+    errors.push(issue("E_PHASE_CHRONOLOGY_INVALID", "Protocol event ledger is required before completion", [eventsRel]));
     return { valid: false, events: [], errors: [] };
   }
-  const ledger = await validateEventLedger(target, packageRoot);
-  for (const error of ledger.errors) errors.push({ ...error, artifacts: [ARTIFACT_PATHS.events] });
+  const ledger = await validateEventLedger(target, packageRoot, { taskId: scopedTaskId, eventsPath: options.eventsPath });
+  for (const error of ledger.errors) errors.push({ ...error, artifacts: [eventsRel] });
   for (const error of validateStateLedgerCoherence(state, ledger.events)) {
-    errors.push({ ...error, artifacts: [ARTIFACT_PATHS.state, ARTIFACT_PATHS.events] });
+    errors.push({ ...error, artifacts: [stateRel, eventsRel] });
   }
   const requiredEvents = LIFECYCLE_MILESTONES.slice(0, state?.phase === "COMPLETE" ? undefined : -1);
-  const observed = new Set(ledger.events.filter((event) => event.taskId === taskId).map((event) => event.event));
+  const observed = new Set(ledger.events.filter((event) => event.taskId === contractTaskId).map((event) => event.event));
   for (const event of requiredEvents) {
     if (!observed.has(event)) {
-      errors.push(issue("E_PHASE_CHRONOLOGY_INVALID", `Required protocol event is missing: ${event}`, [ARTIFACT_PATHS.events], { event }));
+      errors.push(issue("E_PHASE_CHRONOLOGY_INVALID", `Required protocol event is missing: ${event}`, [eventsRel], { event }));
     }
   }
-  if (ledger.events.some((event) => event.taskId !== taskId)) {
-    errors.push(issue("E_PHASE_CHRONOLOGY_INVALID", "Protocol events must belong to the current task", [ARTIFACT_PATHS.events]));
+  if (ledger.events.some((event) => event.taskId !== contractTaskId)) {
+    errors.push(issue("E_PHASE_CHRONOLOGY_INVALID", "Protocol events must belong to the current task", [eventsRel]));
   }
   if (state?.phase !== "COMPLETE" && observed.has("COMPLETION_VALIDATED")) {
-    errors.push(issue("E_PHASE_CHRONOLOGY_INVALID", "COMPLETION_VALIDATED requires COMPLETE state", [ARTIFACT_PATHS.events]));
+    errors.push(issue("E_PHASE_CHRONOLOGY_INVALID", "COMPLETION_VALIDATED requires COMPLETE state", [eventsRel]));
   }
   return ledger;
 }
 
-export async function evaluateCompletion({ target, packageRoot, strict = false, authorityContext, runtimeContext } = {}) {
+export async function evaluateCompletion({
+  target,
+  packageRoot,
+  strict = false,
+  authorityContext,
+  runtimeContext,
+  taskId = null,
+  contractPath = null,
+  routePath = null,
+  statePath = null,
+  receiptPath = null,
+  eventsPath = null,
+  preflightPath = null,
+} = {}) {
   const errors = [];
-  const preflight = await evaluatePreflight({ target, packageRoot, strict });
+  const preflight = await evaluatePreflight({ target, packageRoot, strict, taskId, contractPath, routePath, statePath });
   errors.push(...preflight.errors);
+
+  const contractRel = contractPath ?? (taskId ? taskArtifactPath(taskId, "contract") : ARTIFACT_PATHS.contract);
+  const routeRel = routePath ?? (taskId ? taskArtifactPath(taskId, "route") : ARTIFACT_PATHS.route);
+  const stateRel = statePath ?? (taskId ? taskArtifactPath(taskId, "state") : ARTIFACT_PATHS.state);
+  const receiptRel = receiptPath ?? (taskId ? taskArtifactPath(taskId, "receipt") : ARTIFACT_PATHS.receipt);
+
   const contract = await loadRequired(
-    () => readContract(target, packageRoot),
+    () => readContract(target, packageRoot, { taskId, contractPath }),
     "E_CONTRACT_MISSING",
     "Current contract is not available",
-    [ARTIFACT_PATHS.contract],
+    [contractRel],
     errors,
   );
   const route = await loadRequired(
-    () => readPersistedRoute(target, packageRoot),
+    () => readPersistedRoute(target, packageRoot, { taskId, routePath }),
     "E_ROUTE_MISSING",
     "Persisted routing result is not available",
-    [ARTIFACT_PATHS.route],
+    [routeRel],
     errors,
   );
   const state = await loadRequired(
-    () => readWorkState(target, packageRoot).then((value) => {
+    () => readWorkState(target, { packageRoot, taskId, statePath }).then((value) => {
       if (!value) {
         const error = new Error("Work state is missing");
         error.code = "ARTIFACT_MISSING";
@@ -190,19 +210,19 @@ export async function evaluateCompletion({ target, packageRoot, strict = false, 
     }),
     "E_STATE_MISSING",
     "Work state is not available",
-    [ARTIFACT_PATHS.state],
+    [stateRel],
     errors,
   );
   const receipt = await loadRequired(
-    () => readJsonArtifact(target, ARTIFACT_PATHS.receipt, "execution-receipt", packageRoot),
+    () => readJsonArtifact(target, receiptRel, "execution-receipt", packageRoot),
     "E_RECEIPT_MISSING",
     "Execution receipt is not available",
-    [ARTIFACT_PATHS.receipt],
+    [receiptRel],
     errors,
   );
 
   if (state && hasExecutionStarted(state.phase)) {
-    const prerequisites = await evaluateStartExecutionPrerequisites({ target, state, packageRoot });
+    const prerequisites = await evaluateStartExecutionPrerequisites({ target, state, packageRoot, taskId, statePath, contractPath, routePath });
     errors.push(...prerequisites.errors);
   }
 
@@ -215,27 +235,35 @@ export async function evaluateCompletion({ target, packageRoot, strict = false, 
         runtimeContext,
       });
     } catch (error) {
-      errors.push(issue(error.code ?? "E_RECEIPT_INVALID", `Execution receipt is invalid: ${error.message}`, [ARTIFACT_PATHS.receipt]));
+      errors.push(issue(error.code ?? "E_RECEIPT_INVALID", `Execution receipt is invalid: ${error.message}`, [receiptRel]));
     }
   }
 
   if (contract) {
-    errors.push(...await validateChecksExecutionProvenance(state?.checks, {
-      target,
-      packageRoot,
-      taskId: contract.value.taskId,
-      artifactPath: ARTIFACT_PATHS.state,
-    }));
-    errors.push(...await validateChecksExecutionProvenance(receipt?.value?.checks, {
-      target,
-      packageRoot,
-      taskId: contract.value.taskId,
-      artifactPath: ARTIFACT_PATHS.receipt,
-    }));
+    try {
+      await validateChecksExecutionProvenance(state?.checks, {
+        target,
+        packageRoot,
+        taskId: contract.value.taskId,
+        artifactPath: stateRel,
+      });
+    } catch (error) {
+      errors.push(issue(error.code ?? "E_EXECUTION_REF_INVALID", error.message, error.artifacts ?? [stateRel]));
+    }
+    try {
+      await validateChecksExecutionProvenance(receipt?.value?.checks, {
+        target,
+        packageRoot,
+        taskId: contract.value.taskId,
+        artifactPath: receiptRel,
+      });
+    } catch (error) {
+      errors.push(issue(error.code ?? "E_EXECUTION_REF_INVALID", error.message, error.artifacts ?? [receiptRel]));
+    }
   }
 
   if (state && !["REVIEWING", "COMPLETE"].includes(state.phase)) {
-    errors.push(issue("E_PHASE_PREREQUISITE_MISSING", `Completion requires REVIEWING or COMPLETE state, found ${state.phase}`, [ARTIFACT_PATHS.state]));
+    errors.push(issue("E_PHASE_PREREQUISITE_MISSING", `Completion requires REVIEWING or COMPLETE state, found ${state.phase}`, [stateRel]));
   }
 
   let coverage = [];
@@ -263,7 +291,7 @@ export async function evaluateCompletion({ target, packageRoot, strict = false, 
   }
 
   const ledger = contract && state
-    ? await validateLedger(target, contract.value.taskId, state, errors, packageRoot)
+    ? await validateLedger(target, taskId, contract.value.taskId, state, errors, packageRoot, { eventsPath, statePath })
     : { valid: false, events: [], errors: [] };
 
   if (state) {
@@ -271,15 +299,15 @@ export async function evaluateCompletion({ target, packageRoot, strict = false, 
       const classification = await classifyLoadedWorkState({
         target,
         state,
-        contractFile: ARTIFACT_PATHS.contract,
+        contractFile: contractRel,
       });
       if (classification.status === "REVALIDATION_REQUIRED") {
         for (const reason of classification.reasons) {
-          errors.push(issue(reason === "CONTRACT_CHANGED" ? "E_CONTRACT_STALE" : "E_PHASE_ARTIFACT_STALE", `State freshness check failed: ${reason}`, [ARTIFACT_PATHS.state]));
+          errors.push(issue(reason === "CONTRACT_CHANGED" ? "E_CONTRACT_STALE" : "E_PHASE_ARTIFACT_STALE", `State freshness check failed: ${reason}`, [stateRel]));
         }
       }
     } catch (error) {
-      errors.push(issue("E_PHASE_ARTIFACT_STALE", error.message, [ARTIFACT_PATHS.state]));
+      errors.push(issue("E_PHASE_ARTIFACT_STALE", error.message, [stateRel]));
     }
   }
 
@@ -299,7 +327,7 @@ export async function evaluateCompletion({ target, packageRoot, strict = false, 
       errors.push(issue(
         termErr.code,
         termErr.message,
-        [ARTIFACT_PATHS.contract, ARTIFACT_PATHS.receipt],
+        [contractRel, receiptRel],
         { requirementId: termErr.requirementId },
       ));
     }
@@ -324,8 +352,40 @@ export async function evaluateCompletion({ target, packageRoot, strict = false, 
   };
 }
 
-export async function runComplete({ target, packageRoot, strict = false, persist = true, authorityContext, runtimeContext } = {}) {
-  const result = await evaluateCompletion({ target, packageRoot, strict, authorityContext, runtimeContext });
+export async function runComplete({
+  target,
+  packageRoot,
+  strict = false,
+  persist = true,
+  authorityContext,
+  runtimeContext,
+  taskId = null,
+  contractPath = null,
+  routePath = null,
+  statePath = null,
+  receiptPath = null,
+  eventsPath = null,
+  preflightPath = null,
+} = {}) {
+  const result = await evaluateCompletion({
+    target,
+    packageRoot,
+    strict,
+    authorityContext,
+    runtimeContext,
+    taskId,
+    contractPath,
+    routePath,
+    statePath,
+    receiptPath,
+    eventsPath,
+    preflightPath,
+  });
+
+  const receiptRel = receiptPath ?? (taskId ? taskArtifactPath(taskId, "receipt") : ARTIFACT_PATHS.receipt);
+  const stateRel = statePath ?? (taskId ? taskArtifactPath(taskId, "state") : ARTIFACT_PATHS.state);
+  const contractRel = contractPath ?? (taskId ? taskArtifactPath(taskId, "contract") : ARTIFACT_PATHS.contract);
+
   const rejectionCodes = [...new Set(result.errors.map((error) => error.code))].sort();
   const evidenceOnlyRejection = rejectionCodes.length > 0
     && rejectionCodes.every(isRecoverableCompletionEvidenceCode);
@@ -336,7 +396,7 @@ export async function runComplete({ target, packageRoot, strict = false, persist
     "E_AUTHORITY_UNTRUSTED_SOURCE",
   ].includes(code));
   if (persist && result.status === "REJECTED" && evidenceOnlyRejection && !authorityRejection) {
-    const state = await readWorkState(target, packageRoot);
+    const state = await readWorkState(target, { packageRoot, taskId, statePath });
     if (state?.phase === "REVIEWING") {
       const reasonCodes = rejectionCodes;
       const missingRequirementIds = [...new Set(result.errors.map((error) => error.requirementId).filter(Boolean))].sort();
@@ -364,11 +424,11 @@ export async function runComplete({ target, packageRoot, strict = false, persist
       };
       let receipt = null;
       try {
-        receipt = await readJsonArtifact(target, ARTIFACT_PATHS.receipt, "execution-receipt", packageRoot);
+        receipt = await readJsonArtifact(target, receiptRel, "execution-receipt", packageRoot);
       } catch {
         // The evaluator already reports a missing or invalid receipt; evidence-only rejection can persist without one.
       }
-      await writeWorkState(target, next, { packageRoot });
+      await writeWorkState(target, next, { packageRoot, taskId, statePath });
       let nextReceipt = null;
       if (receipt) {
         nextReceipt = await createReceipt({
@@ -376,9 +436,9 @@ export async function runComplete({ target, packageRoot, strict = false, persist
           stateFingerprint: canonicalFingerprint(next),
           verificationCycle: next.verificationCycle ?? receipt.value.verificationCycle ?? 1,
         }, packageRoot, { target, taskId: state.taskId, authorityContext, runtimeContext });
-        await writeJsonArtifact(target, ARTIFACT_PATHS.receipt, nextReceipt, "execution-receipt", packageRoot);
+        await writeJsonArtifact(target, receiptRel, nextReceipt, "execution-receipt", packageRoot);
       }
-      const ledger = await validateEventLedger(target, packageRoot);
+      const ledger = await validateEventLedger(target, packageRoot, { taskId, eventsPath });
       const lastRejection = ledger.events.filter((e) => e.taskId === state.taskId && e.event === "COMPLETION_REJECTED").at(-1);
       const lastDetails = lastRejection?.details ?? {};
       const isIdentical = lastRejection
@@ -399,14 +459,14 @@ export async function runComplete({ target, packageRoot, strict = false, persist
             stateFingerprint: canonicalFingerprint(next),
             ...(nextReceipt ? { receiptFingerprint: canonicalFingerprint(nextReceipt) } : {}),
           },
-        }, packageRoot);
+        }, packageRoot, { taskId, eventsPath });
       }
     }
   }
   if (persist && result.status === "VALID") {
-    const state = await readWorkState(target, packageRoot);
+    const state = await readWorkState(target, { packageRoot, taskId, statePath });
     if (state && state.phase !== "COMPLETE") {
-      const receipt = await readJsonArtifact(target, ARTIFACT_PATHS.receipt, "execution-receipt", packageRoot);
+      const receipt = await readJsonArtifact(target, receiptRel, "execution-receipt", packageRoot);
       const next = {
         ...state,
         previousPhase: state.phase,
@@ -421,13 +481,13 @@ export async function runComplete({ target, packageRoot, strict = false, persist
         stateFingerprint: canonicalFingerprint(next),
         verificationCycle: next.verificationCycle ?? receipt.value.verificationCycle ?? 1,
       }, packageRoot, { target, taskId: state.taskId, authorityContext, runtimeContext });
-      await writeWorkState(target, next, { packageRoot });
-      await writeJsonArtifact(target, ARTIFACT_PATHS.receipt, nextReceipt, "execution-receipt", packageRoot);
+      await writeWorkState(target, next, { packageRoot, taskId, statePath });
+      await writeJsonArtifact(target, receiptRel, nextReceipt, "execution-receipt", packageRoot);
     }
-    const contract = await readContract(target, packageRoot);
-    const ledger = await validateEventLedger(target, packageRoot);
-    if (!ledger.events.some((event) => event.event === "COMPLETION_VALIDATED")) {
-      await appendProtocolEvent(target, { taskId: contract.value.taskId, event: "COMPLETION_VALIDATED" }, packageRoot);
+    const contract = await readContract(target, packageRoot, { taskId, contractPath });
+    const ledger = await validateEventLedger(target, packageRoot, { taskId, eventsPath });
+    if (!ledger.events.some((event) => event.taskId === contract.value.taskId && event.event === "COMPLETION_VALIDATED")) {
+      await appendProtocolEvent(target, { taskId: contract.value.taskId, event: "COMPLETION_VALIDATED" }, packageRoot, { taskId, eventsPath });
     }
   }
   return result;

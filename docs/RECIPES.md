@@ -16,6 +16,8 @@ Concise, copy-paste friendly recipes for common ForgeLoop tasks.
 8. [Inspect Why Completion is Blocked](#recipe-8--inspect-why-completion-is-blocked)
 9. [Export a Portable Task Bundle](#recipe-9--export-a-portable-task-bundle)
 10. [Final Verification Before Pull Request](#recipe-10--final-verification-before-pull-request)
+11. [Run Multi-Task Workflows Concurrently](#recipe-11--run-multi-task-workflows-concurrently)
+12. [Migrate Legacy 1.0 Single-Task Layout](#recipe-12--migrate-legacy-10-single-task-layout)
 
 ---
 
@@ -179,4 +181,47 @@ forgeloop complete --json
 # 5. Confirm terminal state
 forgeloop next --json
 # Expected: "terminal": true, "nextAction": "NONE"
+```
+
+---
+
+### Recipe 11 — Run Multi-Task Workflows Concurrently
+
+```bash
+# 1. Create task-1 claiming auth directory
+forgeloop task-create --task auth-feature --claim src/auth --claim tests/auth --json
+
+# 2. Create task-2 claiming billing directory
+forgeloop task-create --task billing-feature --claim src/billing --claim tests/billing --json
+
+# 3. List active tasks
+forgeloop task-list --json
+
+# 4. Work on task-1
+forgeloop route --task auth-feature --work clean-code --surface backend
+forgeloop preflight --task auth-feature --json
+forgeloop advance --task auth-feature --to EXECUTING
+forgeloop advance --task auth-feature --to VERIFYING
+forgeloop run-check --task auth-feature --id auth-tests --requirement tests -- npm test -- tests/auth
+forgeloop advance --task auth-feature --to REVIEWING
+forgeloop complete --task auth-feature --json
+
+# 5. Release any dead locks if needed
+forgeloop task-unlock --task auth-feature --force --json
+```
+
+---
+
+### Recipe 12 — Migrate Legacy 1.0 Single-Task Layout
+
+```bash
+# 1. Perform dry-run migration check
+forgeloop task-migrate --dry-run --json
+
+# 2. Execute migration to .forgeloop/task-state/<taskKey>/
+forgeloop task-migrate --json
+
+# 3. Verify migrated task state
+forgeloop task-list --json
+forgeloop status --json
 ```

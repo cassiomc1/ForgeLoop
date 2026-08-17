@@ -301,5 +301,10 @@ forgeloop next --json
 | `E_CHECK_INVALID` | Check structure or required parameters are invalid. | Provide valid check ID, requirement, and parameters. |
 | `E_RECEIPT_STATE_MISMATCH` | Receipt does not match current state cycle or work state. | Run forgeloop prepare-completion --json. |
 | `E_CONTINUITY_RECONCILIATION_REQUIRED` | Continuity context has drifted from work state. | Run forgeloop reconcile-continuity --json. |
+| `E_TASK_AMBIGUOUS` | Multiple tasks exist in the project but no task selector was provided. | Select a task explicitly using --task <id> or FORGELOOP_TASK=<id>. |
+| `E_TASK_LOCKED` | Task mutation is currently locked by another concurrent process or run-check. | Wait for the active mutation to complete or inspect the lock with forgeloop task-show. |
+| `E_TASK_SCOPE_CONFLICT` | Task write claims overlap with another non-complete task in the same checkout. | Adjust write claims to non-overlapping paths or run tasks in separate worktrees. |
+| `E_TASK_SCOPE_DIRTY` | Claimed paths contain pre-existing uncommitted changes. | Commit or stash changes in claimed paths before defining or adopting the scope. |
+| `E_TASK_CHANGE_OUTSIDE_SCOPE` | Modified paths in repository exceed the declared task write claims. | Update write claims with forgeloop task-scope or revert out-of-scope modifications. |
 
 <!-- END FORGELOOP GENERATED: public-error-codes -->

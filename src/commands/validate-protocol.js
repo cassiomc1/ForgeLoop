@@ -43,6 +43,8 @@ async function readArtifact(target, relativePath, label) {
   }
 }
 
+import { taskArtifactPath } from "../core/task-paths.js";
+
 export async function runValidateProtocol({
   target,
   packageRoot,
@@ -53,12 +55,23 @@ export async function runValidateProtocol({
   continuityFile = null,
   taskBriefFiles = [],
   delegatedResultFiles = [],
+  taskId = null,
+  task = null,
 }) {
+  const effectiveTaskId = taskId ?? task ?? null;
+  const effectiveRouteFile = routeFile ?? (effectiveTaskId ? taskArtifactPath(effectiveTaskId, "route") : ARTIFACT_PATHS.route);
+  const effectiveStateFile = stateFile ?? (effectiveTaskId ? taskArtifactPath(effectiveTaskId, "state") : ARTIFACT_PATHS.state);
+  const effectiveReceiptFile = receiptFile ?? (effectiveTaskId ? taskArtifactPath(effectiveTaskId, "receipt") : ARTIFACT_PATHS.receipt);
+  const effectiveContractFile = contractFile ?? (effectiveTaskId ? taskArtifactPath(effectiveTaskId, "contract") : null);
+  const effectiveContinuityFile = continuityFile ?? (effectiveTaskId ? taskArtifactPath(effectiveTaskId, "continuity") : null);
+  const effectiveEventsFile = effectiveTaskId ? taskArtifactPath(effectiveTaskId, "events") : ARTIFACT_PATHS.events;
+  const effectivePreflightFile = effectiveTaskId ? taskArtifactPath(effectiveTaskId, "preflight") : ARTIFACT_PATHS.preflight;
+
   const descriptors = [
-    ["route", routeFile],
-    ["state", stateFile],
-    ["receipt", receiptFile],
-    ["continuity", continuityFile],
+    ["route", effectiveRouteFile],
+    ["state", effectiveStateFile],
+    ["receipt", effectiveReceiptFile],
+    ["continuity", effectiveContinuityFile],
     ...taskBriefFiles.map((file) => [`task brief:${file}`, file]),
     ...delegatedResultFiles.map((file) => [`delegated result:${file}`, file]),
   ];
@@ -117,19 +130,20 @@ export async function runValidateProtocol({
   for (const item of loaded.filter((candidate) => candidate.label.startsWith("delegated result:"))) {
     await validateLoaded(item, "delegated-result", async (value) => validateDelegatedResult(value, packageRoot));
   }
-  const stateValidationError = schemaErrors.some((error) => error.artifacts.includes(stateFile));
+  const stateValidationError = schemaErrors.some((error) => error.artifacts.includes(effectiveStateFile));
   const stateClassification = state && readErrors.length === 0 && !stateValidationError
-    ? await classifyLoadedWorkState({ target, state, contractFile })
+    ? await classifyLoadedWorkState({ target, state, contractFile: effectiveContractFile, taskId: effectiveTaskId })
     : null;
   let readyConsistencyErrors = [];
   try {
-    const persistedPreflight = await readJsonArtifact(target, ARTIFACT_PATHS.preflight, "preflight", packageRoot);
+    const persistedPreflight = await readJsonArtifact(target, effectivePreflightFile, "preflight", packageRoot);
     if (persistedPreflight.value.status === "READY") {
       readyConsistencyErrors = await validateReadyProtocolConsistency({
         target,
         packageRoot,
         persisted: persistedPreflight.value,
-        current: await evaluatePreflight({ target, packageRoot }),
+        current: await evaluatePreflight({ target, packageRoot, taskId: effectiveTaskId }),
+        taskId: effectiveTaskId,
       });
     }
   } catch {
@@ -138,13 +152,13 @@ export async function runValidateProtocol({
   let ledgerEvents = [];
   let ledgerErrors = [];
   if (state && !stateValidationError) {
-    const ledger = await validateEventLedger(target, packageRoot);
+    const ledger = await validateEventLedger(target, packageRoot, { taskId: effectiveTaskId, eventsPath: effectiveEventsFile });
     ledgerEvents = ledger.events ?? [];
     ledgerErrors = [
-      ...ledger.errors.map((error) => ({ ...error, artifacts: [ARTIFACT_PATHS.events] })),
+      ...ledger.errors.map((error) => ({ ...error, artifacts: [effectiveEventsFile] })),
       ...validateStateLedgerCoherence(state, ledger.events).map((error) => ({
         ...error,
-        artifacts: [ARTIFACT_PATHS.state, ARTIFACT_PATHS.events],
+        artifacts: [effectiveStateFile, effectiveEventsFile],
       })),
     ];
   }

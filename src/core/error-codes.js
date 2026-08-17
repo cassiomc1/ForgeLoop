@@ -7,6 +7,29 @@ import {
   E_VERIFICATION_TOOL_UNAVAILABLE,
 } from "./verification-constants.js";
 
+export const E_TASK_REQUIRED = "E_TASK_REQUIRED";
+export const E_TASK_NOT_FOUND = "E_TASK_NOT_FOUND";
+export const E_TASK_ALREADY_EXISTS = "E_TASK_ALREADY_EXISTS";
+export const E_TASK_AMBIGUOUS = "E_TASK_AMBIGUOUS";
+export const E_TASK_SELECTOR_CONFLICT = "E_TASK_SELECTOR_CONFLICT";
+export const E_TASK_DESCRIPTOR_INVALID = "E_TASK_DESCRIPTOR_INVALID";
+export const E_TASK_KEY_MISMATCH = "E_TASK_KEY_MISMATCH";
+export const E_TASK_CONTEXT_MISMATCH = "E_TASK_CONTEXT_MISMATCH";
+
+export const E_TASK_LOCKED = "E_TASK_LOCKED";
+export const E_TASK_LOCK_INVALID = "E_TASK_LOCK_INVALID";
+
+export const E_TASK_SCOPE_REQUIRED = "E_TASK_SCOPE_REQUIRED";
+export const E_TASK_SCOPE_CONFLICT = "E_TASK_SCOPE_CONFLICT";
+export const E_TASK_SCOPE_DIRTY = "E_TASK_SCOPE_DIRTY";
+export const E_TASK_SCOPE_FROZEN = "E_TASK_SCOPE_FROZEN";
+export const E_TASK_CHANGE_OUTSIDE_SCOPE = "E_TASK_CHANGE_OUTSIDE_SCOPE";
+export const E_TASK_CHANGE_ATTRIBUTION_UNAVAILABLE = "E_TASK_CHANGE_ATTRIBUTION_UNAVAILABLE";
+
+export const E_TASK_LAYOUT_LEGACY = "E_TASK_LAYOUT_LEGACY";
+export const E_TASK_MIGRATION_INVALID = "E_TASK_MIGRATION_INVALID";
+export const E_TASK_MIGRATION_IDENTITY_MISMATCH = "E_TASK_MIGRATION_IDENTITY_MISMATCH";
+
 /**
  * Public, stable ForgeLoop error and reason codes documented for users and harnesses.
  */
@@ -102,6 +125,41 @@ export const PUBLIC_ERROR_CODES = Object.freeze({
     meaning: "Continuity context has drifted from work state.",
     safeResolution: "Run forgeloop reconcile-continuity --json.",
   }),
+  E_TASK_AMBIGUOUS: Object.freeze({
+    code: "E_TASK_AMBIGUOUS",
+    category: "task-resolution",
+    classification: "PUBLIC_STABLE",
+    meaning: "Multiple tasks exist in the project but no task selector was provided.",
+    safeResolution: "Select a task explicitly using --task <id> or FORGELOOP_TASK=<id>.",
+  }),
+  E_TASK_LOCKED: Object.freeze({
+    code: "E_TASK_LOCKED",
+    category: "concurrency",
+    classification: "PUBLIC_STABLE",
+    meaning: "Task mutation is currently locked by another concurrent process or run-check.",
+    safeResolution: "Wait for the active mutation to complete or inspect the lock with forgeloop task-show.",
+  }),
+  E_TASK_SCOPE_CONFLICT: Object.freeze({
+    code: "E_TASK_SCOPE_CONFLICT",
+    category: "scope",
+    classification: "PUBLIC_STABLE",
+    meaning: "Task write claims overlap with another non-complete task in the same checkout.",
+    safeResolution: "Adjust write claims to non-overlapping paths or run tasks in separate worktrees.",
+  }),
+  E_TASK_SCOPE_DIRTY: Object.freeze({
+    code: "E_TASK_SCOPE_DIRTY",
+    category: "scope",
+    classification: "PUBLIC_STABLE",
+    meaning: "Claimed paths contain pre-existing uncommitted changes.",
+    safeResolution: "Commit or stash changes in claimed paths before defining or adopting the scope.",
+  }),
+  E_TASK_CHANGE_OUTSIDE_SCOPE: Object.freeze({
+    code: "E_TASK_CHANGE_OUTSIDE_SCOPE",
+    category: "scope",
+    classification: "PUBLIC_STABLE",
+    meaning: "Modified paths in repository exceed the declared task write claims.",
+    safeResolution: "Update write claims with forgeloop task-scope or revert out-of-scope modifications.",
+  }),
 });
 
 export const ALL_KNOWN_ERROR_CODES = Object.freeze(new Set([
@@ -117,4 +175,23 @@ export const ALL_KNOWN_ERROR_CODES = Object.freeze(new Set([
   "E_NATIVE_ADAPTER_TARGET_MISSING",
   "E_MIGRATION_INCOMPLETE",
   "E_MIGRATION_WRITE_VERIFY",
+  E_TASK_REQUIRED,
+  E_TASK_NOT_FOUND,
+  E_TASK_ALREADY_EXISTS,
+  E_TASK_AMBIGUOUS,
+  E_TASK_SELECTOR_CONFLICT,
+  E_TASK_DESCRIPTOR_INVALID,
+  E_TASK_KEY_MISMATCH,
+  E_TASK_CONTEXT_MISMATCH,
+  E_TASK_LOCKED,
+  E_TASK_LOCK_INVALID,
+  E_TASK_SCOPE_REQUIRED,
+  E_TASK_SCOPE_CONFLICT,
+  E_TASK_SCOPE_DIRTY,
+  E_TASK_SCOPE_FROZEN,
+  E_TASK_CHANGE_OUTSIDE_SCOPE,
+  E_TASK_CHANGE_ATTRIBUTION_UNAVAILABLE,
+  E_TASK_LAYOUT_LEGACY,
+  E_TASK_MIGRATION_INVALID,
+  E_TASK_MIGRATION_IDENTITY_MISMATCH,
 ]));

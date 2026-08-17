@@ -1,7 +1,8 @@
 import { getNextAction } from "../core/next-action.js";
 
-export async function runNext({ target, packageRoot }) {
-  return getNextAction({ target, packageRoot });
+export async function runNext({ target, packageRoot, taskId, task }) {
+  const effectiveTaskId = taskId ?? task ?? null;
+  return getNextAction({ target, packageRoot, taskId: effectiveTaskId });
 }
 
 export function formatNextActionResult(result) {

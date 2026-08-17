@@ -27,6 +27,7 @@ export const SHIPPED_SCHEMA_NAMES = Object.freeze([
   "task-bundle",
   "execution",
   "authority",
+  "task-descriptor",
 ]);
 
 export class SchemaValidationError extends Error {
