@@ -76,7 +76,7 @@ Inspects repository health, adapter synchronization, and template integrity.
 - `--json`: emit doctor findings as JSON
 - `--strict`: treat warnings as unhealthy
 - `--fix`: restore missing managed template files
-- `--adopt <path>`: preserve an existing adapter in the manifest
+- `--adopt <path>`: preserve an existing adapter in the manifest (repeatable)
 
 <!-- END FORGELOOP GENERATED: cli:doctor:options -->
 
@@ -125,9 +125,9 @@ Calculates and persists deterministic engineering guide routing.
 
 - `--path <directory>`: target project directory (default: current directory)
 - `--work <type>`: declared work type
-- `--surface <value>`: affected surface (repeatable) (repeatable)
-- `--risk <value>`: task risk (repeatable) (repeatable)
-- `--platform <value>`: affected platform (repeatable) (repeatable)
+- `--surface <value>`: affected surface (repeatable)
+- `--risk <value>`: task risk (repeatable)
+- `--platform <value>`: affected platform (repeatable)
 - `--behavior-change`: declare behavior change
 - `--executable-change`: declare executable/configuration change
 - `--json`: emit route result as JSON
@@ -271,10 +271,10 @@ Records operational handoff context before pausing or switching tools.
 - `--path <directory>`: target project directory (default: current directory)
 - `--focus-id <id>`: current implementation focus ID
 - `--focus-summary <text>`: current implementation focus summary
-- `--remaining <id:summary>`: remaining implementation item (repeatable) (repeatable)
-- `--known-issue <id:summary>`: known implementation issue (repeatable) (repeatable)
-- `--changed-area <path>`: changed project area (repeatable) (repeatable)
-- `--inspect-first <path>`: suggested inspection path (repeatable) (repeatable)
+- `--remaining <id:summary>`: remaining implementation item (repeatable)
+- `--known-issue <id:summary>`: known implementation issue (repeatable)
+- `--changed-area <path>`: changed project area (repeatable)
+- `--inspect-first <path>`: suggested inspection path (repeatable)
 - `--resume-note <text>`: bounded operational resume note
 - `--json`: emit structured output as JSON
 
@@ -463,8 +463,8 @@ Performs comprehensive protocol validation across all active artifacts.
 - `--state-file <path>`: work-state JSON relative to target
 - `--receipt-file <path>`: execution-receipt JSON relative to target
 - `--continuity-file <path>`: optional execution-continuity JSON relative to target
-- `--task-brief-file <path>`: task brief JSON (repeatable) (repeatable)
-- `--delegated-result-file <path>`: delegated result JSON (repeatable) (repeatable)
+- `--task-brief-file <path>`: task brief JSON file (repeatable)
+- `--delegated-result-file <path>`: delegated result JSON file (repeatable)
 - `--json`: emit structured output as JSON
 
 <!-- END FORGELOOP GENERATED: cli:validate-protocol:options -->

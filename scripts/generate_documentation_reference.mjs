@@ -418,23 +418,51 @@ async function atomicWriteFile(targetPath, content) {
 }
 
 /**
- * Validates generated output for safety issues.
+ * Known invalid patterns in generated output bodies.
  */
-function validateGeneratedOutput(content, relPath) {
+export const INVALID_GENERATED_PATTERNS = Object.freeze([
+  {
+    code: "DOC_GENERATED_OUTPUT_UNDEFINED",
+    pattern: /(^|[\s:=(,])undefined([\s,);]|$)/,
+    message: "contains undefined value",
+  },
+  {
+    code: "DOC_GENERATED_OUTPUT_OBJECT_STRING",
+    pattern: /\[object Object\]/,
+    message: "contains object stringification ([object Object])",
+  },
+  {
+    code: "DOC_GENERATED_OUTPUT_NAN",
+    pattern: /\bNaN\b/,
+    message: "contains NaN",
+  },
+  {
+    code: "DOC_GENERATED_OUTPUT_DOUBLE_VALUE_MARKER",
+    pattern: /<<[^>]+>>/,
+    message: "contains malformed double value marker (<<...>>)",
+  },
+  {
+    code: "DOC_GENERATED_OUTPUT_DUPLICATE_REPEATABLE",
+    pattern: /\(repeatable\)\s+\(repeatable\)/i,
+    message: "contains duplicate (repeatable) marker",
+  },
+]);
+
+/**
+ * Validates a generated region body before insertion.
+ * Scoped strictly to generated output, avoiding false positives in human prose.
+ * @param {Object} options
+ * @param {string} options.body - The generated region body text
+ * @param {string} options.relPath - Target relative file path
+ * @param {string} options.region - Region identifier
+ * @returns {string[]} Error messages
+ */
+export function validateGeneratedRegionBody({ body, relPath, region }) {
   const errors = [];
-  if (content.includes("undefined")) {
-    // Check if it's in a generated region context (not just the word "undefined" in prose)
-    const lines = content.split("\n");
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      // Only flag bare "undefined" that looks like a bug, not the word in prose
-      if (/\bundefined\b/.test(line) && !line.includes("`undefined`") && !line.includes('"undefined"') && !line.includes("'undefined'") && !line.includes("the undefined") && !line.includes("is undefined") && !line.includes("or undefined") && !line.includes("// undefined")) {
-        // This heuristic is intentionally conservative - we check only in obvious code-output patterns
-      }
+  for (const { code, pattern, message } of INVALID_GENERATED_PATTERNS) {
+    if (pattern.test(body)) {
+      errors.push(`DOC_GENERATED_OUTPUT_INVALID: Generated region "${region}" in "${relPath}" ${message} [${code}]`);
     }
-  }
-  if (content.includes("[object Object]")) {
-    errors.push(`DOC_GENERATED_OUTPUT_INVALID: Generated output for "${relPath}" contains "[object Object]"`);
   }
   return errors;
 }
@@ -443,7 +471,7 @@ function validateGeneratedOutput(content, relPath) {
  * Replaces or checks generated regions in target markdown files.
  * @param {Object} options
  * @param {string} options.rootDir - Base repository directory
- * @param {boolean} options.write - True to persist changes, false to check only
+ * @param {boolean} options.write - True to rewrite files; false to check freshness only
  * @returns {Promise<{ valid: boolean, errors: string[], updatedFiles: string[] }>}
  */
 export async function processGeneratedDocumentation({ rootDir = repositoryRoot, write = false } = {}) {
@@ -503,6 +531,17 @@ export async function processGeneratedDocumentation({ rootDir = repositoryRoot, 
       const endIndex = modifiedContent.indexOf(endMarker, beginIndex + beginMarker.length);
 
       const generatedText = await target.generate();
+      const bodyErrors = validateGeneratedRegionBody({
+        body: generatedText,
+        relPath,
+        region: target.region,
+      });
+
+      if (bodyErrors.length > 0) {
+        errors.push(...bodyErrors);
+        continue;
+      }
+
       const newRegionContent = `${beginMarker}\n\n${generatedText.trim()}\n\n${endMarker}`;
       const existingRegionContent = modifiedContent.slice(beginIndex, endIndex + endMarker.length);
 
@@ -515,10 +554,6 @@ export async function processGeneratedDocumentation({ rootDir = repositoryRoot, 
         modifiedContent = modifiedContent.slice(0, beginIndex) + newRegionContent + modifiedContent.slice(endIndex + endMarker.length);
       }
     }
-
-    // Validate generated output
-    const outputErrors = validateGeneratedOutput(modifiedContent, relPath);
-    errors.push(...outputErrors);
 
     if (modifiedContent !== originalContent) {
       // Normalize line endings to LF

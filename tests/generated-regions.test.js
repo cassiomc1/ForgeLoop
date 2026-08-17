@@ -125,3 +125,47 @@ test("generated regions unit tests: replaceGeneratedRegion and compareGeneratedR
   const cmpFresh = compareGeneratedRegion({ content: replaced, region: "test-region", expectedBody: "new body" });
   assert.equal(cmpFresh.match, true);
 });
+
+test("generated regions unit tests: validateGeneratedRegionBody rejects undefined output", async () => {
+  const { validateGeneratedRegionBody } = await import("../scripts/generate_documentation_reference.mjs");
+  const errors = validateGeneratedRegionBody({
+    body: "- `field`: undefined",
+    relPath: "docs/ARTIFACT_REFERENCE.md",
+    region: "schema:execution",
+  });
+  assert.ok(errors.some((error) => error.includes("DOC_GENERATED_OUTPUT_INVALID") && error.includes("DOC_GENERATED_OUTPUT_UNDEFINED")));
+});
+
+test("generated regions unit tests: validateGeneratedRegionBody rejects object stringification", async () => {
+  const { validateGeneratedRegionBody } = await import("../scripts/generate_documentation_reference.mjs");
+  const errors = validateGeneratedRegionBody({
+    body: "- `field`: [object Object]",
+    relPath: "docs/ARTIFACT_REFERENCE.md",
+    region: "schema:execution",
+  });
+  assert.ok(errors.some((error) => error.includes("DOC_GENERATED_OUTPUT_INVALID") && error.includes("DOC_GENERATED_OUTPUT_OBJECT_STRING")));
+});
+
+test("generated regions unit tests: validateGeneratedRegionBody rejects NaN and malformed patterns", async () => {
+  const { validateGeneratedRegionBody } = await import("../scripts/generate_documentation_reference.mjs");
+  const nanErrors = validateGeneratedRegionBody({
+    body: "- `field`: NaN",
+    relPath: "docs/ARTIFACT_REFERENCE.md",
+    region: "schema:execution",
+  });
+  assert.ok(nanErrors.some((error) => error.includes("DOC_GENERATED_OUTPUT_NAN")));
+
+  const dupErrors = validateGeneratedRegionBody({
+    body: "- `--flag`: value (repeatable) (repeatable)",
+    relPath: "docs/CLI_REFERENCE.md",
+    region: "cli:route:options",
+  });
+  assert.ok(dupErrors.some((error) => error.includes("DOC_GENERATED_OUTPUT_DUPLICATE_REPEATABLE")));
+
+  const markerErrors = validateGeneratedRegionBody({
+    body: "- `-- <argv...>`: description <<argv...>>",
+    relPath: "docs/CLI_REFERENCE.md",
+    region: "cli:run-check:options",
+  });
+  assert.ok(markerErrors.some((error) => error.includes("DOC_GENERATED_OUTPUT_DOUBLE_VALUE_MARKER")));
+});

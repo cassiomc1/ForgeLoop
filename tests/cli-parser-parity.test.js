@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { COMMANDS, parseArgs } from "../src/cli.js";
+import { COMMANDS, parseArgs, parseCliSyntax } from "../src/cli.js";
 import { CLI_COMMAND_DEFINITIONS } from "../src/core/cli-command-definitions.js";
 import { generateCliOptionsForCommand } from "../scripts/generate_documentation_reference.mjs";
 
@@ -14,22 +14,32 @@ test("CLI parser parity: every declared option is recognized for each command", 
       if (optName === "--") {
         testArgv = [cmdName, "--id", "chk-1", "--requirement", "req-1", "--", "node", "--version"];
       } else if (optDef.takesValue) {
-        testArgv = [cmdName, optName, "sample-value"];
+        let val = "sample-value";
+        if (optDef.parseType === "json-object") val = "{}";
+        if (optDef.parseType === "non-negative-integer") val = "0";
+        testArgv = [cmdName, optName, val];
       } else {
         testArgv = [cmdName, optName];
       }
 
       // Syntax parsing must recognize the option without throwing "not valid for <command>"
-      try {
-        parseArgs(testArgv);
-      } catch (err) {
-        // Semantic validation errors (e.g. "record-check requires --id") are allowed,
-        // but option ownership errors ("Option --foo is not valid for bar") are NOT allowed.
-        assert.doesNotMatch(
-          err.message,
-          new RegExp(`Option ${optName} is not valid for ${cmdName}`, "i"),
-          `Command "${cmdName}" must accept its declared option "${optName}"`,
-        );
+      const parsed = parseCliSyntax(testArgv);
+      assert.equal(parsed.command, cmdName);
+      if (optDef.targetKey) {
+        if (optDef.parseType === "boolean") {
+          assert.equal(parsed.options[optDef.targetKey], true);
+        } else if (optDef.repeatable) {
+          assert.ok(Array.isArray(parsed.options[optDef.targetKey]));
+          assert.ok(parsed.options[optDef.targetKey].length > 0);
+        } else if (optDef.parseType === "non-negative-integer") {
+          assert.equal(parsed.options[optDef.targetKey], 0);
+        } else if (optDef.parseType === "json-object") {
+          assert.deepEqual(parsed.options[optDef.targetKey], {});
+        } else if (optDef.parseType === "argv") {
+          assert.deepEqual(parsed.options[optDef.targetKey], ["node", "--version"]);
+        } else {
+          assert.equal(parsed.options[optDef.targetKey], "sample-value");
+        }
       }
     }
   }
@@ -68,6 +78,64 @@ test("CLI parser parity: foreign options are rejected for each command", () => {
             err.message.includes(`Unknown option: ${foreignFlag}`);
         },
         `Command "${cmdName}" must reject foreign option "${foreignFlag}"`,
+      );
+    }
+  }
+});
+
+test("CLI parser parity: equals syntax (--opt=val) works for supported options", () => {
+  const parsedPath = parseCliSyntax(["status", "--path=/custom/target"]);
+  assert.equal(parsedPath.options.path, "/custom/target");
+
+  const parsedId = parseCliSyntax(["record-check", "--id=chk-custom", "--requirement=req-custom", "--status=passed", "--evidence-kind=OBSERVED", "--command=test"]);
+  assert.equal(parsedId.options.checkId, "chk-custom");
+  assert.equal(parsedId.options.checkRequirement, "req-custom");
+  assert.equal(parsedId.options.checkStatus, "passed");
+
+  const parsedExit = parseCliSyntax(["record-check", "--id=chk-1", "--requirement=req-1", "--status=passed", "--evidence-kind=OBSERVED", "--command=test", "--exit-code=42"]);
+  assert.equal(parsedExit.options.checkExitCode, 42);
+});
+
+test("CLI parser parity: aliases -h and -v are recognized", () => {
+  const parsedHelp = parseCliSyntax(["init", "-h"]);
+  assert.equal(parsedHelp.options.help, true);
+
+  const parsedVersion = parseCliSyntax(["doctor", "-v"]);
+  assert.equal(parsedVersion.options.version, true);
+});
+
+test("CLI parser parity: policy positional argument is captured cleanly", () => {
+  const parsed = parseCliSyntax(["policy", "enterprise-strict"]);
+  assert.equal(parsed.command, "policy");
+  assert.equal(parsed.options.policy, "enterprise-strict");
+});
+
+test("CLI parser parity: semantic validation remains enforced", () => {
+  assert.throws(() => parseArgs(["bundle"]), /bundle requires --task/);
+  assert.throws(() => parseArgs(["policy"]), /policy requires a name/);
+  assert.throws(() => parseArgs(["record-check"]), /record-check requires --id/);
+  assert.throws(() => parseArgs(["run-check", "--id", "chk-1", "--requirement", "req-1"]), /run-check requires -- followed by an exact command argv/);
+});
+
+test("generated CLI options never duplicate repeatable marker", () => {
+  for (const command of COMMANDS) {
+    const generated = generateCliOptionsForCommand(command);
+    assert.doesNotMatch(
+      generated,
+      /\(repeatable\)\s+\(repeatable\)/,
+      `${command} contains duplicated repeatable marker`,
+    );
+  }
+});
+
+test("repeatable CLI options keep repeatability out of descriptions", () => {
+  for (const [command, definition] of Object.entries(CLI_COMMAND_DEFINITIONS)) {
+    for (const [option, optionDef] of Object.entries(definition.options)) {
+      if (!optionDef.repeatable) continue;
+      assert.doesNotMatch(
+        optionDef.description,
+        /\brepeatable\b/i,
+        `${command} ${option} duplicates repeatability in description`,
       );
     }
   }
