@@ -162,11 +162,37 @@ test("generated documentation generator fails closed on missing, duplicate, inva
     assert.equal(repairRes.valid, true);
     assert.ok(repairRes.updatedFiles.includes("docs/CLI_REFERENCE.md"));
 
-    const postRepairCheck = await processGeneratedDocumentation({ rootDir: tempDir, write: false });
-    assert.equal(postRepairCheck.valid, true);
-    assert.equal(postRepairCheck.errors.length, 0);
+    // 7. Write mode performs ZERO writes when any structural error exists
+    const brokenCliDoc = originalCliDoc
+      .replace(
+        /<!-- BEGIN FORGELOOP GENERATED: cli:init:options -->[\s\S]*?<!-- END FORGELOOP GENERATED: cli:init:options -->/,
+        "<!-- BEGIN FORGELOOP GENERATED: cli:init:options -->\n\n- `--stale`: stale\n\n<!-- END FORGELOOP GENERATED: cli:init:options -->",
+      )
+      .replace("<!-- END FORGELOOP GENERATED: cli:doctor:options -->", "");
+    await writeFile(cliDocPath, brokenCliDoc, "utf8");
+    const snapshotBefore = await readFile(cliDocPath, "utf8");
+
+    const failWriteRes = await processGeneratedDocumentation({ rootDir: tempDir, write: true });
+    assert.equal(failWriteRes.valid, false);
+    assert.deepEqual(failWriteRes.updatedFiles, []);
+
+    const snapshotAfter = await readFile(cliDocPath, "utf8");
+    assert.equal(snapshotAfter, snapshotBefore, "write mode must not modify files when validation fails");
+
+    // 8. Nested region -> DOC_GENERATED_REGION_NESTED
+    const doctorMatch = originalCliDoc.match(/<!-- BEGIN FORGELOOP GENERATED: cli:doctor:options -->[\s\S]*?<!-- END FORGELOOP GENERATED: cli:doctor:options -->/);
+    const docWithoutDoctor = originalCliDoc.replace(doctorMatch[0], "");
+    const nestedDoc = docWithoutDoctor.replace(
+      "<!-- BEGIN FORGELOOP GENERATED: cli:init:options -->",
+      `<!-- BEGIN FORGELOOP GENERATED: cli:init:options -->\n${doctorMatch[0]}`,
+    );
+    await writeFile(cliDocPath, nestedDoc, "utf8");
+    const nestedRes = await processGeneratedDocumentation({ rootDir: tempDir, write: false });
+    assert.equal(nestedRes.valid, false);
+    assert.ok(nestedRes.errors.some((e) => e.includes("DOC_GENERATED_REGION_NESTED")));
   } finally {
     await rm(tempDir, { recursive: true, force: true });
   }
 });
+
 

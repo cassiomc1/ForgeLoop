@@ -96,7 +96,7 @@ export function validateGeneratedRegions({ content, relPath, expectedRegions }) 
   for (const region of expectedSet) {
     const result = requireGeneratedRegion({ content, relPath, region });
     if (!result.valid) {
-      errors.push(`[${result.code}] ${result.message}`);
+      errors.push(`${result.code}: ${result.message}`);
     } else {
       regionDataList.push({ region, ...result });
     }
@@ -106,7 +106,7 @@ export function validateGeneratedRegions({ content, relPath, expectedRegions }) 
   const foundRegions = findGeneratedRegions(content);
   for (const found of foundRegions) {
     if (!expectedSet.has(found.region)) {
-      errors.push(`[DOC_GENERATED_REGION_UNKNOWN] Unknown region ${found.region} found in ${relPath}`);
+      errors.push(`DOC_GENERATED_REGION_UNKNOWN: Unknown generated region "${found.region}" found in "${relPath}"`);
     }
   }
 
@@ -117,7 +117,7 @@ export function validateGeneratedRegions({ content, relPath, expectedRegions }) 
     const next = regionDataList[i+1];
     
     if (next.beginIndex < current.endIndex) {
-      errors.push(`[DOC_GENERATED_REGION_NESTED] Region ${next.region} is nested inside region ${current.region} in ${relPath}`);
+      errors.push(`DOC_GENERATED_REGION_NESTED: Region "${next.region}" is nested inside region "${current.region}" in "${relPath}"`);
     }
   }
 

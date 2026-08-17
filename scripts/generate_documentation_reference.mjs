@@ -11,7 +11,7 @@ import { PUBLIC_ERROR_CODES } from "../src/core/error-codes.js";
 import { readSchema } from "../src/core/schema-validation.js";
 import { getPackageRoot } from "../src/core/templates.js";
 
-import { requireGeneratedRegion, findGeneratedRegions } from "./lib/generated-regions.mjs";
+import { validateGeneratedRegions } from "./lib/generated-regions.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const packageRoot = getPackageRoot();
@@ -278,9 +278,9 @@ export function generateCliOptionsForCommand(commandName) {
     if (optDef.isPositional) {
       const raw = optDef.valueName ?? optName;
       const clean = raw.replace(/^<+|>+$/g, "");
-      lines.push(`  - \`<${clean}>\`: ${optDef.description}${repeatableSuffix}`);
+      lines.push(`- \`<${clean}>\`: ${optDef.description}${repeatableSuffix}`);
     } else {
-      lines.push(`  - \`${label}\`: ${optDef.description}${repeatableSuffix}`);
+      lines.push(`- \`${label}\`: ${optDef.description}${repeatableSuffix}`);
     }
   }
 
@@ -481,38 +481,30 @@ export async function processGeneratedDocumentation({ rootDir = repositoryRoot, 
       continue;
     }
 
+    const expectedRegions = fileTargets.map((t) => t.region);
+    const structuralValidation = validateGeneratedRegions({
+      content: originalContent,
+      relPath,
+      expectedRegions,
+    });
+
+    if (!structuralValidation.valid) {
+      errors.push(...structuralValidation.errors);
+      continue;
+    }
+
     let modifiedContent = originalContent;
-    const seenRegions = new Set();
-    const expectedRegionsForFile = new Set(fileTargets.map((t) => t.region));
 
     for (const target of fileTargets) {
-      if (seenRegions.has(target.region)) {
-        errors.push(`DOC_GENERATED_REGION_DUPLICATE: Target file "${relPath}" has duplicate region ID "${target.region}"`);
-        continue;
-      }
-      seenRegions.add(target.region);
-
       const beginMarker = `<!-- BEGIN FORGELOOP GENERATED: ${target.region} -->`;
       const endMarker = `<!-- END FORGELOOP GENERATED: ${target.region} -->`;
 
-      // Fail closed: missing region is an error, not silently skipped
-      const regionResult = requireGeneratedRegion({ content: modifiedContent, relPath, region: target.region });
-      if (!regionResult.valid) {
-        errors.push(`${regionResult.code}: ${regionResult.message}`);
-        continue;
-      }
-
-      const endIndex = modifiedContent.indexOf(endMarker, regionResult.beginIndex + beginMarker.length);
-      if (endIndex === -1) {
-        errors.push(
-          `DOC_GENERATED_REGION_INVALID: In "${relPath}", region "${target.region}" has a BEGIN marker without matching END marker`,
-        );
-        continue;
-      }
+      const beginIndex = modifiedContent.indexOf(beginMarker);
+      const endIndex = modifiedContent.indexOf(endMarker, beginIndex + beginMarker.length);
 
       const generatedText = await target.generate();
       const newRegionContent = `${beginMarker}\n\n${generatedText.trim()}\n\n${endMarker}`;
-      const existingRegionContent = modifiedContent.slice(regionResult.beginIndex, endIndex + endMarker.length);
+      const existingRegionContent = modifiedContent.slice(beginIndex, endIndex + endMarker.length);
 
       if (existingRegionContent !== newRegionContent) {
         if (!write) {
@@ -520,15 +512,7 @@ export async function processGeneratedDocumentation({ rootDir = repositoryRoot, 
             `DOC_GENERATED_REGION_STALE: In "${relPath}", generated region "${target.region}" is stale. Run 'npm run docs:generate' to update.`,
           );
         }
-        modifiedContent = modifiedContent.slice(0, regionResult.beginIndex) + newRegionContent + modifiedContent.slice(endIndex + endMarker.length);
-      }
-    }
-
-    // Check for unknown generated regions in this file
-    const foundRegions = findGeneratedRegions(modifiedContent);
-    for (const found of foundRegions) {
-      if (!expectedRegionsForFile.has(found.region)) {
-        errors.push(`DOC_GENERATED_REGION_UNKNOWN: Unknown generated region "${found.region}" found in "${relPath}"`);
+        modifiedContent = modifiedContent.slice(0, beginIndex) + newRegionContent + modifiedContent.slice(endIndex + endMarker.length);
       }
     }
 
@@ -543,15 +527,16 @@ export async function processGeneratedDocumentation({ rootDir = repositoryRoot, 
     }
   }
 
-  // Phase 2: Only write after all validations pass (for --write mode)
-  if (write && errors.length === 0) {
-    for (const [fullPath, { relPath, content }] of fileOutputs.entries()) {
-      await atomicWriteFile(fullPath, content);
-      updatedFiles.push(relPath);
+  // Phase 2: Only write when ALL validations across ALL files pass with zero errors (fail closed)
+  if (write) {
+    if (errors.length > 0) {
+      return {
+        valid: false,
+        errors,
+        updatedFiles: [],
+      };
     }
-  } else if (write && errors.length > 0) {
-    // If there are structural errors (missing regions), still write what we can
-    // but only content changes (stale updates), not structural fixes
+
     for (const [fullPath, { relPath, content }] of fileOutputs.entries()) {
       await atomicWriteFile(fullPath, content);
       updatedFiles.push(relPath);
