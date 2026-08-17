@@ -54,6 +54,8 @@ jobs:
         run: npm test
       - name: Verify package contents
         run: npm run pack:check
+      - name: Verify documentation conformance
+        run: npm run docs:check
       - name: Run repository validators
         run: |
           python3 -m unittest discover -s tests -v

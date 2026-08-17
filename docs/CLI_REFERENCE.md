@@ -38,7 +38,6 @@ Initializes ForgeLoop in a target repository.
 - **When to use**: Once when onboarding a new repository to ForgeLoop.
 - **Mutation**: Writes `.forgeloop/kit/`, `.forgeloop/forgeloop.gitignore`, `AGENTS.md`, `CLAUDE.md`, `.cursor/rules/project-loop.mdc`, `.github/copilot-instructions.md`.
 - **Options**:
-  - `--adopt <path>`: Adopt an existing custom adapter path into the manifest.
   - `--dry-run`: Show planned writes without modifying files.
 - **Example**:
 

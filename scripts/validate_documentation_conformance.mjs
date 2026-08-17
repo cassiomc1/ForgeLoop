@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 import { COMMANDS } from "../src/cli.js";
 import { ARTIFACT_REGISTRY } from "../src/core/artifact-registry.js";
-import { CLI_COMMAND_METADATA } from "../src/core/cli-metadata.js";
+import { CLI_COMMAND_DEFINITIONS } from "../src/core/cli-command-definitions.js";
 import { DISCOVERY_SURFACES } from "../src/core/discovery-surfaces.js";
 import { ALL_KNOWN_ERROR_CODES, PUBLIC_ERROR_CODES } from "../src/core/error-codes.js";
 import { nativeShim } from "../src/core/native-adapters.js";
@@ -18,6 +18,20 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 const packageRoot = getPackageRoot();
 
 /**
+ * Normalizes a raw option string from Markdown to match CLI definition option keys.
+ * Examples:
+ *   "`--path <directory>`" -> "--path"
+ *   "`-- <argv...>`" -> "--"
+ *   "`<name>`" -> "<name>"
+ */
+export function normalizeCliOption(rawOption) {
+  const cleaned = rawOption.trim().replace(/`/g, "");
+  if (cleaned.startsWith("-- ")) return "--";
+  if (cleaned.startsWith("<") && cleaned.endsWith(">")) return cleaned;
+  return cleaned.split(" ")[0];
+}
+
+/**
  * Validates documentation against canonical schemas, CLI registry, and protocol constants.
  * Purely structural, deterministic, offline, and side-effect-free.
  */
@@ -25,7 +39,7 @@ export async function validateDocumentationConformance({ rootDir = repositoryRoo
   const errors = [];
 
   // =========================================================================
-  // 1. Validate Artifact Reference against JSON Schemas
+  // 1. Validate Artifact Reference against JSON Schemas & Registry
   // =========================================================================
   const artifactDocPath = path.join(rootDir, "docs", "ARTIFACT_REFERENCE.md");
   const artifactDocContent = await readFile(artifactDocPath, "utf8");
@@ -36,7 +50,8 @@ export async function validateDocumentationConformance({ rootDir = repositoryRoo
   const taggedArtifacts = new Map();
 
   while ((match = docTagPattern.exec(artifactDocContent)) !== null) {
-    const [, schemaName, artifactPath] = match;
+    const [, schemaName, rawArtifactPath] = match;
+    const artifactPath = rawArtifactPath.trim();
     const tagIndex = match.index;
     const nextTagIndex = artifactDocContent.indexOf("<!-- forgeloop-doc:", tagIndex + match[0].length);
     const sectionContent = nextTagIndex !== -1
@@ -53,6 +68,13 @@ export async function validateDocumentationConformance({ rootDir = repositoryRoo
       errors.push(
         `DOC_ARTIFACT_SECTION_MISSING: Artifact "${key}" with schema "${artifactInfo.schema}" is missing a tagged section in docs/ARTIFACT_REFERENCE.md`,
       );
+    } else {
+      const tagged = taggedArtifacts.get(artifactInfo.schema);
+      if (tagged.artifactPath !== artifactInfo.path) {
+        errors.push(
+          `DOC_ARTIFACT_PATH_MISMATCH: Artifact "${key}" tagged path "${tagged.artifactPath}" does not match registry path "${artifactInfo.path}"`,
+        );
+      }
     }
   }
 
@@ -119,7 +141,7 @@ export async function validateDocumentationConformance({ rootDir = repositoryRoo
       }
     }
 
-    // Specific structural checks:
+    // Specific structural & semantic constraints:
     // 1. Gate decisions must be array of strings, not array of objects
     if (schemaName === "gate") {
       if (schema.properties.decisions?.items?.type !== "string") {
@@ -144,24 +166,39 @@ export async function validateDocumentationConformance({ rootDir = repositoryRoo
       }
     }
 
-    // 3. Execution artifacts must not claim stdout/stderr logs
+    // 3. Execution artifacts must have kind: const COMMAND_EXECUTION and exitCode: integer or null
     if (schemaName === "execution") {
       if (/output logs|stdout\/stderr logs|captures output/i.test(sectionContent)) {
         errors.push(`DOC_EXECUTION_STDOUT_CLAIM: Execution artifact documentation must not claim stdout/stderr logs are stored`);
       }
+      if (!sectionContent.includes("COMMAND_EXECUTION")) {
+        errors.push(`DOC_EXECUTION_KIND_CONST_MISMATCH: Execution kind must be documented as const COMMAND_EXECUTION`);
+      }
+      const exitCodeLine = sectionContent.split("\n").find((l) => l.includes("`exitCode`"));
+      if (!exitCodeLine || !/integer\s+or\s+null/i.test(exitCodeLine)) {
+        errors.push(`DOC_EXECUTION_EXIT_CODE_TYPE_MISMATCH: Execution exitCode must be documented as integer or null`);
+      }
     }
 
-    // 4. Contract assumptions source const must match
+    // 4. Contract assumptions source const and requirement structure
     if (schemaName === "current-contract") {
       const sourceProp = schema.properties.assumptions?.items?.properties?.source;
       if (sourceProp?.const !== "agent-default") {
         errors.push(`DOC_CONTRACT_SOURCE_CONST: Contract assumption source must be const "agent-default"`);
       }
+      // Check requirement definitions in current-contract
+      if (!sectionContent.includes("PRODUCT") || !sectionContent.includes("VERIFICATION") || !sectionContent.includes("LIFECYCLE")) {
+        errors.push(`DOC_CONTRACT_REQUIREMENT_TYPES_MISSING: current-contract verification must document all requirement types including PRODUCT`);
+      }
+      const reqIdLine = sectionContent.split("\n").find((l) => l.includes("`id`") && l.includes("verification"));
+      if (reqIdLine && /required/i.test(reqIdLine)) {
+        errors.push(`DOC_CONTRACT_REQUIREMENT_ID_REQUIRED_MISMATCH: requirement id is optional in schema`);
+      }
     }
   }
 
   // =========================================================================
-  // 2. Validate CLI Reference against COMMANDS and CLI_COMMAND_METADATA
+  // 2. Validate CLI Reference against COMMANDS and CLI_COMMAND_DEFINITIONS
   // =========================================================================
   const cliDocPath = path.join(rootDir, "docs", "CLI_REFERENCE.md");
   const cliDocContent = await readFile(cliDocPath, "utf8");
@@ -173,9 +210,9 @@ export async function validateDocumentationConformance({ rootDir = repositoryRoo
       errors.push(`DOC_CLI_COMMAND_MISSING: Command "${command}" is not documented in docs/CLI_REFERENCE.md`);
     }
 
-    const commandMeta = CLI_COMMAND_METADATA[command];
-    if (!commandMeta) {
-      errors.push(`CLI_METADATA_MISSING: Command "${command}" missing from CLI_COMMAND_METADATA`);
+    const commandDef = CLI_COMMAND_DEFINITIONS[command];
+    if (!commandDef) {
+      errors.push(`CLI_DEFINITION_MISSING: Command "${command}" missing from CLI_COMMAND_DEFINITIONS`);
       continue;
     }
 
@@ -188,16 +225,41 @@ export async function validateDocumentationConformance({ rootDir = repositoryRoo
         : cliDocContent.slice(sectionStart);
 
       // Validate documented flags under this command
-      const documentedOptionMatches = commandSection.matchAll(/(?:^|\n)[ \t]*-[ \t]*(`--?[a-zA-Z0-9_-]+(?: <[^>]+>)?`|`-- <[^>]+>`)/g);
+      const documentedOptionMatches = commandSection.matchAll(
+        /(?:^|\n)[ \t]*-[ \t]*(`--?[a-zA-Z0-9_-]+(?: <[^>]+>)?`|`-- <[^>]+>`|`<[a-zA-Z0-9_-]+>`)/g,
+      );
       const documentedOptions = new Set();
       for (const optMatch of documentedOptionMatches) {
-        const rawOpt = optMatch[1].replace(/`/g, "").split(" ")[0];
-        documentedOptions.add(rawOpt);
+        documentedOptions.add(normalizeCliOption(optMatch[1]));
+      }
+
+      // Check for missing command options (excluding global options --path, --help, --version unless explicitly in command options)
+      for (const optKey of Object.keys(commandDef.options)) {
+        if (optKey === "--path" || optKey === "--help" || optKey === "--version") continue;
+        if (!documentedOptions.has(optKey)) {
+          errors.push(
+            `DOC_CLI_OPTION_MISSING: Command "${command}" definition includes option "${optKey}" which is not documented in CLI_REFERENCE.md`,
+          );
+        }
+      }
+
+      // Check for extra documented options that command does not accept
+      for (const docOpt of documentedOptions) {
+        if (!commandDef.options[docOpt] && docOpt !== "--path" && docOpt !== "--help" && docOpt !== "--version") {
+          errors.push(
+            `DOC_CLI_OPTION_EXTRA: Command "${command}" in CLI_REFERENCE.md documents unsupported option "${docOpt}"`,
+          );
+        }
       }
 
       // Check run-check specifically for stdout/stderr claims
       if (command === "run-check" && /captures (exit code and )?output/i.test(commandSection)) {
         errors.push(`DOC_RUN_CHECK_STDOUT_CLAIM: run-check documentation must not claim stdout/stderr logs are captured or stored`);
+      }
+
+      // Check init specifically to ensure --adopt is not present
+      if (command === "init" && documentedOptions.has("--adopt")) {
+        errors.push(`DOC_INIT_ADOPT_EXTRA: init command does not accept --adopt; --adopt is a doctor option`);
       }
     }
   }
