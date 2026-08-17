@@ -509,9 +509,11 @@ export async function processGeneratedDocumentation({ rootDir = repositoryRoot, 
       continue;
     }
 
+    const normalizedOriginalContent = originalContent.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+
     const expectedRegions = fileTargets.map((t) => t.region);
     const structuralValidation = validateGeneratedRegions({
-      content: originalContent,
+      content: normalizedOriginalContent,
       relPath,
       expectedRegions,
     });
@@ -521,7 +523,7 @@ export async function processGeneratedDocumentation({ rootDir = repositoryRoot, 
       continue;
     }
 
-    let modifiedContent = originalContent;
+    let modifiedContent = normalizedOriginalContent;
 
     for (const target of fileTargets) {
       const beginMarker = `<!-- BEGIN FORGELOOP GENERATED: ${target.region} -->`;
@@ -555,10 +557,8 @@ export async function processGeneratedDocumentation({ rootDir = repositoryRoot, 
       }
     }
 
-    if (modifiedContent !== originalContent) {
-      // Normalize line endings to LF
-      const normalizedContent = modifiedContent.replace(/\r\n/g, "\n");
-      fileOutputs.set(fullPath, { relPath, content: normalizedContent });
+    if (modifiedContent !== normalizedOriginalContent) {
+      fileOutputs.set(fullPath, { relPath, content: modifiedContent });
     }
   }
 

@@ -1,12 +1,37 @@
 import assert from "node:assert/strict";
-import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 
 import { processGeneratedDocumentation } from "../scripts/generate_documentation_reference.mjs";
 import { validateDocumentationConformance } from "../scripts/validate_documentation_conformance.mjs";
-import { checkGeneratedDiagram } from "../scripts/check-generated-diagram.mjs";
+import { checkGeneratedDiagram, fingerprintText, normalizeTextForFingerprint } from "../scripts/check-generated-diagram.mjs";
+
+test("fingerprint is independent of line-ending representation", () => {
+  const lf = "flowchart TD\nA --> B\n";
+  const crlf = "flowchart TD\r\nA --> B\r\n";
+  const cr = "flowchart TD\rA --> B\r";
+
+  assert.equal(normalizeTextForFingerprint(lf), "flowchart TD\nA --> B\n");
+  assert.equal(normalizeTextForFingerprint(crlf), "flowchart TD\nA --> B\n");
+  assert.equal(normalizeTextForFingerprint(cr), "flowchart TD\nA --> B\n");
+
+  assert.equal(fingerprintText(lf), fingerprintText(crlf));
+  assert.equal(fingerprintText(lf), fingerprintText(cr));
+
+  // Semantic changes must still produce different fingerprints
+  assert.notEqual(
+    fingerprintText("flowchart TD\nA --> B\n"),
+    fingerprintText("flowchart TD\nA --> C\n"),
+  );
+
+  // Newlines vs no newlines must produce different fingerprints
+  assert.notEqual(
+    fingerprintText("A\n"),
+    fingerprintText("A"),
+  );
+});
 
 test("documentation reference generator is deterministic and idempotent", async () => {
   const tempDir = await mkdtemp(path.join(os.tmpdir(), "forgeloop-portability-"));
@@ -22,7 +47,11 @@ test("documentation reference generator is deterministic and idempotent", async 
 
     // First run --write
     const firstRun = await processGeneratedDocumentation({ rootDir: tempDir, write: true });
-    assert.equal(firstRun.valid, true);
+    assert.equal(
+      firstRun.valid,
+      true,
+      `first generation failed: ${JSON.stringify(firstRun.errors, null, 2)}`,
+    );
 
     const firstArtifactDoc = await readFile(path.join(tempDir, "docs", "ARTIFACT_REFERENCE.md"), "utf8");
     const firstCliDoc = await readFile(path.join(tempDir, "docs", "CLI_REFERENCE.md"), "utf8");
@@ -30,7 +59,11 @@ test("documentation reference generator is deterministic and idempotent", async 
 
     // Second run --write
     const secondRun = await processGeneratedDocumentation({ rootDir: tempDir, write: true });
-    assert.equal(secondRun.valid, true);
+    assert.equal(
+      secondRun.valid,
+      true,
+      `second generation failed: ${JSON.stringify(secondRun.errors, null, 2)}`,
+    );
     assert.equal(secondRun.updatedFiles.length, 0, "Second generation must be a zero-diff no-op");
 
     const secondArtifactDoc = await readFile(path.join(tempDir, "docs", "ARTIFACT_REFERENCE.md"), "utf8");
@@ -43,7 +76,11 @@ test("documentation reference generator is deterministic and idempotent", async 
 
     // Check mode
     const checkRun = await processGeneratedDocumentation({ rootDir: tempDir, write: false });
-    assert.equal(checkRun.valid, true);
+    assert.equal(
+      checkRun.valid,
+      true,
+      `check mode failed: ${JSON.stringify(checkRun.errors, null, 2)}`,
+    );
     assert.equal(checkRun.errors.length, 0);
   } finally {
     await rm(tempDir, { recursive: true, force: true });
@@ -63,10 +100,18 @@ test("documentation generation and validation succeed in directory paths contain
     await cp(".github", path.join(tempDir, ".github"), { recursive: true });
 
     const genResult = await processGeneratedDocumentation({ rootDir: tempDir, write: false });
-    assert.equal(genResult.valid, true);
+    assert.equal(
+      genResult.valid,
+      true,
+      `documentation generation failed: ${JSON.stringify(genResult.errors, null, 2)}`,
+    );
 
     const confResult = await validateDocumentationConformance({ rootDir: tempDir });
-    assert.equal(confResult.valid, true);
+    assert.equal(
+      confResult.valid,
+      true,
+      `documentation validation failed: ${JSON.stringify(confResult.errors, null, 2)}`,
+    );
   } finally {
     await rm(tempDir, { recursive: true, force: true });
   }
@@ -94,6 +139,32 @@ test("Mermaid diagram check validates target SVG explicitly", async () => {
     await assert.rejects(async () => {
       await checkGeneratedDiagram(invalidTempSvg);
     }, /fingerprint does not match canonical source/i);
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("Mermaid diagram check succeeds when source file has CRLF line endings", async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "forgeloop-crlf-diagram-"));
+
+  try {
+    const sourcePath = path.join("docs", "forgeloop-flow.mmd");
+    const canonicalSource = await readFile(sourcePath, "utf8");
+    const crlfSource = canonicalSource.replace(/\r\n/g, "\n").replace(/\n/g, "\r\n");
+
+    const tempDocsDir = path.join(tempDir, "docs");
+    const tempAssetsDir = path.join(tempDocsDir, "assets");
+    await mkdir(tempAssetsDir, { recursive: true });
+
+    await writeFile(path.join(tempDocsDir, "forgeloop-flow.mmd"), crlfSource, "utf8");
+
+    const validSvgPath = path.join("docs", "assets", "forgeloop-flow.svg");
+    const validSvg = await readFile(validSvgPath, "utf8");
+    await writeFile(path.join(tempAssetsDir, "forgeloop-flow.svg"), validSvg, "utf8");
+
+    // Should validate without error regardless of CRLF in the source file
+    const result = await checkGeneratedDiagram(null, tempDir);
+    assert.equal(result.valid, true);
   } finally {
     await rm(tempDir, { recursive: true, force: true });
   }
@@ -194,5 +265,3 @@ test("generated documentation generator fails closed on missing, duplicate, inva
     await rm(tempDir, { recursive: true, force: true });
   }
 });
-
-

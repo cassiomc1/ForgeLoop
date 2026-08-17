@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 
-import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+
+import { fingerprintText } from "./check-generated-diagram.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const sourcePath = path.join(repositoryRoot, "docs", "forgeloop-flow.mmd");
@@ -32,15 +33,20 @@ if (!existsSync(sourcePath)) {
   process.exitCode = 1;
 } else {
   const source = await readFile(sourcePath, "utf8");
-  const sourceFingerprint = createHash("sha256").update(source).digest("hex");
-  await mkdir(path.dirname(outputPath), { recursive: true });
+  const sourceFingerprint = fingerprintText(source);
+  const isWin = process.platform === "win32";
+  const cmd = isWin ? process.env.ComSpec || "cmd.exe" : mermaidCli;
+  const args = isWin
+    ? ["/d", "/s", "/c", mermaidCli, "-i", sourcePath, "-o", outputPath, "-t", "dark", "-b", "transparent", ...puppeteerArgs]
+    : ["-i", sourcePath, "-o", outputPath, "-t", "dark", "-b", "transparent", ...puppeteerArgs];
+
   const result = spawnSync(
-    mermaidCli,
-    ["-i", sourcePath, "-o", outputPath, "-t", "dark", "-b", "transparent", ...puppeteerArgs],
+    cmd,
+    args,
     {
       cwd: repositoryRoot,
       encoding: "utf8",
-      shell: process.platform === "win32",
+      shell: false,
       stdio: "inherit",
     },
   );

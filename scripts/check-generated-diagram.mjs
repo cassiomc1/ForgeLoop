@@ -8,6 +8,26 @@ import { fileURLToPath } from "node:url";
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 /**
+ * Normalizes text to canonical LF line endings before fingerprinting.
+ * @param {string} text
+ * @returns {string}
+ */
+export function normalizeTextForFingerprint(text) {
+  return text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+}
+
+/**
+ * Computes a deterministic SHA-256 fingerprint for canonical text across all platforms.
+ * @param {string} text
+ * @returns {string}
+ */
+export function fingerprintText(text) {
+  return createHash("sha256")
+    .update(normalizeTextForFingerprint(text), "utf8")
+    .digest("hex");
+}
+
+/**
  * Validates that an SVG file contains a valid SHA-256 fingerprint matching the canonical Mermaid source.
  * @param {string} [targetPath] - Optional path to target SVG
  * @param {string} [rootDir] - Optional root directory
@@ -22,7 +42,7 @@ export async function checkGeneratedDiagram(targetPath = null, rootDir = reposit
     readFile(sourcePath, "utf8"),
     readFile(outputPath, "utf8"),
   ]);
-  const expectedFingerprint = createHash("sha256").update(source).digest("hex");
+  const expectedFingerprint = fingerprintText(source);
   const actualFingerprint = rendered.match(
     /<svg\b[^>]*data-forgeloop-source-sha256="([a-f0-9]{64})"/,
   )?.[1];
