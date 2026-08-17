@@ -3,7 +3,7 @@ name: design-code-eng
 language: en
 description: "Visual direction, UX, motion, and perceived performance for premium digital experiences."
 version: "2026.09"
-last-reviewed: "2026-08-10"
+last-reviewed: "2026-08-17"
 guide-id: design
 requires-gates:
   - design
@@ -342,7 +342,7 @@ Select references for a product problem; they do not override project tokens or 
 
 - **Technical diagrams and architecture flows**: for polished Mermaid-based architecture and workflow diagrams, use [Beautiful Mermaid by Craft](https://agents.craft.do/mermaid) when relevant; preserve canonical Mermaid source, local versioned SVG assets, and do not treat presentation tooling as a mandatory protocol gate or runtime dependency.
 - **Component source and interaction inspiration**: use [21st.dev](https://21st.dev/) to study components and interactions; inspect each source, dependency, community contribution, and premium-material term before adoption.
-- **Component and motion inspiration**: use [React Bits](https://reactbits.dev/) to study component and motion behavior; distinguish public/free material from React Bits Pro and inspect each source/dependency license.
+- **React component and motion reference**: use [React Bits](https://reactbits.dev/) to discover animated React components and interaction patterns, and inspect the [React Bits source repository](https://github.com/DavidHDev/react-bits) before adopting code. Use it only when the target stack is React or when a deliberate, reviewed adaptation is appropriate. Prefer the smallest component or pattern that solves the product need; do not install or copy the entire library by default. Inspect the exact component source, transitive dependencies, license/usage terms, accessibility behavior, reduced-motion behavior, responsive behavior, and runtime cost before adoption. Adapt tokens, typography, spacing, states, semantics, and motion to the target project's design system instead of preserving React Bits defaults.
 - **Component inspiration**: use [Fancy Components](https://www.fancycomponents.dev/) to study component composition; verify its terms separately from Motion, Tailwind, shadcn, or other dependencies.
 - **Motion primitives**: use [Motion Primitives](https://motion-primitives.com/) to study discrete interaction patterns; distinguish documented open-source material from its Pro offering and verify component/dependency terms.
 - **Component and design-system research**: use [Component Gallery](https://component.gallery/) for comparison, not for license assumptions.
@@ -350,6 +350,41 @@ Select references for a product problem; they do not override project tokens or 
 - **Pointer enhancement**: activate [Cursify](https://cursify.ui-layouts.com/) only when `(hover: hover) and (pointer: fine)`; retain native controls and default cursor behavior, with equivalent tap interaction for touch/coarse pointers.
 - **Typography discovery**: verify each [UNCUT](https://uncut.wtf/) font's author, license, weights, and hosting rights.
 - **Creative coding and WebGL**: [cables.gl](https://cables.gl/) requires a semantic fallback, pause/offscreen behavior, a performance budget, and asset/operator provenance.
+
+### React Bits — operational use for React interfaces
+
+React Bits is an optional implementation/reference source for high-finish React interfaces. It is not a required ForgeLoop tool, protocol dependency, verification dependency, or design-system replacement.
+
+Use it when:
+
+- the target application uses React;
+- a concrete interaction, text treatment, background, reveal, or UI component would materially improve the product experience;
+- implementing the behavior from scratch would add unnecessary design or engineering cost;
+- the effect fits the selected motion intensity and visual direction.
+
+Do not use it when:
+
+- the target is not React and adaptation would add more complexity than value;
+- the component exists only as decoration without a product or communication purpose;
+- the same result already exists in the target project's design system;
+- the component violates the project's accessibility, performance, security, dependency, or browser-support constraints;
+- a static or simpler CSS/HTML implementation communicates the same result more clearly.
+
+Adoption workflow:
+
+1. **Define the need first.** Identify the concrete UI or communication problem before browsing components.
+2. **Confirm the target stack.** Verify React version, styling strategy, TypeScript/JavaScript choice, SSR/CSR boundary, and existing animation/runtime libraries.
+3. **Inspect the source.** Review the exact component in the [React Bits repository](https://github.com/DavidHDev/react-bits), not only the visual demo.
+4. **Check usage terms.** Verify the current license and any component-specific dependency or attribution requirements before copying or installing code.
+5. **Choose the smallest variant.** Prefer one component/pattern and the variant matching the project (JS/TS and CSS/Tailwind); do not add unrelated components.
+6. **Prefer local adaptation.** Adapt the component into the target project's component structure and semantic tokens rather than importing a visual identity wholesale.
+7. **Preserve semantics.** Text, controls, navigation, forms, focus states, errors, status information, and primary actions must remain semantic and usable without decorative motion.
+8. **Respect reduced motion.** Provide a static or substantially reduced alternative under `prefers-reduced-motion`; essential information must never depend on animation.
+9. **Bound runtime cost.** Lazy-load expensive effects when practical, pause continuous animation outside the viewport or on hidden pages, and avoid adding duplicate animation/runtime libraries without justification.
+10. **Verify the result.** Test keyboard/focus behavior, contrast, 320 CSS px reflow, touch behavior, reduced motion, console/runtime errors, and the project's performance budget.
+11. **Record provenance.** When code or a material implementation pattern is adopted, record React Bits as an external source in the task/project attribution or source record when applicable.
+
+ForgeLoop runtime must not gain a dependency on React Bits as a result of this guidance. Any installation belongs to the target project and remains subject to normal authorization and dependency policy.
 
 ---
 
