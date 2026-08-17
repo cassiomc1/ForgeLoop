@@ -54,6 +54,15 @@ test("forgeloop task-create, task-list, task-show, task-scope, task-unlock CLI l
     assert.equal(shown.taskId, "cli-task-1");
     assert.deepEqual(shown.writeClaims, ["src/auth"]);
 
+    // Human-readable task-show must handle unlocked state without crashing
+    const humanShowRes = runCli(target, "task-show", "--task", "cli-task-1");
+    assert.equal(
+      humanShowRes.status,
+      0,
+      `task-show human output failed: ${humanShowRes.stderr}`,
+    );
+    assert.match(humanShowRes.stdout, /Lock: unlocked/);
+
     // 4. task-scope
     const scopeRes = runCli(target, "task-scope", "--task", "cli-task-1", "--claim", "src/auth", "--claim", "tests/auth", "--json");
     assert.equal(scopeRes.status, 0, `task-scope failed: ${scopeRes.stderr}`);

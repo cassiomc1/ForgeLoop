@@ -64,7 +64,9 @@ export async function runTaskShow({ target, packageRoot, taskId } = {}) {
 
 export function formatTaskShowResult(result) {
   const claims = result.writeClaims.length === 0 ? "none" : result.writeClaims.join(", ");
-  const lockStatus = result.lock.locked ? `locked by PID ${result.lock.pid} since ${result.lock.acquiredAt}` : "unlocked";
+  const lockStatus = result.lock
+    ? `locked by PID ${result.lock.pid ?? "unknown"} since ${result.lock.acquiredAt ?? "unknown"}`
+    : "unlocked";
   const lines = [
     `Task: ${result.taskId}`,
     `Key: ${result.taskKey}`,
