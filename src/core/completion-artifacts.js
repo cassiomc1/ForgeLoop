@@ -18,7 +18,7 @@ import { readPersistedRoute } from "./route-artifact.js";
 import { createReceipt, validateReceipt } from "./receipt.js";
 import { readWorkState, writeWorkState } from "./work-state.js";
 import { assertExecutionPrerequisites, hasExecutionStarted } from "./execution-prerequisites.js";
-import { normalizeRequirements, classifyRequirement } from "./evidence-readiness.js";
+import { normalizeRequirements } from "./evidence-readiness.js";
 import { classifyCommandResolution, validateVerificationAuthority } from "./verification-capability.js";
 import { readExecutionArtifact, validateExecutionBinding } from "./execution.js";
 import { taskArtifactPath, taskExecutionPath } from "./task-paths.js";
@@ -367,7 +367,6 @@ export async function assertRecordCheckPrerequisites({
   const state = await readWorkState(target, { packageRoot, taskId, statePath });
   const stateRel = statePath ?? (taskId ? taskArtifactPath(taskId, "state") : ARTIFACT_PATHS.state);
   const eventsRel = eventsPath ?? (taskId ? taskArtifactPath(taskId, "events") : ARTIFACT_PATHS.events);
-  const receiptRel = receiptPath ?? (taskId ? taskArtifactPath(taskId, "receipt") : ARTIFACT_PATHS.receipt);
 
   if (!state) throw artifactError("E_STATE_MISSING", "Work state is required before recording a check", [stateRel]);
   if (["COMPLETE", "BLOCKED"].includes(state.phase)) {
@@ -719,7 +718,6 @@ export async function recordTerminalResult({
 
   const state = await readWorkState(target, { packageRoot, taskId, statePath });
   const stateRel = statePath ?? (taskId ? taskArtifactPath(taskId, "state") : ARTIFACT_PATHS.state);
-  const eventsRel = eventsPath ?? (taskId ? taskArtifactPath(taskId, "events") : ARTIFACT_PATHS.events);
   const receiptRel = receiptPath ?? (taskId ? taskArtifactPath(taskId, "receipt") : ARTIFACT_PATHS.receipt);
 
   if (!state) throw artifactError("E_STATE_MISSING", "Work state is required before recording a terminal result", [stateRel]);

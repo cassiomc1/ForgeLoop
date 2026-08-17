@@ -11,7 +11,6 @@ import {
 } from "./artifacts.js";
 import { taskExecutionPath } from "./task-paths.js";
 import {
-  classifyCommandResolution,
   resolveExecutionResolution,
   validateVerificationAuthority,
   E_COMMAND_RESOLUTION_AMBIGUOUS,

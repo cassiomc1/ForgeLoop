@@ -10,7 +10,7 @@ import { completionRelationshipErrors } from "./completion-relationships.js";
 import { assertSafePath, ensureWithin, fileExists } from "./filesystem.js";
 import { evaluateStartExecutionPrerequisites, hasExecutionStarted } from "./execution-prerequisites.js";
 import { isRecoverableCompletionEvidenceCode } from "./completion-recovery.js";
-import { classifyRequirement, evaluateTerminalRequirements } from "./evidence-readiness.js";
+import { evaluateTerminalRequirements } from "./evidence-readiness.js";
 import { taskArtifactPath } from "./task-paths.js";
 
 function issue(code, message, artifacts = [], details = {}) {
@@ -383,8 +383,6 @@ export async function runComplete({
   });
 
   const receiptRel = receiptPath ?? (taskId ? taskArtifactPath(taskId, "receipt") : ARTIFACT_PATHS.receipt);
-  const stateRel = statePath ?? (taskId ? taskArtifactPath(taskId, "state") : ARTIFACT_PATHS.state);
-  const contractRel = contractPath ?? (taskId ? taskArtifactPath(taskId, "contract") : ARTIFACT_PATHS.contract);
 
   const rejectionCodes = [...new Set(result.errors.map((error) => error.code))].sort();
   const evidenceOnlyRejection = rejectionCodes.length > 0
