@@ -13,9 +13,9 @@ from pathlib import Path
 from urllib.parse import unquote
 
 try:
-    from scripts.validate_loop_system import GUIDE_LAST_REVIEWED, GUIDE_VERSION
+    from scripts.validate_loop_system import GUIDE_VERSION
 except ModuleNotFoundError:
-    from validate_loop_system import GUIDE_LAST_REVIEWED, GUIDE_VERSION
+    from validate_loop_system import GUIDE_VERSION
 
 required = {"name", "language", "description", "version", "last-reviewed"}
 
@@ -525,7 +525,7 @@ name: sample
 language: en
 description: "Valid scalar with punctuation."
 version: "{GUIDE_VERSION}"
-last-reviewed: "{GUIDE_LAST_REVIEWED}"
+last-reviewed: "2026-08-10"
 guide-id: sample
 requires-gates:
   - design
@@ -566,7 +566,7 @@ completion-evidence:
             f'version: "{GUIDE_VERSION}"', "version: 2026.08"
         ),
         "unquoted timestamp": valid_frontmatter.replace(
-            f'last-reviewed: "{GUIDE_LAST_REVIEWED}"',
+            'last-reviewed: "2026-08-10"',
             "last-reviewed: 2026-08-08T12:30:00Z",
         ),
         "quoted plain key": valid_frontmatter.replace(
@@ -713,20 +713,32 @@ def validate_iso_date(value: str, field_name: str, relative_path: str) -> None:
 
 def load_guide_registry(root: Path) -> dict[str, dict]:
     registry_path = root / "src" / "config" / "guides.json"
-    if registry_path.is_file():
-        return json.loads(registry_path.read_text(encoding="utf-8"))
-    return {}
+    if not registry_path.is_file():
+        raise ValidationError("missing canonical guide registry: src/config/guides.json")
+    try:
+        data = json.loads(registry_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        raise ValidationError(f"invalid guide registry JSON: {error}") from error
+    if not isinstance(data, dict):
+        raise ValidationError("guide registry root must be an object")
+    return data
 
 
 def validate_repository(root: Path) -> None:
     root = root.resolve()
     registry = load_guide_registry(root)
-    guides = sorted(root.glob("ENG/*.md"))
-    if not guides:
-        raise ValidationError("expected English guides in ENG/, found none")
-    if registry and len(guides) != len(registry):
-        raise ValidationError(f"expected {len(registry)} English guides matching registry, found {len(guides)}")
+    registry_paths = {def_data.get("path") for def_data in registry.values() if isinstance(def_data, dict)}
+    disk_paths = {path.relative_to(root).as_posix() for path in root.glob("ENG/*.md")}
 
+    missing = registry_paths - disk_paths
+    unregistered = disk_paths - registry_paths
+
+    if missing:
+        raise ValidationError("registered guide files missing: " + ", ".join(sorted(missing)))
+    if unregistered:
+        raise ValidationError("unregistered guide files: " + ", ".join(sorted(unregistered)))
+
+    guides = sorted(root.glob("ENG/*.md"))
     names = set()
     for path in guides:
         if not path.is_file():

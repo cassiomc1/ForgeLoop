@@ -28,6 +28,7 @@ CLI syntax truth        -> CLI registry / parser (src/cli.js, src/core/cli-comma
 Artifact shape truth    -> JSON schemas (schemas/*.schema.json, src/core/artifact-registry.js)
 Lifecycle truth         -> protocol / state machine (src/core/protocol.js)
 Reason-code truth       -> exported protocol constants (src/core/error-codes.js, src/core/protocol.js)
+Guide registry truth    -> canonical guide registry (src/config/guides.json)
 Package contents truth  -> package.json + package tests (tests/package.test.js)
 Documentation routing   -> DOCS_INDEX.md
 ```

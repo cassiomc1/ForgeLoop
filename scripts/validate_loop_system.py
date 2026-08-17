@@ -139,19 +139,6 @@ CANONICAL_REFERENCES = (
     "GUIDE_ROUTER.md",
 )
 
-GUIDES = {
-    "premium": "ENG/premium-sites-studio-eng.md",
-    "clean": "ENG/clean-code-eng.md",
-    "test": "ENG/test-code-eng.md",
-    "security": "ENG/sec-code-eng.md",
-    "design": "ENG/design-code-eng.md",
-    "performance": "ENG/perf-code-eng.md",
-    "accessibility": "ENG/accessibility-eng.md",
-    "games": "ENG/games-code-design-web-eng.md",
-    "taste": "ENG/taste-frontend-eng.md",
-    "documentation": "ENG/documentation-quality-eng.md",
-}
-
 ROUTING_SCENARIOS = {
     "landing-page-premium": "premium,design,taste,accessibility,clean,test,security,performance",
     "api-auth": "clean,test,security,performance",
@@ -176,7 +163,7 @@ PLAIN_GUIDE_FRONTMATTER = {
 }
 LIST_GUIDE_FRONTMATTER = {"requires-gates", "completion-evidence"}
 GUIDE_VERSION = "2026.09"
-GUIDE_LAST_REVIEWED = "2026-08-10"
+FIXTURE_GUIDE_LAST_REVIEWED = "2026-08-10"
 
 
 class ValidationError(RuntimeError):
@@ -338,16 +325,63 @@ def validate_iso_date(value: str, field_name: str, relative_path: str) -> None:
 
 def load_guide_registry(root: Path) -> dict[str, str]:
     registry_path = root / "src" / "config" / "guides.json"
-    if registry_path.is_file():
+    if not registry_path.is_file():
+        raise ValidationError("missing canonical guide registry: src/config/guides.json")
+
+    try:
         data = json.loads(registry_path.read_text(encoding="utf-8"))
-        return {guide_id: def_data["path"] for guide_id, def_data in data.items()}
-    return GUIDES
+    except json.JSONDecodeError as error:
+        raise ValidationError(f"invalid guide registry JSON: {error}") from error
+
+    if not isinstance(data, dict):
+        raise ValidationError("guide registry root must be an object")
+
+    result: dict[str, str] = {}
+    for guide_id, definition in data.items():
+        if not isinstance(guide_id, str) or not re.fullmatch(r"[a-z][a-z0-9-]*", guide_id):
+            raise ValidationError(f"invalid guide ID in registry: '{guide_id}'")
+
+        if not isinstance(definition, dict):
+            raise ValidationError(f"guide registry entry '{guide_id}' must be an object")
+
+        relative = definition.get("path")
+        install = definition.get("install")
+
+        if not isinstance(relative, str) or not relative or not relative.startswith("ENG/") or not relative.endswith(".md"):
+            raise ValidationError(f"guide registry entry '{guide_id}' has invalid path: '{relative}'")
+
+        relative_path = Path(relative)
+        if relative_path.is_absolute():
+            raise ValidationError(f"guide registry entry '{guide_id}' has absolute path: '{relative}'")
+
+        try:
+            (root / relative_path).resolve().relative_to(root.resolve())
+        except ValueError as error:
+            raise ValidationError(f"guide path escapes repository: '{relative}'") from error
+
+        if not isinstance(install, bool):
+            raise ValidationError(f"guide registry entry '{guide_id}' has invalid install flag: '{install}'")
+
+        result[guide_id] = relative
+
+    return result
 
 
 def validate_guides(root: Path) -> None:
     guides = load_guide_registry(root)
+    registry_paths = set(guides.values())
+    disk_paths = {p.relative_to(root).as_posix() for p in root.glob("ENG/*.md")}
+
+    missing = registry_paths - disk_paths
+    unregistered = disk_paths - registry_paths
+
+    if missing:
+        raise ValidationError("registered guide files missing: " + ", ".join(sorted(missing)))
+    if unregistered:
+        raise ValidationError("unregistered guide files: " + ", ".join(sorted(unregistered)))
+
     names: set[str] = set()
-    for relative in guides.values():
+    for guide_id, relative in guides.items():
         path = root / relative
         metadata = parse_guide_frontmatter(path)
         if metadata["name"] != path.stem:
@@ -359,6 +393,8 @@ def validate_guides(root: Path) -> None:
         if metadata["version"] != GUIDE_VERSION:
             raise ValidationError(f"{relative}: unexpected version")
         validate_iso_date(str(metadata["last-reviewed"]), "last-reviewed", relative)
+        if "guide-id" in metadata and metadata["guide-id"] != guide_id:
+            raise ValidationError(f"{relative}: frontmatter guide-id '{metadata['guide-id']}' does not match registry key '{guide_id}'")
         if metadata["name"] in names:
             raise ValidationError(f"{relative}: duplicate guide name {metadata['name']}")
         names.add(metadata["name"])
@@ -628,20 +664,29 @@ def _write(path: Path, text: str) -> None:
     path.write_text(text, encoding="utf-8")
 
 
-def _valid_fixture(root: Path) -> None:
-    guides = {
-        "premium": "ENG/premium-sites-studio-eng.md",
-        "clean": "ENG/clean-code-eng.md",
-        "test": "ENG/test-code-eng.md",
-        "security": "ENG/sec-code-eng.md",
-        "design": "ENG/design-code-eng.md",
-        "performance": "ENG/perf-code-eng.md",
-        "accessibility": "ENG/accessibility-eng.md",
-        "games": "ENG/games-code-design-web-eng.md",
-        "taste": "ENG/taste-frontend-eng.md",
-        "documentation": "ENG/documentation-quality-eng.md",
+def _fixture_guide_registry() -> dict[str, dict]:
+    return {
+        "premium": {"path": "ENG/premium-sites-studio-eng.md", "install": True},
+        "clean": {"path": "ENG/clean-code-eng.md", "install": True},
+        "test": {"path": "ENG/test-code-eng.md", "install": True},
+        "security": {"path": "ENG/sec-code-eng.md", "install": True},
+        "design": {"path": "ENG/design-code-eng.md", "install": True},
+        "taste": {"path": "ENG/taste-frontend-eng.md", "install": True},
+        "performance": {"path": "ENG/perf-code-eng.md", "install": True},
+        "accessibility": {"path": "ENG/accessibility-eng.md", "install": True},
+        "games": {"path": "ENG/games-code-design-web-eng.md", "install": True},
+        "documentation": {"path": "ENG/documentation-quality-eng.md", "install": True},
     }
-    for guide_path in guides.values():
+
+
+def _valid_fixture(root: Path) -> None:
+    registry = _fixture_guide_registry()
+    _write(
+        root / "src" / "config" / "guides.json",
+        json.dumps(registry, indent=2) + "\n",
+    )
+    for guide_id, def_data in registry.items():
+        guide_path = def_data["path"]
         path = root / guide_path
         _write(
             path,
@@ -650,7 +695,8 @@ def _valid_fixture(root: Path) -> None:
             "language: en\n"
             'description: "Fixture guide."\n'
             f'version: "{GUIDE_VERSION}"\n'
-            f'last-reviewed: "{GUIDE_LAST_REVIEWED}"\n'
+            f'last-reviewed: "{FIXTURE_GUIDE_LAST_REVIEWED}"\n'
+            f"guide-id: {guide_id}\n"
             "---\n"
             "# Guide\n",
         )
@@ -698,8 +744,8 @@ def _valid_fixture(root: Path) -> None:
     )
 
     catalog = "\n".join(
-        f"| `{guide_id}` | [Guide](./{guide_path}) |"
-        for guide_id, guide_path in guides.items()
+        f"| `{guide_id}` | [Guide](./{def_data['path']}) |"
+        for guide_id, def_data in registry.items()
     )
     scenarios = {
         "landing-page-premium": "premium,design,taste,accessibility,clean,test,security,performance",
@@ -918,6 +964,53 @@ def run_self_tests() -> None:
         finally:
             (outside / "LOOP_ENGINEERING.md").unlink(missing_ok=True)
             outside.rmdir()
+        root = Path(directory)
+        _valid_fixture(root)
+        (root / "src" / "config" / "guides.json").unlink()
+        _expect_invalid(root, "missing canonical guide registry")
+        cases += 1
+
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        _valid_fixture(root)
+        _write(root / "src" / "config" / "guides.json", "{ invalid json")
+        _expect_invalid(root, "invalid guide registry JSON")
+        cases += 1
+
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        _valid_fixture(root)
+        orphan = root / "ENG" / "orphan-eng.md"
+        _write(
+            orphan,
+            "---\n"
+            "name: orphan-eng\n"
+            "language: en\n"
+            'description: "Fixture guide."\n'
+            'version: "2026.09"\n'
+            'last-reviewed: "2026-08-17"\n'
+            "guide-id: orphan\n"
+            "---\n"
+            "# Guide\n",
+        )
+        _expect_invalid(root, "unregistered guide files")
+        cases += 1
+
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        _valid_fixture(root)
+        (root / "ENG" / "clean-code-eng.md").unlink()
+        _expect_invalid(root, "registered guide files missing")
+        cases += 1
+
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        _valid_fixture(root)
+        registry = _fixture_guide_registry()
+        registry["clean"]["install"] = "yes"
+        _write(root / "src" / "config" / "guides.json", json.dumps(registry))
+        _expect_invalid(root, "invalid install flag")
+        cases += 1
 
     print(f"loop self-tests passed: {cases} cases")
 
@@ -932,10 +1025,12 @@ def main() -> int:
         if args.self_test:
             run_self_tests()
         else:
-            validate_repository(args.root.resolve())
+            resolved_root = args.root.resolve()
+            validate_repository(resolved_root)
+            guides = load_guide_registry(resolved_root)
             print(
                 "validated loop system: "
-                f"{len(ADAPTERS)} adapters, {len(GUIDES)} English guides, "
+                f"{len(ADAPTERS)} adapters, {len(guides)} English guides, "
                 f"{len(ROUTING_SCENARIOS)} routing scenarios"
             )
         return 0
