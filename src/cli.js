@@ -99,6 +99,7 @@ function applyOption({ canonicalName, optionDef, inlineValue, argv, index, optio
       const value = inlineValue ?? argv[index + 1];
       if (
         value === undefined ||
+        (value.length === 0 && !optionDef.allowEmpty) ||
         (value.startsWith("-") && inlineValue === undefined && !optionDef.allowLeadingHyphen)
       ) {
         throw new Error(optionDef.missingValueMessage ?? `${canonicalName} requires a value`);

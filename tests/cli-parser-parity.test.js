@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { COMMANDS, parseArgs, parseCliSyntax } from "../src/cli.js";
-import { CLI_COMMAND_DEFINITIONS, buildOptionLookup } from "../src/core/cli-command-definitions.js";
+import { CLI_COMMAND_DEFINITIONS, CLI_COMMON_OPTIONS, buildOptionLookup } from "../src/core/cli-command-definitions.js";
 import { generateCliOptionsForCommand } from "../scripts/generate_documentation_reference.mjs";
 
 test("CLI definitions satisfy strict registry invariants", () => {
@@ -39,6 +39,53 @@ test("CLI definitions satisfy strict registry invariants", () => {
       if (optionDef.parseType === "argv") {
         assert.equal(optionName, "--", `${command} argv parseType must have canonical name --`);
       }
+
+      if (optionDef.allowEmpty) {
+        assert.equal(optionDef.parseType, "string", `${command} ${optionName} allowEmpty is valid only for string options`);
+        assert.equal(optionDef.takesValue, true, `${command} ${optionName} allowEmpty requires a value-taking option`);
+      }
+
+      if (optionDef.allowLeadingHyphen) {
+        assert.equal(optionDef.parseType, "string", `${command} ${optionName} allowLeadingHyphen is valid only for string options`);
+        assert.equal(optionDef.takesValue, true, `${command} ${optionName} allowLeadingHyphen requires a value-taking option`);
+      }
+    }
+  }
+});
+
+test("every command contains all CLI_COMMON_OPTIONS", () => {
+  for (const [command, definition] of Object.entries(CLI_COMMAND_DEFINITIONS)) {
+    for (const commonOption of Object.keys(CLI_COMMON_OPTIONS)) {
+      assert.ok(definition.options[commonOption], `${command} missing common option ${commonOption}`);
+    }
+  }
+});
+
+test("CLI aliases do not collide within a command", () => {
+  for (const [command, definition] of Object.entries(CLI_COMMAND_DEFINITIONS)) {
+    const seen = new Set();
+    for (const [canonical, optionDef] of Object.entries(definition.options)) {
+      if (optionDef.isPositional) continue;
+      assert.equal(seen.has(canonical), false, `${command} duplicate option ${canonical}`);
+      seen.add(canonical);
+      for (const alias of optionDef.aliases ?? []) {
+        assert.equal(seen.has(alias), false, `${command} alias collision: ${alias}`);
+        seen.add(alias);
+      }
+    }
+  }
+});
+
+test("CLI target keys do not collide unexpectedly within a command", () => {
+  for (const [command, definition] of Object.entries(CLI_COMMAND_DEFINITIONS)) {
+    const targetOwners = new Map();
+    for (const [name, optionDef] of Object.entries(definition.options)) {
+      if (optionDef.isPositional) continue;
+      const existing = targetOwners.get(optionDef.targetKey);
+      if (existing) {
+        throw new Error(`${command}: ${name} and ${existing} share targetKey ${optionDef.targetKey}`);
+      }
+      targetOwners.set(optionDef.targetKey, name);
     }
   }
 });
@@ -190,6 +237,36 @@ test("all value-taking long options support equals syntax", () => {
       assert.doesNotThrow(
         () => parseCliSyntax([command, `${optionName}=${sample}`]),
         `${command} ${optionName}=${sample} threw unexpectedly`,
+      );
+    }
+  }
+});
+
+test("string CLI options reject empty equals values and explicit empty argv values", () => {
+  assert.throws(() => parseCliSyntax(["status", "--path="]), /--path requires a directory/);
+  assert.throws(() => parseCliSyntax(["bundle", "--task="]), /--task requires an ID/);
+  assert.throws(() => parseCliSyntax(["record-check", "--id="]), /--id requires a check ID/);
+  assert.throws(() => parseCliSyntax(["bundle", "--task", ""]), /--task requires an ID/);
+  assert.throws(() => parseCliSyntax(["status", "--path", ""]), /--path requires a directory/);
+});
+
+test("all non-empty string CLI options reject empty inline values and empty argv values", () => {
+  for (const [command, definition] of Object.entries(CLI_COMMAND_DEFINITIONS)) {
+    for (const [optionName, optionDef] of Object.entries(definition.options)) {
+      if (optionDef.parseType !== "string" || optionDef.isPositional || optionDef.allowEmpty) {
+        continue;
+      }
+
+      assert.throws(
+        () => parseCliSyntax([command, `${optionName}=`]),
+        undefined,
+        `${command} ${optionName}= must reject empty values`,
+      );
+
+      assert.throws(
+        () => parseCliSyntax([command, optionName, ""]),
+        undefined,
+        `${command} ${optionName} "" must reject empty values`,
       );
     }
   }
