@@ -221,7 +221,8 @@ export function parseCliSyntax(argv) {
   };
 
   const command = discoverCommand(argv);
-  const optionLookup = buildOptionLookup(command);
+  const bootstrapLookup = buildOptionLookup(null);
+  const commandLookup = buildOptionLookup(command);
   const positionalDefs = getPositionalDefinitions(command);
   let positionalCursor = 0;
   const suppliedFlags = new Set();
@@ -236,7 +237,10 @@ export function parseCliSyntax(argv) {
     }
 
     if (argument === "--") {
-      const passthrough = optionLookup.get("--");
+      if (!commandSeen) {
+        throw new Error("-- is not valid before a command");
+      }
+      const passthrough = commandLookup.get("--");
       if (!passthrough) {
         throw new Error(`Unknown option: --`);
       }
@@ -246,7 +250,8 @@ export function parseCliSyntax(argv) {
     }
 
     const { name: optName, inlineValue } = splitLongOption(argument);
-    const matched = optionLookup.get(optName);
+    const activeLookup = commandSeen ? commandLookup : bootstrapLookup;
+    const matched = activeLookup.get(optName);
 
     if (matched) {
       const res = applyOption({
@@ -263,13 +268,20 @@ export function parseCliSyntax(argv) {
       continue;
     }
 
-    if (command && !argument.startsWith("-")) {
+    if (commandSeen && command && !argument.startsWith("-")) {
       const positional = positionalDefs[positionalCursor];
       if (positional) {
         options[positional.targetKey] = argument;
         positionalCursor += 1;
         continue;
       }
+    }
+
+    if (!commandSeen) {
+      if (!command) {
+        throw new Error(`Unknown option: ${argument}`);
+      }
+      throw new Error(`Option ${argument} is not valid before a command`);
     }
 
     if (command) {

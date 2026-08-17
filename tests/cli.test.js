@@ -391,9 +391,9 @@ test("CLI accepts global options before the command", async () => {
   await withTarget(async (target) => {
     const result = runCliDirect(
       repositoryRoot,
-      "--dry-run",
-      "init",
       `--path=${target}`,
+      "init",
+      "--dry-run",
     );
 
     assert.equal(result.status, 0, result.stderr);

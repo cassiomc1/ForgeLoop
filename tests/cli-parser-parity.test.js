@@ -80,12 +80,64 @@ test("CLI target keys do not collide unexpectedly within a command", () => {
   for (const [command, definition] of Object.entries(CLI_COMMAND_DEFINITIONS)) {
     const targetOwners = new Map();
     for (const [name, optionDef] of Object.entries(definition.options)) {
-      if (optionDef.isPositional) continue;
       const existing = targetOwners.get(optionDef.targetKey);
       if (existing) {
         throw new Error(`${command}: ${name} and ${existing} share targetKey ${optionDef.targetKey}`);
       }
       targetOwners.set(optionDef.targetKey, name);
+    }
+  }
+});
+
+test("bootstrap options are accepted before the command", () => {
+  const p1 = parseCliSyntax(["--path", "./repo", "status"]);
+  assert.equal(p1.command, "status");
+  assert.equal(p1.options.path, "./repo");
+
+  const p2 = parseCliSyntax(["--path=./repo", "status"]);
+  assert.equal(p2.command, "status");
+  assert.equal(p2.options.path, "./repo");
+
+  const p3 = parseCliSyntax(["-h"]);
+  assert.equal(p3.command, null);
+  assert.equal(p3.options.help, true);
+
+  const p4 = parseCliSyntax(["-v"]);
+  assert.equal(p4.command, null);
+  assert.equal(p4.options.version, true);
+});
+
+test("command-specific options are rejected before command discovery", () => {
+  assert.throws(() => parseCliSyntax(["--json", "status"]), /not valid before a command/);
+  assert.throws(() => parseCliSyntax(["--task", "abc", "bundle"]), /not valid before a command/);
+  assert.throws(() => parseCliSyntax(["--strict", "doctor"]), /not valid before a command/);
+  assert.throws(() => parseCliSyntax(["--", "node", "--version", "run-check"]), /not valid before a command/);
+});
+
+test("non-bootstrap options cannot appear before command", () => {
+  const bootstrapFlags = new Set(Object.keys(CLI_COMMON_OPTIONS));
+
+  for (const [command, definition] of Object.entries(CLI_COMMAND_DEFINITIONS)) {
+    for (const [optionName, optionDef] of Object.entries(definition.options)) {
+      if (optionDef.isPositional || optionName === "--" || bootstrapFlags.has(optionName)) {
+        continue;
+      }
+
+      let argv;
+      if (optionDef.takesValue) {
+        let sample = "sample";
+        if (optionDef.parseType === "json-object") sample = "{}";
+        if (optionDef.parseType === "non-negative-integer") sample = "0";
+        argv = [optionName, sample, command];
+      } else {
+        argv = [optionName, command];
+      }
+
+      assert.throws(
+        () => parseCliSyntax(argv),
+        /not valid before a command/,
+        `${command} ${optionName} unexpectedly allowed before command`,
+      );
     }
   }
 });

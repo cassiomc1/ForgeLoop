@@ -20,6 +20,19 @@ Commands that support structured machine-readable output document `--json` in th
 
 ---
 
+## CLI Syntax Contract
+
+ForgeLoop uses a definition-driven command-line parser:
+
+- **Bootstrap Options**: Before the command, only common options (`--path <directory>`, `--help`, `--version`, `-h`, `-v`) are accepted.
+- **Command-Specific Options**: Available after command discovery.
+- **Equals Syntax**: All value-taking long options support both `--option value` and `--option=value`.
+- **String Options**: Reject empty values by default (e.g. `--path=` or `--task=""` are rejected).
+- **Boolean Flags**: Never accept inline values (e.g. `--json=false` is rejected).
+- **Argv Passthrough**: Everything after a command's `--` passthrough marker is preserved exactly and is not parsed as ForgeLoop syntax.
+
+---
+
 ## Command Index by Purpose
 
 <!-- BEGIN FORGELOOP GENERATED: cli-command-index -->
