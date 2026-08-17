@@ -74,6 +74,8 @@ export async function migrateLegacyLayout(
     packageRoot = getPackageRoot(),
     afterCopyForTest = null,
     afterPublishForTest = null,
+    beforeLegacyCleanupForTest = null,
+    removeLegacyArtifactForTest = null,
   } = {},
 ) {
   const detection = await detectLegacySingletonLayout(target);
@@ -196,6 +198,9 @@ export async function migrateLegacyLayout(
     };
   }
 
+  let published = false;
+  let cleanupStarted = false;
+
   // 2. Create temporary migration directory
   await mkdir(tempDirAbs, { recursive: true });
 
@@ -275,6 +280,7 @@ export async function migrateLegacyLayout(
     // 8. Atomically publish
     await mkdir(ensureWithin(target, TASK_STATE_ROOT), { recursive: true });
     await rename(tempDirAbs, finalDirAbs);
+    published = true;
 
     // Test hook for corruption / failure testing after publication
     if (typeof afterPublishForTest === "function") {
@@ -302,10 +308,20 @@ export async function migrateLegacyLayout(
     assertMigrationSnapshotsEqual(sourceSnapshot, finalSnapshot, "published namespace");
     await readTaskDescriptor(target, canonicalTaskId, packageRoot);
 
+    // Test hook for cleanup failure testing
+    if (typeof beforeLegacyCleanupForTest === "function") {
+      await beforeLegacyCleanupForTest({ finalDirAbs, finalDirRel, target });
+    }
+
     // 10. Cleanup legacy task files (strictly after successful publish and validation)
+    cleanupStarted = true;
     try {
       for (const item of detection.legacyFiles) {
-        await removeLegacyArtifact(target, item.path);
+        if (typeof removeLegacyArtifactForTest === "function") {
+          await removeLegacyArtifactForTest(target, item.path);
+        } else {
+          await removeLegacyArtifact(target, item.path);
+        }
       }
     } catch (cleanupErr) {
       const error = new Error(
@@ -324,12 +340,20 @@ export async function migrateLegacyLayout(
       migratedArtifacts,
     };
   } catch (error) {
+    if (published && !cleanupStarted && (await fileExists(finalDirAbs))) {
+      try {
+        await rm(finalDirAbs, { recursive: true, force: true });
+      } catch (rollbackErr) {
+        error.rollbackError = rollbackErr;
+      }
+    }
+
     // Cleanup temp dir on failure if it still exists
     if (await fileExists(tempDirAbs)) {
       try {
         await rm(tempDirAbs, { recursive: true, force: true });
-      } catch {
-        // ignore
+      } catch (tempErr) {
+        error.tempCleanupError = tempErr;
       }
     }
     throw error;

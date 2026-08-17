@@ -400,6 +400,94 @@ test("migration rejects post-publish corruption when published namespace fingerp
         }),
       (error) => error.code === E_TASK_MIGRATION_INVALID,
     );
+
+    const taskKey = taskStorageKey("post-publish-corrupt-task");
+    const finalDir = path.join(target, ".forgeloop", "task-state", taskKey);
+
+    // Assert invalid published namespace was rolled back before cleanup started
+    assert.equal(
+      await fileExists(finalDir),
+      false,
+      "Invalid published namespace must be rolled back before legacy cleanup begins",
+    );
+
+    // Assert legacy source files remain intact
+    assert.equal(
+      await fileExists(path.join(target, ".forgeloop", "current-contract.json")),
+      true,
+      "Legacy contract must remain intact",
+    );
+    assert.equal(
+      await fileExists(path.join(target, ".forgeloop", "work-state.json")),
+      true,
+      "Legacy state must remain intact",
+    );
+
+    // Assert retry succeeds cleanly
+    const retry = await migrateLegacyLayout(target, { packageRoot });
+    assert.equal(retry.migrated, true);
+    assert.equal(retry.taskId, "post-publish-corrupt-task");
+    assert.equal(
+      await fileExists(finalDir),
+      true,
+      "Final task directory must exist after successful retry",
+    );
+    assert.equal(
+      await fileExists(path.join(target, ".forgeloop", "current-contract.json")),
+      false,
+      "Legacy contract must be cleaned up after successful retry",
+    );
+  });
+});
+
+test("migration preserves valid published namespace if legacy cleanup fails after publication", async () => {
+  await withTarget(async (target) => {
+    const contract = createContract({
+      taskId: "cleanup-fail-task",
+      objective: "Test cleanup failure preservation",
+      deliverables: ["src/index.js"],
+      constraints: ["none"],
+      risks: ["low"],
+      verification: ["tests"],
+      successCriteria: ["tests pass"],
+      stopConditions: ["error"],
+      unresolvedDecisions: [],
+      sourceRefs: ["src"],
+    });
+    await writeContract(target, contract, packageRoot);
+
+    const state = createWorkState({
+      taskId: "cleanup-fail-task",
+      contractFingerprint: "0".repeat(64),
+      repositoryFingerprint: { branch: null, head: null },
+      phase: "PLANNED",
+      completedSteps: [],
+      pendingSteps: [],
+      checks: [],
+      failures: [],
+      blockers: [],
+    });
+    await writeWorkState(target, state, { packageRoot });
+
+    // In removeLegacyArtifactForTest, throw to simulate failure during cleanup
+    await assert.rejects(
+      () =>
+        migrateLegacyLayout(target, {
+          packageRoot,
+          removeLegacyArtifactForTest: async () => {
+            throw new Error("Simulated filesystem cleanup failure");
+          },
+        }),
+      (error) => error.code === E_TASK_MIGRATION_INVALID && error.message.includes("legacy cleanup failed"),
+    );
+
+    const taskKey = taskStorageKey("cleanup-fail-task");
+    const finalDir = path.join(target, ".forgeloop", "task-state", taskKey);
+    assert.equal(
+      await fileExists(finalDir),
+      true,
+      "Valid published namespace must be preserved if cleanup fails",
+    );
   });
 });
 
