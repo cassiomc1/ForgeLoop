@@ -68,6 +68,7 @@ A tool is a candidate, not a ranking winner. Record the decision in the reposito
 | Real services | [Testcontainers](https://testcontainers.com/), stack-native harness | required fidelity, container availability, time, and CI isolation |
 | HTTP/event contracts | [Pact](https://docs.pact.io/), OpenAPI/JSON Schema/GraphQL schema | consumer/provider ownership, versioning, and compatibility across deployments |
 | Performance | [k6](https://grafana.com/docs/k6/latest/), [Gatling](https://docs.gatling.io/), [JMeter](https://jmeter.apache.org/usermanual/), or [Locust](https://docs.locust.io/) | protocol, load model, volume, distribution, metrics, and team operability |
+| React code quality diagnostics | [React Doctor](https://github.com/millionco/react-doctor) plus the project's existing lint/test/type/a11y/security tools | candidate supplemental scan for React targets; evaluate framework compatibility, version pinning, network/install policy, telemetry policy, false positives, changed-code scope, and whether findings overlap existing gates |
 
 Mocks, stubs, and fakes belong in isolated tests. For integration, prefer disposable dependencies equivalent to production when this reduces relevant differences. Typing, linting, and static analysis complement tests; they do not replace executing behavior.
 
@@ -84,9 +85,53 @@ Run only the rows applicable to the product and recorded risk. A tool name witho
 | Laravel | middleware, validation, policies/auth, queues, and database are not exercised by a pure unit test | separate unit from feature/HTTP/database tests; fake only the boundary outside the oracle and verify persisted effects; approve a critical endpoint with applicable auth, validation, response, database, and job/event evidence | [Laravel — testing](https://laravel.com/docs/12.x/testing), [HTTP tests](https://laravel.com/docs/12.x/http-tests), and [database testing](https://laravel.com/docs/12.x/database-testing) |
 | HTML and HyperFrames | invalid markup, overflow, nondeterministic timing, or an incorrect critical frame | validate HTML; run `hyperframes lint`/`hyperframes check` when exposed by the pinned version; preview/render declared formats and review critical frames/boundaries; any structural, timing, or layout error blocks | [WHATWG — validators](https://whatwg.org/validator/), [Nu HTML Checker](https://validator.w3.org/nu/), and [HyperFrames](https://hyperframes.heygen.com) |
 | CSS and visual regression | cascade, responsiveness, theme, font, or environment changes layout/behavior | run Stylelint and semantic/interaction assertions; compare screenshots only in a controlled environment and risk matrix; diffs require explicit review and the gate does not depend on a generated CSS snapshot | [Stylelint](https://stylelint.io/user-guide/get-started/) and [Playwright visual comparisons](https://playwright.dev/docs/test-snapshots) |
+| React quality diagnostics | regressions in state/effects, performance, accessibility, security, or component architecture | run React Doctor when pinned/authorized; scope to changed files; triage findings against project risk and preserve exit code and findings as check evidence | [React Doctor](https://github.com/millionco/react-doctor) |
 | Terraform | valid configuration produces unexpected replace/destroy, cost, exposure, or state | run `fmt`/`validate`, test module assertions, and review `plan`; use a dedicated account/environment for `terraform test` that creates resources; block unexpected actions and confirm cleanup of every test resource | [Terraform validate](https://developer.hashicorp.com/terraform/cli/commands/validate), [test](https://developer.hashicorp.com/terraform/cli/commands/test), and [plan](https://developer.hashicorp.com/terraform/cli/commands/plan) |
 | Kubernetes and containers | a schema accepted locally fails in-cluster, or rollout/probe/rollback/image behavior diverges | use strict validation and server-side dry-run; use an ephemeral cluster when rollout/controller risk justifies it; run build checks and image smoke; the gate covers probes, resources, permissions, applicable rollback, and cleanup | [kubectl apply](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_apply/) and [Docker build checks](https://docs.docker.com/reference/build-checks/) |
 | Ansible | a playbook is not idempotent, makes a destructive change, or reaches an incorrect state | run syntax/check when safe and a Molecule scenario with converge, verify, idempotence, and destroy according to risk; approve only if the second convergence causes no unintended change and the environment is cleaned | [Ansible Molecule](https://docs.ansible.com/projects/molecule/) and [test sequence](https://docs.ansible.com/projects/molecule/usage/) |
+
+### React Doctor — optional supplemental React diagnostics
+
+For a React target, [React Doctor](https://github.com/millionco/react-doctor) may be used as a supplemental static/quality scan when it is already available or its execution/install is explicitly authorized. It reports diagnostics across React correctness/state, performance, architecture, security, accessibility, and related design rules.
+
+It does not replace the target's type checker, linter, unit/integration/E2E tests, security review, accessibility review, or performance evidence.
+
+Before using it:
+
+1. **Identify version**: Determine the exact pinned/adopted version.
+2. **Follow authority policy**: Determine whether invocation downloads code or changes the environment; follow the target's authorization/network policy.
+3. **Telemetry policy**: Review the tool's current telemetry behavior and disable telemetry when target policy requires it.
+4. **Scope appropriately**: Select a scope that matches the task (`changed`/equivalent when supported) rather than turning an unrelated existing backlog into a new completion requirement.
+5. **Preserve evidence**: Retain the actual findings, exit status, version, and command as evidence.
+6. **Risk-based triage**: Triage findings by real project risk instead of treating the numeric score as the pass/fail oracle.
+
+Command examples:
+
+```bash
+# If the project already has a pinned React Doctor command:
+npm run react-doctor -- --verbose --scope changed
+
+# If an authorized one-off remote invocation is explicitly allowed:
+npx react-doctor@<PINNED_VERSION> --no-telemetry --verbose --scope changed
+```
+
+> [!NOTE]
+> Verify current upstream CLI syntax before execution; external command flags are not part of the ForgeLoop protocol contract.
+
+Evidence integration:
+
+A successful observed run may be recorded through ForgeLoop's existing check mechanism:
+
+```bash
+forgeloop run-check \
+  --task <task-id> \
+  --id react-doctor-changed \
+  --requirement react-quality \
+  -- <project-owned-react-doctor-command>
+```
+
+- **Score Semantics**: A React Doctor score is diagnostic telemetry, not a universal gate. The target contract or project policy may define a versioned threshold, but absent such a contract ForgeLoop evaluates concrete findings against applicable correctness, accessibility, security, performance, and architecture requirements.
+- **False Positives**: When a finding is disputed, inspect the exact rule and project context. A suppression/config change is a code-quality policy change and requires the same review as other lint/static-analysis configuration changes; do not disable a rule merely to make a score increase.
 
 ## Fixtures, cassettes, and oracles
 

@@ -342,7 +342,10 @@ Select references for a product problem; they do not override project tokens or 
 
 - **Technical diagrams and architecture flows**: for polished Mermaid-based architecture and workflow diagrams, use [Beautiful Mermaid by Craft](https://agents.craft.do/mermaid) when relevant; preserve canonical Mermaid source, local versioned SVG assets, and do not treat presentation tooling as a mandatory protocol gate or runtime dependency.
 - **Component source and interaction inspiration**: use [21st.dev](https://21st.dev/) to study components and interactions; inspect each source, dependency, community contribution, and premium-material term before adoption.
+- **AI-agent and conversational UI reference**: use [AIcss](https://www.aicss.dev/) to study specialized AI-agent and assistant interfaces (streaming responses, tool/action states, diffs, citations, structured outputs, agent inputs, and approval cards) when the target actually has an AI-agent surface.
 - **React component and motion reference**: use [React Bits](https://reactbits.dev/) to discover animated React components and interaction patterns, and inspect the [React Bits source repository](https://github.com/DavidHDev/react-bits) before adopting code. Use it only when the target stack is React or when a deliberate, reviewed adaptation is appropriate. Prefer the smallest component or pattern that solves the product need; do not install or copy the entire library by default. Inspect the exact component source, transitive dependencies, license/usage terms, accessibility behavior, reduced-motion behavior, responsive behavior, and runtime cost before adoption. Adapt tokens, typography, spacing, states, semantics, and motion to the target project's design system instead of preserving React Bits defaults.
+- **React and Next.js animated components**: use [beUI](https://beui.dev/) and its [source repository](https://github.com/starc007/ui-components) to study React/Next.js animated components built with Motion and Tailwind; prefer source-level adoption of the smallest matching component when the target stack fits.
+- **Page and theme transitions**: use [Transition Kit](https://transition-kit.space/) and its [source repository](https://github.com/AbdullahMukadam/Transition-kit) as a reference for CSS-first page and theme transitions built around the View Transitions API; use as progressive enhancement only with functional fallback.
 - **Component inspiration**: use [Fancy Components](https://www.fancycomponents.dev/) to study component composition; verify its terms separately from Motion, Tailwind, shadcn, or other dependencies.
 - **Motion primitives**: use [Motion Primitives](https://motion-primitives.com/) to study discrete interaction patterns; distinguish documented open-source material from its Pro offering and verify component/dependency terms.
 - **Component and design-system research**: use [Component Gallery](https://component.gallery/) for comparison, not for license assumptions.
@@ -350,6 +353,25 @@ Select references for a product problem; they do not override project tokens or 
 - **Pointer enhancement**: activate [Cursify](https://cursify.ui-layouts.com/) only when `(hover: hover) and (pointer: fine)`; retain native controls and default cursor behavior, with equivalent tap interaction for touch/coarse pointers.
 - **Typography discovery**: verify each [UNCUT](https://uncut.wtf/) font's author, license, weights, and hosting rights.
 - **Creative coding and WebGL**: [cables.gl](https://cables.gl/) requires a semantic fallback, pause/offscreen behavior, a performance budget, and asset/operator provenance.
+
+### External UI/component reference adoption
+
+External galleries, component registries, motion libraries, and UI references are discovery inputs, not product requirements.
+
+Before materially adopting an external component or interaction:
+
+1. define the concrete UI need first;
+2. confirm the target stack and existing design system;
+3. inspect the exact component/source rather than relying on a gallery preview;
+4. verify current license/terms and any premium/free boundary;
+5. inspect runtime dependencies and avoid introducing a second animation or UI stack without a measured reason;
+6. verify keyboard/focus semantics, contrast, responsive behavior, touch, loading/error/disabled states, and reduced motion;
+7. evaluate bundle/runtime cost and browser/platform support;
+8. adapt the smallest useful source into the target project's tokens, architecture, and component conventions;
+9. record source/provenance when materially adopted;
+10. re-run target-project verification after adaptation.
+
+Do not install or copy an entire component library merely because one example looks useful. When React Bits, beUI, Motion Primitives, or another motion/component source could all satisfy the same need, choose one smallest compatible implementation; do not combine libraries for variety. ForgeLoop itself must not gain a dependency on any resource listed in this section.
 
 ### React Bits — operational use for React interfaces
 
@@ -385,6 +407,49 @@ Adoption workflow:
 11. **Record provenance.** When code or a material implementation pattern is adopted, record React Bits as an external source in the task/project attribution or source record when applicable.
 
 ForgeLoop runtime must not gain a dependency on React Bits as a result of this guidance. Any installation belongs to the target project and remains subject to normal authorization and dependency policy.
+
+### AIcss — contextual AI-agent and conversational UI reference
+
+[AIcss](https://www.aicss.dev/) is a specialized reference for AI-agent and conversational product surfaces (streaming responses, tool/action execution states, diffs, citations, structured outputs, agent inputs, and approval/status cards).
+
+Use AIcss as a candidate only when at least one of these is in scope:
+
+- streamed assistant output;
+- visible tool execution/status;
+- source citations;
+- file/code diffs;
+- structured agent results;
+- agent-specific input/approval interaction.
+
+For ordinary SaaS, editorial, portfolio, or marketing UI without those surfaces, use general component/design references instead.
+
+> [!IMPORTANT]
+> **Safety and Hidden-Reasoning Boundary**: AIcss labels such as "thinking" or "reasoning" describe presentation patterns, not an evidence source. They do not authorize exposing private chain-of-thought or hidden model state. Prefer concise observable progress/status information that the target product is permitted to show.
+
+### beUI — React/Next animated component source
+
+[beUI](https://beui.dev/) and its source repository [starc007/ui-components](https://github.com/starc007/ui-components) provide copy-paste animated components for React/Next.js using Motion and Tailwind.
+
+- **Smallest-Adoption Rule**: Prefer source-level adoption of the smallest matching component. Do not run its shadcn command, install its agent skill, or add Motion/Tailwind merely because the catalog is available. Any installation belongs to the target project and follows normal authorization and dependency policy.
+- **Verification Expectations**: For any materially adopted animated component, verify keyboard/focus access, touch targets, reduced-motion behavior (`prefers-reduced-motion`), responsive reflow at 320 CSS px, loading/error/disabled states, console/runtime errors, and bundle/runtime impact.
+
+### Transition Kit — progressive-enhancement page and theme transitions
+
+[Transition Kit](https://transition-kit.space/) and its source repository [AbdullahMukadam/Transition-kit](https://github.com/AbdullahMukadam/Transition-kit) provide CSS-first page and theme transitions built around the View Transitions API.
+
+For Transition Kit or any View Transitions API effect:
+
+1. **Functional Base First**: The page navigation or theme switch action must work completely without the transition; enhancement never owns essential meaning or action.
+2. **Implementation-Time Capability Check**: Check current target-browser support for the View Transitions API at implementation time rather than assuming static support tables.
+3. **Graceful Fallback**: Unsupported browsers must receive a functional, immediate fallback without errors or layout shifts.
+4. **Reduced Motion**: Under `prefers-reduced-motion`, provide an equivalent static or near-instant path.
+5. **State Preservation**: Ensure focus management, navigation/history, scroll restoration, theme persistence, and interactive controls remain correct during and after transitions.
+6. **Motion Budget**: Transition duration and easing must respect the product motion budget.
+7. **No Protocol Dependency**: Adapt copied CSS/JS into the target project architecture instead of creating a ForgeLoop dependency.
+
+### Target-Project React Diagnostics Cross-Reference
+
+For React-specific supplemental diagnostics after implementation, including design-tagged findings when supported by the adopted version, see [`test-code-eng.md`](./test-code-eng.md). React Doctor is a verifier candidate, not a component/design source.
 
 ---
 

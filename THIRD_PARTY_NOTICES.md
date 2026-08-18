@@ -56,6 +56,16 @@ dependencies, version, and distribution conditions before adoption.
   workflow boundaries and public discoverability only.
 - Boundary: this repository links to Superpowers as a reference; it is not a dependency of `ForgeLoop`, and `ForgeLoop` does not copy, bundle, install, or vendor any Superpowers source, skill, hook, plugin, runtime, dependency, credential, or provider.
 
+### React Doctor
+
+- Project: [millionco/react-doctor](https://github.com/millionco/react-doctor).
+- Use in this collection: optional target-project React diagnostic/verifier
+  reference.
+- Boundary: React Doctor is not a ForgeLoop runtime dependency or universal
+  completion gate. ForgeLoop does not automatically download, install, execute,
+  configure, or enable its CI/agent integrations. Verify current upstream
+  license, CLI, telemetry, network behavior, and dependencies before use.
+
 ### Runtime and validator boundary
 
 The distributed CLI and repository validators use Node.js and Python standard
@@ -87,14 +97,27 @@ network behavior, and distribution terms separately.
 
 ## Design reference sites
 
-The following nine sites are references in the design guide. None is a
+The following sites are references in the design guide. None is a
 dependency of this collection or a blanket permission to reuse code, assets,
 fonts, templates, or other material.
 
 - [21st.dev](https://21st.dev/): component and template registry; check the
   terms for the specific author, community contribution, or paid material.
+- [AIcss](https://www.aicss.dev/): AI-agent interface pattern and component
+  reference; verify current terms, provenance, dependencies, and reuse rights
+  for the exact block before copying or redistributing it.
 - [React Bits](https://reactbits.dev/): component and motion reference; keep
   public/free material, React Bits Pro, and dependency terms separate.
+- [beUI](https://beui.dev/) / source
+  [starc007/ui-components](https://github.com/starc007/ui-components):
+  React/Next.js animated component reference; verify current terms, license,
+  Motion/Tailwind dependencies, and accessibility/reduced-motion behavior before
+  adoption.
+- [Transition Kit](https://transition-kit.space/) / source
+  [AbdullahMukadam/Transition-kit](https://github.com/AbdullahMukadam/Transition-kit):
+  CSS-first page/theme transition reference around the View Transitions API;
+  verify current terms, browser compatibility, and fallback behavior before
+  adoption.
 - [Fancy Components](https://www.fancycomponents.dev/): component reference;
   verify the linked source license and each dependency before reuse.
 - [Motion Primitives](https://motion-primitives.com/): motion reference; keep

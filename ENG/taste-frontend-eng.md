@@ -107,8 +107,9 @@ Use the existing product system when one is present. If the target has no
 system, choose a small coherent set of semantic tokens, components, states,
 and usage rules that the team can maintain. A vendor guide, gallery, template,
 or AI output can inform a direction, but it is not evidence of product fit,
-license, accessibility, or performance. For React-specific external component
-or motion references, follow the React Bits adoption rules in
+license, accessibility, or performance. For external component, AI-interface,
+or motion references — including React Bits, AIcss, beUI, and Transition Kit
+when contextually applicable — follow the canonical adoption rules in
 [`design-code-eng.md`](./design-code-eng.md) rather than treating a gallery
 component as a project design-system default. Keep any external reference in
 the task's source and attribution records; do not add a network dependency to
