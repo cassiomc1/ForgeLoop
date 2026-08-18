@@ -60,7 +60,7 @@ invariants and record why a skipped phase was not applicable.
 
 - `COMPLETE` requires verification evidence current to the task.
 - `BLOCKED` requires blocker evidence, a category, and a safe next action.
-- `CORRECTING` requires an append-only diagnosis event recorded in the event ledger (`DIAGNOSIS_RECORDED`) with non-zero information gain (`informationGain !== "NONE"`).
+- `CORRECTING` requires a diagnosed hypothesis recorded in the event ledger (`DIAGNOSIS_RECORDED`) with non-zero information gain (`informationGain !== "NONE"`).
 - `REVIEWING` cannot claim independent review when reviewer and implementer
   identities are equal.
 - `REVIEWING → VERIFYING` requires a persisted evidence-only completion
