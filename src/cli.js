@@ -26,6 +26,9 @@ import { formatPrepareCompletionResult, runPrepareCompletion } from "./commands/
 import { formatRecordCheckResult, runRecordCheck } from "./commands/record-check.js";
 import { formatRunCheckResult, runCheck } from "./commands/run-check.js";
 import { formatRecordTerminalResult, runRecordTerminalResult } from "./commands/record-terminal-result.js";
+import { formatRecordDiagnosisResult, runRecordDiagnosis } from "./commands/record-diagnosis.js";
+import { formatProgressResult, runProgress } from "./commands/progress.js";
+import { formatRecordDecisionCriterionResult, runRecordDecisionCriterion } from "./commands/record-decision-criterion.js";
 import { formatNextActionResult, runNext } from "./commands/next.js";
 import { formatContinuityResult, runContinuity } from "./commands/continuity.js";
 import { formatRecordContinuityResult, runRecordContinuity } from "./commands/record-continuity.js";
@@ -498,6 +501,36 @@ export const COMMAND_HANDLERS = Object.freeze({
       taskId: options.task,
     });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatRecordTerminalResult(result));
+    return 0;
+  },
+  "record-diagnosis": async ({ target, packageRoot, options }) => {
+    const result = await runRecordDiagnosis({
+      target,
+      packageRoot,
+      hypothesis: options.hypothesis,
+      failureClass: options.failureClass,
+      evidenceRefs: options.evidenceRefs,
+      settledBy: options.settledBy,
+      nextSafeAction: options.nextSafeAction,
+      taskId: options.task,
+    });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatRecordDiagnosisResult(result));
+    return 0;
+  },
+  progress: async ({ target, packageRoot, options }) => {
+    const result = await runProgress({ target, packageRoot, taskId: options.task });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatProgressResult(result));
+    return result.status === "STALLED" ? 1 : 0;
+  },
+  "record-decision-criterion": async ({ target, packageRoot, options }) => {
+    const result = await runRecordDecisionCriterion({
+      target,
+      packageRoot,
+      decision: options.decision,
+      settledBy: options.settledBy,
+      taskId: options.task,
+    });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatRecordDecisionCriterionResult(result));
     return 0;
   },
   complete: async ({ target, packageRoot, options }) => {

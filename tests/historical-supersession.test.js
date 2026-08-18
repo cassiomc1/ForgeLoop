@@ -12,6 +12,7 @@ import { recordManualCheck } from "./helpers/record-check-compat.js";
 const recordCheck = (input) => recordManualCheck(recordCheckArtifact, input);
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { appendProtocolEvent } from "../src/core/events.js";
+import { recordDiagnosis } from "../src/core/diagnosis.js";
 import { advanceWorkState } from "../src/core/phase.js";
 import { NEXT_ACTIONS, getNextAction } from "../src/core/next-action.js";
 import { evaluateRoute } from "../src/core/router.js";
@@ -101,14 +102,20 @@ test("Test A & D: Historical Fail in cycle 1 -> New Pass in cycle 2 with same ID
 
     // Enter DIAGNOSING -> CORRECTING -> VERIFYING (cycle 2)
     await advanceWorkState(target, "DIAGNOSING", { packageRoot });
-    let state = await readWorkState(target, packageRoot);
-    state.diagnosedHypothesis = "Fixed bug in math logic";
-    await writeWorkState(target, state, { packageRoot });
+    await recordDiagnosis({
+      target,
+      packageRoot,
+      hypothesis: "Fixed bug in math logic",
+      failureClass: "VERIFICATION_FAILURE",
+      evidenceRefs: ["unit-tests"],
+      settledBy: "Pass tests",
+      nextSafeAction: "Fix bug",
+    });
 
     await advanceWorkState(target, "CORRECTING", { packageRoot });
     await advanceWorkState(target, "VERIFYING", { packageRoot });
 
-    state = await readWorkState(target, packageRoot);
+    let state = await readWorkState(target, packageRoot);
     assert.equal(state.verificationCycle, 2);
 
     // Cycle 2: record passing check with same ID
@@ -150,9 +157,15 @@ test("Test E: Historical Fail in cycle 1 -> New Pass in cycle 2 with DIFFERENT c
 
     // Advance to DIAGNOSING -> CORRECTING -> VERIFYING (cycle 2)
     await advanceWorkState(target, "DIAGNOSING", { packageRoot });
-    let state = await readWorkState(target, packageRoot);
-    state.diagnosedHypothesis = "Resolved failure";
-    await writeWorkState(target, state, { packageRoot });
+    await recordDiagnosis({
+      target,
+      packageRoot,
+      hypothesis: "Resolved failure",
+      failureClass: "VERIFICATION_FAILURE",
+      evidenceRefs: ["tests-old"],
+      settledBy: "Pass tests",
+      nextSafeAction: "Fix bug",
+    });
 
     await advanceWorkState(target, "CORRECTING", { packageRoot });
     await advanceWorkState(target, "VERIFYING", { packageRoot });
@@ -170,7 +183,7 @@ test("Test E: Historical Fail in cycle 1 -> New Pass in cycle 2 with DIFFERENT c
     });
 
     // Verify historical check is still persisted
-    state = await readWorkState(target, packageRoot);
+    let state = await readWorkState(target, packageRoot);
     assert.equal(state.checks.length, 2);
     assert.ok(state.checks.some((c) => c.id === "tests-old" && c.status === "failed"));
     assert.ok(state.checks.some((c) => c.id === "tests-new" && c.status === "passed"));
@@ -203,9 +216,15 @@ test("Test B: Historical Blocked in cycle 1 -> New Pass in cycle 2 results in EN
 
     // Advance through correction cycle
     await advanceWorkState(target, "DIAGNOSING", { packageRoot });
-    let state = await readWorkState(target, packageRoot);
-    state.diagnosedHypothesis = "Unlocked test harness";
-    await writeWorkState(target, state, { packageRoot });
+    await recordDiagnosis({
+      target,
+      packageRoot,
+      hypothesis: "Unlocked test harness",
+      failureClass: "ENVIRONMENT_FAILURE",
+      evidenceRefs: ["browser-check-c1"],
+      settledBy: "Pass tests",
+      nextSafeAction: "Fix env",
+    });
 
     await advanceWorkState(target, "CORRECTING", { packageRoot });
     await advanceWorkState(target, "VERIFYING", { packageRoot });
@@ -247,11 +266,29 @@ test("Test C: Historical Pass in cycle 1 -> New Fail in cycle 2 results in DIAGN
     let next = await getNextAction(target, packageRoot);
     assert.equal(next.nextAction, NEXT_ACTIONS.ENTER_REVIEWING);
 
+    // Cycle 1 also had a failure to investigate
+    await recordCheck({
+      target,
+      packageRoot,
+      id: "test-c1-fail",
+      requirement: "tests",
+      status: "failed",
+      evidenceKind: "OBSERVED",
+      command: "npm test",
+      result: "Investigating failure",
+    });
+
     // Advance to cycle 2 through correction transition
     await advanceWorkState(target, "DIAGNOSING", { packageRoot });
-    let state = await readWorkState(target, packageRoot);
-    state.diagnosedHypothesis = "Investigating regression";
-    await writeWorkState(target, state, { packageRoot });
+    await recordDiagnosis({
+      target,
+      packageRoot,
+      hypothesis: "Investigating regression",
+      failureClass: "VERIFICATION_FAILURE",
+      evidenceRefs: ["test-c1-fail"],
+      settledBy: "Pass tests",
+      nextSafeAction: "Fix bug",
+    });
 
     await advanceWorkState(target, "CORRECTING", { packageRoot });
     await advanceWorkState(target, "VERIFYING", { packageRoot });

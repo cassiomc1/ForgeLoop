@@ -21,6 +21,7 @@ import { createContract, contractFingerprint, writeContract } from "../src/core/
 import { coverageForRequirements } from "../src/core/coverage.js";
 import { createEvidence } from "../src/core/evidence.js";
 import { appendProtocolEvent, validateEventLedger } from "../src/core/events.js";
+import { diagnosisFingerprint } from "../src/core/diagnosis-model.js";
 import { createGate } from "../src/core/gates.js";
 import { persistGate } from "../src/core/gate-artifact.js";
 import { advanceWorkState } from "../src/core/phase.js";
@@ -177,7 +178,28 @@ async function setupTarget(target, {
     await appendProtocolEvent(target, { taskId: contract.taskId, event: "EXECUTION_STARTED" }, packageRoot);
   }
   if (["VERIFYING", "DIAGNOSING", "CORRECTING", "REVIEWING", "COMPLETE"].includes(phase)) {
-    await appendProtocolEvent(target, { taskId: contract.taskId, event: "VERIFICATION_STARTED" }, packageRoot);
+    await appendProtocolEvent(target, { taskId: contract.taskId, event: "VERIFICATION_STARTED", details: { verificationCycle: 1 } }, packageRoot);
+    if (diagnosedHypothesis) {
+      await appendProtocolEvent(target, {
+        taskId: contract.taskId,
+        event: "DIAGNOSIS_RECORDED",
+        details: {
+          verificationCycle: 1,
+          failureClass: "VERIFICATION_FAILURE",
+          hypothesis: diagnosedHypothesis,
+          evidenceRefs: ["check-1"],
+          settledBy: "Pass tests",
+          nextSafeAction: "Fix bug",
+          informationGain: "FIRST_DIAGNOSIS",
+          diagnosisFingerprint: diagnosisFingerprint({
+            failureClass: "VERIFICATION_FAILURE",
+            hypothesis: diagnosedHypothesis,
+            evidenceRefs: ["check-1"],
+          }),
+          previousDiagnosisFingerprint: null,
+        },
+      }, packageRoot);
+    }
   }
 
   if (staleRoute) {
@@ -601,20 +623,21 @@ test("normal next-driven success path prepares the receipt before record-check",
   });
 });
 
-test("diagnosis guidance is executable only after a hypothesis is persisted", async (t) => {
-  await t.test("missing hypothesis returns deterministic repair guidance", async () => {
+test("diagnosis guidance is executable only after a diagnosis is recorded", async (t) => {
+  await t.test("missing diagnosis returns RECORD_DIAGNOSIS and command spec", async () => {
     await withTarget(async (target) => {
       await setupTarget(target, { phase: "DIAGNOSING" });
       const next = await getNextAction({ target, packageRoot });
 
-      assertStableAction(next, NEXT_ACTIONS.RESOLVE_BLOCKER);
-      assert.ok(next.reasonCodes.includes("E_DIAGNOSIS_HYPOTHESIS_MISSING"));
+      assertStableAction(next, NEXT_ACTIONS.RECORD_DIAGNOSIS);
+      assert.ok(next.reasonCodes.includes("E_DIAGNOSIS_REQUIRED"));
       assert.equal(next.commands.includes("forgeloop advance --to CORRECTING"), false);
-      assert.ok(next.requiredArtifacts.includes(ARTIFACT_PATHS.state));
+      assert.equal(next.commandSpecs.some((s) => s.commandId === "record-diagnosis"), true);
+      assert.ok(next.requiredArtifacts.includes(ARTIFACT_PATHS.events));
     });
   });
 
-  await t.test("persisted hypothesis retains the correction action and legal phase command", async () => {
+  await t.test("persisted diagnosis retains the correction action and legal phase command", async () => {
     await withTarget(async (target) => {
       await setupTarget(target, { phase: "DIAGNOSING", diagnosedHypothesis: "fixture diagnosis" });
       const next = await getNextAction({ target, packageRoot });

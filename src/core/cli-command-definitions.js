@@ -1,5 +1,5 @@
 /**
- * Canonical, declarative definition of all 33 ForgeLoop CLI commands.
+ * Canonical, declarative definition of all 36 ForgeLoop CLI commands.
  * This is the machine source of truth for CLI option parsing, help text,
  * metadata, documentation generation, and conformance validation.
  *
@@ -316,6 +316,55 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     removes: [],
     mayExecuteExternalProcess: false,
     description: "Records external terminal result evidence (PUBLICATION or PRODUCTION_READINESS) into receipt.",
+  }),
+  "record-diagnosis": Object.freeze({
+    name: "record-diagnosis",
+    category: "lifecycle",
+    mutation: "MUTATING",
+    options: Object.freeze({
+      ...CLI_COMMON_OPTIONS,
+      ...CLI_TASK_OPTION,
+      "--hypothesis": Object.freeze({ targetKey: "hypothesis", parseType: "string", takesValue: true, valueName: "text", missingValueMessage: "--hypothesis requires text", description: "specific root-cause hypothesis explaining the verification failure" }),
+      "--failure-class": Object.freeze({ targetKey: "failureClass", parseType: "string", takesValue: true, valueName: "class", missingValueMessage: "--failure-class requires a class", description: "canonical failure class taxonomy" }),
+      "--evidence-ref": Object.freeze({ targetKey: "evidenceRefs", parseType: "string", takesValue: true, valueName: "check-id", repeatable: true, missingValueMessage: "--evidence-ref requires a check ID", description: "reference to failed/blocked check from current cycle" }),
+      "--settled-by": Object.freeze({ targetKey: "settledBy", parseType: "string", takesValue: true, valueName: "text", missingValueMessage: "--settled-by requires text", description: "falsification or settlement criteria for the hypothesis" }),
+      "--next-safe-action": Object.freeze({ targetKey: "nextSafeAction", parseType: "string", takesValue: true, valueName: "text", missingValueMessage: "--next-safe-action requires text", description: "smallest safe action to address the hypothesis" }),
+      "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
+    }),
+    writes: [".forgeloop/task-state/<taskKey>/events.ndjson", ".forgeloop/task-state/<taskKey>/work-state.json"],
+    removes: [],
+    mayExecuteExternalProcess: false,
+    description: "Records an append-only diagnosis event in the lifecycle event ledger for the active cycle.",
+  }),
+  progress: Object.freeze({
+    name: "progress",
+    category: "diagnostics",
+    mutation: "READ_ONLY",
+    options: Object.freeze({
+      ...CLI_COMMON_OPTIONS,
+      ...CLI_TASK_OPTION,
+      "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit progress evaluation as JSON" }),
+    }),
+    writes: [],
+    removes: [],
+    mayExecuteExternalProcess: false,
+    description: "Evaluates task progress across verification cycles and detects stalls deterministically.",
+  }),
+  "record-decision-criterion": Object.freeze({
+    name: "record-decision-criterion",
+    category: "lifecycle",
+    mutation: "MUTATING",
+    options: Object.freeze({
+      ...CLI_COMMON_OPTIONS,
+      ...CLI_TASK_OPTION,
+      "--decision": Object.freeze({ targetKey: "decision", parseType: "string", takesValue: true, valueName: "text", missingValueMessage: "--decision requires text", description: "unresolved decision text matching current contract" }),
+      "--settled-by": Object.freeze({ targetKey: "settledBy", parseType: "string", takesValue: true, valueName: "text", missingValueMessage: "--settled-by requires text", description: "criteria or guidance that settles the decision" }),
+      "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
+    }),
+    writes: [".forgeloop/task-state/<taskKey>/events.ndjson"],
+    removes: [],
+    mayExecuteExternalProcess: false,
+    description: "Records an append-only decision settlement criterion bound to the active contract fingerprint.",
   }),
   complete: Object.freeze({
     name: "complete",

@@ -13,7 +13,9 @@ export const NEXT_ACTIONS = Object.freeze({
   CONTINUE_IMPLEMENTATION: "CONTINUE_IMPLEMENTATION",
   RECORD_VERIFICATION: "RECORD_VERIFICATION",
   DIAGNOSE: "DIAGNOSE",
+  RECORD_DIAGNOSIS: "RECORD_DIAGNOSIS",
   CORRECT: "CORRECT",
+  CHANGE_STRATEGY: "CHANGE_STRATEGY",
   ENTER_REVIEWING: "ENTER_REVIEWING",
   RECORD_TERMINAL_RESULT: "RECORD_TERMINAL_RESULT",
   PREPARE_COMPLETION: "PREPARE_COMPLETION",
@@ -32,13 +34,20 @@ export function result({
   commandSpecs = [],
   requiredArtifacts = [],
   missingArtifacts = [],
+  progress = undefined,
 }) {
   const normalizedReasons = reasons
-    .map((reason) => ({
-      code: reason.code ?? "E_NEXT_ACTION_BLOCKED",
-      message: reason.message ?? String(reason),
-      artifacts: uniqueSorted(reason.artifacts ?? []),
-    }))
+    .map((reason) => {
+      const base = {
+        code: reason.code ?? "E_NEXT_ACTION_BLOCKED",
+        message: reason.message ?? String(reason),
+        artifacts: uniqueSorted(reason.artifacts ?? []),
+      };
+      if (reason.resolution) {
+        base.resolution = structuredClone(reason.resolution);
+      }
+      return base;
+    })
     .sort((left, right) => left.code.localeCompare(right.code)
       || left.artifacts.join("\0").localeCompare(right.artifacts.join("\0"))
       || left.message.localeCompare(right.message));
@@ -57,6 +66,7 @@ export function result({
       .sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right))),
     requiredArtifacts: uniqueSorted(requiredArtifacts),
     missingArtifacts: uniqueSorted(missingArtifacts),
+    ...(progress ? { progress: structuredClone(progress) } : {}),
   };
 }
 
@@ -87,6 +97,22 @@ export function recordCheckCommandSpec(requirement) {
       { name: "evidenceKind", option: "--evidence-kind=<OBSERVED|INFERRED|NOT_VERIFIED|BLOCKED>" },
       { name: "result", option: "--result=<text>" },
       { name: "exitCode", option: "--exit-code=<number>", optional: true },
+    ],
+  };
+}
+
+export function recordDiagnosisCommandSpec() {
+  return {
+    commandId: "record-diagnosis",
+    executable: "forgeloop",
+    subcommand: "record-diagnosis",
+    argv: ["record-diagnosis"],
+    requiredInputs: [
+      { name: "hypothesis", option: "--hypothesis=<text>" },
+      { name: "failureClass", option: "--failure-class=<class>" },
+      { name: "evidenceRef", option: "--evidence-ref=<check-id>", repeatable: true },
+      { name: "settledBy", option: "--settled-by=<text>" },
+      { name: "nextSafeAction", option: "--next-safe-action=<text>" },
     ],
   };
 }

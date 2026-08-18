@@ -21,6 +21,7 @@ import { discoverTasks } from "./task-discovery.js";
 import { assertNoScopeConflicts, assertScopeClean } from "./task-scope.js";
 import { readTaskDescriptor } from "./task-descriptor.js";
 import { E_TASK_SCOPE_REQUIRED } from "./error-codes.js";
+import { currentCycleDiagnosis } from "./diagnosis-model.js";
 
 function phaseError(code, message, artifacts = []) {
   const error = new Error(message);
@@ -242,7 +243,35 @@ export async function advanceWorkState(target, toPhase, options = {}) {
       );
     }
   }
+  if (toPhase === "CORRECTING" && state.phase === "DIAGNOSING") {
+    const cycle = state.verificationCycle ?? 1;
+    const diagEvent = currentCycleDiagnosis(ledger.events, state.taskId, cycle);
+    if (!diagEvent) {
+      throw phaseError(
+        "E_DIAGNOSIS_REQUIRED",
+        "DIAGNOSING -> CORRECTING requires an append-only diagnosis record for the active verification cycle",
+        [eventsRel],
+      );
+    }
+    const details = diagEvent.details;
+    if (!details || details.informationGain === "NONE") {
+      throw phaseError(
+        "E_DIAGNOSIS_NO_NEW_INFORMATION",
+        "The proposed retry repeats the previous hypothesis with the same evidence without new information",
+        [eventsRel],
+      );
+    }
+  }
   if (toPhase === "VERIFYING" && state.phase === "CORRECTING") {
+    const cycle = state.verificationCycle ?? 1;
+    const diagEvent = currentCycleDiagnosis(ledger.events, state.taskId, cycle);
+    if (!diagEvent) {
+      throw phaseError(
+        "E_DIAGNOSIS_REQUIRED",
+        "CORRECTING -> VERIFYING requires an append-only diagnosis record for the current cycle",
+        [eventsRel],
+      );
+    }
     if (typeof state.diagnosedHypothesis !== "string" || !state.diagnosedHypothesis.trim()) {
       throw phaseError(
         "E_PHASE_PREREQUISITE_MISSING",

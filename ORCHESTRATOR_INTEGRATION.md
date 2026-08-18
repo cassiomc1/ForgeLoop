@@ -60,12 +60,14 @@ invariants and record why a skipped phase was not applicable.
 
 - `COMPLETE` requires verification evidence current to the task.
 - `BLOCKED` requires blocker evidence, a category, and a safe next action.
-- `CORRECTING` requires a diagnosed hypothesis and a changed evidence basis.
+- `CORRECTING` requires an append-only diagnosis event recorded in the event ledger (`DIAGNOSIS_RECORDED`) with non-zero information gain (`informationGain !== "NONE"`).
 - `REVIEWING` cannot claim independent review when reviewer and implementer
   identities are equal.
 - `REVIEWING → VERIFYING` requires a persisted evidence-only completion
   rejection and starts a new `verificationCycle`.
-- A retry requires new evidence or a changed hypothesis.
+- A retry requires new evidence or a changed hypothesis; repeating the same diagnosis produces `informationGain: NONE` and stalls progression (`CHANGE_STRATEGY`).
+- `forgeloop progress` deterministically evaluates task progress across cycles as `ADVANCING`, `WATCH`, or `STALLED`.
+- `forgeloop record-decision-criterion` attaches contract-bound guidance to unresolved decisions without breaking the schema.
 
 ## Serializable interfaces
 

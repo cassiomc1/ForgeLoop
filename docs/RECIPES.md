@@ -18,6 +18,7 @@ Concise, copy-paste friendly recipes for common ForgeLoop tasks.
 10. [Final Verification Before Pull Request](#recipe-10--final-verification-before-pull-request)
 11. [Run Multi-Task Workflows Concurrently](#recipe-11--run-multi-task-workflows-concurrently)
 12. [Migrate Legacy 1.0 Single-Task Layout](#recipe-12--migrate-legacy-10-single-task-layout)
+13. [Record Decision Settlement Criteria](#recipe-13--record-decision-settlement-criteria)
 
 ---
 
@@ -98,16 +99,29 @@ export FORGELOOP_TASK="task-001"
 forgeloop run-check --id unit-tests --requirement "All tests pass" -- npm test
 # Output: status = failed
 
-# 2. Query next action (directs to DIAGNOSE)
-forgeloop next --json
+# 2. Advance to DIAGNOSING
+forgeloop advance --to DIAGNOSING
 
-# 3. Formulate diagnosis and apply code fix in checkout
+# 3. Record append-only root-cause diagnosis in ledger
+forgeloop record-diagnosis \
+  --hypothesis="Edge case comparison operator <= instead of < in validator" \
+  --failure-class="VERIFICATION_FAILURE" \
+  --evidence-ref="unit-tests" \
+  --settled-by="Boundary test passes with status 400" \
+  --next-safe-action="Replace <= with < in validator.js"
 
-# 4. Re-run verification check
+# 4. Advance to CORRECTING and apply the fix
+forgeloop advance --to CORRECTING
+
+# 5. Re-enter VERIFYING (advances verificationCycle monotonically)
+forgeloop advance --to VERIFYING
+
+# 6. Re-run verification check
 forgeloop run-check --id unit-tests --requirement "All tests pass" -- npm test
 
-# 5. Check audit
-forgeloop audit --json
+# 7. Advance to REVIEWING and complete
+forgeloop advance --to REVIEWING
+forgeloop complete --json
 ```
 
 ---
@@ -247,4 +261,19 @@ forgeloop task-migrate --json
 # 3. Verify migrated task state
 forgeloop task-list --json
 forgeloop status --json
+```
+
+---
+
+### Recipe 13 — Record Decision Settlement Criteria
+
+```bash
+# 1. Record an append-only settlement criterion bound to the active contract
+forgeloop record-decision-criterion \
+  --task task-001 \
+  --decision="Which authentication provider should be used?" \
+  --settled-by="Use provider with native support for current JWT session tokens"
+
+# 2. Inspect next action (surfaces the guidance)
+forgeloop next --task task-001
 ```

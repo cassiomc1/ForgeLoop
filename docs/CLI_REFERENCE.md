@@ -40,8 +40,8 @@ ForgeLoop uses a definition-driven command-line parser:
 | Category | Commands |
 | --- | --- |
 | **Setup & Maintenance** | [`init`](#init), [`update`](#update), [`task-migrate`](#task-migrate), [`task-unlock`](#task-unlock) |
-| **Inspection & Diagnostics** | [`doctor`](#doctor), [`inspect`](#inspect), [`status`](#status), [`validate-state`](#validate-state), [`validate-protocol`](#validate-protocol) |
-| **Lifecycle & State** | [`activate`](#activate), [`route`](#route), [`preflight`](#preflight), [`advance`](#advance), [`next`](#next), [`complete`](#complete), [`clear-state`](#clear-state), [`task-create`](#task-create), [`task-list`](#task-list), [`task-show`](#task-show), [`task-scope`](#task-scope) |
+| **Inspection & Diagnostics** | [`doctor`](#doctor), [`progress`](#progress), [`inspect`](#inspect), [`status`](#status), [`validate-state`](#validate-state), [`validate-protocol`](#validate-protocol) |
+| **Lifecycle & State** | [`activate`](#activate), [`route`](#route), [`preflight`](#preflight), [`advance`](#advance), [`next`](#next), [`record-diagnosis`](#record-diagnosis), [`record-decision-criterion`](#record-decision-criterion), [`complete`](#complete), [`clear-state`](#clear-state), [`task-create`](#task-create), [`task-list`](#task-list), [`task-show`](#task-show), [`task-scope`](#task-scope) |
 | **Cross-Harness Continuity** | [`continuity`](#continuity), [`record-continuity`](#record-continuity), [`reconcile-continuity`](#reconcile-continuity), [`clear-continuity`](#clear-continuity) |
 | **Verification & Completion** | [`prepare-completion`](#prepare-completion), [`run-check`](#run-check), [`record-check`](#record-check), [`record-terminal-result`](#record-terminal-result), [`audit`](#audit), [`report`](#report), [`validate-receipt`](#validate-receipt) |
 | **Policy & Auditing** | [`policy`](#policy), [`bundle`](#bundle) |
@@ -199,6 +199,33 @@ Creates a protocol/session activation marker for the current harness session.
 
   ```bash
   forgeloop activate --json
+  ```
+
+### `record-decision-criterion`
+
+Records an append-only decision settlement criterion bound to the active contract fingerprint.
+
+- **Purpose**: Records settlement guidance or criteria for open contract decisions without modifying contract schema.
+- **When to use**: To attach settlement guidance to unresolved decisions in `current-contract.unresolvedDecisions[]`.
+- **Mutation**: Appends `DECISION_CRITERION_RECORDED` to event ledger.
+- **Options**:
+
+<!-- BEGIN FORGELOOP GENERATED: cli:record-decision-criterion:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--decision <text>`: unresolved decision text matching current contract
+- `--settled-by <text>`: criteria or guidance that settles the decision
+- `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:record-decision-criterion:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop record-decision-criterion \
+    --decision="Which authentication provider should be used?" \
+    --settled-by="Use provider supporting current session token middleware"
   ```
 
 ### `advance`
@@ -427,6 +454,39 @@ Records an observed or manual verification check result without executing comman
     --result "Verified contrast ratios exceed 4.5:1 across all color schemes"
   ```
 
+### `record-diagnosis`
+
+Records an append-only diagnosis event in the lifecycle event ledger for the active cycle.
+
+- **Purpose**: Records root-cause hypotheses, failure classes, and settlement criteria for failed verification checks.
+- **When to use**: In `DIAGNOSING` phase before advancing to `CORRECTING`.
+- **Mutation**: Appends `DIAGNOSIS_RECORDED` to event ledger and updates work state projection.
+- **Options**:
+
+<!-- BEGIN FORGELOOP GENERATED: cli:record-diagnosis:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--hypothesis <text>`: specific root-cause hypothesis explaining the verification failure
+- `--failure-class <class>`: canonical failure class taxonomy
+- `--evidence-ref <check-id>`: reference to failed/blocked check from current cycle (repeatable)
+- `--settled-by <text>`: falsification or settlement criteria for the hypothesis
+- `--next-safe-action <text>`: smallest safe action to address the hypothesis
+- `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:record-diagnosis:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop record-diagnosis \
+    --hypothesis="Off-by-one index calculation in slice function" \
+    --failure-class="VERIFICATION_FAILURE" \
+    --evidence-ref="unit-tests" \
+    --settled-by="Test returns expected slice length" \
+    --next-safe-action="Adjust offset +1 in slice.js"
+  ```
+
 ### `validate-state`
 
 Validates `.forgeloop/work-state.json` structure, hash chain, and repository binding.
@@ -498,6 +558,29 @@ Performs comprehensive protocol validation across all active artifacts.
 
   ```bash
   forgeloop validate-protocol --json
+  ```
+
+### `progress`
+
+Evaluates task progress across verification cycles and detects stalls deterministically.
+
+- **Purpose**: Evaluates whether iterative correction cycles are advancing, on watch, or stalled.
+- **When to use**: Any time during execution, verification, or diagnosis to inspect progress signals and prevent repeated ineffective retries.
+- **Mutation**: Read-only.
+- **Options**:
+
+<!-- BEGIN FORGELOOP GENERATED: cli:progress:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--json`: emit progress evaluation as JSON
+
+<!-- END FORGELOOP GENERATED: cli:progress:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop progress --json
   ```
 
 ---

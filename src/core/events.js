@@ -12,6 +12,9 @@ import { isRecoverableCompletionEvidenceCode } from "./completion-recovery.js";
 
 import { taskArtifactPath } from "./task-paths.js";
 
+import { assertDiagnosisDetails } from "./diagnosis-model.js";
+import { assertDecisionCriterionDetails } from "./settlement-model.js";
+
 const EVENT_SCHEMA_VERSION = 1;
 export const LIFECYCLE_MILESTONES = Object.freeze([
   "CONTRACT_VALIDATED",
@@ -36,6 +39,20 @@ const REPEATABLE_MILESTONES = new Set([
   "REVIEW_STARTED",
   "TERMINAL_RESULT_RECORDED",
 ]);
+
+export function validateKnownEventDetails(event) {
+  if (!event || typeof event !== "object") return;
+  switch (event.event) {
+    case "DIAGNOSIS_RECORDED":
+      assertDiagnosisDetails(event.details);
+      return;
+    case "DECISION_CRITERION_RECORDED":
+      assertDecisionCriterionDetails(event.details);
+      return;
+    default:
+      return;
+  }
+}
 
 function eventHash(event) {
   const { hash, ...body } = event;
@@ -64,8 +81,9 @@ export async function readEvents(target, packageRoot, options = {}) {
       event = JSON.parse(line);
       assertJsonLimits(event, `${relPath}[${index}]`);
       assertSchema(event, schema, `${relPath}[${index}]`);
+      validateKnownEventDetails(event);
     } catch (error) {
-      throw protocolError("E_EVENT_INVALID", `${relPath} line ${index + 1}: ${error.message}`, [relPath]);
+      throw protocolError(error.code ?? "E_EVENT_INVALID", `${relPath} line ${index + 1}: ${error.message}`, [relPath]);
     }
     return event;
   });
@@ -88,6 +106,7 @@ export async function appendProtocolEvent(target, input, packageRoot, options = 
     previousHash: previous?.hash ?? null,
     ...(input.details ? { details: structuredClone(input.details) } : {}),
   };
+  validateKnownEventDetails(event);
   assertSecretFree(event);
   const schema = await readSchema("event", packageRoot);
   assertSchema(event, schema, relPath);
@@ -124,6 +143,11 @@ export async function validateEventLedger(target, packageRoot, options = {}) {
     }
     if (event.hash !== eventHash(event)) {
       errors.push({ code: "E_LEDGER_HASH_INVALID", message: `event ${event.seq} hash does not match its content` });
+    }
+    try {
+      validateKnownEventDetails(event);
+    } catch (err) {
+      errors.push({ code: err.code ?? "E_EVENT_INVALID", message: `event ${event.seq} (${event.event}): ${err.message}` });
     }
     const milestoneIndex = LIFECYCLE_MILESTONES.indexOf(event.event);
     if (milestoneIndex >= 0) {

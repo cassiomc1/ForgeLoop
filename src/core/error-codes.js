@@ -30,6 +30,15 @@ export const E_TASK_LAYOUT_LEGACY = "E_TASK_LAYOUT_LEGACY";
 export const E_TASK_MIGRATION_INVALID = "E_TASK_MIGRATION_INVALID";
 export const E_TASK_MIGRATION_IDENTITY_MISMATCH = "E_TASK_MIGRATION_IDENTITY_MISMATCH";
 
+export const E_DIAGNOSIS_REQUIRED = "E_DIAGNOSIS_REQUIRED";
+export const E_DIAGNOSIS_INVALID = "E_DIAGNOSIS_INVALID";
+export const E_DIAGNOSIS_EVIDENCE_INVALID = "E_DIAGNOSIS_EVIDENCE_INVALID";
+export const E_DIAGNOSIS_CYCLE_MISMATCH = "E_DIAGNOSIS_CYCLE_MISMATCH";
+export const E_DIAGNOSIS_NO_NEW_INFORMATION = "E_DIAGNOSIS_NO_NEW_INFORMATION";
+export const E_PROGRESS_STALLED = "E_PROGRESS_STALLED";
+export const E_DECISION_CRITERION_INVALID = "E_DECISION_CRITERION_INVALID";
+export const E_DECISION_NOT_UNRESOLVED = "E_DECISION_NOT_UNRESOLVED";
+
 /**
  * Public, stable ForgeLoop error and reason codes documented for users and harnesses.
  */
@@ -159,6 +168,62 @@ export const PUBLIC_ERROR_CODES = Object.freeze({
     classification: "PUBLIC_STABLE",
     meaning: "Modified paths in repository exceed the declared task write claims.",
     safeResolution: "Update write claims with forgeloop task-scope or revert out-of-scope modifications.",
+  }),
+  E_DIAGNOSIS_REQUIRED: Object.freeze({
+    code: "E_DIAGNOSIS_REQUIRED",
+    category: "diagnosis",
+    classification: "PUBLIC_STABLE",
+    meaning: "Current correction cycle has no append-only diagnosis record.",
+    safeResolution: "Run forgeloop record-diagnosis with current failed evidence before correcting.",
+  }),
+  E_DIAGNOSIS_INVALID: Object.freeze({
+    code: "E_DIAGNOSIS_INVALID",
+    category: "diagnosis",
+    classification: "PUBLIC_STABLE",
+    meaning: "Diagnosis record details or parameters are malformed.",
+    safeResolution: "Provide valid failureClass, hypothesis, evidenceRefs, settledBy, and nextSafeAction.",
+  }),
+  E_DIAGNOSIS_EVIDENCE_INVALID: Object.freeze({
+    code: "E_DIAGNOSIS_EVIDENCE_INVALID",
+    category: "diagnosis",
+    classification: "PUBLIC_STABLE",
+    meaning: "Referenced diagnosis evidence is missing or has no failed checks in the current cycle.",
+    safeResolution: "Reference at least one failed or blocked check ID from the active verification cycle.",
+  }),
+  E_DIAGNOSIS_CYCLE_MISMATCH: Object.freeze({
+    code: "E_DIAGNOSIS_CYCLE_MISMATCH",
+    category: "diagnosis",
+    classification: "PUBLIC_STABLE",
+    meaning: "Diagnosis verification cycle does not match the active work state verification cycle.",
+    safeResolution: "Record diagnosis for the current active verification cycle.",
+  }),
+  E_DIAGNOSIS_NO_NEW_INFORMATION: Object.freeze({
+    code: "E_DIAGNOSIS_NO_NEW_INFORMATION",
+    category: "diagnosis",
+    classification: "PUBLIC_STABLE",
+    meaning: "The proposed retry repeats the previous hypothesis with the same evidence.",
+    safeResolution: "Change the hypothesis, collect independent evidence, or change strategy.",
+  }),
+  E_PROGRESS_STALLED: Object.freeze({
+    code: "E_PROGRESS_STALLED",
+    category: "progress",
+    classification: "PUBLIC_STABLE",
+    meaning: "Persisted correction history shows no new diagnostic information.",
+    safeResolution: "Use an independent check, revisit assumptions, or record a materially different diagnosis.",
+  }),
+  E_DECISION_CRITERION_INVALID: Object.freeze({
+    code: "E_DECISION_CRITERION_INVALID",
+    category: "contract",
+    classification: "PUBLIC_STABLE",
+    meaning: "Decision settlement criterion details or parameters are malformed.",
+    safeResolution: "Provide non-empty decision text and settledBy criterion.",
+  }),
+  E_DECISION_NOT_UNRESOLVED: Object.freeze({
+    code: "E_DECISION_NOT_UNRESOLVED",
+    category: "contract",
+    classification: "PUBLIC_STABLE",
+    meaning: "A settlement criterion referenced a decision not present in current unresolvedDecisions.",
+    safeResolution: "Use the exact current unresolved decision text or update the contract first.",
   }),
 });
 

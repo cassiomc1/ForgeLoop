@@ -13,12 +13,13 @@ import { recordManualCheck } from "./helpers/record-check-compat.js";
 const recordCheck = (input) => recordManualCheck(recordCheckArtifact, input);
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { appendProtocolEvent } from "../src/core/events.js";
+import { recordDiagnosis } from "../src/core/diagnosis.js";
 import { advanceWorkState } from "../src/core/phase.js";
 import { NEXT_ACTIONS, getNextAction } from "../src/core/next-action.js";
 import { evaluateRoute } from "../src/core/router.js";
 import { persistRoute } from "../src/core/route-artifact.js";
 import { getPackageRoot } from "../src/core/templates.js";
-import { createWorkState, readWorkState, writeWorkState } from "../src/core/work-state.js";
+import { createWorkState, writeWorkState } from "../src/core/work-state.js";
 
 const packageRoot = getPackageRoot();
 
@@ -212,10 +213,20 @@ test("product correction loop commands recommended by next are executable (P2-8 
     // 3. Execute advance to DIAGNOSING
     await advanceWorkState(target, "DIAGNOSING", { packageRoot });
 
-    // 4. Record hypothesis
-    let workState = await readWorkState(target, packageRoot);
-    workState.diagnosedHypothesis = "Fixed logic off-by-one error";
-    await writeWorkState(target, workState, { packageRoot });
+    // 4. Before diagnosis is recorded: next recommends RECORD_DIAGNOSIS
+    next = await getNextAction(target, packageRoot);
+    assert.equal(next.nextAction, NEXT_ACTIONS.RECORD_DIAGNOSIS);
+
+    // Record diagnosis
+    await recordDiagnosis({
+      target,
+      packageRoot,
+      hypothesis: "Fixed logic off-by-one error",
+      failureClass: "VERIFICATION_FAILURE",
+      evidenceRefs: ["unit-tests-c1"],
+      settledBy: "Tests pass",
+      nextSafeAction: "Fix logic",
+    });
 
     // 5. In DIAGNOSING with hypothesis: next recommends CORRECT
     next = await getNextAction(target, packageRoot);

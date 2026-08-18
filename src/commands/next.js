@@ -14,7 +14,15 @@ export function formatNextActionResult(result) {
   ];
   if (result.reasons.length > 0) {
     lines.push("REASONS:");
-    lines.push(...result.reasons.map((reason) => `- ${reason.code}: ${reason.message}`));
+    for (const reason of result.reasons) {
+      lines.push(`- ${reason.code}: ${reason.message}`);
+      if (reason.resolution?.kind === "SETTLEMENT_CRITERION" && reason.resolution.settledBy) {
+        lines.push(`  SETTLED BY: ${reason.resolution.settledBy}`);
+      }
+    }
+  }
+  if (result.progress) {
+    lines.push(`PROGRESS: ${result.progress.status}`);
   }
   if (result.commands.length > 0) {
     lines.push("COMMANDS (SAFE SYNOPSIS ONLY):");

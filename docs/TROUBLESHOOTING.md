@@ -8,6 +8,8 @@ This guide provides symptom-first recovery procedures for common ForgeLoop proto
 
 - [`preflight` is `BLOCKED`](#symptom-preflight-is-blocked)
 - [`forgeloop next` returns `RESOLVE_BLOCKER`](#symptom-forgeloop-next-returns-resolve_blocker)
+- [`forgeloop next` returns `RECORD_DIAGNOSIS`](#symptom-forgeloop-next-returns-record_diagnosis)
+- [Progress is `STALLED` or `forgeloop next` returns `CHANGE_STRATEGY`](#symptom-progress-is-stalled)
 - [Protocol state or contract is `STALE`](#symptom-state-or-contract-is-stale)
 - [Execution continuity is `STALE`](#symptom-continuity-is-stale)
 - [Multiple tasks ambiguous (`E_TASK_AMBIGUOUS`)](#symptom-multiple-tasks-ambiguous)
@@ -77,7 +79,71 @@ forgeloop next --task <id> --json
 
 1. Check the `reasons` field in the `forgeloop next --json` output.
 2. Follow the suggested command in `commands` or `commandSpecs`.
-3. If in `VERIFYING` after a failure, record a hypothesis, apply the fix, and re-run `run-check`.
+3. If in `VERIFYING` after a failure, advance to `DIAGNOSING`, record a diagnosis with `forgeloop record-diagnosis`, and advance to `CORRECTING`.
+
+---
+
+### Symptom: `forgeloop next` returns `RECORD_DIAGNOSIS`
+
+#### What it means
+
+The task is in `DIAGNOSING` phase following a verification failure, but no append-only diagnosis event (`DIAGNOSIS_RECORDED`) has been recorded for the active verification cycle (`E_DIAGNOSIS_REQUIRED`).
+
+#### Likely causes
+
+1. A check failed in `VERIFYING` and the phase was advanced to `DIAGNOSING` without calling `record-diagnosis`.
+2. An attempt was made to advance directly to `CORRECTING` without recording an evidence-backed root cause hypothesis.
+
+#### Inspect
+
+```bash
+forgeloop status --task <id> --json
+forgeloop next --task <id> --json
+```
+
+#### Safe recovery
+
+Record an append-only diagnosis referencing at least one failed or blocked check from the current verification cycle:
+
+```bash
+forgeloop record-diagnosis --task <id> \
+  --hypothesis="Root cause explanation" \
+  --failure-class="VERIFICATION_FAILURE" \
+  --evidence-ref="failed-check-id" \
+  --settled-by="Observable condition that settles the hypothesis" \
+  --next-safe-action="Smallest safe action to address the hypothesis"
+```
+
+Then advance to `CORRECTING`:
+
+```bash
+forgeloop advance --task <id> --to CORRECTING
+```
+
+---
+
+### Symptom: Progress is `STALLED`
+
+#### What it means
+
+Deterministic progress evaluation detected that repeated correction cycles contain no new diagnostic information (`E_PROGRESS_STALLED`, `NO_DIAGNOSTIC_INFORMATION_GAIN`), or the same requirement failed 3+ times with an identical diagnosis (`REPEATED_FAILURE_WITH_SAME_DIAGNOSIS`).
+
+#### Likely causes
+
+1. A recorded diagnosis repeated the previous hypothesis with the exact same evidence references (`informationGain: NONE`).
+2. The same requirement has repeatedly failed across 3 or more verification cycles without a strategy change.
+
+#### Inspect
+
+```bash
+forgeloop progress --task <id> --json
+```
+
+#### Safe recovery
+
+1. Do not repeat the same retry or correction action.
+2. Re-examine the failure evidence from a new angle or gather fresh diagnostic evidence.
+3. Formulate a genuinely new root-cause hypothesis with new evidence references and record it with `forgeloop record-diagnosis`.
 
 ---
 
@@ -341,5 +407,13 @@ forgeloop next --task <id> --json
 | `E_TASK_SCOPE_CONFLICT` | Task write claims overlap with another non-complete task in the same checkout. | Adjust write claims to non-overlapping paths or run tasks in separate worktrees. |
 | `E_TASK_SCOPE_DIRTY` | Claimed paths contain pre-existing uncommitted changes. | Commit or stash changes in claimed paths before defining or adopting the scope. |
 | `E_TASK_CHANGE_OUTSIDE_SCOPE` | Modified paths in repository exceed the declared task write claims. | Update write claims with forgeloop task-scope or revert out-of-scope modifications. |
+| `E_DIAGNOSIS_REQUIRED` | Current correction cycle has no append-only diagnosis record. | Run forgeloop record-diagnosis with current failed evidence before correcting. |
+| `E_DIAGNOSIS_INVALID` | Diagnosis record details or parameters are malformed. | Provide valid failureClass, hypothesis, evidenceRefs, settledBy, and nextSafeAction. |
+| `E_DIAGNOSIS_EVIDENCE_INVALID` | Referenced diagnosis evidence is missing or has no failed checks in the current cycle. | Reference at least one failed or blocked check ID from the active verification cycle. |
+| `E_DIAGNOSIS_CYCLE_MISMATCH` | Diagnosis verification cycle does not match the active work state verification cycle. | Record diagnosis for the current active verification cycle. |
+| `E_DIAGNOSIS_NO_NEW_INFORMATION` | The proposed retry repeats the previous hypothesis with the same evidence. | Change the hypothesis, collect independent evidence, or change strategy. |
+| `E_PROGRESS_STALLED` | Persisted correction history shows no new diagnostic information. | Use an independent check, revisit assumptions, or record a materially different diagnosis. |
+| `E_DECISION_CRITERION_INVALID` | Decision settlement criterion details or parameters are malformed. | Provide non-empty decision text and settledBy criterion. |
+| `E_DECISION_NOT_UNRESOLVED` | A settlement criterion referenced a decision not present in current unresolvedDecisions. | Use the exact current unresolved decision text or update the contract first. |
 
 <!-- END FORGELOOP GENERATED: public-error-codes -->

@@ -592,6 +592,36 @@ the current cycle. Lifecycle-owned terminal criteria such as validator-backed
 `record-check` claims. Compound `ALL` checks cannot pass while any declared
 component is failed, blocked, partial, or not verified.
 
+### Diagnosis Ledger and Evidence-Driven Correction
+
+When a check fails during verification (`VERIFYING → DIAGNOSING`), the actor must record an append-only diagnosis event in the lifecycle ledger before entering `CORRECTING`:
+
+```bash
+forgeloop record-diagnosis \
+  --hypothesis="Specific root-cause hypothesis explaining the verification failure" \
+  --failure-class="VERIFICATION_FAILURE" \
+  --evidence-ref="check-id" \
+  --settled-by="Observable condition that settles or falsifies the hypothesis" \
+  --next-safe-action="Smallest safe local action to address the hypothesis"
+```
+
+- `evidence-ref` must reference at least one failed or blocked check from the active verification cycle.
+- Diagnoses are classified by information gain relative to prior diagnoses: `FIRST_DIAGNOSIS`, `NEW_HYPOTHESIS`, `NEW_EVIDENCE`, `NEW_HYPOTHESIS_AND_EVIDENCE`, or `NONE`.
+- Repeating a previous hypothesis with the same evidence results in `informationGain: NONE`. Such diagnoses are recorded in the event ledger for auditability but cannot authorize correction (`DIAGNOSING → CORRECTING` fails with `E_DIAGNOSIS_NO_NEW_INFORMATION`, and `forgeloop next` returns `CHANGE_STRATEGY`).
+- Deterministic progress evaluation (`forgeloop progress`) returns `ADVANCING`, `WATCH`, or `STALLED` without probabilistic heuristics.
+
+### Decision Settlement Criteria
+
+Unresolved contract decisions in `current-contract.unresolvedDecisions[]` can be paired with append-only settlement criteria bound to the active contract fingerprint:
+
+```bash
+forgeloop record-decision-criterion \
+  --decision="Exact text of unresolved decision" \
+  --settled-by="Criteria or guidance that settles the decision"
+```
+
+Settlement criteria provide guidance surfaced by `forgeloop next` (`SETTLED BY: ...`) while preserving contract schema compatibility (`unresolvedDecisions[]` remains an array of strings in protocolVersion 1). Recording a criterion does not automatically satisfy preflight readiness; the contract must be explicitly updated or resolved.
+
 ## Independent completion dimensions
 
 Local task completion, verification, publication, and production readiness are

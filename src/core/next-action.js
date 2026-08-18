@@ -17,6 +17,7 @@ import {
   commandFor,
   decision,
   recordCheckCommandSpec,
+  recordDiagnosisCommandSpec,
   recordTerminalResultCommandSpec,
   result,
   uniqueSorted,
@@ -31,10 +32,14 @@ import {
 } from "./next-action-artifacts.js";
 import { PHASES_REQUIRING_EXECUTION_CHRONOLOGY } from "./next-action-phases.js";
 import { evaluateContinuityNextAction } from "./next-action-continuity.js";
+import { currentCycleDiagnosis } from "./diagnosis-model.js";
+import { evaluateProgress, PROGRESS_STATUS } from "./progress.js";
+import { criterionForDecision } from "./settlement-model.js";
+import { readEvents } from "./events.js";
 
 export { NEXT_ACTIONS } from "./next-action-model.js";
 
-export async function getNextAction(targetOrOptions = {}, packageRootOption) {
+async function computeNextAction(targetOrOptions = {}, packageRootOption) {
   const normalized = typeof targetOrOptions === "string"
     ? { target: targetOrOptions, packageRoot: packageRootOption }
     : targetOrOptions;
@@ -456,19 +461,50 @@ export async function getNextAction(targetOrOptions = {}, packageRootOption) {
     });
   }
   if (state.phase === "DIAGNOSING") {
-    if (typeof state.diagnosedHypothesis !== "string" || !state.diagnosedHypothesis.trim()) {
-      return decision(
-        context,
-        NEXT_ACTIONS.RESOLVE_BLOCKER,
-        artifactError(
-          "E_DIAGNOSIS_HYPOTHESIS_MISSING",
-          "Record diagnosedHypothesis in .forgeloop/work-state.json before advancing to CORRECTING",
-          [ARTIFACT_PATHS.state],
-        ),
-        requiredArtifacts,
-      );
+    const ledger = await validateEventLedger(target, packageRoot, { taskId: normalized.taskId ?? null });
+    const cycle = state.verificationCycle ?? 1;
+    const diagEvent = currentCycleDiagnosis(ledger.events, state.taskId, cycle);
+    if (!diagEvent) {
+      return result({
+        ...context,
+        nextAction: NEXT_ACTIONS.RECORD_DIAGNOSIS,
+        reasons: [
+          artifactError(
+            "E_DIAGNOSIS_REQUIRED",
+            "Current correction cycle has no append-only diagnosis record.",
+            [ARTIFACT_PATHS.events],
+          ),
+        ],
+        commandSpecs: [recordDiagnosisCommandSpec()],
+        requiredArtifacts: [...requiredArtifacts, ARTIFACT_PATHS.events],
+      });
     }
-    return decision(context, NEXT_ACTIONS.CORRECT, artifactError("PHASE_DIAGNOSING", "The persisted diagnosis hypothesis permits correction"));
+    const progress = evaluateProgress({ state, events: ledger.events });
+    if (progress.status === PROGRESS_STATUS.STALLED) {
+      return result({
+        ...context,
+        nextAction: NEXT_ACTIONS.CHANGE_STRATEGY,
+        reasons: [
+          artifactError(
+            "E_PROGRESS_STALLED",
+            "The current correction strategy has no new diagnostic information.",
+            [ARTIFACT_PATHS.state, ARTIFACT_PATHS.events],
+          ),
+        ],
+        progress,
+        requiredArtifacts,
+      });
+    }
+    return result({
+      ...context,
+      nextAction: NEXT_ACTIONS.CORRECT,
+      commands: [commandFor(NEXT_ACTIONS.CORRECT)],
+      reasons: [
+        artifactError("PHASE_DIAGNOSING", "The persisted diagnosis hypothesis permits correction"),
+      ],
+      ...(progress.status === PROGRESS_STATUS.WATCH ? { progress } : {}),
+      requiredArtifacts,
+    });
   }
   if (state.phase === "CORRECTING") {
     return decision(context, NEXT_ACTIONS.ENTER_VERIFYING, artifactError("PHASE_CORRECTING", "Correction is ready for verification"));
@@ -674,4 +710,44 @@ export async function getNextAction(targetOrOptions = {}, packageRootOption) {
     artifactError("E_PHASE_UNSUPPORTED", `Unsupported persisted phase: ${state.phase}`, [ARTIFACT_PATHS.state]),
     requiredArtifacts,
   );
+}
+
+export async function getNextAction(targetOrOptions = {}, packageRootOption) {
+  const res = await computeNextAction(targetOrOptions, packageRootOption);
+  if (res && res.reasons && res.reasons.some((r) => r.code === "E_CONTRACT_UNRESOLVED_DECISION" || r.code === "E_UNRESOLVED_DECISION")) {
+    const normalized = typeof targetOrOptions === "string" ? { target: targetOrOptions, packageRoot: packageRootOption } : targetOrOptions;
+    const { target, packageRoot, taskId } = normalized ?? {};
+    try {
+      const explicitTaskId = taskId ?? null;
+      const contract = await readContract(target, packageRoot, { taskId: explicitTaskId });
+      const events = await readEvents(target, packageRoot, { taskId: explicitTaskId });
+      if (contract?.value?.unresolvedDecisions?.length > 0) {
+        const enrichedReasons = res.reasons.map((r) => {
+          if (r.code === "E_CONTRACT_UNRESOLVED_DECISION" || r.code === "E_UNRESOLVED_DECISION") {
+            for (const dec of contract.value.unresolvedDecisions) {
+              const criterion = criterionForDecision(events, res.taskId, dec, contract.fingerprint);
+              if (criterion) {
+                return {
+                  ...r,
+                  resolution: {
+                    kind: "SETTLEMENT_CRITERION",
+                    itemId: criterion.decisionId,
+                    settledBy: criterion.settledBy,
+                  },
+                };
+              }
+            }
+          }
+          return r;
+        });
+        return result({
+          ...res,
+          reasons: enrichedReasons,
+        });
+      }
+    } catch {
+      // Ignore read errors
+    }
+  }
+  return res;
 }
