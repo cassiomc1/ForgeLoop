@@ -34,11 +34,19 @@ export function sameStringSet(left, right) {
 export function validatePersistedPreflight(persisted, current) {
   const errors = [];
   if (persisted?.status !== "READY") {
-    errors.push(issue("E_PREFLIGHT_NOT_READY", "A persisted READY preflight is required", [ARTIFACT_PATHS.preflight]));
+    if (Array.isArray(persisted?.errors) && persisted.errors.length > 0) {
+      errors.push(...persisted.errors);
+    } else {
+      errors.push(issue("E_PREFLIGHT_NOT_READY", "A persisted READY preflight is required", [ARTIFACT_PATHS.preflight]));
+    }
     return errors;
   }
   if (current?.status !== "READY") {
-    errors.push(issue("E_PREFLIGHT_NOT_READY", "The current preflight evaluation is not READY", [ARTIFACT_PATHS.preflight]));
+    if (Array.isArray(current?.errors) && current.errors.length > 0) {
+      errors.push(...current.errors);
+    } else {
+      errors.push(issue("E_PREFLIGHT_NOT_READY", "The current preflight evaluation is not READY", [ARTIFACT_PATHS.preflight]));
+    }
   }
   if (persisted.taskId !== current?.taskId) {
     errors.push(issue(

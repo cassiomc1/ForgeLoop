@@ -175,3 +175,114 @@ test("protocol compatibility - work-state.diagnosedHypothesis is maintained as p
     await removeTempTree(target);
   }
 });
+
+test("protocol compatibility - legacy DIAGNOSING state with only mutable diagnosedHypothesis is readable but requires RECORD_DIAGNOSIS", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-compat-legacy-"));
+  try {
+    const taskId = "task-compat-legacy";
+    const contract = createContract({
+      taskId,
+      objective: "Test legacy task upgrade",
+      deliverables: ["src/index.js"],
+      constraints: [],
+      risks: [],
+      verification: ["tests"],
+      successCriteria: ["tests pass"],
+      stopConditions: [],
+      unresolvedDecisions: [],
+      sourceRefs: [],
+    });
+    const contractHash = contractFingerprint(contract);
+    await writeContract(target, contract, packageRoot);
+
+    const route = evaluateRoute({ workType: "code", surfaces: ["config"], platforms: [] });
+    const persistedRoute = await persistRoute(target, route, packageRoot, {
+      contractFingerprint: contractHash,
+    });
+
+    const state = createWorkState({
+      taskId,
+      contractFingerprint: contractHash,
+      routeFingerprint: persistedRoute.fingerprint,
+      repositoryFingerprint: { branch: null, head: null },
+      phase: "PLANNED",
+      selectedGuides: [...persistedRoute.value.guides],
+      requiredGates: [],
+      satisfiedGates: [],
+      completedSteps: ["planning"],
+      pendingSteps: ["execute"],
+      checks: [],
+      failures: [],
+      blockers: [],
+      verificationEvidence: [],
+    });
+    await writeWorkState(target, state, { packageRoot });
+
+    await appendProtocolEvent(target, { taskId, event: "CONTRACT_VALIDATED" }, packageRoot);
+    await appendProtocolEvent(target, { taskId, event: "ROUTE_VALIDATED" }, packageRoot);
+    await runPreflight({ target, packageRoot });
+    await advanceWorkState(target, "EXECUTING", packageRoot);
+    await advanceWorkState(target, "VERIFYING", packageRoot);
+    await prepareCompletion({ target, packageRoot });
+
+    await recordCheck({
+      target,
+      packageRoot,
+      id: "check-auth",
+      requirement: "auth",
+      status: "failed",
+      evidenceKind: "OBSERVED",
+      command: "npm test",
+      result: "Assertion failed",
+    });
+
+    await advanceWorkState(target, "DIAGNOSING", packageRoot);
+
+    // Simulate old protocol-v1 task by injecting mutable diagnosedHypothesis without DIAGNOSIS_RECORDED event
+    const legacyState = {
+      ...(await readWorkState(target, { packageRoot })),
+      diagnosedHypothesis: "Legacy mutable hypothesis from older version",
+    };
+    await writeWorkState(target, legacyState, { packageRoot });
+
+    // Old task is readable
+    const loadedState = await readWorkState(target, { packageRoot });
+    assert.equal(loadedState.phase, "DIAGNOSING");
+    assert.equal(loadedState.diagnosedHypothesis, "Legacy mutable hypothesis from older version");
+
+    // forgeloop next returns RECORD_DIAGNOSIS because ledger has no DIAGNOSIS_RECORDED event
+    const nextBefore = await getNextAction({ target, packageRoot });
+    assert.equal(nextBefore.nextAction, "RECORD_DIAGNOSIS");
+
+    // Attempting to advance to CORRECTING is blocked with E_DIAGNOSIS_REQUIRED
+    await assert.rejects(
+      () => advanceWorkState(target, "CORRECTING", packageRoot),
+      { code: "E_DIAGNOSIS_REQUIRED" }
+    );
+
+    // Record diagnosis through the new append-only API
+    const diagRes = await recordDiagnosis({
+      target,
+      packageRoot,
+      hypothesis: "Updated authoritative hypothesis",
+      failureClass: "VERIFICATION_FAILURE",
+      evidenceRefs: ["check-auth"],
+      settledBy: "Test passes",
+      nextSafeAction: "Fix auth handler",
+    });
+    assert.equal(diagRes.event.event, "DIAGNOSIS_RECORDED");
+    assert.equal(diagRes.diagnosis.informationGain, "FIRST_DIAGNOSIS");
+
+    // forgeloop next now returns CORRECT
+    const nextAfter = await getNextAction({ target, packageRoot });
+    assert.equal(nextAfter.nextAction, "CORRECT");
+
+    // advance to CORRECTING now succeeds
+    await advanceWorkState(target, "CORRECTING", packageRoot);
+    const finalState = await readWorkState(target, { packageRoot });
+    assert.equal(finalState.phase, "CORRECTING");
+
+  } finally {
+    await removeTempTree(target);
+  }
+});

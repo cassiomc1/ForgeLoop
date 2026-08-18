@@ -14,6 +14,12 @@ import {
 import { recordDecisionCriterion } from "../src/core/settlement.js";
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { appendProtocolEvent, readEvents, validateEventLedger } from "../src/core/events.js";
+import { evaluateRoute } from "../src/core/router.js";
+import { persistRoute } from "../src/core/route-artifact.js";
+import { createWorkState, writeWorkState } from "../src/core/work-state.js";
+import { getNextAction } from "../src/core/next-action.js";
+import { formatNextActionResult } from "../src/commands/next.js";
+import { runPreflight } from "../src/commands/preflight.js";
 
 const packageRoot = getPackageRoot();
 
@@ -125,6 +131,100 @@ test("recordDecisionCriterion persists in event ledger and respects contract bin
     // Stale contract fingerprint lookup returns null
     const staleLookup = criterionForDecision(events, taskId, decisionText, "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
     assert.equal(staleLookup, null);
+
+  } finally {
+    await removeTempTree(target);
+  }
+});
+
+test("forgeloop next surfaces multiple settlement criteria without fabricating missing ones", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-settlement-multi-"));
+  try {
+    const taskId = "task-multi-criteria";
+    const unresolvedDecisions = [
+      "Which cache store to use?",
+      "Which queue driver to use?",
+      "Which cloud region to deploy to?",
+    ];
+
+    const contract = createContract({
+      taskId,
+      objective: "Test multiple settlement criteria",
+      deliverables: ["src/app.js"],
+      constraints: [],
+      risks: [],
+      verification: ["tests"],
+      successCriteria: ["tests pass"],
+      stopConditions: [],
+      unresolvedDecisions,
+      sourceRefs: [],
+    });
+
+    const contractHash = contractFingerprint(contract);
+    await writeContract(target, contract, packageRoot);
+
+    await appendProtocolEvent(target, { taskId, event: "TASK_RECEIVED" }, packageRoot);
+    await appendProtocolEvent(target, { taskId, event: "CONTRACT_VALIDATED" }, packageRoot);
+
+    const route = evaluateRoute({ workType: "code", surfaces: ["config"], platforms: [] });
+    const persistedRoute = await persistRoute(target, route, packageRoot, {
+      contractFingerprint: contractHash,
+    });
+    await appendProtocolEvent(target, { taskId, event: "ROUTE_VALIDATED" }, packageRoot);
+
+    const state = createWorkState({
+      taskId,
+      contractFingerprint: contractHash,
+      routeFingerprint: persistedRoute.fingerprint,
+      repositoryFingerprint: { branch: null, head: null },
+      phase: "PLANNED",
+      selectedGuides: [...persistedRoute.value.guides],
+      requiredGates: [],
+      satisfiedGates: [],
+      completedSteps: ["planning"],
+      pendingSteps: ["execute"],
+      checks: [],
+      failures: [],
+      blockers: [],
+      verificationEvidence: [],
+    });
+    await writeWorkState(target, state, { packageRoot });
+    await runPreflight({ target, packageRoot });
+
+    // Record criteria for 2 of the 3 decisions
+    await recordDecisionCriterion({
+      target,
+      packageRoot,
+      decision: "Which cache store to use?",
+      settledBy: "Use Redis in-memory cache",
+    });
+
+    await recordDecisionCriterion({
+      target,
+      packageRoot,
+      decision: "Which queue driver to use?",
+      settledBy: "Use SQS or local in-memory emitter",
+    });
+
+    const next = await getNextAction({ target, packageRoot });
+    const decisionReason = next.reasons.find((r) => r.code === "E_CONTRACT_UNRESOLVED_DECISION" || r.code === "E_UNRESOLVED_DECISION");
+    assert.ok(decisionReason);
+    assert.equal(decisionReason.resolution.kind, "SETTLEMENT_CRITERIA");
+    assert.equal(decisionReason.resolution.items.length, 2);
+    assert.equal(decisionReason.resolution.items[0].decision, "Which cache store to use?");
+    assert.equal(decisionReason.resolution.items[0].settledBy, "Use Redis in-memory cache");
+    assert.equal(decisionReason.resolution.items[1].decision, "Which queue driver to use?");
+    assert.equal(decisionReason.resolution.items[1].settledBy, "Use SQS or local in-memory emitter");
+
+    // Formatted text output verification
+    const formatted = formatNextActionResult(next);
+    assert.ok(formatted.includes("SETTLEMENT CRITERIA:"));
+    assert.ok(formatted.includes("Which cache store to use?"));
+    assert.ok(formatted.includes("SETTLED BY: Use Redis in-memory cache"));
+    assert.ok(formatted.includes("Which queue driver to use?"));
+    assert.ok(formatted.includes("SETTLED BY: Use SQS or local in-memory emitter"));
+    // 3rd decision has no criterion
+    assert.ok(!formatted.includes("Which cloud region to deploy to?\n    SETTLED BY:"));
 
   } finally {
     await removeTempTree(target);

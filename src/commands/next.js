@@ -18,6 +18,12 @@ export function formatNextActionResult(result) {
       lines.push(`- ${reason.code}: ${reason.message}`);
       if (reason.resolution?.kind === "SETTLEMENT_CRITERION" && reason.resolution.settledBy) {
         lines.push(`  SETTLED BY: ${reason.resolution.settledBy}`);
+      } else if (reason.resolution?.kind === "SETTLEMENT_CRITERIA" && Array.isArray(reason.resolution.items)) {
+        lines.push("  SETTLEMENT CRITERIA:");
+        for (const item of reason.resolution.items) {
+          lines.push(`  - ${item.decision}`);
+          lines.push(`    SETTLED BY: ${item.settledBy}`);
+        }
       }
     }
   }

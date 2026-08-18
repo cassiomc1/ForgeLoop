@@ -722,28 +722,49 @@ export async function getNextAction(targetOrOptions = {}, packageRootOption) {
       const contract = await readContract(target, packageRoot, { taskId: explicitTaskId });
       const events = await readEvents(target, packageRoot, { taskId: explicitTaskId });
       if (contract?.value?.unresolvedDecisions?.length > 0) {
-        const enrichedReasons = res.reasons.map((r) => {
-          if (r.code === "E_CONTRACT_UNRESOLVED_DECISION" || r.code === "E_UNRESOLVED_DECISION") {
-            for (const dec of contract.value.unresolvedDecisions) {
-              const criterion = criterionForDecision(events, res.taskId, dec, contract.fingerprint);
-              if (criterion) {
-                return {
-                  ...r,
-                  resolution: {
-                    kind: "SETTLEMENT_CRITERION",
-                    itemId: criterion.decisionId,
-                    settledBy: criterion.settledBy,
-                  },
-                };
-              }
-            }
+        const foundCriteria = [];
+        for (const dec of contract.value.unresolvedDecisions) {
+          const criterion = criterionForDecision(events, res.taskId, dec, contract.fingerprint);
+          if (criterion) {
+            foundCriteria.push({
+              decisionId: criterion.decisionId,
+              decision: dec,
+              settledBy: criterion.settledBy,
+            });
           }
-          return r;
-        });
-        return result({
-          ...res,
-          reasons: enrichedReasons,
-        });
+        }
+
+        if (foundCriteria.length > 0) {
+          let resolution;
+          if (foundCriteria.length === 1) {
+            resolution = {
+              kind: "SETTLEMENT_CRITERION",
+              itemId: foundCriteria[0].decisionId,
+              decision: foundCriteria[0].decision,
+              settledBy: foundCriteria[0].settledBy,
+            };
+          } else {
+            resolution = {
+              kind: "SETTLEMENT_CRITERIA",
+              items: foundCriteria,
+            };
+          }
+
+          const enrichedReasons = res.reasons.map((r) => {
+            if (r.code === "E_CONTRACT_UNRESOLVED_DECISION" || r.code === "E_UNRESOLVED_DECISION") {
+              return {
+                ...r,
+                resolution,
+              };
+            }
+            return r;
+          });
+
+          return result({
+            ...res,
+            reasons: enrichedReasons,
+          });
+        }
       }
     } catch {
       // Ignore read errors

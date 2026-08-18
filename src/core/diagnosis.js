@@ -97,6 +97,37 @@ export async function recordDiagnosis({
     throw error;
   }
 
+  const existingEvent = currentCycleDiagnosis(
+    ledger.events,
+    state.taskId,
+    state.verificationCycle,
+  );
+
+  const requestedFingerprint = diagnosisFingerprint({
+    failureClass,
+    hypothesis,
+    evidenceRefs: cleanRefs,
+  });
+
+  if (existingEvent?.details?.diagnosisFingerprint === requestedFingerprint) {
+    const updatedState = {
+      ...state,
+      diagnosedHypothesis: existingEvent.details.hypothesis,
+      lastUpdated: new Date().toISOString(),
+    };
+    await writeWorkState(target, updatedState, {
+      packageRoot,
+      taskId: taskId ?? null,
+      statePath,
+    });
+    return {
+      event: existingEvent,
+      state: updatedState,
+      diagnosis: existingEvent.details,
+      idempotent: true,
+    };
+  }
+
   const taskDiagnosisEvents = diagnosisEventsForTask(ledger.events, state.taskId);
   const previousEvent = taskDiagnosisEvents.at(-1) ?? null;
   const previousDetails = previousEvent?.details ?? null;
@@ -127,6 +158,7 @@ export async function recordDiagnosis({
   const updatedState = {
     ...state,
     diagnosedHypothesis: hypothesis.trim(),
+    lastUpdated: new Date().toISOString(),
   };
   await writeWorkState(target, updatedState, { packageRoot, taskId: taskId ?? null, statePath });
 
@@ -134,5 +166,6 @@ export async function recordDiagnosis({
     event,
     state: updatedState,
     diagnosis: details,
+    idempotent: false,
   };
 }

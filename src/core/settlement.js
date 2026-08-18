@@ -42,7 +42,7 @@ export async function recordDecisionCriterion({
     throw error;
   }
 
-  const ledger = await validateEventLedger(target, packageRoot, { taskId: contract.value.taskId, eventsPath });
+  const ledger = await validateEventLedger(target, packageRoot, { taskId: taskId ?? null, eventsPath });
   if (!ledger.valid) {
     const first = ledger.errors[0];
     const error = new Error(first.message);
@@ -68,7 +68,7 @@ export async function recordDecisionCriterion({
       details,
     },
     packageRoot,
-    { taskId: contract.value.taskId, eventsPath },
+    { taskId: taskId ?? null, eventsPath },
   );
 
   return {

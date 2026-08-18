@@ -13,6 +13,15 @@ export const PROGRESS_SIGNAL = Object.freeze({
   HIGH_CORRECTION_CYCLE_COUNT: "HIGH_CORRECTION_CYCLE_COUNT",
 });
 
+export function diagnosisRequirements(diagnosis, checksById) {
+  if (!diagnosis) return [];
+  return [...new Set(
+    (diagnosis.evidenceRefs ?? [])
+      .map((id) => checksById.get(id)?.requirement)
+      .filter(Boolean),
+  )].sort();
+}
+
 export function evaluateProgress({ state, events = [] } = {}) {
   const signals = [];
   let status = PROGRESS_STATUS.ADVANCING;
@@ -25,7 +34,20 @@ export function evaluateProgress({ state, events = [] } = {}) {
   const diagEvents = diagnosisEventsForTask(taskEvents, state.taskId);
   const latestDiag = diagEvents.at(-1)?.details ?? null;
 
-  // 1. Check if latest diagnosis has NO information gain
+  // Build checksById index for resolving requirement from check IDs
+  const checksById = new Map();
+  for (const check of state.checks ?? []) {
+    if (check.id) checksById.set(check.id, check);
+    if (check.checkId) checksById.set(check.checkId, check);
+  }
+  for (const event of taskEvents) {
+    if (event.event === "VERIFICATION_RECORDED" && event.details) {
+      if (event.details.id) checksById.set(event.details.id, event.details);
+      if (event.details.checkId) checksById.set(event.details.checkId, event.details);
+    }
+  }
+
+  // 1. Check if latest diagnosis has NO information gain (global stall)
   if (latestDiag && latestDiag.informationGain === "NONE") {
     status = PROGRESS_STATUS.STALLED;
     signals.push({
@@ -61,11 +83,13 @@ export function evaluateProgress({ state, events = [] } = {}) {
     }
   }
 
+  const latestDiagReqs = diagnosisRequirements(latestDiag, checksById);
+
   for (const [req, cyclesSet] of [...reqCycles.entries()].sort(([a], [b]) => a.localeCompare(b))) {
     if (cyclesSet.size >= 3) {
       const sortedCycles = [...cyclesSet].sort((a, b) => a - b);
-      const isLatestStalled = latestDiag && latestDiag.informationGain === "NONE";
-      if (isLatestStalled) {
+      const isLatestStalledForThisReq = latestDiag && latestDiag.informationGain === "NONE" && latestDiagReqs.includes(req);
+      if (isLatestStalledForThisReq) {
         if (!signals.some((s) => s.code === PROGRESS_SIGNAL.REPEATED_FAILURE_WITH_SAME_DIAGNOSIS && s.requirement === req)) {
           signals.push({
             code: PROGRESS_SIGNAL.REPEATED_FAILURE_WITH_SAME_DIAGNOSIS,

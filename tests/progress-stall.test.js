@@ -176,3 +176,65 @@ test("evaluateProgress - four cycles with changing evidence -> WATCH, never STAL
   assert.equal(progress.signals.some((s) => s.code === PROGRESS_SIGNAL.HIGH_CORRECTION_CYCLE_COUNT), true);
   assert.equal(progress.signals.some((s) => s.severity === "BLOCKING_FOR_RETRY"), false);
 });
+
+test("evaluateProgress - requirement A failed 3 cycles, but latest NONE diagnosis belongs to B -> no false A repeated-diagnosis signal", () => {
+  const state = {
+    taskId: "task-1",
+    verificationCycle: 4,
+    checks: [
+      { id: "c1", requirement: "reqA", status: "failed", details: { verificationCycle: 1 } },
+      { id: "c2", requirement: "reqA", status: "failed", details: { verificationCycle: 2 } },
+      { id: "c3", requirement: "reqA", status: "failed", details: { verificationCycle: 3 } },
+      { id: "c4", requirement: "reqB", status: "failed", details: { verificationCycle: 4 } },
+    ],
+  };
+  const events = [
+    {
+      taskId: "task-1",
+      event: "DIAGNOSIS_RECORDED",
+      details: {
+        verificationCycle: 4,
+        hypothesis: "Repeated hypothesis for B",
+        evidenceRefs: ["c4"],
+        informationGain: "NONE",
+      },
+    },
+  ];
+  const progress = evaluateProgress({ state, events });
+  // Global status is STALLED due to latest diagnosis informationGain === NONE
+  assert.equal(progress.status, PROGRESS_STATUS.STALLED);
+  assert.equal(progress.signals.some((s) => s.code === PROGRESS_SIGNAL.NO_DIAGNOSTIC_INFORMATION_GAIN), true);
+
+  // Requirement A has 3 failed cycles -> REPEATED_FAILED_REQUIREMENT, but NOT REPEATED_FAILURE_WITH_SAME_DIAGNOSIS
+  const signalA = progress.signals.find((s) => s.requirement === "reqA");
+  assert.ok(signalA);
+  assert.equal(signalA.code, PROGRESS_SIGNAL.REPEATED_FAILED_REQUIREMENT);
+  assert.equal(progress.signals.some((s) => s.code === PROGRESS_SIGNAL.REPEATED_FAILURE_WITH_SAME_DIAGNOSIS && s.requirement === "reqA"), false);
+});
+
+test("evaluateProgress - requirement A failed 3 cycles and latest NONE diagnosis belongs to A -> REPEATED_FAILURE_WITH_SAME_DIAGNOSIS for A", () => {
+  const state = {
+    taskId: "task-1",
+    verificationCycle: 3,
+    checks: [
+      { id: "c1", requirement: "reqA", status: "failed", details: { verificationCycle: 1 } },
+      { id: "c2", requirement: "reqA", status: "failed", details: { verificationCycle: 2 } },
+      { id: "c3", requirement: "reqA", status: "failed", details: { verificationCycle: 3 } },
+    ],
+  };
+  const events = [
+    {
+      taskId: "task-1",
+      event: "DIAGNOSIS_RECORDED",
+      details: {
+        verificationCycle: 3,
+        hypothesis: "Repeated hypothesis for A",
+        evidenceRefs: ["c3"],
+        informationGain: "NONE",
+      },
+    },
+  ];
+  const progress = evaluateProgress({ state, events });
+  assert.equal(progress.status, PROGRESS_STATUS.STALLED);
+  assert.equal(progress.signals.some((s) => s.code === PROGRESS_SIGNAL.REPEATED_FAILURE_WITH_SAME_DIAGNOSIS && s.requirement === "reqA"), true);
+});

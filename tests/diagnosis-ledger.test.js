@@ -213,7 +213,7 @@ test("recordDiagnosis persists in event ledger and updates work state projection
       { code: "E_DIAGNOSIS_EVIDENCE_INVALID" }
     );
 
-    // Record second diagnosis in same cycle (repeats hypothesis & evidence -> NONE)
+    // Record idempotent retry in same cycle (re-submits same hypothesis & evidence)
     const res2 = await recordDiagnosis({
       target,
       packageRoot,
@@ -224,12 +224,135 @@ test("recordDiagnosis persists in event ledger and updates work state projection
       nextSafeAction: "Replace <= with < in middleware",
       taskId,
     });
-    assert.equal(res2.diagnosis.informationGain, "NONE");
+    assert.equal(res2.idempotent, true);
+    assert.equal(res2.diagnosis.diagnosisFingerprint, res.diagnosis.diagnosisFingerprint);
 
-    const events = await readEvents(target, packageRoot, { taskId });
-    const diagEvents = events.filter((e) => e.event === "DIAGNOSIS_RECORDED");
-    assert.equal(diagEvents.length, 2);
-    assert.equal(diagEvents[1].details.previousDiagnosisFingerprint, diagEvents[0].details.diagnosisFingerprint);
+    let events = await readEvents(target, packageRoot, { taskId });
+    let diagEvents = events.filter((e) => e.event === "DIAGNOSIS_RECORDED");
+    assert.equal(diagEvents.length, 1);
+
+    // Simulate partial writeWorkState failure: corrupt diagnosedHypothesis
+    const corruptedState = {
+      ...state,
+      diagnosedHypothesis: "corrupted or stale hypothesis",
+    };
+    await writeWorkState(target, corruptedState, { packageRoot, taskId });
+
+    // Retry recordDiagnosis repairs the projection
+    const resRepair = await recordDiagnosis({
+      target,
+      packageRoot,
+      hypothesis: "Comparison operator <= instead of <",
+      failureClass: "VERIFICATION_FAILURE",
+      evidenceRefs: ["check-auth-boundary"],
+      settledBy: "Exact boundary check returns 401",
+      nextSafeAction: "Replace <= with < in middleware",
+      taskId,
+    });
+    assert.equal(resRepair.idempotent, true);
+    assert.equal(resRepair.state.diagnosedHypothesis, "Comparison operator <= instead of <");
+
+    events = await readEvents(target, packageRoot, { taskId });
+    diagEvents = events.filter((e) => e.event === "DIAGNOSIS_RECORDED");
+    assert.equal(diagEvents.length, 1);
+
+    // Now test a genuinely repeated diagnosis in Cycle 2 -> produces NONE
+    await appendProtocolEvent(target, { taskId, event: "VERIFICATION_STARTED", details: { verificationCycle: 2 } }, packageRoot, { taskId });
+    const cycle2State = {
+      ...state,
+      verificationCycle: 2,
+      checks: [
+        {
+          id: "check-auth-c2",
+          requirement: "auth",
+          status: "failed",
+          evidenceKind: "OBSERVED",
+          result: "still 200",
+          details: { verificationCycle: 2 },
+        },
+      ],
+    };
+    await writeWorkState(target, cycle2State, { packageRoot, taskId });
+
+    const resCycle2 = await recordDiagnosis({
+      target,
+      packageRoot,
+      hypothesis: "Comparison operator <= instead of <",
+      failureClass: "VERIFICATION_FAILURE",
+      evidenceRefs: ["check-auth-c2"],
+      settledBy: "Returns 401",
+      nextSafeAction: "Fix it",
+      taskId,
+    });
+    // In cycle 2, hypothesis is identical but evidence is new -> NEW_EVIDENCE
+    assert.equal(resCycle2.diagnosis.informationGain, "NEW_EVIDENCE");
+    assert.equal(resCycle2.idempotent, false);
+
+  } finally {
+    await removeTempTree(target);
+  }
+});
+
+test("recordDiagnosis updates lastUpdated timestamp", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-diag-timestamp-"));
+  try {
+    const taskId = "task-timestamp";
+    await appendProtocolEvent(target, { taskId, event: "TASK_RECEIVED" }, packageRoot, { taskId });
+    await appendProtocolEvent(target, { taskId, event: "CONTRACT_VALIDATED" }, packageRoot, { taskId });
+    await appendProtocolEvent(target, { taskId, event: "ROUTE_VALIDATED" }, packageRoot, { taskId });
+    await appendProtocolEvent(target, { taskId, event: "PREFLIGHT_READY" }, packageRoot, { taskId });
+    await appendProtocolEvent(target, { taskId, event: "EXECUTION_STARTED" }, packageRoot, { taskId });
+    await appendProtocolEvent(target, { taskId, event: "VERIFICATION_STARTED", details: { verificationCycle: 1 } }, packageRoot, { taskId });
+
+    const oldTimestamp = "2020-01-01T00:00:00.000Z";
+    const state = createWorkState({
+      taskId,
+      contractFingerprint: "0".repeat(64),
+      routeFingerprint: "0".repeat(64),
+      repositoryFingerprint: { branch: null, head: null },
+      phase: "DIAGNOSING",
+      verificationCycle: 1,
+      lastUpdated: oldTimestamp,
+      checks: [
+        {
+          id: "c1",
+          requirement: "r1",
+          status: "failed",
+          evidenceKind: "OBSERVED",
+          result: "failed",
+          details: { verificationCycle: 1 },
+        },
+      ],
+    });
+    await writeWorkState(target, state, { packageRoot, taskId });
+
+    const res = await recordDiagnosis({
+      target,
+      packageRoot,
+      hypothesis: "Root cause found",
+      failureClass: "VERIFICATION_FAILURE",
+      evidenceRefs: ["c1"],
+      settledBy: "Test passes",
+      nextSafeAction: "Fix code",
+      taskId,
+    });
+
+    assert.notEqual(res.state.lastUpdated, oldTimestamp);
+    assert.ok(Date.parse(res.state.lastUpdated) > Date.parse(oldTimestamp));
+
+    // Also verify idempotent call updates lastUpdated
+    const resIdempotent = await recordDiagnosis({
+      target,
+      packageRoot,
+      hypothesis: "Root cause found",
+      failureClass: "VERIFICATION_FAILURE",
+      evidenceRefs: ["c1"],
+      settledBy: "Test passes",
+      nextSafeAction: "Fix code",
+      taskId,
+    });
+    assert.equal(resIdempotent.idempotent, true);
+    assert.ok(resIdempotent.state.lastUpdated);
 
   } finally {
     await removeTempTree(target);
