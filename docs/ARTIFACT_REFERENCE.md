@@ -160,7 +160,7 @@ Discovered repository facts, platforms, runtimes, and dependencies.
 
 <!-- forgeloop-doc: schema=event artifact=.forgeloop/task-state/<task-key>/events.ndjson -->
 
-The append-only cryptographic event ledger. Each line is a single JSON event object.
+The append-only cryptographic event ledger. Each line is a single JSON event object. Records authoritative chronological events including lifecycle milestones (`TASK_RECEIVED`, `CONTRACT_VALIDATED`, `ROUTE_VALIDATED`, `PREFLIGHT_READY`, `EXECUTION_STARTED`, `VERIFICATION_STARTED`), evidence-backed diagnoses (`DIAGNOSIS_RECORDED`), and decision settlement criteria (`DECISION_CRITERION_RECORDED`).
 
 #### Canonical Line Fields
 
@@ -254,7 +254,7 @@ Pre-implementation gate approval artifact recording decisions, bound artifact ha
 
 <!-- forgeloop-doc: schema=work-state artifact=.forgeloop/task-state/<task-key>/work-state.json -->
 
-The canonical, authoritative lifecycle work state.
+The canonical, authoritative lifecycle work state. Represents current checkpoint and resume state (`phase`, `checks`, `verificationCycle`, `lastUpdated`). Note: `diagnosedHypothesis` is maintained as a backward-compatibility projection of the latest diagnosis from `events.ndjson`.
 
 #### Canonical Fields
 

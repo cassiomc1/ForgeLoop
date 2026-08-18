@@ -237,10 +237,36 @@ forgeloop run-check --task task-contact-form-001 --id lint --requirement "npm ru
 
 If a check fails:
 
-1. Do not repeat the failed check blindly.
-2. Formulate a diagnostic hypothesis.
-3. Apply the correction.
-4. Re-run `forgeloop run-check`.
+1. Advance to `DIAGNOSING`:
+
+   ```bash
+   forgeloop advance --task task-contact-form-001 --to DIAGNOSING
+   ```
+
+2. Record an append-only root-cause diagnosis in the event ledger:
+
+   ```bash
+   forgeloop record-diagnosis \
+     --task task-contact-form-001 \
+     --hypothesis="Form validation regex incorrectly rejects valid domain formats" \
+     --failure-class="VERIFICATION_FAILURE" \
+     --evidence-ref="unit-tests" \
+     --settled-by="All domain validation unit tests pass" \
+     --next-safe-action="Update email domain regex in ContactForm.jsx"
+   ```
+
+3. Advance to `CORRECTING` and apply the fix:
+
+   ```bash
+   forgeloop advance --task task-contact-form-001 --to CORRECTING
+   ```
+
+4. Re-enter `VERIFYING` (advances `verificationCycle` monotonically) and re-run checks:
+
+   ```bash
+   forgeloop advance --task task-contact-form-001 --to VERIFYING
+   forgeloop run-check --task task-contact-form-001 --id unit-tests --requirement "npm test passes for contact form" -- npm test
+   ```
 
 ---
 

@@ -29,26 +29,30 @@ This guide provides symptom-first recovery procedures for common ForgeLoop proto
 
 #### What it means
 
-Pre-implementation gates (e.g. `design`, `threat-boundary`) are unsatisfied, missing, or referencing stale files.
+Pre-implementation gates (e.g. `design`, `threat-boundary`) are unsatisfied, missing, or referencing stale files, or the contract contains unresolved blocking decisions. ForgeLoop preserves specific preflight error codes (`E_CONTRACT_UNRESOLVED_DECISION`, `E_CONTRACT_STALE`, `E_ROUTE_STALE`, `E_GATE_UNVERIFIED`) in `reasons` instead of reducing them to generic readiness errors.
 
 #### Likely causes
 
-1. A gate required by an activated guide has no corresponding `.forgeloop/task-state/<taskKey>/gates/<gate>.json` file.
-2. The gate artifact references files whose SHA-256 hashes changed after the gate was satisfied.
-3. Contract `unresolvedDecisions` contains blocking decisions.
+1. A gate required by an activated guide has no corresponding `.forgeloop/task-state/<taskKey>/gates/<gate>.json` file (`E_GATE_UNVERIFIED`).
+2. The gate artifact references files whose SHA-256 hashes changed after the gate was satisfied (`E_GATE_STALE`).
+3. Contract `unresolvedDecisions` contains blocking decisions (`E_CONTRACT_UNRESOLVED_DECISION`).
 
 #### Inspect
 
 ```bash
 forgeloop task-show --task <id> --json
 forgeloop preflight --task <id> --json
+forgeloop next --task <id> --json
 ```
 
 #### Safe recovery
 
 1. If a gate is missing, satisfy required gates or create the gate artifact with status `"satisfied"`.
 2. If an artifact hash changed, update the artifact SHA-256 in the gate file.
-3. Re-run `forgeloop preflight --task <id> --json`.
+3. If `unresolvedDecisions` contains blocking items:
+   - Record settlement guidance with `forgeloop record-decision-criterion --decision="..." --settled-by="..."` to provide context.
+   - Resolve or remove the blocking decision in `contract.json`.
+4. Re-run `forgeloop preflight --task <id> --json`.
 
 #### Do not
 
@@ -126,24 +130,28 @@ forgeloop advance --task <id> --to CORRECTING
 
 #### What it means
 
-Deterministic progress evaluation detected that repeated correction cycles contain no new diagnostic information (`E_PROGRESS_STALLED`, `NO_DIAGNOSTIC_INFORMATION_GAIN`), or the same requirement failed 3+ times with an identical diagnosis (`REPEATED_FAILURE_WITH_SAME_DIAGNOSIS`).
+Deterministic progress evaluation detected that iterative correction cycles are not advancing (`E_PROGRESS_STALLED`). The latest diagnosis produced `informationGain: NONE` (signal `NO_DIAGNOSTIC_INFORMATION_GAIN`), or a specific contract requirement failed across 3+ verification cycles with an identical diagnosis (`REPEATED_FAILURE_WITH_SAME_DIAGNOSIS`).
 
 #### Likely causes
 
-1. A recorded diagnosis repeated the previous hypothesis with the exact same evidence references (`informationGain: NONE`).
-2. The same requirement has repeatedly failed across 3 or more verification cycles without a strategy change.
+1. A recorded diagnosis in a new cycle repeated the previous hypothesis with the exact same evidence references (`informationGain: NONE`). Note: technical retries within the *same* cycle are idempotent and do not cause stalls, but repeating in a *new* cycle does.
+2. The same requirement has repeatedly failed across 3 or more verification cycles with unchanged diagnostic hypotheses.
+3. Minor cosmetic changes were made to `settledBy` or `nextSafeAction` without changing the root hypothesis or evidence references.
 
 #### Inspect
 
 ```bash
 forgeloop progress --task <id> --json
+forgeloop next --task <id> --json
 ```
 
 #### Safe recovery
 
-1. Do not repeat the same retry or correction action.
-2. Re-examine the failure evidence from a new angle or gather fresh diagnostic evidence.
-3. Formulate a genuinely new root-cause hypothesis with new evidence references and record it with `forgeloop record-diagnosis`.
+1. When stalled, `forgeloop next` returns `nextAction: "CHANGE_STRATEGY"` with error code `E_PROGRESS_STALLED`.
+2. Do not repeat the same retry or correction action.
+3. Re-examine the failure evidence from a new angle or gather fresh diagnostic evidence.
+4. Formulate a genuinely new root-cause hypothesis with new evidence references and record it with `forgeloop record-diagnosis`.
+5. Once a diagnosis with positive information gain (`NEW_HYPOTHESIS`, `NEW_EVIDENCE`, `NEW_HYPOTHESIS_AND_EVIDENCE`) is recorded, `forgeloop next` returns `CORRECT` and status returns to `ADVANCING`.
 
 ---
 

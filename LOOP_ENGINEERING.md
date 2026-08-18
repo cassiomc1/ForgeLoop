@@ -605,10 +605,28 @@ forgeloop record-diagnosis \
   --next-safe-action="Smallest safe local action to address the hypothesis"
 ```
 
-- `evidence-ref` must reference at least one failed or blocked check from the active verification cycle.
-- Diagnoses are classified by information gain relative to prior diagnoses: `FIRST_DIAGNOSIS`, `NEW_HYPOTHESIS`, `NEW_EVIDENCE`, `NEW_HYPOTHESIS_AND_EVIDENCE`, or `NONE`.
-- Repeating a previous hypothesis with the same evidence results in `informationGain: NONE`. Such diagnoses are recorded in the event ledger for auditability but cannot authorize correction (`DIAGNOSING → CORRECTING` fails with `E_DIAGNOSIS_NO_NEW_INFORMATION`, and `forgeloop next` returns `CHANGE_STRATEGY`).
-- Deterministic progress evaluation (`forgeloop progress`) returns `ADVANCING`, `WATCH`, or `STALLED` without probabilistic heuristics.
+- **Single Source of Truth**: The append-only, hash-chained `events.ndjson` is the sole authority for diagnosis chronology (`DIAGNOSIS_RECORDED` events). The mutable `work-state.diagnosedHypothesis` field is maintained strictly as a backward-compatibility projection.
+- **Evidence Binding**: `evidence-ref` must reference at least one failed or blocked check from the active `verificationCycle`.
+- **Information Gain Classification**: Each diagnosis is classified by comparing its normalized semantic fingerprint (`sha256(failureClass:normalizedHypothesis:sortedEvidenceRefs)`) against previous task diagnoses:
+  - `FIRST_DIAGNOSIS`: Initial diagnosis for the task.
+  - `NEW_HYPOTHESIS`: Distinct hypothesis with previously observed evidence.
+  - `NEW_EVIDENCE`: Same hypothesis supported by newly observed evidence checks.
+  - `NEW_HYPOTHESIS_AND_EVIDENCE`: Both hypothesis and evidence references are new.
+  - `NONE`: Repeating the previous hypothesis with the exact same evidence.
+- **Idempotent Recovery in the Same Cycle**: Retrying `record-diagnosis` with the identical hypothesis and evidence within the *same* verification cycle is idempotent. It reuses the existing event, repairs or synchronizes `work-state.diagnosedHypothesis`, advances `work-state.lastUpdated`, and returns `idempotent: true` without appending a duplicate event or triggering a false stall.
+- **No Retry Without Information Gain**: Repeating the same hypothesis and evidence in a *subsequent* verification cycle produces `informationGain: NONE`. Such diagnoses are recorded in the event ledger for auditability but cannot authorize a correction phase transition (`DIAGNOSING → CORRECTING` fails with `E_DIAGNOSIS_NO_NEW_INFORMATION`, and `forgeloop next` returns `CHANGE_STRATEGY`). Superficial alterations to `settled-by`, `next-safe-action`, or formatting without changing the underlying hypothesis or evidence references do not generate information gain.
+- **Legacy Compatibility Invariant**: Tasks created under older protocol-v1 revisions that have `diagnosedHypothesis` populated in `work-state.json` without a corresponding `DIAGNOSIS_RECORDED` event remain readable. However, `forgeloop next` returns `RECORD_DIAGNOSIS` and `DIAGNOSING → CORRECTING` fails with `E_DIAGNOSIS_REQUIRED` until a formal diagnosis is appended via `forgeloop record-diagnosis`. ForgeLoop never synthesizes historical events automatically.
+
+### Progress Stall Detection (`forgeloop progress`)
+
+Task progress across iterative verification cycles is evaluated deterministically without heuristics, model confidence scores, or chain-of-thought introspection:
+
+- **Statuses**:
+  - `ADVANCING`: Failure counts are low, or new diagnostic information gain is present.
+  - `WATCH`: A single requirement has failed across 3+ distinct cycles with changing diagnoses, or the task has reached a high cycle count ($\ge 4$). High cycle count alone produces `WATCH`, never a hard stall.
+  - `STALLED`: The latest diagnosis has `informationGain: NONE` (global stall with signal `NO_DIAGNOSTIC_INFORMATION_GAIN`), or a specific requirement failed 3+ times with identical diagnoses (`REPEATED_FAILURE_WITH_SAME_DIAGNOSIS`).
+- **Requirement-Specific Attribution**: Stall signals are mapped to individual contract requirements strictly through `evidenceRefs → check → requirement`. A stall on one requirement does not fabricate false repeat-diagnosis signals for unrelated requirements.
+- **Strategy Change**: When stalled, `forgeloop next` returns action `CHANGE_STRATEGY` with error code `E_PROGRESS_STALLED`. This directs the actor to formulate a genuinely new root-cause hypothesis, gather independent diagnostic evidence, or change the technical approach.
 
 ### Decision Settlement Criteria
 
@@ -620,7 +638,10 @@ forgeloop record-decision-criterion \
   --settled-by="Criteria or guidance that settles the decision"
 ```
 
-Settlement criteria provide guidance surfaced by `forgeloop next` (`SETTLED BY: ...`) while preserving contract schema compatibility (`unresolvedDecisions[]` remains an array of strings in protocolVersion 1). Recording a criterion does not automatically satisfy preflight readiness; the contract must be explicitly updated or resolved.
+- **Contract Schema Compatibility**: `current-contract.unresolvedDecisions[]` remains an array of strings (`string[]`) under `protocolVersion: 1`. Criteria are persisted as `DECISION_CRITERION_RECORDED` events in `events.ndjson` bound to `contractFingerprint`.
+- **Guidance Surfacing**: `forgeloop next` surfaces recorded criteria in its blocker reasons as `SETTLEMENT_CRITERION` (for a single decision) or `SETTLEMENT_CRITERIA` with an `items[]` array (for multiple decisions). Decisions without recorded criteria do not receive fabricated guidance.
+- **Fingerprint Binding and Staleness**: A criterion is valid only while the contract fingerprint matches. If the contract is modified, previous criteria bound to older fingerprints are automatically ignored as stale.
+- **Non-Bypassing**: Recording a settlement criterion attaches advisory guidance only; it does not automatically resolve the decision or make preflight `READY`. The contract must still be explicitly updated or resolved before execution begins.
 
 ## Independent completion dimensions
 

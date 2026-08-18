@@ -112,10 +112,12 @@ forgeloop complete --task example-task --json
 `advance` changes protocol phase only; it never runs target commands.
 `run-check` classifies the exact argv before launch and records ForgeLoop-owned
 execution provenance. `record-check` stores an observation and never executes
-the text supplied to `--command`. `complete` validates the contract, route,
-gates, ledger, evidence, coverage, receipt, and freshness. `audit` is
-read-only. `report` exposes independent completion, publication, and
-production-readiness dimensions.
+the text supplied to `--command`. `record-diagnosis` appends an authoritative
+root-cause hypothesis to the event ledger. `progress` evaluates task
+progression and detects stalls deterministically. `complete` validates the
+contract, route, gates, ledger, evidence, coverage, receipt, and freshness.
+`audit` is read-only. `report` exposes independent completion, publication,
+and production-readiness dimensions.
 
 The status precedence is `INVALID` > `INCONSISTENT` > `STALE` > `INCOMPLETE` >
 `VALID`. A `READY` preflight is a resumable checkpoint: if its work state is
