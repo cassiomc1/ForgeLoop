@@ -225,11 +225,34 @@ export async function verifyPolicyLock(target, packageRoot) {
   const baseline = await readBaseline(target, packageRoot);
   const expectedLock = computePolicyLockData(rules, baseline);
 
+  const mismatches = [];
+  if (persistedLock.algorithm !== expectedLock.algorithm) {
+    mismatches.push("algorithm");
+  }
   if (persistedLock.digest !== expectedLock.digest) {
+    mismatches.push("digest");
+  }
+  if (persistedLock.rulesDigest && persistedLock.rulesDigest !== expectedLock.rulesDigest) {
+    mismatches.push("rulesDigest");
+  }
+  if (persistedLock.baselineDigest && persistedLock.baselineDigest !== expectedLock.baselineDigest) {
+    mismatches.push("baselineDigest");
+  }
+
+  if (mismatches.length > 0) {
     return {
       status: "MISMATCH",
-      expected: expectedLock.digest,
-      observed: persistedLock.digest,
+      mismatches,
+      expected: {
+        digest: expectedLock.digest,
+        rulesDigest: expectedLock.rulesDigest,
+        baselineDigest: expectedLock.baselineDigest,
+      },
+      observed: {
+        digest: persistedLock.digest,
+        rulesDigest: persistedLock.rulesDigest,
+        baselineDigest: persistedLock.baselineDigest,
+      },
     };
   }
 
@@ -244,6 +267,7 @@ export async function evaluateTargetPolicy({
   packageRoot,
   taskId = null,
   files = null,
+  overrideAdapters = null,
   now = new Date().toISOString(),
 } = {}) {
   const capability = await detectPolicyCapability(target, packageRoot);
@@ -301,16 +325,18 @@ export async function evaluateTargetPolicy({
   // Active lock verification
   const lockVerification = await verifyPolicyLock(target, packageRoot);
   if (lockVerification.status === "MISMATCH") {
+    const expStr = typeof lockVerification.expected === "object" ? lockVerification.expected.digest : lockVerification.expected;
+    const obsStr = typeof lockVerification.observed === "object" ? lockVerification.observed.digest : lockVerification.observed;
     errors.push({
       code: "POLICY_LOCK_MISMATCH",
-      why: `Persisted policy lock does not match current effective policy: expected ${lockVerification.expected}, observed ${lockVerification.observed}`,
+      why: `Persisted policy lock does not match current effective policy: expected ${expStr}, observed ${obsStr}`,
       fix: "Re-evaluate effective rules and update policy.lock or restore modified rules.",
     });
   }
 
   for (const rule of rules) {
     const adapterId = rule.check?.adapter ?? (typeof rule.check === "string" ? rule.check : null);
-    const adapter = getPolicyAdapter(adapterId);
+    const adapter = overrideAdapters?.[adapterId] ?? getPolicyAdapter(adapterId);
 
     if (!adapter) {
       evaluatedRules.push({

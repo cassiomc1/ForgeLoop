@@ -27,7 +27,7 @@ import {
 import { PROFILE_PATH } from "./target-layout.js";
 import { readPersistedRoute } from "./route-artifact.js";
 import { validateEventLedger } from "./events.js";
-import { taskArtifactPath } from "./task-paths.js";
+import { PROJECT_ARTIFACT_PATHS, taskArtifactPath } from "./task-paths.js";
 
 const PREVIEW_DECISION_LIMIT = 10;
 const PREVIEW_DECISION_MAX_LENGTH = 240;
@@ -89,6 +89,24 @@ export async function evaluatePreflight({ target, packageRoot, strict = false, t
   }
   if (state && contract && state.contractFingerprint !== contract.fingerprint) {
     errors.push(issue("E_CONTRACT_STALE", "work-state references a different contract", [contractRelPath, stateRelPath]));
+  }
+
+  const { detectPolicyCapability } = await import("./policy-engine.js");
+  const policyCapability = await detectPolicyCapability(target, packageRoot);
+  if (policyCapability === "INVALID") {
+    errors.push(issue(
+      "E_POLICY_INVALID",
+      "Executable policy artifacts are present but invalid.",
+      [
+        PROJECT_ARTIFACT_PATHS.policyRules,
+        PROJECT_ARTIFACT_PATHS.policyBaseline,
+        PROJECT_ARTIFACT_PATHS.policyDiscovery,
+        PROJECT_ARTIFACT_PATHS.policyLock,
+      ],
+      {
+        next: "Repair the invalid policy artifact and rerun forgeloop preflight.",
+      },
+    ));
   }
 
   const sortedErrors = sortIssues(errors);
@@ -188,7 +206,20 @@ export async function runPreflight({
     } = await import("./policy-engine.js");
 
     const policyCapability = await detectPolicyCapability(target, packageRoot);
-    if (policyCapability !== "NOT_PRESENT") {
+    if (policyCapability === "INVALID") {
+      throw preflightError(
+        "E_POLICY_INVALID",
+        "Executable policy artifacts are present but invalid.",
+        [
+          PROJECT_ARTIFACT_PATHS.policyRules,
+          PROJECT_ARTIFACT_PATHS.policyBaseline,
+          PROJECT_ARTIFACT_PATHS.policyDiscovery,
+          PROJECT_ARTIFACT_PATHS.policyLock,
+        ],
+      );
+    }
+
+    if (policyCapability === "AVAILABLE") {
       try {
         const existingSnapshot = await readTaskPolicySnapshot(target, result.taskId, packageRoot);
         if (!existingSnapshot) {

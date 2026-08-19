@@ -580,7 +580,13 @@ export const COMMAND_HANDLERS = Object.freeze({
     return result.status === "VALID" ? 0 : 1;
   },
   baseline: async ({ target, packageRoot, options }) => {
-    const result = await runBaseline({ target, packageRoot, record: options.record, update: options.update });
+    const result = await runBaseline({
+      target,
+      packageRoot,
+      record: options.record,
+      update: options.update,
+      policyResetAuthorized: options.policyResetAuthorized,
+    });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatBaselineResult(result));
     return 0;
   },

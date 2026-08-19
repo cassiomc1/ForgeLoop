@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { mkdtemp, rm, writeFile, mkdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import { runInit } from "../src/commands/init.js";
 import { runTaskCreate } from "../src/commands/task-create.js";
@@ -21,12 +23,27 @@ import {
   computePolicyLockData,
   detectPolicyCapability,
   evaluateTargetPolicy,
+  readPolicyLock,
+  readTaskPolicySnapshot,
   verifyPolicyLock,
+  writePolicyLock,
   writeProjectRules,
 } from "../src/core/policy-engine.js";
 import { writeBaseline } from "../src/core/policy-baseline.js";
+import { createContract, writeContract } from "../src/core/contract.js";
+import { NEXT_ACTIONS, policyRecoveryAction } from "../src/core/next-action.js";
+import { taskArtifactPath } from "../src/core/task-paths.js";
 
 const packageRoot = getPackageRoot();
+const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const cliPath = path.join(repositoryRoot, "src", "cli.js");
+
+function runCli(target, ...args) {
+  return spawnSync(process.execPath, [cliPath, ...args, "--path", target], {
+    cwd: repositoryRoot,
+    encoding: "utf8",
+  });
+}
 
 async function withTarget(fn) {
   const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-hardening-"));
@@ -161,39 +178,335 @@ test("P4: policy.lock malformed -> INVALID capability", async () => {
   });
 });
 
-test("P5: policy evaluation throws unexpectedly -> fails closed with POLICY_EVALUATION_FAILED", async () => {
+test("P5 / EVAL-1: policy evaluation throws unexpectedly -> fails closed with exact POLICY_EVALUATION_FAILED", async () => {
   await withTarget(async (target) => {
     await runInit({ target, packageRoot, packageVersion: "1.2.1" });
-    // Write custom project rule with broken adapter
-    await writeProjectRules(
+    const throwingAdapter = {
+      check: async () => {
+        throw new Error("intentional policy evaluation failure");
+      },
+    };
+    const policyEval = await evaluateTargetPolicy({
       target,
-      [
-        {
-          id: "CUSTOM.BROKEN",
-          name: "Broken check",
-          description: "Throws an error",
-          source: "project",
-          severity: "HIGH",
-          blocking: true,
-          check: { type: "adapter", adapter: "repo-structure" },
-          why: "Broken rule fixture",
-          fix: "Repair rule",
-        },
-      ],
       packageRoot,
-    );
-
-    const policyEval = await evaluateTargetPolicy({ target, packageRoot });
+      overrideAdapters: { "secret-detection": throwingAdapter },
+    });
     assert.equal(policyEval.status, "INVALID");
-    assert.ok(policyEval.errors.length > 0);
+    assert.ok(policyEval.errors.some((e) => e.code === "POLICY_EVALUATION_FAILED"));
+  });
+});
+
+test("P6: discovery.json malformed -> INVALID capability", async () => {
+  await withTarget(async (target) => {
+    await runInit({ target, packageRoot, packageVersion: "1.2.1" });
+    await mkdir(path.join(target, ".forgeloop", "policy"), { recursive: true });
+    await writeFile(path.join(target, ".forgeloop", "policy", "discovery.json"), "CORRUPT_DISCOVERY{{{");
+
+    const capability = await detectPolicyCapability(target, packageRoot);
+    assert.equal(capability, "INVALID");
   });
 });
 
 // --------------------------------------------------------------------------
-// L1 - L5: Policy Lock Integrity Tests
+// PF1 - PF6: Preflight Policy Invariants
 // --------------------------------------------------------------------------
 
-test("L1: effective rules and baseline unchanged -> lock status VALID", async () => {
+test("PF1: policy absent -> preflight behavior unchanged (READY possible)", async () => {
+  await withTarget(async (target) => {
+    await runTaskCreate({ target, taskId: "task-pf1", packageRoot });
+    const contract = createContract({
+      taskId: "task-pf1",
+      objective: "Verify preflight with absent policy",
+      deliverables: ["src/app.js"],
+      constraints: ["offline"],
+      risks: [],
+      verification: ["tests"],
+      successCriteria: ["tests"],
+      stopConditions: ["blocked"],
+      unresolvedDecisions: [],
+      sourceRefs: [],
+    });
+    await writeContract(target, contract, packageRoot, { taskId: "task-pf1" });
+    await runRoute({ target, taskId: "task-pf1", workType: "code", surfaces: ["config"], packageRoot });
+
+    const preRes = await runPreflight({ target, taskId: "task-pf1", packageRoot });
+    assert.equal(preRes.status, "READY");
+  });
+});
+
+test("PF2: policy available and valid -> snapshot captured and READY", async () => {
+  await withTarget(async (target) => {
+    await runInit({ target, packageRoot, packageVersion: "1.2.1" });
+    await runTaskCreate({ target, taskId: "task-pf2", packageRoot });
+    const contract = createContract({
+      taskId: "task-pf2",
+      objective: "Verify preflight with valid policy",
+      deliverables: ["src/app.js"],
+      constraints: ["offline"],
+      risks: [],
+      verification: ["tests"],
+      successCriteria: ["tests"],
+      stopConditions: ["blocked"],
+      unresolvedDecisions: [],
+      sourceRefs: [],
+    });
+    await writeContract(target, contract, packageRoot, { taskId: "task-pf2" });
+    await runRoute({ target, taskId: "task-pf2", workType: "code", surfaces: ["config"], packageRoot });
+
+    const preRes = await runPreflight({ target, taskId: "task-pf2", packageRoot });
+    assert.equal(preRes.status, "READY");
+
+    const snapshot = await readTaskPolicySnapshot(target, "task-pf2", packageRoot);
+    assert.ok(snapshot);
+    assert.ok(snapshot.policyDigest);
+  });
+});
+
+test("PF3: policy.lock malformed -> preflight throws E_POLICY_INVALID", async () => {
+  await withTarget(async (target) => {
+    await runInit({ target, packageRoot, packageVersion: "1.2.1" });
+    await runTaskCreate({ target, taskId: "task-pf3", packageRoot });
+    const contract = createContract({
+      taskId: "task-pf3",
+      objective: "Verify preflight with malformed lock",
+      deliverables: ["src/app.js"],
+      constraints: ["offline"],
+      risks: [],
+      verification: ["tests"],
+      successCriteria: ["tests"],
+      stopConditions: ["blocked"],
+      unresolvedDecisions: [],
+      sourceRefs: [],
+    });
+    await writeContract(target, contract, packageRoot, { taskId: "task-pf3" });
+    await runRoute({ target, taskId: "task-pf3", workType: "code", surfaces: ["config"], packageRoot });
+
+    // Corrupt lockfile
+    await writeFile(path.join(target, ".forgeloop", "policy", "policy.lock"), "{ \"schemaVersion\": 999 }");
+
+    await assert.rejects(
+      async () => {
+        await runPreflight({ target, taskId: "task-pf3", packageRoot });
+      },
+      (err) => {
+        assert.equal(err.code, "E_POLICY_INVALID");
+        return true;
+      },
+    );
+  });
+});
+
+test("PF4: rules.json malformed -> preflight throws E_POLICY_INVALID", async () => {
+  await withTarget(async (target) => {
+    await runInit({ target, packageRoot, packageVersion: "1.2.1" });
+    await runTaskCreate({ target, taskId: "task-pf4", packageRoot });
+    const contract = createContract({
+      taskId: "task-pf4",
+      objective: "Verify preflight with malformed rules",
+      deliverables: ["src/app.js"],
+      constraints: ["offline"],
+      risks: [],
+      verification: ["tests"],
+      successCriteria: ["tests"],
+      stopConditions: ["blocked"],
+      unresolvedDecisions: [],
+      sourceRefs: [],
+    });
+    await writeContract(target, contract, packageRoot, { taskId: "task-pf4" });
+    await runRoute({ target, taskId: "task-pf4", workType: "code", surfaces: ["config"], packageRoot });
+
+    // Corrupt rules.json
+    await writeFile(path.join(target, ".forgeloop", "policy", "rules.json"), "MALFORMED_RULES_JSON{{{");
+
+    await assert.rejects(
+      async () => {
+        await runPreflight({ target, taskId: "task-pf4", packageRoot });
+      },
+      (err) => {
+        assert.equal(err.code, "E_POLICY_INVALID");
+        return true;
+      },
+    );
+  });
+});
+
+test("PF5: baseline.json malformed -> preflight throws E_POLICY_INVALID", async () => {
+  await withTarget(async (target) => {
+    await runInit({ target, packageRoot, packageVersion: "1.2.1" });
+    await runTaskCreate({ target, taskId: "task-pf5", packageRoot });
+    const contract = createContract({
+      taskId: "task-pf5",
+      objective: "Verify preflight with malformed baseline",
+      deliverables: ["src/app.js"],
+      constraints: ["offline"],
+      risks: [],
+      verification: ["tests"],
+      successCriteria: ["tests"],
+      stopConditions: ["blocked"],
+      unresolvedDecisions: [],
+      sourceRefs: [],
+    });
+    await writeContract(target, contract, packageRoot, { taskId: "task-pf5" });
+    await runRoute({ target, taskId: "task-pf5", workType: "code", surfaces: ["config"], packageRoot });
+
+    // Corrupt baseline.json
+    await writeFile(path.join(target, ".forgeloop", "policy", "baseline.json"), "MALFORMED_BASELINE{{{");
+
+    await assert.rejects(
+      async () => {
+        await runPreflight({ target, taskId: "task-pf5", packageRoot });
+      },
+      (err) => {
+        assert.equal(err.code, "E_POLICY_INVALID");
+        return true;
+      },
+    );
+  });
+});
+
+test("PF6: discovery.json malformed -> preflight throws E_POLICY_INVALID", async () => {
+  await withTarget(async (target) => {
+    await runInit({ target, packageRoot, packageVersion: "1.2.1" });
+    await runTaskCreate({ target, taskId: "task-pf6", packageRoot });
+    const contract = createContract({
+      taskId: "task-pf6",
+      objective: "Verify preflight with malformed discovery",
+      deliverables: ["src/app.js"],
+      constraints: ["offline"],
+      risks: [],
+      verification: ["tests"],
+      successCriteria: ["tests"],
+      stopConditions: ["blocked"],
+      unresolvedDecisions: [],
+      sourceRefs: [],
+    });
+    await writeContract(target, contract, packageRoot, { taskId: "task-pf6" });
+    await runRoute({ target, taskId: "task-pf6", workType: "code", surfaces: ["config"], packageRoot });
+
+    // Corrupt discovery.json
+    await writeFile(path.join(target, ".forgeloop", "policy", "discovery.json"), "MALFORMED_DISCOVERY{{{");
+
+    await assert.rejects(
+      async () => {
+        await runPreflight({ target, taskId: "task-pf6", packageRoot });
+      },
+      (err) => {
+        assert.equal(err.code, "E_POLICY_INVALID");
+        return true;
+      },
+    );
+  });
+});
+
+// --------------------------------------------------------------------------
+// SNAP-1: Snapshot Write Failure Test
+// --------------------------------------------------------------------------
+
+test("SNAP-1: task policy snapshot destination conflict causes snapshot write failure -> E_POLICY_SNAPSHOT_WRITE_FAILED", async () => {
+  await withTarget(async (target) => {
+    await runInit({ target, packageRoot, packageVersion: "1.2.1" });
+    await runTaskCreate({ target, taskId: "task-snap1", packageRoot });
+    const contract = createContract({
+      taskId: "task-snap1",
+      objective: "Verify snapshot write failure",
+      deliverables: ["src/app.js"],
+      constraints: ["offline"],
+      risks: [],
+      verification: ["tests"],
+      successCriteria: ["tests"],
+      stopConditions: ["blocked"],
+      unresolvedDecisions: [],
+      sourceRefs: [],
+    });
+    await writeContract(target, contract, packageRoot, { taskId: "task-snap1" });
+    await runRoute({ target, taskId: "task-snap1", workType: "code", surfaces: ["config"], packageRoot });
+
+    // Create conflict where snapshot file is expected to be written
+    const snapRel = taskArtifactPath("task-snap1", "policySnapshot");
+    const snapshotPath = path.join(target, snapRel);
+    await mkdir(snapshotPath, { recursive: true });
+
+    await assert.rejects(
+      async () => {
+        await runPreflight({ target, taskId: "task-snap1", packageRoot });
+      },
+      (err) => {
+        assert.equal(err.code, "E_POLICY_SNAPSHOT_WRITE_FAILED");
+        return true;
+      },
+    );
+  });
+});
+
+// --------------------------------------------------------------------------
+// L1 - L5 / LOCK-F1 - LOCK-F6: Policy Lock Integrity Tests
+// --------------------------------------------------------------------------
+
+test("LOCK-F1: top digest modified -> MISMATCH", async () => {
+  await withTarget(async (target) => {
+    await runInit({ target, packageRoot, packageVersion: "1.2.1" });
+    const lock = await readPolicyLock(target, packageRoot);
+    lock.digest = "sha256:0000000000000000000000000000000000000000000000000000000000000000";
+    await writePolicyLock(target, lock, packageRoot);
+
+    const lockResult = await verifyPolicyLock(target, packageRoot);
+    assert.equal(lockResult.status, "MISMATCH");
+    assert.ok(lockResult.mismatches.includes("digest"));
+  });
+});
+
+test("LOCK-F2: rulesDigest modified only -> MISMATCH", async () => {
+  await withTarget(async (target) => {
+    await runInit({ target, packageRoot, packageVersion: "1.2.1" });
+    const lock = await readPolicyLock(target, packageRoot);
+    lock.rulesDigest = "sha256:1111111111111111111111111111111111111111111111111111111111111111";
+    await writePolicyLock(target, lock, packageRoot);
+
+    const lockResult = await verifyPolicyLock(target, packageRoot);
+    assert.equal(lockResult.status, "MISMATCH");
+    assert.ok(lockResult.mismatches.includes("rulesDigest"));
+  });
+});
+
+test("LOCK-F3: baselineDigest modified only -> MISMATCH", async () => {
+  await withTarget(async (target) => {
+    await runInit({ target, packageRoot, packageVersion: "1.2.1" });
+    const lock = await readPolicyLock(target, packageRoot);
+    lock.baselineDigest = "sha256:2222222222222222222222222222222222222222222222222222222222222222";
+    await writePolicyLock(target, lock, packageRoot);
+
+    const lockResult = await verifyPolicyLock(target, packageRoot);
+    assert.equal(lockResult.status, "MISMATCH");
+    assert.ok(lockResult.mismatches.includes("baselineDigest"));
+  });
+});
+
+test("LOCK-F4: algorithm invalid -> MISMATCH", async () => {
+  await withTarget(async (target) => {
+    await runInit({ target, packageRoot, packageVersion: "1.2.1" });
+    const lock = await readPolicyLock(target, packageRoot);
+    // Write directly to bypass schema validation during write
+    const tampered = { ...lock, algorithm: "sha512" };
+    await writeFile(path.join(target, ".forgeloop", "policy", "policy.lock"), JSON.stringify(tampered, null, 2));
+
+    const lockResult = await verifyPolicyLock(target, packageRoot);
+    assert.ok(["MISMATCH", "INVALID"].includes(lockResult.status));
+  });
+});
+
+test("LOCK-F5: capturedAt changed only -> VALID (capturedAt is non-semantic)", async () => {
+  await withTarget(async (target) => {
+    await runInit({ target, packageRoot, packageVersion: "1.2.1" });
+    const lock = await readPolicyLock(target, packageRoot);
+    lock.capturedAt = "2099-01-01T00:00:00.000Z";
+    await writePolicyLock(target, lock, packageRoot);
+
+    const lockResult = await verifyPolicyLock(target, packageRoot);
+    assert.equal(lockResult.status, "VALID");
+  });
+});
+
+test("LOCK-F6: all semantic fields unchanged -> lock status VALID", async () => {
   await withTarget(async (target) => {
     await runInit({ target, packageRoot, packageVersion: "1.2.1" });
     const lockResult = await verifyPolicyLock(target, packageRoot);
@@ -383,10 +696,6 @@ test("B5: legacy snapshot with digest mismatch but no baseline state = UNKNOWN",
 
 // --------------------------------------------------------------------------
 // R1 - R4: Baseline Command Protections
-import { createContract, writeContract } from "../src/core/contract.js";
-
-// --------------------------------------------------------------------------
-// R1 - R4: Baseline Command Protections
 // --------------------------------------------------------------------------
 
 test("R1: initial adoption baseline --record is allowed without active task", async () => {
@@ -485,6 +794,90 @@ test("R4: explicit --policy-reset-authorized allows re-recording during active t
     const result = await runBaseline({ target, packageRoot, record: true, policyResetAuthorized: true });
     assert.equal(result.status, "RECORDED");
   });
+});
+
+// --------------------------------------------------------------------------
+// CLI-B1 - CLI-B4: CLI Baseline Reset Authorization Tests
+// --------------------------------------------------------------------------
+
+test("CLI-B1 to CLI-B3: real CLI processes --policy-reset-authorized flag correctly", async () => {
+  await withTarget(async (target) => {
+    // 1. init
+    const initRes = runCli(target, "init");
+    assert.equal(initRes.status, 0);
+
+    // 2. create task and preflight
+    const createRes = runCli(target, "task-create", "--task=cli-b-task");
+    assert.equal(createRes.status, 0);
+
+    const contract = createContract({
+      taskId: "cli-b-task",
+      objective: "Verify CLI baseline flag",
+      deliverables: ["src/app.js"],
+      constraints: ["offline"],
+      risks: [],
+      verification: ["tests"],
+      successCriteria: ["tests"],
+      stopConditions: ["blocked"],
+      unresolvedDecisions: [],
+      sourceRefs: [],
+    });
+    await writeContract(target, contract, packageRoot, { taskId: "cli-b-task" });
+    runCli(target, "route", "--task=cli-b-task", "--work=code", "--surface=config");
+    runCli(target, "activate", "--task=cli-b-task");
+    runCli(target, "preflight", "--task=cli-b-task");
+
+    // CLI-B2: without --policy-reset-authorized, baseline --record fails during active task
+    const blockedRes = runCli(target, "baseline", "--record");
+    assert.notEqual(blockedRes.status, 0);
+
+    // CLI-B3: with --policy-reset-authorized, baseline --record succeeds
+    const allowedRes = runCli(target, "baseline", "--record", "--policy-reset-authorized");
+    assert.equal(allowedRes.status, 0);
+  });
+});
+
+test("CLI-B4: default baseline without explicit flag sets policyResetAuthorized to false", async () => {
+  await withTarget(async (target) => {
+    const initRes = runCli(target, "init");
+    assert.equal(initRes.status, 0);
+    const baselineRes = runCli(target, "baseline", "--record");
+    assert.equal(baselineRes.status, 0);
+  });
+});
+
+// --------------------------------------------------------------------------
+// NEXT-P1 - NEXT-P6: forgeloop next Policy Recovery Action Mapping
+// --------------------------------------------------------------------------
+
+test("NEXT-P1: E_POLICY_WEAKENING maps to RESTORE_POLICY", () => {
+  const action = policyRecoveryAction([{ code: "E_POLICY_WEAKENING", message: "Policy weakened" }]);
+  assert.equal(action, NEXT_ACTIONS.RESTORE_POLICY);
+});
+
+test("NEXT-P2: E_CHECK_MUTATION_EXECUTION_ERROR maps to REPAIR_CHECKER", () => {
+  const action = policyRecoveryAction([{ code: "E_CHECK_MUTATION_EXECUTION_ERROR", message: "Mutation execution error" }]);
+  assert.equal(action, NEXT_ACTIONS.REPAIR_CHECKER);
+});
+
+test("NEXT-P3: E_POLICY_INVALID maps to REPAIR_POLICY", () => {
+  const action = policyRecoveryAction([{ code: "E_POLICY_INVALID", message: "Invalid policy" }]);
+  assert.equal(action, NEXT_ACTIONS.REPAIR_POLICY);
+});
+
+test("NEXT-P4: E_BASELINE_EXPANSION maps to RESTORE_BASELINE", () => {
+  const action = policyRecoveryAction([{ code: "E_BASELINE_EXPANSION", message: "Baseline expansion" }]);
+  assert.equal(action, NEXT_ACTIONS.RESTORE_BASELINE);
+});
+
+test("NEXT-P5: E_BASELINE_RECORD_DURING_ACTIVE_TASK maps to CONTINUE_WITH_EXISTING_BASELINE", () => {
+  const action = policyRecoveryAction([{ code: "E_BASELINE_RECORD_DURING_ACTIVE_TASK", message: "Active task recording" }]);
+  assert.equal(action, NEXT_ACTIONS.CONTINUE_WITH_EXISTING_BASELINE);
+});
+
+test("NEXT-P6: non-policy error returns null (preserves standard handling)", () => {
+  const action = policyRecoveryAction([{ code: "E_RECEIPT_STALE", message: "Receipt stale" }]);
+  assert.equal(action, null);
 });
 
 // --------------------------------------------------------------------------

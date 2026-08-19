@@ -39,6 +39,34 @@ import { readEvents } from "./events.js";
 
 export { NEXT_ACTIONS } from "./next-action-model.js";
 
+export function policyRecoveryAction(errors = []) {
+  if (errors.some((e) => e.code === "E_POLICY_WEAKENING")) {
+    return NEXT_ACTIONS.RESTORE_POLICY;
+  }
+  if (errors.some((e) => e.code === "E_POLICY_LOCK_MISMATCH")) {
+    return NEXT_ACTIONS.RESTORE_POLICY;
+  }
+  if (errors.some((e) => e.code === "E_CHECK_MUTATION_EXECUTION_ERROR" || e.code === "E_CHECK_MUTATION_NOT_DETECTED")) {
+    return NEXT_ACTIONS.REPAIR_CHECKER;
+  }
+  if (errors.some((e) => e.code === "E_POLICY_INVALID" || e.code === "E_POLICY_EVALUATION_FAILED")) {
+    return NEXT_ACTIONS.REPAIR_POLICY;
+  }
+  if (errors.some((e) => e.code === "E_POLICY_DRIFT_UNKNOWN")) {
+    return NEXT_ACTIONS.REVERIFY_AFTER_POLICY_CHANGE;
+  }
+  if (errors.some((e) => e.code === "E_BASELINE_EXPANSION")) {
+    return NEXT_ACTIONS.RESTORE_BASELINE;
+  }
+  if (errors.some((e) => e.code === "E_BASELINE_RECORD_DURING_ACTIVE_TASK")) {
+    return NEXT_ACTIONS.CONTINUE_WITH_EXISTING_BASELINE;
+  }
+  if (errors.some((e) => e.code === "E_CHECK_INERT")) {
+    return NEXT_ACTIONS.RESOLVE_INERT_CHECK;
+  }
+  return null;
+}
+
 async function computeNextAction(targetOrOptions = {}, packageRootOption) {
   const normalized = typeof targetOrOptions === "string"
     ? { target: targetOrOptions, packageRoot: packageRootOption }
@@ -648,6 +676,7 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
         requiredArtifacts: [...requiredArtifacts, ARTIFACT_PATHS.receipt],
       });
     }
+
     const completion = await evaluateCompletion({ target, packageRoot, authorityContext, runtimeContext });
     if (completion.status !== "VALID") {
       const terminalPendingErrors = completion.errors.filter((err) => (
@@ -670,6 +699,15 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
           requiredArtifacts: [...requiredArtifacts, ARTIFACT_PATHS.receipt, ARTIFACT_PATHS.events],
         });
       }
+      const policyAction = policyRecoveryAction(completion.errors);
+      if (policyAction) {
+        return result({
+          ...context,
+          nextAction: policyAction,
+          reasons: completion.errors,
+          requiredArtifacts: [...requiredArtifacts, ARTIFACT_PATHS.receipt, ARTIFACT_PATHS.events],
+        });
+      }
       return result({
         ...context,
         nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
@@ -684,9 +722,10 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
     if (completion.status === "VALID") {
       return decision(context, NEXT_ACTIONS.NONE, artifactError("PHASE_COMPLETE", "Completion is validator-backed and terminal"));
     }
+    const policyAction = policyRecoveryAction(completion.errors);
     return result({
       ...context,
-      nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
+      nextAction: policyAction ?? NEXT_ACTIONS.RESOLVE_BLOCKER,
       reasons: completion.errors,
       requiredArtifacts: [...requiredArtifacts, ARTIFACT_PATHS.receipt, ARTIFACT_PATHS.events],
     });
