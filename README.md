@@ -1,7 +1,7 @@
 # ForgeLoop — Verifiable Engineering Protocol
 
 <p align="center">
-  <img src="./docs/assets/forgeloop-readme-engineering.svg" alt="ForgeLoop — Loop Engineering for AI Agents" width="100%">
+  <img src="./docs/assets/eng_readme_forgeloop.png" alt="ForgeLoop — Loop Engineering for AI Agents" width="100%">
 </p>
 
 [![Docs quality](https://github.com/cassiomc1/forgeloop/actions/workflows/docs-quality.yml/badge.svg?branch=main)](https://github.com/cassiomc1/forgeloop/actions/workflows/docs-quality.yml)
