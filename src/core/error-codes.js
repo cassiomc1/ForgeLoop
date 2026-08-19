@@ -337,6 +337,13 @@ export const PUBLIC_ERROR_CODES = Object.freeze({
     meaning: "Executable policy bootstrap could not complete during initialization.",
     safeResolution: "Repair the reported filesystem/schema error and rerun `forgeloop init`. Initialization is restartable while no committed manifest exists.",
   }),
+  E_INIT_KIT_CONFLICT: Object.freeze({
+    code: "E_INIT_KIT_CONFLICT",
+    category: "project-maintenance",
+    classification: "PUBLIC_STABLE",
+    meaning: "A canonical ForgeLoop kit destination already exists with content that does not match the shipped canonical template.",
+    safeResolution: "Inspect the conflicting `.forgeloop/kit/...` file. If it is stale or partial ForgeLoop output, remove or restore it and rerun `forgeloop init`. Do not overwrite unknown content automatically.",
+  }),
 });
 
 export const E_CHECK_INERT = "E_CHECK_INERT";
@@ -355,6 +362,7 @@ export const E_POLICY_LOCK_MISMATCH = "E_POLICY_LOCK_MISMATCH";
 export const E_POLICY_DRIFT_UNKNOWN = "E_POLICY_DRIFT_UNKNOWN";
 export const E_BASELINE_RECORD_DURING_ACTIVE_TASK = "E_BASELINE_RECORD_DURING_ACTIVE_TASK";
 export const E_POLICY_INITIALIZATION_FAILED = "E_POLICY_INITIALIZATION_FAILED";
+export const E_INIT_KIT_CONFLICT = "E_INIT_KIT_CONFLICT";
 
 export const ALL_KNOWN_ERROR_CODES = Object.freeze(new Set([
   ...FAILURE_CODES,
@@ -404,4 +412,5 @@ export const ALL_KNOWN_ERROR_CODES = Object.freeze(new Set([
   E_POLICY_DRIFT_UNKNOWN,
   E_BASELINE_RECORD_DURING_ACTIVE_TASK,
   E_POLICY_INITIALIZATION_FAILED,
+  E_INIT_KIT_CONFLICT,
 ]));

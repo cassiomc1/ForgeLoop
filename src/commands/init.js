@@ -7,6 +7,13 @@ import {
 } from "../core/manifest.js";
 import { readTemplateEntries } from "../core/templates.js";
 import { PROJECT_ARTIFACT_PATHS } from "../core/task-paths.js";
+import { isKitPath } from "../core/target-layout.js";
+import { E_INIT_KIT_CONFLICT, E_POLICY_INITIALIZATION_FAILED } from "../core/error-codes.js";
+
+// Compatibility re-exports: the canonical semantic definitions live in
+// src/core/error-codes.js; this keeps existing import paths working while
+// ensuring there is exactly one literal source for each constant.
+export { E_INIT_KIT_CONFLICT, E_POLICY_INITIALIZATION_FAILED };
 
 /**
  * Executable-policy artifacts initialized by `forgeloop init`. The manifest is
@@ -18,8 +25,6 @@ export const POLICY_INIT_ARTIFACTS = Object.freeze([
   PROJECT_ARTIFACT_PATHS.policyBaseline,
   PROJECT_ARTIFACT_PATHS.policyLock,
 ]);
-
-export const E_POLICY_INITIALIZATION_FAILED = "E_POLICY_INITIALIZATION_FAILED";
 
 function policyInitializationError(cause) {
   const error = new Error(`Executable policy initialization failed: ${cause.message}`);
@@ -153,8 +158,10 @@ export async function runInit({
   }
 
   // 8. Write kit files. Existing files that match the shipped template are
-  // resumable init output; PROJECT_PROFILE.md is preserved by contract; other
-  // pre-existing (brownfield) files are preserved as unowned.
+  // resumable init output; PROJECT_PROFILE.md is preserved by contract;
+  // canonical hidden kit files (.forgeloop/kit/*) that differ from the shipped
+  // template fail init without overwrite; other pre-existing (brownfield)
+  // files are preserved as unowned.
   for (const entry of entries) {
     const destination = ensureWithin(target, entry.relativePath);
     if (await fileExists(destination)) {
@@ -168,6 +175,17 @@ export async function runInit({
           preserve: true,
         };
         continue;
+      } else if (isKitPath(entry.relativePath)) {
+        // Canonical hidden kit content defines the protocol that harnesses and
+        // agents are instructed to follow. A manifest must never certify a
+        // target whose hidden canonical kit conflicts with the shipped
+        // template, so fail deterministically and preserve the file.
+        const error = new Error(
+          `Canonical ForgeLoop kit file conflicts with shipped template: ${entry.relativePath}`,
+        );
+        error.code = E_INIT_KIT_CONFLICT;
+        error.artifacts = [entry.relativePath];
+        throw error;
       } else {
         actions.push({ action: "skip", path: entry.relativePath, reason: "pre-existing" });
         continue;

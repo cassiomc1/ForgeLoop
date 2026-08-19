@@ -61,8 +61,9 @@ test("all discovery surfaces contain the protocol required marker and universal 
     assert.match(content, /regardless of model, provider/i);
     assert.match(content, /in spirit/i);
     assert.match(content, /missing verification tool/i);
-    assert.match(content, /work-state\.json`?\s+exists/i);
+    assert.match(content, /forgeloop task-list/i);
     assert.match(content, /forgeloop next/i);
+    assert.doesNotMatch(content, /If\s+`?\.forgeloop\/work-state\.json`?\s+exists/i);
   }
 });
 
@@ -75,8 +76,26 @@ test("native shim generator emits protocol required marker and references", () =
     assert.match(shim, /regardless of model, provider, product, IDE/i);
     assert.match(shim, /in spirit/i);
     assert.match(shim, /missing verification tool/i);
-    assert.match(shim, /work-state\.json`?\s+exists/i);
+    assert.match(shim, /forgeloop task-list/i);
     assert.match(shim, /forgeloop next/i);
+    assert.doesNotMatch(shim, /If\s+`?\.forgeloop\/work-state\.json`?\s+exists/i);
+  }
+});
+
+test("NATIVE-TASK-1/2/3/4/5: shims are task-aware and never present legacy singleton as primary", () => {
+  for (const surface of DISCOVERY_SURFACES) {
+    const shim = nativeShim(surface.path);
+    // NATIVE-TASK-1: shim directs task discovery through the CLI.
+    assert.match(shim, /forgeloop task-list --json/);
+    // NATIVE-TASK-2: shim mentions task-aware resume.
+    assert.match(shim, /forgeloop next --task <id> --json/);
+    // NATIVE-TASK-3: legacy singleton is not the primary modern discovery mechanism.
+    assert.doesNotMatch(shim, /If\s+`?\.forgeloop\/work-state\.json`?\s+exists/i);
+    assert.match(shim, /backward compatibility/);
+    // NATIVE-TASK-4: harness/model/session change does not create a new task.
+    assert.match(shim, /does not create a new task/);
+    // NATIVE-TASK-5: every adapter target is a real discovery surface.
+    assert.ok(DISCOVERY_SURFACES.some((candidate) => candidate.path === surface.path));
   }
 });
 

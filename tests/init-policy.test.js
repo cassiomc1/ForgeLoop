@@ -1,14 +1,15 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, readdir, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 
-import { runInit, E_POLICY_INITIALIZATION_FAILED, POLICY_INIT_ARTIFACTS } from "../src/commands/init.js";
+import { runInit, E_INIT_KIT_CONFLICT, E_POLICY_INITIALIZATION_FAILED, POLICY_INIT_ARTIFACTS } from "../src/commands/init.js";
+import { E_POLICY_INITIALIZATION_FAILED as CANONICAL_POLICY_INIT_ERROR } from "../src/core/error-codes.js";
 import { readManifest, sha256 } from "../src/core/manifest.js";
 import { detectPolicyCapability, verifyPolicyLock, readDiscoveryReport } from "../src/core/policy-engine.js";
 import { readBaseline } from "../src/core/policy-baseline.js";
-import { getPackageRoot } from "../src/core/templates.js";
+import { getPackageRoot, readTemplateEntries } from "../src/core/templates.js";
 
 const packageRoot = getPackageRoot();
 const PACKAGE_VERSION = "1.2.1";
@@ -181,4 +182,96 @@ test("INIT-POLICY-7: dry-run performs zero writes", async () => {
   } finally {
     await rm(target, { recursive: true, force: true });
   }
+});
+
+test("INIT-KIT-1: a matching canonical kit file is reusable resumable output", async () => {
+  const target = await createTempTarget();
+  try {
+    const entries = await readTemplateEntries(packageRoot);
+    const loop = entries.find((entry) => entry.relativePath === ".forgeloop/kit/LOOP_ENGINEERING.md");
+    assert.ok(loop, "template must ship .forgeloop/kit/LOOP_ENGINEERING.md");
+    await mkdir(path.dirname(path.join(target, loop.relativePath)), { recursive: true });
+    await writeFile(path.join(target, loop.relativePath), loop.bytes);
+
+    const result = await runInit({ target, dryRun: false, packageRoot, packageVersion: PACKAGE_VERSION });
+    assert.ok(result.actions.some((action) => action.action === "reuse" && action.path === loop.relativePath));
+    await assertInitialized(target);
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
+test("INIT-KIT-2: a divergent canonical kit file blocks init without overwrite", async () => {
+  const target = await createTempTarget();
+  try {
+    const kitPath = ".forgeloop/kit/LOOP_ENGINEERING.md";
+    const conflicting = "tampered kit content\n";
+    await mkdir(path.dirname(path.join(target, kitPath)), { recursive: true });
+    await writeFile(path.join(target, kitPath), conflicting);
+
+    await assert.rejects(
+      () => runInit({ target, dryRun: false, packageRoot, packageVersion: PACKAGE_VERSION }),
+      (error) => error.code === E_INIT_KIT_CONFLICT,
+    );
+    assert.equal(await readManifest(target), null, "manifest must remain absent");
+    assert.equal(await readFile(path.join(target, kitPath), "utf8"), conflicting, "conflicting file must be unchanged");
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
+test("INIT-KIT-3: a divergent canonical kit schema blocks init", async () => {
+  const target = await createTempTarget();
+  try {
+    const kitPath = ".forgeloop/kit/schemas/work-state.schema.json";
+    const conflicting = "{ \"not\": \"a schema\" }\n";
+    await mkdir(path.dirname(path.join(target, kitPath)), { recursive: true });
+    await writeFile(path.join(target, kitPath), conflicting);
+
+    await assert.rejects(
+      () => runInit({ target, dryRun: false, packageRoot, packageVersion: PACKAGE_VERSION }),
+      (error) => error.code === E_INIT_KIT_CONFLICT,
+    );
+    assert.equal(await readManifest(target), null);
+    assert.equal(await readFile(path.join(target, kitPath), "utf8"), conflicting);
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
+test("INIT-KIT-4: a custom PROJECT_PROFILE.md remains preserved with preserve=true", async () => {
+  const target = await createTempTarget();
+  try {
+    const profilePath = ".forgeloop/kit/PROJECT_PROFILE.md";
+    const customProfile = "# My custom profile\ncustom content\n";
+    await mkdir(path.dirname(path.join(target, profilePath)), { recursive: true });
+    await writeFile(path.join(target, profilePath), customProfile);
+
+    await runInit({ target, dryRun: false, packageRoot, packageVersion: PACKAGE_VERSION });
+    assert.equal(await readFile(path.join(target, profilePath), "utf8"), customProfile);
+    const manifest = await readManifest(target);
+    assert.equal(manifest.files[profilePath].preserve, true);
+    await assertInitialized(target);
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
+test("INIT-KIT-5: a pre-existing root native adapter remains preserved, not a kit conflict", async () => {
+  const target = await createTempTarget();
+  try {
+    const customAgents = "# Local harness instructions\ncustom adapter\n";
+    await writeFile(path.join(target, "AGENTS.md"), customAgents);
+
+    await runInit({ target, dryRun: false, packageRoot, packageVersion: PACKAGE_VERSION });
+    assert.equal(await readFile(path.join(target, "AGENTS.md"), "utf8"), customAgents);
+    await assertInitialized(target);
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
+test("INIT-ERR-2: E_POLICY_INITIALIZATION_FAILED has a single canonical source", () => {
+  assert.equal(E_POLICY_INITIALIZATION_FAILED, CANONICAL_POLICY_INIT_ERROR);
+  assert.equal(CANONICAL_POLICY_INIT_ERROR, "E_POLICY_INITIALIZATION_FAILED");
 });

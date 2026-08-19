@@ -41,10 +41,20 @@ Before changing product or executable files, establish the ForgeLoop contract,
 route, required gates, and READY preflight.
 
 Before creating or activating new lifecycle state:
-If \`.forgeloop/work-state.json\` exists, inspect the existing task,
-reconcile continuity when present, inspect the checkout, and run
-\`forgeloop next\`. A change of harness, model, provider, IDE, process,
-terminal, or session does not create a new task.
+
+1. Inspect existing ForgeLoop tasks first.
+2. Use \`forgeloop task-list --json\` to discover current task namespaces.
+3. If an existing task is selected or identifiable, use
+   \`forgeloop next --task <id> --json\` before creating another task.
+4. Reconcile continuity when the selected task has continuity state.
+5. Inspect the checkout before resuming work.
+
+A change of harness, model, provider, IDE, process, terminal, or session
+does not create a new task.
+
+Legacy singleton state such as \`.forgeloop/work-state.json\` remains
+supported only for backward compatibility and must not be treated as the
+primary modern discovery mechanism.
 
 Use the project-local ForgeLoop CLI for lifecycle-owned protocol state.
 Never manually synthesize lifecycle chronology or assign ForgeLoop COMPLETE.

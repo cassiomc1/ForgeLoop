@@ -571,5 +571,6 @@ forgeloop next --task <id> --json
 | `E_POLICY_DRIFT_UNKNOWN` | Task policy drift was detected but baseline snapshot details are unavailable. | Re-verify the task under the current policy state. |
 | `E_BASELINE_RECORD_DURING_ACTIVE_TASK` | Cannot re-record baseline during an active task with policy snapshot. | Resolve new violations or use monotonic baseline --update. |
 | `E_POLICY_INITIALIZATION_FAILED` | Executable policy bootstrap could not complete during initialization. | Repair the reported filesystem/schema error and rerun `forgeloop init`. Initialization is restartable while no committed manifest exists. |
+| `E_INIT_KIT_CONFLICT` | A canonical ForgeLoop kit destination already exists with content that does not match the shipped canonical template. | Inspect the conflicting `.forgeloop/kit/...` file. If it is stale or partial ForgeLoop output, remove or restore it and rerun `forgeloop init`. Do not overwrite unknown content automatically. |
 
 <!-- END FORGELOOP GENERATED: public-error-codes -->

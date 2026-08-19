@@ -161,14 +161,27 @@ test("negative fixtures & mutation tests: validateDocumentationConformance detec
       await writeFile(docFile, docContent, "utf8");
     }
 
-    // Mutation 5: Missing adapter resume rule
+    // Mutation 5: Missing adapter task discovery rule
     const agentsFile = path.join(tempDir, "AGENTS.md");
     let agentsContent = await readFile(agentsFile, "utf8");
-    const mutAgents5 = mustReplace(agentsContent, /work-state\.json/g, "other-state.json", "agents.md resume rule");
+    const mutAgents5 = mustReplace(agentsContent, /forgeloop task-list/g, "forgeloop tasklist", "agents.md task discovery rule");
     await writeFile(agentsFile, mutAgents5, "utf8");
     const mut5 = await validateDocumentationConformance({ rootDir: tempDir });
     assert.equal(mut5.valid, false);
     assert.ok(mut5.errors.some((e) => e.includes("DOC_ADAPTER_RESUME_RULE_MISSING")));
+    await writeFile(agentsFile, agentsContent, "utf8");
+
+    // Mutation 5b: Legacy singleton presented as the primary resume mechanism
+    const mutAgents5b = mustReplace(
+      agentsContent,
+      /ForgeLoop applies regardless of model, provider/i,
+      "ForgeLoop applies regardless of model, provider. If `.forgeloop/work-state.json` exists, resume it first.",
+      "agents.md legacy-primary resume",
+    );
+    await writeFile(agentsFile, mutAgents5b, "utf8");
+    const mut5b = await validateDocumentationConformance({ rootDir: tempDir });
+    assert.equal(mut5b.valid, false);
+    assert.ok(mut5b.errors.some((e) => e.includes("DOC_ADAPTER_LEGACY_PRIMARY_RESUME")));
     await writeFile(agentsFile, agentsContent, "utf8");
 
     // Mutation 6: Legacy singleton path outside migration marker in docs/RECIPES.md

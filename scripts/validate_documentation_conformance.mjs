@@ -605,22 +605,33 @@ export async function validateDocumentationConformance({ rootDir = repositoryRoo
   // =========================================================================
   // 5. Validate Cross-Harness Resume Rules across Adapters
   // =========================================================================
-  const resumePattern = /work-state\.json`?\s+exists/i;
+  // Modern task discovery is CLI/task-aware: harnesses must discover existing
+  // tasks via `forgeloop task-list` and resume via `forgeloop next --task`.
+  // The legacy singleton path must not be presented as the primary modern
+  // discovery mechanism.
+  const resumePattern = /forgeloop task-list/i;
+  const legacyPrimaryResumePattern = /If\s+`?\.forgeloop\/work-state\.json`?\s+exists/i;
   for (const surface of DISCOVERY_SURFACES) {
     const surfacePath = path.join(rootDir, surface.path);
     const content = await readFile(surfacePath, "utf8");
     if (!resumePattern.test(content)) {
-      errors.push(`DOC_ADAPTER_RESUME_RULE_MISSING: Adapter "${surface.path}" is missing cross-harness resume rule`);
+      errors.push(`DOC_ADAPTER_RESUME_RULE_MISSING: Adapter "${surface.path}" is missing cross-harness task discovery rule (forgeloop task-list)`);
     }
     if (!/forgeloop next/i.test(content)) {
       errors.push(`DOC_ADAPTER_NEXT_ACTION_MISSING: Adapter "${surface.path}" is missing reference to forgeloop next`);
+    }
+    if (legacyPrimaryResumePattern.test(content)) {
+      errors.push(`DOC_ADAPTER_LEGACY_PRIMARY_RESUME: Adapter "${surface.path}" presents legacy .forgeloop/work-state.json as the primary modern resume mechanism`);
     }
   }
 
   for (const surface of DISCOVERY_SURFACES) {
     const shim = nativeShim(surface.path);
     if (!resumePattern.test(shim)) {
-      errors.push(`DOC_NATIVE_SHIM_RESUME_RULE_MISSING: nativeShim for "${surface.path}" is missing cross-harness resume rule`);
+      errors.push(`DOC_NATIVE_SHIM_RESUME_RULE_MISSING: nativeShim for "${surface.path}" is missing cross-harness task discovery rule (forgeloop task-list)`);
+    }
+    if (legacyPrimaryResumePattern.test(shim)) {
+      errors.push(`DOC_NATIVE_SHIM_LEGACY_PRIMARY_RESUME: nativeShim for "${surface.path}" presents legacy .forgeloop/work-state.json as the primary modern resume mechanism`);
     }
   }
 
