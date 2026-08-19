@@ -11,7 +11,7 @@ import { CLI_COMMAND_METADATA } from "../src/core/cli-metadata.js";
 import { ALL_KNOWN_ERROR_CODES, PUBLIC_ERROR_CODES } from "../src/core/error-codes.js";
 import { readSchema } from "../src/core/schema-validation.js";
 import { getPackageRoot } from "../src/core/templates.js";
-import { validateDocumentationConformance } from "../scripts/validate_documentation_conformance.mjs";
+import { validateDocumentationConformance, validateCliExamples, validateCliMutationClaim } from "../scripts/validate_documentation_conformance.mjs";
 
 const packageRoot = getPackageRoot();
 
@@ -306,6 +306,78 @@ test("CLI example, mutation-claim, and legacy-path conformance regressions (DOC-
       ["DOC_COMPLETION_RETURN_STATUS_MISMATCH"],
     );
 
+    // DOC-CLI-CMD-1: example command must match the section command
+    await runMutation(
+      "task-create section contains forgeloop status",
+      (content) => mustReplace(
+        content,
+        "forgeloop task-create --task task-001 --claim src/auth --json",
+        "forgeloop status --json",
+        "task-create section example",
+      ),
+      ["DOC_CLI_EXAMPLE_COMMAND_MISMATCH"],
+    );
+
+    // DOC-TERM-3: record-terminal-result --type SOMETHING is rejected
+    await runMutation(
+      "record-terminal-result unknown type",
+      (content) => mustReplace(
+        content,
+        "--type PUBLICATION \\",
+        "--type SOMETHING \\",
+        "terminal result type",
+      ),
+      ["DOC_CLI_EXAMPLE_TYPE_INVALID"],
+    );
+
+    // DOC-TERM-4: valid type with invalid status is rejected (status set check)
+    await runMutation(
+      "record-terminal-result PUBLICATION passed",
+      (content) => mustReplace(
+        content,
+        "--status published \\",
+        "--status passed \\",
+        "terminal result status",
+      ),
+      ["DOC_CLI_EXAMPLE_STATUS_INVALID"],
+    );
+
+    // DOC-COMP-EXACT-3: extra completion status must fail exact-set equality
+    await runMutation(
+      "complete return status with extra status",
+      (content) => mustReplace(
+        content,
+        "- **Return Status**: `VALID` or `REJECTED`.",
+        "- **Return Status**: `VALID` or `REJECTED` or `INVALID`.",
+        "complete return status extra",
+      ),
+      ["DOC_COMPLETION_RETURN_STATUS_MISMATCH"],
+    );
+
+    // DOC-VERIFY-2: verificationStatus casing drift must fail
+    await runMutation(
+      "complete verificationStatus lower-case VALID",
+      (content) => mustReplace(
+        content,
+      "- **Return Dimensions**: The evaluation result reports separate dimensions alongside the return status: `taskStatus` (`COMPLETE`/`INCOMPLETE`/`BLOCKED`), `verificationStatus` (`VALID`/`invalid`), `publicationStatus`, `productionReadiness`, and `errors[]` with the concrete rejection reasons.",
+      "- **Return Dimensions**: The evaluation result reports separate dimensions alongside the return status: `taskStatus` (`COMPLETE`/`INCOMPLETE`/`BLOCKED`), `verificationStatus` (`valid`/`invalid`), `publicationStatus`, `productionReadiness`, and `errors[]` with the concrete rejection reasons.",
+        "complete verificationStatus casing",
+      ),
+      ["DOC_COMPLETION_VERIFICATION_STATUS_MISMATCH"],
+    );
+
+    // DOC-MUT-2: conditional mutation claim on a READ_ONLY command is rejected
+    await runMutation(
+      "read-only command with conditional write claim",
+      (content) => mustReplace(
+        content,
+        "- **Mutation**: Read-only.\n- **Options**:\n\n<!-- BEGIN FORGELOOP GENERATED: cli:progress:options -->",
+        "- **Mutation**: Read-only by default; writes `.forgeloop/policy/discovery.json` only with `--write`.\n- **Options**:\n\n<!-- BEGIN FORGELOOP GENERATED: cli:progress:options -->",
+        "progress conditional mutation",
+      ),
+      ["DOC_CLI_MUTATION_CLAIM_INVALID"],
+    );
+
     // DOC-PATH-1: singleton task path in CLI_REFERENCE outside legacy markers
     await runMutation(
       "singleton path in CLI_REFERENCE",
@@ -334,4 +406,81 @@ test("CLI example, mutation-claim, and legacy-path conformance regressions (DOC-
   } finally {
     await rm(tempDir, { recursive: true, force: true });
   }
+});
+
+test("DOC-CLI-CMD-2 / DOC-TERM-1 / DOC-TERM-2 / DOC-COMP-EXACT-1 / DOC-VERIFY-1 positive conformance paths", () => {
+  // DOC-CLI-CMD-2: section command matching its example command passes.
+  const taskCreateDef = CLI_COMMAND_DEFINITIONS["task-create"];
+  const matching = validateCliExamples(
+    "### `task-create`\n\n```bash\nforgeloop task-create --task task-001 --json\n```\n",
+    "task-create",
+    taskCreateDef,
+  );
+  assert.deepEqual(matching, []);
+
+  // Cross-command workflow examples are permitted when explicitly marked.
+  const markedCrossCommand = validateCliExamples(
+    "### `task-create`\n\n```bash\n# Cross-command workflow example: check state before creating the task\nforgeloop status --json\n```\n",
+    "task-create",
+    taskCreateDef,
+  );
+  assert.deepEqual(markedCrossCommand, []);
+
+  // DOC-CLI-CMD-1: unmarked mismatch fails.
+  const mismatched = validateCliExamples(
+    "### `task-create`\n\n```bash\nforgeloop status --json\n```\n",
+    "task-create",
+    taskCreateDef,
+  );
+  assert.ok(mismatched.some((error) => error.includes("DOC_CLI_EXAMPLE_COMMAND_MISMATCH")));
+
+  // DOC-TERM-1: PUBLICATION + published passes.
+  const termDef = CLI_COMMAND_DEFINITIONS["record-terminal-result"];
+  const publication = validateCliExamples(
+    "```bash\nforgeloop record-terminal-result --requirement r1 --type PUBLICATION --status published --source s --result r\n```\n",
+    "record-terminal-result",
+    termDef,
+  );
+  assert.deepEqual(publication, []);
+
+  // DOC-TERM-2: PRODUCTION_READINESS + ready passes.
+  const productionReadiness = validateCliExamples(
+    "```bash\nforgeloop record-terminal-result --requirement r1 --type PRODUCTION_READINESS --status ready --source s --result r\n```\n",
+    "record-terminal-result",
+    termDef,
+  );
+  assert.deepEqual(productionReadiness, []);
+
+  // DOC-TERM-3: unsupported terminal type fails.
+  const unknownType = validateCliExamples(
+    "```bash\nforgeloop record-terminal-result --requirement r1 --type SOMETHING --status published --source s --result r\n```\n",
+    "record-terminal-result",
+    termDef,
+  );
+  assert.ok(unknownType.some((error) => error.includes("DOC_CLI_EXAMPLE_TYPE_INVALID")));
+
+  // DOC-TERM-4: valid type with invalid status fails.
+  const invalidStatus = validateCliExamples(
+    "```bash\nforgeloop record-terminal-result --requirement r1 --type PUBLICATION --status passed --source s --result r\n```\n",
+    "record-terminal-result",
+    termDef,
+  );
+  assert.ok(invalidStatus.some((error) => error.includes("DOC_CLI_EXAMPLE_STATUS_INVALID")));
+
+  // Conditional mutation claims are accepted on MUTATING commands with the
+  // gating option (policy-discover), and rejected when the option is unknown.
+  const policyDiscoverDef = CLI_COMMAND_DEFINITIONS["policy-discover"];
+  const conditionalOk = validateCliMutationClaim(
+    "- **Mutation**: Read-only by default; writes `.forgeloop/policy/discovery.json` and regenerates `.forgeloop/policy/policy.lock` only with `--write`.",
+    "policy-discover",
+    policyDiscoverDef,
+  );
+  assert.deepEqual(conditionalOk, []);
+
+  const conditionalUnknownFlag = validateCliMutationClaim(
+    "- **Mutation**: Read-only by default; writes `.forgeloop/policy/discovery.json` only with `--persist`.",
+    "policy-discover",
+    policyDiscoverDef,
+  );
+  assert.ok(conditionalUnknownFlag.some((error) => error.includes("DOC_CLI_MUTATION_CLAIM_INVALID")));
 });

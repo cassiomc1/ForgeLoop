@@ -21,6 +21,14 @@ import { detectPolicyCapability, evaluateTargetPolicy } from "./policy-engine.js
  */
 export const COMPLETION_STATUSES = Object.freeze(["VALID", "REJECTED"]);
 
+/**
+ * Canonical completion verification-status values returned by
+ * evaluateCompletion. The asymmetric casing (VALID / invalid) is the actual
+ * runtime contract and is intentionally preserved; documentation conformance
+ * checks documented examples and prose against this exact set.
+ */
+export const VERIFICATION_STATUSES = Object.freeze(["VALID", "invalid"]);
+
 function issue(code, message, artifacts = [], details = {}) {
   return { code, message, artifacts, ...details };
 }

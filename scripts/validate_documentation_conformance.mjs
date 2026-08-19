@@ -7,8 +7,8 @@ import { fileURLToPath } from "node:url";
 import { COMMANDS } from "../src/cli.js";
 import { ARTIFACT_REGISTRY } from "../src/core/artifact-registry.js";
 import { CLI_COMMAND_DEFINITIONS } from "../src/core/cli-command-definitions.js";
-import { COMPLETION_STATUSES } from "../src/core/completion.js";
-import { PRODUCTION_READINESS_STATUSES, PUBLICATION_STATUSES } from "../src/core/completion-artifacts.js";
+import { COMPLETION_STATUSES, VERIFICATION_STATUSES } from "../src/core/completion.js";
+import { PRODUCTION_READINESS_STATUSES, PUBLICATION_STATUSES, TERMINAL_RESULT_TYPES } from "../src/core/completion-artifacts.js";
 import { DISCOVERY_SURFACES } from "../src/core/discovery-surfaces.js";
 import { ALL_KNOWN_ERROR_CODES, PUBLIC_ERROR_CODES } from "../src/core/error-codes.js";
 import { nativeShim } from "../src/core/native-adapters.js";
@@ -83,14 +83,17 @@ export function tokenizeCliExampleLine(line) {
  * Validates fenced shell examples inside a CLI command section against the
  * canonical command definition:
  *   - the command must exist;
+ *   - every example command must match the section command, unless the block
+ *     is explicitly marked as a cross-command workflow example (a `#` comment
+ *     containing "cross-command" or "workflow example" inside the block);
  *   - every long option must exist for that command;
  *   - boolean flags must not receive values (inline `=value` or adjacent token);
  *   - value options must receive a value;
  *   - bare positional tokens are rejected unless the command defines a
  *     positional option (e.g. `policy <name>`);
  *   - content after a passthrough `--` is ignored;
- *   - record-terminal-result `--type`/`--status` pairs must use the canonical
- *     terminal status sets.
+ *   - record-terminal-result `--type` must be a canonical terminal type and
+ *     `--type`/`--status` pairs must use the canonical terminal status sets.
  * Comments, environment assignments, and line continuations are ignored.
  */
 export function validateCliExamples(sectionContent, command, commandDef) {
@@ -103,6 +106,7 @@ export function validateCliExamples(sectionContent, command, commandDef) {
     // Join continuation lines (trailing backslash) before parsing. EOL-safe:
     // GitHub Actions may check out the repository with CRLF line endings.
     const joined = block.replace(/\\\r?\n/g, " ");
+    const markedCrossCommand = /#.*(?:cross-command|workflow example)/i.test(joined);
     for (const rawLine of joined.split(/\r?\n/)) {
       const line = rawLine.trim().replace(/\\$/, "");
       if (!line || line.startsWith("#")) continue;
@@ -115,6 +119,12 @@ export function validateCliExamples(sectionContent, command, commandDef) {
       if (!exampleDef) {
         errors.push(
           `DOC_CLI_EXAMPLE_COMMAND_UNKNOWN: Command "${command}" example references unknown command "${exampleCommand}"`,
+        );
+        continue;
+      }
+      if (exampleCommand !== command && !markedCrossCommand) {
+        errors.push(
+          `DOC_CLI_EXAMPLE_COMMAND_MISMATCH: Section "${command}" contains example for "${exampleCommand}"`,
         );
         continue;
       }
@@ -177,16 +187,20 @@ export function validateCliExamples(sectionContent, command, commandDef) {
         }
       }
 
-      if (exampleCommand === "record-terminal-result" && typeValue && statusValue) {
-        const allowed = typeValue === "PUBLICATION"
-          ? PUBLICATION_STATUSES
-          : typeValue === "PRODUCTION_READINESS"
-            ? PRODUCTION_READINESS_STATUSES
-            : null;
-        if (allowed && !allowed.includes(statusValue)) {
+      if (exampleCommand === "record-terminal-result" && typeValue) {
+        if (!TERMINAL_RESULT_TYPES.includes(typeValue)) {
           errors.push(
-            `DOC_CLI_EXAMPLE_STATUS_INVALID: record-terminal-result example uses status "${statusValue}" which is not valid for type "${typeValue}"`,
+            `DOC_CLI_EXAMPLE_TYPE_INVALID: unsupported terminal type "${typeValue}"`,
           );
+        } else if (statusValue) {
+          const allowed = typeValue === "PUBLICATION"
+            ? PUBLICATION_STATUSES
+            : PRODUCTION_READINESS_STATUSES;
+          if (!allowed.includes(statusValue)) {
+            errors.push(
+              `DOC_CLI_EXAMPLE_STATUS_INVALID: record-terminal-result example uses status "${statusValue}" which is not valid for type "${typeValue}"`,
+            );
+          }
         }
       }
     }
@@ -201,6 +215,12 @@ export function validateCliExamples(sectionContent, command, commandDef) {
  *   - read-only commands documented as writing/mutating;
  *   - mutating commands documented as read-only;
  *   - write/remove claims on commands whose runtime writes/removes are empty.
+ *
+ * Conditional mutation claims are supported: prose that gates writes behind a
+ * documented option (e.g. "writes X only with `--write`" or "Read-only by
+ * default; writes X with `--write`") is validated against that option instead
+ * of the absolute read-only/mutating class, and the gating option must exist
+ * on the command.
  */
 export function validateCliMutationClaim(commandSection, command, commandDef) {
   const errors = [];
@@ -209,6 +229,28 @@ export function validateCliMutationClaim(commandSection, command, commandDef) {
   const text = mutationLine.replace(/- \*\*Mutation\*\*:\s*/, "");
   const claimsReadOnly = /read-?only/i.test(text);
   const claimsMutation = /writes?\b|updates?\b|persists?\b|appends?\b|removes?\b|moves?\b|deletes?\b|mutat/i.test(text);
+
+  // Conditional claim: mutation gated behind an explicit option reference.
+  const conditionalFlagMatch = text.match(/(?:only\s+)?(?:when|with|if)\s+`?--([a-z0-9-]+)`?/i);
+  const conditionalFlag = conditionalFlagMatch ? `--${conditionalFlagMatch[1]}` : null;
+
+  if (conditionalFlag) {
+    if (commandDef.mutation === "READ_ONLY") {
+      errors.push(
+        `DOC_CLI_MUTATION_CLAIM_INVALID: Command "${command}" is READ_ONLY but documents conditional mutation ("${text.trim()}")`,
+      );
+    } else if (!commandDef.options[conditionalFlag]) {
+      errors.push(
+        `DOC_CLI_MUTATION_CLAIM_INVALID: Command "${command}" documents conditional mutation under unknown option "${conditionalFlag}" ("${text.trim()}")`,
+      );
+    }
+    if (claimsMutation && commandDef.writes.length === 0 && commandDef.removes.length === 0) {
+      errors.push(
+        `DOC_CLI_MUTATION_CLAIM_INVALID: Command "${command}" claims writes/removes but runtime writes=[] and removes=[] ("${text.trim()}")`,
+      );
+    }
+    return errors;
+  }
 
   if (commandDef.mutation === "READ_ONLY") {
     if (!claimsReadOnly && claimsMutation) {
@@ -469,7 +511,7 @@ export async function validateDocumentationConformance({ rootDir = repositoryRoo
       // Validate manual Mutation: prose against canonical mutation metadata
       errors.push(...validateCliMutationClaim(commandSection, command, commandDef));
 
-      // complete must document the machine-owned return status set
+      // complete must document the machine-owned return status set exactly
       if (command === "complete") {
         const returnStatusLine = commandSection.split("\n").find((line) => /- \*\*Return Status\*\*:/.test(line));
         if (!returnStatusLine) {
@@ -477,12 +519,34 @@ export async function validateDocumentationConformance({ rootDir = repositoryRoo
             `DOC_COMPLETION_RETURN_STATUS_MISSING: complete must document a "Return Status" line listing ${COMPLETION_STATUSES.join(" | ")}`,
           );
         } else {
-          for (const status of COMPLETION_STATUSES) {
-            if (!returnStatusLine.includes(status)) {
-              errors.push(
-                `DOC_COMPLETION_RETURN_STATUS_MISMATCH: complete "Return Status" must include "${status}" from COMPLETION_STATUSES`,
-              );
-            }
+          const documented = new Set([...returnStatusLine.matchAll(/`([A-Z][A-Z0-9_]*)`/g)].map((m) => m[1]));
+          const canonical = new Set(COMPLETION_STATUSES);
+          if (documented.size !== canonical.size || [...documented].some((status) => !canonical.has(status))) {
+            errors.push(
+              `DOC_COMPLETION_RETURN_STATUS_MISMATCH: complete "Return Status" must document exactly ${COMPLETION_STATUSES.join(" | ")}, got ${[...documented].join(" | ") || "(none)"}`,
+            );
+          }
+        }
+
+        // complete must document the machine-owned verification dimension
+        // exactly: verificationStatus is `VALID` | `invalid` in the runtime.
+        const returnDimensionsLine = commandSection.split("\n").find((line) => /- \*\*Return Dimensions\*\*:/.test(line));
+        if (!returnDimensionsLine) {
+          errors.push(
+            `DOC_COMPLETION_RETURN_DIMENSIONS_MISSING: complete must document a "Return Dimensions" line including verificationStatus (${VERIFICATION_STATUSES.join(" | ")})`,
+          );
+        } else {
+          const verificationMatch = returnDimensionsLine.match(/verificationStatus`?\s*\(`([^`]+)`(?:\s*\/\s*`([^`]+)`)?\)/);
+          const verificationTokens = verificationMatch
+            ? new Set([verificationMatch[1], verificationMatch[2]].filter(Boolean))
+            : new Set();
+          const canonicalVerification = new Set(VERIFICATION_STATUSES);
+          const exact = verificationTokens.size === canonicalVerification.size
+            && [...verificationTokens].every((token) => canonicalVerification.has(token));
+          if (!exact) {
+            errors.push(
+              `DOC_COMPLETION_VERIFICATION_STATUS_MISMATCH: complete "Return Dimensions" must document verificationStatus as exactly ${VERIFICATION_STATUSES.join(" | ")}, got ${[...verificationTokens].join(" | ") || "(none)"}`,
+            );
           }
         }
       }

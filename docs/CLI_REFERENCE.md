@@ -519,21 +519,37 @@ Validates `.forgeloop/task-state/<taskKey>/execution-receipt.json` schema and ch
 
 - **Purpose**: Integrity check for completion receipt.
 - **Mutation**: Read-only.
+- **Receipt Resolution**: Without `--file`, the receipt is resolved from the task context: an explicit `--task` (or `FORGELOOP_TASK`) selects that task's namespaced receipt, otherwise a single active task is resolved automatically. `--file` overrides task-based receipt resolution and validates exactly the given relative file.
 - **Options**:
 
 <!-- BEGIN FORGELOOP GENERATED: cli:validate-receipt:options -->
 
 - `--path <directory>`: target project directory (default: current directory)
-- `--file <path>`: receipt file relative to target
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--file <path>`: receipt file relative to target (overrides task-based receipt resolution)
 - `--json`: emit structured output as JSON
 
 <!-- END FORGELOOP GENERATED: cli:validate-receipt:options -->
 
-- **Example**:
+- **Examples**:
+
+  Validate the selected task's namespaced receipt:
 
   ```bash
-  forgeloop validate-receipt --json
+  forgeloop validate-receipt --task task-001 --json
   ```
+
+  Validate an explicit receipt file (`--file` overrides task-based receipt resolution):
+
+  ```bash
+  forgeloop validate-receipt --file .forgeloop/task-state/<taskKey>/execution-receipt.json --json
+  ```
+
+<!-- BEGIN FORGELOOP LEGACY LAYOUT EXAMPLE -->
+
+When no task is selected and no task descriptors exist, the legacy singleton `.forgeloop/execution-receipt.json` compatibility path is validated.
+
+<!-- END FORGELOOP LEGACY LAYOUT EXAMPLE -->
 
 ### `validate-protocol`
 
@@ -688,7 +704,7 @@ Validates protocol completion and transitions the task to `COMPLETE`.
 - **When to use**: In `REVIEWING` phase when all checks have passed.
 - **Mutation**: Updates `.forgeloop/task-state/<taskKey>/work-state.json` to `COMPLETE` and records completion event.
 - **Return Status**: `VALID` or `REJECTED`.
-- **Return Dimensions**: The evaluation result reports separate dimensions alongside the return status: `taskStatus` (`COMPLETE`/`INCOMPLETE`/`BLOCKED`), `verificationStatus` (`valid`/`invalid`), `publicationStatus`, `productionReadiness`, and `errors[]` with the concrete rejection reasons.
+- **Return Dimensions**: The evaluation result reports separate dimensions alongside the return status: `taskStatus` (`COMPLETE`/`INCOMPLETE`/`BLOCKED`), `verificationStatus` (`VALID`/`invalid`), `publicationStatus`, `productionReadiness`, and `errors[]` with the concrete rejection reasons.
 - **Options**:
 
 <!-- BEGIN FORGELOOP GENERATED: cli:complete:options -->
@@ -829,7 +845,7 @@ Evaluates compliance against a named policy pack.
 Discovers architectural patterns, project conventions, and candidate verification rules deterministically.
 
 - **Purpose**: Runs non-interactive repository inspection to derive policy rules with confidence scores.
-- **Mutation**: Writes `.forgeloop/policy/discovery.json`.
+- **Mutation**: Read-only by default; writes `.forgeloop/policy/discovery.json` and regenerates `.forgeloop/policy/policy.lock` only with `--write`. Without `--write`, discovery is observational and persists nothing.
 - **Options**:
 
 <!-- BEGIN FORGELOOP GENERATED: cli:policy-discover:options -->
@@ -840,10 +856,18 @@ Discovers architectural patterns, project conventions, and candidate verificatio
 
 <!-- END FORGELOOP GENERATED: cli:policy-discover:options -->
 
-- **Example**:
+- **Examples**:
+
+  Read-only discovery (observational, persists nothing):
 
   ```bash
   forgeloop policy-discover --json
+  ```
+
+  Persist discovery and regenerate the policy lock:
+
+  ```bash
+  forgeloop policy-discover --write --json
   ```
 
 ### `policy-status`

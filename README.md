@@ -165,7 +165,7 @@ forgeloop task-migrate --json
 ForgeLoop enforces automated, non-interactive verification rules (`rules.json`) with zero interactive dependencies:
 
 ```bash
-# Discover architecture conventions and candidate rules automatically
+# Discover architecture conventions and candidate rules (read-only unless --write)
 forgeloop policy-discover --json
 
 # Inspect active policy verification status, baselines, and drift

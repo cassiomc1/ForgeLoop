@@ -606,7 +606,7 @@ export const COMMAND_HANDLERS = Object.freeze({
     return result.ok ? 0 : 1;
   },
   "validate-receipt": async ({ target, packageRoot, options }) => {
-    const result = await runValidateReceipt({ target, packageRoot, file: options.file });
+    const result = await runValidateReceipt({ target, packageRoot, file: options.file, taskId: options.task });
     console.log(options.json ? JSON.stringify(result, null, 2) : "valid: execution receipt");
     return 0;
   },

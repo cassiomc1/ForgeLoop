@@ -301,7 +301,7 @@ Output:
 {
   "status": "VALID",
   "taskStatus": "COMPLETE",
-  "verificationStatus": "valid"
+  "verificationStatus": "VALID"
 }
 ```
 

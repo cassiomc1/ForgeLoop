@@ -285,6 +285,7 @@ forgeloop next --task task-001
 
 ```bash
 # 1. Discover architecture conventions and candidate rules
+#    (read-only observation; add --write to persist discovery and regenerate the lock)
 forgeloop policy-discover --json
 
 # 2. Record pre-existing debt into brownfield baseline

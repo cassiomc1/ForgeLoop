@@ -592,7 +592,8 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     mutation: "READ_ONLY",
     options: Object.freeze({
       ...CLI_COMMON_OPTIONS,
-      "--file": Object.freeze({ targetKey: "file", parseType: "string", takesValue: true, valueName: "path", missingValueMessage: "--file requires a path", description: "receipt file relative to target" }),
+      ...CLI_TASK_OPTION,
+      "--file": Object.freeze({ targetKey: "file", parseType: "string", takesValue: true, valueName: "path", missingValueMessage: "--file requires a path", description: "receipt file relative to target (overrides task-based receipt resolution)" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
     }),
     writes: [],

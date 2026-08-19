@@ -27,6 +27,16 @@ import { assertClaimsCoverChangedPaths } from "./task-scope.js";
 import { discoverTasks } from "./task-discovery.js";
 
 /**
+ * Canonical terminal-result types shared by runtime validation, tests, and
+ * documentation conformance. Keep these single-sourced; do not re-declare
+ * the same type lists in validators or tests.
+ */
+export const TERMINAL_RESULT_TYPES = Object.freeze([
+  "PUBLICATION",
+  "PRODUCTION_READINESS",
+]);
+
+/**
  * Canonical terminal-status sets shared by runtime validation, tests, and
  * documentation conformance. Keep these single-sourced; do not re-declare
  * the same status lists in validators or tests.
@@ -722,7 +732,7 @@ export async function recordTerminalResult({
   if (!target || !requirement || !type || !status || !source || !result) {
     throw artifactError("E_CHECK_INVALID", "record-terminal-result requires target, requirement, type, status, source, and result", [ARTIFACT_PATHS.state]);
   }
-  if (!["PUBLICATION", "PRODUCTION_READINESS"].includes(type)) {
+  if (!TERMINAL_RESULT_TYPES.includes(type)) {
     throw artifactError("E_FUTURE_TERMINAL_EVIDENCE", `record-terminal-result does not support type ${type}`, [ARTIFACT_PATHS.state]);
   }
   if (type === "PUBLICATION" && !PUBLICATION_STATUSES.includes(status)) {

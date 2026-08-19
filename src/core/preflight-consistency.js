@@ -86,64 +86,68 @@ export async function validateReadyProtocolConsistency({
   persisted,
   current = null,
   evaluateCurrentPreflight,
+  taskId = null,
 } = {}) {
   if (persisted?.status !== "READY") return [];
-  const result = current ?? await evaluateCurrentPreflight({ target, packageRoot });
+  const result = current ?? await evaluateCurrentPreflight({ target, packageRoot, taskId });
   const errors = [...validatePersistedPreflight(persisted, result)];
+
+  const stateRel = taskId ? taskArtifactPath(taskId, "state") : ARTIFACT_PATHS.state;
+  const eventsRel = taskId ? taskArtifactPath(taskId, "events") : ARTIFACT_PATHS.events;
 
   let state = null;
   try {
-    state = await readWorkState(target, packageRoot);
+    state = await readWorkState(target, { packageRoot, taskId });
   } catch (error) {
-    errors.push(issue("E_STATE_INVALID", error.message, [ARTIFACT_PATHS.state]));
+    errors.push(issue("E_STATE_INVALID", error.message, [stateRel]));
   }
   if (!state) {
     errors.push(issue(
       "E_STATE_MISSING_AFTER_PREFLIGHT_READY",
       "A persisted READY preflight must have a resumable work-state checkpoint",
-      [ARTIFACT_PATHS.preflight, ARTIFACT_PATHS.state],
+      [ARTIFACT_PATHS.preflight, stateRel],
     ));
   } else {
     if (state.taskId !== persisted.taskId) {
-      errors.push(issue("E_STATE_TASK_MISMATCH", "The resumable checkpoint does not belong to the READY preflight task", [ARTIFACT_PATHS.state, ARTIFACT_PATHS.preflight]));
+      errors.push(issue("E_STATE_TASK_MISMATCH", "The resumable checkpoint does not belong to the READY preflight task", [stateRel, ARTIFACT_PATHS.preflight]));
     }
     if (state.contractFingerprint !== result.fingerprints.contract) {
-      errors.push(issue("E_CONTRACT_STALE", "The resumable checkpoint does not match the READY contract fingerprint", [ARTIFACT_PATHS.state, ARTIFACT_PATHS.contract]));
+      errors.push(issue("E_CONTRACT_STALE", "The resumable checkpoint does not match the READY contract fingerprint", [stateRel, ARTIFACT_PATHS.contract]));
     }
     if (state.routeFingerprint !== result.fingerprints.routing) {
-      errors.push(issue("E_ROUTE_STALE", "The resumable checkpoint does not match the READY routing fingerprint", [ARTIFACT_PATHS.state, ARTIFACT_PATHS.route]));
+      errors.push(issue("E_ROUTE_STALE", "The resumable checkpoint does not match the READY routing fingerprint", [stateRel, ARTIFACT_PATHS.route]));
     }
     if (JSON.stringify(state.selectedGuides) !== JSON.stringify(result.routing.guides)) {
-      errors.push(issue("E_ROUTE_GUIDE_MISMATCH", "The resumable checkpoint guides do not match the READY routing result", [ARTIFACT_PATHS.state, ARTIFACT_PATHS.route]));
+      errors.push(issue("E_ROUTE_GUIDE_MISMATCH", "The resumable checkpoint guides do not match the READY routing result", [stateRel, ARTIFACT_PATHS.route]));
     }
     if (!sameStringSet(state.requiredGates ?? [], persisted.requiredGates)
       || !sameStringSet(state.satisfiedGates ?? [], persisted.satisfiedGates)) {
-      errors.push(issue("E_PREFLIGHT_GATES_STALE", "The resumable checkpoint gate sets do not match the READY preflight", [ARTIFACT_PATHS.state, ARTIFACT_PATHS.preflight, ARTIFACT_PATHS.gates]));
+      errors.push(issue("E_PREFLIGHT_GATES_STALE", "The resumable checkpoint gate sets do not match the READY preflight", [stateRel, ARTIFACT_PATHS.preflight, ARTIFACT_PATHS.gates]));
     }
   }
 
-  const ledger = await validateEventLedger(target, packageRoot);
+  const ledger = await validateEventLedger(target, packageRoot, { taskId });
   if (!ledger.valid) {
-    errors.push(...ledger.errors.map((error) => issue(error.code ?? "E_EVENT_INVALID", error.message, [ARTIFACT_PATHS.events])));
+    errors.push(...ledger.errors.map((error) => issue(error.code ?? "E_EVENT_INVALID", error.message, [eventsRel])));
   }
   const events = ledger.events ?? [];
   for (const requiredEvent of ["CONTRACT_VALIDATED", "ROUTE_VALIDATED"]) {
     if (!events.some((event) => event.event === requiredEvent && event.taskId === persisted.taskId)) {
-      errors.push(issue("E_PREFLIGHT_EVENT_MISSING", `READY preflight is missing lifecycle event: ${requiredEvent}`, [ARTIFACT_PATHS.events, ARTIFACT_PATHS.preflight]));
+      errors.push(issue("E_PREFLIGHT_EVENT_MISSING", `READY preflight is missing lifecycle event: ${requiredEvent}`, [eventsRel, ARTIFACT_PATHS.preflight]));
     }
   }
   for (const gate of persisted.satisfiedGates ?? []) {
     if (!events.some((event) => event.event === "GATE_SATISFIED"
       && event.taskId === persisted.taskId
       && event.details?.gate === gate)) {
-      errors.push(issue("E_PREFLIGHT_GATE_EVENT_MISSING", `READY preflight is missing lifecycle gate event: ${gate}`, [ARTIFACT_PATHS.events, `${ARTIFACT_PATHS.gates}/${gate}.json`]));
+      errors.push(issue("E_PREFLIGHT_GATE_EVENT_MISSING", `READY preflight is missing lifecycle gate event: ${gate}`, [eventsRel, `${ARTIFACT_PATHS.gates}/${gate}.json`]));
     }
   }
   const readyEvents = events.filter((event) => event.event === "PREFLIGHT_READY" && event.taskId === persisted.taskId);
   if (readyEvents.length === 0) {
-    errors.push(issue("E_PREFLIGHT_READY_EVENT_MISSING", "Persisted READY preflight is missing the matching PREFLIGHT_READY lifecycle event", [ARTIFACT_PATHS.preflight, ARTIFACT_PATHS.events]));
+    errors.push(issue("E_PREFLIGHT_READY_EVENT_MISSING", "Persisted READY preflight is missing the matching PREFLIGHT_READY lifecycle event", [ARTIFACT_PATHS.preflight, eventsRel]));
   } else if (!readyEvents.some((event) => sameReadyPreflightEvent(event, result))) {
-    errors.push(issue("E_PREFLIGHT_READY_EVENT_MISMATCH", "PREFLIGHT_READY lifecycle details do not match the persisted READY preflight", [ARTIFACT_PATHS.preflight, ARTIFACT_PATHS.events]));
+    errors.push(issue("E_PREFLIGHT_READY_EVENT_MISMATCH", "PREFLIGHT_READY lifecycle details do not match the persisted READY preflight", [ARTIFACT_PATHS.preflight, eventsRel]));
   }
   return sortIssues(errors);
 }
