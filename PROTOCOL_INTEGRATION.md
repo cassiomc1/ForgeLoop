@@ -317,10 +317,12 @@ For the practical handoff and multi-tool takeover sequence, see
 
 ForgeLoop integrates executable verification rules directly into the lifecycle:
 
-- **Preflight**: Captures effective policy rules and full semantic baseline state into `policy-snapshot.json`. Snapshot write failures fail closed with `E_POLICY_SNAPSHOT_WRITE_FAILED`.
-- **Execution & Verifying**: Evaluates checks with mutation proofing (`rule-verify`). Checkers must cleanly distinguish `PASS`, `FAIL`, and `ERROR` (`CHECK_MUTATION_EXECUTION_ERROR`). Unproven or inert checks in discovered rules degrade gracefully without stopping execution.
-- **Lock Verification**: Validates `policy.lock` against effective rules + baseline. Mismatches trigger `E_POLICY_LOCK_MISMATCH`.
-- **Completion**: Audits unbaselined violations, policy weakening, and drift. Returns `VALID` when policy integrity is intact and no new unbaselined violations exist.
+- **Preflight**: Validates policy capability (`NOT_PRESENT`, `AVAILABLE`, `INVALID`). For `AVAILABLE`, captures effective policy rules and semantic baseline state into `.forgeloop/task-state/<taskKey>/policy-snapshot.json`. If policy artifacts are malformed (`INVALID`), preflight fails closed with `E_POLICY_INVALID`. Snapshot write conflicts fail closed with `E_POLICY_SNAPSHOT_WRITE_FAILED`.
+- **Lock Verification**: Validates `.forgeloop/policy/policy.lock` against effective rules (`built-in` + `discovered` + `project overrides`) and baseline. Requires `algorithm`, `digest`, `rulesDigest`, and `baselineDigest` to match. `capturedAt` is non-semantic metadata. Mismatches trigger `E_POLICY_LOCK_MISMATCH`.
+- **Execution & Verifying**: Evaluates checks with mutation proofing (`rule-verify`). Checkers must cleanly distinguish `PASS`, `FAIL`, and `ERROR` (`CHECK_MUTATION_EXECUTION_ERROR`). Expected mutant failure yields `PROVEN`; false passes yield `UNPROVEN` (`CHECK_MUTATION_NOT_DETECTED`). Unproven or inert checks in discovered rules degrade gracefully without stopping execution.
+- **Completion**: Audits unbaselined violations, policy weakening, and drift. Weakening relative to task snapshot produces `E_POLICY_WEAKENING`. Returns `VALID` when policy integrity is intact and no new unbaselined violations exist.
 - **Autonomy Principle**: Non-interactive execution is preserved. Tools, commands, and validators operate unattended with standard input closed and without interactive prompt dependencies.
-- **Baseline Protection**: Re-recording baseline debt mid-task is rejected with `E_BASELINE_RECORD_DURING_ACTIVE_TASK`; only monotonic ratchet-down is allowed during active tasks.
+- **Baseline Protection**: Re-recording baseline debt mid-task is rejected with `E_BASELINE_RECORD_DURING_ACTIVE_TASK`; only monotonic ratchet-down is allowed during active tasks (`baseline --update`). Explicit re-recording requires `--policy-reset-authorized`.
+- **Semantic Recovery**: `forgeloop next` maps policy findings directly to actionable recovery actions (`RESTORE_POLICY`, `REPAIR_CHECKER`, `REPAIR_POLICY`, `REVERIFY_AFTER_POLICY_CHANGE`, `RESTORE_BASELINE`, `CONTINUE_WITH_EXISTING_BASELINE`, `RESOLVE_INERT_CHECK`).
+- **Task Scoping**: Task-specific policy snapshots and state live under `.forgeloop/task-state/<taskKey>/` to ensure clean multi-task isolation and cross-harness continuity.
 

@@ -60,10 +60,10 @@ cross-platform CI (.github/workflows/docs-quality.yml)
 | Fact Category | Canonical Machine Source | Generated Target File | Generated Region Marker |
 | --- | --- | --- | --- |
 | **Artifact Inventory** | `ARTIFACT_REGISTRY` (`src/core/artifact-registry.js`) | `docs/ARTIFACT_REFERENCE.md` | `<!-- BEGIN FORGELOOP GENERATED: artifact-registry -->` |
-| **Artifact Fields** (12 schemas) | `schemas/*.schema.json` | `docs/ARTIFACT_REFERENCE.md` | `<!-- BEGIN FORGELOOP GENERATED: schema:<name> -->` |
+| **Artifact Fields** | `schemas/*.schema.json` | `docs/ARTIFACT_REFERENCE.md` | `<!-- BEGIN FORGELOOP GENERATED: schema:<name> -->` |
 | **CLI Command Index** | `CLI_COMMAND_DEFINITIONS` (`src/core/cli-command-definitions.js`) | `docs/CLI_REFERENCE.md` | `<!-- BEGIN FORGELOOP GENERATED: cli-command-index -->` |
 | **CLI Common Options** | `CLI_COMMAND_DEFINITIONS` (`src/core/cli-command-definitions.js`) | `docs/CLI_REFERENCE.md` | `<!-- BEGIN FORGELOOP GENERATED: cli-common-options -->` |
-| **CLI Command Options** (27 commands) | `CLI_COMMAND_DEFINITIONS` (`src/core/cli-command-definitions.js`) | `docs/CLI_REFERENCE.md` | `<!-- BEGIN FORGELOOP GENERATED: cli:<command>:options -->` |
+| **CLI Command Options** | `CLI_COMMAND_DEFINITIONS` (`src/core/cli-command-definitions.js`) | `docs/CLI_REFERENCE.md` | `<!-- BEGIN FORGELOOP GENERATED: cli:<command>:options -->` |
 | **Public Error Codes** | `PUBLIC_ERROR_CODES` (`src/core/error-codes.js`) | `docs/TROUBLESHOOTING.md` | `<!-- BEGIN FORGELOOP GENERATED: public-error-codes -->` |
 | **Architecture Flow** | `docs/forgeloop-flow.mmd` | `docs/assets/forgeloop-flow.svg` | Verified via embedded SHA-256 fingerprint |
 
@@ -81,6 +81,11 @@ npm test
 # 3. Verify freshness, diagram fingerprints, and semantic conformance
 npm run docs:check
 ```
+
+Do not hard-code inventory totals in prose or headings. Counts of commands,
+schemas, fields, and public codes are derived from the registries and schemas;
+when those sources change, regenerate the reference documents and let the
+conformance checks detect omissions.
 
 ---
 

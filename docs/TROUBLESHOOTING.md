@@ -18,6 +18,11 @@ This guide provides symptom-first recovery procedures for common ForgeLoop proto
 - [Execution reference invalid (`E_EXECUTION_REF_INVALID`)](#symptom-execution-reference-invalid)
 - [`forgeloop complete` returns `INCOMPLETE`](#symptom-forgeloop-complete-returns-incomplete)
 - [`forgeloop complete` returns `INVALID`](#symptom-forgeloop-complete-returns-invalid)
+- [Policy lock mismatch (`E_POLICY_LOCK_MISMATCH`)](#symptom-policy-lock-mismatch)
+- [Invalid policy artifacts fail closed (`E_POLICY_INVALID`)](#symptom-invalid-policy-artifacts-fail-closed)
+- [Policy weakening detected (`E_POLICY_WEAKENING`)](#symptom-policy-weakening-detected)
+- [Baseline re-record blocked during active task (`E_BASELINE_RECORD_DURING_ACTIVE_TASK`)](#symptom-baseline-re-record-blocked-during-active-task)
+- [Mutation checker execution error (`E_CHECK_MUTATION_EXECUTION_ERROR`)](#symptom-mutation-checker-execution-error)
 - [Another harness cannot resume the task](#symptom-another-harness-cannot-resume)
 - [Stable Error & Reason Code Reference](#stable-error-and-reason-codes)
 
@@ -363,6 +368,133 @@ forgeloop validate-protocol --task <id> --json
 #### Safe recovery
 
 Inspect the specific error reported in `errors[]` and correct the inconsistent artifact.
+
+---
+
+### Symptom: Policy Lock Mismatch
+
+#### Error Code: `E_POLICY_LOCK_MISMATCH`
+
+#### What it means
+
+The persisted `.forgeloop/policy/policy.lock` digest or required subdigests (`rulesDigest`, `baselineDigest`, `algorithm`) do not match current effective rules or baseline.
+
+#### Inspect
+
+```bash
+forgeloop policy-status --json
+```
+
+#### Safe recovery
+
+1. If rules or baseline were legitimately modified, re-evaluate and update the lock via discovery/baseline commands:
+
+   ```bash
+   forgeloop policy-discover --write --json
+   forgeloop baseline --update --json
+   ```
+
+2. If modifications were unintentional, restore the previous `.forgeloop/policy/rules.json` or `.forgeloop/policy/baseline.json`.
+
+3. Follow `forgeloop next --json` if returned recovery action is `RESTORE_POLICY`.
+
+---
+
+### Symptom: Invalid Policy Artifacts Fail Closed
+
+#### Error Code: `E_POLICY_INVALID`
+
+#### What it means
+
+One or more executable policy artifacts (`.forgeloop/policy/rules.json`, `.forgeloop/policy/baseline.json`, `.forgeloop/policy/discovery.json`, or `.forgeloop/policy/policy.lock`) is present but malformed or fails schema validation. ForgeLoop does not silently ignore corrupt policy: preflight and completion fail closed.
+
+#### Inspect
+
+```bash
+forgeloop policy-status --json
+```
+
+#### Safe recovery
+
+1. Validate each policy artifact against its schema and repair the malformed JSON or invalid fields.
+
+2. Re-run preflight:
+
+   ```bash
+   forgeloop preflight --task <id> --json
+   ```
+
+3. Follow `forgeloop next --task <id> --json` if the returned recovery action is `REPAIR_POLICY`.
+
+---
+
+### Symptom: Policy Weakening Detected
+
+#### Error Code: `E_POLICY_WEAKENING`
+
+#### What it means
+
+Policy rules were relaxed or baseline debt expanded after the task policy snapshot was captured during preflight.
+
+#### Safe recovery
+
+1. Inspect the policy diff:
+
+   ```bash
+   forgeloop policy-diff --task <id> --json
+   ```
+
+2. Restore the original policy configuration captured in `.forgeloop/task-state/<taskKey>/policy-snapshot.json`.
+
+3. Re-query `forgeloop next --task <id> --json` (returns `RESTORE_POLICY`).
+
+---
+
+### Symptom: Baseline Re-Record Blocked During Active Task
+
+#### Error Code: `E_BASELINE_RECORD_DURING_ACTIVE_TASK`
+
+#### What it means
+
+`forgeloop baseline --record` was executed during an active task bound to a preflight policy snapshot. Re-recording during active tasks is blocked to prevent converting new violations into accepted debt.
+
+#### Safe recovery
+
+1. Fix newly introduced violations instead of recording them into baseline debt.
+
+2. If resolving legacy debt, use monotonic ratchet-down:
+
+   ```bash
+   forgeloop baseline --update --json
+   ```
+
+3. If an intentional full baseline re-recording is authorized by an operator, supply the explicit authority flag:
+
+   ```bash
+   forgeloop baseline --record --policy-reset-authorized --json
+   ```
+
+---
+
+### Symptom: Mutation Checker Execution Error
+
+#### Error Code: `E_CHECK_MUTATION_EXECUTION_ERROR`
+
+#### What it means
+
+A policy rule checker threw an unhandled exception while evaluating its synthetic mutation fixture during `rule-verify`. A crashing checker cannot prove its mutation detection efficacy.
+
+#### Safe recovery
+
+1. Inspect the checker error stack and adapter implementation:
+
+   ```bash
+   forgeloop rule-verify --rule <rule-id> --json
+   ```
+
+2. Repair the unhandled exception path in the checker adapter.
+
+3. Re-run `forgeloop rule-verify --rule <rule-id> --json` until the mutation is proven (`PROVEN`).
 
 ---
 

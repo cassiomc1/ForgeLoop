@@ -48,6 +48,7 @@ Key continuity invariants:
 | **Operational Continuity** | `.forgeloop/task-state/<taskKey>/continuity.json` | Active focus, remaining items, known issues, inspect-first paths | Operational context only (non-evidence) |
 | **Implementation Truth** | Git checkout / filesystem | Actual source code and files | Ground truth for changes |
 | **Task Intent** | `.forgeloop/task-state/<taskKey>/contract.json` | Objectives, constraints, deliverables, verification requirements | Contract authority |
+| **Task Policy Snapshot** | `.forgeloop/task-state/<taskKey>/policy-snapshot.json` | Effective policy rules and baseline authorized at preflight | Policy integrity binding; a replacement harness must resume against this snapshot, not re-discover policy |
 | **Execution Guidance** | `.forgeloop/task-state/<taskKey>/routing-result.json` | Deterministically selected engineering guides | Guidance |
 | **Verification Provenance** | `.forgeloop/task-state/<taskKey>/executions/*.json` | Attested process execution records | Verification truth |
 | **Next Action** | `forgeloop next` | Deterministic computation of the valid next command | Control authority |

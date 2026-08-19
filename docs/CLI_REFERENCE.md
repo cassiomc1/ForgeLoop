@@ -269,10 +269,14 @@ Computes the deterministic next action required by the protocol.
 
 <!-- END FORGELOOP GENERATED: cli:next:options -->
 
-- **Example**:
+- **Examples**:
 
   ```bash
   forgeloop next --json
+
+  # Explicit task selection prevents another concurrent task from
+  # becoming the implicit source of lifecycle state
+  forgeloop next --task <id> --json
   ```
 
 ---
@@ -835,9 +839,9 @@ Discovers architectural patterns, project conventions, and candidate verificatio
 
 ### `policy-status`
 
-Reports effective executable policy verification status, baselines, and drift.
+Reports effective executable policy verification status, baselines, lock integrity, and drift.
 
-- **Purpose**: Evaluates all rules, identifies inert checks, baselined debt, and unbaselined violations.
+- **Purpose**: Evaluates all rules, verifies `policy.lock` integrity, identifies inert checks, baselined debt, unbaselined violations, and drift against the task snapshot.
 - **Mutation**: Read-only.
 - **Options**:
 
@@ -849,10 +853,13 @@ Reports effective executable policy verification status, baselines, and drift.
 
 <!-- END FORGELOOP GENERATED: cli:policy-status:options -->
 
-- **Example**:
+- **Examples**:
 
   ```bash
   forgeloop policy-status --json
+
+  # Evaluate drift against a specific task snapshot
+  forgeloop policy-status --task <id> --json
   ```
 
 ### `policy-diff`
@@ -873,10 +880,14 @@ Semantically diffs policy rules and classifies changes as tightening, neutral, o
 
 <!-- END FORGELOOP GENERATED: cli:policy-diff:options -->
 
-- **Example**:
+- **Examples**:
 
   ```bash
-  forgeloop policy-diff --base .forgeloop/policy/rules.json --json
+  # Diff the current effective policy against the task snapshot
+  forgeloop policy-diff --task <id> --json
+
+  # Diff two explicit policy JSON files
+  forgeloop policy-diff --before .forgeloop/policy/before.json --after .forgeloop/policy/after.json --json
   ```
 
 ### `rule-verify`
@@ -906,7 +917,7 @@ Runs mutation verification on policy rules to prove checkers actively detect inv
 Manages the brownfield policy baseline and monotonic ratchet-down.
 
 - **Purpose**: Records current violations into baseline, or ratchets baseline downward as debt is fixed.
-- **Mutation**: Writes `.forgeloop/policy/baseline.json`.
+- **Mutation**: Writes `.forgeloop/policy/baseline.json` and regenerates `.forgeloop/policy/policy.lock`.
 - **Options**:
 
 <!-- BEGIN FORGELOOP GENERATED: cli:baseline:options -->
@@ -919,11 +930,23 @@ Manages the brownfield policy baseline and monotonic ratchet-down.
 
 <!-- END FORGELOOP GENERATED: cli:baseline:options -->
 
-- **Example**:
+- **Examples**:
 
   ```bash
+  # Adopt pre-existing violations as brownfield debt
   forgeloop baseline --record --json
+
+  # Remove resolved debt (monotonic; additions are rejected)
+  forgeloop baseline --update --json
+
+  # Explicit operator authority to re-record during an active task
+  forgeloop baseline --record --policy-reset-authorized --json
   ```
+
+During an active task bound to a policy snapshot, `--record` without
+`--policy-reset-authorized` fails with `E_BASELINE_RECORD_DURING_ACTIVE_TASK`;
+`--update` is monotonic and fails with `E_BASELINE_EXPANSION` if it would add
+debt.
 
 ### `profile-interview`
 

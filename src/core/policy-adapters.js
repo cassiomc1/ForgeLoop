@@ -49,7 +49,7 @@ async function collectFiles(directory, baseDir = directory) {
 }
 
 export const BUILTIN_ADAPTERS = Object.freeze({
-  "secret-detection": {
+  ["secret-detection"]: {
     id: "secret-detection",
     description: "Scans repository files for hardcoded credentials, tokens, and private keys.",
     supports: () => true,

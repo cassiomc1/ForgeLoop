@@ -331,6 +331,7 @@ A guide never authorizes installation, publication, deletion, migration, or an e
 - **Missing tool:** use an available equivalent only when it provides compatible evidence; otherwise request approval or report the check as not run.
 - **Missing guide or broken link:** continue only with conservative defaults and disclose the limitation.
 - **Missing credential:** report the blocked capability without exposing or inventing a credential.
+- **Executable policy failure:** present but malformed policy artifacts fail closed and block preflight and completion; policy weakening relative to the task snapshot blocks completion. Canonical invariants and recovery actions are defined in [`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md#executable-policy--autonomy-preserving-invariants), with integration obligations in [`PROTOCOL_INTEGRATION.md`](./PROTOCOL_INTEGRATION.md).
 - **Conflicting instructions:** apply precedence, choose the most conservative interpretation, and record any material decision.
 - **Repeated failure without new evidence:** stop repeating the same action, reassess the hypothesis, and use another diagnostic method.
 - **External or destructive action:** proceed only with explicit authority and an exact validated target.
