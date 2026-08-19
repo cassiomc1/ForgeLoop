@@ -8,12 +8,13 @@ review primitive without adding that framework to the package.
 
 ```text
 RECEIVED → DISCOVERING → CONTRACT_READY → ROUTED
-                                      ├→ DESIGNING → PLANNED
-                                      └→ PLANNED
+                                       ├→ DESIGNING → PLANNED
+                                       └→ PLANNED
 PLANNED → EXECUTING → VERIFYING
 VERIFYING ├→ DIAGNOSING → CORRECTING → VERIFYING
-          └→ REVIEWING → COMPLETE
-                         └→ VERIFYING when completion is rejected only for evidence
+          └→ REVIEWING ──────────────→ COMPLETE
+                ├→ VERIFYING   evidence-only completion recovery
+                └→ CORRECTING  implementation/review correction required
 Any non-terminal state → BLOCKED when a genuine blocker is evidenced
 ```
 
@@ -50,8 +51,40 @@ Any non-terminal state → BLOCKED when a genuine blocker is evidenced
 | `CORRECTING` | the fix is applied | `VERIFYING` |
 | `VERIFYING` | checks pass | `REVIEWING` |
 | `REVIEWING` | completion is rejected only for evidence | `VERIFYING` |
+| `REVIEWING` | an implementation or review finding requires correction | `CORRECTING` |
 | `REVIEWING` | contract and quality are accepted | `COMPLETE` |
 | `Any non-terminal state` | a genuine external blocker is evidenced | `BLOCKED` |
+
+`BLOCKED` is additionally reachable from any non-terminal, non-`BLOCKED`
+phase when the blocker invariant is satisfied. `WORK_TRANSITIONS` alone is
+therefore not the entire executable transition model; the special `BLOCKED`
+edge is part of the canonical machine semantics.
+
+The exact edge inventory below is generated from the runtime
+(`WORK_PHASES`/`WORK_TRANSITIONS` in `src/core/protocol.js`) and must not be
+edited by hand.
+
+<!-- BEGIN FORGELOOP GENERATED: work-transitions -->
+
+| From | To |
+| --- | --- |
+| `RECEIVED` | `DISCOVERING` |
+| `DISCOVERING` | `CONTRACT_READY` |
+| `CONTRACT_READY` | `ROUTED` |
+| `ROUTED` | `DESIGNING` |
+| `ROUTED` | `PLANNED` |
+| `DESIGNING` | `PLANNED` |
+| `PLANNED` | `EXECUTING` |
+| `EXECUTING` | `VERIFYING` |
+| `VERIFYING` | `DIAGNOSING` |
+| `VERIFYING` | `REVIEWING` |
+| `DIAGNOSING` | `CORRECTING` |
+| `CORRECTING` | `VERIFYING` |
+| `REVIEWING` | `COMPLETE` |
+| `REVIEWING` | `CORRECTING` |
+| `REVIEWING` | `VERIFYING` |
+
+<!-- END FORGELOOP GENERATED: work-transitions -->
 
 The host may skip proportional phases, but it must preserve the state
 invariants and record why a skipped phase was not applicable.

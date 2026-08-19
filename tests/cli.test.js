@@ -520,14 +520,16 @@ test("route human output explains selected guides", async () => {
   });
 });
 
-test("route rejects invalid signal values and unrelated flags", () => {
-  const unknown = runCliDirect(repositoryRoot, "route", "--work", "unknown");
-  const dryRun = runCliDirect(repositoryRoot, "route", "--work", "code", "--dry-run");
+test("route rejects invalid signal values and unrelated flags", async () => {
+  await withTarget(async (target) => {
+    const unknown = runCli(target, "route", "--work", "unknown");
+    const dryRun = runCli(target, "route", "--work", "code", "--dry-run");
 
-  assert.equal(unknown.status, 1);
-  assert.match(unknown.stderr, /unknown work type/i);
-  assert.equal(dryRun.status, 1);
-  assert.match(dryRun.stderr, /not valid for route/i);
+    assert.equal(unknown.status, 1);
+    assert.match(unknown.stderr, /unknown work type/i);
+    assert.equal(dryRun.status, 1);
+    assert.match(dryRun.stderr, /not valid for route/i);
+  });
 });
 
 test("route help exposes only routing options", () => {

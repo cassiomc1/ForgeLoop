@@ -8,6 +8,7 @@ import { COMMANDS } from "../src/cli.js";
 import { ARTIFACT_REGISTRY } from "../src/core/artifact-registry.js";
 import { CLI_COMMAND_DEFINITIONS } from "../src/core/cli-command-definitions.js";
 import { PUBLIC_ERROR_CODES } from "../src/core/error-codes.js";
+import { WORK_PHASES, WORK_TRANSITIONS } from "../src/core/protocol.js";
 import { readSchema } from "../src/core/schema-validation.js";
 import { getPackageRoot } from "../src/core/templates.js";
 
@@ -349,6 +350,22 @@ export function escapeMarkdownTableCell(value) {
 }
 
 /**
+ * Generates the exact canonical work-state transition edge inventory.
+ * Rows are emitted deterministically in WORK_PHASES order with destinations
+ * in WORK_TRANSITIONS order. The special BLOCKED wildcard edge is documented
+ * separately in prose because it is not part of the WORK_TRANSITIONS table.
+ */
+export function generateWorkTransitionsTable() {
+  const rows = ["| From | To |", "| --- | --- |"];
+  for (const from of WORK_PHASES) {
+    for (const to of WORK_TRANSITIONS[from] ?? []) {
+      rows.push(`| \`${from}\` | \`${to}\` |`);
+    }
+  }
+  return rows.join("\n");
+}
+
+/**
  * Registry of all deterministic documentation generation targets.
  */
 export function getDocumentationGenerationTargets() {
@@ -372,6 +389,11 @@ export function getDocumentationGenerationTargets() {
       file: "docs/TROUBLESHOOTING.md",
       region: "public-error-codes",
       generate: () => generatePublicErrorCodesTable(),
+    },
+    {
+      file: "ORCHESTRATOR_INTEGRATION.md",
+      region: "work-transitions",
+      generate: () => generateWorkTransitionsTable(),
     },
   ];
 

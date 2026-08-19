@@ -35,6 +35,10 @@ Documentation routing   -> DOCS_INDEX.md
 
 Operational documentation must explain canonical behavior, not redefine it.
 
+Canonical phase and transition inventories must be derived from `WORK_PHASES`
+and `WORK_TRANSITIONS`; do not maintain independent hand-written transition
+enums when a generated or mechanically validated representation is available.
+
 ---
 
 ## 3. Generated Documentation Provenance & Pipeline
@@ -64,6 +68,7 @@ cross-platform CI (.github/workflows/docs-quality.yml)
 | **CLI Command Index** | `CLI_COMMAND_DEFINITIONS` (`src/core/cli-command-definitions.js`) | `docs/CLI_REFERENCE.md` | `<!-- BEGIN FORGELOOP GENERATED: cli-command-index -->` |
 | **CLI Common Options** | `CLI_COMMAND_DEFINITIONS` (`src/core/cli-command-definitions.js`) | `docs/CLI_REFERENCE.md` | `<!-- BEGIN FORGELOOP GENERATED: cli-common-options -->` |
 | **CLI Command Options** | `CLI_COMMAND_DEFINITIONS` (`src/core/cli-command-definitions.js`) | `docs/CLI_REFERENCE.md` | `<!-- BEGIN FORGELOOP GENERATED: cli:<command>:options -->` |
+| **Work-State Transitions** | `WORK_PHASES` / `WORK_TRANSITIONS` (`src/core/protocol.js`) | `ORCHESTRATOR_INTEGRATION.md` | `<!-- BEGIN FORGELOOP GENERATED: work-transitions -->` |
 | **Public Error Codes** | `PUBLIC_ERROR_CODES` (`src/core/error-codes.js`) | `docs/TROUBLESHOOTING.md` | `<!-- BEGIN FORGELOOP GENERATED: public-error-codes -->` |
 | **Architecture Flow** | `docs/forgeloop-flow.mmd` | `docs/assets/forgeloop-flow.svg` | Verified via embedded SHA-256 fingerprint |
 
@@ -98,9 +103,10 @@ conformance checks detect omissions.
 | **Artifact fields & types** | `schemas/*.schema.json` | `scripts/validate_documentation_conformance.mjs` |
 | **Enums & consts** | `schemas/*.schema.json` | `scripts/validate_documentation_conformance.mjs` |
 | **Lifecycle phases** | `WORK_PHASES` (`src/core/protocol.js`) | `scripts/validate_documentation_conformance.mjs` |
+| **Lifecycle transitions** | `WORK_TRANSITIONS` (`src/core/protocol.js`) + the special `BLOCKED` rule | `scripts/generate_documentation_reference.mjs` and `scripts/validate_documentation_conformance.mjs` |
 | **Stable error codes** | `PUBLIC_ERROR_CODES` (`src/core/error-codes.js`) | `scripts/validate_documentation_conformance.mjs` |
 | **Discovery resume rules** | `DISCOVERY_SURFACES` & `nativeShim` | `scripts/validate_documentation_conformance.mjs` |
-| **Operational path freshness** | `OPERATIONAL_DOCUMENTS` & `task-paths.js` | `scripts/validate_documentation_conformance.mjs` |
+| **Task-layout path freshness** | `TASK_LAYOUT_DOCUMENTS` & `task-paths.js` | `scripts/validate_documentation_conformance.mjs` |
 | **Package-shipped docs** | `package.json` (`files`) | `tests/package.test.js` |
 | **Architecture diagram** | `docs/forgeloop-flow.mmd` | `scripts/check-generated-diagram.mjs` |
 
@@ -121,6 +127,7 @@ Avoid ambiguous phrases like *"should generally"* or *"usually"* for behaviors t
 
 - Canonical task-scoped paths are defined in `src/core/task-paths.js` under `.forgeloop/task-state/<taskKey>/`.
 - Operational guides (`README.md`, `GETTING_STARTED.md`, `RECIPES.md`, `CROSS_HARNESS_CONTINUITY.md`, `TROUBLESHOOTING.md`) must document namespaced paths by default.
+- Architecture/integration documents (`LOOP_SYSTEM_DESIGN.md`, `ORCHESTRATOR_INTEGRATION.md`) are covered by the same task-layout conformance scope (`TASK_LAYOUT_DOCUMENTS`).
 - Legacy ForgeLoop 1.0 singleton paths (e.g. `.forgeloop/current-contract.json`) are permitted **only** inside explicit legacy migration regions:
 
   ```markdown
@@ -150,7 +157,32 @@ Avoid ambiguous phrases like *"should generally"* or *"usually"* for behaviors t
 
 ---
 
-## 8. Documentation Change Checklist for Pull Requests
+## 8. README Hero and Package Boundary
+
+README hero assets are branding/conceptual illustrations. They are not the
+canonical protocol diagram. `docs/forgeloop-flow.mmd` remains the canonical
+architecture flow source and `docs/assets/forgeloop-flow.svg` remains its
+generated render.
+
+The README hero is intentionally GitHub-repository-only:
+
+- `README.md` may reference `docs/assets/eng_readme_forgeloop.png`; GitHub
+  renders it from the repository.
+- The hero PNG is excluded from the npm package (`package.json` `files`), and
+  `tests/package.test.js` asserts that exclusion so it cannot be silently
+  re-included.
+- The packaged README is therefore not self-contained for that relative hero
+  path; do not claim otherwise.
+- If a portable hero is ever shipped, any relative README asset referenced by
+  packaged Markdown must be present in the package and covered by
+  `tests/package.test.js`.
+
+Never delete `docs/assets/forgeloop-flow.svg`; it is generator-owned output of
+the diagram workflow.
+
+---
+
+## 9. Documentation Change Checklist for Pull Requests
 
 For documentation-impacting changes, verify each item before merging:
 

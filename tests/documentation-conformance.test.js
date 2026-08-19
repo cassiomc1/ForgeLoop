@@ -33,6 +33,8 @@ async function copyDocsFixture(tempDir) {
   await cp("CLAUDE.md", path.join(tempDir, "CLAUDE.md"));
   await cp(".cursor", path.join(tempDir, ".cursor"), { recursive: true });
   await cp(".github", path.join(tempDir, ".github"), { recursive: true });
+  await cp("LOOP_SYSTEM_DESIGN.md", path.join(tempDir, "LOOP_SYSTEM_DESIGN.md"));
+  await cp("ORCHESTRATOR_INTEGRATION.md", path.join(tempDir, "ORCHESTRATOR_INTEGRATION.md"));
 }
 
 test("validateDocumentationConformance passes on repository docs", async () => {
@@ -527,4 +529,94 @@ test("DOC-CROSS-1/2/3: cross-command examples validate positional args against t
     statusDef,
   );
   assert.ok(unmarkedMismatch.some((error) => error.includes("DOC_CLI_EXAMPLE_COMMAND_MISMATCH")));
+});
+
+test("DOC-LAYOUT-ARCH / DOC-TRANSITION / DOC-ADVANCE: architecture layout, canonical transitions, and advance prose conformance", async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "forgeloop-arch-test-"));
+
+  try {
+    await copyDocsFixture(tempDir);
+
+    const systemDesignFile = path.join(tempDir, "LOOP_SYSTEM_DESIGN.md");
+    const orchestratorFile = path.join(tempDir, "ORCHESTRATOR_INTEGRATION.md");
+    const cliReferenceFile = path.join(tempDir, "docs", "CLI_REFERENCE.md");
+
+    // DOC-LAYOUT-ARCH-1 (PASS): current architecture documents the modern task-scoped layout
+    const baseline = await validateDocumentationConformance({ rootDir: tempDir });
+    assert.equal(baseline.valid, true, `Baseline must be valid: ${baseline.errors.join("\n")}`);
+    assert.ok((await readFile(systemDesignFile, "utf8")).includes(".forgeloop/task-state/"));
+
+    // DOC-LAYOUT-ARCH-2 (FAIL): reintroducing a singleton task path as current architecture
+    let systemDesign = await readFile(systemDesignFile, "utf8");
+    const layoutMut = mustReplace(
+      systemDesign,
+      "and modern mutable task protocol state is isolated under `.forgeloop/task-state/<taskKey>/`.",
+      "and mutable protocol artifacts remain directly under `.forgeloop/work-state.json`.",
+      "DOC-LAYOUT-ARCH-2 singleton reintroduction",
+    );
+    await writeFile(systemDesignFile, layoutMut, "utf8");
+    const layoutMutated = await validateDocumentationConformance({ rootDir: tempDir });
+    assert.equal(layoutMutated.valid, false);
+    assert.ok(
+      layoutMutated.errors.some((error) => error.includes("DOC_LEGACY_TASK_PATH_OUTSIDE_MIGRATION") && error.includes("LOOP_SYSTEM_DESIGN.md")),
+      `Expected DOC_LEGACY_TASK_PATH_OUTSIDE_MIGRATION for LOOP_SYSTEM_DESIGN.md, got: ${layoutMutated.errors.join("\n")}`,
+    );
+    await writeFile(systemDesignFile, systemDesign, "utf8");
+
+    // DOC-TRANSITION-1 (FAIL): removing REVIEWING -> CORRECTING from the documented table
+    const orchestrator = await readFile(orchestratorFile, "utf8");
+    const removeCorrecting = mustReplace(
+      orchestrator,
+      "| `REVIEWING` | an implementation or review finding requires correction | `CORRECTING` |\n",
+      "",
+      "DOC-TRANSITION-1 remove REVIEWING->CORRECTING",
+    );
+    await writeFile(orchestratorFile, removeCorrecting, "utf8");
+    const removedEdge = await validateDocumentationConformance({ rootDir: tempDir });
+    assert.equal(removedEdge.valid, false);
+    assert.ok(
+      removedEdge.errors.some((error) => error.includes("DOC_TRANSITION_EDGE_MISSING") && error.includes("REVIEWING") && error.includes("CORRECTING")),
+      `Expected DOC_TRANSITION_EDGE_MISSING for REVIEWING -> CORRECTING, got: ${removedEdge.errors.join("\n")}`,
+    );
+
+    // DOC-TRANSITION-2 (FAIL): adding an unsupported REVIEWING -> DESIGNING edge
+    const mutatedOrchestrator = await readFile(orchestratorFile, "utf8");
+    const addUnsupported = mustReplace(
+      mutatedOrchestrator,
+      "| `REVIEWING` | completion is rejected only for evidence | `VERIFYING` |",
+      "| `REVIEWING` | completion is rejected only for evidence | `VERIFYING` |\n| `REVIEWING` | unsupported invention | `DESIGNING` |",
+      "DOC-TRANSITION-2 add REVIEWING->DESIGNING",
+    );
+    await writeFile(orchestratorFile, addUnsupported, "utf8");
+    const extraEdge = await validateDocumentationConformance({ rootDir: tempDir });
+    assert.equal(extraEdge.valid, false);
+    assert.ok(
+      extraEdge.errors.some((error) => error.includes("DOC_TRANSITION_EDGE_EXTRA") && error.includes("REVIEWING") && error.includes("DESIGNING")),
+      `Expected DOC_TRANSITION_EDGE_EXTRA for REVIEWING -> DESIGNING, got: ${extraEdge.errors.join("\n")}`,
+    );
+    await writeFile(orchestratorFile, orchestrator, "utf8");
+
+    // DOC-TRANSITION-3 (PASS): restored canonical set validates
+    const restored = await validateDocumentationConformance({ rootDir: tempDir });
+    assert.equal(restored.valid, true, `Restored fixture must be valid: ${restored.errors.join("\n")}`);
+
+    // DOC-ADVANCE-1 (PASS + FAIL mutation): advance Purpose must not publish a manual phase subset
+    let cliReference = await readFile(cliReferenceFile, "utf8");
+    assert.doesNotMatch(cliReference, /Purpose\*\*: Transitions between valid protocol phases/);
+    const staleSubset = mustReplace(
+      cliReference,
+      "- **Purpose**: Transitions the task along a valid edge of the canonical ForgeLoop work-state machine. The destination is validated against the current phase and the canonical lifecycle transition rules.",
+      "- **Purpose**: Transitions between valid protocol phases (`PLANNED`, `EXECUTING`, `VERIFYING`, `REVIEWING`).",
+      "DOC-ADVANCE-1 stale phase subset",
+    );
+    await writeFile(cliReferenceFile, staleSubset, "utf8");
+    const staleAdvance = await validateDocumentationConformance({ rootDir: tempDir });
+    assert.equal(staleAdvance.valid, false);
+    assert.ok(
+      staleAdvance.errors.some((error) => error.includes("DOC_ADVANCE_PHASE_SUBSET")),
+      `Expected DOC_ADVANCE_PHASE_SUBSET, got: ${staleAdvance.errors.join("\n")}`,
+    );
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
 });
