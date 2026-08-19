@@ -25,9 +25,15 @@ export const COMPLETION_STATUSES = Object.freeze(["VALID", "REJECTED"]);
  * Canonical completion verification-status values returned by
  * evaluateCompletion. The asymmetric casing (VALID / invalid) is the actual
  * runtime contract and is intentionally preserved; documentation conformance
- * checks documented examples and prose against this exact set.
+ * checks documented examples and prose against this exact set, and the runtime
+ * derives its output from these same named constants.
  */
-export const VERIFICATION_STATUSES = Object.freeze(["VALID", "invalid"]);
+export const VERIFICATION_STATUS_VALID = "VALID";
+export const VERIFICATION_STATUS_INVALID = "invalid";
+export const VERIFICATION_STATUSES = Object.freeze([
+  VERIFICATION_STATUS_VALID,
+  VERIFICATION_STATUS_INVALID,
+]);
 
 function issue(code, message, artifacts = [], details = {}) {
   return { code, message, artifacts, ...details };
@@ -423,7 +429,7 @@ export async function evaluateCompletion({
   return {
     status: valid ? COMPLETION_STATUSES[0] : COMPLETION_STATUSES[1],
     taskStatus: valid ? "COMPLETE" : receiptValue?.status === "blocked" ? "BLOCKED" : "INCOMPLETE",
-    verificationStatus: valid ? "VALID" : "invalid",
+    verificationStatus: valid ? VERIFICATION_STATUS_VALID : VERIFICATION_STATUS_INVALID,
     publicationStatus: publication,
     productionReadiness: receiptValue?.productionReadiness ?? "not-verified",
     errors: sortedErrors,

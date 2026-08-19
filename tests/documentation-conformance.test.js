@@ -484,3 +484,35 @@ test("DOC-CLI-CMD-2 / DOC-TERM-1 / DOC-TERM-2 / DOC-COMP-EXACT-1 / DOC-VERIFY-1 
   );
   assert.ok(conditionalUnknownFlag.some((error) => error.includes("DOC_CLI_MUTATION_CLAIM_INVALID")));
 });
+
+test("DOC-CROSS-1/2/3: cross-command examples validate positional args against the example command", () => {
+  const taskCreateDef = CLI_COMMAND_DEFINITIONS["task-create"];
+  const policyDef = CLI_COMMAND_DEFINITIONS["policy"];
+  const statusDef = CLI_COMMAND_DEFINITIONS["status"];
+
+  // DOC-CROSS-1: `policy default --json` is valid inside a task-create section
+  // when marked as a cross-command workflow example (policy accepts `<name>`).
+  const crossValid = validateCliExamples(
+    "### `task-create`\n\n```bash\n# Cross-command workflow example: apply policy then create the task\nforgeloop policy default --json\n```\n",
+    "task-create",
+    taskCreateDef,
+  );
+  assert.deepEqual(crossValid, []);
+
+  // DOC-CROSS-2: `status` does not accept positional values, so a cross-command
+  // example passing `unexpected-value` must fail.
+  const crossInvalid = validateCliExamples(
+    "### `policy`\n\n```bash\n# Cross-command workflow example: check status first\nforgeloop status unexpected-value --json\n```\n",
+    "policy",
+    statusDef,
+  );
+  assert.ok(crossInvalid.some((error) => error.includes("DOC_CLI_EXAMPLE_POSITIONAL_UNEXPECTED")));
+
+  // DOC-CROSS-3: unmarked mismatches still fail with the section-match error.
+  const unmarkedMismatch = validateCliExamples(
+    "### `policy`\n\n```bash\nforgeloop status --json\n```\n",
+    "policy",
+    statusDef,
+  );
+  assert.ok(unmarkedMismatch.some((error) => error.includes("DOC_CLI_EXAMPLE_COMMAND_MISMATCH")));
+});

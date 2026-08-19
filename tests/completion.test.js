@@ -15,6 +15,7 @@ import { appendProtocolEvent } from "../src/core/events.js";
 import { evaluateRoute } from "../src/core/router.js";
 import { persistRoute } from "../src/core/route-artifact.js";
 import { createEvidence } from "../src/core/evidence.js";
+import { VERIFICATION_STATUS_INVALID, VERIFICATION_STATUS_VALID, VERIFICATION_STATUSES } from "../src/core/completion.js";
 import { ARTIFACT_PATHS, canonicalFingerprint, writeJsonArtifact } from "../src/core/artifacts.js";
 import { prepareCompletion } from "../src/core/completion-artifacts.js";
 import { createWorkState, writeWorkState } from "../src/core/work-state.js";
@@ -177,6 +178,21 @@ test("complete validates a coherent task and keeps publication independent", asy
     assert.equal(completion.verificationStatus, "VALID");
     assert.equal(completion.publicationStatus, "local-only");
     assert.equal(result.receipt.productionReadiness, "not-verified");
+
+    // VERIFY-CANON-1: the runtime value is produced from the canonical constant.
+    assert.equal(completion.verificationStatus, VERIFICATION_STATUS_VALID);
+    assert.ok(VERIFICATION_STATUSES.includes(completion.verificationStatus));
+  });
+});
+
+test("complete reports a REJECTED completion with the canonical invalid verification status", async () => {
+  await withTarget(async (target) => {
+    const result = await runComplete({ target, packageRoot, persist: false });
+    assert.equal(result.status, "REJECTED");
+
+    // VERIFY-CANON-2: the runtime value is produced from the canonical constant.
+    assert.equal(result.verificationStatus, VERIFICATION_STATUS_INVALID);
+    assert.ok(VERIFICATION_STATUSES.includes(result.verificationStatus));
   });
 });
 

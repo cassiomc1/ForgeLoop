@@ -71,6 +71,17 @@ export async function resolveTaskContext(target, {
   const tasks = await discoverTasks(target, packageRoot);
   const healthyTasks = tasks.filter((t) => t.healthy !== false);
 
+  // Fail closed: modern task namespaces exist but are all corrupt/unhealthy.
+  // Never fall back to legacy singleton state over corrupt modern state.
+  if (tasks.length > 0 && healthyTasks.length === 0) {
+    const firstInvalid = tasks.find((t) => t.healthy === false);
+    const error = new Error(
+      firstInvalid?.error?.message ?? "Task namespaces exist but none are valid",
+    );
+    error.code = firstInvalid?.error?.code ?? "E_TASK_DESCRIPTOR_INVALID";
+    throw error;
+  }
+
   if (healthyTasks.length === 1) {
     const single = healthyTasks[0];
     return createTaskContext({

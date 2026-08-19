@@ -92,6 +92,15 @@ export async function discoverTasks(target, packageRoot = getPackageRoot()) {
         directory: `${TASK_STATE_ROOT}/${descriptor.taskKey}`,
       });
     } catch (err) {
+      // A directory without a task.json descriptor is not a task namespace
+      // (e.g. an incidental policy-snapshot directory written by a legacy
+      // preflight). Skip it rather than surfacing a phantom corrupt namespace,
+      // so legacy compatibility remains allowed when modern state is genuinely
+      // absent. Genuinely corrupt descriptors (present but invalid) still
+      // surface below as unhealthy.
+      if (err.code === "E_TASK_NOT_FOUND" || err.code === "ARTIFACT_MISSING") {
+        continue;
+      }
       // P1-2: Surface corrupt task namespaces instead of silently hiding them
       tasks.push({
         taskId: null,

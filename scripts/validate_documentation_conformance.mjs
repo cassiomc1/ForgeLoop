@@ -100,7 +100,6 @@ export function validateCliExamples(sectionContent, command, commandDef) {
   const errors = [];
   const stripQuotes = (value) => (typeof value === "string" ? value.replace(/^["']|["']$/g, "") : value);
   const exampleBlocks = [...sectionContent.matchAll(/```(?:bash|sh)?\s*\n([\s\S]*?)```/g)].map((m) => m[1]);
-  const hasPositional = Object.keys(commandDef.options).some((key) => /^<[^>]+>$/.test(key));
 
   for (const block of exampleBlocks) {
     // Join continuation lines (trailing backslash) before parsing. EOL-safe:
@@ -128,6 +127,13 @@ export function validateCliExamples(sectionContent, command, commandDef) {
         );
         continue;
       }
+
+      // Positional support must reflect the actual example command, not the
+      // documentation section command (relevant for marked cross-command
+      // workflow examples such as `policy default --json` inside another
+      // command's section).
+      const hasPositional = Object.values(exampleDef.options)
+        .some((option) => option.isPositional === true);
 
       let sawPassthrough = false;
       let typeValue = null;

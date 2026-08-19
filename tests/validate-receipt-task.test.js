@@ -135,3 +135,97 @@ test("VR-TASK-5: multiple active tasks without --task or --file fail with E_TASK
     assert.match(result.stderr, /E_TASK_AMBIGUOUS|Multiple active tasks/i);
   });
 });
+
+/**
+ * Writes a corrupt task namespace: a 64-hex directory whose task.json contains
+ * a valid descriptor for a different taskId, so its storage key does not match
+ * the directory name (surfaced by discoverTasks as E_TASK_KEY_MISMATCH).
+ */
+async function writeCorruptNamespace(target, dirName, taskId) {
+  const descriptor = {
+    schemaVersion: 1,
+    protocolVersion: 1,
+    taskId,
+    taskKey: taskStorageKey(taskId),
+    createdAt: "2026-08-19T00:00:00.000Z",
+    updatedAt: "2026-08-19T00:00:00.000Z",
+    writeClaims: [],
+  };
+  const dir = path.join(target, ".forgeloop", "task-state", dirName);
+  await mkdir(dir, { recursive: true });
+  await writeFile(path.join(dir, "task.json"), `${JSON.stringify(descriptor, null, 2)}\n`, "utf8");
+}
+
+test("TASK-RESOLVE-CORRUPT-1: corrupt namespace plus legacy receipt fails closed (no singleton fallback)", async () => {
+  await withTarget(async (target) => {
+    await writeCorruptNamespace(target, "a".repeat(64), "corrupt-task");
+    await mkdir(path.join(target, ".forgeloop"), { recursive: true });
+    await writeFile(
+      path.join(target, ".forgeloop", "execution-receipt.json"),
+      `${JSON.stringify(receiptFixture("legacy-singleton"), null, 2)}\n`,
+      "utf8",
+    );
+
+    const result = runCli(target, "validate-receipt", "--json");
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /E_TASK_KEY_MISMATCH/i);
+    // Must NOT validate the legacy singleton over corrupt modern state.
+    assert.doesNotMatch(result.stdout, /legacy-singleton/);
+  });
+});
+
+test("TASK-RESOLVE-CORRUPT-2: corrupt namespace without legacy state fails with the corruption error", async () => {
+  await withTarget(async (target) => {
+    await writeCorruptNamespace(target, "a".repeat(64), "corrupt-task");
+
+    const result = runCli(target, "validate-receipt", "--json");
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /E_TASK_KEY_MISMATCH/i);
+  });
+});
+
+test("TASK-RESOLVE-CORRUPT-3: no task namespaces plus legacy receipt remains compatible", async () => {
+  await withTarget(async (target) => {
+    await mkdir(path.join(target, ".forgeloop"), { recursive: true });
+    await writeFile(
+      path.join(target, ".forgeloop", "execution-receipt.json"),
+      `${JSON.stringify(receiptFixture("legacy-singleton"), null, 2)}\n`,
+      "utf8",
+    );
+
+    const result = runCli(target, "validate-receipt", "--json");
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(JSON.parse(result.stdout).taskId, "legacy-singleton");
+  });
+});
+
+test("TASK-RESOLVE-CORRUPT-4: one healthy task plus one corrupt namespace resolves the healthy task", async () => {
+  await withTarget(async (target) => {
+    const created = runCli(target, "task-create", "--task", "healthy-a", "--json");
+    assert.equal(created.status, 0, created.stderr);
+    await writeTaskReceipt(target, "healthy-a", receiptFixture("healthy-a"));
+    await writeCorruptNamespace(target, "a".repeat(64), "corrupt-task");
+
+    const result = runCli(target, "validate-receipt", "--json");
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(JSON.parse(result.stdout).taskId, "healthy-a");
+  });
+});
+
+test("TASK-RESOLVE-CORRUPT-5: descriptor-less directory is not a corrupt namespace; legacy fallback preserved", async () => {
+  await withTarget(async (target) => {
+    // A 64-hex directory with no task.json is an incidental artifact, not a
+    // task namespace, so legacy compatibility must remain available.
+    await mkdir(path.join(target, ".forgeloop", "task-state", "b".repeat(64)), { recursive: true });
+    await mkdir(path.join(target, ".forgeloop"), { recursive: true });
+    await writeFile(
+      path.join(target, ".forgeloop", "execution-receipt.json"),
+      `${JSON.stringify(receiptFixture("legacy-singleton"), null, 2)}\n`,
+      "utf8",
+    );
+
+    const result = runCli(target, "validate-receipt", "--json");
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(JSON.parse(result.stdout).taskId, "legacy-singleton");
+  });
+});
