@@ -50,6 +50,7 @@ test("npm tarball contains the CLI, templates, and license notices only", () => 
     "tests/cli.test.js",
     "scripts/scan_secrets.py",
     ".forgeloop/work-state.json",
+    "docs/assets/eng_readme_forgeloop.png",
     "docs/superpowers/plans/2026-08-11-10-of-10-roadmap-implementation.md",
   ]) {
     assert.equal(listing.includes(excluded), false, `unexpected ${excluded}`);
