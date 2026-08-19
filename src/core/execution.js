@@ -2,14 +2,14 @@ import { randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
 import { readdir } from "node:fs/promises";
 import path from "node:path";
-import { fileExists } from "./filesystem.js";
+import { ensureWithin, fileExists } from "./filesystem.js";
 import {
   ARTIFACT_PATHS,
   executionArtifactPath,
   readJsonArtifact,
   writeJsonArtifact,
 } from "./artifacts.js";
-import { taskExecutionPath } from "./task-paths.js";
+import { taskArtifactPath, taskExecutionPath } from "./task-paths.js";
 import {
   resolveExecutionResolution,
   validateVerificationAuthority,
@@ -75,6 +75,23 @@ function executeProcess(argv, cwd) {
       resolve({ exitCode: null, spawnError: error });
     }
   });
+}
+
+/**
+ * Resolves where a new execution artifact should be written. Task-scoped
+ * execution artifacts require a real modern task namespace (a task.json
+ * descriptor). A descriptor-less task is legacy: writing task-scoped here
+ * would create a phantom `.forgeloop/task-state/<key>/executions/` namespace
+ * that corrupts task discovery. Reads already fall back across both
+ * locations, so a legacy execution stays resolvable.
+ */
+export async function resolveExecutionArtifactPath(target, taskId, executionId) {
+  if (!taskId) return executionArtifactPath(executionId);
+  const descriptorRel = taskArtifactPath(taskId, "descriptor");
+  if (await fileExists(ensureWithin(target, descriptorRel))) {
+    return taskExecutionPath(taskId, executionId);
+  }
+  return executionArtifactPath(executionId);
 }
 
 export async function runCommandExecution({
@@ -153,7 +170,7 @@ export async function runCommandExecution({
     status: processResult.exitCode === 0 && !processResult.spawnError ? "passed" : "failed",
     exitCode: processResult.exitCode,
   };
-  const execPath = executionPath ?? (taskId ? taskExecutionPath(taskId, executionId) : executionArtifactPath(executionId));
+  const execPath = executionPath ?? await resolveExecutionArtifactPath(target, taskId, executionId);
   const written = await writeJsonArtifact(target, execPath, execution, "execution", packageRoot);
   return {
     path: written.path,

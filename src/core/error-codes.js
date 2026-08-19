@@ -330,6 +330,13 @@ export const PUBLIC_ERROR_CODES = Object.freeze({
     meaning: "Cannot re-record baseline during an active task with policy snapshot.",
     safeResolution: "Resolve new violations or use monotonic baseline --update.",
   }),
+  E_POLICY_INITIALIZATION_FAILED: Object.freeze({
+    code: "E_POLICY_INITIALIZATION_FAILED",
+    category: "policy",
+    classification: "PUBLIC_STABLE",
+    meaning: "Executable policy bootstrap could not complete during initialization.",
+    safeResolution: "Repair the reported filesystem/schema error and rerun `forgeloop init`. Initialization is restartable while no committed manifest exists.",
+  }),
 });
 
 export const E_CHECK_INERT = "E_CHECK_INERT";
@@ -347,6 +354,7 @@ export const E_POLICY_SNAPSHOT_WRITE_FAILED = "E_POLICY_SNAPSHOT_WRITE_FAILED";
 export const E_POLICY_LOCK_MISMATCH = "E_POLICY_LOCK_MISMATCH";
 export const E_POLICY_DRIFT_UNKNOWN = "E_POLICY_DRIFT_UNKNOWN";
 export const E_BASELINE_RECORD_DURING_ACTIVE_TASK = "E_BASELINE_RECORD_DURING_ACTIVE_TASK";
+export const E_POLICY_INITIALIZATION_FAILED = "E_POLICY_INITIALIZATION_FAILED";
 
 export const ALL_KNOWN_ERROR_CODES = Object.freeze(new Set([
   ...FAILURE_CODES,
@@ -395,4 +403,5 @@ export const ALL_KNOWN_ERROR_CODES = Object.freeze(new Set([
   E_POLICY_LOCK_MISMATCH,
   E_POLICY_DRIFT_UNKNOWN,
   E_BASELINE_RECORD_DURING_ACTIVE_TASK,
+  E_POLICY_INITIALIZATION_FAILED,
 ]));

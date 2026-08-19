@@ -487,7 +487,6 @@ test("DOC-CLI-CMD-2 / DOC-TERM-1 / DOC-TERM-2 / DOC-COMP-EXACT-1 / DOC-VERIFY-1 
 
 test("DOC-CROSS-1/2/3: cross-command examples validate positional args against the example command", () => {
   const taskCreateDef = CLI_COMMAND_DEFINITIONS["task-create"];
-  const policyDef = CLI_COMMAND_DEFINITIONS["policy"];
   const statusDef = CLI_COMMAND_DEFINITIONS["status"];
 
   // DOC-CROSS-1: `policy default --json` is valid inside a task-create section

@@ -212,11 +212,13 @@ test("TASK-RESOLVE-CORRUPT-4: one healthy task plus one corrupt namespace resolv
   });
 });
 
-test("TASK-RESOLVE-CORRUPT-5: descriptor-less directory is not a corrupt namespace; legacy fallback preserved", async () => {
+test("TASK-RESOLVE-CORRUPT-5: policy-snapshot-only directory is legacy spillover; legacy fallback preserved", async () => {
   await withTarget(async (target) => {
-    // A 64-hex directory with no task.json is an incidental artifact, not a
-    // task namespace, so legacy compatibility must remain available.
-    await mkdir(path.join(target, ".forgeloop", "task-state", "b".repeat(64)), { recursive: true });
+    // The only recognized legacy-incidental artifact inside a descriptor-less
+    // 64-hex directory is the legacy preflight policy snapshot.
+    const dir = path.join(target, ".forgeloop", "task-state", "b".repeat(64));
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, "policy-snapshot.json"), `${JSON.stringify({ schemaVersion: 1, policyDigest: "x" })}\n`, "utf8");
     await mkdir(path.join(target, ".forgeloop"), { recursive: true });
     await writeFile(
       path.join(target, ".forgeloop", "execution-receipt.json"),
@@ -227,5 +229,99 @@ test("TASK-RESOLVE-CORRUPT-5: descriptor-less directory is not a corrupt namespa
     const result = runCli(target, "validate-receipt", "--json");
     assert.equal(result.status, 0, result.stderr);
     assert.equal(JSON.parse(result.stdout).taskId, "legacy-singleton");
+  });
+});
+
+test("TASK-DESCRIPTOR-MISSING-1: policy-snapshot-only directory is not a task namespace", async () => {
+  await withTarget(async (target) => {
+    const dir = path.join(target, ".forgeloop", "task-state", "b".repeat(64));
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, "policy-snapshot.json"), `${JSON.stringify({ schemaVersion: 1, policyDigest: "x" })}\n`, "utf8");
+    await mkdir(path.join(target, ".forgeloop"), { recursive: true });
+    await writeFile(
+      path.join(target, ".forgeloop", "execution-receipt.json"),
+      `${JSON.stringify(receiptFixture("legacy-singleton"), null, 2)}\n`,
+      "utf8",
+    );
+
+    const result = runCli(target, "validate-receipt", "--json");
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(JSON.parse(result.stdout).taskId, "legacy-singleton");
+  });
+});
+
+test("TASK-DESCRIPTOR-MISSING-2: receipt without task.json fails closed with no legacy fallback", async () => {
+  await withTarget(async (target) => {
+    const dir = path.join(target, ".forgeloop", "task-state", "c".repeat(64));
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, "execution-receipt.json"), `${JSON.stringify(receiptFixture("orphan-receipt"), null, 2)}\n`, "utf8");
+    await mkdir(path.join(target, ".forgeloop"), { recursive: true });
+    await writeFile(
+      path.join(target, ".forgeloop", "execution-receipt.json"),
+      `${JSON.stringify(receiptFixture("legacy-singleton"), null, 2)}\n`,
+      "utf8",
+    );
+
+    const result = runCli(target, "validate-receipt", "--json");
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /E_TASK_DESCRIPTOR_INVALID/i);
+    assert.doesNotMatch(result.stdout, /legacy-singleton/);
+  });
+});
+
+test("TASK-DESCRIPTOR-MISSING-3: work-state and events without task.json fail closed", async () => {
+  await withTarget(async (target) => {
+    const dir = path.join(target, ".forgeloop", "task-state", "d".repeat(64));
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, "work-state.json"), `${JSON.stringify({ schemaVersion: 1, taskId: "orphan" })}\n`, "utf8");
+    await writeFile(path.join(dir, "events.ndjson"), "{\"event\":\"TASK_RECEIVED\"}\n", "utf8");
+
+    const result = runCli(target, "validate-receipt", "--json");
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /E_TASK_DESCRIPTOR_INVALID/i);
+  });
+});
+
+test("TASK-DESCRIPTOR-MISSING-4: empty 64-hex directory fails closed", async () => {
+  await withTarget(async (target) => {
+    await mkdir(path.join(target, ".forgeloop", "task-state", "e".repeat(64)), { recursive: true });
+
+    const result = runCli(target, "validate-receipt", "--json");
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /E_TASK_DESCRIPTOR_INVALID/i);
+  });
+});
+
+test("TASK-DESCRIPTOR-MISSING-5: one healthy task plus one descriptor-less corrupt namespace resolves the healthy task (deliberate)", async () => {
+  await withTarget(async (target) => {
+    const created = runCli(target, "task-create", "--task", "healthy-b", "--json");
+    assert.equal(created.status, 0, created.stderr);
+    await writeTaskReceipt(target, "healthy-b", receiptFixture("healthy-b"));
+    const dir = path.join(target, ".forgeloop", "task-state", "f".repeat(64));
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, "work-state.json"), `${JSON.stringify({ schemaVersion: 1, taskId: "orphan" })}\n`, "utf8");
+
+    const result = runCli(target, "validate-receipt", "--json");
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(JSON.parse(result.stdout).taskId, "healthy-b");
+  });
+});
+
+test("TASK-DESCRIPTOR-MISSING-6: only corrupt descriptor-less modern namespace plus legacy singleton fails closed", async () => {
+  await withTarget(async (target) => {
+    const dir = path.join(target, ".forgeloop", "task-state", "9".repeat(64));
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, "execution-receipt.json"), `${JSON.stringify(receiptFixture("orphan-receipt"), null, 2)}\n`, "utf8");
+    await mkdir(path.join(target, ".forgeloop"), { recursive: true });
+    await writeFile(
+      path.join(target, ".forgeloop", "execution-receipt.json"),
+      `${JSON.stringify(receiptFixture("legacy-singleton"), null, 2)}\n`,
+      "utf8",
+    );
+
+    const result = runCli(target, "validate-receipt", "--json");
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /E_TASK_DESCRIPTOR_INVALID/i);
+    assert.doesNotMatch(result.stdout, /legacy-singleton/);
   });
 });

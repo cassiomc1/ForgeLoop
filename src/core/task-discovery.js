@@ -1,11 +1,58 @@
 import { readdir } from "node:fs/promises";
 import { ensureWithin, fileExists } from "./filesystem.js";
 import { getPackageRoot } from "./templates.js";
-import { TASK_STATE_ROOT, taskArtifactPath } from "./task-paths.js";
+import { TASK_STATE_ROOT, TASK_ARTIFACT_FILES, taskArtifactPath } from "./task-paths.js";
 import { readTaskDescriptor } from "./task-descriptor.js";
 import { readJsonArtifact } from "./artifacts.js";
 import { readLockInfo } from "./task-lock.js";
 import { taskStorageKey } from "./task-identity.js";
+
+/**
+ * Explicitly recognized legacy-incidental artifacts that may legitimately
+ * exist inside a 64-hex task-state directory WITHOUT a task.json descriptor.
+ * A legacy preflight writes a task-scoped policy snapshot for a task that has
+ * no modern namespace; that directory is not a task namespace. Any other
+ * content makes the directory a corrupt modern task namespace that must fail
+ * closed.
+ */
+const LEGACY_INCIDENTAL_ARTIFACTS = new Set([
+  TASK_ARTIFACT_FILES.policySnapshot,
+]);
+
+/**
+ * Classifies a 64-hex task-state directory whose task.json is missing.
+ *
+ *   - directory contains only explicitly recognized legacy-incidental
+ *     artifacts (policy-snapshot.json) -> LEGACY_INCIDENTAL (ignored)
+ *   - anything else, including an empty directory -> CORRUPT_TASK_NAMESPACE
+ *     (no positive evidence of legitimate legacy spillover)
+ */
+async function classifyDescriptorlessTaskDirectory(target, taskKey) {
+  const directory = ensureWithin(target, `${TASK_STATE_ROOT}/${taskKey}`);
+  let entries = [];
+  try {
+    entries = await readdir(directory, { withFileTypes: true });
+  } catch {
+    return {
+      kind: "CORRUPT_TASK_NAMESPACE",
+      error: {
+        code: "E_TASK_DESCRIPTOR_INVALID",
+        message: `Task namespace ${taskKey} is missing task.json`,
+      },
+    };
+  }
+  const names = new Set(entries.map((entry) => entry.name));
+  if (names.size > 0 && [...names].every((name) => LEGACY_INCIDENTAL_ARTIFACTS.has(name))) {
+    return { kind: "LEGACY_INCIDENTAL" };
+  }
+  return {
+    kind: "CORRUPT_TASK_NAMESPACE",
+    error: {
+      code: "E_TASK_DESCRIPTOR_INVALID",
+      message: `Task namespace ${taskKey} contains task artifacts but task.json is missing`,
+    },
+  };
+}
 
 export async function discoverTasks(target, packageRoot = getPackageRoot()) {
   const rootPath = ensureWithin(target, TASK_STATE_ROOT);
@@ -92,13 +139,23 @@ export async function discoverTasks(target, packageRoot = getPackageRoot()) {
         directory: `${TASK_STATE_ROOT}/${descriptor.taskKey}`,
       });
     } catch (err) {
-      // A directory without a task.json descriptor is not a task namespace
-      // (e.g. an incidental policy-snapshot directory written by a legacy
-      // preflight). Skip it rather than surfacing a phantom corrupt namespace,
-      // so legacy compatibility remains allowed when modern state is genuinely
-      // absent. Genuinely corrupt descriptors (present but invalid) still
-      // surface below as unhealthy.
+      // A directory without a task.json descriptor is not automatically a
+      // task namespace: classify by contents so explicitly recognized legacy
+      // spillover (policy-snapshot.json) stays compatible while any modern
+      // task artifact without a descriptor fails closed instead of silently
+      // reopening the legacy singleton fallback.
       if (err.code === "E_TASK_NOT_FOUND" || err.code === "ARTIFACT_MISSING") {
+        const classification = await classifyDescriptorlessTaskDirectory(target, entry.name);
+        if (classification.kind === "LEGACY_INCIDENTAL") {
+          continue;
+        }
+        tasks.push({
+          taskId: null,
+          taskKey: entry.name,
+          directory: `${TASK_STATE_ROOT}/${entry.name}`,
+          healthy: false,
+          error: classification.error,
+        });
         continue;
       }
       // P1-2: Surface corrupt task namespaces instead of silently hiding them
