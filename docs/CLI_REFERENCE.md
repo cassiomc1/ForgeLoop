@@ -40,11 +40,11 @@ ForgeLoop uses a definition-driven command-line parser:
 | Category | Commands |
 | --- | --- |
 | **Setup & Maintenance** | [`init`](#init), [`update`](#update), [`task-migrate`](#task-migrate), [`task-unlock`](#task-unlock) |
-| **Inspection & Diagnostics** | [`doctor`](#doctor), [`progress`](#progress), [`inspect`](#inspect), [`status`](#status), [`validate-state`](#validate-state), [`validate-protocol`](#validate-protocol) |
+| **Inspection & Diagnostics** | [`doctor`](#doctor), [`progress`](#progress), [`profile-interview`](#profile-interview), [`inspect`](#inspect), [`status`](#status), [`validate-state`](#validate-state), [`validate-protocol`](#validate-protocol) |
 | **Lifecycle & State** | [`activate`](#activate), [`route`](#route), [`preflight`](#preflight), [`advance`](#advance), [`next`](#next), [`record-diagnosis`](#record-diagnosis), [`record-decision-criterion`](#record-decision-criterion), [`complete`](#complete), [`clear-state`](#clear-state), [`task-create`](#task-create), [`task-list`](#task-list), [`task-show`](#task-show), [`task-scope`](#task-scope) |
 | **Cross-Harness Continuity** | [`continuity`](#continuity), [`record-continuity`](#record-continuity), [`reconcile-continuity`](#reconcile-continuity), [`clear-continuity`](#clear-continuity) |
 | **Verification & Completion** | [`prepare-completion`](#prepare-completion), [`run-check`](#run-check), [`record-check`](#record-check), [`record-terminal-result`](#record-terminal-result), [`audit`](#audit), [`report`](#report), [`validate-receipt`](#validate-receipt) |
-| **Policy & Auditing** | [`policy`](#policy), [`bundle`](#bundle) |
+| **Policy & Auditing** | [`policy`](#policy), [`policy-discover`](#policy-discover), [`policy-status`](#policy-status), [`policy-diff`](#policy-diff), [`rule-verify`](#rule-verify), [`baseline`](#baseline), [`bundle`](#bundle) |
 
 <!-- END FORGELOOP GENERATED: cli-command-index -->
 
@@ -809,6 +809,141 @@ Evaluates compliance against a named policy pack.
 
   ```bash
   forgeloop policy default --json
+  ```
+
+### `policy-discover`
+
+Discovers architectural patterns, project conventions, and candidate verification rules deterministically.
+
+- **Purpose**: Runs non-interactive repository inspection to derive policy rules with confidence scores.
+- **Mutation**: Writes `.forgeloop/policy/discovery.json`.
+- **Options**:
+
+<!-- BEGIN FORGELOOP GENERATED: cli:policy-discover:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--write`: persist discovered policy to .forgeloop/policy/discovery.json
+- `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:policy-discover:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop policy-discover --json
+  ```
+
+### `policy-status`
+
+Reports effective executable policy verification status, baselines, and drift.
+
+- **Purpose**: Evaluates all rules, identifies inert checks, baselined debt, and unbaselined violations.
+- **Mutation**: Read-only.
+- **Options**:
+
+<!-- BEGIN FORGELOOP GENERATED: cli:policy-status:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:policy-status:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop policy-status --json
+  ```
+
+### `policy-diff`
+
+Semantically diffs policy rules and classifies changes as tightening, neutral, or weakening.
+
+- **Purpose**: Compares proposed or current policy against a base or task snapshot.
+- **Mutation**: Read-only.
+- **Options**:
+
+<!-- BEGIN FORGELOOP GENERATED: cli:policy-diff:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--before <path>`: path to before policy JSON
+- `--after <path>`: path to after policy JSON
+- `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:policy-diff:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop policy-diff --base .forgeloop/policy/rules.json --json
+  ```
+
+### `rule-verify`
+
+Runs mutation verification on policy rules to prove checkers actively detect invalid states.
+
+- **Purpose**: Validates that rule checkers fail on mutant fixtures, generating proof digests.
+- **Mutation**: Read-only.
+- **Options**:
+
+<!-- BEGIN FORGELOOP GENERATED: cli:rule-verify:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--rule <id>`: verify a specific policy rule ID
+- `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:rule-verify:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop rule-verify --rule SECURITY.NO_HARDCODED_SECRET --json
+  ```
+
+### `baseline`
+
+Manages the brownfield policy baseline and monotonic ratchet-down.
+
+- **Purpose**: Records current violations into baseline, or ratchets baseline downward as debt is fixed.
+- **Mutation**: Writes `.forgeloop/policy/baseline.json`.
+- **Options**:
+
+<!-- BEGIN FORGELOOP GENERATED: cli:baseline:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--record`: record current violations as brownfield baseline
+- `--update`: ratchet baseline downward by removing resolved violations
+- `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:baseline:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop baseline --record --json
+  ```
+
+### `profile-interview`
+
+Interactive interview for operator profile confirmation (never invoked autonomously by agent).
+
+- **Purpose**: Optional human-guided interview for operator configuration.
+- **Mutation**: Updates `PROJECT_PROFILE.md` if confirmed.
+- **Options**:
+
+<!-- BEGIN FORGELOOP GENERATED: cli:profile-interview:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--dry-run`: show planned interview questions without changing files
+- `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:profile-interview:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop profile-interview
   ```
 
 ### `clear-state`

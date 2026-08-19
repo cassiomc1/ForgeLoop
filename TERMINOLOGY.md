@@ -25,3 +25,14 @@
 | Execution continuity | Bounded current-task implementation context used to resume the same ForgeLoop task across sessions or harnesses. |
 | Continuity artifact | `.forgeloop/continuity.json`; non-evidence operational context bound to canonical work state. |
 | Continuity reconciliation | Read-only comparison of continuity bindings and path hints against current canonical state and checkout. |
+| Executable policy rule | A structured rule with an automated checker evaluating constraints on code and artifacts. |
+| Policy discovery | Deterministic non-interactive inspection of codebase structure and conventions with confidence levels. |
+| Brownfield baseline | Cryptographically fingerprinted list of pre-existing policy violations tolerated without blocking progress. |
+| Violation fingerprint | SHA-256 hash uniquely identifying a violation by rule, file, and line/content hash. |
+| Monotonic ratchet | Invariant ensuring brownfield baseline debt only decreases as legacy violations are resolved. |
+| Mutation verification | Proving checker capability by asserting failure on intentionally mutated code fixtures. |
+| Proof digest | Cryptographic digest confirming a checker caught a mutation fixture. |
+| Inert check | A verification rule whose check target or scope does not exist or matches 0 files in the codebase. |
+| Policy drift | Divergence between task preflight snapshot policy and current workspace policy. |
+| Policy diff | Semantic classification of policy changes into `TIGHTEN`, `NEUTRAL`, `WEAKEN`, or `UNKNOWN`. |
+

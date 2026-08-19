@@ -15,7 +15,10 @@ export const TASK_ARTIFACT_FILES = Object.freeze({
   gates: "gates",
   executions: "executions",
   lock: ".lock",
+  policySnapshot: "policy-snapshot.json",
 });
+
+export const POLICY_ROOT = ".forgeloop/policy";
 
 export const PROJECT_ARTIFACT_PATHS = Object.freeze({
   config: ".forgeloop/config.json",
@@ -23,6 +26,11 @@ export const PROJECT_ARTIFACT_PATHS = Object.freeze({
   manifest: ".forgeloop/.manifest.json",
   kit: ".forgeloop/kit",
   gitignore: ".forgeloop/.gitignore",
+  policyDir: ".forgeloop/policy",
+  policyRules: ".forgeloop/policy/rules.json",
+  policyBaseline: ".forgeloop/policy/baseline.json",
+  policyLock: ".forgeloop/policy/policy.lock",
+  policyDiscovery: ".forgeloop/policy/discovery.json",
 });
 
 export const LEGACY_TASK_ARTIFACT_PATHS = Object.freeze({
@@ -92,5 +100,6 @@ export function buildTaskArtifactPaths(taskId) {
     gates: `${dir}/${TASK_ARTIFACT_FILES.gates}`,
     executions: `${dir}/${TASK_ARTIFACT_FILES.executions}`,
     lock: `${dir}/${TASK_ARTIFACT_FILES.lock}`,
+    policySnapshot: `${dir}/${TASK_ARTIFACT_FILES.policySnapshot}`,
   });
 }

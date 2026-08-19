@@ -5,6 +5,7 @@ import { evaluatePreflight, validatePersistedPreflight } from "./preflight.js";
 import { readPersistedRoute } from "./route-artifact.js";
 import { stateIdentityErrors } from "./completion-relationships.js";
 import { classifyLoadedWorkState } from "./work-state.js";
+import { taskArtifactPath } from "./task-paths.js";
 
 const START_EXECUTION_EVENTS = Object.freeze([
   "CONTRACT_VALIDATED",
@@ -128,34 +129,51 @@ function prerequisiteLedgerErrors(ledger, taskId, preflight, route) {
   return errors;
 }
 
-export async function evaluateStartExecutionPrerequisites({ target, state, packageRoot } = {}) {
+export async function evaluateStartExecutionPrerequisites({
+  target,
+  state,
+  packageRoot,
+  taskId = null,
+  contractPath = null,
+  routePath = null,
+  statePath = null,
+  preflightPath = null,
+  eventsPath = null,
+} = {}) {
+  const effectiveTaskId = taskId ?? null;
+  const contractRel = contractPath ?? (effectiveTaskId ? taskArtifactPath(effectiveTaskId, "contract") : ARTIFACT_PATHS.contract);
+  const routeRel = routePath ?? (effectiveTaskId ? taskArtifactPath(effectiveTaskId, "route") : ARTIFACT_PATHS.route);
+  const stateRel = statePath ?? (effectiveTaskId ? taskArtifactPath(effectiveTaskId, "state") : ARTIFACT_PATHS.state);
+  const preflightRel = preflightPath ?? (effectiveTaskId ? taskArtifactPath(effectiveTaskId, "preflight") : ARTIFACT_PATHS.preflight);
+  const eventsRel = eventsPath ?? (effectiveTaskId ? taskArtifactPath(effectiveTaskId, "events") : ARTIFACT_PATHS.events);
+
   const errors = [];
   const requiredArtifacts = [
-    ARTIFACT_PATHS.state,
-    ARTIFACT_PATHS.contract,
-    ARTIFACT_PATHS.route,
-    ARTIFACT_PATHS.preflight,
-    ARTIFACT_PATHS.events,
+    stateRel,
+    contractRel,
+    routeRel,
+    preflightRel,
+    eventsRel,
   ];
   if (!state) {
     return {
-      errors: [issue("E_PHASE_PREREQUISITE_MISSING", "EXECUTING requires a work state", [ARTIFACT_PATHS.state])],
+      errors: [issue("E_PHASE_PREREQUISITE_MISSING", "EXECUTING requires a work state", [stateRel])],
       requiredArtifacts,
     };
   }
 
   const contract = await load(
-    () => readContract(target, packageRoot),
+    () => readContract(target, packageRoot, { taskId: effectiveTaskId, contractPath }),
     "E_PHASE_PREREQUISITE_MISSING",
-    `EXECUTING requires ${ARTIFACT_PATHS.contract}`,
-    [ARTIFACT_PATHS.contract],
+    `EXECUTING requires ${contractRel}`,
+    [contractRel],
     errors,
   );
   const route = await load(
-    () => readPersistedRoute(target, packageRoot),
+    () => readPersistedRoute(target, packageRoot, { taskId: effectiveTaskId, routePath }),
     "E_PHASE_PREREQUISITE_MISSING",
-    `EXECUTING requires ${ARTIFACT_PATHS.route}`,
-    [ARTIFACT_PATHS.route],
+    `EXECUTING requires ${routeRel}`,
+    [routeRel],
     errors,
   );
   if (!contract || !route) return { errors, requiredArtifacts, contract, route };
@@ -164,7 +182,7 @@ export async function evaluateStartExecutionPrerequisites({ target, state, packa
     errors.push(issue(
       "E_ROUTE_STALE",
       "EXECUTING requires work state and route to match the current contract",
-      [ARTIFACT_PATHS.state, ARTIFACT_PATHS.route, ARTIFACT_PATHS.contract],
+      [stateRel, routeRel, contractRel],
     ));
   }
   errors.push(...stateIdentityErrors({ contract, route, state }));
@@ -172,14 +190,14 @@ export async function evaluateStartExecutionPrerequisites({ target, state, packa
   const freshness = await classifyLoadedWorkState({
     target,
     state,
-    contractFile: ARTIFACT_PATHS.contract,
+    contractFile: contractRel,
   });
   errors.push(...freshnessErrors(state, freshness));
 
-  const preflight = await evaluatePreflight({ target, packageRoot });
+  const preflight = await evaluatePreflight({ target, packageRoot, taskId: effectiveTaskId, contractPath, routePath, statePath });
   let persistedPreflight = null;
   try {
-    persistedPreflight = await readJsonArtifact(target, ARTIFACT_PATHS.preflight, "preflight", packageRoot);
+    persistedPreflight = await readJsonArtifact(target, preflightRel, "preflight", packageRoot);
   } catch {
     // validatePersistedPreflight reports the stable, actionable preflight reason.
   }
@@ -189,16 +207,16 @@ export async function evaluateStartExecutionPrerequisites({ target, state, packa
     errors.push(issue(
       "E_PREFLIGHT_GATES_STALE",
       "Work state gate sets do not match the current preflight evaluation",
-      [ARTIFACT_PATHS.state, ARTIFACT_PATHS.preflight, ARTIFACT_PATHS.gates],
+      [stateRel, preflightRel, ARTIFACT_PATHS.gates],
     ));
   }
 
-  const ledger = await validateEventLedger(target, packageRoot);
+  const ledger = await validateEventLedger(target, packageRoot, { taskId: effectiveTaskId, eventsPath });
   errors.push(...prerequisiteLedgerErrors(ledger, contract.value.taskId, preflight, route));
   errors.push(...validateStateLedgerCoherence(state, ledger.events).map((error) => issue(
     error.code,
     error.message,
-    [ARTIFACT_PATHS.state, ARTIFACT_PATHS.events],
+    [stateRel, eventsRel],
   )));
   errors.push(...persistedPreflightErrors);
   return { errors, requiredArtifacts, contract, route, preflight, persistedPreflight, ledger };

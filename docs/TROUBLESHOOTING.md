@@ -423,5 +423,13 @@ forgeloop next --task <id> --json
 | `E_PROGRESS_STALLED` | Persisted correction history shows no new diagnostic information. | Use an independent check, revisit assumptions, or record a materially different diagnosis. |
 | `E_DECISION_CRITERION_INVALID` | Decision settlement criterion details or parameters are malformed. | Provide non-empty decision text and settledBy criterion. |
 | `E_DECISION_NOT_UNRESOLVED` | A settlement criterion referenced a decision not present in current unresolvedDecisions. | Use the exact current unresolved decision text or update the contract first. |
+| `E_CHECK_INERT` | An enabled check has no effective scope or target files. | Provide an applicable target scope, configure matching files, or mark the rule unsupported. |
+| `E_CHECK_MUTATION_NOT_DETECTED` | A blocking rule checker failed to detect an intentional mutation fixture. | Fix checker logic to properly identify target violations. |
+| `E_POLICY_DRIFT` | Active policy lock does not match the policy snapshot captured at task activation. | Re-verify affected checks or restore original policy. |
+| `E_POLICY_WEAKENING` | Policy rules were weakened during task execution without explicit authority. | Restore the original policy configuration. |
+| `E_POLICY_LOCK_INVALID` | Policy lockfile is missing, malformed, or corrupt. | Run forgeloop policy-status or regenerate policy.lock. |
+| `E_NEW_POLICY_VIOLATION` | New executable policy violation detected that is not present in brownfield baseline. | Fix the violation before completing the task. |
+| `E_BASELINE_EXPANSION` | Attempted unauthorized addition of new violations to brownfield baseline. | Resolve new violations rather than expanding the baseline. |
+| `E_POLICY_PROOF_STALE` | Mutation verification proof is stale due to checker or fixture modifications. | Re-run forgeloop rule-verify to refresh mutation proof. |
 
 <!-- END FORGELOOP GENERATED: public-error-codes -->

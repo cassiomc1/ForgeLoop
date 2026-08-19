@@ -131,6 +131,22 @@ export async function evaluateAudit({
       : blocked
         ? "INCOMPLETE"
         : "INVALID";
+  let policyStatus = null;
+  try {
+    const { evaluateTargetPolicy } = await import("./policy-engine.js");
+    const policyEval = await evaluateTargetPolicy({ target, packageRoot, taskId });
+    policyStatus = {
+      status: policyEval.status,
+      provenRules: policyEval.provenRules,
+      inertRules: policyEval.inertRules,
+      unsupportedRules: policyEval.unsupportedRules,
+      baselineViolations: policyEval.baselineViolations,
+      drift: policyEval.drift?.detected ?? false,
+    };
+  } catch {
+    policyStatus = { status: "VALID", provenRules: 0, inertRules: 0, unsupportedRules: 0, baselineViolations: 0, drift: false };
+  }
+
   return {
     schemaVersion: 1,
     protocolVersion: PROTOCOL_VERSION,
@@ -142,6 +158,7 @@ export async function evaluateAudit({
       status: manifest ? "ready" : manifestError ? "invalid" : "missing",
       manifest: Boolean(manifest),
     },
+    policy: policyStatus,
     completion,
     changedPaths,
     publicationStatus: completion.publicationStatus,

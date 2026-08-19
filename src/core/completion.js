@@ -11,7 +11,8 @@ import { assertSafePath, ensureWithin, fileExists } from "./filesystem.js";
 import { evaluateStartExecutionPrerequisites, hasExecutionStarted } from "./execution-prerequisites.js";
 import { isRecoverableCompletionEvidenceCode } from "./completion-recovery.js";
 import { evaluateTerminalRequirements } from "./evidence-readiness.js";
-import { taskArtifactPath } from "./task-paths.js";
+import { PROJECT_ARTIFACT_PATHS, taskArtifactPath } from "./task-paths.js";
+import { evaluateTargetPolicy } from "./policy-engine.js";
 
 function issue(code, message, artifacts = [], details = {}) {
   return { code, message, artifacts, ...details };
@@ -89,6 +90,18 @@ function repairNext(error) {
       return "Do not execute installation-capable verification commands without explicit scoped installation authority; use local equivalents or record NOT_VERIFIED.";
     case "E_VERIFICATION_TOOL_UNAVAILABLE":
       return "Use an available local verifier, an existing equivalent, or record NOT_VERIFIED if installation was not authorized.";
+    case "E_NEW_POLICY_VIOLATION":
+      return "Resolve the new policy violation or record baseline if adopted debt before completion.";
+    case "E_POLICY_WEAKENING":
+      return "Restore the original policy configuration or obtain explicit project authority before retrying completion.";
+    case "E_CHECK_INERT":
+      return "Configure an applicable target scope or mark the inert check unsupported.";
+    case "E_CHECK_MUTATION_NOT_DETECTED":
+      return "Fix checker logic to properly detect intentional mutation fixtures.";
+    case "E_POLICY_DRIFT":
+      return "Re-verify affected checks or restore original policy.";
+    case "E_BASELINE_EXPANSION":
+      return "Resolve new violations rather than expanding the baseline.";
     default:
       return "Resolve this validator finding in the named artifact before retrying completion.";
   }
@@ -331,6 +344,30 @@ export async function evaluateCompletion({
         { requirementId: termErr.requirementId },
       ));
     }
+  }
+
+  let policyEval = null;
+  try {
+    policyEval = await evaluateTargetPolicy({
+      target,
+      packageRoot,
+      taskId: contract?.value?.taskId ?? taskId,
+    });
+    for (const policyErr of policyEval.errors ?? []) {
+      const code = policyErr.code === "NEW_VIOLATION" ? "E_NEW_POLICY_VIOLATION"
+        : policyErr.code === "POLICY_WEAKENING" ? "E_POLICY_WEAKENING"
+        : policyErr.code === "CHECK_INERT" ? "E_CHECK_INERT"
+        : policyErr.code === "CHECK_MUTATION_NOT_DETECTED" ? "E_CHECK_MUTATION_NOT_DETECTED"
+        : policyErr.code;
+      errors.push(issue(
+        code,
+        policyErr.why || policyErr.message,
+        [PROJECT_ARTIFACT_PATHS.policyLock],
+        { ruleId: policyErr.ruleId, fix: policyErr.fix },
+      ));
+    }
+  } catch {
+    // Gracefully handle environments without policy setup
   }
 
   const sortedErrors = sortIssues(errors);

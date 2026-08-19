@@ -1138,6 +1138,18 @@ Choose checks that match the artifact and risk.
 Regression depth grows with risk: specific check, related tests, then suite,
 build, and integration validation when reasonable.
 
+### Executable Policy & Autonomy-Preserving Invariants
+
+ForgeLoop enforces executable verification rules (`.forgeloop/policy/rules.json`) that evaluate constraints on code and artifacts:
+
+1. **Zero-Interaction Autonomy Invariant**: The default workflow (`init` → `discovery` → `task creation` → `routing` → `execution` → `verification` → `completion`) must run to completion without interactive prompts, interviews, or mandatory user configuration.
+2. **Uncertainty Principle**: "Uncertainty reduces enforcement; uncertainty does not stop execution." When architecture, patterns, or tools cannot be inferred with high confidence, ForgeLoop records `confidence: "LOW"` or `confidence: "UNKNOWN"`, skips unproven rules or treats them as advisory, and proceeds with execution.
+3. **Brownfield Baseline Tolerances**: Existing violations in a repository are fingerprinted (SHA-256) into `.forgeloop/policy/baseline.json`. Baselined debt does not block task completion. Only *new* violations introduced during the task are blocking.
+4. **Monotonic Ratchet-Down**: As legacy debt is resolved, running `forgeloop baseline --update` removes the resolved fingerprints, preventing regression without re-introducing solved violations.
+5. **Mutation-Backed Verification**: Rule checkers must prove efficacy against mutation fixtures via `forgeloop rule-verify`. Checkers that fail to detect mutant violations are marked `UNPROVEN` with `CHECK_MUTATION_NOT_DETECTED`.
+6. **Inert Check Graceful Degradation**: If an automatically discovered rule targets files or adapters that do not exist, it is marked `CHECK_INERT` and gracefully downgraded to `UNSUPPORTED`/`ADVISORY`. Explicit user-configured blocking rules that become inert fail with `E_CHECK_INERT` to signal configuration errors.
+7. **Policy Diffing & Drift Detection**: Preflight captures a task policy snapshot (`policy-snapshot.json`). If workspace policy is modified mid-task, `forgeloop policy-status` detects policy drift and blocks weakening (`E_POLICY_WEAKENING`). Policy tightening (`TIGHTEN`) requires re-verification.
+
 ## Evidence-driven correction
 
 ```text

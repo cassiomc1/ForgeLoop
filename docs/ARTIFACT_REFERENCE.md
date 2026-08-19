@@ -25,6 +25,11 @@ All artifact schemas are defined in `schemas/*.schema.json`. Persisted artifact 
 | `task-state/<task-key>/continuity.json` | `continuity` | Agent Or Harness | Mutable Handoff Notes | Non Evidence Handoff |
 | `task-state/<task-key>/execution-receipt.json` | `execution-receipt` | Protocol Compiled | Atomic Compilation | Evidence Compilation |
 | `task-state/<task-key>/executions/exec-<id>.json` | `execution` | Protocol Executed | Immutable Once Written | Execution Provenance |
+| `policy/rules.json` | `policy-rules` | Operator Or Agent | Mutable Configuration | Policy Specification |
+| `policy/discovery.json` | `policy-discovery` | Protocol Generated | Mutable On Discovery | Discovered Policy Specification |
+| `policy/baseline.json` | `policy-baseline` | Protocol Generated Or Operator | Monotonic Ratchet Down | Brownfield Baseline |
+| `policy/policy.lock` | `policy-lock` | Protocol Generated | Atomic Digest Compilation | Policy Integrity Lock |
+| `task-state/<task-key>/policy-snapshot.json` | `policy-snapshot` | Protocol Generated | Mutable Before Execution | Task Policy Attestation |
 
 <!-- END FORGELOOP GENERATED: artifact-registry -->
 
@@ -440,3 +445,132 @@ Canonical task descriptor declaring task identity, key, timestamps, and write cl
 - `writeClaims` *(array<string>, required)*
 
 <!-- END FORGELOOP GENERATED: schema:task-descriptor -->
+
+---
+
+### 2.14 `policy/rules.json`
+
+<!-- forgeloop-doc: schema=policy-rules artifact=.forgeloop/policy/rules.json -->
+
+Repository-level executable policy rules declaring verification constraints.
+
+#### Canonical Fields
+
+<!-- BEGIN FORGELOOP GENERATED: schema:policy-rules -->
+
+- `schemaVersion` *(number, required, const: 1)*
+- `rules` *(array<object>, required)*
+  - `id` *(string, required, minLength: 1)*
+  - `severity` *(string, required, enum: `HIGH`, `MEDIUM`, `LOW`, `INFO`)*
+  - `source` *(string, required, enum: `builtin`, `discovered`, `project`)*
+  - `blocking` *(boolean, required)*
+  - `why` *(string, required, minLength: 1)*
+  - `fix` *(string, required, minLength: 1)*
+  - `confidence` *(string, optional, enum: `HIGH`, `MEDIUM`, `LOW`, `UNKNOWN`)*
+  - `scope` *(object, optional)*
+    - `includes` *(array<string>, optional)*
+    - `excludes` *(array<string>, optional)*
+  - `check` *(object, required)*
+    - `type` *(string, required, minLength: 1)*
+    - `adapter` *(string, optional)*
+    - `command` *(array<string>, optional)*
+    - `threshold` *(number, optional)*
+    - `parameters` *(object, optional)*
+
+<!-- END FORGELOOP GENERATED: schema:policy-rules -->
+
+---
+
+### 2.15 `policy/discovery.json`
+
+<!-- forgeloop-doc: schema=policy-discovery artifact=.forgeloop/policy/discovery.json -->
+
+Automated non-interactive discovery report recording inferred architecture, conventions, and confidence scores.
+
+#### Canonical Fields
+
+<!-- BEGIN FORGELOOP GENERATED: schema:policy-discovery -->
+
+- `schemaVersion` *(number, required, const: 1)*
+- `languages` *(array<string>, required)*
+- `testing` *(object, required)*
+  - `detected` *(boolean, required)*
+  - `command` *(array<string>, optional)*
+  - `framework` *(string, optional)*
+  - `confidence` *(string, required, enum: `HIGH`, `MEDIUM`, `LOW`, `UNKNOWN`)*
+- `linting` *(object, required)*
+  - `detected` *(boolean, required)*
+  - `command` *(array<string>, optional)*
+  - `tool` *(string, optional)*
+  - `confidence` *(string, required, enum: `HIGH`, `MEDIUM`, `LOW`, `UNKNOWN`)*
+- `architecture` *(object, required)*
+  - `value` *(string,null, optional)*
+  - `confidence` *(string, required, enum: `HIGH`, `MEDIUM`, `LOW`, `UNKNOWN`)*
+  - `enforcement` *(string, required, enum: `BLOCKING`, `ADVISORY`, `NONE`)*
+- `discoveredRules` *(array<object>, required)*
+
+<!-- END FORGELOOP GENERATED: schema:policy-discovery -->
+
+---
+
+### 2.16 `policy/baseline.json`
+
+<!-- forgeloop-doc: schema=policy-baseline artifact=.forgeloop/policy/baseline.json -->
+
+Brownfield policy baseline recording tolerated legacy violations by cryptographic fingerprint.
+
+#### Canonical Fields
+
+<!-- BEGIN FORGELOOP GENERATED: schema:policy-baseline -->
+
+- `schemaVersion` *(number, required, const: 1)*
+- `createdAt` *(string, required, minLength: 1)*
+- `entries` *(array<object>, required)*
+  - `ruleId` *(string, required, minLength: 1)*
+  - `fingerprints` *(array<string>, required)*
+  - `reviewBy` *(string, optional)*
+  - `details` *(array<object>, optional)*
+
+<!-- END FORGELOOP GENERATED: schema:policy-baseline -->
+
+---
+
+### 2.17 `policy/policy.lock`
+
+<!-- forgeloop-doc: schema=policy-lock artifact=.forgeloop/policy/policy.lock -->
+
+Cryptographic policy digest lock securing effective rules and baseline state.
+
+#### Canonical Fields
+
+<!-- BEGIN FORGELOOP GENERATED: schema:policy-lock -->
+
+- `schemaVersion` *(number, required, const: 1)*
+- `algorithm` *(string, required, const: `sha256`)*
+- `digest` *(string, required, minLength: 1)*
+- `rulesDigest` *(string, optional)*
+- `baselineDigest` *(string, optional)*
+- `capturedAt` *(string, optional)*
+
+<!-- END FORGELOOP GENERATED: schema:policy-lock -->
+
+---
+
+### 2.18 `task-state/<taskKey>/policy-snapshot.json`
+
+<!-- forgeloop-doc: schema=policy-snapshot artifact=.forgeloop/task-state/<task-key>/policy-snapshot.json -->
+
+Task-scoped immutable snapshot of effective policy captured during preflight to detect policy drift.
+
+#### Canonical Fields
+
+<!-- BEGIN FORGELOOP GENERATED: schema:policy-snapshot -->
+
+- `schemaVersion` *(number, required, const: 1)*
+- `policyDigest` *(string, required, minLength: 1)*
+- `rules` *(array<string,object>, required)*
+- `baselineDigest` *(string, optional)*
+- `capturedAt` *(string, optional)*
+
+<!-- END FORGELOOP GENERATED: schema:policy-snapshot -->
+

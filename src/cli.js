@@ -21,6 +21,12 @@ import { formatCompleteResult, runComplete } from "./commands/complete.js";
 import { formatAuditResult, runAudit } from "./commands/audit.js";
 import { formatReportResult, runReport } from "./commands/report.js";
 import { formatPolicyResult, runPolicy } from "./commands/policy.js";
+import { formatPolicyDiscoverResult, runPolicyDiscover } from "./commands/policy-discover.js";
+import { formatPolicyStatusResult, runPolicyStatus } from "./commands/policy-status.js";
+import { formatPolicyDiffResult, runPolicyDiff } from "./commands/policy-diff.js";
+import { formatRuleVerifyResult, runRuleVerify } from "./commands/rule-verify.js";
+import { formatBaselineResult, runBaseline } from "./commands/baseline.js";
+import { formatProfileInterviewResult, runProfileInterview } from "./commands/profile-interview.js";
 import { formatBundleResult, runBundle } from "./commands/bundle.js";
 import { formatPrepareCompletionResult, runPrepareCompletion } from "./commands/prepare-completion.js";
 import { formatRecordCheckResult, runRecordCheck } from "./commands/record-check.js";
@@ -551,6 +557,36 @@ export const COMMAND_HANDLERS = Object.freeze({
   policy: async ({ target, packageRoot, options }) => {
     const result = await runPolicy({ target, packageRoot, name: options.policy, taskId: options.task });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatPolicyResult(result));
+    return 0;
+  },
+  "policy-discover": async ({ target, packageRoot, options }) => {
+    const result = await runPolicyDiscover({ target, packageRoot, write: options.write });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatPolicyDiscoverResult(result));
+    return 0;
+  },
+  "policy-status": async ({ target, packageRoot, options }) => {
+    const result = await runPolicyStatus({ target, packageRoot, taskId: options.task });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatPolicyStatusResult(result));
+    return result.status === "VALID" ? 0 : 1;
+  },
+  "policy-diff": async ({ target, packageRoot, options }) => {
+    const result = await runPolicyDiff({ target, packageRoot, taskId: options.task, before: options.before, after: options.after });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatPolicyDiffResult(result));
+    return 0;
+  },
+  "rule-verify": async ({ target, packageRoot, options }) => {
+    const result = await runRuleVerify({ target, packageRoot, rule: options.rule });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatRuleVerifyResult(result));
+    return result.status === "VALID" ? 0 : 1;
+  },
+  baseline: async ({ target, packageRoot, options }) => {
+    const result = await runBaseline({ target, packageRoot, record: options.record, update: options.update });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatBaselineResult(result));
+    return 0;
+  },
+  "profile-interview": async ({ target, packageRoot, options }) => {
+    const result = await runProfileInterview({ target, packageRoot, dryRun: options.dryRun });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatProfileInterviewResult(result));
     return 0;
   },
   bundle: async ({ target, packageRoot, options }) => {

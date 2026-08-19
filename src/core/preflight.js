@@ -178,6 +178,26 @@ export async function runPreflight({
   }
 
   if (result.taskId !== "unknown") {
+    try {
+      const { loadEffectiveRules, readBaseline, computePolicyLockData, readTaskPolicySnapshot, writeTaskPolicySnapshot } = await import("./policy-engine.js");
+      const existingSnapshot = await readTaskPolicySnapshot(target, result.taskId, packageRoot);
+      if (!existingSnapshot) {
+        const rules = await loadEffectiveRules(target, packageRoot);
+        const baseline = await readBaseline(target, packageRoot);
+        const lock = computePolicyLockData(rules, baseline);
+        const snapshot = {
+          schemaVersion: 1,
+          policyDigest: lock.digest,
+          rules,
+          baselineDigest: lock.baselineDigest,
+          capturedAt: new Date().toISOString(),
+        };
+        await writeTaskPolicySnapshot(target, result.taskId, snapshot, packageRoot);
+      }
+    } catch {
+      // Gracefully handle policy snapshot capture
+    }
+
     await appendActivationEvents(target, packageRoot, ledger, result, { eventsPath, taskId });
     const afterEvents = await validateEventLedger(target, packageRoot, { eventsPath, taskId });
     if (!afterEvents.valid) {

@@ -160,6 +160,27 @@ forgeloop complete --task auth-feature --json
 forgeloop task-migrate --json
 ```
 
+### Executable policy verification & brownfield baselines
+
+ForgeLoop enforces automated, non-interactive verification rules (`rules.json`) with zero interactive dependencies:
+
+```bash
+# Discover architecture conventions and candidate rules automatically
+forgeloop policy-discover --json
+
+# Inspect active policy verification status, baselines, and drift
+forgeloop policy-status --json
+
+# Record brownfield legacy debt into baseline to prevent blocking
+forgeloop baseline --record --json
+
+# Monotonically ratchet down resolved technical debt
+forgeloop baseline --update --json
+
+# Prove rule checker efficacy against synthetic mutation fixtures
+forgeloop rule-verify --rule SECURITY.NO_HARDCODED_SECRET --json
+```
+
 See [`docs/CLI_REFERENCE.md`](./docs/CLI_REFERENCE.md) and [`LOOP_SYSTEM_DESIGN.md`](./LOOP_SYSTEM_DESIGN.md) for architecture details.
 
 ## Architecture flow

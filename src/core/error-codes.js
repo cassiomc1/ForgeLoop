@@ -225,7 +225,72 @@ export const PUBLIC_ERROR_CODES = Object.freeze({
     meaning: "A settlement criterion referenced a decision not present in current unresolvedDecisions.",
     safeResolution: "Use the exact current unresolved decision text or update the contract first.",
   }),
+  E_CHECK_INERT: Object.freeze({
+    code: "E_CHECK_INERT",
+    category: "policy",
+    classification: "PUBLIC_STABLE",
+    meaning: "An enabled check has no effective scope or target files.",
+    safeResolution: "Provide an applicable target scope, configure matching files, or mark the rule unsupported.",
+  }),
+  E_CHECK_MUTATION_NOT_DETECTED: Object.freeze({
+    code: "E_CHECK_MUTATION_NOT_DETECTED",
+    category: "policy",
+    classification: "PUBLIC_STABLE",
+    meaning: "A blocking rule checker failed to detect an intentional mutation fixture.",
+    safeResolution: "Fix checker logic to properly identify target violations.",
+  }),
+  E_POLICY_DRIFT: Object.freeze({
+    code: "E_POLICY_DRIFT",
+    category: "policy",
+    classification: "PUBLIC_STABLE",
+    meaning: "Active policy lock does not match the policy snapshot captured at task activation.",
+    safeResolution: "Re-verify affected checks or restore original policy.",
+  }),
+  E_POLICY_WEAKENING: Object.freeze({
+    code: "E_POLICY_WEAKENING",
+    category: "policy",
+    classification: "PUBLIC_STABLE",
+    meaning: "Policy rules were weakened during task execution without explicit authority.",
+    safeResolution: "Restore the original policy configuration.",
+  }),
+  E_POLICY_LOCK_INVALID: Object.freeze({
+    code: "E_POLICY_LOCK_INVALID",
+    category: "policy",
+    classification: "PUBLIC_STABLE",
+    meaning: "Policy lockfile is missing, malformed, or corrupt.",
+    safeResolution: "Run forgeloop policy-status or regenerate policy.lock.",
+  }),
+  E_NEW_POLICY_VIOLATION: Object.freeze({
+    code: "E_NEW_POLICY_VIOLATION",
+    category: "policy",
+    classification: "PUBLIC_STABLE",
+    meaning: "New executable policy violation detected that is not present in brownfield baseline.",
+    safeResolution: "Fix the violation before completing the task.",
+  }),
+  E_BASELINE_EXPANSION: Object.freeze({
+    code: "E_BASELINE_EXPANSION",
+    category: "policy",
+    classification: "PUBLIC_STABLE",
+    meaning: "Attempted unauthorized addition of new violations to brownfield baseline.",
+    safeResolution: "Resolve new violations rather than expanding the baseline.",
+  }),
+  E_POLICY_PROOF_STALE: Object.freeze({
+    code: "E_POLICY_PROOF_STALE",
+    category: "policy",
+    classification: "PUBLIC_STABLE",
+    meaning: "Mutation verification proof is stale due to checker or fixture modifications.",
+    safeResolution: "Re-run forgeloop rule-verify to refresh mutation proof.",
+  }),
 });
+
+export const E_CHECK_INERT = "E_CHECK_INERT";
+export const E_CHECK_MUTATION_NOT_DETECTED = "E_CHECK_MUTATION_NOT_DETECTED";
+export const E_POLICY_DRIFT = "E_POLICY_DRIFT";
+export const E_POLICY_WEAKENING = "E_POLICY_WEAKENING";
+export const E_POLICY_LOCK_INVALID = "E_POLICY_LOCK_INVALID";
+export const E_NEW_POLICY_VIOLATION = "E_NEW_POLICY_VIOLATION";
+export const E_BASELINE_EXPANSION = "E_BASELINE_EXPANSION";
+export const E_POLICY_PROOF_STALE = "E_POLICY_PROOF_STALE";
 
 export const ALL_KNOWN_ERROR_CODES = Object.freeze(new Set([
   ...FAILURE_CODES,
@@ -259,4 +324,12 @@ export const ALL_KNOWN_ERROR_CODES = Object.freeze(new Set([
   E_TASK_LAYOUT_LEGACY,
   E_TASK_MIGRATION_INVALID,
   E_TASK_MIGRATION_IDENTITY_MISMATCH,
+  E_CHECK_INERT,
+  E_CHECK_MUTATION_NOT_DETECTED,
+  E_POLICY_DRIFT,
+  E_POLICY_WEAKENING,
+  E_POLICY_LOCK_INVALID,
+  E_NEW_POLICY_VIOLATION,
+  E_BASELINE_EXPANSION,
+  E_POLICY_PROOF_STALE,
 ]));

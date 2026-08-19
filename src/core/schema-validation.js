@@ -24,6 +24,11 @@ export const SHIPPED_SCHEMA_NAMES = Object.freeze([
   "event",
   "activation",
   "policy",
+  "policy-rules",
+  "policy-discovery",
+  "policy-baseline",
+  "policy-lock",
+  "policy-snapshot",
   "task-bundle",
   "execution",
   "authority",
@@ -40,6 +45,7 @@ export class SchemaValidationError extends Error {
 }
 
 function typeMatches(value, type) {
+  if (Array.isArray(type)) return type.some((t) => typeMatches(value, t));
   if (type === "object") return value !== null && typeof value === "object" && !Array.isArray(value);
   if (type === "array") return Array.isArray(value);
   if (type === "integer") return Number.isInteger(value);

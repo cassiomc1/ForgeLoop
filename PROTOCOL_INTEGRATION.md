@@ -312,3 +312,13 @@ because the executor changed.
 
 For the practical handoff and multi-tool takeover sequence, see
 [`docs/CROSS_HARNESS_CONTINUITY.md`](./docs/CROSS_HARNESS_CONTINUITY.md).
+
+## Executable Policy Protocol Integration
+
+ForgeLoop integrates executable verification rules directly into the lifecycle:
+
+- **Preflight**: Snapshots effective policy rules and baseline digest into `policy-snapshot.json`.
+- **Execution & Verifying**: Evaluates checks with mutation proofing (`rule-verify`). Unproven or inert checks in discovered rules do not stop execution.
+- **Completion**: Audits unbaselined violations, policy weakening, and drift. Returns `VALID` when no new unbaselined violations exist.
+- **Autonomy Principle**: Non-interactive execution is preserved. Tools, commands, and validators must operate with standard input closed and without interactive prompt dependencies.
+
