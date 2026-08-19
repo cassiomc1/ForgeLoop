@@ -590,4 +590,3 @@ comparison explicitly `UNKNOWN` rather than assuming an empty baseline.
 - `capturedAt` *(string, optional)*
 
 <!-- END FORGELOOP GENERATED: schema:policy-snapshot -->
-

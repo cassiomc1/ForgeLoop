@@ -35,4 +35,3 @@
 | Inert check | A verification rule whose check target or scope does not exist or matches 0 files in the codebase. |
 | Policy drift | Divergence between task preflight snapshot policy and current workspace policy. |
 | Policy diff | Semantic classification of policy changes into `TIGHTEN`, `NEUTRAL`, `WEAKEN`, or `UNKNOWN`. |
-
