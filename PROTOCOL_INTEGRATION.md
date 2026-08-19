@@ -325,4 +325,3 @@ ForgeLoop integrates executable verification rules directly into the lifecycle:
 - **Baseline Protection**: Re-recording baseline debt mid-task is rejected with `E_BASELINE_RECORD_DURING_ACTIVE_TASK`; only monotonic ratchet-down is allowed during active tasks (`baseline --update`). Explicit re-recording requires `--policy-reset-authorized`.
 - **Semantic Recovery**: `forgeloop next` maps policy findings directly to actionable recovery actions (`RESTORE_POLICY`, `REPAIR_CHECKER`, `REPAIR_POLICY`, `REVERIFY_AFTER_POLICY_CHANGE`, `RESTORE_BASELINE`, `CONTINUE_WITH_EXISTING_BASELINE`, `RESOLVE_INERT_CHECK`).
 - **Task Scoping**: Task-specific policy snapshots and state live under `.forgeloop/task-state/<taskKey>/` to ensure clean multi-task isolation and cross-harness continuity.
-
