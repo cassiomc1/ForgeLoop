@@ -195,7 +195,7 @@ forgeloop status --task <id> --json
 
 ---
 
-### Symptom: `EXECUTING` task is stale because the repository moved (`E_REPOSITORY_CHANGED`)
+### Symptom: `EXECUTING`/`VERIFYING` task is stale because the repository moved (`E_REPOSITORY_CHANGED`)
 
 #### What it means
 
@@ -210,7 +210,7 @@ forgeloop reconcile-closure --task <id> --id <verification-id> \
 
 `reconcile-closure` requires:
 
-1. The task is `EXECUTING`.
+1. The task is `EXECUTING` or `VERIFYING` (later phases are not reconcilable; work must return to a verification phase first).
 2. The only drift is `REPOSITORY_CHANGED` (contract or required-artifact drift stays blocked).
 3. The append-only event ledger is valid.
 4. `--id` and `--requirement` exactly match a `VERIFICATION` item of the task contract, and the executed command exits 0, proving the objective is present in the current repository.
@@ -582,7 +582,7 @@ forgeloop next --task <id> --json
 | `E_TASK_SCOPE_DIRTY` | Claimed paths contain pre-existing uncommitted changes. | Commit or stash changes in claimed paths before defining or adopting the scope. |
 | `E_TASK_CHANGE_OUTSIDE_SCOPE` | Modified paths in repository exceed the declared task write claims. | Update write claims with forgeloop task-scope or revert out-of-scope modifications. |
 | `E_RECONCILE_NOT_STALE` | reconcile-closure was invoked for a work-state checkpoint that is already fresh. | No reconciliation is required; continue the normal lifecycle. |
-| `E_RECONCILE_PHASE_INVALID` | reconcile-closure was invoked for a task that is not EXECUTING. | reconcile-closure supports EXECUTING tasks whose objective is already satisfied. |
+| `E_RECONCILE_PHASE_INVALID` | reconcile-closure was invoked for a task that is not EXECUTING or VERIFYING. | reconcile-closure supports EXECUTING or VERIFYING tasks whose objective is already satisfied. |
 | `E_RECONCILE_UNSUPPORTED_DRIFT` | Work-state drift includes kinds other than REPOSITORY_CHANGED (contract or required-artifact drift). | Resolve contract or artifact drift through their dedicated recovery surfaces; reconcile-closure only refreshes repository fingerprint drift. |
 | `E_RECONCILE_LEDGER_INVALID` | The append-only event ledger is not valid, so reconciliation cannot be recorded. | Inspect the ledger errors and repair before reconciling. |
 | `E_RECONCILE_REQUIREMENT_UNKNOWN` | The supplied check id and requirement text do not exactly match a contract verification item of type VERIFICATION. | Supply the exact id and requirement text of an existing contract verification item. |

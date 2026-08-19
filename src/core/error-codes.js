@@ -189,8 +189,8 @@ export const PUBLIC_ERROR_CODES = Object.freeze({
     code: "E_RECONCILE_PHASE_INVALID",
     category: "lifecycle",
     classification: "PUBLIC_STABLE",
-    meaning: "reconcile-closure was invoked for a task that is not EXECUTING.",
-    safeResolution: "reconcile-closure supports EXECUTING tasks whose objective is already satisfied.",
+    meaning: "reconcile-closure was invoked for a task that is not EXECUTING or VERIFYING.",
+    safeResolution: "reconcile-closure supports EXECUTING or VERIFYING tasks whose objective is already satisfied.",
   }),
   E_RECONCILE_UNSUPPORTED_DRIFT: Object.freeze({
     code: "E_RECONCILE_UNSUPPORTED_DRIFT",

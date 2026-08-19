@@ -9,6 +9,8 @@ export const RECONCILE_EVENT = "CHECKPOINT_RECONCILED";
 
 const RECONCILABLE_DRIFT = new Set(["REPOSITORY_CHANGED"]);
 
+const RECONCILABLE_PHASES = new Set(["EXECUTING", "VERIFYING"]);
+
 function reconcileError(code, message, artifacts = []) {
   const error = new Error(message);
   error.code = code;
@@ -17,12 +19,12 @@ function reconcileError(code, message, artifacts = []) {
 }
 
 /**
- * Canonical recovery for an EXECUTING task whose objective is already
- * satisfied in the current repository but whose work-state checkpoint is
- * stale because the repository fingerprint moved.
+ * Canonical recovery for an EXECUTING or VERIFYING task whose objective is
+ * already satisfied in the current repository but whose work-state
+ * checkpoint is stale because the repository fingerprint moved.
  *
  * The command refreshes the checkpoint repository fingerprint only after:
- *   - the task is EXECUTING,
+ *   - the task is EXECUTING or VERIFYING,
  *   - classification requires revalidation and the only drift is
  *     REPOSITORY_CHANGED,
  *   - the append-only event ledger is valid,
@@ -66,10 +68,10 @@ export async function runReconcileClosure({
   if (!state) {
     throw reconcileError("E_RECONCILE_PHASE_INVALID", "Cannot reconcile without work state", [stateRel]);
   }
-  if (state.phase !== "EXECUTING") {
+  if (!RECONCILABLE_PHASES.has(state.phase)) {
     throw reconcileError(
       "E_RECONCILE_PHASE_INVALID",
-      `reconcile-closure supports EXECUTING tasks whose objective is already satisfied; found ${state.phase}`,
+      `reconcile-closure supports EXECUTING or VERIFYING tasks whose objective is already satisfied; found ${state.phase}`,
       [stateRel],
     );
   }

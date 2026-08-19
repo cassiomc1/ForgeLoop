@@ -43,6 +43,8 @@ const STALE_HEAD = "d6b8991dd0da318543a17d0d1c537687567992d1";
 
 async function setupStaleExecutingTask(target, options = {}) {
   const taskId = options.taskId ?? "stale-executing-task";
+  const phase = options.phase ?? "EXECUTING";
+  const previousPhase = options.previousPhase ?? "PLANNED";
   await writeTaskDescriptor(target, createTaskDescriptor({
     taskId,
     writeClaims: ["package.json", "tests"],
@@ -71,8 +73,8 @@ async function setupStaleExecutingTask(target, options = {}) {
     contractFingerprint: contractHash,
     routeFingerprint: persistedRoute.fingerprint,
     repositoryFingerprint: options.repositoryFingerprint ?? { branch: "main", head: STALE_HEAD },
-    phase: "EXECUTING",
-    previousPhase: "PLANNED",
+    phase,
+    previousPhase,
     selectedGuides: route.guides,
     requiredGates: [],
     satisfiedGates: [],
@@ -228,11 +230,28 @@ test("reconcile-closure CLI accepts only contract-bound verification evidence", 
   });
 });
 
-test("reconcile-closure refuses non-EXECUTING tasks", async () => {
+test("reconcile-closure refuses tasks outside EXECUTING/VERIFYING", async () => {
   await withTarget(async (target) => {
-    const { taskId } = await setupStaleExecutingTask(target);
+    const { taskId } = await setupStaleExecutingTask(target, { phase: "REVIEWING", previousPhase: "VERIFYING" });
+    await assert.rejects(
+      () => runReconcileClosure({
+        target,
+        packageRoot,
+        taskId,
+        checkId: "regression-tests",
+        requirement: "pack tarball test asserts the README image is excluded from the npm package",
+        argv: ["node", "-e", "process.exit(0)"],
+      }),
+      (error) => error.code === "E_RECONCILE_PHASE_INVALID",
+    );
+  });
+});
+
+test("reconcile-closure refreshes stale VERIFYING checkpoints and canonical closure completes", async () => {
+  await withTarget(async (target) => {
+    const { taskId } = await setupStaleExecutingTask(target, { phase: "VERIFYING", previousPhase: "EXECUTING" });
     const requirement = "pack tarball test asserts the README image is excluded from the npm package";
-    await runReconcileClosure({
+    const report = await runReconcileClosure({
       target,
       packageRoot,
       taskId,
@@ -240,20 +259,43 @@ test("reconcile-closure refuses non-EXECUTING tasks", async () => {
       requirement,
       argv: ["node", "-e", "process.exit(0)"],
     });
-    await advanceWorkState(target, "VERIFYING", { packageRoot, taskId });
+    assert.equal(report.reconciled, true);
+    assert.equal(report.event, "CHECKPOINT_RECONCILED");
     const state = await readWorkState(target, { packageRoot, taskId });
     assert.equal(state.phase, "VERIFYING");
-    await assert.rejects(
-      () => runReconcileClosure({
-        target,
-        packageRoot,
-        taskId,
-        checkId: "regression-tests",
-        requirement,
-        argv: ["node", "-e", "process.exit(0)"],
-      }),
-      (error) => error.code === "E_RECONCILE_PHASE_INVALID",
-    );
+    assert.notEqual(state.repositoryFingerprint.head, STALE_HEAD);
+
+    await appendProtocolEvent(target, { taskId, event: "VERIFICATION_STARTED", details: { verificationCycle: 1 } }, packageRoot, { taskId });
+    await prepareCompletion({ target, packageRoot, taskId, authorityContext: {}, runtimeContext: {} });
+    await recordCheckArtifact({
+      target,
+      packageRoot,
+      taskId,
+      id: "regression-tests",
+      requirement,
+      kind: "manual-review",
+      status: "passed",
+      evidenceKind: "OBSERVED",
+      result: "objective present in current repository",
+      authorityContext: {},
+      runtimeContext: {},
+    });
+    await recordCheckArtifact({
+      target,
+      packageRoot,
+      taskId,
+      id: "objective-present",
+      kind: "manual-review",
+      requirement: "objective is present in the current repository",
+      status: "passed",
+      evidenceKind: "OBSERVED",
+      result: "reconciled checkpoint with contract-bound evidence that the objective is satisfied in the current repository",
+      authorityContext: {},
+      runtimeContext: {},
+    });
+    await advanceWorkState(target, "REVIEWING", { packageRoot, taskId });
+    const completion = await runComplete({ target, packageRoot, taskId, authorityContext: {}, runtimeContext: {} });
+    assert.equal(completion.status, "VALID", JSON.stringify(completion.errors ?? []).slice(0, 500));
   });
 });
 
