@@ -96,7 +96,7 @@ Typical local commands are:
 ```bash
 forgeloop task-create --task example-task --claim src --claim tests --json
 forgeloop route --task example-task --work complete-website --surface ui --risk untrusted-input
-forgeloop activate --task example-task
+forgeloop activate
 forgeloop preflight --task example-task --json
 forgeloop next --task example-task --json
 forgeloop advance --task example-task --to PLANNED

@@ -7,6 +7,8 @@ import { fileURLToPath } from "node:url";
 import { COMMANDS } from "../src/cli.js";
 import { ARTIFACT_REGISTRY } from "../src/core/artifact-registry.js";
 import { CLI_COMMAND_DEFINITIONS } from "../src/core/cli-command-definitions.js";
+import { COMPLETION_STATUSES } from "../src/core/completion.js";
+import { PRODUCTION_READINESS_STATUSES, PUBLICATION_STATUSES } from "../src/core/completion-artifacts.js";
 import { DISCOVERY_SURFACES } from "../src/core/discovery-surfaces.js";
 import { ALL_KNOWN_ERROR_CODES, PUBLIC_ERROR_CODES } from "../src/core/error-codes.js";
 import { nativeShim } from "../src/core/native-adapters.js";
@@ -35,6 +37,7 @@ export const OPERATIONAL_DOCUMENTS = Object.freeze([
   "README.md",
   "docs/GETTING_STARTED.md",
   "docs/CROSS_HARNESS_CONTINUITY.md",
+  "docs/CLI_REFERENCE.md",
   "docs/RECIPES.md",
   "docs/TROUBLESHOOTING.md",
   "LOOP_ENGINEERING.md",
@@ -59,6 +62,174 @@ export function stripLegacyLayoutExamples(content) {
     /<!-- BEGIN FORGELOOP LEGACY LAYOUT EXAMPLE -->[\s\S]*?<!-- END FORGELOOP LEGACY LAYOUT EXAMPLE -->/g,
     "",
   );
+}
+
+/**
+ * Minimal shell-like tokenizer for documented CLI examples. Groups quoted
+ * segments so option values containing spaces stay a single token. This is
+ * intentionally not a full shell parser.
+ */
+export function tokenizeCliExampleLine(line) {
+  const parts = [];
+  const pattern = /--[^\s=]+=(?:"[^"]*"|'[^']*'|\S+)|"([^"]*)"|'([^']*)'|(\S+)/g;
+  let match;
+  while ((match = pattern.exec(line)) !== null) {
+    parts.push(match[0]);
+  }
+  return parts;
+}
+
+/**
+ * Validates fenced shell examples inside a CLI command section against the
+ * canonical command definition:
+ *   - the command must exist;
+ *   - every long option must exist for that command;
+ *   - boolean flags must not receive values (inline `=value` or adjacent token);
+ *   - value options must receive a value;
+ *   - bare positional tokens are rejected unless the command defines a
+ *     positional option (e.g. `policy <name>`);
+ *   - content after a passthrough `--` is ignored;
+ *   - record-terminal-result `--type`/`--status` pairs must use the canonical
+ *     terminal status sets.
+ * Comments, environment assignments, and line continuations are ignored.
+ */
+export function validateCliExamples(sectionContent, command, commandDef) {
+  const errors = [];
+  const stripQuotes = (value) => (typeof value === "string" ? value.replace(/^["']|["']$/g, "") : value);
+  const exampleBlocks = [...sectionContent.matchAll(/```(?:bash|sh)?\s*\n([\s\S]*?)```/g)].map((m) => m[1]);
+  const hasPositional = Object.keys(commandDef.options).some((key) => /^<[^>]+>$/.test(key));
+
+  for (const block of exampleBlocks) {
+    // Join continuation lines (trailing backslash) before parsing. EOL-safe:
+    // GitHub Actions may check out the repository with CRLF line endings.
+    const joined = block.replace(/\\\r?\n/g, " ");
+    for (const rawLine of joined.split(/\r?\n/)) {
+      const line = rawLine.trim().replace(/\\$/, "");
+      if (!line || line.startsWith("#")) continue;
+      if (/^(export\s+)?[A-Za-z_][A-Za-z0-9_]*=/.test(line)) continue; // environment assignment
+      if (!line.startsWith("forgeloop ")) continue;
+      const parts = tokenizeCliExampleLine(line);
+      const exampleCommand = parts[1];
+      if (!exampleCommand || exampleCommand.startsWith("-")) continue; // e.g. `forgeloop --help`
+      const exampleDef = CLI_COMMAND_DEFINITIONS[exampleCommand];
+      if (!exampleDef) {
+        errors.push(
+          `DOC_CLI_EXAMPLE_COMMAND_UNKNOWN: Command "${command}" example references unknown command "${exampleCommand}"`,
+        );
+        continue;
+      }
+
+      let sawPassthrough = false;
+      let typeValue = null;
+      let statusValue = null;
+      for (let index = 2; index < parts.length; index += 1) {
+        const arg = parts[index];
+        if (sawPassthrough) break;
+        if (arg === "--") {
+          sawPassthrough = true;
+          break;
+        }
+        if (!arg.startsWith("--")) {
+          if (!hasPositional) {
+            errors.push(
+              `DOC_CLI_EXAMPLE_POSITIONAL_UNEXPECTED: Command "${command}" example passes unexpected positional "${arg}" (${exampleCommand})`,
+            );
+          }
+          continue;
+        }
+        const equalsIndex = arg.indexOf("=");
+        const flag = equalsIndex !== -1 ? arg.slice(0, equalsIndex) : arg;
+        const inlineValue = equalsIndex !== -1 ? arg.slice(equalsIndex + 1) : undefined;
+        const option = exampleDef.options[flag];
+        if (!option) {
+          errors.push(
+            `DOC_CLI_EXAMPLE_OPTION_UNSUPPORTED: Command "${command}" example uses unsupported option "${flag}" (${exampleCommand})`,
+          );
+          continue;
+        }
+        if (option.takesValue === false) {
+          if (inlineValue !== undefined) {
+            errors.push(
+              `DOC_CLI_EXAMPLE_BOOLEAN_VALUE: Command "${command}" example passes a value to boolean option "${flag}" (${exampleCommand})`,
+            );
+          } else {
+            const next = parts[index + 1];
+            if (next !== undefined && next !== "--" && !next.startsWith("--") && !/^<.*>$/.test(next)) {
+              errors.push(
+                `DOC_CLI_EXAMPLE_BOOLEAN_VALUE: Command "${command}" example passes value "${next}" to boolean option "${flag}" (${exampleCommand})`,
+              );
+            }
+          }
+        } else if (inlineValue !== undefined) {
+          if (flag === "--type") typeValue = stripQuotes(inlineValue);
+          if (flag === "--status") statusValue = stripQuotes(inlineValue);
+        } else {
+          const next = parts[index + 1];
+          if (next === undefined || next === "--" || next.startsWith("--")) {
+            errors.push(
+              `DOC_CLI_EXAMPLE_VALUE_MISSING: Command "${command}" example option "${flag}" requires a value (${exampleCommand})`,
+            );
+          } else {
+            if (flag === "--type") typeValue = stripQuotes(next);
+            if (flag === "--status") statusValue = stripQuotes(next);
+            index += 1; // consume the value token
+          }
+        }
+      }
+
+      if (exampleCommand === "record-terminal-result" && typeValue && statusValue) {
+        const allowed = typeValue === "PUBLICATION"
+          ? PUBLICATION_STATUSES
+          : typeValue === "PRODUCTION_READINESS"
+            ? PRODUCTION_READINESS_STATUSES
+            : null;
+        if (allowed && !allowed.includes(statusValue)) {
+          errors.push(
+            `DOC_CLI_EXAMPLE_STATUS_INVALID: record-terminal-result example uses status "${statusValue}" which is not valid for type "${typeValue}"`,
+          );
+        }
+      }
+    }
+  }
+  return errors;
+}
+
+/**
+ * Validates manual `Mutation:` prose for a CLI command section against the
+ * canonical CLI definition metadata (mutation class, writes, removes).
+ * Rejects:
+ *   - read-only commands documented as writing/mutating;
+ *   - mutating commands documented as read-only;
+ *   - write/remove claims on commands whose runtime writes/removes are empty.
+ */
+export function validateCliMutationClaim(commandSection, command, commandDef) {
+  const errors = [];
+  const mutationLine = commandSection.split("\n").find((line) => /- \*\*Mutation\*\*:/.test(line));
+  if (!mutationLine) return errors;
+  const text = mutationLine.replace(/- \*\*Mutation\*\*:\s*/, "");
+  const claimsReadOnly = /read-?only/i.test(text);
+  const claimsMutation = /writes?\b|updates?\b|persists?\b|appends?\b|removes?\b|moves?\b|deletes?\b|mutat/i.test(text);
+
+  if (commandDef.mutation === "READ_ONLY") {
+    if (!claimsReadOnly && claimsMutation) {
+      errors.push(
+        `DOC_CLI_MUTATION_CLAIM_INVALID: Command "${command}" is READ_ONLY but documented as mutating ("${text.trim()}")`,
+      );
+    }
+  } else {
+    if (claimsReadOnly) {
+      errors.push(
+        `DOC_CLI_MUTATION_CLAIM_INVALID: Command "${command}" mutates (${commandDef.mutation}) but is documented as read-only ("${text.trim()}")`,
+      );
+    }
+  }
+
+  if (claimsMutation && !claimsReadOnly && commandDef.writes.length === 0 && commandDef.removes.length === 0) {
+    errors.push(
+      `DOC_CLI_MUTATION_CLAIM_INVALID: Command "${command}" claims writes/removes but runtime writes=[] and removes=[] ("${text.trim()}")`,
+    );
+  }
+  return errors;
 }
 
 /**
@@ -290,6 +461,30 @@ export async function validateDocumentationConformance({ rootDir = repositoryRoo
       // Check init specifically to ensure --adopt is not present
       if (command === "init" && documentedOptions.has("--adopt")) {
         errors.push(`DOC_INIT_ADOPT_EXTRA: init command does not accept --adopt; --adopt is a doctor option`);
+      }
+
+      // Validate manual fenced examples against the canonical command definition
+      errors.push(...validateCliExamples(commandSection, command, commandDef));
+
+      // Validate manual Mutation: prose against canonical mutation metadata
+      errors.push(...validateCliMutationClaim(commandSection, command, commandDef));
+
+      // complete must document the machine-owned return status set
+      if (command === "complete") {
+        const returnStatusLine = commandSection.split("\n").find((line) => /- \*\*Return Status\*\*:/.test(line));
+        if (!returnStatusLine) {
+          errors.push(
+            `DOC_COMPLETION_RETURN_STATUS_MISSING: complete must document a "Return Status" line listing ${COMPLETION_STATUSES.join(" | ")}`,
+          );
+        } else {
+          for (const status of COMPLETION_STATUSES) {
+            if (!returnStatusLine.includes(status)) {
+              errors.push(
+                `DOC_COMPLETION_RETURN_STATUS_MISMATCH: complete "Return Status" must include "${status}" from COMPLETION_STATUSES`,
+              );
+            }
+          }
+        }
       }
     }
   }

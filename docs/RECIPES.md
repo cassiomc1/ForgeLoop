@@ -39,7 +39,7 @@ forgeloop route --task task-001 --work code --surface api --risk untrusted-input
 forgeloop preflight --task task-001 --json
 
 # 5. Activate session and plan
-forgeloop activate --task task-001
+forgeloop activate
 forgeloop advance --task task-001 --to PLANNED
 forgeloop advance --task task-001 --to EXECUTING
 ```

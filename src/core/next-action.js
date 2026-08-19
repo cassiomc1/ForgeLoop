@@ -325,7 +325,7 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
     return decision(context, NEXT_ACTIONS.PLAN, artifactError("PHASE_DESIGNING", "Required gates are ready for planning"));
   }
   if (state.phase === "PLANNED") {
-    const prerequisites = await evaluateStartExecutionPrerequisites({ target, state, packageRoot });
+    const prerequisites = await evaluateStartExecutionPrerequisites({ target, state, packageRoot, taskId: explicitTaskId });
     if (prerequisites.errors.length > 0) {
       const preflightOnly = prerequisites.errors.every((error) => error.code.startsWith("E_PREFLIGHT_")
         || (error.code === "E_PHASE_CHRONOLOGY_INVALID"
@@ -575,7 +575,7 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
       let recoveryAuthorized = false;
       if (state.lastCompletionAttempt?.status === "REJECTED") {
         try {
-          const ledger = await validateEventLedger(target, packageRoot);
+          const ledger = await validateEventLedger(target, packageRoot, { taskId: explicitTaskId, eventsPath: eventsRel });
           let currentReceipt = null;
           try {
             const receiptArtifact = await readJsonArtifact(target, receiptRel, "execution-receipt", packageRoot);

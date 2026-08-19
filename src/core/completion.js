@@ -14,6 +14,13 @@ import { evaluateTerminalRequirements } from "./evidence-readiness.js";
 import { PROJECT_ARTIFACT_PATHS, taskArtifactPath } from "./task-paths.js";
 import { detectPolicyCapability, evaluateTargetPolicy } from "./policy-engine.js";
 
+/**
+ * Canonical completion return statuses shared by the runtime, tests, and
+ * documentation conformance. The CLI reference's return-status prose is
+ * mechanically checked against this set.
+ */
+export const COMPLETION_STATUSES = Object.freeze(["VALID", "REJECTED"]);
+
 function issue(code, message, artifacts = [], details = {}) {
   return { code, message, artifacts, ...details };
 }
@@ -406,7 +413,7 @@ export async function evaluateCompletion({
   const sortedErrors = sortIssues(errors);
   const valid = sortedErrors.length === 0;
   return {
-    status: valid ? "VALID" : "REJECTED",
+    status: valid ? COMPLETION_STATUSES[0] : COMPLETION_STATUSES[1],
     taskStatus: valid ? "COMPLETE" : receiptValue?.status === "blocked" ? "BLOCKED" : "INCOMPLETE",
     verificationStatus: valid ? "VALID" : "invalid",
     publicationStatus: publication,
