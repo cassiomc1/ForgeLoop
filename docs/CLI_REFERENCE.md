@@ -1030,8 +1030,6 @@ Clears canonical work-state checkpoint for the current task.
 
 ---
 
-## 7. Multi-Task Management
-
 ### `reconcile-closure`
 
 Reconciles the checkpoint of an EXECUTING task whose objective is already satisfied in the current repository.
