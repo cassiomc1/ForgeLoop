@@ -24,7 +24,7 @@ The system should use every guide that materially helps the task without loading
 - The loop continues while safe progress is possible. Repetition without new evidence triggers hypothesis reassessment or a blocked result, not infinite retries.
 - Third-party provenance and reuse boundaries remain part of every portable copy.
 - Qwen-MM-Plugins is an optional, task-scoped capability extension: the agent checks native support first, installs the smallest missing capability when needed, and verifies it before use; it is not a package or runtime dependency.
-- Canonical documents are installed under `.forgeloop/kit/`; root native adapters remain small shims and mutable protocol artifacts remain directly under `.forgeloop/`.
+- Canonical documents are installed under `.forgeloop/kit/`; root native adapters remain small discovery shims; project-scoped configuration remains under `.forgeloop/`; and modern mutable task protocol state is isolated under `.forgeloop/task-state/<taskKey>/`.
 - `PREFLIGHT_READY` is a resumable protocol checkpoint reconciled with work state, activation events, fingerprints, and the append-only hash chain.
 
 ## Alternatives considered
@@ -368,10 +368,13 @@ directory selected with `--path` when the package is available in the npm
 registry. If it is not available yet, the same commands can run as
 `node src/cli.js ...` from a repository checkout. The CLI maps canonical
 documents into `.forgeloop/kit/`, keeps only native instruction shims at the
-target root, and leaves mutable contract, route, gate, state, event, preflight,
-and receipt artifacts under `.forgeloop/`. Manual copying must preserve that
-target layout; copying package-source root files directly is not equivalent to
-`forgeloop init`.
+target root, and leaves project-scoped configuration under `.forgeloop/` while
+isolating modern mutable task protocol state (contract, route, gate, state,
+event, preflight, and receipt artifacts) under
+`.forgeloop/task-state/<taskKey>/`. Legacy singleton artifacts remain under
+`.forgeloop/` for compatibility and migration only. Manual copying must
+preserve that target layout; copying package-source root files directly is not
+equivalent to `forgeloop init`.
 
 The README explains the file set, activation behavior, current/relative/absolute
 target installation, first-run profile flow, local validation commands, and safe

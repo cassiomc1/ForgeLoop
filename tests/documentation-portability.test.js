@@ -45,6 +45,7 @@ test("documentation reference generator is deterministic and idempotent", async 
     await cp("CLAUDE.md", path.join(tempDir, "CLAUDE.md"));
     await cp(".cursor", path.join(tempDir, ".cursor"), { recursive: true });
     await cp(".github", path.join(tempDir, ".github"), { recursive: true });
+    await cp("ORCHESTRATOR_INTEGRATION.md", path.join(tempDir, "ORCHESTRATOR_INTEGRATION.md"));
 
     // First run --write
     const firstRun = await processGeneratedDocumentation({ rootDir: tempDir, write: true });
@@ -100,6 +101,7 @@ test("documentation generation and validation succeed in directory paths contain
     await cp("CLAUDE.md", path.join(tempDir, "CLAUDE.md"));
     await cp(".cursor", path.join(tempDir, ".cursor"), { recursive: true });
     await cp(".github", path.join(tempDir, ".github"), { recursive: true });
+    await cp("ORCHESTRATOR_INTEGRATION.md", path.join(tempDir, "ORCHESTRATOR_INTEGRATION.md"));
 
     const genResult = await processGeneratedDocumentation({ rootDir: tempDir, write: false });
     assert.equal(
@@ -203,6 +205,7 @@ test("generated documentation generator fails closed on missing, duplicate, inva
     await cp("docs", path.join(tempDir, "docs"), { recursive: true });
     await cp("schemas", path.join(tempDir, "schemas"), { recursive: true });
     await cp("src", path.join(tempDir, "src"), { recursive: true });
+    await cp("ORCHESTRATOR_INTEGRATION.md", path.join(tempDir, "ORCHESTRATOR_INTEGRATION.md"));
 
     const cliDocPath = path.join(tempDir, "docs", "CLI_REFERENCE.md");
     const originalCliDoc = await readFile(cliDocPath, "utf8");

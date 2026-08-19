@@ -232,7 +232,7 @@ Records an append-only decision settlement criterion bound to the active contrac
 
 Advances the protocol lifecycle phase.
 
-- **Purpose**: Transitions between valid protocol phases (`PLANNED`, `EXECUTING`, `VERIFYING`, `REVIEWING`).
+- **Purpose**: Transitions the task along a valid edge of the canonical ForgeLoop work-state machine. The destination is validated against the current phase and the canonical lifecycle transition rules.
 - **When to use**: To declare transitions between workflow stages.
 - **Mutation**: Updates `.forgeloop/task-state/<taskKey>/work-state.json` and appends transition event to ledger.
 - **Options**:

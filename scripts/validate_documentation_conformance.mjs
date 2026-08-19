@@ -12,7 +12,7 @@ import { PRODUCTION_READINESS_STATUSES, PUBLICATION_STATUSES, TERMINAL_RESULT_TY
 import { DISCOVERY_SURFACES } from "../src/core/discovery-surfaces.js";
 import { ALL_KNOWN_ERROR_CODES, PUBLIC_ERROR_CODES } from "../src/core/error-codes.js";
 import { nativeShim } from "../src/core/native-adapters.js";
-import { WORK_PHASES } from "../src/core/protocol.js";
+import { WORK_PHASES, WORK_TRANSITIONS } from "../src/core/protocol.js";
 import { readSchema } from "../src/core/schema-validation.js";
 import { getPackageRoot } from "../src/core/templates.js";
 
@@ -43,6 +43,26 @@ export const OPERATIONAL_DOCUMENTS = Object.freeze([
   "LOOP_ENGINEERING.md",
   "EXECUTION_STATE.md",
   "PROTOCOL_INTEGRATION.md",
+]);
+
+/**
+ * Architecture/integration documents that make normative layout or state
+ * machine claims. They are not operational walkthroughs, but they must still
+ * describe the modern task-scoped layout and the exact canonical transitions.
+ */
+export const NORMATIVE_ARCHITECTURE_DOCUMENTS = Object.freeze([
+  "LOOP_SYSTEM_DESIGN.md",
+  "ORCHESTRATOR_INTEGRATION.md",
+]);
+
+/**
+ * Documents that describe the current task-state layout. The legacy-path
+ * guard applies to this whole set, so singleton-era paths cannot be
+ * reintroduced as current architecture outside explicit legacy markers.
+ */
+export const TASK_LAYOUT_DOCUMENTS = Object.freeze([
+  ...OPERATIONAL_DOCUMENTS,
+  ...NORMATIVE_ARCHITECTURE_DOCUMENTS,
 ]);
 
 export const LEGACY_TASK_PATH_PATTERNS = Object.freeze([
@@ -275,6 +295,110 @@ export function validateCliMutationClaim(commandSection, command, commandDef) {
   if (claimsMutation && !claimsReadOnly && commandDef.writes.length === 0 && commandDef.removes.length === 0) {
     errors.push(
       `DOC_CLI_MUTATION_CLAIM_INVALID: Command "${command}" claims writes/removes but runtime writes=[] and removes=[] ("${text.trim()}")`,
+    );
+  }
+  return errors;
+}
+
+/**
+ * Validates the manual "Canonical transition table" in
+ * ORCHESTRATOR_INTEGRATION.md against the runtime transition model.
+ *
+ * The runtime model is:
+ *   - the exact `WORK_TRANSITIONS` edge set, plus
+ *   - a special `BLOCKED` wildcard edge from any non-terminal, non-BLOCKED
+ *     phase (implemented in `isValidTransition` in src/core/protocol.js).
+ *
+ * The table must contain exactly one wildcard row (`Any non-terminal state` →
+ * `BLOCKED`) and its remaining rows must match the `WORK_TRANSITIONS` edge set
+ * exactly. This prevents both removed canonical edges and unsupported
+ * invented edges from surviving in the documentation.
+ */
+export function validateCanonicalTransitions(orchestratorContent) {
+  const errors = [];
+  const sectionStart = orchestratorContent.indexOf("## Canonical transition table");
+  if (sectionStart === -1) {
+    errors.push(`DOC_TRANSITION_TABLE_MISSING: ORCHESTRATOR_INTEGRATION.md must contain a "## Canonical transition table" section`);
+    return errors;
+  }
+  const sectionEnd = orchestratorContent.indexOf("<!-- BEGIN FORGELOOP GENERATED: work-transitions -->", sectionStart);
+  const sectionEnd2 = orchestratorContent.indexOf("\n## ", sectionStart + 2);
+  const bounds = [sectionEnd, sectionEnd2].filter((index) => index !== -1);
+  const section = orchestratorContent.slice(sectionStart, bounds.length > 0 ? Math.min(...bounds) : undefined);
+
+  const documentedEdges = new Set();
+  let wildcardRows = 0;
+  const rowPattern = /^\|\s*`([^`]+)`\s*\|\s*(.*?)\s*\|\s*`([^`]+)`\s*\|$/gm;
+  for (const match of section.matchAll(rowPattern)) {
+    const [, rawFrom, condition, rawTo] = match;
+    const from = rawFrom.trim();
+    const to = rawTo.trim();
+    if (from === "Any non-terminal state") {
+      wildcardRows += 1;
+      if (to !== "BLOCKED") {
+        errors.push(`DOC_TRANSITION_BLOCKED_ROW_INVALID: BLOCKED wildcard row must target \`BLOCKED\`, got \`${to}\``);
+      }
+      continue;
+    }
+    if (!WORK_PHASES.includes(from) || !WORK_PHASES.includes(to)) {
+      errors.push(`DOC_TRANSITION_EDGE_UNKNOWN_PHASE: Transition table row uses unknown phase "\`${from}\` -> \`${to}\`" (${condition})`);
+      continue;
+    }
+    documentedEdges.add(`${from}->${to}`);
+  }
+
+  if (wildcardRows !== 1) {
+    errors.push(
+      `DOC_TRANSITION_BLOCKED_ROW_INVALID: Transition table must contain exactly one "Any non-terminal state" -> \`BLOCKED\` wildcard row, found ${wildcardRows}`,
+    );
+  }
+
+  const machineEdges = new Set();
+  for (const from of WORK_PHASES) {
+    for (const to of WORK_TRANSITIONS[from] ?? []) {
+      machineEdges.add(`${from}->${to}`);
+    }
+  }
+
+  for (const edge of machineEdges) {
+    if (!documentedEdges.has(edge)) {
+      errors.push(`DOC_TRANSITION_EDGE_MISSING: Canonical transition \`${edge.replace("->", "` -> `")}\` is not documented in the transition table`);
+    }
+  }
+  for (const edge of documentedEdges) {
+    if (!machineEdges.has(edge)) {
+      errors.push(`DOC_TRANSITION_EDGE_EXTRA: Transition table documents unsupported edge \`${edge.replace("->", "` -> `")}\``);
+    }
+  }
+
+  if (!section.includes("additionally reachable from any non-terminal")) {
+    errors.push(
+      `DOC_TRANSITION_BLOCKED_NOTE_MISSING: ORCHESTRATOR_INTEGRATION.md must state that \`BLOCKED\` is additionally reachable from any non-terminal, non-BLOCKED phase`,
+    );
+  }
+
+  return errors;
+}
+
+/**
+ * Validates that the `advance` command section in docs/CLI_REFERENCE.md does
+ * not publish a manually maintained subset of work phases. Lifecycle truth
+ * lives in the canonical state machine; manual phase lists drift.
+ */
+export function validateCliAdvancePurpose(cliDocContent) {
+  const errors = [];
+  const sectionStart = cliDocContent.indexOf("### `advance`");
+  if (sectionStart === -1) return errors;
+  const sectionEnd = cliDocContent.indexOf("\n### `", sectionStart + 5);
+  const commandSection = sectionEnd !== -1
+    ? cliDocContent.slice(sectionStart, sectionEnd)
+    : cliDocContent.slice(sectionStart);
+  const purposeLine = commandSection.split("\n").find((line) => /- \*\*Purpose\*\*:/.test(line));
+  if (!purposeLine) return errors;
+  const mentionedPhases = WORK_PHASES.filter((phase) => new RegExp(`\\b${phase}\\b`).test(purposeLine));
+  if (mentionedPhases.length > 0) {
+    errors.push(
+      `DOC_ADVANCE_PHASE_SUBSET: advance "Purpose" must not maintain a manual phase list; remove ${mentionedPhases.join(", ")} and reference the canonical work-state machine instead`,
     );
   }
   return errors;
@@ -636,9 +760,9 @@ export async function validateDocumentationConformance({ rootDir = repositoryRoo
   }
 
   // =========================================================================
-  // 6. Validate Operational Documents and Legacy Path Guard
+  // 6. Validate Operational/Architecture Documents and Legacy Path Guard
   // =========================================================================
-  for (const relativePath of OPERATIONAL_DOCUMENTS) {
+  for (const relativePath of TASK_LAYOUT_DOCUMENTS) {
     const docPath = path.join(rootDir, relativePath);
     let content = "";
     try {
@@ -656,6 +780,39 @@ export async function validateDocumentationConformance({ rootDir = repositoryRoo
       }
     }
   }
+
+  // Modern task-layout claim: the architecture document must describe the
+  // task-scoped layout, not silently drop it while removing legacy paths.
+  const systemDesignPath = path.join(rootDir, "LOOP_SYSTEM_DESIGN.md");
+  let systemDesignContent = "";
+  try {
+    systemDesignContent = await readFile(systemDesignPath, "utf8");
+  } catch {
+    // missing file is reported below if the check is skipped; keep silent
+  }
+  if (systemDesignContent && !systemDesignContent.includes(".forgeloop/task-state/")) {
+    errors.push(
+      `DOC_ARCH_TASK_LAYOUT_MISSING: LOOP_SYSTEM_DESIGN.md must document the modern task-scoped state layout under .forgeloop/task-state/<taskKey>/`,
+    );
+  }
+
+  // Canonical transition inventory: the manual table in
+  // ORCHESTRATOR_INTEGRATION.md must equal the runtime transition model.
+  const orchestratorPath = path.join(rootDir, "ORCHESTRATOR_INTEGRATION.md");
+  let orchestratorContent = "";
+  try {
+    orchestratorContent = await readFile(orchestratorPath, "utf8");
+  } catch {
+    errors.push(
+      `DOC_TRANSITION_TABLE_MISSING: ORCHESTRATOR_INTEGRATION.md is required for the canonical transition conformance check`,
+    );
+  }
+  if (orchestratorContent) {
+    errors.push(...validateCanonicalTransitions(orchestratorContent));
+  }
+
+  // CLI advance prose must not publish a manual phase subset.
+  errors.push(...validateCliAdvancePurpose(cliDocContent));
 
   // README duplicate heading & diagram reference checks
   const readmePath = path.join(rootDir, "README.md");
