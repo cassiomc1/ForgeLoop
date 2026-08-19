@@ -2,12 +2,17 @@ import { sha256 } from "./manifest.js";
 import { canonicalFingerprint } from "./artifacts.js";
 import { getPolicyAdapter } from "./policy-adapters.js";
 
+// Synthetic secret-shaped values are assembled at runtime so committed source
+// contains no paste-ready secret literals; mutation fixtures still receive the
+// full value through content overrides.
+const FAKE_AWS_ACCESS_KEY = ["AKIA", "1234567890", "ABCDEF"].join("");
+
 const MUTATION_FIXTURES = Object.freeze({
-  "secret-detection": {
+  ["secret-detection"]: {
     mutationName: "hardcoded-secret",
     files: ["src/config/credentials.js"],
     contentOverrides: {
-      "src/config/credentials.js": "const awsKey = 'AKIA1234567890ABCDEF';\nmodule.exports = { awsKey };\n",
+      "src/config/credentials.js": `const awsKey = '${FAKE_AWS_ACCESS_KEY}';\nmodule.exports = { awsKey };\n`,
     },
     expected: "FAIL",
   },

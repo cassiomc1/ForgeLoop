@@ -19,6 +19,7 @@ Concise, copy-paste friendly recipes for common ForgeLoop tasks.
 11. [Run Multi-Task Workflows Concurrently](#recipe-11--run-multi-task-workflows-concurrently)
 12. [Migrate Legacy 1.0 Single-Task Layout](#recipe-12--migrate-legacy-10-single-task-layout)
 13. [Record Decision Settlement Criteria](#recipe-13--record-decision-settlement-criteria)
+14. [Executable Policy, Baseline Ratchet, and Recovery](#recipe-14--executable-policy-baseline-ratchet-and-recovery)
 
 ---
 
@@ -276,4 +277,32 @@ forgeloop record-decision-criterion \
 
 # 2. Inspect next action (surfaces the guidance)
 forgeloop next --task task-001
+```
+
+---
+
+### Recipe 14 — Executable Policy, Baseline Ratchet, and Recovery
+
+```bash
+# 1. Discover architecture conventions and candidate rules
+forgeloop policy-discover --json
+
+# 2. Record pre-existing debt into brownfield baseline
+forgeloop baseline --record --json
+
+# 3. Check policy verification status and lock integrity
+forgeloop policy-status --json
+
+# 4. Prove checker efficacy against mutation fixtures
+forgeloop rule-verify --rule SECURITY.NO_HARDCODED_SECRET --json
+
+# 5. Ratchet down baseline as debt is resolved during task
+forgeloop baseline --update --json
+
+# 6. If policy weakens mid-task, inspect next recovery action
+forgeloop next --task task-001 --json
+# Follow returned action (e.g. RESTORE_POLICY, REPAIR_CHECKER, REPAIR_POLICY)
+
+# Intentional operator-authorized baseline reset (not normal recovery)
+forgeloop baseline --record --policy-reset-authorized --json
 ```

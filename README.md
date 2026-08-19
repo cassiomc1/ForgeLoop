@@ -181,6 +181,17 @@ forgeloop baseline --update --json
 forgeloop rule-verify --rule SECURITY.NO_HARDCODED_SECRET --json
 ```
 
+A policy-bound task captures its effective rules and semantic baseline in
+`.forgeloop/task-state/<taskKey>/policy-snapshot.json`. The project lock at
+`.forgeloop/policy/policy.lock` protects the effective rules plus baseline and
+must contain matching `algorithm`, `digest`, `rulesDigest`, and `baselineDigest`
+values. `capturedAt` is informational metadata and does not change semantic
+identity. During an active task, `baseline --update` may remove resolved debt,
+but `baseline --record` is blocked unless an operator explicitly supplies
+`--policy-reset-authorized`. Use `forgeloop next --task <id> --json` to receive
+semantic recovery such as `RESTORE_POLICY`, `REPAIR_CHECKER`, or
+`RESTORE_BASELINE` when verification detects drift or corruption.
+
 See [`docs/CLI_REFERENCE.md`](./docs/CLI_REFERENCE.md) and [`LOOP_SYSTEM_DESIGN.md`](./LOOP_SYSTEM_DESIGN.md) for architecture details.
 
 ## Architecture flow

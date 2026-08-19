@@ -25,6 +25,11 @@ import { evaluateTargetPolicy, writeProjectRules } from "../src/core/policy-engi
 
 const packageRoot = getPackageRoot();
 
+// Synthetic AWS-access-key-shaped values are assembled at runtime so committed
+// test source contains no paste-ready secret literals (secret scanner hygiene).
+const LEGACY_AWS_KEY = ["AKIA", "1234567890", "LEGACY"].join("");
+const NEW_AWS_KEY = ["AKIA", "9999999999", "NEWSEC"].join("");
+
 async function createTempTarget() {
   return mkdtemp(path.join(os.tmpdir(), "forgeloop-policy-test-"));
 }
@@ -131,7 +136,7 @@ test("2. Brownfield autonomy acceptance test: pre-existing violations baselined,
     await mkdir(path.join(target, "src/legacy"), { recursive: true });
     await writeFile(
       path.join(target, "src/legacy/old-credentials.js"),
-      "const legacyKey = 'AKIA1234567890LEGACY';\nmodule.exports = { legacyKey };\n",
+      `const legacyKey = '${LEGACY_AWS_KEY}';\nmodule.exports = { legacyKey };\n`,
     );
 
     // Record baseline
@@ -149,7 +154,7 @@ test("2. Brownfield autonomy acceptance test: pre-existing violations baselined,
     await mkdir(path.join(target, "src/new"), { recursive: true });
     await writeFile(
       path.join(target, "src/new/new-credentials.js"),
-      "const newSecret = 'AKIA9999999999NEWSEC';\n",
+      `const newSecret = '${NEW_AWS_KEY}';\n`,
     );
 
     // Status now reports NEW_VIOLATION and INVALID

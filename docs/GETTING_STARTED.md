@@ -191,6 +191,8 @@ Output:
 
 When preflight returns `READY`, ForgeLoop synchronizes resumable work state (`.forgeloop/task-state/<taskKey>/work-state.json`) and preflight status (`.forgeloop/task-state/<taskKey>/preflight.json`). If preflight reports `BLOCKED`, inspect the required gates in the output and satisfy them first.
 
+If executable policy artifacts exist under `.forgeloop/policy/`, preflight also captures the effective rules and baseline into `.forgeloop/task-state/<taskKey>/policy-snapshot.json` so later policy drift can be detected. Malformed policy artifacts block preflight with `E_POLICY_INVALID`. See [LOOP_ENGINEERING.md](../LOOP_ENGINEERING.md#executable-policy--autonomy-preserving-invariants).
+
 ---
 
 ### Step 4 — Activate Session and Plan
@@ -342,9 +344,10 @@ Under `.forgeloop/task-state/<taskKey>/`:
 - `work-state.json`: lifecycle phase and resumption checkpoint;
 - `events.ndjson`: hash-chained append-only event ledger;
 - `executions/*.json`: provenance records for executed verification commands;
-- `execution-receipt.json`: completion evidence and coverage mapping.
+- `execution-receipt.json`: completion evidence and coverage mapping;
+- `policy-snapshot.json`: effective policy and baseline captured at preflight (created when executable policy is configured).
 
-Shared repository artifacts (`sources.json`, `config.json`) remain at `.forgeloop/`.
+Shared repository artifacts (`sources.json`, `config.json`) remain at `.forgeloop/`. When executable policy is configured, its shared artifacts live under `.forgeloop/policy/` (`rules.json`, `baseline.json`, `policy.lock`, `discovery.json`).
 
 ---
 

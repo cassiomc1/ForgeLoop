@@ -541,6 +541,15 @@ Brownfield policy baseline recording tolerated legacy violations by cryptographi
 
 Cryptographic policy digest lock securing effective rules and baseline state.
 
+The lock protects the **effective policy** — built-in rules plus discovered
+rules plus project rules/overrides, combined with the baseline. `algorithm`,
+`digest`, `rulesDigest`, and `baselineDigest` all participate in lock integrity
+validation; a disagreement with the current effective policy produces
+`E_POLICY_LOCK_MISMATCH`. `capturedAt` is informational metadata only — it is
+not part of semantic policy identity, and changing it alone does not represent
+a policy change. A missing or malformed lock fails closed rather than being
+silently ignored.
+
 #### Canonical Fields
 
 <!-- BEGIN FORGELOOP GENERATED: schema:policy-lock -->
@@ -561,6 +570,13 @@ Cryptographic policy digest lock securing effective rules and baseline state.
 <!-- forgeloop-doc: schema=policy-snapshot artifact=.forgeloop/task-state/<task-key>/policy-snapshot.json -->
 
 Task-scoped immutable snapshot of effective policy captured during preflight to detect policy drift.
+
+A snapshot binds the task to the policy that was authorized at activation:
+`policyDigest`, the effective `rules`, semantic `baseline` entries, and
+`baselineDigest`. Later policy changes are classified by semantic diff as
+`TIGHTEN`, `NEUTRAL`, `WEAKEN`, or `UNKNOWN`. Modern snapshots carry the full
+semantic baseline; legacy snapshots without baseline state leave baseline
+comparison explicitly `UNKNOWN` rather than assuming an empty baseline.
 
 #### Canonical Fields
 
