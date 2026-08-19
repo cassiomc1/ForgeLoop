@@ -161,6 +161,14 @@ fonts, templates, or other material.
   the current first-party license and asset-specific terms before use; record
   attribution when required and preserve asset provenance in the target
   project. A catalog listing is not a permanent license statement.
+- [DesEngs](https://desengs.com/) / source
+  [remvze/desengs](https://github.com/remvze/desengs):
+  curated meta-directory for design-engineering resources. The upstream
+  DesEngs repository currently declares MIT for its own software/material
+  covered by that license. ForgeLoop uses the site only as an optional discovery
+  index and does not bundle or mirror its catalog. Each external resource linked
+  by DesEngs retains its own license, terms, authorship, dependencies, and
+  premium/free boundary; inspect the exact upstream source before adoption.
 
 ### Qwen-MM-Plugins
 

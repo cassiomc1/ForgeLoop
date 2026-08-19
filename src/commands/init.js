@@ -133,6 +133,13 @@ function kitConflictError(relativePath) {
  * leaves no committed manifest, so a retry reconciles already-correct files
  * without manual cleanup.
  *
+ * `init --dry-run` performs the same deterministic initialization planning and
+ * conflict detection as real init (existing manifest, unsafe paths, canonical
+ * kit conflicts, invalid or conflicting policy artifacts, and the computable
+ * policy state), but performs NO mutation: it does not simulate filesystem
+ * failures that only occur during a real write, power loss, post-write races,
+ * or verification of bytes that were never written.
+ *
  * `hooks` is a deterministic failure-injection seam used only by tests:
  *   afterPolicyDiscovery(discovery, { target, packageRoot })
  *   beforeBaselineWrite({ target, packageRoot, baseline })
@@ -208,35 +215,31 @@ export async function runInit({
     throw policyInitializationError(cause);
   }
 
-  // 6. Pre-reconcile existing policy artifacts during planning (read-only) so
-  // a deterministic policy conflict also fails before any write. dry-run keeps
-  // its side-effect-free contract and only reports planned writes.
-  let discoveryReconcile = null;
-  let baselineReconcile = null;
-  let lockReconcile = null;
-  if (!dryRun) {
-    discoveryReconcile = await reconcilePolicyArtifact(
-      target,
-      packageRoot,
-      readDiscoveryReport,
-      discovery,
-      { semanticEqual: (a, b) => JSON.stringify(a) === JSON.stringify(b), label: `${PROJECT_ARTIFACT_PATHS.policyDiscovery}` },
-    );
-    baselineReconcile = await reconcilePolicyArtifact(
-      target,
-      packageRoot,
-      readBaseline,
-      baseline,
-      { semanticEqual: baselineSemanticallyEqual, label: `${PROJECT_ARTIFACT_PATHS.policyBaseline}` },
-    );
-    lockReconcile = await reconcilePolicyArtifact(
-      target,
-      packageRoot,
-      readPolicyLock,
-      lock,
-      { semanticEqual: lockSemanticallyEqual, label: `${PROJECT_ARTIFACT_PATHS.policyLock}` },
-    );
-  }
+  // 6. Pre-reconcile existing policy artifacts during planning (read-only) for
+  // BOTH real init and dry-run, so a deterministic policy conflict is detected
+  // with identical semantics and before any mutation. dry-run stays zero-write
+  // and only reports the resulting plan.
+  const discoveryReconcile = await reconcilePolicyArtifact(
+    target,
+    packageRoot,
+    readDiscoveryReport,
+    discovery,
+    { semanticEqual: (a, b) => JSON.stringify(a) === JSON.stringify(b), label: `${PROJECT_ARTIFACT_PATHS.policyDiscovery}` },
+  );
+  const baselineReconcile = await reconcilePolicyArtifact(
+    target,
+    packageRoot,
+    readBaseline,
+    baseline,
+    { semanticEqual: baselineSemanticallyEqual, label: `${PROJECT_ARTIFACT_PATHS.policyBaseline}` },
+  );
+  const lockReconcile = await reconcilePolicyArtifact(
+    target,
+    packageRoot,
+    readPolicyLock,
+    lock,
+    { semanticEqual: lockSemanticallyEqual, label: `${PROJECT_ARTIFACT_PATHS.policyLock}` },
+  );
 
   // 7. Mutate: write kit files per the precomputed plan. Existing files that
   // match the shipped template are resumable init output; PROJECT_PROFILE.md
@@ -279,11 +282,13 @@ export async function runInit({
   }
 
   // 8-9. Write/reuse policy artifacts and verify before committing authority.
+  // dry-run performs no mutation but reports the accurate plan (reuse vs
+  // would-write) computed by the read-only reconciliation above.
   if (dryRun) {
     actions.push(
-      { action: "would-write", path: PROJECT_ARTIFACT_PATHS.policyDiscovery, reason: "dry-run" },
-      { action: "would-write", path: PROJECT_ARTIFACT_PATHS.policyBaseline, reason: "dry-run" },
-      { action: "would-write", path: PROJECT_ARTIFACT_PATHS.policyLock, reason: "dry-run" },
+      { action: discoveryReconcile.action === "reuse" ? "reuse" : "would-write", path: PROJECT_ARTIFACT_PATHS.policyDiscovery, reason: discoveryReconcile.action === "reuse" ? "matches canonical state" : "dry-run" },
+      { action: baselineReconcile.action === "reuse" ? "reuse" : "would-write", path: PROJECT_ARTIFACT_PATHS.policyBaseline, reason: baselineReconcile.action === "reuse" ? "matches canonical state" : "dry-run" },
+      { action: lockReconcile.action === "reuse" ? "reuse" : "would-write", path: PROJECT_ARTIFACT_PATHS.policyLock, reason: lockReconcile.action === "reuse" ? "matches canonical state" : "dry-run" },
     );
   } else {
     actions.push(

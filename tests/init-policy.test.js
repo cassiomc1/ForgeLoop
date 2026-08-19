@@ -8,7 +8,7 @@ import { runInit, E_INIT_KIT_CONFLICT, E_POLICY_INITIALIZATION_FAILED, POLICY_IN
 import { E_POLICY_INITIALIZATION_FAILED as CANONICAL_POLICY_INIT_ERROR } from "../src/core/error-codes.js";
 import { readManifest, sha256 } from "../src/core/manifest.js";
 import { detectPolicyCapability, verifyPolicyLock, readDiscoveryReport } from "../src/core/policy-engine.js";
-import { readBaseline } from "../src/core/policy-baseline.js";
+import { readBaseline, createBaselineFromViolations } from "../src/core/policy-baseline.js";
 import { getPackageRoot, readTemplateEntries } from "../src/core/templates.js";
 
 const packageRoot = getPackageRoot();
@@ -298,6 +298,76 @@ test("INIT-KIT-6: canonical kit conflict is detected before any initialization w
     );
     assert.equal(await readManifest(target), null);
     assert.equal(await readFile(path.join(target, conflictPath), "utf8"), "tampered canonical kit\n");
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
+test("INIT-POLICY-8: dry-run detects a deterministic existing policy conflict and performs zero writes", async () => {
+  const target = await createTempTarget();
+  try {
+    // A schema-valid but noncanonical baseline: semantically conflicting
+    // existing authority, not malformed JSON.
+    const conflictingBaseline = createBaselineFromViolations([
+      { ruleId: "SECURITY.NO_HARDCODED_SECRET", file: "legacy.js", snippet: "legacy-secret" },
+    ]);
+    const baselinePath = ".forgeloop/policy/baseline.json";
+    await mkdir(path.dirname(path.join(target, baselinePath)), { recursive: true });
+    await writeFile(
+      path.join(target, baselinePath),
+      `${JSON.stringify(conflictingBaseline, null, 2)}\n`,
+      "utf8",
+    );
+
+    const before = await snapshotTree(target);
+
+    await assert.rejects(
+      () => runInit({ target, dryRun: true, packageRoot, packageVersion: PACKAGE_VERSION }),
+      (error) => error.code === E_POLICY_INITIALIZATION_FAILED,
+    );
+
+    const after = await snapshotTree(target);
+    assert.deepEqual(after, before, "dry-run must not write any files");
+    assert.equal(await readManifest(target), null);
+    assert.equal(
+      await readFile(path.join(target, baselinePath), "utf8"),
+      `${JSON.stringify(conflictingBaseline, null, 2)}\n`,
+      "conflicting baseline must remain unchanged",
+    );
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
+test("INIT-POLICY-9: dry-run reports reuse for canonical policy artifacts left by an interrupted init", async () => {
+  const target = await createTempTarget();
+  try {
+    // Real init fails deterministically before the manifest is committed.
+    await assert.rejects(
+      () => runInit({
+        target,
+        dryRun: false,
+        packageRoot,
+        packageVersion: PACKAGE_VERSION,
+        hooks: { beforeManifestWrite: injectedFailure },
+      }),
+      (error) => error.code === E_POLICY_INITIALIZATION_FAILED,
+    );
+    assert.equal(await readManifest(target), null);
+
+    const before = await snapshotTree(target);
+
+    const dryRunResult = await runInit({ target, dryRun: true, packageRoot, packageVersion: PACKAGE_VERSION });
+    for (const artifact of POLICY_INIT_ARTIFACTS) {
+      assert.ok(
+        dryRunResult.actions.some((action) => action.action === "reuse" && action.path === artifact),
+        `dry-run must report reuse for ${artifact}`,
+      );
+    }
+
+    const after = await snapshotTree(target);
+    assert.deepEqual(after, before, "dry-run must not write any files");
+    assert.equal(await readManifest(target), null);
   } finally {
     await rm(target, { recursive: true, force: true });
   }

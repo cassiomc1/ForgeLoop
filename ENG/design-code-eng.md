@@ -373,6 +373,35 @@ Before materially adopting an external component or interaction:
 
 Do not install or copy an entire component library merely because one example looks useful. When React Bits, beUI, Motion Primitives, or another motion/component source could all satisfy the same need, choose one smallest compatible implementation; do not combine libraries for variety. ForgeLoop itself must not gain a dependency on any resource listed in this section.
 
+#### External resource discovery workflow
+
+When the needed design capability is not already available in the target project:
+
+1. define the concrete capability first;
+2. search the project's existing components/dependencies before external discovery;
+3. use a curated index such as DesEngs when current alternatives would help;
+4. shortlist at most 2–3 realistic candidates;
+5. inspect each candidate's exact upstream source;
+6. compare license, dependencies, accessibility, performance, compatibility, maintenance, and implementation cost;
+7. choose the smallest compatible option;
+8. do not install anything without the authority already required by ForgeLoop;
+9. record provenance when materially adopting external code or assets.
+
+Bound discovery effort: 2–3 candidates is the strong default; broader research is justified only for a genuinely high-risk architecture decision. External discovery is optional and proportional — it must never become a mandatory browsing gate.
+
+#### Permanent reference admission rule
+
+Do not add every useful external discovery to ForgeLoop's canonical guide. Add a named permanent reference only when it provides a recurring capability, workflow, or quality signal that is materially useful across projects and is not already covered by an existing reference. One-off discoveries remain target-project choices.
+
+A meta-directory such as DesEngs may be used to rediscover current alternatives instead of expanding ForgeLoop into an exhaustive external-tools catalog.
+
+### Design-engineering meta-discovery
+
+- **DesEngs** — https://desengs.com/
+  Optional meta-directory for discovering current design-engineering resources across reading, learning, UI/component exploration, interaction tooling, skills, creative coding, design systems, and implementation references. Use it when a concrete design need is not already satisfied by the target project's design system or a known compatible ForgeLoop reference.
+
+  Treat DesEngs as a discovery index, not as an approval list. For any linked resource that may be materially adopted, inspect the exact upstream source, current license/terms, dependencies, accessibility, browser/platform support, performance cost, maintenance status, and premium/free boundary before use. The license or listing status of DesEngs does not grant reuse rights for the external projects it indexes.
+
 ### Optional pattern and asset references
 
 External galleries and asset libraries are reconnaissance tools, not design authority. The target product's requirements, existing design system, accessibility, security, performance budget, and the rules in this guide take precedence.
