@@ -200,9 +200,11 @@ If executable policy artifacts exist under `.forgeloop/policy/`, preflight also 
 Create a session activation marker and transition to `PLANNED`:
 
 ```bash
-forgeloop activate --task task-contact-form-001
+forgeloop activate
 forgeloop advance --task task-contact-form-001 --to PLANNED
 ```
+
+`activate` is session-scoped, not task-scoped: it records the current harness session (`.forgeloop/sessions/<sessionId>.json`) and does not accept `--task`.
 
 ---
 

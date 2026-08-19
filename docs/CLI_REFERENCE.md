@@ -80,7 +80,7 @@ Inspects repository health, adapter synchronization, and template integrity.
 
 - **Purpose**: Diagnose missing files, unmanaged adapters, profile issues, and broken kit references.
 - **When to use**: After initialization, after git merges, or when troubleshooting.
-- **Mutation**: Read-only (unless `--fix` is passed).
+- **Mutation**: Writes `.forgeloop/.manifest.json` only when `--fix` is passed; otherwise performs no mutation.
 - **Options**:
 
 <!-- BEGIN FORGELOOP GENERATED: cli:doctor:options -->
@@ -131,7 +131,7 @@ Calculates and persists deterministic engineering guide routing.
 
 - **Purpose**: Selects relevant technical guides (e.g. `clean`, `test`, `security`, `design`) based on declared work attributes.
 - **When to use**: During discovery before preflight.
-- **Mutation**: Writes `.forgeloop/routing-result.json`.
+- **Mutation**: Writes `.forgeloop/task-state/<taskKey>/routing-result.json`.
 - **Options**:
 
 <!-- BEGIN FORGELOOP GENERATED: cli:route:options -->
@@ -160,7 +160,7 @@ Validates pre-implementation readiness and establishes protocol readiness state.
 
 - **Purpose**: Verifies that the contract, route, profile facts, and mandatory pre-implementation gates (e.g. `design`) are satisfied and consistent.
 - **When to use**: Before starting implementation.
-- **Mutation**: Persists `.forgeloop/preflight.json` and, when the protocol is ready, may create or synchronize resumable work state and lifecycle events.
+- **Mutation**: Persists `.forgeloop/task-state/<taskKey>/preflight.json` and, when the protocol is ready, may create or synchronize task-scoped resumable work state and lifecycle events.
 - **Return Status**: `READY` or `BLOCKED`.
 - **Options**:
 
@@ -185,7 +185,7 @@ Creates a protocol/session activation marker for the current harness session.
 
 - **Purpose**: Creates an activation marker containing `sessionId`, `activationMarker`, and `createdAt` for the current harness session. It does not create the canonical lifecycle work state.
 - **When to use**: When starting a session after `preflight` is established.
-- **Mutation**: Writes `.forgeloop/session.json`.
+- **Mutation**: Writes `.forgeloop/sessions/<sessionId>.json`.
 - **Options**:
 
 <!-- BEGIN FORGELOOP GENERATED: cli:activate:options -->
@@ -234,7 +234,7 @@ Advances the protocol lifecycle phase.
 
 - **Purpose**: Transitions between valid protocol phases (`PLANNED`, `EXECUTING`, `VERIFYING`, `REVIEWING`).
 - **When to use**: To declare transitions between workflow stages.
-- **Mutation**: Updates `.forgeloop/work-state.json` and appends transition event to ledger.
+- **Mutation**: Updates `.forgeloop/task-state/<taskKey>/work-state.json` and appends transition event to ledger.
 - **Options**:
 
 <!-- BEGIN FORGELOOP GENERATED: cli:advance:options -->
@@ -312,7 +312,7 @@ Records operational handoff context before pausing or switching tools.
 
 - **Purpose**: Stores immediate work-in-progress notes to help the next harness continue without confusion.
 - **When to use**: Before ending a session or transferring control.
-- **Mutation**: Writes `.forgeloop/continuity.json`.
+- **Mutation**: Writes `.forgeloop/task-state/<taskKey>/continuity.json`.
 - **Options**:
 
 <!-- BEGIN FORGELOOP GENERATED: cli:record-continuity:options -->
@@ -370,7 +370,7 @@ Clears operational continuity context while preserving canonical work state.
 
 - **Purpose**: Removes stale or corrupt continuity handoff data when starting fresh from the last work-state checkpoint.
 - **When to use**: When continuity is unrecoverably stale or no longer relevant.
-- **Mutation**: Removes `.forgeloop/continuity.json`.
+- **Mutation**: Removes `.forgeloop/task-state/<taskKey>/continuity.json`.
 - **Options**:
 
 <!-- BEGIN FORGELOOP GENERATED: cli:clear-continuity:options -->
@@ -395,9 +395,9 @@ Clears operational continuity context while preserving canonical work state.
 
 Executes a verification command with ForgeLoop-attested provenance.
 
-- **Purpose**: Runs an exact command, records the execution artifact in `.forgeloop/executions/`, and binds the resulting observed check evidence to that execution through `executionRef`.
+- **Purpose**: Runs an exact command, records the execution artifact in `.forgeloop/task-state/<taskKey>/executions/`, and binds the resulting observed check evidence to that execution through `executionRef`.
 - **When to use**: During `VERIFYING` phase to execute test suites, linters, or validators.
-- **Mutation**: Writes `.forgeloop/executions/exec-*.json`, updates `.forgeloop/execution-receipt.json`, appends to ledger.
+- **Mutation**: Writes `.forgeloop/task-state/<taskKey>/executions/exec-*.json`, updates `.forgeloop/task-state/<taskKey>/execution-receipt.json`, appends to task ledger.
 - **Options**:
 
 <!-- BEGIN FORGELOOP GENERATED: cli:run-check:options -->
@@ -424,7 +424,7 @@ Records an observed or manual verification check result without executing comman
 
 - **Purpose**: Records manual review evidence or external observations.
 - **When to use**: For manual reviews, accessibility inspections, or external validations.
-- **Mutation**: Updates `.forgeloop/execution-receipt.json` and appends to ledger.
+- **Mutation**: Updates `.forgeloop/task-state/<taskKey>/execution-receipt.json` and appends to task ledger.
 - **Options**:
 
 <!-- BEGIN FORGELOOP GENERATED: cli:record-check:options -->
@@ -493,7 +493,7 @@ Records an append-only diagnosis event in the lifecycle event ledger for the act
 
 ### `validate-state`
 
-Validates `.forgeloop/work-state.json` structure, hash chain, and repository binding.
+Validates `.forgeloop/task-state/<taskKey>/work-state.json` structure, hash chain, and repository binding.
 
 - **Purpose**: Integrity check for work state.
 - **Mutation**: Read-only.
@@ -515,7 +515,7 @@ Validates `.forgeloop/work-state.json` structure, hash chain, and repository bin
 
 ### `validate-receipt`
 
-Validates `.forgeloop/execution-receipt.json` schema and check references.
+Validates `.forgeloop/task-state/<taskKey>/execution-receipt.json` schema and check references.
 
 - **Purpose**: Integrity check for completion receipt.
 - **Mutation**: Read-only.
@@ -593,11 +593,11 @@ Evaluates task progress across verification cycles and detects stalls determinis
 
 ### `prepare-completion`
 
-Initializes or refreshes `.forgeloop/execution-receipt.json`.
+Initializes or refreshes `.forgeloop/task-state/<taskKey>/execution-receipt.json`.
 
 - **Purpose**: Maps contract requirements to evidence coverage slots.
 - **When to use**: Upon entering the `VERIFYING` phase before recording checks.
-- **Mutation**: Writes `.forgeloop/execution-receipt.json`.
+- **Mutation**: Writes `.forgeloop/task-state/<taskKey>/execution-receipt.json`.
 - **Options**:
 
 <!-- BEGIN FORGELOOP GENERATED: cli:prepare-completion:options -->
@@ -643,10 +643,18 @@ Records external publication or production-readiness observations.
   forgeloop record-terminal-result \
     --requirement release-publish \
     --type PUBLICATION \
-    --status passed \
+    --status published \
     --source "npm publish" \
     --result "v1.1.0 published to registry"
   ```
+
+- **Terminal Statuses**: The `--status` value must be one of the canonical
+  statuses for the declared `--type`:
+
+  | `--type` | Allowed `--status` values |
+  | --- | --- |
+  | `PUBLICATION` | `committed`, `pushed`, `published`, `deployed` |
+  | `PRODUCTION_READINESS` | `ready`, `blocked` |
 
 ### `audit`
 
@@ -678,8 +686,9 @@ Validates protocol completion and transitions the task to `COMPLETE`.
 
 - **Purpose**: Authoritative protocol validation of the entire task lifecycle.
 - **When to use**: In `REVIEWING` phase when all checks have passed.
-- **Mutation**: Updates `.forgeloop/work-state.json` to `COMPLETE` and records completion event.
-- **Return Status**: `VALID`, `INCOMPLETE`, `STALE`, `INCONSISTENT`, or `INVALID`.
+- **Mutation**: Updates `.forgeloop/task-state/<taskKey>/work-state.json` to `COMPLETE` and records completion event.
+- **Return Status**: `VALID` or `REJECTED`.
+- **Return Dimensions**: The evaluation result reports separate dimensions alongside the return status: `taskStatus` (`COMPLETE`/`INCOMPLETE`/`BLOCKED`), `verificationStatus` (`valid`/`invalid`), `publicationStatus`, `productionReadiness`, and `errors[]` with the concrete rejection reasons.
 - **Options**:
 
 <!-- BEGIN FORGELOOP GENERATED: cli:complete:options -->
@@ -950,10 +959,11 @@ debt.
 
 ### `profile-interview`
 
-Interactive interview for operator profile confirmation (never invoked autonomously by agent).
+Optional operator-facing interview guidance (never invoked autonomously by agent).
 
-- **Purpose**: Optional human-guided interview for operator configuration.
-- **Mutation**: Updates `PROJECT_PROFILE.md` if confirmed.
+- **Purpose**: Returns optional discovery/interview guidance to help an operator inspect or refine project assumptions. It does not write `PROJECT_PROFILE.md` automatically.
+- **When to use**: Optional; never required for normal autonomous execution.
+- **Mutation**: Read-only.
 - **Options**:
 
 <!-- BEGIN FORGELOOP GENERATED: cli:profile-interview:options -->
@@ -976,7 +986,7 @@ Clears canonical work-state checkpoint for the current task.
 
 - **Purpose**: Emergency reset of local work-state checkpoint.
 - **When to use**: Only when abandoning a task or resetting state after an unrecoverable corruption.
-- **Mutation**: Removes `.forgeloop/work-state.json` only. Sibling ForgeLoop artifacts (such as contracts, routes, gates, and ledger history) are preserved.
+- **Mutation**: Removes `.forgeloop/task-state/<taskKey>/work-state.json` only. Sibling ForgeLoop artifacts (such as contracts, routes, gates, and ledger history) are preserved.
 - **Safety Note**: This is not a full `.forgeloop/` reset command.
 - **Options**:
 
@@ -1019,8 +1029,16 @@ Initializes a new isolated task namespace with write claims and contract.
 - **Example**:
 
   ```bash
-  forgeloop task-create --id task-001 --claim src/auth --prompt "Add auth module" --json
+  forgeloop task-create --task task-001 --claim src/auth --json
   ```
+
+  With an explicit initial contract file:
+
+  ```bash
+  forgeloop task-create --task task-001 --claim src/auth --claim tests/auth --contract-file task-contract.json --json
+  ```
+
+  `--contract-file` points to a contract JSON that is validated and copied into the task namespace.
 
 ### `task-list`
 
@@ -1085,7 +1103,7 @@ Updates or inspects write claims for a task.
 - **Example**:
 
   ```bash
-  forgeloop task-scope --task task-001 --claim src/auth tests/auth --json
+  forgeloop task-scope --task task-001 --claim src/auth --claim tests/auth --json
   ```
 
 ### `task-migrate`

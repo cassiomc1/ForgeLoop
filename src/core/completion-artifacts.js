@@ -26,6 +26,22 @@ import { readTaskDescriptor } from "./task-descriptor.js";
 import { assertClaimsCoverChangedPaths } from "./task-scope.js";
 import { discoverTasks } from "./task-discovery.js";
 
+/**
+ * Canonical terminal-status sets shared by runtime validation, tests, and
+ * documentation conformance. Keep these single-sourced; do not re-declare
+ * the same status lists in validators or tests.
+ */
+export const PUBLICATION_STATUSES = Object.freeze([
+  "committed",
+  "pushed",
+  "published",
+  "deployed",
+]);
+export const PRODUCTION_READINESS_STATUSES = Object.freeze([
+  "ready",
+  "blocked",
+]);
+
 function artifactError(code, message, artifacts = []) {
   const error = new Error(message);
   error.code = code;
@@ -709,10 +725,10 @@ export async function recordTerminalResult({
   if (!["PUBLICATION", "PRODUCTION_READINESS"].includes(type)) {
     throw artifactError("E_FUTURE_TERMINAL_EVIDENCE", `record-terminal-result does not support type ${type}`, [ARTIFACT_PATHS.state]);
   }
-  if (type === "PUBLICATION" && !["committed", "pushed", "published", "deployed"].includes(status)) {
+  if (type === "PUBLICATION" && !PUBLICATION_STATUSES.includes(status)) {
     throw artifactError("E_CHECK_INVALID", `Invalid publication status for record-terminal-result: ${status}`, [ARTIFACT_PATHS.state]);
   }
-  if (type === "PRODUCTION_READINESS" && !["ready", "blocked"].includes(status)) {
+  if (type === "PRODUCTION_READINESS" && !PRODUCTION_READINESS_STATUSES.includes(status)) {
     throw artifactError("E_CHECK_INVALID", `Invalid production readiness status for record-terminal-result: ${status}`, [ARTIFACT_PATHS.state]);
   }
 
