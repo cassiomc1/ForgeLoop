@@ -16,6 +16,7 @@ import { runCheck } from "../src/commands/run-check.js";
 import { runPrepareCompletion } from "../src/commands/prepare-completion.js";
 import { runComplete } from "../src/commands/complete.js";
 import { runBaseline } from "../src/commands/baseline.js";
+import { runNext } from "../src/commands/next.js";
 import { getPackageRoot } from "../src/core/templates.js";
 import { verifyRuleMutation } from "../src/core/policy-mutation.js";
 import { diffPolicies } from "../src/core/policy-diff.js";
@@ -23,6 +24,8 @@ import {
   computePolicyLockData,
   detectPolicyCapability,
   evaluateTargetPolicy,
+  loadEffectiveRules,
+  readBaseline,
   readPolicyLock,
   readTaskPolicySnapshot,
   verifyPolicyLock,
@@ -439,8 +442,109 @@ test("SNAP-1: task policy snapshot destination conflict causes snapshot write fa
 });
 
 // --------------------------------------------------------------------------
-// L1 - L5 / LOCK-F1 - LOCK-F6: Policy Lock Integrity Tests
+// L1 - L5 / LOCK-S1 - LOCK-S8: Policy Lock Integrity Tests
 // --------------------------------------------------------------------------
+
+test("LOCK-S1: rulesDigest missing -> not VALID", async () => {
+  await withTarget(async (target) => {
+    await runInit({ target, packageRoot, packageVersion: "1.2.1" });
+    const lock = await readPolicyLock(target, packageRoot);
+    delete lock.rulesDigest;
+    await writeFile(path.join(target, ".forgeloop", "policy", "policy.lock"), JSON.stringify(lock, null, 2));
+
+    const lockResult = await verifyPolicyLock(target, packageRoot);
+    assert.notEqual(lockResult.status, "VALID");
+    if (lockResult.mismatches) {
+      assert.ok(lockResult.mismatches.includes("rulesDigest"));
+    }
+  });
+});
+
+test("LOCK-S2: baselineDigest missing -> not VALID", async () => {
+  await withTarget(async (target) => {
+    await runInit({ target, packageRoot, packageVersion: "1.2.1" });
+    const lock = await readPolicyLock(target, packageRoot);
+    delete lock.baselineDigest;
+    await writeFile(path.join(target, ".forgeloop", "policy", "policy.lock"), JSON.stringify(lock, null, 2));
+
+    const lockResult = await verifyPolicyLock(target, packageRoot);
+    assert.notEqual(lockResult.status, "VALID");
+    if (lockResult.mismatches) {
+      assert.ok(lockResult.mismatches.includes("baselineDigest"));
+    }
+  });
+});
+
+test("LOCK-S3: rulesDigest incorrect -> MISMATCH", async () => {
+  await withTarget(async (target) => {
+    await runInit({ target, packageRoot, packageVersion: "1.2.1" });
+    const lock = await readPolicyLock(target, packageRoot);
+    lock.rulesDigest = "sha256:1111111111111111111111111111111111111111111111111111111111111111";
+    await writePolicyLock(target, lock, packageRoot);
+
+    const lockResult = await verifyPolicyLock(target, packageRoot);
+    assert.equal(lockResult.status, "MISMATCH");
+    assert.ok(lockResult.mismatches.includes("rulesDigest"));
+  });
+});
+
+test("LOCK-S4: baselineDigest incorrect -> MISMATCH", async () => {
+  await withTarget(async (target) => {
+    await runInit({ target, packageRoot, packageVersion: "1.2.1" });
+    const lock = await readPolicyLock(target, packageRoot);
+    lock.baselineDigest = "sha256:2222222222222222222222222222222222222222222222222222222222222222";
+    await writePolicyLock(target, lock, packageRoot);
+
+    const lockResult = await verifyPolicyLock(target, packageRoot);
+    assert.equal(lockResult.status, "MISMATCH");
+    assert.ok(lockResult.mismatches.includes("baselineDigest"));
+  });
+});
+
+test("LOCK-S5: capturedAt removed -> VALID (capturedAt is optional and non-semantic)", async () => {
+  await withTarget(async (target) => {
+    await runInit({ target, packageRoot, packageVersion: "1.2.1" });
+    const lock = await readPolicyLock(target, packageRoot);
+    delete lock.capturedAt;
+    await writePolicyLock(target, lock, packageRoot);
+
+    const lockResult = await verifyPolicyLock(target, packageRoot);
+    assert.equal(lockResult.status, "VALID");
+  });
+});
+
+test("LOCK-S6: capturedAt changed only -> VALID", async () => {
+  await withTarget(async (target) => {
+    await runInit({ target, packageRoot, packageVersion: "1.2.1" });
+    const lock = await readPolicyLock(target, packageRoot);
+    lock.capturedAt = "2099-01-01T00:00:00.000Z";
+    await writePolicyLock(target, lock, packageRoot);
+
+    const lockResult = await verifyPolicyLock(target, packageRoot);
+    assert.equal(lockResult.status, "VALID");
+  });
+});
+
+test("LOCK-S7: all semantic fields intact -> lock status VALID", async () => {
+  await withTarget(async (target) => {
+    await runInit({ target, packageRoot, packageVersion: "1.2.1" });
+    const lockResult = await verifyPolicyLock(target, packageRoot);
+    assert.equal(lockResult.status, "VALID");
+    assert.ok(lockResult.digest.startsWith("sha256:"));
+  });
+});
+
+test("LOCK-S8: top-level digest intact + rulesDigest missing -> not VALID", async () => {
+  await withTarget(async (target) => {
+    await runInit({ target, packageRoot, packageVersion: "1.2.1" });
+    const lock = await readPolicyLock(target, packageRoot);
+    delete lock.rulesDigest;
+    await writeFile(path.join(target, ".forgeloop", "policy", "policy.lock"), JSON.stringify(lock, null, 2));
+
+    const lockResult = await verifyPolicyLock(target, packageRoot);
+    assert.notEqual(lockResult.status, "VALID");
+  });
+});
 
 test("LOCK-F1: top digest modified -> MISMATCH", async () => {
   await withTarget(async (target) => {
@@ -455,63 +559,15 @@ test("LOCK-F1: top digest modified -> MISMATCH", async () => {
   });
 });
 
-test("LOCK-F2: rulesDigest modified only -> MISMATCH", async () => {
+test("LOCK-F4: algorithm invalid -> MISMATCH or INVALID", async () => {
   await withTarget(async (target) => {
     await runInit({ target, packageRoot, packageVersion: "1.2.1" });
     const lock = await readPolicyLock(target, packageRoot);
-    lock.rulesDigest = "sha256:1111111111111111111111111111111111111111111111111111111111111111";
-    await writePolicyLock(target, lock, packageRoot);
-
-    const lockResult = await verifyPolicyLock(target, packageRoot);
-    assert.equal(lockResult.status, "MISMATCH");
-    assert.ok(lockResult.mismatches.includes("rulesDigest"));
-  });
-});
-
-test("LOCK-F3: baselineDigest modified only -> MISMATCH", async () => {
-  await withTarget(async (target) => {
-    await runInit({ target, packageRoot, packageVersion: "1.2.1" });
-    const lock = await readPolicyLock(target, packageRoot);
-    lock.baselineDigest = "sha256:2222222222222222222222222222222222222222222222222222222222222222";
-    await writePolicyLock(target, lock, packageRoot);
-
-    const lockResult = await verifyPolicyLock(target, packageRoot);
-    assert.equal(lockResult.status, "MISMATCH");
-    assert.ok(lockResult.mismatches.includes("baselineDigest"));
-  });
-});
-
-test("LOCK-F4: algorithm invalid -> MISMATCH", async () => {
-  await withTarget(async (target) => {
-    await runInit({ target, packageRoot, packageVersion: "1.2.1" });
-    const lock = await readPolicyLock(target, packageRoot);
-    // Write directly to bypass schema validation during write
     const tampered = { ...lock, algorithm: "sha512" };
     await writeFile(path.join(target, ".forgeloop", "policy", "policy.lock"), JSON.stringify(tampered, null, 2));
 
     const lockResult = await verifyPolicyLock(target, packageRoot);
     assert.ok(["MISMATCH", "INVALID"].includes(lockResult.status));
-  });
-});
-
-test("LOCK-F5: capturedAt changed only -> VALID (capturedAt is non-semantic)", async () => {
-  await withTarget(async (target) => {
-    await runInit({ target, packageRoot, packageVersion: "1.2.1" });
-    const lock = await readPolicyLock(target, packageRoot);
-    lock.capturedAt = "2099-01-01T00:00:00.000Z";
-    await writePolicyLock(target, lock, packageRoot);
-
-    const lockResult = await verifyPolicyLock(target, packageRoot);
-    assert.equal(lockResult.status, "VALID");
-  });
-});
-
-test("LOCK-F6: all semantic fields unchanged -> lock status VALID", async () => {
-  await withTarget(async (target) => {
-    await runInit({ target, packageRoot, packageVersion: "1.2.1" });
-    const lockResult = await verifyPolicyLock(target, packageRoot);
-    assert.equal(lockResult.status, "VALID");
-    assert.ok(lockResult.digest.startsWith("sha256:"));
   });
 });
 
@@ -878,6 +934,95 @@ test("NEXT-P5: E_BASELINE_RECORD_DURING_ACTIVE_TASK maps to CONTINUE_WITH_EXISTI
 test("NEXT-P6: non-policy error returns null (preserves standard handling)", () => {
   const action = policyRecoveryAction([{ code: "E_RECEIPT_STALE", message: "Receipt stale" }]);
   assert.equal(action, null);
+});
+
+// --------------------------------------------------------------------------
+// E2E Next Policy Recovery Tests
+// --------------------------------------------------------------------------
+
+test("E2E Next Recovery: policy weakening causes forgeloop next to return RESTORE_POLICY", async () => {
+  await withTarget(async (target) => {
+    // 1. init repository
+    await runInit({ target, packageRoot, packageVersion: "1.2.1" });
+
+    // 2. add a project rule with strict threshold
+    const initialRule = {
+      id: "CUSTOM.COMPLEXITY",
+      name: "Complexity limit",
+      description: "Checks complexity threshold",
+      source: "project",
+      severity: "HIGH",
+      blocking: true,
+      check: {
+        type: "adapter",
+        adapter: "secret-detection",
+      },
+      why: "Ensure code quality",
+      fix: "Refactor complex code",
+    };
+    await writeProjectRules(target, [initialRule], packageRoot);
+    const rules = await loadEffectiveRules(target, packageRoot);
+    const baseline = await readBaseline(target, packageRoot);
+    const lock = computePolicyLockData(rules, baseline);
+    await writePolicyLock(target, lock, packageRoot);
+
+    // 3. create task, contract, route
+    await runTaskCreate({ target, taskId: "weaken-recovery-task", claim: ["src"], packageRoot });
+    const contract = createContract({
+      taskId: "weaken-recovery-task",
+      objective: "Verify E2E next action policy recovery",
+      deliverables: ["src/config.js"],
+      constraints: ["offline"],
+      risks: [],
+      verification: ["tests"],
+      successCriteria: ["tests"],
+      stopConditions: ["blocked"],
+      unresolvedDecisions: [],
+      sourceRefs: [],
+    });
+    await writeContract(target, contract, packageRoot, { taskId: "weaken-recovery-task" });
+    await runRoute({ target, taskId: "weaken-recovery-task", workType: "code", surfaces: ["config"], packageRoot });
+
+    // 4. preflight (captures policy snapshot)
+    const preflightRes = await runPreflight({ target, taskId: "weaken-recovery-task", packageRoot });
+    assert.equal(preflightRes.status, "READY");
+
+    // 5. activate and advance through lifecycle to REVIEWING
+    await runActivate({ target, taskId: "weaken-recovery-task", packageRoot });
+    await runAdvance({ target, taskId: "weaken-recovery-task", to: "PLANNED", packageRoot });
+    await runAdvance({ target, taskId: "weaken-recovery-task", to: "EXECUTING", packageRoot });
+    await runAdvance({ target, taskId: "weaken-recovery-task", to: "VERIFYING", packageRoot });
+
+    await runPrepareCompletion({ target, taskId: "weaken-recovery-task", packageRoot });
+    await runCheck({
+      target,
+      taskId: "weaken-recovery-task",
+      id: "check-1",
+      requirement: "tests",
+      argv: ["node", "-e", "process.exit(0)"],
+      packageRoot,
+    });
+    await runAdvance({ target, taskId: "weaken-recovery-task", to: "REVIEWING", packageRoot });
+    await runPrepareCompletion({ target, taskId: "weaken-recovery-task", packageRoot });
+
+    // 6. Weaken the policy by weakening the blocking rule
+    const weakenedRule = {
+      ...initialRule,
+      severity: "LOW",
+      blocking: false,
+    };
+    await writeProjectRules(target, [weakenedRule], packageRoot);
+    const weakenedRules = await loadEffectiveRules(target, packageRoot);
+    const weakenedLock = computePolicyLockData(weakenedRules, baseline);
+    await writePolicyLock(target, weakenedLock, packageRoot);
+
+    // 7. Run forgeloop next (runNext)
+    const nextResult = await runNext({ target, taskId: "weaken-recovery-task", packageRoot });
+
+    // 8. Assert RESTORE_POLICY and E_POLICY_WEAKENING
+    assert.equal(nextResult.nextAction, NEXT_ACTIONS.RESTORE_POLICY);
+    assert.ok(nextResult.reasons.some((r) => r.code === "E_POLICY_WEAKENING"));
+  });
 });
 
 // --------------------------------------------------------------------------

@@ -1,4 +1,5 @@
 import { ARTIFACT_PATHS, readJsonArtifact } from "./artifacts.js";
+import { taskArtifactPath } from "./task-paths.js";
 import { completionIdentityErrors, evaluateCompletion } from "./completion.js";
 import { readContract } from "./contract.js";
 import { evaluatePreflight, validatePersistedPreflight, validateReadyProtocolConsistency } from "./preflight.js";
@@ -40,10 +41,7 @@ import { readEvents } from "./events.js";
 export { NEXT_ACTIONS } from "./next-action-model.js";
 
 export function policyRecoveryAction(errors = []) {
-  if (errors.some((e) => e.code === "E_POLICY_WEAKENING")) {
-    return NEXT_ACTIONS.RESTORE_POLICY;
-  }
-  if (errors.some((e) => e.code === "E_POLICY_LOCK_MISMATCH")) {
+  if (errors.some((e) => e.code === "E_POLICY_WEAKENING" || e.code === "E_POLICY_LOCK_MISMATCH")) {
     return NEXT_ACTIONS.RESTORE_POLICY;
   }
   if (errors.some((e) => e.code === "E_CHECK_MUTATION_EXECUTION_ERROR" || e.code === "E_CHECK_MUTATION_NOT_DETECTED")) {
@@ -71,68 +69,77 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
   const normalized = typeof targetOrOptions === "string"
     ? { target: targetOrOptions, packageRoot: packageRootOption }
     : targetOrOptions;
-  const { target, packageRoot, authorityContext, runtimeContext } = normalized ?? {};
+  const { target, packageRoot, taskId: explicitTaskId, authorityContext, runtimeContext } = normalized ?? {};
+
+  const stateRel = explicitTaskId ? taskArtifactPath(explicitTaskId, "state") : ARTIFACT_PATHS.state;
+  const preflightRel = explicitTaskId ? taskArtifactPath(explicitTaskId, "preflight") : ARTIFACT_PATHS.preflight;
+  const contractRel = explicitTaskId ? taskArtifactPath(explicitTaskId, "contract") : ARTIFACT_PATHS.contract;
+  const routeRel = explicitTaskId ? taskArtifactPath(explicitTaskId, "route") : ARTIFACT_PATHS.route;
+  const receiptRel = explicitTaskId ? taskArtifactPath(explicitTaskId, "receipt") : ARTIFACT_PATHS.receipt;
+  const eventsRel = explicitTaskId ? taskArtifactPath(explicitTaskId, "events") : ARTIFACT_PATHS.events;
+
   const workState = await loadArtifact(
-    () => readWorkState(target, packageRoot),
-    ARTIFACT_PATHS.state,
+    () => readWorkState(target, { packageRoot, taskId: explicitTaskId }),
+    stateRel,
   );
   if (workState.error) {
     return decision(
       {},
       NEXT_ACTIONS.RESOLVE_BLOCKER,
-      artifactError("WORK_STATE_INVALID", workState.error.message, [ARTIFACT_PATHS.state]),
-      [ARTIFACT_PATHS.state],
+      artifactError("WORK_STATE_INVALID", workState.error.message, [stateRel]),
+      [stateRel],
       workState.missingArtifacts,
     );
   }
   if (!workState.value) {
     const persistedPreflight = await loadArtifact(
-      () => readJsonArtifact(target, ARTIFACT_PATHS.preflight, "preflight", packageRoot),
-      ARTIFACT_PATHS.preflight,
+      () => readJsonArtifact(target, preflightRel, "preflight", packageRoot),
+      preflightRel,
     );
     if (!persistedPreflight.error && persistedPreflight.value?.value?.status === "READY") {
       try {
         const consistencyErrors = await validateReadyProtocolConsistency({
           target,
           packageRoot,
+          taskId: explicitTaskId,
           persisted: persistedPreflight.value.value,
         });
         if (consistencyErrors.length > 0) {
           return result({
-            taskId: persistedPreflight.value.value.taskId ?? "unknown",
+            taskId: persistedPreflight.value.value.taskId ?? explicitTaskId ?? "unknown",
             currentPhase: "ROUTED",
             nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
             reasons: consistencyErrors,
             requiredArtifacts: [
-              ARTIFACT_PATHS.state,
-              ARTIFACT_PATHS.contract,
-              ARTIFACT_PATHS.route,
-              ARTIFACT_PATHS.preflight,
-              ARTIFACT_PATHS.events,
+              stateRel,
+              contractRel,
+              routeRel,
+              preflightRel,
+              eventsRel,
             ],
-            missingArtifacts: [ARTIFACT_PATHS.state],
+            missingArtifacts: [stateRel],
           });
         }
       } catch (error) {
         return result({
-          taskId: persistedPreflight.value.value.taskId ?? "unknown",
+          taskId: persistedPreflight.value.value.taskId ?? explicitTaskId ?? "unknown",
           currentPhase: "ROUTED",
           nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
           reasons: [artifactError(
             error.code ?? "E_PREFLIGHT_READY_INCONSISTENT",
             error.message,
-            error.artifacts ?? [ARTIFACT_PATHS.preflight, ARTIFACT_PATHS.events],
+            error.artifacts ?? [preflightRel, eventsRel],
           )],
-          requiredArtifacts: [ARTIFACT_PATHS.preflight, ARTIFACT_PATHS.events],
+          requiredArtifacts: [preflightRel, eventsRel],
         });
       }
     }
     return decision(
       {},
       NEXT_ACTIONS.DISCOVER,
-      artifactError("WORK_STATE_ABSENT", "No work-state checkpoint is present", [ARTIFACT_PATHS.state]),
-      [ARTIFACT_PATHS.state],
-      [ARTIFACT_PATHS.state],
+      artifactError("WORK_STATE_ABSENT", "No work-state checkpoint is present", [stateRel]),
+      [stateRel],
+      [stateRel],
     );
   }
 
@@ -143,7 +150,7 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
       context,
       NEXT_ACTIONS.DISCOVER,
       artifactError("PHASE_RECEIVED", "Discovery has not started"),
-      [ARTIFACT_PATHS.state],
+      [stateRel],
     );
   }
   if (state.phase === "DISCOVERING") {
@@ -151,14 +158,14 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
       context,
       NEXT_ACTIONS.CREATE_CONTRACT,
       artifactError("PHASE_DISCOVERING", "Create and validate the task contract"),
-      [ARTIFACT_PATHS.state],
+      [stateRel],
     );
   }
   const contractResult = await loadArtifact(
-    () => readContract(target, packageRoot),
-    ARTIFACT_PATHS.contract,
+    () => readContract(target, packageRoot, { taskId: explicitTaskId }),
+    contractRel,
   );
-  const contractArtifacts = [ARTIFACT_PATHS.state, ARTIFACT_PATHS.contract];
+  const contractArtifacts = [stateRel, contractRel];
 
   if (contractResult.error) {
     return result({
@@ -187,7 +194,7 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
   const freshness = await classifyLoadedWorkState({
     target,
     state,
-    contractFile: ARTIFACT_PATHS.contract,
+    contractFile: contractRel,
   });
   if (freshness.status === "REVALIDATION_REQUIRED") {
     return result({
@@ -195,8 +202,8 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
       nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
       reasons: freshnessReasons(state, freshness),
       requiredArtifacts: uniqueSorted([
-        ARTIFACT_PATHS.state,
-        ARTIFACT_PATHS.contract,
+        stateRel,
+        contractRel,
         ...(state.requiredArtifacts?.map((artifact) => artifact.path) ?? []),
       ]),
     });
@@ -207,14 +214,14 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
       NEXT_ACTIONS.ROUTE,
       artifactError("PHASE_CONTRACT_READY", "Persist deterministic routing for the validated contract"),
       contractArtifacts,
-      [ARTIFACT_PATHS.route],
+      [routeRel],
     );
   }
   const routeResult = await loadArtifact(
-    () => readPersistedRoute(target, packageRoot),
-    ARTIFACT_PATHS.route,
+    () => readPersistedRoute(target, packageRoot, { taskId: explicitTaskId }),
+    routeRel,
   );
-  const requiredArtifacts = [...contractArtifacts, ARTIFACT_PATHS.route];
+  const requiredArtifacts = [...contractArtifacts, routeRel];
   const missingArtifacts = [...routeResult.missingArtifacts];
 
   if (routeResult.error) {
@@ -246,7 +253,7 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
   let executionPrerequisites = null;
   if (phaseNeedsChronology) {
     try {
-      executionPrerequisites = await evaluateStartExecutionPrerequisites({ target, state, packageRoot });
+      executionPrerequisites = await evaluateStartExecutionPrerequisites({ target, state, packageRoot, taskId: explicitTaskId });
     } catch (error) {
       return result({
         ...context,
@@ -254,14 +261,14 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
         reasons: [artifactError(
           error?.code ?? "E_PHASE_CHRONOLOGY_INVALID",
           `Unable to evaluate post-execution prerequisites: ${error?.message ?? String(error)}`,
-          Array.isArray(error?.artifacts) ? error.artifacts : [ARTIFACT_PATHS.events],
+          Array.isArray(error?.artifacts) ? error.artifacts : [eventsRel],
         )],
         requiredArtifacts: [
-          ARTIFACT_PATHS.state,
-          ARTIFACT_PATHS.contract,
-          ARTIFACT_PATHS.route,
-          ARTIFACT_PATHS.preflight,
-          ARTIFACT_PATHS.events,
+          stateRel,
+          contractRel,
+          routeRel,
+          preflightRel,
+          eventsRel,
         ],
       });
     }
@@ -275,15 +282,15 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
     }
   }
 
-  const preflight = executionPrerequisites?.preflight ?? await evaluatePreflight({ target, packageRoot });
+  const preflight = executionPrerequisites?.preflight ?? await evaluatePreflight({ target, packageRoot, taskId: explicitTaskId });
   const preflightArtifact = phaseNeedsChronology
     ? null
     : await loadArtifact(
-      () => readJsonArtifact(target, ARTIFACT_PATHS.preflight, "preflight", packageRoot),
-      ARTIFACT_PATHS.preflight,
+      () => readJsonArtifact(target, preflightRel, "preflight", packageRoot),
+      preflightRel,
     );
   const missingGates = preflight.requiredGates.filter((gate) => !preflight.satisfiedGates.includes(gate));
-  const preflightArtifacts = [...requiredArtifacts, ARTIFACT_PATHS.preflight];
+  const preflightArtifacts = [...requiredArtifacts, preflightRel];
   const persistedPreflightErrors = phaseNeedsChronology
     ? []
     : validatePersistedPreflight(preflightArtifact.value?.value, preflight);
@@ -378,7 +385,7 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
       return decision(
         context,
         NEXT_ACTIONS.DIAGNOSE,
-        artifactError("E_CHECK_FAILED", `Observed check failed: ${failed.check.id}`, [ARTIFACT_PATHS.state]),
+        artifactError("E_CHECK_FAILED", `Observed check failed: ${failed.check.id}`, [stateRel]),
       );
     }
     const blocked = authoritative.find(({ check }) => check?.status === "blocked");
@@ -386,28 +393,28 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
       return decision(
         context,
         NEXT_ACTIONS.RESOLVE_BLOCKER,
-        artifactError("E_CHECK_BLOCKED", `Observed check is blocked: ${blocked.check.id}`, [ARTIFACT_PATHS.state]),
+        artifactError("E_CHECK_BLOCKED", `Observed check is blocked: ${blocked.check.id}`, [stateRel]),
       );
     }
     const receipt = await loadArtifact(
-      () => readJsonArtifact(target, ARTIFACT_PATHS.receipt, "execution-receipt", packageRoot),
-      ARTIFACT_PATHS.receipt,
+      () => readJsonArtifact(target, receiptRel, "execution-receipt", packageRoot),
+      receiptRel,
     );
     if (receipt.error) {
       if (receipt.error.code === "ARTIFACT_MISSING") {
         return decision(
           context,
           NEXT_ACTIONS.PREPARE_COMPLETION,
-          artifactError("E_RECEIPT_MISSING", "Prepare the execution receipt before recording verification checks", [ARTIFACT_PATHS.receipt]),
-          [...requiredArtifacts, ARTIFACT_PATHS.receipt],
+          artifactError("E_RECEIPT_MISSING", "Prepare the execution receipt before recording verification checks", [receiptRel]),
+          [...requiredArtifacts, receiptRel],
           receipt.missingArtifacts,
         );
       }
       return decision(
         context,
         NEXT_ACTIONS.RESOLVE_BLOCKER,
-        artifactError("E_RECEIPT_INVALID", `Repair or remove the invalid execution receipt before continuing: ${receipt.error.message}`, [ARTIFACT_PATHS.receipt]),
-        [...requiredArtifacts, ARTIFACT_PATHS.receipt],
+        artifactError("E_RECEIPT_INVALID", `Repair or remove the invalid execution receipt before continuing: ${receipt.error.message}`, [receiptRel]),
+        [...requiredArtifacts, receiptRel],
       );
     }
     try {
@@ -421,8 +428,8 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
       return decision(
         context,
         NEXT_ACTIONS.RESOLVE_BLOCKER,
-        artifactError("E_RECEIPT_INVALID", `Repair or remove the invalid execution receipt before continuing: ${error.message}`, [ARTIFACT_PATHS.receipt]),
-        [...requiredArtifacts, ARTIFACT_PATHS.receipt],
+        artifactError("E_RECEIPT_INVALID", `Repair or remove the invalid execution receipt before continuing: ${error.message}`, [receiptRel]),
+        [...requiredArtifacts, receiptRel],
       );
     }
     const readiness = evaluateRequiredEvidence({
@@ -455,15 +462,15 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
         return decision(
           context,
           NEXT_ACTIONS.PREPARE_COMPLETION,
-          artifactError("E_RECEIPT_STATE_MISMATCH", "Run forgeloop prepare-completion to refresh the execution receipt with current state", [ARTIFACT_PATHS.receipt]),
-          [...requiredArtifacts, ARTIFACT_PATHS.receipt],
+          artifactError("E_RECEIPT_STATE_MISMATCH", "Run forgeloop prepare-completion to refresh the execution receipt with current state", [receiptRel]),
+          [...requiredArtifacts, receiptRel],
         );
       }
       return result({
         ...context,
         nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
         reasons: receiptRelationships,
-        requiredArtifacts: [...requiredArtifacts, ARTIFACT_PATHS.receipt],
+        requiredArtifacts: [...requiredArtifacts, receiptRel],
       });
     }
     if (readiness.ready) {
@@ -483,7 +490,7 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
               ? "E_EVIDENCE_PARTIAL"
               : "E_EVIDENCE_REQUIRED",
           "Run the required check and record observed evidence through the structured command specification.",
-          [ARTIFACT_PATHS.state],
+          [stateRel],
         )),
       requiredArtifacts: requiredArtifacts,
     });
@@ -500,11 +507,11 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
           artifactError(
             "E_DIAGNOSIS_REQUIRED",
             "Current correction cycle has no append-only diagnosis record.",
-            [ARTIFACT_PATHS.events],
+            [eventsRel],
           ),
         ],
         commandSpecs: [recordDiagnosisCommandSpec()],
-        requiredArtifacts: [...requiredArtifacts, ARTIFACT_PATHS.events],
+        requiredArtifacts: [...requiredArtifacts, eventsRel],
       });
     }
     const progress = evaluateProgress({ state, events: ledger.events });
@@ -516,7 +523,7 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
           artifactError(
             "E_PROGRESS_STALLED",
             "The current correction strategy has no new diagnostic information.",
-            [ARTIFACT_PATHS.state, ARTIFACT_PATHS.events],
+            [stateRel, eventsRel],
           ),
         ],
         progress,
@@ -571,7 +578,7 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
           const ledger = await validateEventLedger(target, packageRoot);
           let currentReceipt = null;
           try {
-            const receiptArtifact = await readJsonArtifact(target, ARTIFACT_PATHS.receipt, "execution-receipt", packageRoot);
+            const receiptArtifact = await readJsonArtifact(target, receiptRel, "execution-receipt", packageRoot);
             currentReceipt = receiptArtifact?.value;
           } catch {}
           const recoveryAuth = validateCompletionRecoveryAuthorization({
@@ -598,22 +605,22 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
               ? "E_EVIDENCE_REQUIRED"
               : item.reasonCode ?? "E_EVIDENCE_PARTIAL",
             `Evidence is not ready: ${item.text}`,
-            [ARTIFACT_PATHS.state],
+            [stateRel],
           )),
         requiredArtifacts,
       });
     }
     const receipt = await loadArtifact(
-      () => readJsonArtifact(target, ARTIFACT_PATHS.receipt, "execution-receipt", packageRoot),
-      ARTIFACT_PATHS.receipt,
+      () => readJsonArtifact(target, receiptRel, "execution-receipt", packageRoot),
+      receiptRel,
     );
     if (receipt.error) {
       if (receipt.error.code !== "ARTIFACT_MISSING") {
         return decision(
           context,
           NEXT_ACTIONS.RESOLVE_BLOCKER,
-          artifactError("E_RECEIPT_INVALID", `Repair or remove the invalid execution receipt before continuing: ${receipt.error.message}`, [ARTIFACT_PATHS.receipt]),
-          [...requiredArtifacts, ARTIFACT_PATHS.receipt],
+          artifactError("E_RECEIPT_INVALID", `Repair or remove the invalid execution receipt before continuing: ${receipt.error.message}`, [receiptRel]),
+          [...requiredArtifacts, receiptRel],
         );
       }
       return decision(
@@ -622,9 +629,9 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
         artifactError(
           receipt.error.code === "ARTIFACT_MISSING" ? "E_RECEIPT_MISSING" : "E_RECEIPT_INVALID",
           receipt.error.message,
-          [ARTIFACT_PATHS.receipt],
+          [receiptRel],
         ),
-        [...requiredArtifacts, ARTIFACT_PATHS.receipt],
+        [...requiredArtifacts, receiptRel],
         receipt.missingArtifacts,
       );
     }
@@ -639,8 +646,8 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
       return decision(
         context,
         NEXT_ACTIONS.RESOLVE_BLOCKER,
-        artifactError("E_RECEIPT_INVALID", `Repair or remove the invalid execution receipt before continuing: ${error.message}`, [ARTIFACT_PATHS.receipt]),
-        [...requiredArtifacts, ARTIFACT_PATHS.receipt],
+        artifactError("E_RECEIPT_INVALID", `Repair or remove the invalid execution receipt before continuing: ${error.message}`, [receiptRel]),
+        [...requiredArtifacts, receiptRel],
       );
     }
     const receiptRelationships = completionRelationshipErrors({
@@ -665,19 +672,19 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
         return decision(
           context,
           NEXT_ACTIONS.PREPARE_COMPLETION,
-          artifactError("E_RECEIPT_STATE_MISMATCH", "Run forgeloop prepare-completion to refresh the execution receipt with current state", [ARTIFACT_PATHS.receipt]),
-          [...requiredArtifacts, ARTIFACT_PATHS.receipt],
+          artifactError("E_RECEIPT_STATE_MISMATCH", "Run forgeloop prepare-completion to refresh the execution receipt with current state", [receiptRel]),
+          [...requiredArtifacts, receiptRel],
         );
       }
       return result({
         ...context,
         nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
         reasons: receiptRelationships,
-        requiredArtifacts: [...requiredArtifacts, ARTIFACT_PATHS.receipt],
+        requiredArtifacts: [...requiredArtifacts, receiptRel],
       });
     }
 
-    const completion = await evaluateCompletion({ target, packageRoot, authorityContext, runtimeContext });
+    const completion = await evaluateCompletion({ target, packageRoot, taskId: explicitTaskId, authorityContext, runtimeContext });
     if (completion.status !== "VALID") {
       const terminalPendingErrors = completion.errors.filter((err) => (
         err.code === "E_PUBLICATION_REQUIREMENT_PENDING" || err.code === "E_PRODUCTION_REQUIREMENT_PENDING"
@@ -696,7 +703,7 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
           commands: ["forgeloop record-terminal-result"],
           commandSpecs: terminalPendingReqs.map(recordTerminalResultCommandSpec),
           reasons: completion.errors,
-          requiredArtifacts: [...requiredArtifacts, ARTIFACT_PATHS.receipt, ARTIFACT_PATHS.events],
+          requiredArtifacts: [...requiredArtifacts, receiptRel, eventsRel],
         });
       }
       const policyAction = policyRecoveryAction(completion.errors);
@@ -705,20 +712,20 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
           ...context,
           nextAction: policyAction,
           reasons: completion.errors,
-          requiredArtifacts: [...requiredArtifacts, ARTIFACT_PATHS.receipt, ARTIFACT_PATHS.events],
+          requiredArtifacts: [...requiredArtifacts, receiptRel, eventsRel],
         });
       }
       return result({
         ...context,
         nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
         reasons: completion.errors,
-        requiredArtifacts: [...requiredArtifacts, ARTIFACT_PATHS.receipt, ARTIFACT_PATHS.events],
+        requiredArtifacts: [...requiredArtifacts, receiptRel, eventsRel],
       });
     }
     return decision(context, NEXT_ACTIONS.RUN_COMPLETE, artifactError("COMPLETION_READY", "Completion artifacts and cross-artifact validation are valid"));
   }
   if (state.phase === "COMPLETE") {
-    const completion = await evaluateCompletion({ target, packageRoot, authorityContext, runtimeContext });
+    const completion = await evaluateCompletion({ target, packageRoot, taskId: explicitTaskId, authorityContext, runtimeContext });
     if (completion.status === "VALID") {
       return decision(context, NEXT_ACTIONS.NONE, artifactError("PHASE_COMPLETE", "Completion is validator-backed and terminal"));
     }
@@ -727,7 +734,7 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
       ...context,
       nextAction: policyAction ?? NEXT_ACTIONS.RESOLVE_BLOCKER,
       reasons: completion.errors,
-      requiredArtifacts: [...requiredArtifacts, ARTIFACT_PATHS.receipt, ARTIFACT_PATHS.events],
+      requiredArtifacts: [...requiredArtifacts, receiptRel, eventsRel],
     });
   }
   if (state.phase === "BLOCKED") {
@@ -737,7 +744,7 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
       reasons: state.blockers.map((blocker) => artifactError(
         "WORK_STATE_BLOCKED",
         blocker.reason ?? "Work state has a recorded blocker",
-        [ARTIFACT_PATHS.state],
+        [stateRel],
       )),
       requiredArtifacts,
     });

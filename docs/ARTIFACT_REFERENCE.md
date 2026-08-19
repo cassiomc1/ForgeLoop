@@ -548,8 +548,8 @@ Cryptographic policy digest lock securing effective rules and baseline state.
 - `schemaVersion` *(number, required, const: 1)*
 - `algorithm` *(string, required, const: `sha256`)*
 - `digest` *(string, required, minLength: 1)*
-- `rulesDigest` *(string, optional)*
-- `baselineDigest` *(string, optional)*
+- `rulesDigest` *(string, required)*
+- `baselineDigest` *(string, required)*
 - `capturedAt` *(string, optional)*
 
 <!-- END FORGELOOP GENERATED: schema:policy-lock -->

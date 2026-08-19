@@ -232,10 +232,10 @@ export async function verifyPolicyLock(target, packageRoot) {
   if (persistedLock.digest !== expectedLock.digest) {
     mismatches.push("digest");
   }
-  if (persistedLock.rulesDigest && persistedLock.rulesDigest !== expectedLock.rulesDigest) {
+  if (persistedLock.rulesDigest !== expectedLock.rulesDigest) {
     mismatches.push("rulesDigest");
   }
-  if (persistedLock.baselineDigest && persistedLock.baselineDigest !== expectedLock.baselineDigest) {
+  if (persistedLock.baselineDigest !== expectedLock.baselineDigest) {
     mismatches.push("baselineDigest");
   }
 
@@ -244,14 +244,16 @@ export async function verifyPolicyLock(target, packageRoot) {
       status: "MISMATCH",
       mismatches,
       expected: {
+        algorithm: expectedLock.algorithm,
         digest: expectedLock.digest,
         rulesDigest: expectedLock.rulesDigest,
         baselineDigest: expectedLock.baselineDigest,
       },
       observed: {
-        digest: persistedLock.digest,
-        rulesDigest: persistedLock.rulesDigest,
-        baselineDigest: persistedLock.baselineDigest,
+        algorithm: persistedLock.algorithm ?? null,
+        digest: persistedLock.digest ?? null,
+        rulesDigest: persistedLock.rulesDigest ?? null,
+        baselineDigest: persistedLock.baselineDigest ?? null,
       },
     };
   }
