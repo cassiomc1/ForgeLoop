@@ -1,7 +1,7 @@
 import { CLI_COMMAND_DEFINITIONS } from "./cli-command-definitions.js";
 
 /**
- * Canonical metadata for all 42 ForgeLoop CLI commands derived directly
+ * Canonical metadata for all 43 ForgeLoop CLI commands derived directly
  * from CLI_COMMAND_DEFINITIONS to guarantee zero divergence.
  */
 export const CLI_COMMAND_METADATA = Object.freeze(

@@ -49,8 +49,30 @@ export function validateKnownEventDetails(event) {
     case "DECISION_CRITERION_RECORDED":
       assertDecisionCriterionDetails(event.details);
       return;
+    case "CHECKPOINT_RECONCILED":
+      assertReconcileClosureDetails(event.details);
+      return;
     default:
       return;
+  }
+}
+
+function assertReconcileClosureDetails(details) {
+  if (!details || typeof details !== "object" || Array.isArray(details)) {
+    throw protocolError("E_EVENT_INVALID", "CHECKPOINT_RECONCILED requires structured details");
+  }
+  for (const key of ["checkId", "command", "executionId"]) {
+    if (typeof details[key] !== "string") {
+      throw protocolError("E_EVENT_INVALID", `CHECKPOINT_RECONCILED details.${key} must be a string`);
+    }
+  }
+  for (const key of ["previousBranch", "currentBranch", "previousHead", "currentHead"]) {
+    if (typeof details[key] !== "string" && details[key] !== null) {
+      throw protocolError("E_EVENT_INVALID", `CHECKPOINT_RECONCILED details.${key} must be a string or null`);
+    }
+  }
+  if (typeof details.exitCode !== "number" || !Number.isInteger(details.exitCode) || details.exitCode < 0) {
+    throw protocolError("E_EVENT_INVALID", "CHECKPOINT_RECONCILED details.exitCode must be a non-negative integer");
   }
 }
 

@@ -42,7 +42,7 @@ test("validateDocumentationConformance passes on repository docs", async () => {
   assert.equal(result.valid, true, `Expected valid documentation conformance, got errors: ${result.errors.join("\n")}`);
   assert.equal(result.errors.length, 0);
   assert.ok(result.summary.taggedArtifactsCount >= 13);
-  assert.equal(result.summary.commandsCount, 42);
+  assert.equal(result.summary.commandsCount, 43);
   assert.ok(result.summary.publicErrorCodesCount >= 13);
   assert.equal(result.summary.discoverySurfacesCount, 4);
 });
@@ -62,9 +62,9 @@ test("ARTIFACT_REGISTRY covers all public schemas and matches ARTIFACT_REFERENCE
   }
 });
 
-test("CLI_COMMAND_DEFINITIONS and CLI_COMMAND_METADATA cover all 42 commands with valid options", () => {
-  assert.equal(Object.keys(CLI_COMMAND_DEFINITIONS).length, 42);
-  assert.equal(Object.keys(CLI_COMMAND_METADATA).length, 42);
+test("CLI_COMMAND_DEFINITIONS and CLI_COMMAND_METADATA cover all 43 commands with valid options", () => {
+  assert.equal(Object.keys(CLI_COMMAND_DEFINITIONS).length, 43);
+  assert.equal(Object.keys(CLI_COMMAND_METADATA).length, 43);
   for (const command of COMMANDS) {
     const def = CLI_COMMAND_DEFINITIONS[command];
     const meta = CLI_COMMAND_METADATA[command];

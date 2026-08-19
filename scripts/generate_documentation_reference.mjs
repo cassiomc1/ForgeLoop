@@ -306,7 +306,7 @@ export function generatePublicErrorCodesTable() {
 
 /**
  * Deterministically generates the common CLI options section.
- * Computes intersection of options across all 42 commands (excluding --help and --version).
+ * Computes intersection of options across all 43 commands (excluding --help and --version).
  */
 export function generateCommonOptionsSection() {
   // Compute intersection of options across all commands

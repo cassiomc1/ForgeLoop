@@ -31,6 +31,7 @@ import { formatBundleResult, runBundle } from "./commands/bundle.js";
 import { formatPrepareCompletionResult, runPrepareCompletion } from "./commands/prepare-completion.js";
 import { formatRecordCheckResult, runRecordCheck } from "./commands/record-check.js";
 import { formatRunCheckResult, runCheck } from "./commands/run-check.js";
+import { formatReconcileClosureResult, reconcileClosure } from "./commands/reconcile-closure.js";
 import { formatRecordTerminalResult, runRecordTerminalResult } from "./commands/record-terminal-result.js";
 import { formatRecordDiagnosisResult, runRecordDiagnosis } from "./commands/record-diagnosis.js";
 import { formatProgressResult, runProgress } from "./commands/progress.js";
@@ -343,6 +344,18 @@ export function validateCliSemantics({ command, options } = {}) {
     }
     if (!Array.isArray(options.commandArgv) || options.commandArgv.length === 0) {
       throw new Error("run-check requires -- followed by an exact command argv");
+    }
+  }
+  if (command === "reconcile-closure" && !options.help) {
+    if (!options.task) throw new Error("reconcile-closure requires --task");
+    if (!options.checkId) throw new Error("reconcile-closure requires --id");
+    if (!options.checkRequirement) throw new Error("reconcile-closure requires --requirement");
+    if (options.checkKind || options.checkStatus || options.checkEvidenceKind || options.checkCommand
+      || options.checkResult || options.checkExitCode !== null || options.checkExecutionRef || options.checkProvenance) {
+      throw new Error("reconcile-closure accepts only --id, --requirement, --details, and -- <argv>");
+    }
+    if (!Array.isArray(options.commandArgv) || options.commandArgv.length === 0) {
+      throw new Error("reconcile-closure requires -- followed by an exact command argv");
     }
   }
 }
@@ -680,6 +693,19 @@ export const COMMAND_HANDLERS = Object.freeze({
   "task-unlock": async ({ target, packageRoot, options }) => {
     const result = await runTaskUnlock({ target, packageRoot, taskId: options.task, force: options.force });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatTaskUnlockResult(result));
+    return 0;
+  },
+  "reconcile-closure": async ({ target, packageRoot, options }) => {
+    const result = await reconcileClosure({
+      target,
+      packageRoot,
+      taskId: options.task,
+      checkId: options.checkId,
+      checkRequirement: options.checkRequirement,
+      checkDetails: options.checkDetails,
+      commandArgv: options.commandArgv,
+    });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatReconcileClosureResult(result));
     return 0;
   },
   update: async ({ target, packageRoot, packageVersion, options }) => {

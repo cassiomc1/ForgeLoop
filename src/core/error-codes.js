@@ -39,6 +39,15 @@ export const E_PROGRESS_STALLED = "E_PROGRESS_STALLED";
 export const E_DECISION_CRITERION_INVALID = "E_DECISION_CRITERION_INVALID";
 export const E_DECISION_NOT_UNRESOLVED = "E_DECISION_NOT_UNRESOLVED";
 
+export const E_RECONCILE_NOT_STALE = "E_RECONCILE_NOT_STALE";
+export const E_RECONCILE_PHASE_INVALID = "E_RECONCILE_PHASE_INVALID";
+export const E_RECONCILE_UNSUPPORTED_DRIFT = "E_RECONCILE_UNSUPPORTED_DRIFT";
+export const E_RECONCILE_LEDGER_INVALID = "E_RECONCILE_LEDGER_INVALID";
+export const E_RECONCILE_REQUIREMENT_UNKNOWN = "E_RECONCILE_REQUIREMENT_UNKNOWN";
+export const E_RECONCILE_EVIDENCE_FAILED = "E_RECONCILE_EVIDENCE_FAILED";
+export const E_REPOSITORY_CHANGED = "E_REPOSITORY_CHANGED";
+export const E_STATE_REVALIDATION_REQUIRED = "E_STATE_REVALIDATION_REQUIRED";
+
 /**
  * Public, stable ForgeLoop error and reason codes documented for users and harnesses.
  */
@@ -168,6 +177,62 @@ export const PUBLIC_ERROR_CODES = Object.freeze({
     classification: "PUBLIC_STABLE",
     meaning: "Modified paths in repository exceed the declared task write claims.",
     safeResolution: "Update write claims with forgeloop task-scope or revert out-of-scope modifications.",
+  }),
+  E_RECONCILE_NOT_STALE: Object.freeze({
+    code: "E_RECONCILE_NOT_STALE",
+    category: "lifecycle",
+    classification: "PUBLIC_STABLE",
+    meaning: "reconcile-closure was invoked for a work-state checkpoint that is already fresh.",
+    safeResolution: "No reconciliation is required; continue the normal lifecycle.",
+  }),
+  E_RECONCILE_PHASE_INVALID: Object.freeze({
+    code: "E_RECONCILE_PHASE_INVALID",
+    category: "lifecycle",
+    classification: "PUBLIC_STABLE",
+    meaning: "reconcile-closure was invoked for a task that is not EXECUTING.",
+    safeResolution: "reconcile-closure supports EXECUTING tasks whose objective is already satisfied.",
+  }),
+  E_RECONCILE_UNSUPPORTED_DRIFT: Object.freeze({
+    code: "E_RECONCILE_UNSUPPORTED_DRIFT",
+    category: "freshness",
+    classification: "PUBLIC_STABLE",
+    meaning: "Work-state drift includes kinds other than REPOSITORY_CHANGED (contract or required-artifact drift).",
+    safeResolution: "Resolve contract or artifact drift through their dedicated recovery surfaces; reconcile-closure only refreshes repository fingerprint drift.",
+  }),
+  E_RECONCILE_LEDGER_INVALID: Object.freeze({
+    code: "E_RECONCILE_LEDGER_INVALID",
+    category: "integrity",
+    classification: "PUBLIC_STABLE",
+    meaning: "The append-only event ledger is not valid, so reconciliation cannot be recorded.",
+    safeResolution: "Inspect the ledger errors and repair before reconciling.",
+  }),
+  E_RECONCILE_REQUIREMENT_UNKNOWN: Object.freeze({
+    code: "E_RECONCILE_REQUIREMENT_UNKNOWN",
+    category: "verification",
+    classification: "PUBLIC_STABLE",
+    meaning: "The supplied check id and requirement text do not exactly match a contract verification item of type VERIFICATION.",
+    safeResolution: "Supply the exact id and requirement text of an existing contract verification item.",
+  }),
+  E_RECONCILE_EVIDENCE_FAILED: Object.freeze({
+    code: "E_RECONCILE_EVIDENCE_FAILED",
+    category: "verification",
+    classification: "PUBLIC_STABLE",
+    meaning: "The executed objective-satisfaction evidence command did not pass.",
+    safeResolution: "Inspect the execution artifact; reconciliation is refused until evidence passes in the current repository.",
+  }),
+  E_REPOSITORY_CHANGED: Object.freeze({
+    code: "E_REPOSITORY_CHANGED",
+    category: "freshness",
+    classification: "PUBLIC_STABLE",
+    meaning: "The repository fingerprint (branch or HEAD) moved after the work-state checkpoint was recorded.",
+    safeResolution: "If the task objective is already satisfied in the current repository, run forgeloop reconcile-closure; otherwise resume from a checkpoint that matches the current repository.",
+  }),
+  E_STATE_REVALIDATION_REQUIRED: Object.freeze({
+    code: "E_STATE_REVALIDATION_REQUIRED",
+    category: "freshness",
+    classification: "PUBLIC_STABLE",
+    meaning: "The work-state checkpoint must be revalidated before the lifecycle can continue.",
+    safeResolution: "Run forgeloop reconcile-closure for externally satisfied EXECUTING tasks, or inspect the freshness reasons for other drift.",
   }),
   E_DIAGNOSIS_REQUIRED: Object.freeze({
     code: "E_DIAGNOSIS_REQUIRED",
@@ -392,6 +457,14 @@ export const ALL_KNOWN_ERROR_CODES = Object.freeze(new Set([
   E_TASK_SCOPE_DIRTY,
   E_TASK_SCOPE_FROZEN,
   E_TASK_CHANGE_OUTSIDE_SCOPE,
+  E_RECONCILE_NOT_STALE,
+  E_RECONCILE_PHASE_INVALID,
+  E_RECONCILE_UNSUPPORTED_DRIFT,
+  E_RECONCILE_LEDGER_INVALID,
+  E_RECONCILE_REQUIREMENT_UNKNOWN,
+  E_RECONCILE_EVIDENCE_FAILED,
+  E_REPOSITORY_CHANGED,
+  E_STATE_REVALIDATION_REQUIRED,
   E_TASK_CHANGE_ATTRIBUTION_UNAVAILABLE,
   E_TASK_LAYOUT_LEGACY,
   E_TASK_MIGRATION_INVALID,

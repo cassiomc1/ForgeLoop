@@ -41,7 +41,7 @@ ForgeLoop uses a definition-driven command-line parser:
 | --- | --- |
 | **Setup & Maintenance** | [`init`](#init), [`update`](#update), [`task-migrate`](#task-migrate), [`task-unlock`](#task-unlock) |
 | **Inspection & Diagnostics** | [`doctor`](#doctor), [`progress`](#progress), [`profile-interview`](#profile-interview), [`inspect`](#inspect), [`status`](#status), [`validate-state`](#validate-state), [`validate-protocol`](#validate-protocol) |
-| **Lifecycle & State** | [`activate`](#activate), [`route`](#route), [`preflight`](#preflight), [`advance`](#advance), [`next`](#next), [`record-diagnosis`](#record-diagnosis), [`record-decision-criterion`](#record-decision-criterion), [`complete`](#complete), [`clear-state`](#clear-state), [`task-create`](#task-create), [`task-list`](#task-list), [`task-show`](#task-show), [`task-scope`](#task-scope) |
+| **Lifecycle & State** | [`activate`](#activate), [`route`](#route), [`preflight`](#preflight), [`advance`](#advance), [`next`](#next), [`record-diagnosis`](#record-diagnosis), [`record-decision-criterion`](#record-decision-criterion), [`complete`](#complete), [`clear-state`](#clear-state), [`reconcile-closure`](#reconcile-closure), [`task-create`](#task-create), [`task-list`](#task-list), [`task-show`](#task-show), [`task-scope`](#task-scope) |
 | **Cross-Harness Continuity** | [`continuity`](#continuity), [`record-continuity`](#record-continuity), [`reconcile-continuity`](#reconcile-continuity), [`clear-continuity`](#clear-continuity) |
 | **Verification & Completion** | [`prepare-completion`](#prepare-completion), [`run-check`](#run-check), [`record-check`](#record-check), [`record-terminal-result`](#record-terminal-result), [`audit`](#audit), [`report`](#report), [`validate-receipt`](#validate-receipt) |
 | **Policy & Auditing** | [`policy`](#policy), [`policy-discover`](#policy-discover), [`policy-status`](#policy-status), [`policy-diff`](#policy-diff), [`rule-verify`](#rule-verify), [`baseline`](#baseline), [`bundle`](#bundle) |
@@ -1026,6 +1026,40 @@ Clears canonical work-state checkpoint for the current task.
 
   ```bash
   forgeloop clear-state
+  ```
+
+---
+
+## 7. Multi-Task Management
+
+### `reconcile-closure`
+
+Reconciles the checkpoint of an EXECUTING task whose objective is already satisfied in the current repository.
+
+- **Purpose**: Refresh the work-state repository fingerprint of a stale EXECUTING task after repository movement, using executed contract-bound evidence that the objective is present, so the canonical completion pipeline can close it.
+- **When to use**: When a task is stuck in EXECUTING with `E_REPOSITORY_CHANGED` / `E_STATE_REVALIDATION_REQUIRED` and its objective was already satisfied by other changes in the current repository.
+- **Mutation**: Appends a `CHECKPOINT_RECONCILED` ledger event (previous/current repository fingerprints plus evidence) and refreshes the work-state repository fingerprint. Phase stays EXECUTING; claims release only through canonical `COMPLETE`.
+- **Safety Note**: Refuses non-EXECUTING tasks, fresh checkpoints, contract or artifact drift, invalid ledgers, unknown requirements, and failing evidence.
+- **Options**:
+
+<!-- BEGIN FORGELOOP GENERATED: cli:reconcile-closure:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--id <id>`: contract verification item id used as evidence
+- `--requirement <id>`: exact contract verification item requirement text
+- `--details <json>`: additional structured execution details
+- `-- <argv...>`: exact command argv to execute as objective-satisfaction evidence
+- `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:reconcile-closure:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop reconcile-closure --task <id> --id regression-tests \
+    --requirement "pack tarball test asserts the README image is excluded from the npm package" \
+    -- node --test tests/package.test.js
   ```
 
 ---

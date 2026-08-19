@@ -195,6 +195,40 @@ forgeloop status --task <id> --json
 
 ---
 
+### Symptom: `EXECUTING` task is stale because the repository moved (`E_REPOSITORY_CHANGED`)
+
+#### What it means
+
+A task entered `EXECUTING` at an older checkout and the repository HEAD changed (commit, merge, or checkout). The work-state checkpoint fingerprint no longer matches, so transitions and completion are fail-closed with `E_REPOSITORY_CHANGED` / `E_STATE_REVALIDATION_REQUIRED`. This is intentional: execution must not silently continue against different code.
+
+If the task's objective is already satisfied by the current repository (for example, the work was merged by another change), the checkpoint can be reconciled with executed evidence:
+
+```bash
+forgeloop reconcile-closure --task <id> --id <verification-id> \
+  --requirement "<exact contract verification text>" -- <command>
+```
+
+`reconcile-closure` requires:
+
+1. The task is `EXECUTING`.
+2. The only drift is `REPOSITORY_CHANGED` (contract or required-artifact drift stays blocked).
+3. The append-only event ledger is valid.
+4. `--id` and `--requirement` exactly match a `VERIFICATION` item of the task contract, and the executed command exits 0, proving the objective is present in the current repository.
+
+It then appends a `CHECKPOINT_RECONCILED` ledger event (previous/current repository fingerprints plus the evidence) and refreshes the work-state repository fingerprint. Closure still goes through the canonical pipeline:
+
+```bash
+forgeloop advance --task <id> --to VERIFYING
+forgeloop prepare-completion --task <id>
+forgeloop run-check --task <id> --id <id> --requirement "<text>" -- <command>
+forgeloop advance --task <id> --to REVIEWING
+forgeloop complete --task <id>
+```
+
+Write claims release only when completion is validator-backed (`COMPLETE`).
+
+---
+
 ### Symptom: Continuity is `STALE`
 
 #### What it means
@@ -547,6 +581,14 @@ forgeloop next --task <id> --json
 | `E_TASK_SCOPE_CONFLICT` | Task write claims overlap with another non-complete task in the same checkout. | Adjust write claims to non-overlapping paths or run tasks in separate worktrees. |
 | `E_TASK_SCOPE_DIRTY` | Claimed paths contain pre-existing uncommitted changes. | Commit or stash changes in claimed paths before defining or adopting the scope. |
 | `E_TASK_CHANGE_OUTSIDE_SCOPE` | Modified paths in repository exceed the declared task write claims. | Update write claims with forgeloop task-scope or revert out-of-scope modifications. |
+| `E_RECONCILE_NOT_STALE` | reconcile-closure was invoked for a work-state checkpoint that is already fresh. | No reconciliation is required; continue the normal lifecycle. |
+| `E_RECONCILE_PHASE_INVALID` | reconcile-closure was invoked for a task that is not EXECUTING. | reconcile-closure supports EXECUTING tasks whose objective is already satisfied. |
+| `E_RECONCILE_UNSUPPORTED_DRIFT` | Work-state drift includes kinds other than REPOSITORY_CHANGED (contract or required-artifact drift). | Resolve contract or artifact drift through their dedicated recovery surfaces; reconcile-closure only refreshes repository fingerprint drift. |
+| `E_RECONCILE_LEDGER_INVALID` | The append-only event ledger is not valid, so reconciliation cannot be recorded. | Inspect the ledger errors and repair before reconciling. |
+| `E_RECONCILE_REQUIREMENT_UNKNOWN` | The supplied check id and requirement text do not exactly match a contract verification item of type VERIFICATION. | Supply the exact id and requirement text of an existing contract verification item. |
+| `E_RECONCILE_EVIDENCE_FAILED` | The executed objective-satisfaction evidence command did not pass. | Inspect the execution artifact; reconciliation is refused until evidence passes in the current repository. |
+| `E_REPOSITORY_CHANGED` | The repository fingerprint (branch or HEAD) moved after the work-state checkpoint was recorded. | If the task objective is already satisfied in the current repository, run forgeloop reconcile-closure; otherwise resume from a checkpoint that matches the current repository. |
+| `E_STATE_REVALIDATION_REQUIRED` | The work-state checkpoint must be revalidated before the lifecycle can continue. | Run forgeloop reconcile-closure for externally satisfied EXECUTING tasks, or inspect the freshness reasons for other drift. |
 | `E_DIAGNOSIS_REQUIRED` | Current correction cycle has no append-only diagnosis record. | Run forgeloop record-diagnosis with current failed evidence before correcting. |
 | `E_DIAGNOSIS_INVALID` | Diagnosis record details or parameters are malformed. | Provide valid failureClass, hypothesis, evidenceRefs, settledBy, and nextSafeAction. |
 | `E_DIAGNOSIS_EVIDENCE_INVALID` | Referenced diagnosis evidence is missing or has no failed checks in the current cycle. | Reference at least one failed or blocked check ID from the active verification cycle. |
