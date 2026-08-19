@@ -1,5 +1,5 @@
 /**
- * Canonical, declarative definition of all 36 ForgeLoop CLI commands.
+ * Canonical, declarative definition of all 42 ForgeLoop CLI commands.
  * This is the machine source of truth for CLI option parsing, help text,
  * metadata, documentation generation, and conformance validation.
  *
@@ -64,7 +64,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     mutation: "MUTATING",
     options: Object.freeze({
       ...CLI_COMMON_OPTIONS,
-      "--dry-run": Object.freeze({ targetKey: "dryRun", parseType: "boolean", takesValue: false, description: "show planned writes without changing files" }),
+      "--dry-run": Object.freeze({ targetKey: "dryRun", parseType: "boolean", takesValue: false, description: "perform deterministic init planning and conflict detection without writing" }),
     }),
     writes: [".forgeloop/*", "AGENTS.md", "CLAUDE.md", ".cursor/rules/project-loop.mdc", ".github/copilot-instructions.md"],
     removes: [],
@@ -93,7 +93,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     mutation: "MUTATING",
     options: Object.freeze({
       ...CLI_COMMON_OPTIONS,
-      "--dry-run": Object.freeze({ targetKey: "dryRun", parseType: "boolean", takesValue: false, description: "show planned writes without changing files" }),
+      "--dry-run": Object.freeze({ targetKey: "dryRun", parseType: "boolean", takesValue: false, description: "perform deterministic update planning and conflict detection without writing" }),
     }),
     writes: [".forgeloop/*", "AGENTS.md", "CLAUDE.md", ".cursor/rules/project-loop.mdc", ".github/copilot-instructions.md"],
     removes: [],

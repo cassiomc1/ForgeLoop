@@ -64,7 +64,7 @@ Initializes ForgeLoop in a target repository.
 <!-- BEGIN FORGELOOP GENERATED: cli:init:options -->
 
 - `--path <directory>`: target project directory (default: current directory)
-- `--dry-run`: show planned writes without changing files
+- `--dry-run`: perform deterministic init planning and conflict detection without writing
 
 <!-- END FORGELOOP GENERATED: cli:init:options -->
 
@@ -111,7 +111,7 @@ Updates the managed instruction kit to match the current ForgeLoop package versi
 <!-- BEGIN FORGELOOP GENERATED: cli:update:options -->
 
 - `--path <directory>`: target project directory (default: current directory)
-- `--dry-run`: show planned writes without changing files
+- `--dry-run`: perform deterministic update planning and conflict detection without writing
 
 <!-- END FORGELOOP GENERATED: cli:update:options -->
 
