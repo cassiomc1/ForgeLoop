@@ -24,6 +24,24 @@ function mustReplace(content, matcher, replacement, label) {
   return result;
 }
 
+/**
+ * Inserts `insertedContent` just before the named canonical generated region's
+ * END marker, using EOL that matches the fixture under test. Anchoring on the
+ * canonical region marker (rather than incidental option text) keeps the
+ * mutation deterministic across platforms and independent of documentation
+ * wording drift. Still fail-closed via mustReplace: if the region marker is
+ * absent, the mutation does not apply.
+ */
+function insertBeforeGeneratedRegionEnd(content, region, insertedContent, eol, label) {
+  const endMarker = `<!-- END FORGELOOP GENERATED: ${region} -->`;
+  return mustReplace(
+    content,
+    endMarker,
+    [insertedContent, "", endMarker].join(eol),
+    label,
+  );
+}
+
 async function copyDocsFixture(tempDir) {
   await cp("docs", path.join(tempDir, "docs"), { recursive: true });
   await cp("schemas", path.join(tempDir, "schemas"), { recursive: true });
@@ -175,10 +193,11 @@ test("negative fixtures & mutation tests: validateDocumentationConformance detec
       await writeFile(docFile, docContent, "utf8");
 
       // Mutation 3: init documented with --adopt
-      const mutCli3 = mustReplace(
+      const mutCli3 = insertBeforeGeneratedRegionEnd(
         cliContent,
-        /(- `--dry-run`)/,
-        `- \`--adopt <path>\`: Adopt adapter.${eol}  $1`,
+        "cli:init:options",
+        "- `--adopt <path>`: Adopt adapter.",
+        eol,
         `init --adopt (${eol === "\n" ? "LF" : "CRLF"})`,
       );
       await writeFile(cliDocFile, mutCli3, "utf8");

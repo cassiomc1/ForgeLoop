@@ -30,12 +30,26 @@ function runCli(target, ...args) {
   });
 }
 
+async function rimrafWithRetry(target) {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      await rm(target, { recursive: true, force: true });
+      return;
+    } catch (error) {
+      const code = error?.code;
+      const isTransient = code === "EBUSY" || code === "EPERM" || code === "ENOTEMPTY";
+      if (!isTransient || attempt === 4) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 30 * (attempt + 1)));
+    }
+  }
+}
+
 async function withTarget(run) {
   const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-reconcile-closure-"));
   try {
     await run(target);
   } finally {
-    await rm(target, { recursive: true, force: true });
+    await rimrafWithRetry(target);
   }
 }
 
