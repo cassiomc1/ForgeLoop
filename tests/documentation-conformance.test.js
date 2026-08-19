@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -35,6 +35,39 @@ async function copyDocsFixture(tempDir) {
   await cp(".github", path.join(tempDir, ".github"), { recursive: true });
   await cp("LOOP_SYSTEM_DESIGN.md", path.join(tempDir, "LOOP_SYSTEM_DESIGN.md"));
   await cp("ORCHESTRATOR_INTEGRATION.md", path.join(tempDir, "ORCHESTRATOR_INTEGRATION.md"));
+  await normalizeFixtureToLF(path.join(tempDir, "docs"));
+  await normalizeFixtureToLF(path.join(tempDir, "schemas"));
+  await normalizeFixtureToLF(path.join(tempDir, "src"));
+  await normalizeFixtureToLF(path.join(tempDir, "README.md"));
+  await normalizeFixtureToLF(path.join(tempDir, "AGENTS.md"));
+  await normalizeFixtureToLF(path.join(tempDir, "CLAUDE.md"));
+  await normalizeFixtureToLF(path.join(tempDir, "LOOP_SYSTEM_DESIGN.md"));
+  await normalizeFixtureToLF(path.join(tempDir, "ORCHESTRATOR_INTEGRATION.md"));
+  return tempDir;
+}
+
+// Normalize every committed file in the fixture tree to canonical LF before
+// mutation assertions. Git checkouts may be CRLF on Windows, which would break
+// literal EOL-terminated matchers; the conformance validator normalizes
+// internally too, so LF is the canonical form for mutation fixtures. This does
+// NOT weaken validator CRLF handling — the LF/CRLF drift test still exercises
+// both line-ending inputs directly.
+async function normalizeFixtureToLF(target) {
+  const stats = await stat(target);
+  if (!stats.isDirectory()) {
+    if (stats.isFile() && target.endsWith(".md")) {
+      const original = await readFile(target, "utf8");
+      const normalized = original.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+      if (normalized !== original) {
+        await writeFile(target, normalized, "utf8");
+      }
+    }
+    return;
+  }
+  const entries = await readdir(target, { withFileTypes: true });
+  for (const child of entries) {
+    await normalizeFixtureToLF(path.join(target, child.name));
+  }
 }
 
 test("validateDocumentationConformance passes on repository docs", async () => {
