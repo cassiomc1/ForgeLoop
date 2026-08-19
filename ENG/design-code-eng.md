@@ -373,6 +373,36 @@ Before materially adopting an external component or interaction:
 
 Do not install or copy an entire component library merely because one example looks useful. When React Bits, beUI, Motion Primitives, or another motion/component source could all satisfy the same need, choose one smallest compatible implementation; do not combine libraries for variety. ForgeLoop itself must not gain a dependency on any resource listed in this section.
 
+### Optional pattern and asset references
+
+External galleries and asset libraries are reconnaissance tools, not design authority. The target product's requirements, existing design system, accessibility, security, performance budget, and the rules in this guide take precedence.
+
+Before using an external example:
+
+1. identify the design problem it solves;
+2. compare at least two structural options when practical;
+3. choose based on content and interaction needs, not novelty;
+4. rebuild the chosen pattern in the target project's own stack and tokens;
+5. verify accessibility, responsiveness, states, and performance;
+6. verify the current source/license before copying code, prompts, media, or other substantial material.
+
+#### UI pattern reconnaissance
+
+- **VibePrompt** — https://vibeprompts.dev/
+  Optional pattern-vocabulary reference for common UI structures including heroes, pricing, FAQ, onboarding, dashboards, navigation, contact, feature sections, and supporting utility UI. Use it to compare section and interaction structures before implementing, and treat the examples as inspiration and vocabulary, not as canonical ForgeLoop markup. Do not treat Tailwind examples or prompts as canonical ForgeLoop markup; rebuild the selected pattern using the target project's own stack, components, semantic HTML, tokens, accessibility rules, responsive behavior, and performance budget. Verify the source terms before copying any prompt, snippet, or substantial text.
+
+#### Illustration references
+
+- **Kitbitz** — https://kitbitz.art/
+  Optional hand-drawn illustration reference when the selected creative direction genuinely benefits from playful/editorial imagery (education, creative tools, games, maps, community products, illustrated onboarding). Do not make it a default asset source for every site, and do not assume a permanent license status: verify the current first-party license and the exact asset terms before use. Record source, license, purpose, and any required attribution. Prefer SVG when appropriate, optimize delivered assets, provide accessible alternatives, and ensure the page remains understandable if the illustration is unavailable.
+
+#### Editorial strategy reference
+
+- **Elaya Design — Landing Page Design**
+  https://github.com/elayadesign/ai-design-skills/blob/main/skills/landing-page-design/SKILL.md
+
+  Useful as an editorial reference for landing-page strategy, conversion structure, benefit-first copy, objection handling, proof placement, and section-by-section implementation. Its prescriptive visual system (specific fonts, palettes, motion recipes, and navigation styles) is not a ForgeLoop universal rule and does not override this guide or the target project's design system. ForgeLoop's own `NON_BLOCKING`/`BLOCKING` decision classification controls whether the user must be asked anything.
+
 ### React Bits — operational use for React interfaces
 
 React Bits is an optional implementation/reference source for high-finish React interfaces. It is not a required ForgeLoop tool, protocol dependency, verification dependency, or design-system replacement.

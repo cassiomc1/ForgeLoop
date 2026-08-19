@@ -73,25 +73,61 @@ async function reconcilePolicyArtifact(target, packageRoot, readExisting, expect
 }
 
 /**
+ * Classifies an existing template destination against the shipped template.
+ * Shared by the pre-mutation conflict scan and the mutation loop so the two
+ * phases cannot drift apart:
+ *
+ *   - MATCH            existing bytes equal the shipped template (resumable)
+ *   - PRESERVE_PROFILE custom PROJECT_PROFILE.md (intentionally preservable)
+ *   - KIT_CONFLICT     canonical hidden kit content differs (fail closed)
+ *   - PRESERVE_UNOWNED pre-existing root/brownfield file (preserve, unowned)
+ */
+export function classifyExistingInitTemplate({ entry, existingBytes }) {
+  const existingHash = sha256(existingBytes);
+  const templateHash = sha256(entry.bytes);
+
+  if (existingHash === templateHash) {
+    return { kind: "MATCH", existingHash, templateHash };
+  }
+  if (entry.sourcePath === "PROJECT_PROFILE.md") {
+    return { kind: "PRESERVE_PROFILE", existingHash, templateHash };
+  }
+  if (isKitPath(entry.relativePath)) {
+    return { kind: "KIT_CONFLICT", existingHash, templateHash };
+  }
+  return { kind: "PRESERVE_UNOWNED", existingHash, templateHash };
+}
+
+function kitConflictError(relativePath) {
+  const error = new Error(
+    `Canonical ForgeLoop kit file conflicts with shipped template: ${relativePath}`,
+  );
+  error.code = E_INIT_KIT_CONFLICT;
+  error.artifacts = [relativePath];
+  return error;
+}
+
+/**
  * Initializes a target project with the ForgeLoop kit and executable-policy
  * bootstrap, committing manifest authority LAST.
  *
  * Execution order:
- *   1. validate all destination paths
- *   2. read template entries
- *   3. inspect existing unmanaged/resumable files
- *   4. discover policy (uncertainty is fine; infrastructure failure is not)
- *   5. compute initial baseline
- *   6. compute effective rules
- *   7. compute policy.lock
- *   8. write kit files (resumable output is reused)
- *   9. write discovery.json (reconciled)
- *  10. write baseline.json (reconciled)
- *  11. write policy.lock (reconciled)
- *  12. verify executable-policy capability
- *  13. verify written policy.lock
- *  14. write manifest atomically
- *  15. return success
+ *   PHASE 1 — READ / PLAN (no writes):
+ *     1. validate all destination paths
+ *     2. read template entries
+ *     3. inspect the manifest
+ *     4. classify every existing template destination; a canonical kit
+ *        conflict throws E_INIT_KIT_CONFLICT before ANY write
+ *     5. compute policy discovery, baseline, effective rules, and policy.lock
+ *        in memory
+ *     6. pre-reconcile existing policy artifacts (read-only) so a policy
+ *        conflict also fails before any write
+ *   PHASE 2 — MUTATE:
+ *     7. write/reuse allowed kit files per the precomputed plan
+ *     8. write/reuse policy artifacts per the precomputed decisions
+ *     9. verify executable-policy capability and policy.lock
+ *    10. write manifest atomically
+ *    11. return success
  *
  * Any policy-bootstrap failure raises E_POLICY_INITIALIZATION_FAILED and
  * leaves no committed manifest, so a retry reconciles already-correct files
@@ -123,7 +159,22 @@ export async function runInit({
   for (const entry of entries) await assertSafePath(target, entry.relativePath);
   for (const relativePath of POLICY_INIT_ARTIFACTS) await assertSafePath(target, relativePath);
 
-  // 4-7. Compute the full executable-policy bootstrap in memory first. Unknown
+  // 4. Pre-scan every existing template destination during planning. A
+  // deterministic canonical kit conflict must fail before ANY initialization
+  // write: no adapter, no kit file, no policy artifact, no manifest.
+  const initPlan = new Map();
+  for (const entry of entries) {
+    const destination = ensureWithin(target, entry.relativePath);
+    if (!(await fileExists(destination))) continue;
+    const existingBytes = await readBytes(destination);
+    const classification = classifyExistingInitTemplate({ entry, existingBytes });
+    if (classification.kind === "KIT_CONFLICT") {
+      throw kitConflictError(entry.relativePath);
+    }
+    initPlan.set(entry.relativePath, { ...classification, existingBytes });
+  }
+
+  // 5. Compute the full executable-policy bootstrap in memory first. Unknown
   // or low-confidence discovery is legitimate autonomy and succeeds; only
   // genuine discovery/serialization/computation failures fail closed.
   const { discoverPolicy } = await import("../core/policy-discovery.js");
@@ -157,41 +208,60 @@ export async function runInit({
     throw policyInitializationError(cause);
   }
 
-  // 8. Write kit files. Existing files that match the shipped template are
-  // resumable init output; PROJECT_PROFILE.md is preserved by contract;
-  // canonical hidden kit files (.forgeloop/kit/*) that differ from the shipped
-  // template fail init without overwrite; other pre-existing (brownfield)
-  // files are preserved as unowned.
+  // 6. Pre-reconcile existing policy artifacts during planning (read-only) so
+  // a deterministic policy conflict also fails before any write. dry-run keeps
+  // its side-effect-free contract and only reports planned writes.
+  let discoveryReconcile = null;
+  let baselineReconcile = null;
+  let lockReconcile = null;
+  if (!dryRun) {
+    discoveryReconcile = await reconcilePolicyArtifact(
+      target,
+      packageRoot,
+      readDiscoveryReport,
+      discovery,
+      { semanticEqual: (a, b) => JSON.stringify(a) === JSON.stringify(b), label: `${PROJECT_ARTIFACT_PATHS.policyDiscovery}` },
+    );
+    baselineReconcile = await reconcilePolicyArtifact(
+      target,
+      packageRoot,
+      readBaseline,
+      baseline,
+      { semanticEqual: baselineSemanticallyEqual, label: `${PROJECT_ARTIFACT_PATHS.policyBaseline}` },
+    );
+    lockReconcile = await reconcilePolicyArtifact(
+      target,
+      packageRoot,
+      readPolicyLock,
+      lock,
+      { semanticEqual: lockSemanticallyEqual, label: `${PROJECT_ARTIFACT_PATHS.policyLock}` },
+    );
+  }
+
+  // 7. Mutate: write kit files per the precomputed plan. Existing files that
+  // match the shipped template are resumable init output; PROJECT_PROFILE.md
+  // is preserved by contract; canonical hidden kit conflicts were already
+  // rejected in planning; other pre-existing (brownfield) files are preserved
+  // as unowned.
   for (const entry of entries) {
     const destination = ensureWithin(target, entry.relativePath);
-    if (await fileExists(destination)) {
-      const existingBytes = await readBytes(destination);
-      if (sha256(existingBytes) === sha256(entry.bytes)) {
+    const planned = initPlan.get(entry.relativePath);
+    if (planned) {
+      if (planned.kind === "MATCH") {
         actions.push({ action: "reuse", path: entry.relativePath, reason: "matches template" });
-      } else if (entry.sourcePath === "PROJECT_PROFILE.md") {
+      } else if (planned.kind === "PRESERVE_PROFILE") {
         actions.push({ action: "skip", path: entry.relativePath, reason: "preserved" });
         manifest.files[entry.relativePath] = {
-          sha256: sha256(existingBytes),
+          sha256: planned.existingHash,
           preserve: true,
         };
         continue;
-      } else if (isKitPath(entry.relativePath)) {
-        // Canonical hidden kit content defines the protocol that harnesses and
-        // agents are instructed to follow. A manifest must never certify a
-        // target whose hidden canonical kit conflicts with the shipped
-        // template, so fail deterministically and preserve the file.
-        const error = new Error(
-          `Canonical ForgeLoop kit file conflicts with shipped template: ${entry.relativePath}`,
-        );
-        error.code = E_INIT_KIT_CONFLICT;
-        error.artifacts = [entry.relativePath];
-        throw error;
       } else {
         actions.push({ action: "skip", path: entry.relativePath, reason: "pre-existing" });
         continue;
       }
       manifest.files[entry.relativePath] = {
-        sha256: sha256(entry.bytes),
+        sha256: planned.templateHash,
         preserve: entry.sourcePath === "PROJECT_PROFILE.md",
       };
       continue;
@@ -208,8 +278,7 @@ export async function runInit({
     };
   }
 
-  // 9-11. Write policy artifacts, reconciling resumable output from a failed
-  // previous init instead of overwriting unknown content.
+  // 8-9. Write/reuse policy artifacts and verify before committing authority.
   if (dryRun) {
     actions.push(
       { action: "would-write", path: PROJECT_ARTIFACT_PATHS.policyDiscovery, reason: "dry-run" },
@@ -217,28 +286,6 @@ export async function runInit({
       { action: "would-write", path: PROJECT_ARTIFACT_PATHS.policyLock, reason: "dry-run" },
     );
   } else {
-    const discoveryReconcile = await reconcilePolicyArtifact(
-      target,
-      packageRoot,
-      readDiscoveryReport,
-      discovery,
-      { semanticEqual: (a, b) => JSON.stringify(a) === JSON.stringify(b), label: `${PROJECT_ARTIFACT_PATHS.policyDiscovery}` },
-    );
-    const baselineReconcile = await reconcilePolicyArtifact(
-      target,
-      packageRoot,
-      readBaseline,
-      baseline,
-      { semanticEqual: baselineSemanticallyEqual, label: `${PROJECT_ARTIFACT_PATHS.policyBaseline}` },
-    );
-    const lockReconcile = await reconcilePolicyArtifact(
-      target,
-      packageRoot,
-      readPolicyLock,
-      lock,
-      { semanticEqual: lockSemanticallyEqual, label: `${PROJECT_ARTIFACT_PATHS.policyLock}` },
-    );
-
     actions.push(
       { action: discoveryReconcile.action === "reuse" ? "reuse" : "created", path: PROJECT_ARTIFACT_PATHS.policyDiscovery, reason: discoveryReconcile.action === "reuse" ? "matches canonical state" : "initialized" },
       { action: baselineReconcile.action === "reuse" ? "reuse" : "created", path: PROJECT_ARTIFACT_PATHS.policyBaseline, reason: baselineReconcile.action === "reuse" ? "matches canonical state" : "initialized" },
@@ -265,15 +312,13 @@ export async function runInit({
       throw policyInitializationError(cause);
     }
 
-    // 12-13. Verify canonical policy state before committing authority.
-    let capability;
-    let lockVerification;
+    // 9. Verify canonical policy state before committing authority.
     try {
-      capability = await detectPolicyCapability(target, packageRoot);
+      const capability = await detectPolicyCapability(target, packageRoot);
       if (capability !== "AVAILABLE") {
         throw new Error(`Executable policy capability is ${capability} after bootstrap`);
       }
-      lockVerification = await verifyPolicyLock(target, packageRoot);
+      const lockVerification = await verifyPolicyLock(target, packageRoot);
       if (lockVerification.status !== "VALID") {
         throw new Error(`Executable policy lock verification failed: ${lockVerification.status}`);
       }
@@ -282,7 +327,7 @@ export async function runInit({
     }
   }
 
-  // 14. Commit manifest authority LAST: successful initialization is only
+  // 10. Commit manifest authority LAST: successful initialization is only
   // real once the manifest exists.
   if (hooks.beforeManifestWrite) {
     try {

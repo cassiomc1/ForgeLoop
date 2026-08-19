@@ -275,3 +275,30 @@ test("INIT-ERR-2: E_POLICY_INITIALIZATION_FAILED has a single canonical source",
   assert.equal(E_POLICY_INITIALIZATION_FAILED, CANONICAL_POLICY_INIT_ERROR);
   assert.equal(CANONICAL_POLICY_INIT_ERROR, "E_POLICY_INITIALIZATION_FAILED");
 });
+
+test("INIT-KIT-6: canonical kit conflict is detected before any initialization write", async () => {
+  const target = await createTempTarget();
+  try {
+    const conflictPath = ".forgeloop/kit/LOOP_ENGINEERING.md";
+    await mkdir(path.dirname(path.join(target, conflictPath)), { recursive: true });
+    await writeFile(path.join(target, conflictPath), "tampered canonical kit\n", "utf8");
+
+    const before = await snapshotTree(target);
+
+    await assert.rejects(
+      () => runInit({ target, dryRun: false, packageRoot, packageVersion: PACKAGE_VERSION }),
+      (error) => error.code === E_INIT_KIT_CONFLICT,
+    );
+
+    const after = await snapshotTree(target);
+    assert.deepEqual(
+      after,
+      before,
+      "pre-existing deterministic init conflict must be side-effect free",
+    );
+    assert.equal(await readManifest(target), null);
+    assert.equal(await readFile(path.join(target, conflictPath), "utf8"), "tampered canonical kit\n");
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});

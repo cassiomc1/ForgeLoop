@@ -13,6 +13,22 @@ review the applicable source terms before redistributing such material.
 
 ## Adapted and editorial sources
 
+### Elaya Design — Landing Page Design
+
+- Project:
+  [elayadesign/ai-design-skills](https://github.com/elayadesign/ai-design-skills).
+- Referenced skill:
+  [landing-page-design](https://github.com/elayadesign/ai-design-skills/blob/main/skills/landing-page-design/SKILL.md).
+- License declared by the upstream repository: MIT.
+- Use in this collection: editorial influence for landing-page strategy,
+  conversion structure, proof/objection placement, benefit-first copy, and
+  incremental section-by-section implementation.
+- Boundary: ForgeLoop does not adopt the upstream skill's complete prescriptive
+  visual system as a universal rule, and does not import its intake-question
+  workflow over ForgeLoop's own decision classification. The strategy concepts
+  are paraphrased; if substantial upstream text is copied or adapted in the
+  future, preserve the applicable MIT notice and attribution.
+
 ### A11Y.md
 
 - Project: [fecarrico/A11Y.md](https://github.com/fecarrico/A11Y.md).
@@ -135,6 +151,16 @@ fonts, templates, or other material.
 - [cables.gl](https://cables.gl/): creative-coding and WebGL reference; check
   the tool, exported patches or operators, code, and third-party assets
   separately before distribution.
+- [VibePrompt](https://vibeprompts.dev/): optional UI-pattern and prompt
+  reference for comparing common page/component structures. ForgeLoop does not
+  bundle its prompts or snippets and does not make Tailwind a dependency.
+  Verify the site's current terms and the provenance/license of any prompt,
+  snippet, or substantial material before copying or redistributing it.
+- [Kitbitz](https://kitbitz.art/): optional illustration and visual-asset
+  reference. ForgeLoop does not bundle, mirror, or download its assets. Verify
+  the current first-party license and asset-specific terms before use; record
+  attribution when required and preserve asset provenance in the target
+  project. A catalog listing is not a permanent license statement.
 
 ### Qwen-MM-Plugins
 

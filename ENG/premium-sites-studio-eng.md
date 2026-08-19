@@ -92,6 +92,34 @@ Rules:
 - Identify what must be approved by the client, user, or legal team before writing the interface.
 - Define audience, device, network speed, language, location, and technology as context — not as end-stage details.
 
+### Landing-page specialization
+
+For a true landing page, narrow the brief further:
+
+- identify one offer;
+- identify the primary audience;
+- identify one primary conversion action;
+- define what counts as conversion;
+- determine what visitors already know when they arrive;
+- identify the most important objections;
+- inventory available proof such as product screenshots, documented metrics, case studies, certifications, or real testimonials.
+
+Apply normal ForgeLoop decision classification to missing information. Discover and infer first. A safe, local, reversible design choice is `NON_BLOCKING`: record the assumption and continue. Ask only when a missing fact is genuinely `BLOCKING`, such as real pricing, a regulated claim, a real customer endorsement, a legal guarantee, or external authority.
+
+Choose page structure based on visitor knowledge and conversion friction rather than visual fashion. Useful structural modes include product-led classic, narrative/educational, minimal high-intent, and comparison/alternative-intent.
+
+A common conversion narrative is:
+
+```text
+Hero → problem/context → benefits → how it works → proof → objection handling → final primary CTA
+```
+
+Adapt or remove stages according to the product. This is a decision framework, not a mandatory template.
+
+Lead copy with supported outcomes, then explain features or mechanisms. Keep proof close to the claim it supports. Never invent metrics, testimonials, customer logos, guarantees, certifications, or regulated statements.
+
+For long landing pages, implement one coherent section at a time when practical and verify it before multiplying the pattern across the page.
+
 ## 4. Gate 2 — Content, architecture, and journeys
 
 ### Content inventory
