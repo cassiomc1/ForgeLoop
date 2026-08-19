@@ -8,6 +8,7 @@
     "schemaVersion": { "const": 1 },
     "policyDigest": { "type": "string", "minLength": 1 },
     "rules": { "type": "array", "items": { "type": ["string", "object"] } },
+    "baseline": { "type": "object" },
     "baselineDigest": { "type": "string" },
     "capturedAt": { "type": "string" }
   },

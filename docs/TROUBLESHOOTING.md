@@ -431,5 +431,12 @@ forgeloop next --task <id> --json
 | `E_NEW_POLICY_VIOLATION` | New executable policy violation detected that is not present in brownfield baseline. | Fix the violation before completing the task. |
 | `E_BASELINE_EXPANSION` | Attempted unauthorized addition of new violations to brownfield baseline. | Resolve new violations rather than expanding the baseline. |
 | `E_POLICY_PROOF_STALE` | Mutation verification proof is stale due to checker or fixture modifications. | Re-run forgeloop rule-verify to refresh mutation proof. |
+| `E_CHECK_MUTATION_EXECUTION_ERROR` | A policy checker threw an unhandled exception while evaluating its mutation fixture. | Repair the checker execution path and rerun rule verification. |
+| `E_POLICY_EVALUATION_FAILED` | Policy evaluation threw an unexpected error during execution. | Inspect policy configuration and checker adapters for unhandled errors. |
+| `E_POLICY_INVALID` | Policy artifact is malformed, corrupt, or schema-invalid. | Validate and repair rules.json, baseline.json, or discovery.json against schema. |
+| `E_POLICY_SNAPSHOT_WRITE_FAILED` | Failed to persist task policy snapshot during preflight. | Ensure the target task directory is writable and repair filesystem permissions. |
+| `E_POLICY_LOCK_MISMATCH` | Persisted policy lock digest does not match current effective policy state. | Re-evaluate effective rules and update policy.lock or restore modified rules. |
+| `E_POLICY_DRIFT_UNKNOWN` | Task policy drift was detected but baseline snapshot details are unavailable. | Re-verify the task under the current policy state. |
+| `E_BASELINE_RECORD_DURING_ACTIVE_TASK` | Cannot re-record baseline during an active task with policy snapshot. | Resolve new violations or use monotonic baseline --update. |
 
 <!-- END FORGELOOP GENERATED: public-error-codes -->

@@ -281,6 +281,55 @@ export const PUBLIC_ERROR_CODES = Object.freeze({
     meaning: "Mutation verification proof is stale due to checker or fixture modifications.",
     safeResolution: "Re-run forgeloop rule-verify to refresh mutation proof.",
   }),
+  E_CHECK_MUTATION_EXECUTION_ERROR: Object.freeze({
+    code: "E_CHECK_MUTATION_EXECUTION_ERROR",
+    category: "policy",
+    classification: "PUBLIC_STABLE",
+    meaning: "A policy checker threw an unhandled exception while evaluating its mutation fixture.",
+    safeResolution: "Repair the checker execution path and rerun rule verification.",
+  }),
+  E_POLICY_EVALUATION_FAILED: Object.freeze({
+    code: "E_POLICY_EVALUATION_FAILED",
+    category: "policy",
+    classification: "PUBLIC_STABLE",
+    meaning: "Policy evaluation threw an unexpected error during execution.",
+    safeResolution: "Inspect policy configuration and checker adapters for unhandled errors.",
+  }),
+  E_POLICY_INVALID: Object.freeze({
+    code: "E_POLICY_INVALID",
+    category: "policy",
+    classification: "PUBLIC_STABLE",
+    meaning: "Policy artifact is malformed, corrupt, or schema-invalid.",
+    safeResolution: "Validate and repair rules.json, baseline.json, or discovery.json against schema.",
+  }),
+  E_POLICY_SNAPSHOT_WRITE_FAILED: Object.freeze({
+    code: "E_POLICY_SNAPSHOT_WRITE_FAILED",
+    category: "policy",
+    classification: "PUBLIC_STABLE",
+    meaning: "Failed to persist task policy snapshot during preflight.",
+    safeResolution: "Ensure the target task directory is writable and repair filesystem permissions.",
+  }),
+  E_POLICY_LOCK_MISMATCH: Object.freeze({
+    code: "E_POLICY_LOCK_MISMATCH",
+    category: "policy",
+    classification: "PUBLIC_STABLE",
+    meaning: "Persisted policy lock digest does not match current effective policy state.",
+    safeResolution: "Re-evaluate effective rules and update policy.lock or restore modified rules.",
+  }),
+  E_POLICY_DRIFT_UNKNOWN: Object.freeze({
+    code: "E_POLICY_DRIFT_UNKNOWN",
+    category: "policy",
+    classification: "PUBLIC_STABLE",
+    meaning: "Task policy drift was detected but baseline snapshot details are unavailable.",
+    safeResolution: "Re-verify the task under the current policy state.",
+  }),
+  E_BASELINE_RECORD_DURING_ACTIVE_TASK: Object.freeze({
+    code: "E_BASELINE_RECORD_DURING_ACTIVE_TASK",
+    category: "policy",
+    classification: "PUBLIC_STABLE",
+    meaning: "Cannot re-record baseline during an active task with policy snapshot.",
+    safeResolution: "Resolve new violations or use monotonic baseline --update.",
+  }),
 });
 
 export const E_CHECK_INERT = "E_CHECK_INERT";
@@ -291,6 +340,13 @@ export const E_POLICY_LOCK_INVALID = "E_POLICY_LOCK_INVALID";
 export const E_NEW_POLICY_VIOLATION = "E_NEW_POLICY_VIOLATION";
 export const E_BASELINE_EXPANSION = "E_BASELINE_EXPANSION";
 export const E_POLICY_PROOF_STALE = "E_POLICY_PROOF_STALE";
+export const E_CHECK_MUTATION_EXECUTION_ERROR = "E_CHECK_MUTATION_EXECUTION_ERROR";
+export const E_POLICY_EVALUATION_FAILED = "E_POLICY_EVALUATION_FAILED";
+export const E_POLICY_INVALID = "E_POLICY_INVALID";
+export const E_POLICY_SNAPSHOT_WRITE_FAILED = "E_POLICY_SNAPSHOT_WRITE_FAILED";
+export const E_POLICY_LOCK_MISMATCH = "E_POLICY_LOCK_MISMATCH";
+export const E_POLICY_DRIFT_UNKNOWN = "E_POLICY_DRIFT_UNKNOWN";
+export const E_BASELINE_RECORD_DURING_ACTIVE_TASK = "E_BASELINE_RECORD_DURING_ACTIVE_TASK";
 
 export const ALL_KNOWN_ERROR_CODES = Object.freeze(new Set([
   ...FAILURE_CODES,
@@ -332,4 +388,11 @@ export const ALL_KNOWN_ERROR_CODES = Object.freeze(new Set([
   E_NEW_POLICY_VIOLATION,
   E_BASELINE_EXPANSION,
   E_POLICY_PROOF_STALE,
+  E_CHECK_MUTATION_EXECUTION_ERROR,
+  E_POLICY_EVALUATION_FAILED,
+  E_POLICY_INVALID,
+  E_POLICY_SNAPSHOT_WRITE_FAILED,
+  E_POLICY_LOCK_MISMATCH,
+  E_POLICY_DRIFT_UNKNOWN,
+  E_BASELINE_RECORD_DURING_ACTIVE_TASK,
 ]));

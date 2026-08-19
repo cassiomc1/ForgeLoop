@@ -317,8 +317,10 @@ For the practical handoff and multi-tool takeover sequence, see
 
 ForgeLoop integrates executable verification rules directly into the lifecycle:
 
-- **Preflight**: Snapshots effective policy rules and baseline digest into `policy-snapshot.json`.
-- **Execution & Verifying**: Evaluates checks with mutation proofing (`rule-verify`). Unproven or inert checks in discovered rules do not stop execution.
-- **Completion**: Audits unbaselined violations, policy weakening, and drift. Returns `VALID` when no new unbaselined violations exist.
-- **Autonomy Principle**: Non-interactive execution is preserved. Tools, commands, and validators must operate with standard input closed and without interactive prompt dependencies.
+- **Preflight**: Captures effective policy rules and full semantic baseline state into `policy-snapshot.json`. Snapshot write failures fail closed with `E_POLICY_SNAPSHOT_WRITE_FAILED`.
+- **Execution & Verifying**: Evaluates checks with mutation proofing (`rule-verify`). Checkers must cleanly distinguish `PASS`, `FAIL`, and `ERROR` (`CHECK_MUTATION_EXECUTION_ERROR`). Unproven or inert checks in discovered rules degrade gracefully without stopping execution.
+- **Lock Verification**: Validates `policy.lock` against effective rules + baseline. Mismatches trigger `E_POLICY_LOCK_MISMATCH`.
+- **Completion**: Audits unbaselined violations, policy weakening, and drift. Returns `VALID` when policy integrity is intact and no new unbaselined violations exist.
+- **Autonomy Principle**: Non-interactive execution is preserved. Tools, commands, and validators operate unattended with standard input closed and without interactive prompt dependencies.
+- **Baseline Protection**: Re-recording baseline debt mid-task is rejected with `E_BASELINE_RECORD_DURING_ACTIVE_TASK`; only monotonic ratchet-down is allowed during active tasks.
 

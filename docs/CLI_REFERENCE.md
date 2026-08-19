@@ -914,6 +914,7 @@ Manages the brownfield policy baseline and monotonic ratchet-down.
 - `--path <directory>`: target project directory (default: current directory)
 - `--record`: record current violations as brownfield baseline
 - `--update`: ratchet baseline downward by removing resolved violations
+- `--policy-reset-authorized`: explicit operator authority to re-record baseline during active tasks
 - `--json`: emit structured output as JSON
 
 <!-- END FORGELOOP GENERATED: cli:baseline:options -->

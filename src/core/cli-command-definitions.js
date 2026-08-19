@@ -492,6 +492,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
       ...CLI_COMMON_OPTIONS,
       "--record": Object.freeze({ targetKey: "record", parseType: "boolean", takesValue: false, description: "record current violations as brownfield baseline" }),
       "--update": Object.freeze({ targetKey: "update", parseType: "boolean", takesValue: false, description: "ratchet baseline downward by removing resolved violations" }),
+      "--policy-reset-authorized": Object.freeze({ targetKey: "policyResetAuthorized", parseType: "boolean", takesValue: false, description: "explicit operator authority to re-record baseline during active tasks" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
     }),
     writes: [".forgeloop/policy/baseline.json", ".forgeloop/policy/policy.lock"],

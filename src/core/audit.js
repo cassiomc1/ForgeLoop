@@ -132,19 +132,26 @@ export async function evaluateAudit({
         ? "INCOMPLETE"
         : "INVALID";
   let policyStatus = null;
-  try {
-    const { evaluateTargetPolicy } = await import("./policy-engine.js");
-    const policyEval = await evaluateTargetPolicy({ target, packageRoot, taskId });
-    policyStatus = {
-      status: policyEval.status,
-      provenRules: policyEval.provenRules,
-      inertRules: policyEval.inertRules,
-      unsupportedRules: policyEval.unsupportedRules,
-      baselineViolations: policyEval.baselineViolations,
-      drift: policyEval.drift?.detected ?? false,
-    };
-  } catch {
-    policyStatus = { status: "VALID", provenRules: 0, inertRules: 0, unsupportedRules: 0, baselineViolations: 0, drift: false };
+  const { detectPolicyCapability, evaluateTargetPolicy } = await import("./policy-engine.js");
+  const policyCapability = await detectPolicyCapability(target, packageRoot);
+  if (policyCapability === "AVAILABLE") {
+    try {
+      const policyEval = await evaluateTargetPolicy({ target, packageRoot, taskId });
+      policyStatus = {
+        status: policyEval.status,
+        provenRules: policyEval.provenRules,
+        inertRules: policyEval.inertRules,
+        unsupportedRules: policyEval.unsupportedRules,
+        baselineViolations: policyEval.baselineViolations,
+        drift: policyEval.drift?.detected ?? false,
+      };
+    } catch {
+      policyStatus = { status: "INVALID", provenRules: 0, inertRules: 0, unsupportedRules: 0, baselineViolations: 0, drift: false };
+    }
+  } else if (policyCapability === "INVALID") {
+    policyStatus = { status: "INVALID", provenRules: 0, inertRules: 0, unsupportedRules: 0, baselineViolations: 0, drift: false };
+  } else {
+    policyStatus = { status: "NOT_APPLICABLE", provenRules: 0, inertRules: 0, unsupportedRules: 0, baselineViolations: 0, drift: false };
   }
 
   return {

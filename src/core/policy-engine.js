@@ -131,10 +131,70 @@ export async function loadEffectiveRules(target, packageRoot) {
   return [...ruleMap.values()].sort((a, b) => a.id.localeCompare(b.id));
 }
 
+export async function detectPolicyCapability(target, packageRoot) {
+  const rulesRel = PROJECT_ARTIFACT_PATHS.policyRules;
+  const baselineRel = PROJECT_ARTIFACT_PATHS.policyBaseline;
+  const discoveryRel = PROJECT_ARTIFACT_PATHS.policyDiscovery;
+  const lockRel = PROJECT_ARTIFACT_PATHS.policyLock;
+
+  const hasRules = await fileExists(path.join(target, rulesRel));
+  const hasBaseline = await fileExists(path.join(target, baselineRel));
+  const hasDiscovery = await fileExists(path.join(target, discoveryRel));
+  const hasLock = await fileExists(path.join(target, lockRel));
+
+  if (!hasRules && !hasBaseline && !hasDiscovery && !hasLock) {
+    return "NOT_PRESENT";
+  }
+
+  try {
+    if (hasRules) await readProjectRules(target, packageRoot);
+    if (hasBaseline) await readBaseline(target, packageRoot);
+    if (hasDiscovery) await readDiscoveryReport(target, packageRoot);
+    if (hasLock) await readPolicyLock(target, packageRoot);
+    return "AVAILABLE";
+  } catch {
+    return "INVALID";
+  }
+}
+
+export function canonicalizeRules(rules) {
+  const seenIds = new Set();
+  const sorted = [...(rules ?? [])].sort((a, b) => a.id.localeCompare(b.id));
+  for (const r of sorted) {
+    if (seenIds.has(r.id)) {
+      throw new Error(`Duplicate rule ID detected: ${r.id}`);
+    }
+    seenIds.add(r.id);
+  }
+  return sorted;
+}
+
+export function canonicalizeBaseline(baseline) {
+  if (!baseline || !Array.isArray(baseline.entries)) {
+    return { schemaVersion: 1, entries: [] };
+  }
+  const entries = baseline.entries.map((entry) => {
+    const fps = entry.fingerprints ?? [];
+    if (new Set(fps).size !== fps.length) {
+      throw new Error(`Duplicate fingerprint detected for rule ${entry.ruleId}`);
+    }
+    return {
+      ruleId: entry.ruleId,
+      fingerprints: [...fps].sort(),
+      ...(entry.reviewBy ? { reviewBy: entry.reviewBy } : {}),
+    };
+  });
+  return {
+    schemaVersion: baseline.schemaVersion ?? 1,
+    entries: entries.sort((a, b) => a.ruleId.localeCompare(b.ruleId)),
+  };
+}
+
 export function computePolicyLockData(rules, baseline) {
-  const canonicalRules = [...(rules ?? [])].sort((a, b) => a.id.localeCompare(b.id));
+  const canonicalRules = canonicalizeRules(rules);
+  const canonicalBase = canonicalizeBaseline(baseline);
   const rulesDigest = sha256(canonicalFingerprint(canonicalRules));
-  const baselineDigest = sha256(canonicalFingerprint(baseline ?? {}));
+  const baselineDigest = sha256(canonicalFingerprint(canonicalBase));
   const fullDigest = sha256(`${rulesDigest}:${baselineDigest}`);
 
   return {
@@ -147,6 +207,38 @@ export function computePolicyLockData(rules, baseline) {
   };
 }
 
+export async function verifyPolicyLock(target, packageRoot) {
+  const capability = await detectPolicyCapability(target, packageRoot);
+  if (capability === "NOT_PRESENT") {
+    return { status: "NOT_APPLICABLE" };
+  }
+  if (capability === "INVALID") {
+    return { status: "INVALID", error: "Policy artifacts are malformed" };
+  }
+
+  const persistedLock = await readPolicyLock(target, packageRoot);
+  if (!persistedLock) {
+    return { status: "MISMATCH", error: "Policy lockfile is missing" };
+  }
+
+  const rules = await loadEffectiveRules(target, packageRoot);
+  const baseline = await readBaseline(target, packageRoot);
+  const expectedLock = computePolicyLockData(rules, baseline);
+
+  if (persistedLock.digest !== expectedLock.digest) {
+    return {
+      status: "MISMATCH",
+      expected: expectedLock.digest,
+      observed: persistedLock.digest,
+    };
+  }
+
+  return {
+    status: "VALID",
+    digest: expectedLock.digest,
+  };
+}
+
 export async function evaluateTargetPolicy({
   target = process.cwd(),
   packageRoot,
@@ -154,12 +246,67 @@ export async function evaluateTargetPolicy({
   files = null,
   now = new Date().toISOString(),
 } = {}) {
+  const capability = await detectPolicyCapability(target, packageRoot);
+  if (capability === "NOT_PRESENT") {
+    return {
+      status: "VALID",
+      capability: "NOT_PRESENT",
+      rules: [],
+      provenRules: 0,
+      inertRules: 0,
+      unsupportedRules: 0,
+      baselineViolations: 0,
+      newViolations: [],
+      resolvedViolations: [],
+      ratchetedBaseline: null,
+      lock: { status: "NOT_APPLICABLE" },
+      drift: { detected: false },
+      errors: [],
+      warnings: [],
+    };
+  }
+
+  if (capability === "INVALID") {
+    return {
+      status: "INVALID",
+      capability: "INVALID",
+      rules: [],
+      provenRules: 0,
+      inertRules: 0,
+      unsupportedRules: 0,
+      baselineViolations: 0,
+      newViolations: [],
+      resolvedViolations: [],
+      ratchetedBaseline: null,
+      lock: { status: "INVALID" },
+      drift: { detected: false },
+      errors: [
+        {
+          code: "E_POLICY_INVALID",
+          why: "Policy configuration or baseline artifacts are malformed or fail schema validation.",
+          fix: "Validate and repair rules.json, baseline.json, or discovery.json against schemas.",
+        },
+      ],
+      warnings: [],
+    };
+  }
+
   const rules = await loadEffectiveRules(target, packageRoot);
   const baseline = await readBaseline(target, packageRoot);
   const errors = [];
   const warnings = [];
   const evaluatedRules = [];
   const rawViolations = [];
+
+  // Active lock verification
+  const lockVerification = await verifyPolicyLock(target, packageRoot);
+  if (lockVerification.status === "MISMATCH") {
+    errors.push({
+      code: "POLICY_LOCK_MISMATCH",
+      why: `Persisted policy lock does not match current effective policy: expected ${lockVerification.expected}, observed ${lockVerification.observed}`,
+      fix: "Re-evaluate effective rules and update policy.lock or restore modified rules.",
+    });
+  }
 
   for (const rule of rules) {
     const adapterId = rule.check?.adapter ?? (typeof rule.check === "string" ? rule.check : null);
@@ -180,6 +327,12 @@ export async function evaluateTargetPolicy({
     try {
       checkResult = await adapter.check({ target, rule, files });
     } catch (error) {
+      errors.push({
+        code: "POLICY_EVALUATION_FAILED",
+        ruleId: rule.id,
+        why: `Policy evaluation threw an unexpected error for rule ${rule.id}: ${error.message}`,
+        fix: "Inspect adapter check logic and target files for unhandled exceptions.",
+      });
       checkResult = { passed: false, isInert: false, violations: [], error: error.message };
     }
 
@@ -231,12 +384,21 @@ export async function evaluateTargetPolicy({
     if (rule.blocking) {
       mutationProof = await verifyRuleMutation({ target, rule, adapter });
       if (mutationProof.status !== "PROVEN") {
-        errors.push({
-          code: "CHECK_MUTATION_NOT_DETECTED",
-          ruleId: rule.id,
-          why: mutationProof.why,
-          fix: mutationProof.fix,
-        });
+        if (mutationProof.errorCode === "CHECK_MUTATION_EXECUTION_ERROR") {
+          errors.push({
+            code: "CHECK_MUTATION_EXECUTION_ERROR",
+            ruleId: rule.id,
+            why: mutationProof.why,
+            fix: mutationProof.fix,
+          });
+        } else {
+          errors.push({
+            code: "CHECK_MUTATION_NOT_DETECTED",
+            ruleId: rule.id,
+            why: mutationProof.why,
+            fix: mutationProof.fix,
+          });
+        }
       }
     }
 
@@ -289,8 +451,8 @@ export async function evaluateTargetPolicy({
       const currentLock = computePolicyLockData(rules, baseline);
       if (taskSnapshot.policyDigest !== currentLock.digest) {
         const policyDiff = diffPolicies(
-          { rules: taskSnapshot.rules, baseline: { entries: [] } },
-          { rules, baseline },
+          { rules: taskSnapshot.rules, baseline: taskSnapshot.baseline, baselineDigest: taskSnapshot.baselineDigest },
+          { rules, baseline, baselineDigest: currentLock.baselineDigest },
         );
         drift = {
           detected: true,
@@ -305,6 +467,12 @@ export async function evaluateTargetPolicy({
             code: "POLICY_WEAKENING",
             why: "Policy weakening detected relative to task activation snapshot.",
             fix: "Restore the original policy rules or obtain explicit project authority.",
+          });
+        } else if (policyDiff.classification === "UNKNOWN") {
+          errors.push({
+            code: "POLICY_DRIFT_UNKNOWN",
+            why: "Policy drift detected against task snapshot but baseline state cannot be semantically compared.",
+            fix: "Re-verify the task under the current policy state.",
           });
         } else if (policyDiff.classification === "TIGHTEN") {
           warnings.push({

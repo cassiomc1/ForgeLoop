@@ -71,40 +71,57 @@ export function diffPolicies(beforePolicy = {}, afterPolicy = {}) {
   }
 
   // Check baseline changes
-  const beforeBaseline = new Map((beforePolicy?.baseline?.entries ?? []).map((e) => [e.ruleId, new Set(e.fingerprints)]));
-  const afterBaseline = new Map((afterPolicy?.baseline?.entries ?? []).map((e) => [e.ruleId, new Set(e.fingerprints)]));
-
-  for (const [ruleId, afterFpSet] of afterBaseline.entries()) {
-    const beforeFpSet = beforeBaseline.get(ruleId) ?? new Set();
-    const addedFps = [...afterFpSet].filter((fp) => !beforeFpSet.has(fp));
-    if (addedFps.length > 0) {
+  if (beforePolicy && beforePolicy.baseline === undefined && beforePolicy.baselineDigest) {
+    // Legacy snapshot lacking semantic baseline state
+    if (afterPolicy?.baselineDigest && beforePolicy.baselineDigest !== afterPolicy.baselineDigest) {
       changes.push({
-        path: `baseline.${ruleId}`,
-        type: "WEAKEN",
-        before: beforeFpSet.size,
-        after: afterFpSet.size,
-        description: `Added ${addedFps.length} new violations to baseline for rule ${ruleId}`,
+        path: "baseline",
+        type: "UNKNOWN",
+        before: beforePolicy.baselineDigest,
+        after: afterPolicy.baselineDigest,
+        description: "Baseline digest changed but semantic baseline snapshot is unavailable",
       });
     }
-  }
+  } else if (beforePolicy?.baseline || afterPolicy?.baseline) {
+    const beforeEntries = beforePolicy?.baseline?.entries ?? [];
+    const afterEntries = afterPolicy?.baseline?.entries ?? [];
+    const beforeBaseline = new Map(beforeEntries.map((e) => [e.ruleId, new Set(e.fingerprints ?? [])]));
+    const afterBaseline = new Map(afterEntries.map((e) => [e.ruleId, new Set(e.fingerprints ?? [])]));
 
-  for (const [ruleId, beforeFpSet] of beforeBaseline.entries()) {
-    const afterFpSet = afterBaseline.get(ruleId) ?? new Set();
-    const removedFps = [...beforeFpSet].filter((fp) => !afterFpSet.has(fp));
-    if (removedFps.length > 0) {
-      changes.push({
-        path: `baseline.${ruleId}`,
-        type: "TIGHTEN",
-        before: beforeFpSet.size,
-        after: afterFpSet.size,
-        description: `Resolved and removed ${removedFps.length} baseline violations for rule ${ruleId}`,
-      });
+    const allRuleIds = new Set([...beforeBaseline.keys(), ...afterBaseline.keys()]);
+    for (const ruleId of allRuleIds) {
+      const beforeFpSet = beforeBaseline.get(ruleId) ?? new Set();
+      const afterFpSet = afterBaseline.get(ruleId) ?? new Set();
+
+      const addedFps = [...afterFpSet].filter((fp) => !beforeFpSet.has(fp));
+      const removedFps = [...beforeFpSet].filter((fp) => !afterFpSet.has(fp));
+
+      if (addedFps.length > 0) {
+        changes.push({
+          path: `baseline.${ruleId}`,
+          type: "WEAKEN",
+          before: beforeFpSet.size,
+          after: afterFpSet.size,
+          description: `Added ${addedFps.length} new violations to baseline for rule ${ruleId}`,
+        });
+      }
+      if (removedFps.length > 0) {
+        changes.push({
+          path: `baseline.${ruleId}`,
+          type: "TIGHTEN",
+          before: beforeFpSet.size,
+          after: afterFpSet.size,
+          description: `Resolved and removed ${removedFps.length} baseline violations for rule ${ruleId}`,
+        });
+      }
     }
   }
 
   let classification = POLICY_DIFF_CLASSIFICATIONS.NEUTRAL;
   if (changes.some((c) => c.type === "WEAKEN")) {
     classification = POLICY_DIFF_CLASSIFICATIONS.WEAKEN;
+  } else if (changes.some((c) => c.type === "UNKNOWN")) {
+    classification = POLICY_DIFF_CLASSIFICATIONS.UNKNOWN;
   } else if (changes.some((c) => c.type === "TIGHTEN")) {
     classification = POLICY_DIFF_CLASSIFICATIONS.TIGHTEN;
   }

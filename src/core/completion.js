@@ -12,7 +12,7 @@ import { evaluateStartExecutionPrerequisites, hasExecutionStarted } from "./exec
 import { isRecoverableCompletionEvidenceCode } from "./completion-recovery.js";
 import { evaluateTerminalRequirements } from "./evidence-readiness.js";
 import { PROJECT_ARTIFACT_PATHS, taskArtifactPath } from "./task-paths.js";
-import { evaluateTargetPolicy } from "./policy-engine.js";
+import { detectPolicyCapability, evaluateTargetPolicy } from "./policy-engine.js";
 
 function issue(code, message, artifacts = [], details = {}) {
   return { code, message, artifacts, ...details };
@@ -75,13 +75,20 @@ function repairNext(error) {
       return "Do not edit work-state or receipt manually; recover through supported lifecycle commands.";
     case "E_COMPLETION_RECOVERY_UNAUTHORIZED":
     case "E_COMPLETION_REJECTION_LEDGER_MISMATCH":
-    case "E_COMPLETION_REJECTION_STATE_FINGERPRINT_MISMATCH":
-    case "E_COMPLETION_REJECTION_RECEIPT_FINGERPRINT_MISMATCH":
-      return "Ensure a matching completion rejection exists in the protocol ledger and artifacts remain unmodified before recovery.";
-    case "E_GATE_UNVERIFIED":
-    case "E_GATE_STALE":
-      return "Satisfy or refresh the named gate, then rerun forgeloop preflight.";
-    case "E_PROFILE_UNVERIFIED":
+    case "E_CYCLE_CLOSED":
+      return "Advance the task through valid lifecycle phases (PLANNED -> EXECUTING -> VERIFYING -> REVIEWING).";
+    case "E_LEDGER_INVALID":
+    case "E_LEDGER_STALE":
+    case "E_STATE_LEDGER_MISMATCH":
+      return "Inspect the event ledger and repair sequence or integrity violations.";
+    case "E_EVIDENCE_MISSING":
+    case "E_EVIDENCE_BLOCKED":
+    case "E_CHECK_FAILED":
+    case "E_REQUIREMENT_UNMET":
+      return "Execute and pass all required checks using forgeloop run-check before completion.";
+    case "E_CHECK_EXECUTION_PROVENANCE_MISSING":
+      return "Re-run checks via forgeloop run-check to ensure ForgeLoop execution provenance.";
+    case "E_CONTRACT_PROFILE_STRICT_UNVERIFIED":
       return "Use Standard mode for a fresh target, or verify PROJECT_PROFILE.md before Strict completion.";
     case "E_INSTALLATION_AUTHORITY_REQUIRED":
     case "E_AUTHORITY_INVALID":
@@ -98,9 +105,19 @@ function repairNext(error) {
       return "Configure an applicable target scope or mark the inert check unsupported.";
     case "E_CHECK_MUTATION_NOT_DETECTED":
       return "Fix checker logic to properly detect intentional mutation fixtures.";
+    case "E_CHECK_MUTATION_EXECUTION_ERROR":
+      return "Repair the checker execution path and rerun rule verification.";
+    case "E_POLICY_LOCK_MISMATCH":
+      return "Re-evaluate effective rules and update policy.lock or restore modified rules.";
     case "E_POLICY_DRIFT":
+    case "E_POLICY_DRIFT_UNKNOWN":
       return "Re-verify affected checks or restore original policy.";
+    case "E_POLICY_INVALID":
+      return "Validate and repair rules.json, baseline.json, or discovery.json against schema.";
+    case "E_POLICY_EVALUATION_FAILED":
+      return "Inspect policy configuration and checker adapters for unhandled errors.";
     case "E_BASELINE_EXPANSION":
+    case "E_BASELINE_RECORD_DURING_ACTIVE_TASK":
       return "Resolve new violations rather than expanding the baseline.";
     default:
       return "Resolve this validator finding in the named artifact before retrying completion.";
@@ -346,28 +363,44 @@ export async function evaluateCompletion({
     }
   }
 
-  let policyEval = null;
-  try {
-    policyEval = await evaluateTargetPolicy({
-      target,
-      packageRoot,
-      taskId: contract?.value?.taskId ?? taskId,
-    });
-    for (const policyErr of policyEval.errors ?? []) {
-      const code = policyErr.code === "NEW_VIOLATION" ? "E_NEW_POLICY_VIOLATION"
-        : policyErr.code === "POLICY_WEAKENING" ? "E_POLICY_WEAKENING"
-        : policyErr.code === "CHECK_INERT" ? "E_CHECK_INERT"
-        : policyErr.code === "CHECK_MUTATION_NOT_DETECTED" ? "E_CHECK_MUTATION_NOT_DETECTED"
-        : policyErr.code;
+  const policyCapability = await detectPolicyCapability(target, packageRoot);
+  if (policyCapability === "INVALID") {
+    errors.push(issue(
+      "E_POLICY_INVALID",
+      "Policy configuration or baseline artifacts are malformed or fail schema validation.",
+      [PROJECT_ARTIFACT_PATHS.policyRules, PROJECT_ARTIFACT_PATHS.policyBaseline],
+    ));
+  } else if (policyCapability === "AVAILABLE") {
+    try {
+      const policyEval = await evaluateTargetPolicy({
+        target,
+        packageRoot,
+        taskId: contract?.value?.taskId ?? taskId,
+      });
+      for (const policyErr of policyEval.errors ?? []) {
+        const code = policyErr.code === "NEW_VIOLATION" ? "E_NEW_POLICY_VIOLATION"
+          : policyErr.code === "POLICY_WEAKENING" ? "E_POLICY_WEAKENING"
+          : policyErr.code === "CHECK_INERT" ? "E_CHECK_INERT"
+          : policyErr.code === "CHECK_MUTATION_NOT_DETECTED" ? "E_CHECK_MUTATION_NOT_DETECTED"
+          : policyErr.code === "CHECK_MUTATION_EXECUTION_ERROR" ? "E_CHECK_MUTATION_EXECUTION_ERROR"
+          : policyErr.code === "POLICY_LOCK_MISMATCH" ? "E_POLICY_LOCK_MISMATCH"
+          : policyErr.code === "POLICY_DRIFT_UNKNOWN" ? "E_POLICY_DRIFT_UNKNOWN"
+          : policyErr.code === "POLICY_EVALUATION_FAILED" ? "E_POLICY_EVALUATION_FAILED"
+          : policyErr.code;
+        errors.push(issue(
+          code,
+          policyErr.why || policyErr.message,
+          [PROJECT_ARTIFACT_PATHS.policyLock],
+          { ruleId: policyErr.ruleId, fix: policyErr.fix },
+        ));
+      }
+    } catch (error) {
       errors.push(issue(
-        code,
-        policyErr.why || policyErr.message,
+        "E_POLICY_EVALUATION_FAILED",
+        `Policy evaluation threw an unexpected error: ${error.message}`,
         [PROJECT_ARTIFACT_PATHS.policyLock],
-        { ruleId: policyErr.ruleId, fix: policyErr.fix },
       ));
     }
-  } catch {
-    // Gracefully handle environments without policy setup
   }
 
   const sortedErrors = sortIssues(errors);

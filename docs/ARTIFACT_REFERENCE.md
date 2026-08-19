@@ -569,6 +569,7 @@ Task-scoped immutable snapshot of effective policy captured during preflight to 
 - `schemaVersion` *(number, required, const: 1)*
 - `policyDigest` *(string, required, minLength: 1)*
 - `rules` *(array<string,object>, required)*
+- `baseline` *(object, optional)*
 - `baselineDigest` *(string, optional)*
 - `capturedAt` *(string, optional)*
 

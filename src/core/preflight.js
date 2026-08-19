@@ -178,24 +178,37 @@ export async function runPreflight({
   }
 
   if (result.taskId !== "unknown") {
-    try {
-      const { loadEffectiveRules, readBaseline, computePolicyLockData, readTaskPolicySnapshot, writeTaskPolicySnapshot } = await import("./policy-engine.js");
-      const existingSnapshot = await readTaskPolicySnapshot(target, result.taskId, packageRoot);
-      if (!existingSnapshot) {
-        const rules = await loadEffectiveRules(target, packageRoot);
-        const baseline = await readBaseline(target, packageRoot);
-        const lock = computePolicyLockData(rules, baseline);
-        const snapshot = {
-          schemaVersion: 1,
-          policyDigest: lock.digest,
-          rules,
-          baselineDigest: lock.baselineDigest,
-          capturedAt: new Date().toISOString(),
-        };
-        await writeTaskPolicySnapshot(target, result.taskId, snapshot, packageRoot);
+    const {
+      detectPolicyCapability,
+      loadEffectiveRules,
+      readBaseline,
+      computePolicyLockData,
+      readTaskPolicySnapshot,
+      writeTaskPolicySnapshot,
+    } = await import("./policy-engine.js");
+
+    const policyCapability = await detectPolicyCapability(target, packageRoot);
+    if (policyCapability !== "NOT_PRESENT") {
+      try {
+        const existingSnapshot = await readTaskPolicySnapshot(target, result.taskId, packageRoot);
+        if (!existingSnapshot) {
+          const rules = await loadEffectiveRules(target, packageRoot);
+          const baseline = await readBaseline(target, packageRoot);
+          const lock = computePolicyLockData(rules, baseline);
+          const snapshot = {
+            schemaVersion: 1,
+            policyDigest: lock.digest,
+            rules,
+            baseline: baseline ?? { schemaVersion: 1, entries: [] },
+            baselineDigest: lock.baselineDigest,
+            capturedAt: new Date().toISOString(),
+          };
+          await writeTaskPolicySnapshot(target, result.taskId, snapshot, packageRoot);
+        }
+      } catch (error) {
+        const snapRel = taskArtifactPath(result.taskId, "policySnapshot");
+        throw preflightError("E_POLICY_SNAPSHOT_WRITE_FAILED", `Failed to persist task policy snapshot: ${error.message}`, [snapRel]);
       }
-    } catch {
-      // Gracefully handle policy snapshot capture
     }
 
     await appendActivationEvents(target, packageRoot, ledger, result, { eventsPath, taskId });

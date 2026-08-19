@@ -63,6 +63,8 @@ export async function verifyRuleMutation({
     return {
       ruleId: rule?.id ?? "UNKNOWN",
       status: "UNSUPPORTED",
+      observed: "UNKNOWN",
+      proofDigest: null,
       why: `No mutation fixture available for adapter ${adapterId}`,
       fix: "Provide a mutation fixture to verify this rule.",
     };
@@ -70,6 +72,7 @@ export async function verifyRuleMutation({
 
   // Execute check on mutation fixture (in-memory content overrides, non-mutating)
   let checkResult;
+  let executionError = null;
   try {
     checkResult = await activeAdapter.check({
       target,
@@ -78,10 +81,24 @@ export async function verifyRuleMutation({
       contentOverrides: activeFixture.contentOverrides,
     });
   } catch (error) {
-    checkResult = { passed: false, error: error.message };
+    executionError = error;
   }
 
-  const observed = checkResult.passed ? "PASS" : "FAIL";
+  if (executionError) {
+    return {
+      ruleId: rule?.id ?? "UNKNOWN",
+      mutation: activeFixture.mutationName,
+      expected: activeFixture.expected,
+      observed: "ERROR",
+      status: "UNPROVEN",
+      errorCode: "CHECK_MUTATION_EXECUTION_ERROR",
+      proofDigest: null,
+      why: `The policy checker failed while evaluating its mutation fixture: ${executionError.message}`,
+      fix: "Repair checker execution path and rerun rule verification.",
+    };
+  }
+
+  const observed = checkResult?.passed ? "PASS" : "FAIL";
   const expected = activeFixture.expected;
   const detected = observed === expected;
 
@@ -97,7 +114,7 @@ export async function verifyRuleMutation({
       observed,
       status: "PROVEN",
       proofDigest: `sha256:${proofDigest}`,
-      scannedFiles: checkResult.scannedFiles ?? 1,
+      scannedFiles: checkResult?.scannedFiles ?? 1,
       why: "Mutation fixture was successfully detected by checker.",
       fix: "Rule is proven and active.",
     };

@@ -48,14 +48,15 @@ export async function runInit({ target, dryRun, packageRoot, packageVersion }) {
 
   try {
     const { discoverPolicy } = await import("../core/policy-discovery.js");
-    const { computePolicyLockData, writeDiscoveryReport, writePolicyLock } = await import("../core/policy-engine.js");
+    const { loadEffectiveRules, computePolicyLockData, writeDiscoveryReport, writePolicyLock } = await import("../core/policy-engine.js");
     const { createBaselineFromViolations, writeBaseline } = await import("../core/policy-baseline.js");
     const discovery = await discoverPolicy({ target });
     if (!dryRun) {
       await writeDiscoveryReport(target, discovery, packageRoot);
       const emptyBaseline = createBaselineFromViolations([]);
       await writeBaseline(target, emptyBaseline, packageRoot);
-      const lock = computePolicyLockData(discovery.discoveredRules, emptyBaseline);
+      const effectiveRules = await loadEffectiveRules(target, packageRoot);
+      const lock = computePolicyLockData(effectiveRules, emptyBaseline);
       await writePolicyLock(target, lock, packageRoot);
     }
   } catch {

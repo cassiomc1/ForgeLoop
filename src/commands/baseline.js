@@ -3,23 +3,51 @@ import {
   evaluateTargetPolicy,
   loadEffectiveRules,
   writePolicyLock,
+  readTaskPolicySnapshot,
 } from "../core/policy-engine.js";
 import {
   createBaselineFromViolations,
   readBaseline,
   writeBaseline,
 } from "../core/policy-baseline.js";
+import { discoverTasks } from "../core/task-discovery.js";
+
+function baselineError(code, message) {
+  const err = new Error(message);
+  err.code = code;
+  return err;
+}
 
 export async function runBaseline({
   target = process.cwd(),
   packageRoot,
   record = false,
   update = false,
+  policyResetAuthorized = false,
 } = {}) {
   const policyEval = await evaluateTargetPolicy({ target, packageRoot });
   let baseline = await readBaseline(target, packageRoot);
 
+  const tasks = await discoverTasks(target, packageRoot);
+  let hasActivePolicyTask = false;
+  for (const t of tasks) {
+    if (t.healthy && t.phase && t.phase !== "COMPLETE" && t.phase !== "BLOCKED") {
+      const snap = await readTaskPolicySnapshot(target, t.taskId, packageRoot);
+      if (snap) {
+        hasActivePolicyTask = true;
+        break;
+      }
+    }
+  }
+
   if (record) {
+    if (hasActivePolicyTask && !policyResetAuthorized) {
+      throw baselineError(
+        "E_BASELINE_RECORD_DURING_ACTIVE_TASK",
+        "Cannot re-record baseline during an active task with policy snapshot. Resolve new violations or use monotonic baseline --update.",
+      );
+    }
+
     const allViolations = [];
     for (const r of policyEval.rules) {
       if (r.violations) allViolations.push(...r.violations);
@@ -40,6 +68,19 @@ export async function runBaseline({
   }
 
   if (update && policyEval.ratchetedBaseline) {
+    // Monotonic check: new baseline cannot contain any fingerprint not in old baseline
+    const oldBaselineMap = new Map((baseline?.entries ?? []).map((e) => [e.ruleId, new Set(e.fingerprints ?? [])]));
+    for (const entry of policyEval.ratchetedBaseline.entries) {
+      const oldFps = oldBaselineMap.get(entry.ruleId) ?? new Set();
+      const hasExpansion = entry.fingerprints.some((fp) => !oldFps.has(fp));
+      if (hasExpansion) {
+        throw baselineError(
+          "E_BASELINE_EXPANSION",
+          `Cannot expand baseline debt for rule ${entry.ruleId}. Monotonic ratchet down allows removing debt only.`,
+        );
+      }
+    }
+
     baseline = policyEval.ratchetedBaseline;
     await writeBaseline(target, baseline, packageRoot);
 
