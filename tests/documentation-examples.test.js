@@ -3,6 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 
 import {
   DOCUMENTS,
@@ -10,7 +11,7 @@ import {
   runDocumentedExample,
 } from "../scripts/validate_documentation_examples.mjs";
 
-const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 test("documentation examples require an explicit expectation marker", () => {
   assert.throws(
