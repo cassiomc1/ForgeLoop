@@ -1,5 +1,12 @@
 # Documentation index
 
+The machine-readable inventory is
+[`docs/documentation-manifest.json`](./docs/documentation-manifest.json). It
+classifies every package-shipped document, names canonical concept owners, and
+records generated/deprecated-document metadata. Normative requirements and
+their implementation/test mappings are in
+[`docs/protocol-requirements.json`](./docs/protocol-requirements.json).
+
 ForgeLoop keeps one canonical process and separates protocol behavior from
 integration and guide context. Use this map before editing documentation.
 

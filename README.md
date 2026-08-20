@@ -52,6 +52,36 @@ frontmatter. Repository validators keep the catalog and metadata synchronized.
 
 ## Quickstart
 
+### Demonstração em 60 segundos
+
+Em um diretório descartável, inicialize o kit e crie uma tarefa isolada. O
+resultado é determinístico e pode ser inspecionado por qualquer harness
+compatível:
+
+```bash
+npx @cassiomc1/forgeloop init
+forgeloop task-create --task demo --claim src --json
+forgeloop route --task demo --work clean-code --json
+forgeloop preflight --task demo --json
+forgeloop next --task demo --json
+```
+
+O último comando informa a ação segura seguinte; ele não executa código nem
+agenda agentes.
+
+### Responsabilidades
+
+| Responsabilidade | ForgeLoop | Harness ou desenvolvedor |
+| --- | --- | --- |
+| Validar contrato e rotas | Sim | Fornece intenção e sinais |
+| Implementar código | Não | Sim |
+| Registrar proveniência de comando | Sim, com `run-check` | Fornece comando e ambiente |
+| Validar conclusão | Sim | Fornece trabalho e evidência reais |
+| Agendar agentes ou inferência LLM | Não | Externo ao protocolo |
+
+Para uma troca concreta entre ferramentas, veja a
+[continuidade entre harnesses](./docs/CROSS_HARNESS_CONTINUITY.md).
+
 From a published package, initialize a target project with:
 
 ```bash
@@ -239,6 +269,9 @@ Development tooling is intentionally separate from runtime dependencies. The
 repository policy allows only ESLint, c8, and Mermaid CLI as development
 dependencies; `npm run dependency:policy` fails if runtime or unapproved
 dependencies appear.
+
+Para reportar vulnerabilidades ou contribuir com alterações, consulte
+[`SECURITY.md`](./SECURITY.md) e [`CONTRIBUTING.md`](./CONTRIBUTING.md).
 
 ## Autonomous blind-run isolation
 

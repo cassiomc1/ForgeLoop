@@ -123,6 +123,21 @@ When writing documentation, use precise terms:
 
 Avoid ambiguous phrases like *"should generally"* or *"usually"* for behaviors that are strictly enforced by the validator.
 
+### Stable requirement IDs
+
+Every protocol-level `MUST` or `MUST NOT` has a stable `FL-<AREA>-<NNN>`
+anchor and an entry in [`protocol-requirements.json`](./protocol-requirements.json).
+Each map entry names its normative source, implementation validator, and at
+least one executable test. `npm run docs:check` rejects an unmapped normative
+requirement, an unused mapping, or a missing implementation/test target.
+
+### Documentation impact classification
+
+Classify each documentation-impacting change as one or more of: `NONE`,
+`REFERENCE_ONLY`, `OPERATIONAL`, `NORMATIVE`, `SCHEMA_COMPATIBILITY`,
+`MIGRATION`, or `SECURITY`. Changes that are normative, compatibility,
+migration, or security-sensitive require `npm run docs:check` before merge.
+
 ### Multi-Task Layout Rules
 
 - Canonical task-scoped paths are defined in `src/core/task-paths.js` under `.forgeloop/task-state/<taskKey>/`.
@@ -196,3 +211,5 @@ For documentation-impacting changes, verify each item before merging:
 - [ ] Did package-shipped documentation change?
 - [ ] Were generated reference docs updated (`npm run docs:generate`)?
 - [ ] Did documentation conformance CI pass (`npm run docs:check`)?
+- [ ] If normative language changed, are stable IDs and mappings current?
+- [ ] Is the documentation impact classification recorded in the PR?
