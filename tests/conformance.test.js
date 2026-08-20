@@ -73,7 +73,12 @@ test("delegationIsInScope correctly derives whether delegation applies", () => {
 });
 
 test("compatibility conformance scenarios have complete, versioned contracts", async () => {
-  const scenarios = ["cross-harness-resume", "policy-drift", "verification-recovery", "concurrent-claims", "interrupted-transaction"];
+  const scenarios = [
+    "cross-harness-resume", "stale-route-recovery", "stale-receipt-recovery", "policy-drift",
+    "baseline-expansion-refusal", "concurrent-claims", "delegated-task-result", "interrupted-migration",
+    "verification-recovery", "terminal-owned-requirement", "external-observed-check", "windows-workspace",
+    "repository-movement-after-verifying", "interrupted-transaction",
+  ];
   for (const scenario of scenarios) {
     const content = await readFile(path.join(repositoryRoot, "conformance", scenario, "SCENARIO.json"), "utf8");
     const value = JSON.parse(content);

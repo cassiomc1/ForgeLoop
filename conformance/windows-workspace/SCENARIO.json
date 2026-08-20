@@ -1,0 +1,1 @@
+{"protocolVersion":1,"request":"Run a task in a Windows workspace with Unicode paths and a package-manager command.","expectedRoute":{"workType":"code","guides":["clean","test"]},"requiredGates":["portability"],"requiredEvidence":["windows-path","package-manager-execution"],"expectedNextActionSequence":["RUN_CHECK","RECORD_CHECK"],"expectedTerminalResult":"WINDOWS_PORTABLE"}
