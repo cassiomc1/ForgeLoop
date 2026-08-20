@@ -7,7 +7,7 @@ import { test } from "node:test";
 import { withTaskTransaction, findIncompleteTransactions, recoverIncompleteTransactions } from "../src/core/transaction.js";
 import { appendProtocolEvent, readEvents } from "../src/core/events.js";
 import { getPackageRoot } from "../src/core/templates.js";
-import { writeJsonArtifact } from "../src/core/artifacts.js";
+import { readJsonArtifact, writeJsonArtifact } from "../src/core/artifacts.js";
 
 test("withTaskTransaction publishes staged files only after callback completes", async () => {
   const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-transaction-"));
@@ -66,6 +66,7 @@ test("task-scoped JSON artifacts stage through the active transaction", async ()
     await withTaskTransaction({ target, taskId: "artifact-transaction", operation: "test", packageRoot }, async () => {
       await writeJsonArtifact(target, relativePath, { schemaVersion: 1, protocolVersion: 1, complianceMode: "standard" }, "config", packageRoot, { taskId: "artifact-transaction" });
       await assert.rejects(() => readFile(path.join(target, relativePath), "utf8"), { code: "ENOENT" });
+      assert.equal((await readJsonArtifact(target, relativePath, "config", packageRoot)).value.complianceMode, "standard");
     });
     assert.equal(JSON.parse(await readFile(path.join(target, relativePath), "utf8")).complianceMode, "standard");
   } finally {

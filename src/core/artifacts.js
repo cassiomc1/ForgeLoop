@@ -76,7 +76,9 @@ export async function readJsonArtifact(
   }
 
   const artifactPath = ensureWithin(target, relativePath);
-  if (!(await fileExists(artifactPath))) {
+  const transaction = getActiveTaskTransaction();
+  const stagedText = transaction ? await transaction.readText(relativePath) : null;
+  if (stagedText === null && !(await fileExists(artifactPath))) {
     throw new ArtifactError(
       "ARTIFACT_MISSING",
       `Artifact is missing: ${relativePath}`,
@@ -86,7 +88,7 @@ export async function readJsonArtifact(
 
   let value;
   try {
-    const bytes = await readBytes(artifactPath);
+    const bytes = stagedText === null ? await readBytes(artifactPath) : Buffer.from(stagedText, "utf8");
     assertJsonBytes(bytes, relativePath);
     value = JSON.parse(bytes.toString("utf8"));
     assertJsonLimits(value, relativePath);
