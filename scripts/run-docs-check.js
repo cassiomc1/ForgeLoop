@@ -23,6 +23,11 @@ const steps = [
     script: "scripts/validate_documentation_conformance.mjs",
     args: [],
   },
+  {
+    name: "Documentation Manifest Validation",
+    script: "scripts/validate_documentation_manifest.mjs",
+    args: [],
+  },
 ];
 
 console.log("Running ForgeLoop documentation check suite...\n");

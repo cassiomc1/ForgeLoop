@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "requirements": {
+    "FL-CONT-001": {
+      "source": "LOOP_ENGINEERING.md",
+      "statement": "A receiving harness MUST reconcile continuity against the current work state and checkout before acting on it.",
+      "tests": ["tests/continuity.test.js", "tests/documentation-conformance.test.js"],
+      "validator": "src/core/continuity.js"
+    }
+  }
+}

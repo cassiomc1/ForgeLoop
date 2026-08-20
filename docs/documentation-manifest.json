@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "documents": [
+    { "path": "AGENTS.md", "id": "agent-instructions", "class": "operational", "audience": ["harness"], "canonicalFor": [], "packaged": true },
+    { "path": "CLAUDE.md", "id": "claude-adapter", "class": "adapter", "audience": ["harness"], "canonicalFor": [], "packaged": true },
+    { "path": "GUIDE_ROUTER.md", "id": "guide-router", "class": "normative", "audience": ["harness", "maintainer"], "canonicalFor": ["guide-routing"], "packaged": true },
+    { "path": "LOOP_ENGINEERING.md", "id": "protocol", "class": "normative", "audience": ["harness", "maintainer"], "canonicalFor": ["lifecycle", "gates", "verification", "recovery", "continuity"], "packaged": true },
+    { "path": "PROTOCOL_INTEGRATION.md", "id": "protocol-integration", "class": "normative", "audience": ["integrator"], "canonicalFor": ["integration"], "packaged": true },
+    { "path": "LOOP_SYSTEM_DESIGN.md", "id": "system-design", "class": "architecture", "audience": ["maintainer", "integrator"], "canonicalFor": ["architecture"], "packaged": true },
+    { "path": "QUALITY_SCORECARD.md", "id": "quality-scorecard", "class": "reference", "audience": ["maintainer"], "canonicalFor": ["quality-scoring"], "packaged": true },
+    { "path": "TERMINOLOGY.md", "id": "terminology", "class": "normative", "audience": ["harness", "maintainer", "integrator"], "canonicalFor": ["terminology"], "packaged": true },
+    { "path": "EXECUTION_STATE.md", "id": "execution-state", "class": "reference", "audience": ["harness"], "canonicalFor": ["execution-artifacts"], "packaged": true },
+    { "path": "DELEGATION_PROTOCOL.md", "id": "delegation", "class": "reference", "audience": ["harness"], "canonicalFor": ["delegation"], "packaged": true },
+    { "path": "ORCHESTRATOR_INTEGRATION.md", "id": "orchestrator-integration", "class": "architecture", "audience": ["integrator"], "canonicalFor": ["orchestration"], "packaged": true },
+    { "path": "THREAT_MODEL.md", "id": "threat-model", "class": "normative", "audience": ["maintainer", "integrator"], "canonicalFor": ["security-model"], "packaged": true },
+    { "path": "CONTRACT_COVERAGE.md", "id": "contract-coverage", "class": "reference", "audience": ["maintainer"], "canonicalFor": ["coverage"], "packaged": true },
+    { "path": "AGENT_COMPATIBILITY.md", "id": "agent-compatibility", "class": "deprecated", "audience": ["harness"], "canonicalFor": [], "packaged": true, "replacement": "PROTOCOL_INTEGRATION.md", "removalPolicy": "Remove in the next compatibility-breaking package release." },
+    { "path": "PROJECT_PROFILE.md", "id": "project-profile", "class": "template", "audience": ["harness"], "canonicalFor": ["project-profile"], "packaged": true },
+    { "path": "THIRD_PARTY_NOTICES.md", "id": "third-party-notices", "class": "legal", "audience": ["maintainer"], "canonicalFor": ["third-party-notices"], "packaged": true },
+    { "path": "LICENSE-DOCS.md", "id": "documentation-license", "class": "legal", "audience": ["maintainer"], "canonicalFor": ["documentation-license"], "packaged": true },
+    { "path": ".github/copilot-instructions.md", "id": "copilot-adapter", "class": "adapter", "audience": ["harness"], "canonicalFor": [], "packaged": true },
+    { "path": "README.md", "id": "readme", "class": "overview", "audience": ["user", "integrator"], "canonicalFor": ["getting-started-overview"], "packaged": true },
+    { "path": "DOCS_INDEX.md", "id": "docs-index", "class": "index", "audience": ["user", "integrator"], "canonicalFor": ["documentation-navigation"], "packaged": true },
+    { "path": "docs/GETTING_STARTED.md", "id": "getting-started", "class": "guide", "audience": ["user"], "canonicalFor": ["getting-started"], "packaged": true },
+    { "path": "docs/CROSS_HARNESS_CONTINUITY.md", "id": "cross-harness-continuity", "class": "guide", "audience": ["integrator"], "canonicalFor": ["cross-harness-continuity"], "packaged": true },
+    { "path": "docs/CLI_REFERENCE.md", "id": "cli-reference", "class": "generated", "audience": ["user", "integrator"], "canonicalFor": ["cli-reference"], "packaged": true, "generator": "scripts/generate_documentation_reference.mjs" },
+    { "path": "docs/ARTIFACT_REFERENCE.md", "id": "artifact-reference", "class": "generated", "audience": ["integrator"], "canonicalFor": ["artifact-reference"], "packaged": true, "generator": "scripts/generate_documentation_reference.mjs" },
+    { "path": "docs/TROUBLESHOOTING.md", "id": "troubleshooting", "class": "guide", "audience": ["user"], "canonicalFor": ["troubleshooting"], "packaged": true },
+    { "path": "docs/RECIPES.md", "id": "recipes", "class": "guide", "audience": ["user"], "canonicalFor": ["recipes"], "packaged": true },
+    { "path": "docs/DOCUMENTATION_GUIDE.md", "id": "documentation-guide", "class": "guide", "audience": ["maintainer"], "canonicalFor": ["documentation-maintenance"], "packaged": true },
+    { "path": "scripts/CI_VALIDATORS.md", "id": "ci-validators", "class": "reference", "audience": ["maintainer"], "canonicalFor": ["ci-validators"], "packaged": true }
+  ]
+}
