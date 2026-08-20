@@ -1,0 +1,17 @@
+name: Conformance report
+description: Report a reproducible external-harness ForgeLoop conformance result.
+title: "conformance: "
+labels: [conformance]
+body:
+  - type: textarea
+    attributes:
+      label: Harness and versions
+      description: Include harness, package version, protocol-info output, OS, and Node version.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Scenario and result
+      description: Include exact commands, redacted persisted artifacts, expected result, and observed result.
+    validations:
+      required: true

@@ -4,6 +4,7 @@ import { readTemplateEntries } from "../core/templates.js";
 import { createEvidence } from "../core/evidence.js";
 import { LAYOUT_VERSION } from "../core/target-layout.js";
 import { inspectNativeAdapter, validateNativeAdapterTargets } from "../core/native-adapters.js";
+import { findIncompleteTransactions, recoverIncompleteTransactions } from "../core/transaction.js";
 
 function finding(code, severity, relativePath, message, remediation = null, evidence = null) {
   const evidenceRecord = evidence && typeof evidence === "object"
@@ -115,6 +116,27 @@ async function adoptAdapters({ target, manifest, adoptPaths, findings }) {
 
 export async function runDoctor({ target, packageRoot, adoptPaths = [], strict = false, fix = false }) {
   const findings = [];
+  const incompleteTransactions = await findIncompleteTransactions(target);
+  for (const transaction of incompleteTransactions) {
+    findings.push(finding(
+      "E_TRANSACTION_INCOMPLETE",
+      "error",
+      `.forgeloop/.txn/${transaction.transactionId}`,
+      `Transaction ${transaction.transactionId} is ${transaction.status} and requires inspection or deterministic recovery.`,
+      "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+    ));
+  }
+  if (fix && incompleteTransactions.some((transaction) => transaction.status === "COMMITTING")) {
+    const recovered = await recoverIncompleteTransactions(target);
+    for (const transaction of recovered) {
+      findings.push(finding(
+        transaction.status === "ROLLED_BACK" ? "TRANSACTION_RECOVERED" : "E_TRANSACTION_RECOVERY_FAILED",
+        transaction.status === "ROLLED_BACK" ? "info" : "error",
+        `.forgeloop/.txn/${transaction.transactionId}`,
+        `Transaction recovery result: ${transaction.status}.`,
+      ));
+    }
+  }
   let manifest = null;
   let manifestChanged = false;
   try {

@@ -1,0 +1,23 @@
+name: Protocol proposal
+description: Propose a backward-compatible ForgeLoop protocol improvement.
+title: "protocol: "
+labels: [protocol]
+body:
+  - type: textarea
+    attributes:
+      label: Problem and invariant
+      description: State the protocol invariant or interoperability problem.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Compatibility and migration
+      description: Describe schema, artifact, CLI, and cross-harness impact including recovery for interrupted migration.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Conformance evidence
+      description: Identify valid and invalid fixtures and the executable tests that prove the proposal.
+    validations:
+      required: true
