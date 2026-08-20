@@ -1,0 +1,9 @@
+{
+  "protocolVersion": 1,
+  "request": "Attempt competing same-revision state mutations and concurrent write claims for one task.",
+  "expectedRoute": { "workType": "code", "guides": ["clean", "test"] },
+  "requiredGates": ["write-claim-conflict"],
+  "requiredEvidence": ["revision-conflict", "serialized-event-ledger"],
+  "expectedNextActionSequence": ["RELOAD_STATE", "RETRY_WITH_CURRENT_REVISION"],
+  "expectedTerminalResult": "ONE_WRITER_COMMITTED"
+}

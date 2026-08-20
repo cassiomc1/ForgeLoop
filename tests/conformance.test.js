@@ -1,9 +1,14 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 
 import { validateTaskArtifactSet, delegationIsInScope } from "../src/core/conformance.js";
 import { evaluateRoute } from "../src/core/router.js";
 import { contractFingerprint, createWorkState } from "../src/core/work-state.js";
+
+const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 const route = evaluateRoute({ workType: "api", surfaces: ["api"], platforms: [] });
 const contract = { objective: "conformance" };
@@ -65,6 +70,21 @@ test("delegationIsInScope correctly derives whether delegation applies", () => {
   assert.equal(delegationIsInScope({ state, receipt, delegatedResults: [delegated] }), true);
   assert.equal(delegationIsInScope({ state: { ...state, delegatedTasks: ["child"] } }), true);
   assert.equal(delegationIsInScope({ events: [{ type: "TASK_DELEGATED", taskId: "child" }] }), true);
+});
+
+test("compatibility conformance scenarios have complete, versioned contracts", async () => {
+  const scenarios = ["cross-harness-resume", "policy-drift", "verification-recovery", "concurrent-claims", "interrupted-transaction"];
+  for (const scenario of scenarios) {
+    const content = await readFile(path.join(repositoryRoot, "conformance", scenario, "SCENARIO.json"), "utf8");
+    const value = JSON.parse(content);
+    assert.equal(value.protocolVersion, 1, scenario);
+    assert.equal(typeof value.request, "string", scenario);
+    assert.ok(value.expectedRoute && Array.isArray(value.expectedRoute.guides), scenario);
+    assert.ok(Array.isArray(value.requiredGates), scenario);
+    assert.ok(Array.isArray(value.requiredEvidence) && value.requiredEvidence.length > 0, scenario);
+    assert.ok(Array.isArray(value.expectedNextActionSequence) && value.expectedNextActionSequence.length > 0, scenario);
+    assert.equal(typeof value.expectedTerminalResult, "string", scenario);
+  }
 });
 
 test("cross-artifact conformance accepts a coherent single-actor set without delegation", () => {

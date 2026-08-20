@@ -1,0 +1,9 @@
+{
+  "protocolVersion": 1,
+  "request": "Resume an EXECUTING task created by a different compatible harness using persisted task artifacts only.",
+  "expectedRoute": { "workType": "code", "guides": ["clean", "test"] },
+  "requiredGates": [],
+  "requiredEvidence": ["persisted-contract", "persisted-work-state", "deterministic-next-action"],
+  "expectedNextActionSequence": ["RECONCILE_CONTINUITY", "RESUME_EXECUTION"],
+  "expectedTerminalResult": "RESUMED"
+}

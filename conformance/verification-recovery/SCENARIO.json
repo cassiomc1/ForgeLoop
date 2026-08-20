@@ -1,0 +1,9 @@
+{
+  "protocolVersion": 1,
+  "request": "Reject insufficient verification evidence and recover through diagnosis, correction, and re-verification.",
+  "expectedRoute": { "workType": "bug", "guides": ["clean", "test"] },
+  "requiredGates": [],
+  "requiredEvidence": ["failed-check", "diagnosis", "observed-reverification"],
+  "expectedNextActionSequence": ["DIAGNOSE_FAILURE", "CORRECT", "REVERIFY"],
+  "expectedTerminalResult": "VALIDATED"
+}

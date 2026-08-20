@@ -169,3 +169,7 @@ not part of this contract.
 Executable coverage is in `tests/cross-harness-resume.test.js`,
 `tests/policy-hardening.test.js`, `tests/state-revision.test.js`,
 `tests/concurrent-ledger.test.js`, and `tests/transaction.test.js`.
+
+Each listed scenario has a versioned `SCENARIO.json` contract. It records the
+request, deterministic route, gates, evidence, next-action sequence, and
+terminal observation independently of any model runtime.

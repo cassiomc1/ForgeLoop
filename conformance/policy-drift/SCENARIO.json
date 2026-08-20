@@ -1,0 +1,9 @@
+{
+  "protocolVersion": 1,
+  "request": "Detect policy drift after an approved baseline changes and require explicit recovery.",
+  "expectedRoute": { "workType": "maintenance", "guides": ["clean", "test"] },
+  "requiredGates": ["policy-consistency"],
+  "requiredEvidence": ["policy-snapshot", "drift-diagnosis"],
+  "expectedNextActionSequence": ["REVALIDATE_POLICY", "RECORD_POLICY_DECISION"],
+  "expectedTerminalResult": "RECOVERY_REQUIRED"
+}
