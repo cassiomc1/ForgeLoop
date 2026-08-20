@@ -40,6 +40,19 @@ test("documentation examples run in a disposable fixture and assert JSON paths",
   }
 });
 
+test("documentation examples can create a task fixture before a resumability command", async () => {
+  const [example] = parseDocumentedExamples("continuity.md", [
+    "<!-- FORGELOOP EXAMPLE: continuity:status | fixture=task:auth-feature | exit=0 | json.taskId=auth-feature -->",
+    "```bash",
+    "forgeloop status --task auth-feature --json",
+    "```",
+    "<!-- END FORGELOOP EXAMPLE -->",
+  ].join("\n"));
+  const result = await runDocumentedExample(example);
+  assert.equal(result.exitCode, 0);
+  assert.equal(result.json.taskId, "auth-feature");
+});
+
 test("each operational document has at least one executable example", async () => {
   for (const relativePath of DOCUMENTS) {
     const examples = parseDocumentedExamples(relativePath, await readFile(path.join(root, relativePath), "utf8"));

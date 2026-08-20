@@ -142,9 +142,11 @@ forgeloop status --json
 
 Or with explicit flag:
 
+<!-- FORGELOOP EXAMPLE: cross-harness:status | fixture=task:auth-feature | exit=0 | json.taskId=auth-feature -->
 ```bash
 forgeloop status --task auth-feature --json
 ```
+<!-- END FORGELOOP EXAMPLE -->
 
 Verify that the task exists and observe the current lifecycle phase (e.g. `EXECUTING` or `VERIFYING`). If multiple tasks exist and no selector is provided, ForgeLoop returns `E_TASK_AMBIGUOUS`.
 

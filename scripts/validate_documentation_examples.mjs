@@ -66,13 +66,19 @@ export function parseDocumentedExamples(documentPath, content) {
     if (lines.length !== 1 || !lines[0].startsWith("forgeloop ")) {
       throw documentedExampleError("DOC_EXAMPLE_COMMAND_INVALID", `${documentPath}:${id} must contain exactly one forgeloop command`);
     }
-    const expected = { exitCode: null, json: {} };
+    const expected = { exitCode: null, fixture: null, json: {} };
     for (const expectation of expectations) {
       const equals = expectation.indexOf("=");
       if (equals === -1) throw documentedExampleError("DOC_EXAMPLE_EXPECTATION_INVALID", `${documentPath}:${id} has invalid expectation ${expectation}`);
       const key = expectation.slice(0, equals);
       const value = parseExpectedValue(expectation.slice(equals + 1));
       if (key === "exit") expected.exitCode = value;
+      else if (key === "fixture") {
+        if (typeof value !== "string" || !/^task:[A-Za-z0-9_-]+$/.test(value)) {
+          throw documentedExampleError("DOC_EXAMPLE_FIXTURE_INVALID", `${documentPath}:${id} has unsupported fixture ${value}`);
+        }
+        expected.fixture = value;
+      }
       else if (key.startsWith("json.")) expected.json[key.slice(5)] = value;
       else throw documentedExampleError("DOC_EXAMPLE_EXPECTATION_INVALID", `${documentPath}:${id} has unsupported expectation ${key}`);
     }
@@ -96,6 +102,24 @@ function runProcess(argv, cwd) {
 export async function runDocumentedExample(example) {
   const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-doc-example-"));
   try {
+    if (example.expected.fixture) {
+      const [, taskId] = example.expected.fixture.split(":");
+      const fixture = await runProcess([
+        process.execPath,
+        path.join(repositoryRoot, "src/cli.js"),
+        "task-create",
+        "--task",
+        taskId,
+        "--claim",
+        "src",
+        "--json",
+        "--path",
+        target,
+      ], repositoryRoot);
+      if (fixture.exitCode !== 0) {
+        throw documentedExampleError("DOC_EXAMPLE_FIXTURE_FAILED", `${example.documentPath}:${example.id} could not create ${example.expected.fixture}: ${fixture.stderr}`);
+      }
+    }
     const commandArgs = example.command.split(/\s+/).slice(1);
     const result = await runProcess([
       process.execPath,
