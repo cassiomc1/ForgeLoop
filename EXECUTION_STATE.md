@@ -51,6 +51,14 @@ and rename it into place. The host filesystem's rename guarantee is the
 atomicity boundary; no database or remote state is involved. A truncated,
 malformed, or secret-bearing file is invalid and is never resumed silently.
 
+Lifecycle mutations that change more than one artifact use a task transaction
+under `.forgeloop/.txn/<transactionId>/`. The transaction records every staged
+replacement and append. Ledger appends validate a bounded tail checkpoint and
+stage only the new NDJSON suffix; if publication is interrupted, recovery
+truncates that suffix to its recorded pre-append size. A stale checkpoint never
+authorizes a new sequence number: ForgeLoop rebuilds it from the ledger before
+continuing.
+
 Before resuming, compare:
 
 - the task contract fingerprint;

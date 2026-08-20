@@ -220,9 +220,13 @@ mitigations, residual limitations, and executable evidence.
 
 Persistent task mutations use a task lease lock and a recoverable transaction
 journal. State writes carry a monotonically increasing revision, while event
-appends are serialized and hash chained. A crash during a multi-file publish
-leaves a journal that `doctor --fix` can roll back deterministically; it never
-permits a partial artifact set to be presented as a completed protocol state.
+appends are serialized and hash chained. The ledger keeps a validated tail
+checkpoint (`seq` and last hash), so a normal append stages and publishes only
+its new NDJSON suffix; a mismatched tail forces a full checkpoint rebuild. A
+crash during a multi-file publish leaves a journal that `doctor --fix` can roll
+back deterministically — including truncating an interrupted ledger suffix to
+its recorded pre-append size. It never permits a partial artifact set to be
+presented as a completed protocol state.
 
 ### `ENG/*.md`
 
