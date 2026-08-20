@@ -5,6 +5,7 @@ import { assertSecretFree } from "./receipt.js";
 import { assertJsonBytes, assertJsonLimits } from "./json-safety.js";
 import { assertSchema, readSchema } from "./schema-validation.js";
 import { getPackageRoot } from "./templates.js";
+import { getActiveTaskTransaction, withTaskTransaction } from "./transaction.js";
 
 export const ARTIFACT_PATHS = Object.freeze({
   contract: ".forgeloop/current-contract.json",
@@ -114,12 +115,18 @@ export async function writeJsonArtifact(
   value,
   schemaName,
   packageRoot = getPackageRoot(),
-  { dryRun = false } = {},
+  { dryRun = false, taskId = null, operation = "write-artifact" } = {},
 ) {
   try {
     await assertSafePath(target, relativePath);
   } catch (error) {
     throw artifactError("ARTIFACT_PATH_INVALID", relativePath, error);
+  }
+  const activeTransaction = getActiveTaskTransaction();
+  if (!activeTransaction && taskId && !dryRun) {
+    return withTaskTransaction({ target, taskId, operation, packageRoot }, async () => (
+      writeJsonArtifact(target, relativePath, value, schemaName, packageRoot, { dryRun, taskId, operation })
+    ));
   }
   try {
     const artifactPath = ensureWithin(target, relativePath);
@@ -129,7 +136,11 @@ export async function writeJsonArtifact(
     assertJsonLimits(value, relativePath);
     const serialized = `${JSON.stringify(value, null, 2)}\n`;
     assertJsonBytes(serialized, relativePath);
-    await writeFileAtomic(artifactPath, serialized, { dryRun });
+    if (activeTransaction && !dryRun) {
+      await activeTransaction.stageText(relativePath, serialized);
+    } else {
+      await writeFileAtomic(artifactPath, serialized, { dryRun });
+    }
     return { path: relativePath, fingerprint: canonicalFingerprint(value), value };
   } catch (error) {
     throw artifactError(

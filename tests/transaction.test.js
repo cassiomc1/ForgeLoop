@@ -7,6 +7,7 @@ import { test } from "node:test";
 import { withTaskTransaction, findIncompleteTransactions, recoverIncompleteTransactions } from "../src/core/transaction.js";
 import { appendProtocolEvent, readEvents } from "../src/core/events.js";
 import { getPackageRoot } from "../src/core/templates.js";
+import { writeJsonArtifact } from "../src/core/artifacts.js";
 
 test("withTaskTransaction publishes staged files only after callback completes", async () => {
   const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-transaction-"));
@@ -52,6 +53,21 @@ test("transaction commit witness is the final published ledger event", async () 
     const events = await readEvents(target, packageRoot, { taskId: "witness-transaction" });
     assert.equal(events.at(-1).event, "TRANSACTION_COMMITTED");
     assert.equal(events.at(-1).details.transactionId.startsWith("txn-"), true);
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
+test("task-scoped JSON artifacts stage through the active transaction", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-transaction-"));
+  const packageRoot = getPackageRoot();
+  const relativePath = ".forgeloop/task-state/config.json";
+  try {
+    await withTaskTransaction({ target, taskId: "artifact-transaction", operation: "test", packageRoot }, async () => {
+      await writeJsonArtifact(target, relativePath, { schemaVersion: 1, protocolVersion: 1, complianceMode: "standard" }, "config", packageRoot, { taskId: "artifact-transaction" });
+      await assert.rejects(() => readFile(path.join(target, relativePath), "utf8"), { code: "ENOENT" });
+    });
+    assert.equal(JSON.parse(await readFile(path.join(target, relativePath), "utf8")).complianceMode, "standard");
   } finally {
     await rm(target, { recursive: true, force: true });
   }
