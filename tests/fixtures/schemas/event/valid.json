@@ -1,0 +1,9 @@
+{
+  "seq": 1,
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "taskId": "fixture",
+  "event": "fixture",
+  "at": "fixture",
+  "previousHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+}

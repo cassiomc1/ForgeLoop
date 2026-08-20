@@ -4,7 +4,7 @@ import { appendProtocolEvent, LIFECYCLE_MILESTONES, validateEventLedger, validat
 import { evaluatePreflight } from "./preflight.js";
 import { readContract } from "./contract.js";
 import { readPersistedRoute } from "./route-artifact.js";
-import { readWorkState, writeWorkState, classifyLoadedWorkState } from "./work-state.js";
+import { readWorkState, mutateWorkState, classifyLoadedWorkState } from "./work-state.js";
 import { createReceipt, validateReceipt } from "./receipt.js";
 import { completionRelationshipErrors } from "./completion-relationships.js";
 import { assertSafePath, ensureWithin, fileExists } from "./filesystem.js";
@@ -517,7 +517,13 @@ export async function runComplete({
       } catch {
         // The evaluator already reports a missing or invalid receipt; evidence-only rejection can persist without one.
       }
-      await writeWorkState(target, next, { packageRoot, taskId, statePath });
+      next.revision = (state.revision ?? 0) + 1;
+      await mutateWorkState(target, {
+        expectedRevision: state.revision ?? 0,
+        packageRoot,
+        taskId,
+        statePath,
+      }, () => next);
       let nextReceipt = null;
       if (receipt) {
         nextReceipt = await createReceipt({
@@ -565,12 +571,18 @@ export async function runComplete({
         publicationStatus: result.publicationStatus,
         lastUpdated: new Date().toISOString(),
       };
+      next.revision = (state.revision ?? 0) + 1;
       const nextReceipt = await createReceipt({
         ...receipt.value,
         stateFingerprint: canonicalFingerprint(next),
         verificationCycle: next.verificationCycle ?? receipt.value.verificationCycle ?? 1,
       }, packageRoot, { target, taskId: state.taskId, authorityContext, runtimeContext });
-      await writeWorkState(target, next, { packageRoot, taskId, statePath });
+      await mutateWorkState(target, {
+        expectedRevision: state.revision ?? 0,
+        packageRoot,
+        taskId,
+        statePath,
+      }, () => next);
       await writeJsonArtifact(target, receiptRel, nextReceipt, "execution-receipt", packageRoot);
     }
     const contract = await readContract(target, packageRoot, { taskId, contractPath });

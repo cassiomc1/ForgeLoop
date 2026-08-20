@@ -1,0 +1,1 @@
+{"protocolVersion":1,"request":"Distinguish an externally observed check from a ForgeLoop-executed command.","expectedRoute":{"workType":"verification","guides":["test"]},"requiredGates":[],"requiredEvidence":["observed-check","execution-provenance"],"expectedNextActionSequence":["RECORD_CHECK","ASSESS_EVIDENCE"],"expectedTerminalResult":"EVIDENCE_CLASSIFIED"}

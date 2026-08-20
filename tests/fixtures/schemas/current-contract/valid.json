@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "taskId": "fixture",
+  "objective": "fixture",
+  "deliverables": [],
+  "constraints": [],
+  "risks": [],
+  "verification": [],
+  "successCriteria": [],
+  "stopConditions": [],
+  "unresolvedDecisions": [],
+  "sourceRefs": []
+}

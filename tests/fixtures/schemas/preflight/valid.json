@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "taskId": "fixture",
+  "status": "READY",
+  "profile": {},
+  "contract": {},
+  "routing": {},
+  "requiredGates": [],
+  "satisfiedGates": [],
+  "errors": []
+}

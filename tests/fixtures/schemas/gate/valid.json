@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "taskId": "fixture",
+  "gate": "fixture",
+  "status": "satisfied",
+  "requiredBy": [],
+  "artifacts": [],
+  "decisions": [],
+  "unknowns": [],
+  "approvedAssumptions": [],
+  "evidence": []
+}

@@ -28,14 +28,15 @@ test("live-agent conformance scenarios declare route, gates, and evidence contra
     .filter((entry) => entry.name !== "runs")
     .map((entry) => entry.name)
     .sort();
-  assert.deepEqual(scenarios, [
+  const liveScenarios = [
     "backend-auth",
     "blind-premium-website",
     "complete-website",
     "docs-only",
     "simple-bug",
-  ]);
-  for (const scenario of scenarios) {
+  ];
+  assert.deepEqual(scenarios.filter((scenario) => liveScenarios.includes(scenario)), liveScenarios);
+  for (const scenario of liveScenarios) {
     await readFile(path.join(root, scenario, "REQUEST.md"), "utf8");
     const route = JSON.parse(await readFile(path.join(root, scenario, "EXPECTED_ROUTE.json"), "utf8"));
     const gates = JSON.parse(await readFile(path.join(root, scenario, "REQUIRED_GATES.json"), "utf8"));

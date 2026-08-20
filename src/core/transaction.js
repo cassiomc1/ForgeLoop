@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { AsyncLocalStorage } from "node:async_hooks";
-import { mkdir, readdir, readFile, rename, unlink } from "node:fs/promises";
+import { mkdir, open, readdir, readFile, rename, stat, truncate, unlink } from "node:fs/promises";
 import { setTimeout as delay } from "node:timers/promises";
 import path from "node:path";
 
@@ -48,8 +48,19 @@ function writePath(entry) {
 async function rollbackPublishedWrites(target, root, manifest) {
   const writes = [...manifest.writes].reverse();
   for (const entry of writes) {
+    if (!entry || typeof entry !== "object") continue;
     const relativePath = writePath(entry);
-    if (!entry || typeof entry !== "object" || (!entry.published && !entry.backupPending && !entry.backupCreated)) continue;
+    if (entry.kind === "APPEND") {
+      if (!entry.appendStarted) continue;
+      const destination = ensureWithin(target, relativePath);
+      const originalSize = Number.isInteger(entry.originalSize) && entry.originalSize >= 0 ? entry.originalSize : 0;
+      if (await fileExists(destination)) {
+        if (originalSize === 0) await unlink(destination);
+        else await truncate(destination, originalSize);
+      }
+      continue;
+    }
+    if (!entry.published && !entry.backupPending && !entry.backupCreated) continue;
     const destination = ensureWithin(target, relativePath);
     const backup = ensureWithin(target, `${root}/backup/${relativePath}`);
     if (entry.published && await fileExists(destination)) await unlink(destination);
@@ -83,7 +94,14 @@ export async function recoverIncompleteTransactions(target) {
   return recovered;
 }
 
-export async function withTaskTransaction({ target, taskId, lockTaskId = taskId, operation = "mutation" } = {}, callback) {
+export async function withTaskTransaction({
+  target,
+  taskId,
+  lockTaskId = taskId,
+  operation = "mutation",
+  packageRoot,
+  recordCommitEvent = false,
+} = {}, callback) {
   if (!target || !taskId) throw new Error("target and taskId are required for a task transaction");
   const started = Date.now();
   const runWithLock = async () => withTaskLock(target, lockTaskId, operation, async (lock) => {
@@ -102,12 +120,17 @@ export async function withTaskTransaction({ target, taskId, lockTaskId = taskId,
         await assertSafePath(target, relativePath);
         const staged = ensureWithin(target, `${stageRoot}/${relativePath}`);
         if (await fileExists(staged)) return readFile(staged, "utf8");
+        const appendStaged = ensureWithin(target, `${stageRoot}/${relativePath}.append`);
+        const appendText = await fileExists(appendStaged) ? await readFile(appendStaged, "utf8") : "";
         const destination = ensureWithin(target, relativePath);
-        if (!(await fileExists(destination))) return null;
-        return readFile(destination, "utf8");
+        if (!(await fileExists(destination))) return appendText || null;
+        return `${await readFile(destination, "utf8")}${appendText}`;
       },
       async stageText(relativePath, text) {
         await assertSafePath(target, relativePath);
+        if (manifest.writes.some((entry) => writePath(entry) === relativePath && entry.kind === "APPEND")) {
+          throw new Error(`cannot replace append-staged path: ${relativePath}`);
+        }
         const staged = `${stageRoot}/${relativePath}`;
         await assertSafePath(target, staged);
         await writeFileAtomic(ensureWithin(target, staged), text);
@@ -116,15 +139,77 @@ export async function withTaskTransaction({ target, taskId, lockTaskId = taskId,
         }
         await writeManifest(target, manifestPath, manifest);
       },
+      async appendText(relativePath, text) {
+        await assertSafePath(target, relativePath);
+        if (typeof text !== "string" || text.length === 0) throw new Error("transaction append text must be a non-empty string");
+        if (manifest.writes.some((entry) => writePath(entry) === relativePath && entry.kind !== "APPEND")) {
+          throw new Error(`cannot append to replace-staged path: ${relativePath}`);
+        }
+        const destination = ensureWithin(target, relativePath);
+        const staged = ensureWithin(target, `${stageRoot}/${relativePath}.append`);
+        const existing = await fileExists(staged) ? await readFile(staged, "utf8") : "";
+        await writeFileAtomic(staged, `${existing}${text}`);
+        let entry = manifest.writes.find((candidate) => writePath(candidate) === relativePath);
+        if (!entry) {
+          entry = {
+            path: relativePath,
+            kind: "APPEND",
+            originalSize: (await fileExists(destination)) ? (await stat(destination)).size : 0,
+            appendStarted: false,
+            published: false,
+          };
+          manifest.writes.push(entry);
+        }
+        await writeManifest(target, manifestPath, manifest);
+      },
     };
     try {
-      const result = await transactionContext.run(tx, () => callback(tx));
+      const result = await transactionContext.run(tx, async () => {
+        const callbackResult = await callback(tx);
+        if (recordCommitEvent) {
+          // Import lazily to keep the transaction/event dependency directional
+          // at module initialization. The event is staged while this task's
+          // transaction context is still active and is published last below.
+          const { appendProtocolEvent } = await import("./events.js");
+          await appendProtocolEvent(target, {
+            taskId,
+            event: "TRANSACTION_COMMITTED",
+            details: { transactionId, operation },
+          }, packageRoot, { taskId });
+        }
+        return callbackResult;
+      });
       manifest.status = "COMMITTING";
       await writeManifest(target, manifestPath, manifest);
-      for (const entry of manifest.writes) {
+      // The ledger is the commit witness. Publishing it last means that a
+      // visible TRANSACTION_COMMITTED event cannot precede a required staged
+      // artifact in the same transaction.
+      const writes = [...manifest.writes].sort((left, right) => {
+        const leftIsLedger = writePath(left).endsWith("events.ndjson");
+        const rightIsLedger = writePath(right).endsWith("events.ndjson");
+        return Number(leftIsLedger) - Number(rightIsLedger);
+      });
+      for (const entry of writes) {
         const relativePath = writePath(entry);
         const staged = ensureWithin(target, `${stageRoot}/${relativePath}`);
         const destination = ensureWithin(target, relativePath);
+        if (entry.kind === "APPEND") {
+          const appendStaged = ensureWithin(target, `${stageRoot}/${relativePath}.append`);
+          const appendText = await readFile(appendStaged, "utf8");
+          await mkdir(path.dirname(destination), { recursive: true });
+          entry.appendStarted = true;
+          await writeManifest(target, manifestPath, manifest);
+          const handle = await open(destination, "a", 0o644);
+          try {
+            await handle.writeFile(appendText);
+            await handle.sync();
+          } finally {
+            await handle.close();
+          }
+          entry.published = true;
+          await writeManifest(target, manifestPath, manifest);
+          continue;
+        }
         const backup = ensureWithin(target, `${root}/backup/${relativePath}`);
         await mkdir(path.dirname(destination), { recursive: true });
         entry.hadPrevious = await fileExists(destination);

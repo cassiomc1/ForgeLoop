@@ -243,12 +243,20 @@ export async function readWorkState(target, options = {}) {
 
   await assertSafePath(target, relPath);
   const statePath = ensureWithin(target, relPath);
-  if (!(await fileExists(statePath))) return null;
   let state;
   try {
-    const bytes = await readBytes(statePath);
-    assertJsonBytes(bytes, relPath);
-    state = JSON.parse(bytes.toString("utf8"));
+    const transaction = getActiveTaskTransaction();
+    const staged = transaction ? await transaction.readText(relPath) : null;
+    if (staged === null) {
+      if (!(await fileExists(statePath))) return null;
+      const bytes = await readBytes(statePath);
+      assertJsonBytes(bytes, relPath);
+      state = JSON.parse(bytes.toString("utf8"));
+    } else {
+      const bytes = Buffer.from(staged, "utf8");
+      assertJsonBytes(bytes, relPath);
+      state = JSON.parse(staged);
+    }
   } catch (error) {
     throw new WorkStateError(`Unable to parse ${relPath}: ${error.message}`);
   }
@@ -312,13 +320,29 @@ export async function mutateWorkState(target, { expectedRevision, packageRoot = 
     error.code = "E_STATE_REVISION_CONFLICT";
     throw error;
   }
+  const updated = await updater(structuredClone(current));
   const next = createWorkState({
-    ...await updater(structuredClone(current)),
+    ...updated,
     revision: expectedRevision + 1,
-    lastUpdated: new Date().toISOString(),
+    lastUpdated: updated.lastUpdated ?? new Date().toISOString(),
   });
   await writeWorkState(target, next, { packageRoot, taskId, statePath });
   return next;
+}
+
+export async function initializeWorkState(target, state, { packageRoot = getPackageRoot(), taskId, statePath } = {}) {
+  if (getActiveTaskTransaction()) {
+    const current = await readWorkState(target, { packageRoot, taskId, statePath });
+    if (current) return current;
+    await writeWorkState(target, state, { packageRoot, taskId, statePath });
+    return state;
+  }
+  return withTaskTransaction({
+    target,
+    taskId: taskId ?? "legacy-work-state",
+    lockTaskId: taskId ?? "legacy-work-state",
+    operation: "initialize-work-state",
+  }, async () => initializeWorkState(target, state, { packageRoot, taskId, statePath }));
 }
 
 export async function clearWorkState(target, options = {}) {

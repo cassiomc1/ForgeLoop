@@ -1275,7 +1275,7 @@ to inspect first.
 `CONTINUITY_CONTEXT_IS_NOT_EVIDENCE`: continuity may guide inspection but can
 never satisfy verification coverage, publication, production readiness, or
 completion. `CONTINUITY_CANNOT_GRANT_AUTHORITY`: continuity cannot authorize an
-installation or external action. The receiving harness MUST reconcile
+installation or external action. <a id="FL-CONT-001"></a> **FL-CONT-001 — A receiving harness MUST reconcile**
 continuity against the current work state and checkout before acting on it.
 
 ## Multi-task concurrent project state

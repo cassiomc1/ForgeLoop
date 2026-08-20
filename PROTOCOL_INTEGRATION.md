@@ -108,6 +108,36 @@ workflows that do not automatically discover one of the default files:
 
 A developer or custom automation can execute ForgeLoop identically to an AI agent.
 
+### Compatibility handshake
+
+Before a harness creates or resumes task state, it can read the complete
+machine-readable compatibility boundary:
+
+```bash
+forgeloop protocol-info --json
+```
+
+When a compatibility change requires persisted state conversion, inspect it
+before writing anything:
+
+```bash
+forgeloop migrate-protocol --to 1 --dry-run --json
+```
+
+`migrate-protocol` accepts only versions with an explicit migration in the
+installed release. Unsupported targets fail without rewriting state. The
+current protocol's only supported conversion is the receipt-backed legacy
+singleton-layout migration; a future protocol version must add its own
+validated migration before it can become an accepted `--to` value.
+
+The response separates package and protocol identity. `packageVersion` is the
+installed CLI version; `readsProtocol` and `writesProtocol` enumerate protocol
+versions supported by this CLI; `readsSchemaVersions` and
+`writesSchemaVersions` map every public artifact schema to its supported
+versions. A harness must not infer compatibility from the package version
+alone, and it must fail closed when its required protocol or schema version is
+absent from the relevant list.
+
 ## CLI resolution policy
 
 Lifecycle-owned protocol state must be managed through the project-local ForgeLoop CLI:

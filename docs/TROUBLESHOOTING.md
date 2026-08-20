@@ -30,6 +30,15 @@ This guide provides symptom-first recovery procedures for common ForgeLoop proto
 
 ## Symptoms and Recovery
 
+Confirm the local CLI's public metadata before diagnosing a harness/version
+mismatch. This check does not create or mutate task state.
+
+<!-- FORGELOOP EXAMPLE: troubleshooting:protocol-info | exit=0 | json.errors.0.code=E_AUTHORITY_INVALID -->
+```bash
+forgeloop protocol-info --json
+```
+<!-- END FORGELOOP EXAMPLE -->
+
 ### Symptom: `preflight` is `BLOCKED`
 
 #### What it means
@@ -645,6 +654,7 @@ forgeloop next --task <id> --json
 | `E_PROFILE_SOURCE_UNKNOWN` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_PROFILE_UNVERIFIED` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_PROGRESS_STALLED` | Persisted correction history shows no new diagnostic information. | Use an independent check, revisit assumptions, or record a materially different diagnosis. |
+| `E_PROTOCOL_MIGRATION_TARGET_UNSUPPORTED` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_PUBLICATION_CLAIM_UNVERIFIED` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_PUBLICATION_REQUIREMENT_PENDING` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_RECEIPT_CONTRACT_MISMATCH` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |

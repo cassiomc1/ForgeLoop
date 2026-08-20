@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "taskId": "fixture",
+  "contractFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "selectedGuides": [],
+  "changedPaths": [],
+  "checks": [],
+  "review": {},
+  "limitations": [],
+  "publication": {
+    "committed": false,
+    "pushed": false,
+    "pullRequest": "fixture",
+    "deployed": false
+  }
+}

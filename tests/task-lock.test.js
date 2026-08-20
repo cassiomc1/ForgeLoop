@@ -9,6 +9,7 @@ import {
   readLockInfo,
   forceUnlockTask,
   classifyLockStaleness,
+  currentProcessStartToken,
   withTaskLock,
 } from "../src/core/task-lock.js";
 import { taskLockPath } from "../src/core/task-paths.js";
@@ -33,6 +34,7 @@ test("acquireTaskLock acquires exclusive lock and release removes it", async () 
     assert.equal(typeof lockHandle.lockData.hostname, "string");
     assert.equal(typeof lockHandle.lockData.ownerInstanceId, "string");
     assert.equal(lockHandle.lockData.leaseMs, 300000);
+    assert.match(lockHandle.lockData.processStartToken, new RegExp(`^${process.pid}:\\d+$`));
     assert.equal(lockHandle.lockData.heartbeatAt, lockHandle.lockData.acquiredAt);
     assert.equal(typeof lockHandle.release, "function");
 
@@ -57,6 +59,12 @@ test("acquireTaskLock acquires exclusive lock and release removes it", async () 
     const infoAfter = await readLockInfo(target, taskId);
     assert.equal(infoAfter, null);
   });
+});
+
+test("process start token pairs the active PID with a stable start epoch", () => {
+  const value = currentProcessStartToken(10_000, 2.5).split(":");
+  assert.equal(Number(value[0]), process.pid);
+  assert.equal(value[1], "7500");
 });
 
 test("classifyLockStaleness distinguishes an expired lease", () => {

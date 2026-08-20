@@ -25,11 +25,15 @@ Concise, copy-paste friendly recipes for common ForgeLoop tasks.
 
 ### Recipe 1 — Start a New Task
 
+<!-- FORGELOOP EXAMPLE: recipes:create-task | exit=0 | json.taskId=task-001 -->
 ```bash
-# 1. Create a task with explicit claims
 forgeloop task-create --task task-001 --claim src --claim tests --json
+```
+<!-- END FORGELOOP EXAMPLE -->
 
+```bash
 # 2. Discover task state path and author contract under .forgeloop/task-state/<taskKey>/contract.json
+
 forgeloop task-show --task task-001 --json
 
 # 3. Route engineering guides

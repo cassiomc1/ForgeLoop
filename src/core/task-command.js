@@ -32,7 +32,7 @@ export async function withTaskMutation(
   });
 
   if (taskContext) {
-    return withTaskTransaction({ target, taskId: taskContext.taskId, operation }, async (transaction) => {
+    return withTaskTransaction({ target, taskId: taskContext.taskId, operation, packageRoot: options.packageRoot, recordCommitEvent: true }, async (transaction) => {
       return callback({ ...taskContext, transaction });
     });
   }

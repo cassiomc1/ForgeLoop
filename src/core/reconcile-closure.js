@@ -1,9 +1,11 @@
 import { readContract } from "./contract.js";
+import { canonicalFingerprint, readJsonArtifact, writeJsonArtifact } from "./artifacts.js";
 import { appendProtocolEvent, validateEventLedger } from "./events.js";
 import { runCommandExecution } from "./execution.js";
+import { createReceipt } from "./receipt.js";
 import { currentRepositoryFingerprint } from "./repository.js";
 import { taskArtifactPath } from "./task-paths.js";
-import { classifyLoadedWorkState, readWorkState, writeWorkState } from "./work-state.js";
+import { classifyLoadedWorkState, readWorkState, mutateWorkState } from "./work-state.js";
 
 export const RECONCILE_EVENT = "CHECKPOINT_RECONCILED";
 
@@ -63,6 +65,7 @@ export async function runReconcileClosure({
   const stateRel = taskArtifactPath(taskId, "state");
   const contractRel = taskArtifactPath(taskId, "contract");
   const eventsRel = taskArtifactPath(taskId, "events");
+  const receiptRel = taskArtifactPath(taskId, "receipt");
 
   const state = await readWorkState(target, { packageRoot, taskId });
   if (!state) {
@@ -154,11 +157,26 @@ export async function runReconcileClosure({
     },
   }, packageRoot, { taskId });
 
-  await writeWorkState(target, {
+  const nextState = await mutateWorkState(target, {
+    expectedRevision: state.revision ?? 0,
+    packageRoot,
+    taskId,
+  }, () => ({
     ...state,
     repositoryFingerprint: repository,
     lastUpdated: new Date().toISOString(),
-  }, { packageRoot, taskId });
+  }));
+
+  try {
+    const receipt = await readJsonArtifact(target, receiptRel, "execution-receipt", packageRoot);
+    const reboundReceipt = await createReceipt({
+      ...receipt.value,
+      stateFingerprint: canonicalFingerprint(nextState),
+    }, packageRoot, { target, taskId, authorityContext, runtimeContext });
+    await writeJsonArtifact(target, receiptRel, reboundReceipt, "execution-receipt", packageRoot);
+  } catch (error) {
+    if (error.code !== "ARTIFACT_MISSING") throw error;
+  }
 
   return {
     taskId,

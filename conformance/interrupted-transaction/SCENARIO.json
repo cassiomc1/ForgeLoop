@@ -1,0 +1,9 @@
+{
+  "protocolVersion": 1,
+  "request": "Recover an interrupted COMMITTING transaction without silently discarding its journal.",
+  "expectedRoute": { "workType": "maintenance", "guides": ["clean", "test"] },
+  "requiredGates": ["transaction-recovery"],
+  "requiredEvidence": ["transaction-manifest", "restored-artifact"],
+  "expectedNextActionSequence": ["RECOVER_TRANSACTION", "REVALIDATE_TASK"],
+  "expectedTerminalResult": "RECOVERED"
+}

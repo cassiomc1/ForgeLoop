@@ -33,6 +33,15 @@ export function classifyLockStaleness(lock, now = Date.now()) {
     : { status: "LIVE", stale: false, expiresAt: new Date(heartbeat + leaseMs).toISOString() };
 }
 
+/**
+ * PID values can be reused. Pairing the PID with the process start epoch gives
+ * a portable, serializable ownership token without a daemon or platform-only
+ * process inspector. Consumers must still treat remote owners as unknown.
+ */
+export function currentProcessStartToken(now = Date.now(), uptimeSeconds = process.uptime()) {
+  return `${process.pid}:${Math.max(0, Math.floor(now - (uptimeSeconds * 1000)))}`;
+}
+
 export const CLAIMS_LOCK_REL_PATH = ".forgeloop/.claims.lock";
 
 export async function readProjectClaimsLockInfo(target) {
@@ -64,6 +73,7 @@ export async function acquireProjectClaimsLock(target, operation = "claim-reserv
     operation,
     pid: process.pid,
     hostname: os.hostname(),
+    processStartToken: currentProcessStartToken(),
     ownerInstanceId: randomUUID(),
     acquiredAt,
     heartbeatAt: acquiredAt,
@@ -146,6 +156,7 @@ export async function acquireTaskLock(target, taskId, operation = "mutation") {
     operation,
     pid: process.pid,
     hostname: os.hostname(),
+    processStartToken: currentProcessStartToken(),
     ownerInstanceId: randomUUID(),
     acquiredAt,
     heartbeatAt: acquiredAt,

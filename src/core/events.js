@@ -1,5 +1,5 @@
 
-import { appendFile, mkdir, readFile } from "node:fs/promises";
+import { appendFile, mkdir, open, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 
 import { assertSafePath, ensureWithin, fileExists } from "./filesystem.js";
@@ -40,6 +40,50 @@ const REPEATABLE_MILESTONES = new Set([
   "REVIEW_STARTED",
   "TERMINAL_RESULT_RECORDED",
 ]);
+
+function eventIndexPath(eventsPath) {
+  return `${eventsPath}.index.json`;
+}
+
+function parseEventIndex(text, relativePath) {
+  if (typeof text !== "string") return null;
+  try {
+    const value = JSON.parse(text);
+    if (!value || value.schemaVersion !== 1 || !Number.isInteger(value.seq) || value.seq < 0
+      || (value.lastHash !== null && !/^[a-f0-9]{64}$/.test(value.lastHash))) return null;
+    return value;
+  } catch {
+    return null;
+  }
+}
+
+function checkpointFromEvents(events) {
+  const last = events.at(-1) ?? null;
+  return {
+    schemaVersion: 1,
+    seq: last?.seq ?? 0,
+    lastHash: last?.hash ?? null,
+  };
+}
+
+async function readEventCheckpoint(target, packageRoot, relPath, options, transaction) {
+  if (!transaction.eventCheckpoints) transaction.eventCheckpoints = new Map();
+  const cached = transaction.eventCheckpoints.get(relPath);
+  if (cached) return cached;
+
+  const indexPath = eventIndexPath(relPath);
+  const indexed = parseEventIndex(await transaction.readText(indexPath), indexPath);
+  const tail = await readEventTail(target, packageRoot, { ...options, eventsPath: relPath, limit: 1 });
+  const last = tail.at(-1) ?? null;
+  let checkpoint;
+  if (indexed && indexed.seq === (last?.seq ?? 0) && indexed.lastHash === (last?.hash ?? null)) {
+    checkpoint = indexed;
+  } else {
+    checkpoint = checkpointFromEvents(await readEvents(target, packageRoot, { ...options, eventsPath: relPath }));
+  }
+  transaction.eventCheckpoints.set(relPath, checkpoint);
+  return checkpoint;
+}
 
 export function validateKnownEventDetails(event) {
   if (!event || typeof event !== "object") return;
@@ -98,6 +142,43 @@ export async function readEvents(target, packageRoot, options = {}) {
   return parseEventsText(text, relPath, packageRoot);
 }
 
+export async function readEventTail(target, packageRoot, options = {}) {
+  const limit = options.limit ?? 50;
+  if (!Number.isInteger(limit) || limit < 1) {
+    throw protocolError("E_EVENT_INVALID", "ledger tail limit must be a positive integer");
+  }
+  const relPath = options?.eventsPath ?? options?.relativePath ?? (options?.taskId ? taskArtifactPath(options.taskId, "events") : ARTIFACT_PATHS.events);
+  await assertSafePath(target, relPath);
+  const eventsPath = ensureWithin(target, relPath);
+  if (!(await fileExists(eventsPath))) return [];
+  const size = (await stat(eventsPath)).size;
+  let window = Math.min(size, 64 * 1024);
+  while (true) {
+    const position = size - window;
+    const handle = await open(eventsPath, "r");
+    const bytes = Buffer.alloc(window);
+    try {
+      await handle.read(bytes, 0, window, position);
+    } finally {
+      await handle.close();
+    }
+    let text = bytes.toString("utf8");
+    if (position > 0) {
+      const firstLineEnd = text.indexOf("\n");
+      if (firstLineEnd < 0) {
+        window = Math.min(size, window * 2);
+        continue;
+      }
+      text = text.slice(firstLineEnd + 1);
+    }
+    const lines = text.split(/\r?\n/).filter((line) => line.trim() !== "");
+    if (lines.length >= limit || position === 0) {
+      return parseEventsText(lines.slice(-limit).join("\n"), relPath, packageRoot);
+    }
+    window = Math.min(size, window * 2);
+  }
+}
+
 async function parseEventsText(text, relPath, packageRoot) {
   assertJsonBytes(text, relPath);
   const schema = await readSchema("event", packageRoot);
@@ -129,20 +210,16 @@ export async function appendProtocolEvent(target, input, packageRoot, options = 
       operation: "append-event",
     }, async () => appendProtocolEvent(target, input, packageRoot, options));
   }
-  const stagedText = activeTransaction ? await activeTransaction.readText(relPath) : null;
-  const events = stagedText === null
-    ? await readEvents(target, packageRoot, { ...options, eventsPath: relPath })
-    : await parseEventsText(stagedText, relPath, packageRoot);
-  const previous = events.at(-1) ?? null;
+  const checkpoint = await readEventCheckpoint(target, packageRoot, relPath, options, activeTransaction);
   const event = {
-    seq: events.length + 1,
+    seq: checkpoint.seq + 1,
     schemaVersion: EVENT_SCHEMA_VERSION,
     protocolVersion: PROTOCOL_VERSION,
     taskId: input.taskId,
     event: input.event,
     at: input.at ?? new Date().toISOString(),
     ...(input.fingerprint ? { fingerprint: input.fingerprint } : {}),
-    previousHash: previous?.hash ?? null,
+    previousHash: checkpoint.lastHash,
     ...(input.details ? { details: structuredClone(input.details) } : {}),
   };
   validateKnownEventDetails(event);
@@ -152,8 +229,10 @@ export async function appendProtocolEvent(target, input, packageRoot, options = 
   event.hash = eventHash(event);
   if (!options.dryRun) {
     if (activeTransaction) {
-      const previousText = events.length === 0 ? "" : `${events.map((item) => JSON.stringify(item)).join("\n")}\n`;
-      await activeTransaction.stageText(relPath, `${previousText}${JSON.stringify(event)}\n`);
+      await activeTransaction.appendText(relPath, `${JSON.stringify(event)}\n`);
+      const nextCheckpoint = { schemaVersion: 1, seq: event.seq, lastHash: event.hash };
+      await activeTransaction.stageText(eventIndexPath(relPath), `${JSON.stringify(nextCheckpoint)}\n`);
+      activeTransaction.eventCheckpoints.set(relPath, nextCheckpoint);
     } else {
       const eventsPath = ensureWithin(target, relPath);
       await mkdir(path.dirname(eventsPath), { recursive: true });

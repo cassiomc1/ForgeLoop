@@ -12,6 +12,7 @@ import { ALL_KNOWN_ERROR_CODES, PUBLIC_ERROR_CODES } from "../src/core/error-cod
 import { readSchema } from "../src/core/schema-validation.js";
 import { getPackageRoot } from "../src/core/templates.js";
 import { validateDocumentationConformance, validateCliExamples, validateCliMutationClaim } from "../scripts/validate_documentation_conformance.mjs";
+import { validateDocumentationManifest } from "../scripts/validate_documentation_manifest.mjs";
 
 const packageRoot = getPackageRoot();
 
@@ -93,9 +94,36 @@ test("validateDocumentationConformance passes on repository docs", async () => {
   assert.equal(result.valid, true, `Expected valid documentation conformance, got errors: ${result.errors.join("\n")}`);
   assert.equal(result.errors.length, 0);
   assert.ok(result.summary.taggedArtifactsCount >= 13);
-  assert.equal(result.summary.commandsCount, 44);
+  assert.equal(result.summary.commandsCount, Object.keys(CLI_COMMAND_DEFINITIONS).length);
   assert.ok(result.summary.publicErrorCodesCount >= 13);
   assert.equal(result.summary.discoverySurfacesCount, 4);
+});
+
+test("documentation manifest classifies package documents and maps normative requirements", async () => {
+  const result = await validateDocumentationManifest();
+  assert.equal(result.valid, true, result.errors.join("\n"));
+  assert.ok(result.summary.documents >= 28);
+  assert.ok(result.summary.requirements >= 1);
+});
+
+test("documentation manifest rejects an unmapped normative requirement", async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "forgeloop-manifest-test-"));
+  try {
+    await cp("docs", path.join(tempDir, "docs"), { recursive: true });
+    await cp("src", path.join(tempDir, "src"), { recursive: true });
+    await cp("tests", path.join(tempDir, "tests"), { recursive: true });
+    await cp("LOOP_ENGINEERING.md", path.join(tempDir, "LOOP_ENGINEERING.md"));
+    await cp("GUIDE_ROUTER.md", path.join(tempDir, "GUIDE_ROUTER.md"));
+    await cp("TERMINOLOGY.md", path.join(tempDir, "TERMINOLOGY.md"));
+    await cp("THREAT_MODEL.md", path.join(tempDir, "THREAT_MODEL.md"));
+    const requirements = path.join(tempDir, "docs", "protocol-requirements.json");
+    await writeFile(requirements, JSON.stringify({ version: 1, requirements: {} }, null, 2));
+    const result = await validateDocumentationManifest({ rootDir: tempDir });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some((error) => error.includes("DOC_REQUIREMENT_MAPPING_MISSING: FL-CONT-001")));
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
 });
 
 test("ARTIFACT_REGISTRY covers all public schemas and matches ARTIFACT_REFERENCE", async () => {
@@ -113,9 +141,8 @@ test("ARTIFACT_REGISTRY covers all public schemas and matches ARTIFACT_REFERENCE
   }
 });
 
-test("CLI_COMMAND_DEFINITIONS and CLI_COMMAND_METADATA cover all 44 commands with valid options", () => {
-  assert.equal(Object.keys(CLI_COMMAND_DEFINITIONS).length, 44);
-  assert.equal(Object.keys(CLI_COMMAND_METADATA).length, 44);
+test("CLI_COMMAND_DEFINITIONS and CLI_COMMAND_METADATA cover every declared command with valid options", () => {
+  assert.deepEqual(Object.keys(CLI_COMMAND_METADATA).sort(), Object.keys(CLI_COMMAND_DEFINITIONS).sort());
   for (const command of COMMANDS) {
     const def = CLI_COMMAND_DEFINITIONS[command];
     const meta = CLI_COMMAND_METADATA[command];

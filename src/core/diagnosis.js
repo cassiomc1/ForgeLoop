@@ -1,5 +1,5 @@
 import { appendProtocolEvent, validateEventLedger } from "./events.js";
-import { readWorkState, writeWorkState } from "./work-state.js";
+import { readWorkState, mutateWorkState } from "./work-state.js";
 import {
   DIAGNOSIS_INFORMATION_GAIN,
   assertDiagnosisDetails,
@@ -110,16 +110,16 @@ export async function recordDiagnosis({
   });
 
   if (existingEvent?.details?.diagnosisFingerprint === requestedFingerprint) {
-    const updatedState = {
-      ...state,
-      diagnosedHypothesis: existingEvent.details.hypothesis,
-      lastUpdated: new Date().toISOString(),
-    };
-    await writeWorkState(target, updatedState, {
+    const updatedState = await mutateWorkState(target, {
+      expectedRevision: state.revision ?? 0,
       packageRoot,
       taskId: taskId ?? null,
       statePath,
-    });
+    }, () => ({
+      ...state,
+      diagnosedHypothesis: existingEvent.details.hypothesis,
+      lastUpdated: new Date().toISOString(),
+    }));
     return {
       event: existingEvent,
       state: updatedState,
@@ -155,12 +155,16 @@ export async function recordDiagnosis({
     { taskId: taskId ?? null, eventsPath },
   );
 
-  const updatedState = {
+  const updatedState = await mutateWorkState(target, {
+    expectedRevision: state.revision ?? 0,
+    packageRoot,
+    taskId: taskId ?? null,
+    statePath,
+  }, () => ({
     ...state,
     diagnosedHypothesis: hypothesis.trim(),
     lastUpdated: new Date().toISOString(),
-  };
-  await writeWorkState(target, updatedState, { packageRoot, taskId: taskId ?? null, statePath });
+  }));
 
   return {
     event,

@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "algorithm": "sha256",
+  "digest": "fixture",
+  "rulesDigest": "fixture",
+  "baselineDigest": "fixture"
+}

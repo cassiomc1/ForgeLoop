@@ -1,0 +1,1 @@
+{"protocolVersion":1,"request":"Reject a baseline update that expands accepted policy debt during an active task.","expectedRoute":{"workType":"maintenance","guides":["clean","test"]},"requiredGates":["policy-baseline"],"requiredEvidence":["baseline-diff","policy-lock"],"expectedNextActionSequence":["RESTORE_BASELINE"],"expectedTerminalResult":"BASELINE_EXPANSION_REFUSED"}

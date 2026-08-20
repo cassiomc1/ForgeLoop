@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "id": "fixture",
+  "kind": "fixture",
+  "requirement": "fixture",
+  "status": "passed",
+  "evidenceKind": "OBSERVED",
+  "source": "fixture"
+}

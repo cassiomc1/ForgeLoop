@@ -1,0 +1,1 @@
+{"protocolVersion":1,"request":"Resume after the contract changes and the persisted route becomes stale.","expectedRoute":{"workType":"code","guides":["clean","test"]},"requiredGates":["route-freshness"],"requiredEvidence":["contract-fingerprint","stale-route-diagnosis"],"expectedNextActionSequence":["REROUTE","RERUN_PREFLIGHT"],"expectedTerminalResult":"ROUTE_REVALIDATED"}

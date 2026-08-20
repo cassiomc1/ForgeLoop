@@ -29,6 +29,15 @@ Switching between execution environments (for example Codex $\rightarrow$ Claude
 
 When a new harness starts in a repository where an active task exists, it must discover the existing task, reconcile continuity when present, inspect the checkout, and proceed from the recorded state rather than overwriting the contract.
 
+Before it touches task state, a harness can verify the public compatibility
+handshake it will use for the handoff:
+
+<!-- FORGELOOP EXAMPLE: cross-harness:handshake | exit=0 | json.lifecycle.phases.0=RECEIVED -->
+```bash
+forgeloop protocol-info --json
+```
+<!-- END FORGELOOP EXAMPLE -->
+
 Key continuity invariants:
 
 - **Continuity is optional**: A missing `continuity.json` file does not invalidate an otherwise resumable task.
@@ -133,9 +142,11 @@ forgeloop status --json
 
 Or with explicit flag:
 
+<!-- FORGELOOP EXAMPLE: cross-harness:status | fixture=task:auth-feature | exit=0 | json.taskId=auth-feature -->
 ```bash
 forgeloop status --task auth-feature --json
 ```
+<!-- END FORGELOOP EXAMPLE -->
 
 Verify that the task exists and observe the current lifecycle phase (e.g. `EXECUTING` or `VERIFYING`). If multiple tasks exist and no selector is provided, ForgeLoop returns `E_TASK_AMBIGUOUS`.
 

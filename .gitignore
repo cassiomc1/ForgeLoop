@@ -2,6 +2,10 @@
 .worktrees/
 node_modules/
 coverage/
+.forgeloop/.txn/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 .commandcode/
 __pycache__/
 .forgeloop/*

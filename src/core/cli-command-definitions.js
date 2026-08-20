@@ -697,6 +697,20 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     mayExecuteExternalProcess: false,
     description: "Shows details of a specific task descriptor and its scoped artifacts.",
   }),
+  "task-lock-status": Object.freeze({
+    name: "task-lock-status",
+    category: "lifecycle",
+    mutation: "READ_ONLY",
+    options: Object.freeze({
+      ...CLI_COMMON_OPTIONS,
+      ...CLI_TASK_OPTION,
+      "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
+    }),
+    writes: [],
+    removes: [],
+    mayExecuteExternalProcess: false,
+    description: "Reports a task lock record and its lease-based stale-lock classification.",
+  }),
   "task-scope": Object.freeze({
     name: "task-scope",
     category: "lifecycle",
@@ -725,6 +739,21 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     removes: [".forgeloop/current-contract.json", ".forgeloop/routing-result.json", ".forgeloop/work-state.json", ".forgeloop/preflight.json", ".forgeloop/execution-receipt.json", ".forgeloop/events.ndjson", ".forgeloop/continuity.json", ".forgeloop/gates", ".forgeloop/executions"],
     mayExecuteExternalProcess: false,
     description: "Migrates a legacy 1.0 singleton task state layout into a task-namespaced layout.",
+  }),
+  "migrate-protocol": Object.freeze({
+    name: "migrate-protocol",
+    category: "project-maintenance",
+    mutation: "MUTATING",
+    options: Object.freeze({
+      ...CLI_COMMON_OPTIONS,
+      "--to": Object.freeze({ targetKey: "to", parseType: "string", takesValue: true, valueName: "protocolVersion", missingValueMessage: "--to requires a protocol version", description: "target supported protocol version" }),
+      "--dry-run": Object.freeze({ targetKey: "dryRun", parseType: "boolean", takesValue: false, description: "show migration actions without writing or deleting artifacts" }),
+      "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured migration result as JSON" }),
+    }),
+    writes: [".forgeloop/task-state/<taskKey>/*"],
+    removes: [".forgeloop/current-contract.json", ".forgeloop/routing-result.json", ".forgeloop/work-state.json", ".forgeloop/preflight.json", ".forgeloop/execution-receipt.json", ".forgeloop/events.ndjson", ".forgeloop/continuity.json", ".forgeloop/gates", ".forgeloop/executions"],
+    mayExecuteExternalProcess: false,
+    description: "Safely migrates explicitly supported protocol state; unknown target versions fail without rewriting artifacts.",
   }),
   "task-unlock": Object.freeze({
     name: "task-unlock",
