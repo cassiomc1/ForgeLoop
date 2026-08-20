@@ -1,6 +1,6 @@
 import { resolveTaskContext } from "../core/task-context.js";
 import { readTaskDescriptor } from "../core/task-descriptor.js";
-import { readLockInfo } from "../core/task-lock.js";
+import { classifyLockStaleness, readLockInfo } from "../core/task-lock.js";
 import { taskDirectory, taskArtifactPath } from "../core/task-paths.js";
 import { readWorkState } from "../core/work-state.js";
 import { readContract } from "../core/contract.js";
@@ -54,7 +54,7 @@ export async function runTaskShow({ target, packageRoot, taskId } = {}) {
     directory: taskDirectory(effectiveTaskId),
     phase: state?.phase ?? "UNINITIALIZED",
     writeClaims: descriptor.writeClaims ?? [],
-    lock: lockInfo,
+    lock: lockInfo ? { ...lockInfo, classification: classifyLockStaleness(lockInfo) } : null,
     contract: contract ? { title: contract.title ?? null, taskType: contract.taskType ?? null } : null,
     artifacts,
     createdAt: descriptor.createdAt,
@@ -65,7 +65,7 @@ export async function runTaskShow({ target, packageRoot, taskId } = {}) {
 export function formatTaskShowResult(result) {
   const claims = result.writeClaims.length === 0 ? "none" : result.writeClaims.join(", ");
   const lockStatus = result.lock
-    ? `locked by PID ${result.lock.pid ?? "unknown"} since ${result.lock.acquiredAt ?? "unknown"}`
+    ? `${result.lock.classification.status}: locked by PID ${result.lock.pid ?? "unknown"} since ${result.lock.acquiredAt ?? "unknown"}`
     : "unlocked";
   const lines = [
     `Task: ${result.taskId}`,
