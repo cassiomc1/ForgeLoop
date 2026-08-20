@@ -340,7 +340,7 @@ export function validateCliSemantics({ command, options } = {}) {
     if (!options.checkRequirement) throw new Error("run-check requires --requirement");
     if (options.checkKind || options.checkStatus || options.checkEvidenceKind || options.checkCommand
       || options.checkResult || options.checkExitCode !== null || options.checkExecutionRef || options.checkProvenance) {
-      throw new Error("run-check accepts only --id, --requirement, --details, and -- <argv>");
+      throw new Error("run-check accepts only --id, --requirement, --details, --timeout-ms, and -- <argv>");
     }
     if (!Array.isArray(options.commandArgv) || options.commandArgv.length === 0) {
       throw new Error("run-check requires -- followed by an exact command argv");
@@ -482,6 +482,7 @@ export const COMMAND_HANDLERS = Object.freeze({
       requirement: options.checkRequirement,
       argv: options.commandArgv,
       details: options.checkDetails ?? undefined,
+      timeoutMs: options.timeoutMs ?? undefined,
       taskId: options.task,
     });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatRunCheckResult(result));

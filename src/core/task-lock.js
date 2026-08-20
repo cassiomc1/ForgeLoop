@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, open, readFile, unlink } from "node:fs/promises";
 import path from "node:path";
+import os from "node:os";
 import { assertSafePath, ensureWithin, fileExists } from "./filesystem.js";
 import { taskLockPath } from "./task-paths.js";
 import { E_TASK_LOCKED } from "./error-codes.js";
@@ -20,6 +21,16 @@ export async function readLockInfo(target, taskId) {
   } catch {
     return { taskId, corrupted: true };
   }
+}
+
+export function classifyLockStaleness(lock, now = Date.now()) {
+  if (!lock || lock.corrupted) return { status: "UNKNOWN", stale: false };
+  const heartbeat = Date.parse(lock.heartbeatAt ?? lock.acquiredAt);
+  const leaseMs = Number.isInteger(lock.leaseMs) && lock.leaseMs > 0 ? lock.leaseMs : 300000;
+  if (!Number.isFinite(heartbeat)) return { status: "UNKNOWN", stale: false };
+  return now > heartbeat + leaseMs
+    ? { status: "STALE", stale: true, expiresAt: new Date(heartbeat + leaseMs).toISOString() }
+    : { status: "LIVE", stale: false, expiresAt: new Date(heartbeat + leaseMs).toISOString() };
 }
 
 export const CLAIMS_LOCK_REL_PATH = ".forgeloop/.claims.lock";
@@ -46,12 +57,17 @@ export async function acquireProjectClaimsLock(target, operation = "claim-reserv
 
   await mkdir(path.dirname(fullPath), { recursive: true });
 
+  const acquiredAt = new Date().toISOString();
   const lockData = {
     lockId: randomUUID(),
     scope: "claims-reservation",
     operation,
     pid: process.pid,
-    acquiredAt: new Date().toISOString(),
+    hostname: os.hostname(),
+    ownerInstanceId: randomUUID(),
+    acquiredAt,
+    heartbeatAt: acquiredAt,
+    leaseMs: 300000,
   };
 
   let fileHandle;
@@ -123,12 +139,17 @@ export async function acquireTaskLock(target, taskId, operation = "mutation") {
 
   await mkdir(path.dirname(fullPath), { recursive: true });
 
+  const acquiredAt = new Date().toISOString();
   const lockData = {
     lockId: randomUUID(),
     taskId,
     operation,
     pid: process.pid,
-    acquiredAt: new Date().toISOString(),
+    hostname: os.hostname(),
+    ownerInstanceId: randomUUID(),
+    acquiredAt,
+    heartbeatAt: acquiredAt,
+    leaseMs: 300000,
   };
 
   let fileHandle;
@@ -179,7 +200,7 @@ export async function acquireTaskLock(target, taskId, operation = "mutation") {
   }
 }
 
-export async function forceUnlockTask(target, taskId) {
+export async function forceUnlockTask(target, taskId, { staleOnly = false } = {}) {
   const relativePath = taskLockPath(taskId);
   await assertSafePath(target, relativePath);
   const fullPath = ensureWithin(target, relativePath);
@@ -189,8 +210,12 @@ export async function forceUnlockTask(target, taskId) {
   }
 
   const existing = await readLockInfo(target, taskId);
+  const classification = classifyLockStaleness(existing);
+  if (staleOnly && !classification.stale) {
+    return { unlocked: false, previousLock: existing, classification };
+  }
   await unlink(fullPath);
-  return { unlocked: true, previousLock: existing };
+  return { unlocked: true, previousLock: existing, classification };
 }
 
 export async function withTaskLock(target, taskId, operationOrCallback, callback) {

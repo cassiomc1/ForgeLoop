@@ -264,6 +264,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
       "--id": Object.freeze({ targetKey: "checkId", parseType: "string", takesValue: true, valueName: "id", missingValueMessage: "--id requires a check ID", description: "stable check identifier" }),
       "--requirement": Object.freeze({ targetKey: "checkRequirement", parseType: "string", takesValue: true, valueName: "id", missingValueMessage: "--requirement requires an evidence target", description: "completion requirement covered by the check" }),
       "--details": Object.freeze({ targetKey: "checkDetails", parseType: "json-object", takesValue: true, valueName: "json", missingValueMessage: "--details requires a JSON object", description: "additional structured check details" }),
+      "--timeout-ms": Object.freeze({ targetKey: "timeoutMs", parseType: "non-negative-integer", takesValue: true, valueName: "number", missingValueMessage: "--timeout-ms requires a non-negative integer", description: "maximum command duration before termination" }),
       "--": Object.freeze({ targetKey: "commandArgv", parseType: "argv", takesValue: true, valueName: "argv...", description: "exact command argv to classify, execute, and attest" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
     }),

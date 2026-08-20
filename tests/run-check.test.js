@@ -69,6 +69,31 @@ test("runCommandExecution captures exact argv, target cwd, and non-zero exit", a
   });
 });
 
+test("runCommandExecution records bounded output provenance and terminates a timed-out check", async () => {
+  await withTarget(async (target) => {
+    const result = await runCommandExecution({
+      target,
+      packageRoot,
+      taskId: "task-1",
+      checkId: "timeout",
+      requirement: "timeout",
+      verificationCycle: 1,
+      timeoutMs: 150,
+      argv: [process.execPath, "-e", "process.stdout.write('before timeout'); setInterval(() => {}, 1000)"],
+    });
+
+    assert.equal(result.execution.status, "failed");
+    assert.equal(result.execution.termination, "timeout");
+    assert.equal(result.execution.exitCode, null);
+    assert.equal(result.execution.signal, "SIGTERM");
+    assert.equal(result.execution.stdoutBytes, Buffer.byteLength("before timeout"));
+    assert.match(result.execution.stdoutSha256, /^[a-f0-9]{64}$/);
+    assert.match(result.execution.stderrSha256, /^[a-f0-9]{64}$/);
+    assert.ok(result.execution.durationMs >= 0);
+    assert.equal(result.execution.outputTruncated, false);
+  });
+});
+
 test("install-capable commands are blocked before process launch without authority", async () => {
   await withTarget(async (target) => {
     await assert.rejects(

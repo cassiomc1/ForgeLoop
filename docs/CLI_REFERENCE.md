@@ -407,6 +407,7 @@ Executes a verification command with ForgeLoop-attested provenance.
 - `--id <id>`: stable check identifier
 - `--requirement <id>`: completion requirement covered by the check
 - `--details <json>`: additional structured check details
+- `--timeout-ms <number>`: maximum command duration before termination
 - `-- <argv...>`: exact command argv to classify, execute, and attest
 - `--json`: emit structured output as JSON
 

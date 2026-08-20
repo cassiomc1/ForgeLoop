@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
 import { readdir } from "node:fs/promises";
 import path from "node:path";
@@ -54,25 +54,73 @@ function validateAuthorityBeforeLaunch({ target, taskId, argv, resolution, detai
   }
 }
 
-function executeProcess(argv, cwd) {
+const MAX_CAPTURED_OUTPUT_BYTES = 64 * 1024;
+
+function digest(bytes) {
+  return createHash("sha256").update(bytes).digest("hex");
+}
+
+function executeProcess(argv, cwd, { timeoutMs = null } = {}) {
   return new Promise((resolve) => {
     let spawnError = null;
+    let timedOut = false;
+    let settled = false;
+    let timeout = null;
+    const stdout = [];
+    const stderr = [];
+    let stdoutBytes = 0;
+    let stderrBytes = 0;
+    let outputTruncated = false;
+    const capture = (chunks, chunk, total) => {
+      const available = MAX_CAPTURED_OUTPUT_BYTES - total;
+      if (available <= 0) {
+        outputTruncated = true;
+        return total;
+      }
+      if (chunk.length > available) {
+        chunks.push(chunk.subarray(0, available));
+        outputTruncated = true;
+        return total + available;
+      }
+      chunks.push(chunk);
+      return total + chunk.length;
+    };
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      if (timeout) clearTimeout(timeout);
+      resolve({
+        ...result,
+        timedOut,
+        stdout: Buffer.concat(stdout),
+        stderr: Buffer.concat(stderr),
+        stdoutBytes,
+        stderrBytes,
+        outputTruncated,
+      });
+    };
     try {
       const child = spawn(argv[0], argv.slice(1), {
         cwd,
         shell: false,
         stdio: ["ignore", "pipe", "pipe"],
       });
-      child.stdout?.resume();
-      child.stderr?.resume();
+      child.stdout?.on("data", (chunk) => { stdoutBytes = capture(stdout, chunk, stdoutBytes); });
+      child.stderr?.on("data", (chunk) => { stderrBytes = capture(stderr, chunk, stderrBytes); });
       child.once("error", (error) => {
         spawnError = error;
       });
-      child.once("close", (exitCode) => {
-        resolve({ exitCode, spawnError });
+      child.once("close", (exitCode, signal) => {
+        finish({ exitCode, signal, spawnError });
       });
+      if (Number.isInteger(timeoutMs) && timeoutMs > 0) {
+        timeout = setTimeout(() => {
+          timedOut = true;
+          child.kill("SIGTERM");
+        }, timeoutMs);
+      }
     } catch (error) {
-      resolve({ exitCode: null, spawnError: error });
+      finish({ exitCode: null, signal: null, spawnError: error });
     }
   });
 }
@@ -106,6 +154,7 @@ export async function runCommandExecution({
   authorityContext,
   runtimeContext,
   executionPath,
+  timeoutMs = null,
 } = {}) {
   const commandArgv = normalizeArgv(argv);
   const resolution = await resolveExecutionResolution({
@@ -145,7 +194,7 @@ export async function runCommandExecution({
 
   const executionId = `exec-${randomUUID()}`;
   const startedAt = new Date().toISOString();
-  const processResult = await executeProcess(commandArgv, target);
+  const processResult = await executeProcess(commandArgv, target, { timeoutMs });
   const finishedAt = new Date().toISOString();
   const execution = {
     schemaVersion: 1,
@@ -167,8 +216,16 @@ export async function runCommandExecution({
     ...(resolution.dispatch ? { dispatch: resolution.dispatch } : {}),
     startedAt,
     finishedAt,
-    status: processResult.exitCode === 0 && !processResult.spawnError ? "passed" : "failed",
+    status: processResult.exitCode === 0 && !processResult.spawnError && !processResult.timedOut ? "passed" : "failed",
     exitCode: processResult.exitCode,
+    durationMs: Math.max(0, Date.parse(finishedAt) - Date.parse(startedAt)),
+    termination: processResult.spawnError ? "spawn-error" : processResult.timedOut ? "timeout" : processResult.signal ? "signal" : "exit",
+    signal: processResult.signal ?? null,
+    stdoutSha256: digest(processResult.stdout),
+    stderrSha256: digest(processResult.stderr),
+    stdoutBytes: processResult.stdoutBytes,
+    stderrBytes: processResult.stderrBytes,
+    outputTruncated: processResult.outputTruncated,
   };
   const execPath = executionPath ?? await resolveExecutionArtifactPath(target, taskId, executionId);
   const written = await writeJsonArtifact(target, execPath, execution, "execution", packageRoot);

@@ -8,6 +8,7 @@ import {
   acquireTaskLock,
   readLockInfo,
   forceUnlockTask,
+  classifyLockStaleness,
   withTaskLock,
 } from "../src/core/task-lock.js";
 import { taskLockPath } from "../src/core/task-paths.js";
@@ -29,6 +30,10 @@ test("acquireTaskLock acquires exclusive lock and release removes it", async () 
     assert.ok(lockHandle);
     assert.equal(lockHandle.lockData.taskId, taskId);
     assert.equal(lockHandle.lockData.operation, "test-cmd");
+    assert.equal(typeof lockHandle.lockData.hostname, "string");
+    assert.equal(typeof lockHandle.lockData.ownerInstanceId, "string");
+    assert.equal(lockHandle.lockData.leaseMs, 300000);
+    assert.equal(lockHandle.lockData.heartbeatAt, lockHandle.lockData.acquiredAt);
     assert.equal(typeof lockHandle.release, "function");
 
     const fullLockPath = path.join(target, taskLockPath(taskId));
@@ -52,6 +57,10 @@ test("acquireTaskLock acquires exclusive lock and release removes it", async () 
     const infoAfter = await readLockInfo(target, taskId);
     assert.equal(infoAfter, null);
   });
+});
+
+test("classifyLockStaleness distinguishes an expired lease", () => {
+  assert.equal(classifyLockStaleness({ acquiredAt: "2020-01-01T00:00:00.000Z", heartbeatAt: "2020-01-01T00:00:00.000Z", leaseMs: 1 }, Date.parse("2020-01-01T00:00:00.002Z")).status, "STALE");
 });
 
 test("withTaskLock runs mutation under lock and releases cleanly on complete or error", async () => {
