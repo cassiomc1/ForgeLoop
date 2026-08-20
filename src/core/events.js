@@ -119,7 +119,14 @@ export async function readEventTail(target, packageRoot, options = {}) {
       await handle.close();
     }
     let text = bytes.toString("utf8");
-    if (position > 0) text = text.slice(text.indexOf("\n") + 1);
+    if (position > 0) {
+      const firstLineEnd = text.indexOf("\n");
+      if (firstLineEnd < 0) {
+        window = Math.min(size, window * 2);
+        continue;
+      }
+      text = text.slice(firstLineEnd + 1);
+    }
     const lines = text.split(/\r?\n/).filter((line) => line.trim() !== "");
     if (lines.length >= limit || position === 0) {
       return parseEventsText(lines.slice(-limit).join("\n"), relPath, packageRoot);
