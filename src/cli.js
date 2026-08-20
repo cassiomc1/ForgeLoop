@@ -383,8 +383,8 @@ function printActions(actions) {
 }
 
 export const COMMAND_HANDLERS = Object.freeze({
-  "protocol-info": async ({ options }) => {
-    const result = await runProtocolInfo();
+  "protocol-info": async ({ packageVersion, options }) => {
+    const result = await runProtocolInfo({ packageVersion });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatProtocolInfoResult(result));
     return 0;
   },

@@ -1,4 +1,5 @@
 import { CLI_COMMAND_DEFINITIONS } from "./cli-command-definitions.js";
+import { ARTIFACT_REGISTRY } from "./artifact-registry.js";
 import { PUBLIC_ERROR_REGISTRY } from "./error-codes.js";
 import { GUIDE_REGISTRY } from "./guide-registry.js";
 import { PROTOCOL_VERSION, WORK_PHASES, WORK_TRANSITIONS } from "./protocol.js";
@@ -11,10 +12,26 @@ export const SCHEMA_COMPATIBILITY_POLICY = Object.freeze({
   migration: "Legacy singleton artifacts remain readable and are migrated explicitly with task-migrate.",
 });
 
-export function protocolInfo() {
+function publicSchemaVersions() {
+  return Object.fromEntries(
+    [...new Set(Object.values(ARTIFACT_REGISTRY)
+      .filter((artifact) => artifact.isPublic && artifact.isPersisted)
+      .map((artifact) => artifact.schema))]
+      .sort()
+      .map((schema) => [schema, [SCHEMA_COMPATIBILITY_POLICY.schemaVersion]]),
+  );
+}
+
+export function protocolInfo({ packageVersion = null } = {}) {
   const errors = Object.values(PUBLIC_ERROR_REGISTRY);
+  const schemaVersions = publicSchemaVersions();
   return {
+    packageVersion,
     protocolVersion: PROTOCOL_VERSION,
+    readsProtocol: [PROTOCOL_VERSION],
+    writesProtocol: [PROTOCOL_VERSION],
+    readsSchemaVersions: schemaVersions,
+    writesSchemaVersions: schemaVersions,
     compatibility: SCHEMA_COMPATIBILITY_POLICY,
     lifecycle: { phases: WORK_PHASES, transitions: WORK_TRANSITIONS },
     guides: Object.values(GUIDE_REGISTRY),
