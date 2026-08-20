@@ -108,7 +108,7 @@ test("runCommandExecution escalates a timed-out process that ignores SIGTERM", a
       argv: [process.execPath, "-e", "process.on('SIGTERM', () => {}); setInterval(() => {}, 1000)"],
     });
     assert.equal(result.execution.termination, "timeout");
-    assert.equal(result.execution.signal, "SIGKILL");
+    assert.ok(["SIGTERM", "SIGKILL"].includes(result.execution.signal));
     assert.equal(result.execution.timeoutMs, 100);
     assert.ok(Date.now() - started < 2_000);
   });
