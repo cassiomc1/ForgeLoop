@@ -57,7 +57,15 @@
     "startedAt": { "type": "string", "minLength": 1 },
     "finishedAt": { "type": "string", "minLength": 1 },
     "status": { "enum": ["passed", "failed"] },
-    "exitCode": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }] }
+    "exitCode": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }] },
+    "durationMs": { "type": "integer", "minimum": 0 },
+    "termination": { "enum": ["exit", "signal", "timeout", "spawn-error"] },
+    "signal": { "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+    "stdoutSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "stderrSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "stdoutBytes": { "type": "integer", "minimum": 0 },
+    "stderrBytes": { "type": "integer", "minimum": 0 },
+    "outputTruncated": { "type": "boolean" }
   },
   "additionalProperties": false
 }

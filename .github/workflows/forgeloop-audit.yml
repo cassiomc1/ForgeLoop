@@ -21,3 +21,11 @@ jobs:
       - name: Audit ForgeLoop receipt
         if: ${{ hashFiles('.forgeloop/execution-receipt.json') != '' }}
         run: node src/cli.js audit --strict
+      - name: Discover task-scoped ForgeLoop receipts
+        id: receipts
+        run: |
+          count=$(find .forgeloop/task-state -name execution-receipt.json -type f 2>/dev/null | wc -l | tr -d ' ')
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+      - name: Audit task-scoped ForgeLoop receipts
+        if: ${{ steps.receipts.outputs.count != '0' }}
+        run: node src/cli.js audit --strict

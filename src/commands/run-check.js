@@ -12,6 +12,7 @@ export async function runCheck({
   requirement,
   argv,
   details,
+  timeoutMs,
   authorityContext,
   runtimeContext,
   taskId,
@@ -44,6 +45,7 @@ export async function runCheck({
       verificationCycle,
       argv,
       details,
+      timeoutMs,
       authorityContext,
       runtimeContext,
     });
