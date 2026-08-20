@@ -24,6 +24,11 @@ const steps = [
     args: [],
   },
   {
+    name: "Executable Documentation Examples",
+    script: "scripts/validate_documentation_examples.mjs",
+    args: [],
+  },
+  {
     name: "Documentation Manifest Validation",
     script: "scripts/validate_documentation_manifest.mjs",
     args: [],

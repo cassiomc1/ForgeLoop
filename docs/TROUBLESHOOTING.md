@@ -30,6 +30,15 @@ This guide provides symptom-first recovery procedures for common ForgeLoop proto
 
 ## Symptoms and Recovery
 
+Confirm the local CLI's public metadata before diagnosing a harness/version
+mismatch. This check does not create or mutate task state.
+
+<!-- FORGELOOP EXAMPLE: troubleshooting:protocol-info | exit=0 | json.errors.0.code=E_AUTHORITY_INVALID -->
+```bash
+forgeloop protocol-info --json
+```
+<!-- END FORGELOOP EXAMPLE -->
+
 ### Symptom: `preflight` is `BLOCKED`
 
 #### What it means

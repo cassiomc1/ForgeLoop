@@ -39,6 +39,15 @@ Core mental model:
 
 In your project repository:
 
+Confirm the installed CLI exposes the compatible protocol before creating
+state. This is read-only and safe to run in a fresh project directory.
+
+<!-- FORGELOOP EXAMPLE: getting-started:compatibility | exit=0 | json.compatibility.schemaVersion=1 -->
+```bash
+forgeloop protocol-info --json
+```
+<!-- END FORGELOOP EXAMPLE -->
+
 ```bash
 # Initialize ForgeLoop kit and discovery shims
 npx @cassiomc1/forgeloop init

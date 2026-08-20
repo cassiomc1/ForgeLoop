@@ -70,9 +70,11 @@ Reports the public compatibility handshake required by external ForgeLoop harnes
 
 - **Example**:
 
+  <!-- FORGELOOP EXAMPLE: cli-reference:protocol-info | exit=0 | json.commands.0.name=protocol-info -->
   ```bash
   forgeloop protocol-info --json
   ```
+  <!-- END FORGELOOP EXAMPLE -->
 
 ### `init`
 

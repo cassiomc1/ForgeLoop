@@ -69,6 +69,15 @@ forgeloop next --task demo --json
 O último comando informa a ação segura seguinte; ele não executa código nem
 agenda agentes.
 
+Antes de um harness criar ou retomar uma tarefa, ele pode confirmar a
+compatibilidade pública sem depender de detalhes internos:
+
+<!-- FORGELOOP EXAMPLE: readme:compatibility | exit=0 | json.protocolVersion=1 -->
+```bash
+forgeloop protocol-info --json
+```
+<!-- END FORGELOOP EXAMPLE -->
+
 ### Responsabilidades
 
 | Responsabilidade | ForgeLoop | Harness ou desenvolvedor |

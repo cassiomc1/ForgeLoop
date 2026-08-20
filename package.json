@@ -66,6 +66,7 @@
     "docs:generate": "node scripts/generate_documentation_reference.mjs --write",
     "docs:generated:check": "node scripts/generate_documentation_reference.mjs --check",
     "docs:conformance": "node scripts/validate_documentation_conformance.mjs",
+    "docs:examples:check": "node scripts/validate_documentation_examples.mjs",
     "docs:report": "node scripts/report_documentation_health.mjs",
     "docs:check": "node scripts/run-docs-check.js",
     "lint": "eslint .",
