@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -15,6 +15,24 @@ test("withTaskTransaction publishes staged files only after callback completes",
     });
     assert.equal(await readFile(path.join(target, ".forgeloop/task-state/output.txt"), "utf8"), "committed\n");
     assert.deepEqual(await findIncompleteTransactions(target), []);
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
+test("withTaskTransaction leaves no temporary atomic-write artifacts after durable publication", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-transaction-"));
+  try {
+    await withTaskTransaction({ target, taskId: "durable-transaction", operation: "test" }, async (tx) => {
+      await tx.stageText(".forgeloop/task-state/output.txt", "durable\n");
+    });
+    const transactionRoot = path.join(target, ".forgeloop/.txn");
+    const transactionIds = await readdir(transactionRoot);
+    for (const transactionId of transactionIds) {
+      const files = await readdir(path.join(transactionRoot, transactionId), { recursive: true });
+      assert.equal(files.some((file) => file.endsWith(".tmp")), false);
+    }
+    assert.equal(await readFile(path.join(target, ".forgeloop/task-state/output.txt"), "utf8"), "durable\n");
   } finally {
     await rm(target, { recursive: true, force: true });
   }

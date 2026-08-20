@@ -3,11 +3,11 @@ import {
   access,
   lstat,
   mkdir,
+  open,
   readFile,
   realpath,
   rename,
   unlink,
-  writeFile,
 } from "node:fs/promises";
 import path from "node:path";
 
@@ -108,10 +108,28 @@ export async function writeFileAtomic(filePath, bytes, { dryRun = false } = {}) 
 
   await mkdir(path.dirname(filePath), { recursive: true });
   const temporaryPath = `${filePath}.${randomUUID()}.tmp`;
+  let temporaryHandle;
   try {
-    await writeFile(temporaryPath, bytes, { mode: 0o644 });
+    // A rename alone is atomic but does not guarantee that staged bytes have
+    // reached stable storage. Sync the temporary file before publishing it;
+    // directory sync is best-effort because Windows and some filesystems do
+    // not permit opening a directory for fsync.
+    temporaryHandle = await open(temporaryPath, "w", 0o644);
+    await temporaryHandle.writeFile(bytes);
+    await temporaryHandle.sync();
+    await temporaryHandle.close();
+    temporaryHandle = null;
     await rename(temporaryPath, filePath);
+    try {
+      const directoryHandle = await open(path.dirname(filePath), "r");
+      try { await directoryHandle.sync(); } finally { await directoryHandle.close(); }
+    } catch (error) {
+      if (!["EINVAL", "EPERM", "EISDIR", "ENOTSUP", "UNKNOWN"].includes(error.code)) throw error;
+    }
   } catch (error) {
+    if (temporaryHandle) {
+      try { await temporaryHandle.close(); } catch { /* preserve original error */ }
+    }
     try {
       await unlink(temporaryPath);
     } catch {
