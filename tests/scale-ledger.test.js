@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -15,6 +15,34 @@ test("ledger tail reads only the requested recent events", async () => {
     }
     const tail = await readEventTail(target, getPackageRoot(), { limit: 3 });
     assert.deepEqual(tail.map((event) => event.seq), [10, 11, 12]);
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
+test("ledger tail remains bounded for a 100k-event NDJSON ledger", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-ledger-scale-"));
+  try {
+    const ledgerPath = path.join(target, ".forgeloop", "events.ndjson");
+    await mkdir(path.dirname(ledgerPath), { recursive: true });
+    const hash = "a".repeat(64);
+    const lines = [];
+    for (let index = 1; index <= 100_000; index += 1) {
+      lines.push(JSON.stringify({
+        seq: index,
+        schemaVersion: 1,
+        protocolVersion: 1,
+        taskId: "scale-ledger",
+        event: "OBSERVATION",
+        at: "2026-01-01T00:00:00.000Z",
+        previousHash: index === 1 ? null : hash,
+        hash,
+      }));
+    }
+    await writeFile(ledgerPath, `${lines.join("\n")}\n`);
+
+    const tail = await readEventTail(target, getPackageRoot(), { limit: 5 });
+    assert.deepEqual(tail.map((event) => event.seq), [99_996, 99_997, 99_998, 99_999, 100_000]);
   } finally {
     await rm(target, { recursive: true, force: true });
   }
