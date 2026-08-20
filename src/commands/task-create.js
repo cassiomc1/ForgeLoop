@@ -38,7 +38,7 @@ export async function runTaskCreate({ target, packageRoot, taskId, claims = [], 
       await assertScopeClean(target, normalizedClaims);
     }
 
-    return withTaskTransaction({ target, taskId, operation: "task-create" }, async () => {
+    return withTaskTransaction({ target, taskId, operation: "task-create", packageRoot, recordCommitEvent: true }, async () => {
       const descriptor = createTaskDescriptor({
         taskId,
         writeClaims: normalizedClaims,

@@ -5,6 +5,8 @@ import path from "node:path";
 import { test } from "node:test";
 
 import { withTaskTransaction, findIncompleteTransactions, recoverIncompleteTransactions } from "../src/core/transaction.js";
+import { appendProtocolEvent, readEvents } from "../src/core/events.js";
+import { getPackageRoot } from "../src/core/templates.js";
 
 test("withTaskTransaction publishes staged files only after callback completes", async () => {
   const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-transaction-"));
@@ -33,6 +35,23 @@ test("withTaskTransaction leaves no temporary atomic-write artifacts after durab
       assert.equal(files.some((file) => file.endsWith(".tmp")), false);
     }
     assert.equal(await readFile(path.join(target, ".forgeloop/task-state/output.txt"), "utf8"), "durable\n");
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
+test("transaction commit witness is the final published ledger event", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-transaction-"));
+  const packageRoot = getPackageRoot();
+  try {
+    await withTaskTransaction({ target, taskId: "witness-transaction", operation: "test", packageRoot, recordCommitEvent: true }, async (tx) => {
+      await tx.stageText(".forgeloop/task-state/output.txt", "published-first\n");
+      await appendProtocolEvent(target, { taskId: "witness-transaction", event: "TASK_RECEIVED" }, packageRoot, { taskId: "witness-transaction" });
+    });
+    assert.equal(await readFile(path.join(target, ".forgeloop/task-state/output.txt"), "utf8"), "published-first\n");
+    const events = await readEvents(target, packageRoot, { taskId: "witness-transaction" });
+    assert.equal(events.at(-1).event, "TRANSACTION_COMMITTED");
+    assert.equal(events.at(-1).details.transactionId.startsWith("txn-"), true);
   } finally {
     await rm(target, { recursive: true, force: true });
   }

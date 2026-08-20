@@ -83,7 +83,14 @@ export async function recoverIncompleteTransactions(target) {
   return recovered;
 }
 
-export async function withTaskTransaction({ target, taskId, lockTaskId = taskId, operation = "mutation" } = {}, callback) {
+export async function withTaskTransaction({
+  target,
+  taskId,
+  lockTaskId = taskId,
+  operation = "mutation",
+  packageRoot,
+  recordCommitEvent = false,
+} = {}, callback) {
   if (!target || !taskId) throw new Error("target and taskId are required for a task transaction");
   const started = Date.now();
   const runWithLock = async () => withTaskLock(target, lockTaskId, operation, async (lock) => {
@@ -118,10 +125,32 @@ export async function withTaskTransaction({ target, taskId, lockTaskId = taskId,
       },
     };
     try {
-      const result = await transactionContext.run(tx, () => callback(tx));
+      const result = await transactionContext.run(tx, async () => {
+        const callbackResult = await callback(tx);
+        if (recordCommitEvent) {
+          // Import lazily to keep the transaction/event dependency directional
+          // at module initialization. The event is staged while this task's
+          // transaction context is still active and is published last below.
+          const { appendProtocolEvent } = await import("./events.js");
+          await appendProtocolEvent(target, {
+            taskId,
+            event: "TRANSACTION_COMMITTED",
+            details: { transactionId, operation },
+          }, packageRoot, { taskId });
+        }
+        return callbackResult;
+      });
       manifest.status = "COMMITTING";
       await writeManifest(target, manifestPath, manifest);
-      for (const entry of manifest.writes) {
+      // The ledger is the commit witness. Publishing it last means that a
+      // visible TRANSACTION_COMMITTED event cannot precede a required staged
+      // artifact in the same transaction.
+      const writes = [...manifest.writes].sort((left, right) => {
+        const leftIsLedger = writePath(left).endsWith("events.ndjson");
+        const rightIsLedger = writePath(right).endsWith("events.ndjson");
+        return Number(leftIsLedger) - Number(rightIsLedger);
+      });
+      for (const entry of writes) {
         const relativePath = writePath(entry);
         const staged = ensureWithin(target, `${stageRoot}/${relativePath}`);
         const destination = ensureWithin(target, relativePath);
