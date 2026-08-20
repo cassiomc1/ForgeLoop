@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { access, mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
@@ -182,5 +182,53 @@ test("forgeloop task-migrate converts 1.0 layout via CLI with human and json out
     assert.ok(migrated.targetDirectory);
     assert.ok(Array.isArray(migrated.migratedArtifacts));
     assert.ok(migrated.migratedArtifacts.includes("contract.json"));
+  });
+});
+
+test("forgeloop migrate-protocol plans safely, rejects unsupported targets, and reuses receipt-backed legacy migration", async () => {
+  await withTarget(async (target) => {
+    const dryRun = runCli(target, "migrate-protocol", "--to", "1", "--dry-run", "--json");
+    assert.equal(dryRun.status, 0, `migrate-protocol dry-run failed: ${dryRun.stderr}`);
+    const planned = JSON.parse(dryRun.stdout);
+    assert.equal(planned.status, "ALREADY_COMPATIBLE");
+    assert.equal(planned.dryRun, true);
+    assert.deepEqual(planned.actions, []);
+    await assert.rejects(access(path.join(target, ".forgeloop")));
+
+    const unsupported = runCli(target, "migrate-protocol", "--to", "2", "--json");
+    assert.equal(unsupported.status, 1);
+    assert.match(unsupported.stderr, /E_PROTOCOL_MIGRATION_TARGET_UNSUPPORTED/);
+    await assert.rejects(access(path.join(target, ".forgeloop")));
+  });
+
+  await withTarget(async (target) => {
+    const contract = createContract({
+      taskId: "protocol-migration-task",
+      objective: "Migrate through the protocol surface",
+      deliverables: ["src/index.js"],
+      constraints: ["none"],
+      risks: ["low"],
+      verification: ["tests"],
+      successCriteria: ["tests pass"],
+      stopConditions: ["error"],
+      unresolvedDecisions: [],
+      sourceRefs: ["src"],
+    });
+    await writeContract(target, contract, packageRoot);
+
+    const plan = runCli(target, "migrate-protocol", "--to=1", "--dry-run", "--json");
+    assert.equal(plan.status, 0, `legacy protocol dry-run failed: ${plan.stderr}`);
+    const planned = JSON.parse(plan.stdout);
+    assert.equal(planned.status, "PLANNED_LEGACY_LAYOUT_MIGRATION");
+    assert.equal(planned.migrated, false);
+    assert.deepEqual(planned.actions.map((action) => action.kind), ["LEGACY_LAYOUT_MIGRATION"]);
+
+    const migrated = runCli(target, "migrate-protocol", "--to", "1", "--json");
+    assert.equal(migrated.status, 0, `legacy protocol migration failed: ${migrated.stderr}`);
+    const result = JSON.parse(migrated.stdout);
+    assert.equal(result.status, "MIGRATED_LEGACY_LAYOUT");
+    assert.equal(result.migrated, true);
+    assert.equal(result.taskId, "protocol-migration-task");
+    assert.ok(result.migratedArtifacts.includes("migration-receipt.json"));
   });
 });

@@ -9,7 +9,7 @@ export const SCHEMA_COMPATIBILITY_POLICY = Object.freeze({
   schemaVersion: 1,
   read: "Readers reject unknown protocol or schema versions; compatibility changes require a new published version.",
   write: "Writers emit only the current schema and protocol versions.",
-  migration: "Legacy singleton artifacts remain readable and are migrated explicitly with task-migrate.",
+  migration: "Use migrate-protocol --to <version> --dry-run to plan an explicit supported migration. Legacy singleton artifacts are migrated with a receipt-backed task-migrate action.",
 });
 
 function publicSchemaVersions() {

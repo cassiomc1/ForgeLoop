@@ -46,6 +46,7 @@ import { formatTaskListResult, runTaskList } from "./commands/task-list.js";
 import { formatTaskShowResult, runTaskShow } from "./commands/task-show.js";
 import { formatTaskScopeResult, runTaskScope } from "./commands/task-scope.js";
 import { formatTaskMigrateResult, runTaskMigrate } from "./commands/task-migrate.js";
+import { formatMigrateProtocolResult, runMigrateProtocol } from "./commands/migrate-protocol.js";
 import { formatTaskUnlockResult, runTaskUnlock } from "./commands/task-unlock.js";
 import { formatTaskLockStatusResult, runTaskLockStatus } from "./commands/task-lock-status.js";
 import { formatProtocolInfoResult, runProtocolInfo } from "./commands/protocol-info.js";
@@ -701,6 +702,11 @@ export const COMMAND_HANDLERS = Object.freeze({
   "task-migrate": async ({ target, packageRoot, options }) => {
     const result = await runTaskMigrate({ target, packageRoot, dryRun: options.dryRun });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatTaskMigrateResult(result));
+    return 0;
+  },
+  "migrate-protocol": async ({ target, packageRoot, options }) => {
+    const result = await runMigrateProtocol({ target, packageRoot, to: options.to, dryRun: options.dryRun });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatMigrateProtocolResult(result));
     return 0;
   },
   "task-unlock": async ({ target, packageRoot, options }) => {

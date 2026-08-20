@@ -40,7 +40,7 @@ ForgeLoop uses a definition-driven command-line parser:
 | Category | Commands |
 | --- | --- |
 | **Inspection & Diagnostics** | [`protocol-info`](#protocol-info), [`doctor`](#doctor), [`progress`](#progress), [`profile-interview`](#profile-interview), [`inspect`](#inspect), [`status`](#status), [`validate-state`](#validate-state), [`validate-protocol`](#validate-protocol) |
-| **Setup & Maintenance** | [`init`](#init), [`update`](#update), [`task-migrate`](#task-migrate), [`task-unlock`](#task-unlock) |
+| **Setup & Maintenance** | [`init`](#init), [`update`](#update), [`task-migrate`](#task-migrate), [`migrate-protocol`](#migrate-protocol), [`task-unlock`](#task-unlock) |
 | **Lifecycle & State** | [`activate`](#activate), [`route`](#route), [`preflight`](#preflight), [`advance`](#advance), [`next`](#next), [`record-diagnosis`](#record-diagnosis), [`record-decision-criterion`](#record-decision-criterion), [`complete`](#complete), [`clear-state`](#clear-state), [`reconcile-closure`](#reconcile-closure), [`task-create`](#task-create), [`task-list`](#task-list), [`task-show`](#task-show), [`task-lock-status`](#task-lock-status), [`task-scope`](#task-scope) |
 | **Cross-Harness Continuity** | [`continuity`](#continuity), [`record-continuity`](#record-continuity), [`reconcile-continuity`](#reconcile-continuity), [`clear-continuity`](#clear-continuity) |
 | **Verification & Completion** | [`prepare-completion`](#prepare-completion), [`run-check`](#run-check), [`record-check`](#record-check), [`record-terminal-result`](#record-terminal-result), [`audit`](#audit), [`report`](#report), [`validate-receipt`](#validate-receipt) |
@@ -1228,6 +1228,37 @@ Migrates a legacy 1.0 single-task `.forgeloop/` layout into a namespaced task di
 
   ```bash
   forgeloop task-migrate --json
+  ```
+
+### `migrate-protocol`
+
+Plans or applies an explicitly supported persisted-state migration to a target
+protocol version.
+
+- **Purpose**: Provides a fail-closed compatibility migration surface. In the
+  current release, target protocol `1` either needs no change or converts a
+  detected legacy singleton layout through the verified `task-migrate` flow.
+- **When to use**: Before upgrading persisted ForgeLoop state when a release
+  documents a new protocol migration. Run the dry-run first and retain the
+  resulting migration receipt after applying a legacy conversion.
+- **Mutation**: Does not write with `--dry-run`. A supported legacy conversion
+  writes the namespaced task state and its `migration-receipt.json` before
+  removing legacy artifacts.
+- **Options**:
+
+<!-- BEGIN FORGELOOP GENERATED: cli:migrate-protocol:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--to <protocolVersion>`: target supported protocol version
+- `--dry-run`: show migration actions without writing or deleting artifacts
+- `--json`: emit structured migration result as JSON
+
+<!-- END FORGELOOP GENERATED: cli:migrate-protocol:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop migrate-protocol --to 1 --dry-run --json
   ```
 
 ### `task-unlock`
