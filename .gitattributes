@@ -1,2 +1,8 @@
 # The frozen published-package fixture is hash-addressed; preserve its bytes on every host.
 tests/fixtures/legacy-0.1.6/** -text
+
+# Generated documentation and protocol artifacts compare canonical bytes across hosts.
+*.md text eol=lf
+*.json text eol=lf
+*.mjs text eol=lf
+*.js text eol=lf
