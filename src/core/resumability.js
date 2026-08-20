@@ -1,5 +1,5 @@
 import { currentRepositoryFingerprint } from "./repository.js";
-import { createWorkState, readWorkState, writeWorkState } from "./work-state.js";
+import { createWorkState, initializeWorkState, readWorkState, mutateWorkState } from "./work-state.js";
 
 const DEFAULT_PENDING_STEPS = ["planning", "implementation", "verification"];
 
@@ -22,8 +22,7 @@ export async function ensureResumableState({ target, packageRoot, contract, rout
     blockers: [],
     verificationEvidence: [],
   });
-  await writeWorkState(target, state, { packageRoot, taskId, statePath });
-  return state;
+  return initializeWorkState(target, state, { packageRoot, taskId, statePath });
 }
 
 export async function synchronizePreflightState({
@@ -57,7 +56,10 @@ export async function synchronizePreflightState({
   if (JSON.stringify(withoutTimestamp(candidate)) === JSON.stringify(withoutTimestamp(state))) {
     return state;
   }
-  const next = { ...candidate, lastUpdated: new Date().toISOString() };
-  await writeWorkState(target, next, { packageRoot, taskId, statePath });
-  return next;
+  return mutateWorkState(target, {
+    expectedRevision: state.revision ?? 0,
+    packageRoot,
+    taskId,
+    statePath,
+  }, () => ({ ...candidate, lastUpdated: new Date().toISOString() }));
 }

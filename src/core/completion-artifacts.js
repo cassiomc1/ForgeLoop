@@ -16,7 +16,7 @@ import { evaluatePreflight } from "./preflight.js";
 import { currentChangedPaths } from "./repository.js";
 import { readPersistedRoute } from "./route-artifact.js";
 import { createReceipt, validateReceipt } from "./receipt.js";
-import { readWorkState, writeWorkState } from "./work-state.js";
+import { readWorkState, mutateWorkState } from "./work-state.js";
 import { assertExecutionPrerequisites, hasExecutionStarted } from "./execution-prerequisites.js";
 import { normalizeRequirements } from "./evidence-readiness.js";
 import { classifyCommandResolution, validateVerificationAuthority } from "./verification-capability.js";
@@ -650,6 +650,7 @@ export async function recordCheck({
   });
   const nextState = {
     ...state,
+    revision: (state.revision ?? 0) + 1,
     checks,
     verificationEvidence: appendUniqueEvidence(state.verificationEvidence ?? [], evidence),
     evidenceCoverage: coverage,
@@ -682,7 +683,12 @@ export async function recordCheck({
     runtimeContext,
   });
 
-  await writeWorkState(target, nextState, { packageRoot, taskId, statePath });
+  await mutateWorkState(target, {
+    expectedRevision: state.revision ?? 0,
+    packageRoot,
+    taskId,
+    statePath,
+  }, () => nextState);
   const written = await writeJsonArtifact(
     target,
     receiptRel,
@@ -900,6 +906,7 @@ export async function recordTerminalResult({
   const evidenceList = appendUniqueEvidence(existingReceipt.value.evidence ?? [], terminalEvidence);
   const nextState = {
     ...state,
+    revision: (state.revision ?? 0) + 1,
     verificationEvidence: evidenceList,
     lastUpdated: new Date().toISOString(),
   };
@@ -932,7 +939,12 @@ export async function recordTerminalResult({
     runtimeContext,
   });
 
-  await writeWorkState(target, nextState, { packageRoot, taskId, statePath });
+  await mutateWorkState(target, {
+    expectedRevision: state.revision ?? 0,
+    packageRoot,
+    taskId,
+    statePath,
+  }, () => nextState);
   await writeJsonArtifact(
     target,
     receiptRel,

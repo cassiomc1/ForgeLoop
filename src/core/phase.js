@@ -9,7 +9,7 @@ import {
 } from "./events.js";
 import { readPersistedRoute } from "./route-artifact.js";
 import { assertWorkPhase, isValidTransition } from "./protocol.js";
-import { readWorkState, writeWorkState } from "./work-state.js";
+import { readWorkState, mutateWorkState } from "./work-state.js";
 import { evaluateCompletion } from "./completion.js";
 import { evaluatePreflight } from "./preflight.js";
 import { requiredEvidenceForTarget } from "./completion-artifacts.js";
@@ -304,6 +304,7 @@ export async function advanceWorkState(target, toPhase, options = {}) {
     next.verificationCycle = reenteringVerification ? (state.verificationCycle ?? 1) + 1 : (state.verificationCycle ?? 1);
   }
   if (reenteringVerification) delete next.lastCompletionAttempt;
+  next.revision = (state.revision ?? 0) + 1;
   let nextReceipt = null;
   try {
     const receipt = await readJsonArtifact(target, receiptRel, "execution-receipt", packageRoot);
@@ -361,7 +362,12 @@ export async function advanceWorkState(target, toPhase, options = {}) {
   } catch (error) {
     if (error.code !== "ARTIFACT_MISSING") throw error;
   }
-  await writeWorkState(target, next, { packageRoot, taskId, statePath });
+  await mutateWorkState(target, {
+    expectedRevision: state.revision ?? 0,
+    packageRoot,
+    taskId,
+    statePath,
+  }, () => next);
   if (nextReceipt) {
     await writeJsonArtifact(target, receiptRel, nextReceipt, "execution-receipt", packageRoot);
   }
