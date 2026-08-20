@@ -62,8 +62,9 @@ test("acquireTaskLock acquires exclusive lock and release removes it", async () 
 });
 
 test("process start token pairs the active PID with a stable start epoch", () => {
-  const token = currentProcessStartToken(10_000, 2.5);
-  assert.equal(token, `${process.pid}:7500`);
+  const value = currentProcessStartToken(10_000, 2.5).split(":");
+  assert.equal(Number(value[0]), process.pid);
+  assert.equal(value[1], "7500");
 });
 
 test("classifyLockStaleness distinguishes an expired lease", () => {
