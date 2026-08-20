@@ -17,7 +17,20 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Build release checksum
+        run: |
+          npm pack --json > pack.json
+          TARBALL="$(node -p "JSON.parse(require('fs').readFileSync('pack.json', 'utf8'))[0].filename")"
+          sha256sum "$TARBALL" > "$TARBALL.sha256"
+          echo "RELEASE_TARBALL=$TARBALL" >> "$GITHUB_ENV"
+
       - name: Create GitHub release with generated notes
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes --title "$GITHUB_REF_NAME"
+        run: gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes --title "$GITHUB_REF_NAME" "$RELEASE_TARBALL.sha256"

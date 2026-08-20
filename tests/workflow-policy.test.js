@@ -43,6 +43,8 @@ test("security and release workflows are present and use pinned actions", async 
   assert.match(dependencyReview, /actions\/dependency-review-action@[0-9a-f]{40}/);
   assert.match(releaseNotes, /gh release create/);
   assert.match(releaseNotes, /--generate-notes/);
+  assert.match(releaseNotes, /npm pack --json/);
+  assert.match(releaseNotes, /sha256sum/);
 
   for (const workflow of [codeql, dependencyReview, releaseNotes]) {
     assert.ok((workflow.match(pinnedAction) ?? []).length > 0);
