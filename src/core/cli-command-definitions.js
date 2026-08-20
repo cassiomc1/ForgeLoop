@@ -697,6 +697,20 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     mayExecuteExternalProcess: false,
     description: "Shows details of a specific task descriptor and its scoped artifacts.",
   }),
+  "task-lock-status": Object.freeze({
+    name: "task-lock-status",
+    category: "lifecycle",
+    mutation: "READ_ONLY",
+    options: Object.freeze({
+      ...CLI_COMMON_OPTIONS,
+      ...CLI_TASK_OPTION,
+      "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
+    }),
+    writes: [],
+    removes: [],
+    mayExecuteExternalProcess: false,
+    description: "Reports a task lock record and its lease-based stale-lock classification.",
+  }),
   "task-scope": Object.freeze({
     name: "task-scope",
     category: "lifecycle",

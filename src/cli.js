@@ -47,6 +47,7 @@ import { formatTaskShowResult, runTaskShow } from "./commands/task-show.js";
 import { formatTaskScopeResult, runTaskScope } from "./commands/task-scope.js";
 import { formatTaskMigrateResult, runTaskMigrate } from "./commands/task-migrate.js";
 import { formatTaskUnlockResult, runTaskUnlock } from "./commands/task-unlock.js";
+import { formatTaskLockStatusResult, runTaskLockStatus } from "./commands/task-lock-status.js";
 import { formatProtocolInfoResult, runProtocolInfo } from "./commands/protocol-info.js";
 import { continuityOptionDefaults, validateContinuityOptions } from "./core/continuity-cli-options.js";
 import { resolveTarget } from "./core/filesystem.js";
@@ -680,6 +681,11 @@ export const COMMAND_HANDLERS = Object.freeze({
   "task-show": async ({ target, packageRoot, options }) => {
     const result = await runTaskShow({ target, packageRoot, taskId: options.task });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatTaskShowResult(result));
+    return 0;
+  },
+  "task-lock-status": async ({ target, packageRoot, options }) => {
+    const result = await runTaskLockStatus({ target, packageRoot, taskId: options.task });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatTaskLockStatusResult(result));
     return 0;
   },
   "task-scope": async ({ target, packageRoot, options }) => {
