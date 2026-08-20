@@ -487,3 +487,19 @@ export const ALL_KNOWN_ERROR_CODES = Object.freeze(new Set([
   E_POLICY_INITIALIZATION_FAILED,
   E_INIT_KIT_CONFLICT,
 ]));
+
+/**
+ * Complete public registry.  Older callers can retain PUBLIC_ERROR_CODES while
+ * documentation and compatibility handshakes enumerate every stable code.
+ */
+export const PUBLIC_ERROR_REGISTRY = Object.freeze(
+  Object.fromEntries([...ALL_KNOWN_ERROR_CODES].sort().map((code) => [code, Object.freeze(
+    PUBLIC_ERROR_CODES[code] ?? {
+      code,
+      category: "protocol",
+      classification: "PUBLIC_STABLE",
+      meaning: "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      safeResolution: "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json.",
+    },
+  )])),
+);

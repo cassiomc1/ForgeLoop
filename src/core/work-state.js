@@ -19,6 +19,7 @@ import { assertJsonBytes } from "./json-safety.js";
 import { assertCoverageList } from "./coverage.js";
 import { canonicalFingerprint } from "./artifacts.js";
 import { taskArtifactPath } from "./task-paths.js";
+import { getActiveTaskTransaction, withTaskTransaction } from "./transaction.js";
 
 export const WORK_STATE_PATH = ".forgeloop/work-state.json";
 
@@ -163,6 +164,9 @@ export function assertWorkStateSemantics(state) {
   if (state.verificationCycle !== undefined && (!Number.isInteger(state.verificationCycle) || state.verificationCycle < 1)) {
     throw new WorkStateError("verificationCycle must be a positive integer");
   }
+  if (state.revision !== undefined && (!Number.isInteger(state.revision) || state.revision < 0)) {
+    throw new WorkStateError("revision must be a non-negative integer");
+  }
   if (state.lastCompletionAttempt !== undefined) {
     if (!state.lastCompletionAttempt || typeof state.lastCompletionAttempt !== "object" || Array.isArray(state.lastCompletionAttempt)) {
       throw new WorkStateError("lastCompletionAttempt must be an object");
@@ -216,6 +220,7 @@ export function createWorkState(input) {
     blockers: [...(input.blockers ?? [])],
     verificationEvidence: [...(input.verificationEvidence ?? [])],
     lastUpdated: input.lastUpdated ?? new Date().toISOString(),
+    revision: input.revision ?? 0,
   };
   if (input.verificationCycle !== undefined) state.verificationCycle = input.verificationCycle;
   if (input.lastCompletionAttempt !== undefined) state.lastCompletionAttempt = structuredClone(input.lastCompletionAttempt);
@@ -276,9 +281,44 @@ export async function writeWorkState(target, state, options = {}) {
 
   await validateStoredState(state, packageRoot);
   await assertSafePath(target, relPath);
-  const statePath = ensureWithin(target, relPath);
-  await writeFileAtomic(statePath, `${JSON.stringify(state, null, 2)}\n`, { dryRun });
+  const serialized = `${JSON.stringify(state, null, 2)}\n`;
+  const transaction = getActiveTaskTransaction();
+  if (!dryRun && transaction) {
+    await transaction.stageText(relPath, serialized);
+  } else {
+    const statePath = ensureWithin(target, relPath);
+    await writeFileAtomic(statePath, serialized, { dryRun });
+  }
   return state;
+}
+
+export async function mutateWorkState(target, { expectedRevision, packageRoot = getPackageRoot(), taskId, statePath } = {}, updater) {
+  if (!Number.isInteger(expectedRevision) || expectedRevision < 0) {
+    const error = new WorkStateError("expectedRevision must be a non-negative integer");
+    error.code = "E_STATE_REVISION_CONFLICT";
+    throw error;
+  }
+  if (!getActiveTaskTransaction()) {
+    return withTaskTransaction({
+      target,
+      taskId: taskId ?? "legacy-work-state",
+      lockTaskId: taskId ?? "legacy-work-state",
+      operation: "mutate-work-state",
+    }, async () => mutateWorkState(target, { expectedRevision, packageRoot, taskId, statePath }, updater));
+  }
+  const current = await readWorkState(target, { packageRoot, taskId, statePath });
+  if (!current || (current.revision ?? 0) !== expectedRevision) {
+    const error = new WorkStateError("Work state revision does not match expected revision");
+    error.code = "E_STATE_REVISION_CONFLICT";
+    throw error;
+  }
+  const next = createWorkState({
+    ...await updater(structuredClone(current)),
+    revision: expectedRevision + 1,
+    lastUpdated: new Date().toISOString(),
+  });
+  await writeWorkState(target, next, { packageRoot, taskId, statePath });
+  return next;
 }
 
 export async function clearWorkState(target, options = {}) {

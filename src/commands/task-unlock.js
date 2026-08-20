@@ -1,7 +1,7 @@
 import { resolveTaskContext } from "../core/task-context.js";
-import { forceUnlockTask, readLockInfo } from "../core/task-lock.js";
+import { classifyLockStaleness, forceUnlockTask, readLockInfo } from "../core/task-lock.js";
 
-export async function runTaskUnlock({ target, packageRoot, taskId, force = false } = {}) {
+export async function runTaskUnlock({ target, packageRoot, taskId, force = false, staleOnly = false } = {}) {
   const context = await resolveTaskContext(target, { taskId, packageRoot, explicitRequired: true });
   const effectiveTaskId = context.taskId;
 
@@ -15,18 +15,20 @@ export async function runTaskUnlock({ target, packageRoot, taskId, force = false
     };
   }
 
-  if (!force) {
+  const classification = classifyLockStaleness(lockInfo);
+  if (!force && !(staleOnly && classification.stale)) {
     const error = new Error(`Task ${effectiveTaskId} is locked by operation "${lockInfo.operation ?? "unknown"}" (PID ${lockInfo.pid ?? "unknown"}). Use --force to unlock.`);
     error.code = "E_TASK_LOCKED";
     throw error;
   }
 
-  await forceUnlockTask(target, effectiveTaskId);
+  const unlocked = await forceUnlockTask(target, effectiveTaskId, { staleOnly });
   return {
     taskId: effectiveTaskId,
     taskKey: context.taskKey,
-    unlocked: true,
-    message: `Released lock for task ${effectiveTaskId}`,
+    unlocked: unlocked.unlocked,
+    classification: unlocked.classification,
+    message: unlocked.unlocked ? `Released lock for task ${effectiveTaskId}` : `Task ${effectiveTaskId} lock is not stale`,
   };
 }
 

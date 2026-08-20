@@ -55,6 +55,7 @@ function validateAuthorityBeforeLaunch({ target, taskId, argv, resolution, detai
 }
 
 const MAX_CAPTURED_OUTPUT_BYTES = 64 * 1024;
+export const TERMINATION_GRACE_MS = 1_000;
 
 function digest(bytes) {
   return createHash("sha256").update(bytes).digest("hex");
@@ -66,6 +67,7 @@ function executeProcess(argv, cwd, { timeoutMs = null } = {}) {
     let timedOut = false;
     let settled = false;
     let timeout = null;
+    let forceTermination = null;
     const stdout = [];
     const stderr = [];
     let stdoutBytes = 0;
@@ -89,6 +91,7 @@ function executeProcess(argv, cwd, { timeoutMs = null } = {}) {
       if (settled) return;
       settled = true;
       if (timeout) clearTimeout(timeout);
+      if (forceTermination) clearTimeout(forceTermination);
       resolve({
         ...result,
         timedOut,
@@ -117,6 +120,9 @@ function executeProcess(argv, cwd, { timeoutMs = null } = {}) {
         timeout = setTimeout(() => {
           timedOut = true;
           child.kill("SIGTERM");
+          forceTermination = setTimeout(() => {
+            child.kill("SIGKILL");
+          }, TERMINATION_GRACE_MS);
         }, timeoutMs);
       }
     } catch (error) {
@@ -226,6 +232,7 @@ export async function runCommandExecution({
     stdoutBytes: processResult.stdoutBytes,
     stderrBytes: processResult.stderrBytes,
     outputTruncated: processResult.outputTruncated,
+    ...(Number.isInteger(timeoutMs) && timeoutMs > 0 ? { timeoutMs, terminationGraceMs: TERMINATION_GRACE_MS } : {}),
   };
   const execPath = executionPath ?? await resolveExecutionArtifactPath(target, taskId, executionId);
   const written = await writeJsonArtifact(target, execPath, execution, "execution", packageRoot);

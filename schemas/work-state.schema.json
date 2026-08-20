@@ -59,6 +59,7 @@
     "failures": { "type": "array", "items": { "type": "object" } },
     "blockers": { "type": "array", "items": { "type": "object" } },
     "lastUpdated": { "type": "string", "minLength": 1 },
+    "revision": { "type": "integer", "minimum": 0 },
     "previousPhase": { "type": "string" },
     "diagnosedHypothesis": { "type": "string", "minLength": 1 },
     "verificationEvidence": { "type": "array", "items": { "type": "object" } },

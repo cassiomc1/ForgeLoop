@@ -1,6 +1,6 @@
 import { cp, mkdir, rename, rm } from "node:fs/promises";
 import path from "node:path";
-import { ensureWithin, fileExists } from "./filesystem.js";
+import { ensureWithin, fileExists, writeFileAtomic } from "./filesystem.js";
 import { getPackageRoot } from "./templates.js";
 import {
   LEGACY_TASK_ARTIFACT_PATHS,
@@ -308,6 +308,23 @@ export async function migrateLegacyLayout(
     assertMigrationSnapshotsEqual(sourceSnapshot, finalSnapshot, "published namespace");
     await readTaskDescriptor(target, canonicalTaskId, packageRoot);
 
+    const migrationReceipt = {
+      schemaVersion: 1,
+      protocolVersion: 1,
+      kind: "LEGACY_TASK_MIGRATION",
+      taskId: canonicalTaskId,
+      taskKey,
+      migratedAt: new Date().toISOString(),
+      source: sourceSnapshot,
+      destination: finalSnapshot,
+      cleanupStatus: "PENDING",
+    };
+    await writeFileAtomic(
+      ensureWithin(target, `${finalDirRel}/migration-receipt.json`),
+      `${JSON.stringify(migrationReceipt, null, 2)}\n`,
+    );
+    migratedArtifacts.push("migration-receipt.json");
+
     // Test hook for cleanup failure testing
     if (typeof beforeLegacyCleanupForTest === "function") {
       await beforeLegacyCleanupForTest({ finalDirAbs, finalDirRel, target });
@@ -323,6 +340,12 @@ export async function migrateLegacyLayout(
           await removeLegacyArtifact(target, item.path);
         }
       }
+      migrationReceipt.cleanupStatus = "COMPLETED";
+      migrationReceipt.cleanedAt = new Date().toISOString();
+      await writeFileAtomic(
+        ensureWithin(target, `${finalDirRel}/migration-receipt.json`),
+        `${JSON.stringify(migrationReceipt, null, 2)}\n`,
+      );
     } catch (cleanupErr) {
       const error = new Error(
         `Migration published successfully to ${finalDirRel}, but legacy cleanup failed: ${cleanupErr.message}. Manual cleanup required.`,

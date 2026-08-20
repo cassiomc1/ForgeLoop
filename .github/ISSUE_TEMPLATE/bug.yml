@@ -1,0 +1,20 @@
+name: Bug report
+description: Report reproducible ForgeLoop behavior that differs from the published contract.
+title: "bug: "
+labels: [bug]
+body:
+  - type: textarea
+    attributes:
+      label: Reproduction
+      description: Include exact ForgeLoop version, command argv, target layout, and observed result. Remove secrets.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Protocol artifacts
+      description: Include relevant redacted JSON, error codes, and `protocol-info --json` version data.

@@ -1,6 +1,7 @@
 import { assertTaskId, taskStorageKey } from "./task-identity.js";
 
 export const TASK_STATE_ROOT = ".forgeloop/task-state";
+export const TASK_LOCK_ROOT = ".forgeloop/locks";
 export const SESSIONS_ROOT = ".forgeloop/sessions";
 
 export const TASK_ARTIFACT_FILES = Object.freeze({
@@ -74,7 +75,8 @@ export function taskExecutionPath(taskId, executionId) {
 }
 
 export function taskLockPath(taskId) {
-  return taskArtifactPath(taskId, "lock");
+  assertTaskId(taskId);
+  return `${TASK_LOCK_ROOT}/${taskStorageKey(taskId)}.lock`;
 }
 
 export function sessionArtifactPath(sessionId) {

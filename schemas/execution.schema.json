@@ -66,6 +66,8 @@
     "stdoutBytes": { "type": "integer", "minimum": 0 },
     "stderrBytes": { "type": "integer", "minimum": 0 },
     "outputTruncated": { "type": "boolean" }
+    ,"timeoutMs": { "type": "integer", "minimum": 1 }
+    ,"terminationGraceMs": { "type": "integer", "minimum": 1 }
   },
   "additionalProperties": false
 }
