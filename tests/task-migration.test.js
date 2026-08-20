@@ -122,6 +122,7 @@ test("migrateLegacyLayout moves legacy artifacts into namespaced directory and c
     assert.equal(await fileExists(path.join(taskDir, "task.json")), true);
     assert.equal(await fileExists(path.join(taskDir, "contract.json")), true);
     assert.equal(await fileExists(path.join(taskDir, "work-state.json")), true);
+    assert.equal(await fileExists(path.join(taskDir, "migration-receipt.json")), true);
 
     const descriptor = await readTaskDescriptor(target, "migrating-task", packageRoot);
     assert.equal(descriptor.taskId, "migrating-task");
