@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
 import { appendProtocolEvent, readEventTail } from "../src/core/events.js";
+import { canonicalFingerprint } from "../src/core/artifacts.js";
 import { getPackageRoot } from "../src/core/templates.js";
 
 test("ledger tail reads only the requested recent events", async () => {
@@ -43,6 +44,43 @@ test("ledger tail remains bounded for a 100k-event NDJSON ledger", async () => {
 
     const tail = await readEventTail(target, getPackageRoot(), { limit: 5 });
     assert.deepEqual(tail.map((event) => event.seq), [99_996, 99_997, 99_998, 99_999, 100_000]);
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
+test("ledger checkpoint is rebuilt when an externally changed tail no longer matches", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-ledger-index-"));
+  const packageRoot = getPackageRoot();
+  try {
+    const first = await appendProtocolEvent(target, { taskId: "index-task", event: "OBSERVATION_ONE" }, packageRoot);
+    const indexPath = path.join(target, ".forgeloop", "events.ndjson.index.json");
+    assert.deepEqual(JSON.parse(await readFile(indexPath, "utf8")), {
+      schemaVersion: 1,
+      seq: 1,
+      lastHash: first.hash,
+    });
+
+    const external = {
+      seq: 2,
+      schemaVersion: 1,
+      protocolVersion: 1,
+      taskId: "index-task",
+      event: "OBSERVATION_EXTERNAL",
+      at: "2026-01-01T00:00:00.000Z",
+      previousHash: first.hash,
+    };
+    external.hash = canonicalFingerprint(external);
+    await appendFile(path.join(target, ".forgeloop", "events.ndjson"), `${JSON.stringify(external)}\n`);
+
+    const third = await appendProtocolEvent(target, { taskId: "index-task", event: "OBSERVATION_THREE" }, packageRoot);
+    assert.equal(third.seq, 3);
+    assert.equal(third.previousHash, external.hash);
+    assert.deepEqual(JSON.parse(await readFile(indexPath, "utf8")), {
+      schemaVersion: 1,
+      seq: 3,
+      lastHash: third.hash,
+    });
   } finally {
     await rm(target, { recursive: true, force: true });
   }

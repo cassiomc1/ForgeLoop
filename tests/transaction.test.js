@@ -23,6 +23,22 @@ test("withTaskTransaction publishes staged files only after callback completes",
   }
 });
 
+test("withTaskTransaction stages append-only ledger deltas until commit", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-transaction-"));
+  const relativePath = ".forgeloop/task-state/events.ndjson";
+  try {
+    await withTaskTransaction({ target, taskId: "append-transaction", operation: "test" }, async (tx) => {
+      await tx.appendText(relativePath, "first\n");
+      await tx.appendText(relativePath, "second\n");
+      assert.equal(await tx.readText(relativePath), "first\nsecond\n");
+      await assert.rejects(() => readFile(path.join(target, relativePath), "utf8"), { code: "ENOENT" });
+    });
+    assert.equal(await readFile(path.join(target, relativePath), "utf8"), "first\nsecond\n");
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
 test("withTaskTransaction leaves no temporary atomic-write artifacts after durable publication", async () => {
   const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-transaction-"));
   try {
@@ -106,6 +122,29 @@ test("recoverIncompleteTransactions restores a pre-transaction file after an int
 
     assert.deepEqual(await recoverIncompleteTransactions(target), [{ transactionId: "txn-interrupted", status: "ROLLED_BACK" }]);
     assert.equal(await readFile(path.join(target, ".forgeloop/task-state/output.txt"), "utf8"), "before\n");
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
+test("recoverIncompleteTransactions truncates an interrupted append to its recorded size", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-transaction-"));
+  try {
+    const root = path.join(target, ".forgeloop/.txn/txn-interrupted-append");
+    const ledgerPath = path.join(target, ".forgeloop/task-state/events.ndjson");
+    await mkdir(path.dirname(root), { recursive: true });
+    await mkdir(path.dirname(ledgerPath), { recursive: true });
+    await writeFile(ledgerPath, "before\nafter\n");
+    await mkdir(root, { recursive: true });
+    await writeFile(path.join(root, "manifest.json"), `${JSON.stringify({
+      schemaVersion: 1,
+      transactionId: "txn-interrupted-append",
+      status: "COMMITTING",
+      writes: [{ path: ".forgeloop/task-state/events.ndjson", kind: "APPEND", originalSize: 7, appendStarted: true, published: false }],
+    })}\n`);
+
+    assert.deepEqual(await recoverIncompleteTransactions(target), [{ transactionId: "txn-interrupted-append", status: "ROLLED_BACK" }]);
+    assert.equal(await readFile(ledgerPath, "utf8"), "before\n");
   } finally {
     await rm(target, { recursive: true, force: true });
   }
