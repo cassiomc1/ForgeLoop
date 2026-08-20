@@ -11,6 +11,7 @@ import { PROTOCOL_VERSION } from "./protocol.js";
 import { isRecoverableCompletionEvidenceCode } from "./completion-recovery.js";
 
 import { taskArtifactPath } from "./task-paths.js";
+import { getActiveTaskTransaction, withTaskTransaction } from "./transaction.js";
 
 import { assertDiagnosisDetails } from "./diagnosis-model.js";
 import { assertDecisionCriterionDetails } from "./settlement-model.js";
@@ -94,6 +95,10 @@ export async function readEvents(target, packageRoot, options = {}) {
   const eventsPath = ensureWithin(target, relPath);
   if (!(await fileExists(eventsPath))) return [];
   const text = await readFile(eventsPath, "utf8");
+  return parseEventsText(text, relPath, packageRoot);
+}
+
+async function parseEventsText(text, relPath, packageRoot) {
   assertJsonBytes(text, relPath);
   const schema = await readSchema("event", packageRoot);
   const lines = text.split(/\r?\n/).filter((line) => line.trim() !== "");
@@ -112,10 +117,22 @@ export async function readEvents(target, packageRoot, options = {}) {
 }
 
 export async function appendProtocolEvent(target, input, packageRoot, options = {}) {
+  const activeTransaction = getActiveTaskTransaction();
   if (typeof input?.taskId !== "string" || !input.taskId) throw protocolError("E_EVENT_INVALID", "event taskId is required");
   if (typeof input?.event !== "string" || !input.event) throw protocolError("E_EVENT_INVALID", "event type is required");
   const relPath = options?.eventsPath ?? options?.relativePath ?? (options?.taskId ? taskArtifactPath(options.taskId, "events") : ARTIFACT_PATHS.events);
-  const events = await readEvents(target, packageRoot, { ...options, eventsPath: relPath });
+  if (!activeTransaction) {
+    return withTaskTransaction({
+      target,
+      taskId: options.taskId ?? input.taskId,
+      lockTaskId: relPath === ARTIFACT_PATHS.events ? "__legacy-events__" : (options.taskId ?? input.taskId),
+      operation: "append-event",
+    }, async () => appendProtocolEvent(target, input, packageRoot, options));
+  }
+  const stagedText = activeTransaction ? await activeTransaction.readText(relPath) : null;
+  const events = stagedText === null
+    ? await readEvents(target, packageRoot, { ...options, eventsPath: relPath })
+    : await parseEventsText(stagedText, relPath, packageRoot);
   const previous = events.at(-1) ?? null;
   const event = {
     seq: events.length + 1,
@@ -133,10 +150,15 @@ export async function appendProtocolEvent(target, input, packageRoot, options = 
   const schema = await readSchema("event", packageRoot);
   assertSchema(event, schema, relPath);
   event.hash = eventHash(event);
-  const eventsPath = ensureWithin(target, relPath);
   if (!options.dryRun) {
-    await mkdir(path.dirname(eventsPath), { recursive: true });
-    await appendFile(eventsPath, `${JSON.stringify(event)}\n`, { encoding: "utf8" });
+    if (activeTransaction) {
+      const previousText = events.length === 0 ? "" : `${events.map((item) => JSON.stringify(item)).join("\n")}\n`;
+      await activeTransaction.stageText(relPath, `${previousText}${JSON.stringify(event)}\n`);
+    } else {
+      const eventsPath = ensureWithin(target, relPath);
+      await mkdir(path.dirname(eventsPath), { recursive: true });
+      await appendFile(eventsPath, `${JSON.stringify(event)}\n`, { encoding: "utf8" });
+    }
   }
   return event;
 }

@@ -47,6 +47,7 @@ import { formatTaskShowResult, runTaskShow } from "./commands/task-show.js";
 import { formatTaskScopeResult, runTaskScope } from "./commands/task-scope.js";
 import { formatTaskMigrateResult, runTaskMigrate } from "./commands/task-migrate.js";
 import { formatTaskUnlockResult, runTaskUnlock } from "./commands/task-unlock.js";
+import { formatProtocolInfoResult, runProtocolInfo } from "./commands/protocol-info.js";
 import { continuityOptionDefaults, validateContinuityOptions } from "./core/continuity-cli-options.js";
 import { resolveTarget } from "./core/filesystem.js";
 import { getPackageRoot } from "./core/templates.js";
@@ -381,6 +382,11 @@ function printActions(actions) {
 }
 
 export const COMMAND_HANDLERS = Object.freeze({
+  "protocol-info": async ({ options }) => {
+    const result = await runProtocolInfo();
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatProtocolInfoResult(result));
+    return 0;
+  },
   init: async ({ target, packageRoot, packageVersion, options }) => {
     const result = await runInit({ target, dryRun: options.dryRun, packageRoot, packageVersion });
     printActions(result.actions);
@@ -692,7 +698,7 @@ export const COMMAND_HANDLERS = Object.freeze({
     return 0;
   },
   "task-unlock": async ({ target, packageRoot, options }) => {
-    const result = await runTaskUnlock({ target, packageRoot, taskId: options.task, force: options.force });
+    const result = await runTaskUnlock({ target, packageRoot, taskId: options.task, force: options.force, staleOnly: options.staleOnly });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatTaskUnlockResult(result));
     return 0;
   },

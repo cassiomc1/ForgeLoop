@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { COMMANDS } from "../src/cli.js";
 import { ARTIFACT_REGISTRY } from "../src/core/artifact-registry.js";
 import { CLI_COMMAND_DEFINITIONS } from "../src/core/cli-command-definitions.js";
-import { PUBLIC_ERROR_CODES } from "../src/core/error-codes.js";
+import { PUBLIC_ERROR_REGISTRY } from "../src/core/error-codes.js";
 import { WORK_PHASES, WORK_TRANSITIONS } from "../src/core/protocol.js";
 import { readSchema } from "../src/core/schema-validation.js";
 import { getPackageRoot } from "../src/core/templates.js";
@@ -297,7 +297,7 @@ export function generatePublicErrorCodesTable() {
     "| --- | --- | --- |",
   ];
 
-  for (const err of Object.values(PUBLIC_ERROR_CODES)) {
+  for (const err of Object.values(PUBLIC_ERROR_REGISTRY)) {
     rows.push(`| \`${err.code}\` | ${err.meaning} | ${err.safeResolution} |`);
   }
 

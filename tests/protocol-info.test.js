@@ -1,0 +1,28 @@
+import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { test } from "node:test";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { ALL_KNOWN_ERROR_CODES } from "../src/core/error-codes.js";
+import { protocolInfo } from "../src/core/protocol-info.js";
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+test("protocol-info exposes a complete public compatibility handshake", () => {
+  const info = protocolInfo();
+  assert.equal(info.protocolVersion, 1);
+  assert.equal(info.compatibility.schemaVersion, 1);
+  assert.ok(info.commands.some((command) => command.name === "protocol-info"));
+  assert.equal(info.errors.length, ALL_KNOWN_ERROR_CODES.size);
+  assert.ok(info.errors.every((error) => error.category && error.safeResolution));
+});
+
+test("protocol-info CLI supports human and JSON output", () => {
+  const json = spawnSync(process.execPath, [path.join(root, "src/cli.js"), "protocol-info", "--json"], { cwd: root, encoding: "utf8" });
+  assert.equal(json.status, 0, json.stderr);
+  assert.equal(JSON.parse(json.stdout).protocolVersion, 1);
+  const human = spawnSync(process.execPath, [path.join(root, "src/cli.js"), "protocol-info"], { cwd: root, encoding: "utf8" });
+  assert.equal(human.status, 0, human.stderr);
+  assert.match(human.stdout, /Protocol version: 1/);
+});

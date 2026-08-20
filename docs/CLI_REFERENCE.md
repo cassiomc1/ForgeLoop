@@ -39,8 +39,8 @@ ForgeLoop uses a definition-driven command-line parser:
 
 | Category | Commands |
 | --- | --- |
+| **Inspection & Diagnostics** | [`protocol-info`](#protocol-info), [`doctor`](#doctor), [`progress`](#progress), [`profile-interview`](#profile-interview), [`inspect`](#inspect), [`status`](#status), [`validate-state`](#validate-state), [`validate-protocol`](#validate-protocol) |
 | **Setup & Maintenance** | [`init`](#init), [`update`](#update), [`task-migrate`](#task-migrate), [`task-unlock`](#task-unlock) |
-| **Inspection & Diagnostics** | [`doctor`](#doctor), [`progress`](#progress), [`profile-interview`](#profile-interview), [`inspect`](#inspect), [`status`](#status), [`validate-state`](#validate-state), [`validate-protocol`](#validate-protocol) |
 | **Lifecycle & State** | [`activate`](#activate), [`route`](#route), [`preflight`](#preflight), [`advance`](#advance), [`next`](#next), [`record-diagnosis`](#record-diagnosis), [`record-decision-criterion`](#record-decision-criterion), [`complete`](#complete), [`clear-state`](#clear-state), [`reconcile-closure`](#reconcile-closure), [`task-create`](#task-create), [`task-list`](#task-list), [`task-show`](#task-show), [`task-scope`](#task-scope) |
 | **Cross-Harness Continuity** | [`continuity`](#continuity), [`record-continuity`](#record-continuity), [`reconcile-continuity`](#reconcile-continuity), [`clear-continuity`](#clear-continuity) |
 | **Verification & Completion** | [`prepare-completion`](#prepare-completion), [`run-check`](#run-check), [`record-check`](#record-check), [`record-terminal-result`](#record-terminal-result), [`audit`](#audit), [`report`](#report), [`validate-receipt`](#validate-receipt) |
@@ -51,6 +51,28 @@ ForgeLoop uses a definition-driven command-line parser:
 ---
 
 ## 1. Setup & Maintenance
+
+### `protocol-info`
+
+Reports the public compatibility handshake required by external ForgeLoop harnesses.
+
+- **Purpose**: Publishes protocol/schema versioning, lifecycle metadata, command metadata, guide registry, and the documented error registry.
+- **When to use**: Before a harness creates or resumes a ForgeLoop task, and when verifying compatibility without reading internal source.
+- **Mutation**: Read-only.
+- **Options**:
+
+<!-- BEGIN FORGELOOP GENERATED: cli:protocol-info:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--json`: emit complete machine-readable protocol metadata
+
+<!-- END FORGELOOP GENERATED: cli:protocol-info:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop protocol-info --json
+  ```
 
 ### `init`
 
@@ -1198,6 +1220,7 @@ Forces the release of a stale task lock.
 - `--path <directory>`: target project directory (default: current directory)
 - `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
 - `--force`: force release of an orphaned task lock
+- `--stale-only`: release only a lock whose lease is expired
 - `--json`: emit structured output as JSON
 
 <!-- END FORGELOOP GENERATED: cli:task-unlock:options -->

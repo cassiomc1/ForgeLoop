@@ -94,6 +94,26 @@ test("runCommandExecution records bounded output provenance and terminates a tim
   });
 });
 
+test("runCommandExecution escalates a timed-out process that ignores SIGTERM", async () => {
+  await withTarget(async (target) => {
+    const started = Date.now();
+    const result = await runCommandExecution({
+      target,
+      packageRoot,
+      taskId: "task-1",
+      checkId: "timeout-force",
+      requirement: "timeout-force",
+      verificationCycle: 1,
+      timeoutMs: 100,
+      argv: [process.execPath, "-e", "process.on('SIGTERM', () => {}); setInterval(() => {}, 1000)"],
+    });
+    assert.equal(result.execution.termination, "timeout");
+    assert.equal(result.execution.signal, "SIGKILL");
+    assert.equal(result.execution.timeoutMs, 100);
+    assert.ok(Date.now() - started < 2_000);
+  });
+});
+
 test("install-capable commands are blocked before process launch without authority", async () => {
   await withTarget(async (target) => {
     await assert.rejects(

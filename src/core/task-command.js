@@ -1,5 +1,5 @@
 import { resolveTaskContext } from "./task-context.js";
-import { withTaskLock } from "./task-lock.js";
+import { withTaskTransaction } from "./transaction.js";
 
 export async function withResolvedTask(
   target,
@@ -32,8 +32,8 @@ export async function withTaskMutation(
   });
 
   if (taskContext) {
-    return withTaskLock(target, taskContext.taskId, operation, async () => {
-      return callback(taskContext);
+    return withTaskTransaction({ target, taskId: taskContext.taskId, operation }, async (transaction) => {
+      return callback({ ...taskContext, transaction });
     });
   }
 

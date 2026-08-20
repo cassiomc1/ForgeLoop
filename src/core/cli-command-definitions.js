@@ -58,6 +58,19 @@ export const CLI_TASK_OPTION = Object.freeze({
 export const CLI_BOOTSTRAP_OPTIONS = CLI_COMMON_OPTIONS;
 
 export const CLI_COMMAND_DEFINITIONS = Object.freeze({
+  "protocol-info": Object.freeze({
+    name: "protocol-info",
+    category: "diagnostics",
+    mutation: "READ_ONLY",
+    options: Object.freeze({
+      ...CLI_COMMON_OPTIONS,
+      "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit complete machine-readable protocol metadata" }),
+    }),
+    writes: [],
+    removes: [],
+    mayExecuteExternalProcess: false,
+    description: "Reports versioning, lifecycle, command, guide, and public error compatibility metadata for external harnesses.",
+  }),
   init: Object.freeze({
     name: "init",
     category: "project-maintenance",
@@ -721,6 +734,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
       ...CLI_COMMON_OPTIONS,
       ...CLI_TASK_OPTION,
       "--force": Object.freeze({ targetKey: "force", parseType: "boolean", takesValue: false, description: "force release of an orphaned task lock" }),
+      "--stale-only": Object.freeze({ targetKey: "staleOnly", parseType: "boolean", takesValue: false, description: "release only a lock whose lease is expired" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
     }),
     writes: [],

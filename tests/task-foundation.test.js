@@ -74,7 +74,7 @@ test("task paths derivation", () => {
   assert.equal(taskArtifactPath(taskId, "descriptor"), `.forgeloop/task-state/${key}/task.json`);
   assert.equal(taskGatePath(taskId, "design"), `.forgeloop/task-state/${key}/gates/design.json`);
   assert.equal(taskExecutionPath(taskId, "exec-123"), `.forgeloop/task-state/${key}/executions/exec-123.json`);
-  assert.equal(taskLockPath(taskId), `.forgeloop/task-state/${key}/.lock`);
+  assert.equal(taskLockPath(taskId), `.forgeloop/locks/${key}.lock`);
   assert.equal(sessionArtifactPath("sess-abc"), `.forgeloop/sessions/sess-abc.json`);
 });
 

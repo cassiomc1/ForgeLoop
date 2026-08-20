@@ -10,7 +10,7 @@ import { CLI_COMMAND_DEFINITIONS } from "../src/core/cli-command-definitions.js"
 import { COMPLETION_STATUSES, VERIFICATION_STATUSES } from "../src/core/completion.js";
 import { PRODUCTION_READINESS_STATUSES, PUBLICATION_STATUSES, TERMINAL_RESULT_TYPES } from "../src/core/completion-artifacts.js";
 import { DISCOVERY_SURFACES } from "../src/core/discovery-surfaces.js";
-import { ALL_KNOWN_ERROR_CODES, PUBLIC_ERROR_CODES } from "../src/core/error-codes.js";
+import { ALL_KNOWN_ERROR_CODES, PUBLIC_ERROR_REGISTRY } from "../src/core/error-codes.js";
 import { nativeShim } from "../src/core/native-adapters.js";
 import { WORK_PHASES, WORK_TRANSITIONS } from "../src/core/protocol.js";
 import { readSchema } from "../src/core/schema-validation.js";
@@ -699,7 +699,7 @@ export async function validateDocumentationConformance({ rootDir = repositoryRoo
   const troubleDocContent = await readFile(troubleDocPath, "utf8");
 
   // Every PUBLIC_ERROR_CODE must be documented
-  for (const [, codeMeta] of Object.entries(PUBLIC_ERROR_CODES)) {
+  for (const [, codeMeta] of Object.entries(PUBLIC_ERROR_REGISTRY)) {
     if (!troubleDocContent.includes(codeMeta.code)) {
       errors.push(
         `DOC_ERROR_CODE_MISSING: Stable public error code "${codeMeta.code}" is not documented in docs/TROUBLESHOOTING.md`,
@@ -855,7 +855,7 @@ export async function validateDocumentationConformance({ rootDir = repositoryRoo
     summary: {
       taggedArtifactsCount: taggedArtifacts.size,
       commandsCount: COMMANDS.length,
-      publicErrorCodesCount: Object.keys(PUBLIC_ERROR_CODES).length,
+      publicErrorCodesCount: Object.keys(PUBLIC_ERROR_REGISTRY).length,
       discoverySurfacesCount: DISCOVERY_SURFACES.length,
     },
   };

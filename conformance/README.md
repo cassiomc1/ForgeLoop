@@ -95,8 +95,8 @@ npm run release:identity -- --version X.Y.Z --release-commit "$RELEASE_COMMIT"
 
 Do not interpret a local package version, a green build, or a tarball URL by
 itself as publication proof. If the verifier cannot establish every identity
-field, record `RELEASE_IDENTITY_NOT_VERIFIED` or
-`RELEASE_IDENTITY_INVALID` and do not start the blind run.
+field, record `RELEASE_IDENTITY_NOT_VERIFIED` or `RELEASE_IDENTITY_INVALID` and
+do not start the blind run.
 
 The complete-website scenario deliberately fails when implementation starts
 before the contract, route, and required gates exist.
@@ -149,3 +149,23 @@ Every live-run report must classify how it ended with exactly one
 An operator-terminated run is recorded as `RUN_STATUS: OPERATOR_INTERRUPTED`,
 `CONFORMANCE: PARTIAL`, with post-termination capabilities marked
 `NOT_REACHED` and the smallest failure class `OPERATOR_INTERRUPTION`.
+
+## Protocol compatibility corpus
+
+This corpus is harness-neutral. A compatible implementation must preserve the
+listed artifacts, run the command sequence without interactive input, and
+obtain the stated observable result. The JSON schemas and
+`forgeloop protocol-info --json` are the version handshake; internal source is
+not part of this contract.
+
+| Scenario | Required observation |
+| --- | --- |
+| `cross-harness-resume` | A second harness reads a persisted task and `next --json` is deterministic. |
+| `policy-drift` | A changed policy snapshot is reported as drift, never silently accepted. |
+| `verification-recovery` | Rejected evidence produces validator-directed recovery. |
+| `concurrent-claims` | Same-revision mutations serialize; only one can commit. |
+| `interrupted-transaction` | A `COMMITTING` journal deterministically restores the prior artifact. |
+
+Executable coverage is in `tests/cross-harness-resume.test.js`,
+`tests/policy-hardening.test.js`, `tests/state-revision.test.js`,
+`tests/concurrent-ledger.test.js`, and `tests/transaction.test.js`.

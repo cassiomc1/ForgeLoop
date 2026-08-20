@@ -3,7 +3,8 @@ import { assertTaskId } from "../core/task-identity.js";
 import { createTaskDescriptor, writeTaskDescriptor } from "../core/task-descriptor.js";
 import { normalizeWriteClaims, assertNoScopeConflicts, assertScopeClean } from "../core/task-scope.js";
 import { discoverTasks, findTaskById } from "../core/task-discovery.js";
-import { withProjectClaimsLock, withTaskLock } from "../core/task-lock.js";
+import { withProjectClaimsLock } from "../core/task-lock.js";
+import { withTaskTransaction } from "../core/transaction.js";
 import { taskDirectory } from "../core/task-paths.js";
 import { ensureWithin, fileExists } from "../core/filesystem.js";
 import { validateContract, writeContract } from "../core/contract.js";
@@ -37,7 +38,7 @@ export async function runTaskCreate({ target, packageRoot, taskId, claims = [], 
       await assertScopeClean(target, normalizedClaims);
     }
 
-    return withTaskLock(target, taskId, "task-create", async () => {
+    return withTaskTransaction({ target, taskId, operation: "task-create" }, async () => {
       const descriptor = createTaskDescriptor({
         taskId,
         writeClaims: normalizedClaims,
