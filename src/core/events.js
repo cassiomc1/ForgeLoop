@@ -1,5 +1,5 @@
 
-import { appendFile, mkdir, readFile } from "node:fs/promises";
+import { appendFile, mkdir, open, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 
 import { assertSafePath, ensureWithin, fileExists } from "./filesystem.js";
@@ -96,6 +96,36 @@ export async function readEvents(target, packageRoot, options = {}) {
   if (!(await fileExists(eventsPath))) return [];
   const text = await readFile(eventsPath, "utf8");
   return parseEventsText(text, relPath, packageRoot);
+}
+
+export async function readEventTail(target, packageRoot, options = {}) {
+  const limit = options.limit ?? 50;
+  if (!Number.isInteger(limit) || limit < 1) {
+    throw protocolError("E_EVENT_INVALID", "ledger tail limit must be a positive integer");
+  }
+  const relPath = options?.eventsPath ?? options?.relativePath ?? (options?.taskId ? taskArtifactPath(options.taskId, "events") : ARTIFACT_PATHS.events);
+  await assertSafePath(target, relPath);
+  const eventsPath = ensureWithin(target, relPath);
+  if (!(await fileExists(eventsPath))) return [];
+  const size = (await stat(eventsPath)).size;
+  let window = Math.min(size, 64 * 1024);
+  while (true) {
+    const position = size - window;
+    const handle = await open(eventsPath, "r");
+    const bytes = Buffer.alloc(window);
+    try {
+      await handle.read(bytes, 0, window, position);
+    } finally {
+      await handle.close();
+    }
+    let text = bytes.toString("utf8");
+    if (position > 0) text = text.slice(text.indexOf("\n") + 1);
+    const lines = text.split(/\r?\n/).filter((line) => line.trim() !== "");
+    if (lines.length >= limit || position === 0) {
+      return parseEventsText(lines.slice(-limit).join("\n"), relPath, packageRoot);
+    }
+    window = Math.min(size, window * 2);
+  }
 }
 
 async function parseEventsText(text, relPath, packageRoot) {
