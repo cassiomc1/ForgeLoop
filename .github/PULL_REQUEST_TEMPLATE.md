@@ -1,4 +1,4 @@
-## ForgeLoop protocol change checklist
+# ForgeLoop protocol change checklist
 
 - [ ] Task contract and scope are stated.
 - [ ] Persisted artifact/schema compatibility impact is stated.
