@@ -218,6 +218,12 @@ The threat model records path, symlink, artifact, secret, stale-state,
 publication, schema, dependency, and resource-limit boundaries with their
 mitigations, residual limitations, and executable evidence.
 
+Persistent task mutations use a task lease lock and a recoverable transaction
+journal. State writes carry a monotonically increasing revision, while event
+appends are serialized and hash chained. A crash during a multi-file publish
+leaves a journal that `doctor --fix` can roll back deterministically; it never
+permits a partial artifact set to be presented as a completed protocol state.
+
 ### `ENG/*.md`
 
 Nine canonical guides cover:
