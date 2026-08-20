@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "authorityId": "fixture",
+  "taskId": "fixture",
+  "type": "SOFTWARE_INSTALLATION",
+  "status": "AUTHORIZED",
+  "scope": {
+    "tool": "fixture"
+  },
+  "source": "operator"
+}

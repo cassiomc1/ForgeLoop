@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "languages": [],
+  "testing": {
+    "detected": false,
+    "confidence": "HIGH"
+  },
+  "linting": {
+    "detected": false,
+    "confidence": "HIGH"
+  },
+  "architecture": {
+    "confidence": "HIGH",
+    "enforcement": "BLOCKING"
+  },
+  "discoveredRules": []
+}

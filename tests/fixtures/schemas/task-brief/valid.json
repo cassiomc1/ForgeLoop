@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "taskId": "fixture",
+  "parentTaskId": "fixture",
+  "objective": "fixture",
+  "allowedPaths": [],
+  "readOnlyPaths": [],
+  "dependencies": [],
+  "constraints": [],
+  "requiredGuides": [],
+  "verification": [
+    "fixture"
+  ],
+  "authority": [],
+  "deliverables": [
+    "fixture"
+  ]
+}

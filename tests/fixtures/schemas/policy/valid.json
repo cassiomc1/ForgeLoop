@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "name": "fixture",
+  "description": "fixture",
+  "complianceMode": "advisory",
+  "requiredGates": [],
+  "requiredEvidence": [],
+  "allowedCompletionStates": [],
+  "freshnessRequired": false
+}

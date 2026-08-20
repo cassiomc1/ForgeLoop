@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "executionId": "fixture",
+  "taskId": "fixture",
+  "checkId": "fixture",
+  "requirement": "fixture",
+  "verificationCycle": 1,
+  "kind": "COMMAND_EXECUTION",
+  "argv": [
+    "fixture"
+  ],
+  "cwd": "fixture",
+  "resolution": {
+    "resolutionMode": "fixture",
+    "mayInstall": false,
+    "installer": "fixture",
+    "tool": "fixture"
+  },
+  "startedAt": "fixture",
+  "finishedAt": "fixture",
+  "status": "passed",
+  "exitCode": 0
+}

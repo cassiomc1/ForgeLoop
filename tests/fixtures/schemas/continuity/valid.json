@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "taskId": "fixture",
+  "workStateFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "contractFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "phase": "fixture",
+  "repositoryFingerprint": {
+    "branch": "fixture",
+    "head": "fixture"
+  },
+  "updatedAt": "fixture",
+  "remainingWork": [],
+  "knownIssues": [],
+  "changedAreas": [],
+  "inspectFirst": []
+}
