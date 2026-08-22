@@ -6,6 +6,11 @@ import { discoverTasks } from "../core/task-discovery.js";
 import { readWorkState } from "../core/work-state.js";
 import { withProjectClaimsLock, withTaskLock } from "../core/task-lock.js";
 import { E_TASK_NOT_FOUND } from "../core/error-codes.js";
+import {
+  assertTaskNotRecovered,
+  readTaskRecovery,
+  taskClaimProjection,
+} from "../core/task-recovery.js";
 
 function taskError(code, message, artifacts = []) {
   const error = new Error(message);
@@ -33,6 +38,7 @@ export async function runTaskScope({ target, packageRoot, taskId, claims } = {})
   if (claims !== undefined && claims !== null) {
     return withProjectClaimsLock(target, async () => {
       return withTaskLock(target, effectiveTaskId, "task-scope", async () => {
+        await assertTaskNotRecovered(target, { taskId: effectiveTaskId, packageRoot });
         const state = await readWorkState(target, { packageRoot, taskId: effectiveTaskId });
         if (state?.phase) {
           assertScopeNotFrozen(state.phase);
@@ -54,17 +60,28 @@ export async function runTaskScope({ target, packageRoot, taskId, claims } = {})
         return {
           taskId: effectiveTaskId,
           taskKey: context.taskKey,
-          writeClaims: updatedDescriptor.writeClaims,
+          ...taskClaimProjection({
+            phase: state?.phase ?? null,
+            recovery: null,
+            writeClaims: updatedDescriptor.writeClaims,
+          }),
           updated: true,
         };
       });
     });
   }
 
+  const state = await readWorkState(target, { packageRoot, taskId: effectiveTaskId });
+  const recovery = (await readTaskRecovery(target, { packageRoot, taskId: effectiveTaskId }))?.value ?? null;
   return {
     taskId: effectiveTaskId,
     taskKey: context.taskKey,
-    writeClaims: descriptor.writeClaims ?? [],
+    ...taskClaimProjection({
+      phase: state?.phase ?? null,
+      recovery,
+      writeClaims: descriptor.writeClaims ?? [],
+    }),
+    recovery,
     updated: false,
   };
 }

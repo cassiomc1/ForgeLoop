@@ -40,7 +40,7 @@ ForgeLoop uses a definition-driven command-line parser:
 | Category | Commands |
 | --- | --- |
 | **Inspection & Diagnostics** | [`protocol-info`](#protocol-info), [`doctor`](#doctor), [`progress`](#progress), [`profile-interview`](#profile-interview), [`inspect`](#inspect), [`status`](#status), [`validate-state`](#validate-state), [`validate-protocol`](#validate-protocol) |
-| **Setup & Maintenance** | [`init`](#init), [`update`](#update), [`task-migrate`](#task-migrate), [`migrate-protocol`](#migrate-protocol), [`task-unlock`](#task-unlock), [`task-recover`](#task-recover) |
+| **Setup & Maintenance** | [`init`](#init), [`update`](#update), [`task-migrate`](#task-migrate), [`migrate-protocol`](#migrate-protocol), [`task-unlock`](#task-unlock), [`task-recover`](#task-recover), [`task-resume`](#task-resume) |
 | **Lifecycle & State** | [`activate`](#activate), [`route`](#route), [`preflight`](#preflight), [`advance`](#advance), [`next`](#next), [`record-diagnosis`](#record-diagnosis), [`record-decision-criterion`](#record-decision-criterion), [`complete`](#complete), [`clear-state`](#clear-state), [`reconcile-closure`](#reconcile-closure), [`task-create`](#task-create), [`task-list`](#task-list), [`task-show`](#task-show), [`task-lock-status`](#task-lock-status), [`task-scope`](#task-scope) |
 | **Cross-Harness Continuity** | [`continuity`](#continuity), [`record-continuity`](#record-continuity), [`reconcile-continuity`](#reconcile-continuity), [`clear-continuity`](#clear-continuity) |
 | **Verification & Completion** | [`prepare-completion`](#prepare-completion), [`run-check`](#run-check), [`record-check`](#record-check), [`record-terminal-result`](#record-terminal-result), [`audit`](#audit), [`report`](#report), [`validate-receipt`](#validate-receipt) |
@@ -1263,9 +1263,9 @@ protocol version.
 
 ### `task-unlock`
 
-Forces the release of a stale task lock.
+Forces the release of a task lock or CAS-safely releases an unchanged stale lease.
 
-- **Purpose**: Removes `.lock` file from the task directory when process crashed.
+- **Purpose**: Removes `.forgeloop/locks/<taskKey>.lock` when its owner is no longer valid. Prefer `--stale-only`; `--force` is an explicit unconditional maintenance action.
 - **Mutation**: Deletes task lock file.
 - **Options**:
 
@@ -1287,17 +1287,18 @@ Forces the release of a stale task lock.
 
 ### `task-recover`
 
-Recovers an ownerless deadlocked task under explicit operator authorization.
+Suspends mutation and releases effective claims for a task deterministically classified `STALE` or `ABANDONED`.
 
-- **Purpose**: Records an append-only operator recovery event, refreshes the stale repository checkpoint, and releases the task's write claims without fabricating a completion claim.
-- **Mutation**: Appends `OPERATOR_RECOVERY_RECORDED` to the task ledger; updates work-state repository fingerprint.
+- **Purpose**: Persists `recovery.json` plus a linked append-only event without changing work state or fabricating completion. `RECOVERABLE` tasks must use `reconcile-closure`.
+- **Mutation**: Transactionally writes recovery state and appends the recovery event. Historical descriptor claims and all lifecycle evidence remain intact; ordinary mutations return `E_TASK_RECOVERED`.
 - **Options**:
 
 <!-- BEGIN FORGELOOP GENERATED: cli:task-recover:options -->
 
 - `--path <directory>`: target project directory (default: current directory)
 - `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
-- `--operator-authorized`: explicit operator authorization to recover an ownerless deadlocked task (required)
+- `--acknowledge-recovery`: acknowledge release of claims for a STALE or ABANDONED task (required; not host attestation)
+- `--operator-authorized`: deprecated alias for --acknowledge-recovery; does not attest operator authority
 - `--json`: emit structured output as JSON
 
 <!-- END FORGELOOP GENERATED: cli:task-recover:options -->
@@ -1305,5 +1306,35 @@ Recovers an ownerless deadlocked task under explicit operator authorization.
 - **Example**:
 
   ```bash
-  forgeloop task-recover --task task-001 --operator-authorized --json
+  forgeloop task-recover --task task-001 --acknowledge-recovery --json
   ```
+
+`--acknowledge-recovery` is caller acknowledgement only. The deprecated
+`--operator-authorized` alias has the same semantics and is not host attestation.
+
+### `task-resume`
+
+Reacquires a recovered task's write claims and restores ordinary mutation authority.
+
+- **Purpose**: Reuses normal claim-overlap and clean-checkout enforcement under project/task serialization, then removes `recovery.json` transactionally.
+- **Mutation**: Optionally updates historical claims in `task.json`, appends `TASK_RECOVERY_RESUMED`, and removes `recovery.json` in one transaction.
+- **Options**:
+
+<!-- BEGIN FORGELOOP GENERATED: cli:task-resume:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--claim <path>`: write claim to reacquire (defaults to all released claims) (repeatable)
+- `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:task-resume:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop task-resume --task task-001 --claim src --claim tests --json
+  ```
+
+With no `--claim`, the command attempts to reacquire all claims recorded in the
+active recovery artifact. It returns `E_TASK_SCOPE_CONFLICT` without removing
+recovery state when another active task owns an overlapping path.

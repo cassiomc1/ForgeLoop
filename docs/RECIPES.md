@@ -20,6 +20,7 @@ Concise, copy-paste friendly recipes for common ForgeLoop tasks.
 12. [Migrate Legacy 1.0 Single-Task Layout](#recipe-12--migrate-legacy-10-single-task-layout)
 13. [Record Decision Settlement Criteria](#recipe-13--record-decision-settlement-criteria)
 14. [Executable Policy, Baseline Ratchet, and Recovery](#recipe-14--executable-policy-baseline-ratchet-and-recovery)
+15. [Release and Reacquire Claims for an Abandoned Task](#recipe-15--release-and-reacquire-claims-for-an-abandoned-task)
 
 ---
 
@@ -311,3 +312,33 @@ forgeloop next --task task-001 --json
 # Intentional operator-authorized baseline reset (not normal recovery)
 forgeloop baseline --record --policy-reset-authorized --json
 ```
+
+---
+
+### Recipe 15 — Release and Reacquire Claims for an Abandoned Task
+
+```bash
+# 1. Inspect deterministic classification and structured next action
+forgeloop next --task task-001 --json
+
+# 2. RECOVERABLE must use reconcile-closure; do not use task-recover
+forgeloop reconcile-closure --task task-001 --id <verification-id> \
+  --requirement "<exact verification text>" -- <verification-command>
+
+# 3. Only STALE or ABANDONED may release effective claims
+forgeloop task-recover --task task-001 --acknowledge-recovery --json
+
+# 4. Other tasks may now adopt the released paths
+forgeloop task-create --task replacement-task --claim src --json
+
+# 5. Reacquisition fails while replacement-task owns src
+forgeloop task-resume --task task-001 --json
+
+# 6. After the conflicting owner completes, reacquire claims explicitly
+forgeloop task-resume --task task-001 --claim src --json
+```
+
+`--acknowledge-recovery` records caller acknowledgement only. It does not grant
+host authority or mark the task complete. Recovery preserves work state,
+receipts, failures, policy snapshots, and continuity until normal lifecycle
+work resumes.

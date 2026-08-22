@@ -31,6 +31,11 @@ export const E_TASK_MIGRATION_INVALID = "E_TASK_MIGRATION_INVALID";
 export const E_TASK_RECOVERY_UNSAFE = "E_TASK_RECOVERY_UNSAFE";
 export const E_TASK_RECOVERY_INCONSISTENT = "E_TASK_RECOVERY_INCONSISTENT";
 export const E_TASK_RECOVERY_AUTHORIZATION_REQUIRED = "E_TASK_RECOVERY_AUTHORIZATION_REQUIRED";
+export const E_TASK_RECOVERY_AUTHORITY_INVALID = "E_TASK_RECOVERY_AUTHORITY_INVALID";
+export const E_TASK_RECOVERED = "E_TASK_RECOVERED";
+export const E_TASK_NOT_RECOVERED = "E_TASK_NOT_RECOVERED";
+export const E_TASK_RECOVERY_OFFICIAL_PATH_AVAILABLE = "E_TASK_RECOVERY_OFFICIAL_PATH_AVAILABLE";
+export const E_TASK_ALREADY_RECOVERED = "E_TASK_ALREADY_RECOVERED";
 export const E_TASK_MIGRATION_IDENTITY_MISMATCH = "E_TASK_MIGRATION_IDENTITY_MISMATCH";
 export const E_PROTOCOL_MIGRATION_TARGET_UNSUPPORTED = "E_PROTOCOL_MIGRATION_TARGET_UNSUPPORTED";
 
@@ -172,22 +177,57 @@ export const PUBLIC_ERROR_CODES = Object.freeze({
     code: "E_TASK_RECOVERY_UNSAFE",
     category: "recovery",
     classification: "PUBLIC_STABLE",
-    meaning: "Operator recovery was refused because the conflicting task is active, inconsistent, already complete, or holds a live lease.",
+    meaning: "Claim-release recovery was refused because the conflicting task is active, inconsistent, already complete, or holds a live lease.",
     safeResolution: "Resolve the reported classification first; live leases must expire or be released by their owner before recovery.",
   }),
   E_TASK_RECOVERY_INCONSISTENT: Object.freeze({
     code: "E_TASK_RECOVERY_INCONSISTENT",
     category: "recovery",
     classification: "PUBLIC_STABLE",
-    meaning: "Operator recovery was refused because the task state or event ledger is inconsistent.",
+    meaning: "Claim-release recovery was refused because the task state, recovery artifact, lock, or event ledger is inconsistent.",
     safeResolution: "Repair the underlying artifact through its dedicated recovery surface; do not force-complete an unreadable task.",
   }),
   E_TASK_RECOVERY_AUTHORIZATION_REQUIRED: Object.freeze({
     code: "E_TASK_RECOVERY_AUTHORIZATION_REQUIRED",
     category: "recovery",
     classification: "PUBLIC_STABLE",
-    meaning: "task-recover requires explicit operator authorization via --operator-authorized.",
-    safeResolution: "Re-run with --operator-authorized only when evidence shows the task has no active owner and official recovery paths are unavailable.",
+    meaning: "task-recover requires explicit caller acknowledgement; this is not host-attested authority.",
+    safeResolution: "Re-run with --acknowledge-recovery only when evidence shows the task is STALE or ABANDONED; --operator-authorized remains a deprecated alias.",
+  }),
+  E_TASK_RECOVERY_AUTHORITY_INVALID: Object.freeze({
+    code: "E_TASK_RECOVERY_AUTHORITY_INVALID",
+    category: "authority",
+    classification: "PUBLIC_STABLE",
+    meaning: "Recovery authority metadata is invalid or claims host attestation without a host-owned grant reference.",
+    safeResolution: "Use caller acknowledgement, or provide a host-attested recovery grant through a trusted host integration.",
+  }),
+  E_TASK_RECOVERED: Object.freeze({
+    code: "E_TASK_RECOVERED",
+    category: "recovery",
+    classification: "PUBLIC_STABLE",
+    meaning: "The task released its write claims through recovery and ordinary mutation is suspended.",
+    safeResolution: "Run forgeloop task-resume --task <id> to reacquire the released claims before mutating the task.",
+  }),
+  E_TASK_NOT_RECOVERED: Object.freeze({
+    code: "E_TASK_NOT_RECOVERED",
+    category: "recovery",
+    classification: "PUBLIC_STABLE",
+    meaning: "task-resume was requested for a task without active recovered state.",
+    safeResolution: "Inspect the task with forgeloop task-show; task-resume is only valid while recovery.json is active.",
+  }),
+  E_TASK_RECOVERY_OFFICIAL_PATH_AVAILABLE: Object.freeze({
+    code: "E_TASK_RECOVERY_OFFICIAL_PATH_AVAILABLE",
+    category: "recovery",
+    classification: "PUBLIC_STABLE",
+    meaning: "Claim-release recovery was refused because canonical lifecycle reconciliation is available.",
+    safeResolution: "Use forgeloop reconcile-closure and the normal verification/completion pipeline instead of task-recover.",
+  }),
+  E_TASK_ALREADY_RECOVERED: Object.freeze({
+    code: "E_TASK_ALREADY_RECOVERED",
+    category: "recovery",
+    classification: "PUBLIC_STABLE",
+    meaning: "The task already has active durable recovered state.",
+    safeResolution: "Inspect the existing recovery metadata; use task-resume to reacquire claims or leave the task recovered.",
   }),
   E_TASK_SCOPE_DIRTY: Object.freeze({
     code: "E_TASK_SCOPE_DIRTY",
@@ -496,6 +536,11 @@ export const ALL_KNOWN_ERROR_CODES = Object.freeze(new Set([
   E_TASK_RECOVERY_UNSAFE,
   E_TASK_RECOVERY_INCONSISTENT,
   E_TASK_RECOVERY_AUTHORIZATION_REQUIRED,
+  E_TASK_RECOVERY_AUTHORITY_INVALID,
+  E_TASK_RECOVERED,
+  E_TASK_NOT_RECOVERED,
+  E_TASK_RECOVERY_OFFICIAL_PATH_AVAILABLE,
+  E_TASK_ALREADY_RECOVERED,
   E_TASK_MIGRATION_IDENTITY_MISMATCH,
   E_PROTOCOL_MIGRATION_TARGET_UNSUPPORTED,
   E_CHECK_INERT,

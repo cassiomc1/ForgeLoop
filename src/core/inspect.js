@@ -11,6 +11,7 @@ import { FORGELOOP_KIT_DIR } from "./target-layout.js";
 import { trustedAuthorityConfiguration } from "./trusted-authority.js";
 import { reconcileContinuity } from "./continuity-reconciliation.js";
 import { continuityFinding, continuityIsHealthy } from "./continuity-observability.js";
+import { findTaskById } from "./task-discovery.js";
 
 function profileMetadata(bytes) {
   const text = bytes.toString("utf8");
@@ -40,6 +41,7 @@ export async function inspectTarget({ target, packageRoot, contractFile = null, 
   const statePath = ensureWithin(target, effectiveStateRel);
   const statePresent = await fileExists(statePath);
   const state = await readAndClassifyWorkState({ target, packageRoot, contractFile, taskId, stateFile: effectiveStateRel });
+  const taskInfo = taskId ? await findTaskById(target, taskId, packageRoot) : null;
   const continuity = await reconcileContinuity({ target, packageRoot, taskId });
   const schemaRoot = manifest?.layoutVersion >= 2
     ? ensureWithin(target, FORGELOOP_KIT_DIR)
@@ -132,6 +134,13 @@ export async function inspectTarget({ target, packageRoot, contractFile = null, 
       evidence: protocolEvidence,
     },
     state: { ...state, path: WORK_STATE_PATH, present: statePresent },
+    recovery: taskInfo?.recovery ?? null,
+    claims: taskInfo ? {
+      state: taskInfo.claimState,
+      historical: taskInfo.historicalWriteClaims,
+      effective: taskInfo.effectiveWriteClaims,
+      mutationAllowed: taskInfo.mutationAllowed,
+    } : null,
     continuity,
     compatibility: {
       deprecated: true,

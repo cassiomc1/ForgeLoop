@@ -6,7 +6,7 @@ import { readJsonArtifact } from "./artifacts.js";
 import { currentChangedPaths } from "./repository.js";
 import { validateReadyProtocolConsistency } from "./preflight.js";
 import { taskArtifactPath } from "./task-paths.js";
-import { readTaskDescriptor } from "./task-descriptor.js";
+import { findTaskById } from "./task-discovery.js";
 
 function sortErrors(errors) {
   return [...errors].sort((left, right) => left.code.localeCompare(right.code)
@@ -25,8 +25,8 @@ async function compareChangedPaths(target, packageRoot, options = {}) {
   let writeClaims = [];
   if (options.taskId) {
     try {
-      const desc = await readTaskDescriptor(target, options.taskId, packageRoot);
-      writeClaims = desc.value.writeClaims ?? [];
+      const task = await findTaskById(target, options.taskId, packageRoot);
+      writeClaims = task?.writeClaims ?? [];
     } catch {
       // ignore
     }
@@ -111,6 +111,7 @@ export async function evaluateAudit({
     // Completion already reports missing or invalid preflight artifacts.
   }
   const errors = sortErrors([...completion.errors, ...readyConsistencyErrors]);
+  const taskInfo = taskId ? await findTaskById(target, taskId, packageRoot) : null;
   const changedPaths = await compareChangedPaths(target, packageRoot, { taskId, receiptPath });
   if (changedPaths.status === "MISMATCH") {
     errors.push({
@@ -167,6 +168,13 @@ export async function evaluateAudit({
     },
     policy: policyStatus,
     completion,
+    recovery: taskInfo?.recovery ?? null,
+    claims: taskInfo ? {
+      state: taskInfo.claimState,
+      historical: taskInfo.historicalWriteClaims,
+      effective: taskInfo.effectiveWriteClaims,
+      mutationAllowed: taskInfo.mutationAllowed,
+    } : null,
     changedPaths,
     publicationStatus: completion.publicationStatus,
     productionReadiness: completion.productionReadiness,

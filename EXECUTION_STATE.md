@@ -10,6 +10,19 @@ Compatible agents may persist a handoff checkpoint at:
 .forgeloop/task-state/<taskKey>/work-state.json
 ```
 
+Claim-release recovery has a separate current-state artifact:
+
+```text
+.forgeloop/task-state/<taskKey>/recovery.json
+```
+
+`work-state.json` remains the lifecycle authority. `recovery.json` records that
+ordinary mutation is suspended and effective claims are released; it does not
+change the phase, refresh repository evidence, erase failures, or imply
+completion. Its `recoveryId`, event sequence, previous revision, released
+claims, repository fingerprint, classification, and authority kind are bound
+to the append-only recovery event.
+
 The file is local, ignored by Git, schema-versioned, and never a replacement
 for the manifest or the target project profile (installed as
 `.forgeloop/kit/PROJECT_PROFILE.md`). It contains no secrets and is untrusted
@@ -65,6 +78,18 @@ Before resuming, compare:
 - the Git branch and HEAD when the target is a Git checkout;
 - the protocol version;
 - required artifacts and assumptions recorded by the task.
+
+If `recovery.json` is active, ordinary lifecycle mutation fails with
+`E_TASK_RECOVERED`. Resume claim ownership explicitly:
+
+```bash
+forgeloop task-resume --task <id> --json
+```
+
+Optional repeatable `--claim <path>` arguments replace the historical claim set
+only after normal overlap and clean-checkout enforcement succeeds. Recovery
+state deletion, any descriptor update, and `TASK_RECOVERY_RESUMED` are staged
+transactionally. A missing recovery artifact returns `E_TASK_NOT_RECOVERED`.
 
 Any material difference produces `REVALIDATION_REQUIRED`. A non-Git target
 reports that branch/HEAD drift is not verifiable. Cheap checks may be rerun,

@@ -14,6 +14,7 @@ export async function runAudit(options = {}) {
 
 export function formatAuditResult(result) {
   const lines = [`FORGELOOP AUDIT: ${result.status}`];
+  if (result.recovery) lines.push(`RECOVERY: ${result.recovery.status} (${result.recovery.recoveryId})`);
   for (const error of result.errors) {
     lines.push(`${error.code}: ${error.message}`);
     if (error.next) lines.push(`NEXT: ${error.next}`);

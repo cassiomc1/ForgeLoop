@@ -31,8 +31,69 @@ export const NEXT_ACTIONS = Object.freeze({
   REPAIR_POLICY: "REPAIR_POLICY",
   RESTORE_BASELINE: "RESTORE_BASELINE",
   CONTINUE_WITH_EXISTING_BASELINE: "CONTINUE_WITH_EXISTING_BASELINE",
+  RECONCILE_CLOSURE: "RECONCILE_CLOSURE",
+  RECOVER_TASK: "RECOVER_TASK",
+  RESUME_RECOVERED_TASK: "RESUME_RECOVERED_TASK",
+  RELEASE_STALE_LOCK: "RELEASE_STALE_LOCK",
+  RESOLVE_RECOVERY_INCONSISTENCY: "RESOLVE_RECOVERY_INCONSISTENCY",
   NONE: "NONE",
 });
+
+function directCommandSpec(commandId, taskId, requiredInputs = []) {
+  return {
+    commandId,
+    executable: "forgeloop",
+    subcommand: commandId,
+    argv: [commandId, `--task=${taskId}`, "--json"],
+    requiredInputs,
+  };
+}
+
+export function recoveryGuidanceForClassification(classification, taskId) {
+  if (classification === "RECOVERABLE") {
+    return {
+      nextAction: NEXT_ACTIONS.RECONCILE_CLOSURE,
+      commands: ["forgeloop reconcile-closure --task <id>"],
+      commandSpecs: [directCommandSpec("reconcile-closure", taskId, [
+        { name: "checkId", option: "--id=<contract-verification-id>" },
+        { name: "requirement", option: "--requirement=<exact-contract-verification-text>" },
+        { name: "command", option: "-- <verification-command...>" },
+      ])],
+    };
+  }
+  if (classification === "STALE" || classification === "ABANDONED") {
+    return {
+      nextAction: NEXT_ACTIONS.RECOVER_TASK,
+      commands: ["forgeloop task-recover --task <id> --acknowledge-recovery --json"],
+      commandSpecs: [directCommandSpec("task-recover", taskId, [
+        {
+          name: "acknowledgeRecovery",
+          option: "--acknowledge-recovery",
+          description: "Caller acknowledgement only; not host-attested authority.",
+        },
+      ])],
+    };
+  }
+  if (classification === "RECOVERED") {
+    return {
+      nextAction: NEXT_ACTIONS.RESUME_RECOVERED_TASK,
+      commands: ["forgeloop task-resume --task <id> --json"],
+      commandSpecs: [directCommandSpec("task-resume", taskId)],
+    };
+  }
+  if (classification === "INCONSISTENT") {
+    return {
+      nextAction: NEXT_ACTIONS.RESOLVE_RECOVERY_INCONSISTENCY,
+      commands: ["forgeloop validate-protocol --task <id> --json"],
+      commandSpecs: [directCommandSpec("validate-protocol", taskId)],
+    };
+  }
+  return {
+    nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
+    commands: ["forgeloop task-show --task <id> --json"],
+    commandSpecs: [directCommandSpec("task-show", taskId)],
+  };
+}
 
 export function result({
   taskId = "unknown",

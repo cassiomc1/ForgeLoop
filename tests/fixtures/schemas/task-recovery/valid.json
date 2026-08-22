@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "taskId": "fixture-recovery",
+  "status": "RECOVERED",
+  "recoveredAt": "2026-08-22T12:00:00.000Z",
+  "recoveryId": "recovery-12345678-abcd-4321-abcd-1234567890ab",
+  "recoveryEventSeq": 8,
+  "classificationAtRecovery": "ABANDONED",
+  "reasonCodes": ["NO_RECORDED_EVIDENCE", "IDLE_BEYOND_THRESHOLD"],
+  "releasedClaims": ["src", "tests"],
+  "previousPhase": "VERIFYING",
+  "previousRevision": 4,
+  "repositoryFingerprint": {
+    "branch": "main",
+    "head": "0123456789abcdef0123456789abcdef01234567"
+  },
+  "authority": {
+    "kind": "CALLER_ACKNOWLEDGED"
+  }
+}

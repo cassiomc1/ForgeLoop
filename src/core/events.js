@@ -97,9 +97,52 @@ export function validateKnownEventDetails(event) {
     case "CHECKPOINT_RECONCILED":
       assertReconcileClosureDetails(event.details);
       return;
+    case "TASK_RECOVERY_RECORDED":
+    case "OPERATOR_RECOVERY_RECORDED":
+      assertRecoveryRecordedDetails(event.details);
+      return;
+    case "TASK_RECOVERY_RESUMED":
+      assertRecoveryResumedDetails(event.details);
+      return;
     default:
       return;
   }
+}
+
+function assertStringList(value, label) {
+  if (!Array.isArray(value) || value.some((item) => typeof item !== "string" || !item)) {
+    throw protocolError("E_EVENT_INVALID", `${label} must be an array of non-empty strings`);
+  }
+}
+
+function assertRecoveryRecordedDetails(details) {
+  if (!details || typeof details !== "object" || Array.isArray(details)) {
+    throw protocolError("E_EVENT_INVALID", "recovery event requires structured details");
+  }
+  for (const key of ["recoveryId", "classification", "previousPhase", "authorityKind"]) {
+    if (typeof details[key] !== "string" || !details[key]) {
+      throw protocolError("E_EVENT_INVALID", `recovery event details.${key} must be a non-empty string`);
+    }
+  }
+  if (!Number.isInteger(details.previousRevision) || details.previousRevision < 0) {
+    throw protocolError("E_EVENT_INVALID", "recovery event details.previousRevision must be a non-negative integer");
+  }
+  if (!["STALE", "ABANDONED"].includes(details.classification)) {
+    throw protocolError("E_EVENT_INVALID", "recovery event details.classification must be STALE or ABANDONED");
+  }
+  if (!["CALLER_ACKNOWLEDGED", "HOST_ATTESTED"].includes(details.authorityKind)) {
+    throw protocolError("E_EVENT_INVALID", "recovery event details.authorityKind is invalid");
+  }
+  assertStringList(details.reasonCodes, "recovery event details.reasonCodes");
+  assertStringList(details.releasedClaims, "recovery event details.releasedClaims");
+}
+
+function assertRecoveryResumedDetails(details) {
+  if (!details || typeof details !== "object" || Array.isArray(details)
+    || typeof details.recoveryId !== "string" || !details.recoveryId) {
+    throw protocolError("E_EVENT_INVALID", "TASK_RECOVERY_RESUMED requires details.recoveryId");
+  }
+  assertStringList(details.reacquiredClaims, "TASK_RECOVERY_RESUMED details.reacquiredClaims");
 }
 
 function assertReconcileClosureDetails(details) {

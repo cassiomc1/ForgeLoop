@@ -33,6 +33,7 @@ export const SHIPPED_SCHEMA_NAMES = Object.freeze([
   "execution",
   "authority",
   "task-descriptor",
+  "task-recovery",
 ]);
 
 export class SchemaValidationError extends Error {

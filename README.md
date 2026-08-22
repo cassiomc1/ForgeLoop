@@ -195,6 +195,15 @@ forgeloop task-create --task auth-feature --claim src/auth --claim tests/auth --
 # List active and completed tasks
 forgeloop task-list --json
 
+# Ask for deterministic conflict/recovery guidance
+forgeloop next --task auth-feature --json
+
+# Only for a task classified STALE or ABANDONED: release effective claims
+forgeloop task-recover --task auth-feature --acknowledge-recovery --json
+
+# Reacquire conflict-free claims before mutating a recovered task again
+forgeloop task-resume --task auth-feature --json
+
 # Run standard lifecycle commands targeting the task
 forgeloop route --task auth-feature --work clean-code --surface backend
 forgeloop preflight --task auth-feature --json
@@ -204,6 +213,12 @@ forgeloop complete --task auth-feature --json
 # Migrate legacy 1.0 single-task layout
 forgeloop task-migrate --json
 ```
+
+Recovery is not completion. `recovery.json` preserves the lifecycle checkpoint
+and historical descriptor claims while suspending ordinary mutation and making
+effective claims empty. The standalone acknowledgement flag is not
+host-attested authority. `task-resume` removes recovery state only after the
+normal claim-overlap and clean-checkout checks succeed.
 
 ### Executable policy verification & brownfield baselines
 

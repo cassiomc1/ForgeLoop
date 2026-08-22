@@ -24,6 +24,7 @@ This guide provides symptom-first recovery procedures for common ForgeLoop proto
 - [Baseline re-record blocked during active task (`E_BASELINE_RECORD_DURING_ACTIVE_TASK`)](#symptom-baseline-re-record-blocked-during-active-task)
 - [Mutation checker execution error (`E_CHECK_MUTATION_EXECUTION_ERROR`)](#symptom-mutation-checker-execution-error)
 - [Another harness cannot resume the task](#symptom-another-harness-cannot-resume)
+- [Task claim conflict or recovered task](#symptom-task-creation-blocked-by-a-write-claim-conflict-e_task_scope_conflict)
 - [Stable Error & Reason Code Reference](#stable-error-and-reason-codes)
 
 ---
@@ -311,13 +312,22 @@ Another non-`COMPLETE` task already holds a write claim that overlaps the claims
 
 #### Inspect
 
-The conflict error carries `error.conflicts[].inspection` with:
+The conflict error carries machine-readable fields directly on each
+`error.conflicts[]` entry, plus the full nested `inspection`:
 
-- `classification`: one of `ACTIVE`, `RECOVERABLE`, `STALE`, `ABANDONED`, `INCONSISTENT`, or `COMPLETE`;
+- `classification`: one of `ACTIVE`, `RECOVERABLE`, `STALE`, `ABANDONED`, `INCONSISTENT`, `RECOVERED`, or `COMPLETE`;
 - `reasonCodes`: the deterministic evidence codes behind the classification;
-- `recoverable` / `recoveredBy`: whether an official recovery path exists and which commands implement it.
+- `nextAction`: the deterministic recovery or wait action;
+- `commandSpecs`: direct-process command metadata and required inputs;
+- `inspection`: the complete classification evidence.
 
-Classification is derived from machine state only (lock/lease, checkpoint freshness, drift kinds, ledger validity, recorded evidence, idle time). A `REVIEWING` phase plus an old timestamp alone is never classified `STALE`; post-execution tasks whose only drift is `REPOSITORY_CHANGED` remain `RECOVERABLE`.
+Classification is derived from machine state only: recovery state, lock/lease,
+checkpoint freshness, drift kinds, ledger validity, all recorded check statuses,
+verification evidence, meaningful ledger activity, and idle time. Lock state
+distinguishes `NONE`, `LIVE`, `STALE`, `UNKNOWN`, and `CORRUPT`; unknown,
+corrupt, or unreadable evidence fails closed as `INCONSISTENT`. A `REVIEWING`
+phase plus an old timestamp alone is never `STALE`; post-execution tasks whose
+only drift is `REPOSITORY_CHANGED` remain `RECOVERABLE`.
 
 #### Safe recovery
 
@@ -328,11 +338,37 @@ Follow the classification:
 forgeloop reconcile-closure --task <task-id> --id <verification-id> \
   --requirement "<exact contract verification text>" -- <command>
 
-# STALE / ABANDONED / deadlocked beyond official paths: operator-authorized recovery
-forgeloop task-recover --task <task-id> --operator-authorized --json
+# STALE / ABANDONED only: caller-acknowledged claim release
+forgeloop task-recover --task <task-id> --acknowledge-recovery --json
+
+# RECOVERED: reacquire claims through normal ownership checks
+forgeloop task-resume --task <task-id> --json
+
+# INCONSISTENT: diagnose; do not force claim release
+forgeloop validate-protocol --task <task-id> --json
 ```
 
-`task-recover` refuses `ACTIVE` tasks (live lease or fresh checkpoint) and `INCONSISTENT` state, records an append-only `OPERATOR_RECOVERY_RECORDED` ledger event, refreshes the stale repository checkpoint, and releases the task's write claims without fabricating a completion claim. Claims release canonically when the task reaches validator-backed `COMPLETE`, or through explicit operator recovery as above.
+`task-recover` uses an explicit allowlist: only `STALE` and `ABANDONED` are
+accepted. It refuses `ACTIVE`, `RECOVERABLE`, `INCONSISTENT`, `RECOVERED`,
+`COMPLETE`, and unknown future classifications. A stale task lock is released
+only if its lock ID, heartbeat, and owner instance still match the observation;
+recovery then revalidates phase, revision, ledger sequence, and classification
+under project-claims and task locks.
+
+The command writes durable `recovery.json` and a linked append-only recovery
+event in one transaction. For PR #66 compatibility, the writer retains the
+event name `OPERATOR_RECOVERY_RECORDED`, but records
+`authorityKind: CALLER_ACKNOWLEDGED`; readers also accept
+`TASK_RECOVERY_RECORDED`. Recovery does not refresh `work-state.json`, change
+phase, erase evidence, alter policy/continuity, or fabricate completion.
+Historical descriptor claims remain visible, while canonical effective claims
+are empty and ordinary mutations fail with `E_TASK_RECOVERED`.
+
+`--acknowledge-recovery` is a caller declaration, not host-attested authority.
+The deprecated `--operator-authorized` alias has the same limited meaning.
+Only `task-resume` can transactionally remove recovery state and reacquire
+claims. If another task owns an overlapping path, resume returns
+`E_TASK_SCOPE_CONFLICT` and leaves the recovered task suspended.
 
 Never edit `.forgeloop/task-state/<taskKey>/` files directly to clear a conflict; that bypasses locks, transactions, expected revisions, and the append-only ledger.
 
@@ -718,6 +754,7 @@ forgeloop next --task <id> --json
 | `E_STATE_REVALIDATION_REQUIRED` | The work-state checkpoint must be revalidated before the lifecycle can continue. | Run forgeloop reconcile-closure for externally satisfied EXECUTING tasks, or inspect the freshness reasons for other drift. |
 | `E_STATE_TASK_MISMATCH` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_TASK_ALREADY_EXISTS` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
+| `E_TASK_ALREADY_RECOVERED` | The task already has active durable recovered state. | Inspect the existing recovery metadata; use task-resume to reacquire claims or leave the task recovered. |
 | `E_TASK_AMBIGUOUS` | Multiple tasks exist in the project but no task selector was provided. | Select a task explicitly using --task <id> or FORGELOOP_TASK=<id>. |
 | `E_TASK_CHANGE_ATTRIBUTION_UNAVAILABLE` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_TASK_CHANGE_OUTSIDE_SCOPE` | Modified paths in repository exceed the declared task write claims. | Update write claims with forgeloop task-scope or revert out-of-scope modifications. |
@@ -730,9 +767,13 @@ forgeloop next --task <id> --json
 | `E_TASK_MIGRATION_IDENTITY_MISMATCH` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_TASK_MIGRATION_INVALID` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_TASK_NOT_FOUND` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
-| `E_TASK_RECOVERY_AUTHORIZATION_REQUIRED` | task-recover requires explicit operator authorization via --operator-authorized. | Re-run with --operator-authorized only when evidence shows the task has no active owner and official recovery paths are unavailable. |
-| `E_TASK_RECOVERY_INCONSISTENT` | Operator recovery was refused because the task state or event ledger is inconsistent. | Repair the underlying artifact through its dedicated recovery surface; do not force-complete an unreadable task. |
-| `E_TASK_RECOVERY_UNSAFE` | Operator recovery was refused because the conflicting task is active, inconsistent, already complete, or holds a live lease. | Resolve the reported classification first; live leases must expire or be released by their owner before recovery. |
+| `E_TASK_NOT_RECOVERED` | task-resume was requested for a task without active recovered state. | Inspect the task with forgeloop task-show; task-resume is only valid while recovery.json is active. |
+| `E_TASK_RECOVERED` | The task released its write claims through recovery and ordinary mutation is suspended. | Run forgeloop task-resume --task <id> to reacquire the released claims before mutating the task. |
+| `E_TASK_RECOVERY_AUTHORITY_INVALID` | Recovery authority metadata is invalid or claims host attestation without a host-owned grant reference. | Use caller acknowledgement, or provide a host-attested recovery grant through a trusted host integration. |
+| `E_TASK_RECOVERY_AUTHORIZATION_REQUIRED` | task-recover requires explicit caller acknowledgement; this is not host-attested authority. | Re-run with --acknowledge-recovery only when evidence shows the task is STALE or ABANDONED; --operator-authorized remains a deprecated alias. |
+| `E_TASK_RECOVERY_INCONSISTENT` | Claim-release recovery was refused because the task state, recovery artifact, lock, or event ledger is inconsistent. | Repair the underlying artifact through its dedicated recovery surface; do not force-complete an unreadable task. |
+| `E_TASK_RECOVERY_OFFICIAL_PATH_AVAILABLE` | Claim-release recovery was refused because canonical lifecycle reconciliation is available. | Use forgeloop reconcile-closure and the normal verification/completion pipeline instead of task-recover. |
+| `E_TASK_RECOVERY_UNSAFE` | Claim-release recovery was refused because the conflicting task is active, inconsistent, already complete, or holds a live lease. | Resolve the reported classification first; live leases must expire or be released by their owner before recovery. |
 | `E_TASK_REQUIRED` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_TASK_SCOPE_CONFLICT` | Task write claims overlap with another non-complete task in the same checkout. | Inspect the conflicting task classification reported in error.conflicts, then reconcile or recover it through its reported official recovery commands before retrying task creation. |
 | `E_TASK_SCOPE_DIRTY` | Claimed paths contain pre-existing uncommitted changes. | Commit or stash changes in claimed paths before defining or adopting the scope. |

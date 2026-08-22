@@ -187,7 +187,8 @@ export async function advanceWorkState(target, toPhase, options = {}) {
 
     const nonCompleteTasks = discovered.filter((t) => t.phase !== "COMPLETE");
     if (nonCompleteTasks.length > 1) {
-      const claims = descriptor?.writeClaims ?? [];
+      const currentTask = discovered.find((task) => task.taskId === taskId && task.healthy !== false);
+      const claims = currentTask?.writeClaims ?? [];
       if (claims.length === 0) {
         throw phaseError(
           E_TASK_SCOPE_REQUIRED,

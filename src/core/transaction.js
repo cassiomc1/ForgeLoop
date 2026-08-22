@@ -118,6 +118,9 @@ export async function withTaskTransaction({
       lock,
       async readText(relativePath) {
         await assertSafePath(target, relativePath);
+        if (manifest.writes.some((entry) => writePath(entry) === relativePath && entry.kind === "DELETE")) {
+          return null;
+        }
         const staged = ensureWithin(target, `${stageRoot}/${relativePath}`);
         if (await fileExists(staged)) return readFile(staged, "utf8");
         const appendStaged = ensureWithin(target, `${stageRoot}/${relativePath}.append`);
@@ -128,8 +131,9 @@ export async function withTaskTransaction({
       },
       async stageText(relativePath, text) {
         await assertSafePath(target, relativePath);
-        if (manifest.writes.some((entry) => writePath(entry) === relativePath && entry.kind === "APPEND")) {
-          throw new Error(`cannot replace append-staged path: ${relativePath}`);
+        const conflicting = manifest.writes.find((entry) => writePath(entry) === relativePath);
+        if (conflicting?.kind === "APPEND" || conflicting?.kind === "DELETE") {
+          throw new Error(`cannot replace ${conflicting.kind.toLowerCase()}-staged path: ${relativePath}`);
         }
         const staged = `${stageRoot}/${relativePath}`;
         await assertSafePath(target, staged);
@@ -160,6 +164,23 @@ export async function withTaskTransaction({
           };
           manifest.writes.push(entry);
         }
+        await writeManifest(target, manifestPath, manifest);
+      },
+      async stageDelete(relativePath) {
+        await assertSafePath(target, relativePath);
+        if (manifest.writes.some((entry) => writePath(entry) === relativePath)) {
+          throw new Error(`cannot delete write-staged path: ${relativePath}`);
+        }
+        const destination = ensureWithin(target, relativePath);
+        if (!(await fileExists(destination))) {
+          throw new Error(`transaction delete target is missing: ${relativePath}`);
+        }
+        manifest.writes.push({
+          path: relativePath,
+          kind: "DELETE",
+          hadPrevious: false,
+          published: false,
+        });
         await writeManifest(target, manifestPath, manifest);
       },
     };
@@ -221,6 +242,11 @@ export async function withTaskTransaction({
           entry.backupCreated = true;
         }
         await writeManifest(target, manifestPath, manifest);
+        if (entry.kind === "DELETE") {
+          entry.published = true;
+          await writeManifest(target, manifestPath, manifest);
+          continue;
+        }
         await rename(staged, destination);
         entry.published = true;
         await writeManifest(target, manifestPath, manifest);
