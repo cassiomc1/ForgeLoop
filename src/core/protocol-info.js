@@ -40,6 +40,11 @@ export function protocolInfo({ packageVersion = null } = {}) {
         explicitResume: true,
         validatedClaimProjection: true,
       },
+      integrationApi: {
+        version: 1,
+        structuredCommandRuntime: true,
+        canonicalResources: true,
+      },
     },
     lifecycle: { phases: WORK_PHASES, transitions: WORK_TRANSITIONS },
     guides: Object.values(GUIDE_REGISTRY),
