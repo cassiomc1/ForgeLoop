@@ -20,6 +20,8 @@ integration and guide context. Use this map before editing documentation.
 | Artifact and schema reference | [`docs/ARTIFACT_REFERENCE.md`](./docs/ARTIFACT_REFERENCE.md) | Purpose, mutability, and trust classifications of `.forgeloop/` |
 | Troubleshooting and recovery | [`docs/TROUBLESHOOTING.md`](./docs/TROUBLESHOOTING.md) | Symptom-first recovery and stable error code reference |
 | Operational recipes | [`docs/RECIPES.md`](./docs/RECIPES.md) | Short copy-paste recipes for daily workflows |
+| Universal integration API | [`docs/UNIVERSAL_INTEGRATION.md`](./docs/UNIVERSAL_INTEGRATION.md) | Programmatic integration subpath, envelope semantics, and consumer map |
+| Local MCP server | [`docs/MCP.md`](./docs/MCP.md) | stdio adapter over canonical commands; modes, capabilities, and resources |
 | Documentation guide | [`docs/DOCUMENTATION_GUIDE.md`](./docs/DOCUMENTATION_GUIDE.md) | Rules and checklist for modifying documentation |
 | ForgeLoop 1.4 release checklist | [`docs/RELEASE_CHECKLIST_1_4.md`](./docs/RELEASE_CHECKLIST_1_4.md) | Claim-recovery, compatibility, package, and publication gates |
 | Lifecycle, gates, planning, verification, and recovery | [`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md) | Normative process for agents and developer workflows |

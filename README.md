@@ -402,3 +402,17 @@ Task-scoped mutable protocol state is stored under
 
 For document ownership, guide routing, capability degradation, and integration
 details, start at [`DOCS_INDEX.md`](./DOCS_INDEX.md).
+
+## Programmatic integration and MCP
+
+ForgeLoop exposes a stable programmatic surface:
+
+```js
+import { executeForgeLoopCommand } from "@cassiomc1/forgeloop/integration";
+```
+
+The local MCP server (`@cassiomc1/forgeloop-mcp`, stdio) is an adapter over
+this exact API — it never reimplements ForgeLoop. See
+[`docs/UNIVERSAL_INTEGRATION.md`](./docs/UNIVERSAL_INTEGRATION.md) and
+[`docs/MCP.md`](./docs/MCP.md). MCP is optional; the CLI and instruction-only
+hosts remain fully supported without it.
