@@ -17,6 +17,11 @@ This checklist prepares the validated claim-recovery capability for release. It 
 - [ ] Single COMPLETE/RECOVERED task can be inspected implicitly by READ commands.
 - [ ] Single COMPLETE/RECOVERED task cannot be selected implicitly for mutation.
 - [ ] Ownership ledger validation is not redundantly repeated inside one immutable snapshot.
+- [ ] Legacy recovery repair CAS-settles only unchanged stale task locks.
+- [ ] Legacy recovery repair refuses UNKNOWN/CORRUPT task locks.
+- [ ] alreadyRepaired requires a fully valid canonical recovery relationship.
+- [ ] No exported claim helper releases claims from COMPLETE phase alone.
+- [ ] Legacy recovery migration v1 accepts only CALLER_ACKNOWLEDGED authority.
 
 ## Compatibility and package gates
 

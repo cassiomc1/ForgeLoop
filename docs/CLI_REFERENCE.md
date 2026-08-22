@@ -1369,6 +1369,12 @@ Migrates one recognized legacy recovery boundary event into the modern durable r
 
 Only the exact known legacy signature is eligible; ambiguous, tampered, or
 post-boundary-active ledgers fail closed with
-`E_LEGACY_RECOVERY_MIGRATION_INVALID` and ownership stays INCONSISTENT. The
-repair itself never releases claims directly; ownership becomes validated
+`E_LEGACY_RECOVERY_MIGRATION_INVALID` and ownership stays INCONSISTENT. A
+`STALE` task lease is settled only through CAS-safe stale release when the
+observed lock is unchanged; `LIVE` locks refuse with `E_TASK_LOCKED`, and
+`UNKNOWN`/`CORRUPT` locks fail closed with the lock preserved — never delete a
+lock file manually to unblock this command. The repair is idempotent: an
+already repaired task returns `{repaired: 0, alreadyRepaired: true}` only when
+the whole canonical recovery relationship validates; any mismatch fails closed.
+The repair itself never releases claims directly; ownership becomes validated
 recovery state and ordinary mutation remains blocked until `task-resume`.

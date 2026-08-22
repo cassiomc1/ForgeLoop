@@ -125,12 +125,6 @@ test("task-resume fails closed when historical descriptor claims no longer match
 
 test("task-resume succeeds after the conflicting owner reaches canonical COMPLETE", async () => {
   const { runTaskResume } = await import("../src/commands/task-resume.js");
-  const { runComplete } = await import("../src/commands/complete.js");
-  const { prepareCompletion, recordCheck: recordCheckArtifact } = await import("../src/core/completion-artifacts.js");
-  const { recordManualCheck } = await import("./helpers/record-check-compat.js");
-  const { advanceWorkState } = await import("../src/core/phase.js");
-  const recordCheck = (input) => recordManualCheck(recordCheckArtifact, input);
-  const { setupRecoverableTask } = await import("./helpers/task-recovery-fixture.js");
   await withRecoveryTarget(async (target) => {
     // Drive completed-owner through the official completion pipeline first
     // (single-task target) so its COMPLETE state carries canonical proof.

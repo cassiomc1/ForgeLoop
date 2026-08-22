@@ -37,7 +37,10 @@ const LEGACY_DETAIL_KEYS = Object.freeze([
   "note",
 ]);
 
-const MIGRATION_AUTHORITY_KINDS = new Set(["CALLER_ACKNOWLEDGED", "HOST_ATTESTED"]);
+// Legacy migration v1 is caller-acknowledged only: the official repair
+// command has no host-grant path. Normal recovery authority semantics are
+// unaffected.
+const MIGRATION_AUTHORITY_KINDS = new Set(["CALLER_ACKNOWLEDGED"]);
 const HASH_PATTERN = /^[a-f0-9]{64}$/;
 const ISO_TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
 const SAFE_OBSERVED_CLASSIFICATIONS = new Set([

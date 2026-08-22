@@ -178,7 +178,9 @@ test("claim projection properties hold across terminal and validated recovery st
   const cases = [
     { phase: "VERIFYING", validatedClaimState: null, claimState: "ACTIVE", claims: ["tests"], mutationAllowed: true },
     { phase: "VERIFYING", validatedClaimState: { valid: true, claimState: "RELEASED_BY_RECOVERY" }, claimState: "RELEASED_BY_RECOVERY", claims: [], mutationAllowed: false },
-    { phase: "COMPLETE", validatedClaimState: null, claimState: "RELEASED_BY_COMPLETION", claims: [], mutationAllowed: false },
+    // phase COMPLETE alone never releases claims or mints RELEASED_BY_COMPLETION.
+    { phase: "COMPLETE", validatedClaimState: null, claimState: "ACTIVE", claims: ["tests"], mutationAllowed: true },
+    { phase: "COMPLETE", validatedClaimState: { valid: true, claimState: "RELEASED_BY_COMPLETION" }, claimState: "RELEASED_BY_COMPLETION", claims: [], mutationAllowed: false },
     { phase: "VERIFYING", validatedClaimState: { valid: false, claimState: "RELEASED_BY_RECOVERY" }, claimState: "ACTIVE", claims: ["tests"], mutationAllowed: true },
   ];
   for (const entry of cases) {

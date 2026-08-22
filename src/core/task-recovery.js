@@ -103,40 +103,37 @@ export async function assertTaskNotRecovered(target, { taskId, packageRoot } = {
 }
 
 export function effectiveTaskClaims({
-  phase,
   validatedClaimState = null,
   historicalWriteClaims = null,
   writeClaims = [],
 } = {}) {
   const historical = historicalWriteClaims ?? writeClaims;
+  // Only VALIDATED canonical ownership may release claims. A bare
+  // `phase === "COMPLETE"` never proves completion ownership.
   const validatedRelease = validatedClaimState?.valid === true
     && ["RELEASED_BY_COMPLETION", "RELEASED_BY_RECOVERY"].includes(validatedClaimState.claimState);
-  return phase === "COMPLETE" || validatedRelease ? [] : [...historical];
+  return validatedRelease ? [] : [...historical];
 }
 
 export function taskClaimProjection({
-  phase,
   validatedClaimState = null,
   historicalWriteClaims: suppliedHistoricalClaims = null,
   writeClaims = [],
 } = {}) {
   const historicalWriteClaims = [...(suppliedHistoricalClaims ?? writeClaims)];
   const effectiveWriteClaims = effectiveTaskClaims({
-    phase,
     validatedClaimState,
     historicalWriteClaims,
   });
-  const claimState = phase === "COMPLETE"
-    ? "RELEASED_BY_COMPLETION"
-    : validatedClaimState?.valid === true
-      ? validatedClaimState.claimState
-      : "ACTIVE";
+  const claimState = validatedClaimState?.valid === true
+    ? validatedClaimState.claimState
+    : "ACTIVE";
   return {
     writeClaims: effectiveWriteClaims,
     historicalWriteClaims,
     effectiveWriteClaims,
     claimState,
-    mutationAllowed: phase !== "COMPLETE" && claimState === "ACTIVE",
+    mutationAllowed: claimState === "ACTIVE",
   };
 }
 

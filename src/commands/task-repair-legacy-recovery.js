@@ -7,10 +7,13 @@ import {
   validateStateLedgerCoherence,
 } from "../core/events.js";
 import {
+  readLockInfo,
+  releaseStaleTaskLockIfUnchanged,
   withProjectClaimsLock,
 } from "../core/task-lock.js";
 import { readWorkState } from "../core/work-state.js";
 import { inspectTaskConflictState, MEANINGFUL_ACTIVITY_EVENTS } from "../core/task-conflict-inspection.js";
+import { resolveTaskClaimState } from "../core/task-claim-state.js";
 import { currentRepositoryFingerprint } from "../core/repository.js";
 import { withTaskTransaction } from "../core/transaction.js";
 import {
@@ -175,6 +178,19 @@ export async function runTaskRepairLegacyRecovery({ target, packageRoot, taskId,
         `Task ${effectiveTaskId} lock ownership is ${lockedInspection.evidence.lockStatus}; refusing unsafe migration`,
         { lockStatus: lockedInspection.evidence.lockStatus },
       );
+    }
+    // A stale lease may only be settled through the CAS-safe path; a lock that
+    // changed under us (replacement owner) aborts the repair.
+    if (lockedInspection.evidence.lockStatus === "STALE") {
+      const observedLock = await readLockInfo(target, effectiveTaskId);
+      const released = await releaseStaleTaskLockIfUnchanged(target, effectiveTaskId, observedLock);
+      if (!released.released && released.reason !== "LOCK_MISSING") {
+        throw repairError(
+          E_LEGACY_RECOVERY_MIGRATION_INVALID,
+          `Task ${effectiveTaskId} stale lock changed during settlement (${released.reason}); replacement owner preserved`,
+          { lockRelease: released },
+        );
+      }
     }
 
     const existingRecovery = await readTaskRecovery(target, { taskId: effectiveTaskId, packageRoot });
@@ -349,6 +365,28 @@ async function verifyAlreadyRepaired(target, {
       "Existing recovery artifact does not match the migrated recovery relationship",
     );
   }
+
+  // alreadyRepaired means the WHOLE canonical recovery relationship is valid:
+  // ownership must resolve to validated RELEASED_BY_RECOVERY and every
+  // artifact field must agree with the canonical migration event.
+  const projection = await resolveTaskClaimState(target, { taskId, packageRoot });
+  const relationshipValid = projection.valid === true
+    && projection.ownershipValid === true
+    && projection.claimState === "RELEASED_BY_RECOVERY"
+    && projection.recovery?.recoveryId === migration.details.recoveryId
+    && projection.recovery?.recoveryEventSeq === migration.seq;
+  if (!relationshipValid) {
+    throw repairError(
+      E_TASK_RECOVERY_INCONSISTENT,
+      "Migrated recovery relationship is not fully validated; refusing idempotent no-op",
+      {
+        claimState: projection.claimState,
+        reasonCodes: projection.reasonCodes,
+        ownershipErrors: projection.ownershipErrors,
+      },
+    );
+  }
+
   return {
     repaired: 0,
     alreadyRepaired: true,

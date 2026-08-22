@@ -148,9 +148,10 @@ export function classifyTaskClaimState(evidence) {
     history,
     normalizedDescriptorClaims,
     historicalWriteClaims,
-    errors,
   } = evidence;
 
+  // Classification is side-effect free: never mutate the supplied evidence.
+  const errors = [...(evidence.errors ?? [])];
   errors.push(...validateTaskRecoveryConsistency({
     taskId,
     recovery,
