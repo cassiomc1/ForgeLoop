@@ -50,6 +50,10 @@ import { formatMigrateProtocolResult, runMigrateProtocol } from "./commands/migr
 import { formatTaskUnlockResult, runTaskUnlock } from "./commands/task-unlock.js";
 import { formatTaskRecoverResult, runTaskRecover } from "./commands/task-recover.js";
 import { formatTaskResumeResult, runTaskResume } from "./commands/task-resume.js";
+import {
+  formatTaskRepairLegacyRecoveryResult,
+  runTaskRepairLegacyRecovery,
+} from "./commands/task-repair-legacy-recovery.js";
 import { formatTaskLockStatusResult, runTaskLockStatus } from "./commands/task-lock-status.js";
 import { formatProtocolInfoResult, runProtocolInfo } from "./commands/protocol-info.js";
 import { continuityOptionDefaults, validateContinuityOptions } from "./core/continuity-cli-options.js";
@@ -733,6 +737,16 @@ export const COMMAND_HANDLERS = Object.freeze({
   "task-resume": async ({ target, packageRoot, options }) => {
     const result = await runTaskResume({ target, packageRoot, taskId: options.task, claims: options.claims });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatTaskResumeResult(result));
+    return 0;
+  },
+  "task-repair-legacy-recovery": async ({ target, packageRoot, options }) => {
+    const result = await runTaskRepairLegacyRecovery({
+      target,
+      packageRoot,
+      taskId: options.task,
+      acknowledgeRecovery: options.acknowledgeRecovery,
+    });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatTaskRepairLegacyRecoveryResult(result));
     return 0;
   },
   "reconcile-closure": async ({ target, packageRoot, options }) => {

@@ -28,7 +28,7 @@
     "recoveredAt": { "type": "string", "format": "date-time" },
     "recoveryId": { "type": "string", "pattern": "^recovery-[A-Za-z0-9-]+$" },
     "recoveryEventSeq": { "type": "integer", "minimum": 1 },
-    "classificationAtRecovery": { "enum": ["STALE", "ABANDONED"] },
+    "classificationAtRecovery": { "enum": ["STALE", "ABANDONED", "LEGACY_BOUNDARY_MIGRATED"] },
     "reasonCodes": {
       "type": "array",
       "items": { "type": "string", "minLength": 1 }

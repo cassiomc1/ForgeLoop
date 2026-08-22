@@ -787,6 +787,21 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     mayExecuteExternalProcess: false,
     description: "Caller-acknowledged recovery of a STALE or ABANDONED task; records durable state and releases effective write claims.",
   }),
+  "task-repair-legacy-recovery": Object.freeze({
+    name: "task-repair-legacy-recovery",
+    category: "project-maintenance",
+    mutation: "MUTATING",
+    options: Object.freeze({
+      ...CLI_COMMON_OPTIONS,
+      ...CLI_TASK_OPTION,
+      "--acknowledge-recovery": Object.freeze({ targetKey: "acknowledgeRecovery", parseType: "boolean", takesValue: false, description: "fresh explicit acknowledgement of the legacy boundary migration (required)" }),
+      "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
+    }),
+    writes: [".forgeloop/task-state/<taskKey>/recovery.json", ".forgeloop/task-state/<taskKey>/events.ndjson"],
+    removes: [],
+    mayExecuteExternalProcess: false,
+    description: "Migrates one recognized legacy OPERATOR_RECOVERY_RECORDED boundary event into the modern durable recovery representation (append-only; original event unchanged).",
+  }),
   "task-resume": Object.freeze({
     name: "task-resume",
     category: "project-maintenance",

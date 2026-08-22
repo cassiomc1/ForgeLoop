@@ -1,4 +1,5 @@
 import { PROTOCOL_VERSION } from "./protocol.js";
+import { LEGACY_RECOVERY_MIGRATION_EVENT } from "./task-recovery-migration.js";
 import { readJsonArtifact, writeJsonArtifact } from "./artifacts.js";
 import {
   E_TASK_RECOVERY_AUTHORITY_INVALID,
@@ -11,6 +12,7 @@ export const TASK_RECOVERY_SCHEMA_VERSION = 1;
 export const TASK_RECOVERY_EVENT_TYPES = Object.freeze(new Set([
   "TASK_RECOVERY_RECORDED",
   "OPERATOR_RECOVERY_RECORDED",
+  LEGACY_RECOVERY_MIGRATION_EVENT,
 ]));
 
 export function createTaskRecovery({
