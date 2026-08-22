@@ -7,6 +7,8 @@ import { resolveTaskContext } from "../src/core/task-context.js";
 import { withResolvedTask, withTaskMutation } from "../src/core/task-command.js";
 import { createTaskDescriptor, writeTaskDescriptor } from "../src/core/task-descriptor.js";
 import { getPackageRoot } from "../src/core/templates.js";
+import { createTaskContext } from "../src/core/task-context.js";
+import { taskLockPath } from "../src/core/task-paths.js";
 
 const packageRoot = getPackageRoot();
 
@@ -137,4 +139,9 @@ test("withResolvedTask and withTaskMutation wrap operations cleanly", async () =
     });
     assert.equal(resMut, "mutated:task-wrapped");
   });
+});
+
+test("task context exposes only the canonical coordination lock path", () => {
+  const context = createTaskContext({ target: "/tmp/forgeloop-context", taskId: "canonical-lock" });
+  assert.equal(context.paths.lock, taskLockPath("canonical-lock"));
 });

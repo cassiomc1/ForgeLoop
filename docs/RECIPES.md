@@ -341,4 +341,7 @@ forgeloop task-resume --task task-001 --claim src --json
 `--acknowledge-recovery` records caller acknowledgement only. It does not grant
 host authority or mark the task complete. Recovery preserves work state,
 receipts, failures, policy snapshots, and continuity until normal lifecycle
-work resumes.
+work resumes. Claims are released only after ForgeLoop validates the recovery
+artifact against the complete ledger history. If `next` returns
+`RESOLVE_RECOVERY_INCONSISTENCY`, run `validate-protocol`; do not create, edit,
+or delete `recovery.json` manually.

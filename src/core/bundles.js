@@ -8,6 +8,8 @@ import { validateChecksExecutionProvenance } from "./completion-artifacts.js";
 import { readExecutionArtifact } from "./execution.js";
 import { assertContinuitySemantics } from "./continuity.js";
 import { taskArtifactPath, taskDirectory } from "./task-paths.js";
+import { resolveTaskClaimState } from "./task-claim-state.js";
+import { E_TASK_CLAIM_OWNERSHIP_INCONSISTENT } from "./error-codes.js";
 
 export const BUNDLE_SCHEMA_VERSION = 1;
 const BUNDLE_ROOT = ".forgeloop/tasks";
@@ -52,6 +54,17 @@ export async function exportTaskBundle(target, taskId, packageRoot) {
   safeTaskId(taskId);
   const directory = bundleDirectory(taskId);
   const artifacts = [];
+
+  if (await fileExists(ensureWithin(target, taskArtifactPath(taskId, "descriptor")))) {
+    const claimProjection = await resolveTaskClaimState(target, { taskId, packageRoot });
+    if (!claimProjection.valid) {
+      const error = new Error(`Task ${taskId} claim ownership is inconsistent and cannot be exported safely`);
+      error.code = E_TASK_CLAIM_OWNERSHIP_INCONSISTENT;
+      error.reasonCodes = claimProjection.reasonCodes;
+      error.errors = claimProjection.ownershipErrors;
+      throw error;
+    }
+  }
 
   const stateSource = await tryReadJson(target, taskArtifactPath(taskId, "state"), ARTIFACT_PATHS.state, "work-state", packageRoot);
   let receiptSource = null;

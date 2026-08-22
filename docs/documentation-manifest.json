@@ -28,6 +28,7 @@
     { "path": "docs/TROUBLESHOOTING.md", "id": "troubleshooting", "class": "guide", "audience": ["user"], "canonicalFor": ["troubleshooting"], "packaged": true },
     { "path": "docs/RECIPES.md", "id": "recipes", "class": "guide", "audience": ["user"], "canonicalFor": ["recipes"], "packaged": true },
     { "path": "docs/DOCUMENTATION_GUIDE.md", "id": "documentation-guide", "class": "guide", "audience": ["maintainer"], "canonicalFor": ["documentation-maintenance"], "packaged": true },
+    { "path": "docs/RELEASE_CHECKLIST_1_4.md", "id": "release-checklist-1-4", "class": "reference", "audience": ["maintainer"], "canonicalFor": ["release-1-4"], "packaged": true },
     { "path": "scripts/CI_VALIDATORS.md", "id": "ci-validators", "class": "reference", "audience": ["maintainer"], "canonicalFor": ["ci-validators"], "packaged": true }
   ]
 }

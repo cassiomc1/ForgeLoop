@@ -1289,7 +1289,7 @@ Forces the release of a task lock or CAS-safely releases an unchanged stale leas
 
 Suspends mutation and releases effective claims for a task deterministically classified `STALE` or `ABANDONED`.
 
-- **Purpose**: Persists `recovery.json` plus a linked append-only event without changing work state or fabricating completion. `RECOVERABLE` tasks must use `reconcile-closure`.
+- **Purpose**: For a task classified only `STALE` or `ABANDONED`, persists `recovery.json` plus a linked append-only event without changing work state or fabricating completion. The canonical claim-state resolver must validate both before claims become effective-empty. `RECOVERABLE` tasks must use `reconcile-closure`.
 - **Mutation**: Transactionally writes recovery state and appends the recovery event. Historical descriptor claims and all lifecycle evidence remain intact; ordinary mutations return `E_TASK_RECOVERED`.
 - **Options**:
 
@@ -1311,12 +1311,15 @@ Suspends mutation and releases effective claims for a task deterministically cla
 
 `--acknowledge-recovery` is caller acknowledgement only. The deprecated
 `--operator-authorized` alias has the same semantics and is not host attestation.
+Fake, missing, corrupt, or mismatched recovery state is
+`E_TASK_CLAIM_OWNERSHIP_INCONSISTENT`/`E_TASK_RECOVERY_INCONSISTENT`; historical
+claims remain reserved.
 
 ### `task-resume`
 
 Reacquires a recovered task's write claims and restores ordinary mutation authority.
 
-- **Purpose**: Reuses normal claim-overlap and clean-checkout enforcement under project/task serialization, then removes `recovery.json` transactionally.
+- **Purpose**: Validates active recovery ownership, CAS-settles only an unchanged stale task lease, reuses normal claim-overlap and clean-checkout enforcement under project/task serialization, then removes `recovery.json` transactionally.
 - **Mutation**: Optionally updates historical claims in `task.json`, appends `TASK_RECOVERY_RESUMED`, and removes `recovery.json` in one transaction.
 - **Options**:
 
@@ -1338,3 +1341,5 @@ Reacquires a recovered task's write claims and restores ordinary mutation author
 With no `--claim`, the command attempts to reacquire all claims recorded in the
 active recovery artifact. It returns `E_TASK_SCOPE_CONFLICT` without removing
 recovery state when another active task owns an overlapping path.
+The resume event counts as meaningful task activity. Never create, edit, or
+delete `recovery.json` manually to emulate this command.

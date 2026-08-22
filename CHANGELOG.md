@@ -5,25 +5,30 @@
 ### Added
 
 - Durable task recovery state in `recovery.json`, explicit `task-resume` claim reacquisition, and recovery-aware `forgeloop next` command specifications.
-- Recovery schema, artifact/event consistency validation, effective-claim projections, and concurrency regression coverage.
+- A canonical validated claim-state resolver, deterministic recovery-history classifier, public ownership/claims-lock errors, protocol capability metadata, tamper conformance corpus, and invariant coverage.
 
 ### Changed
 
 - `task-recover` accepts only `STALE` and `ABANDONED`, preserves lifecycle evidence, and records caller acknowledgement without presenting it as host attestation.
 - Recovered tasks reject ordinary mutations until `task-resume` reacquires conflict-free claims under the project claims lock.
-- Lock and freshness classification now distinguish absent, stale, unknown, and corrupt evidence and fail closed where ownership cannot be proven.
+- Recovered tasks are excluded from implicit mutation-active selection; `TASK_RECOVERY_RESUMED` is meaningful activity and prevents immediate abandoned reclassification.
+- Task and project claim locks distinguish absent, live, stale, unknown, and corrupt evidence; `task-resume` and project claim acquisition CAS-settle only unchanged stale leases.
+- `COMPLETE` tasks report mutation disabled, and task contexts expose only the canonical `.forgeloop/locks/<taskKey>.lock` path.
 
 ### Security and reliability
 
-- Recovery claim release is transactionally bound to an append-only event and durable tombstone; event-tail eviction cannot reactivate claims.
-- Stale task locks are released only when the observed lock ID, heartbeat, and owner instance remain unchanged, and recovery preconditions are revalidated under deterministic lock ordering.
+- Claim ownership now requires a validated relationship between the task descriptor, work state, recovery artifact, and complete append-only recovery history before recovery can release claims.
+- Fake, missing, corrupt, deleted, or mismatched recovery state fails closed, preserves every provable historical claim, and cannot restore mutation authority.
+- Unhealthy task namespaces block claim acquisition when ownership cannot be proven; ordinary mutation and portable bundle export also reject inconsistent ownership.
+- Stale task and project claim locks are released only when the observed lock ID, heartbeat, and owner instance remain unchanged, and recovery preconditions are revalidated under deterministic lock ordering.
 
 ### Compatibility
 
-- Protocol version remains `1`; `protocol-info` advertises the new `task-recovery` schema and `task-resume` command. Consumers that interpret recovered claims must use a package version containing this change.
+- Package version advances to `1.4.0` while protocol version remains `1`; `protocol-info` advertises validated claim recovery version 1.
+- A project containing active `task-recovery` schema v1 state requires ForgeLoop `>=1.4.0`; older readers that do not understand validated recovery ownership must refuse the project rather than infer claims from `task.json` alone.
 - The ledger continues to write `OPERATOR_RECOVERY_RECORDED` for PR #66 reader compatibility, while its authority is explicitly `CALLER_ACKNOWLEDGED`; readers also accept the neutral `TASK_RECOVERY_RECORDED` name.
 - `--operator-authorized` remains a deprecated alias for `--acknowledge-recovery` and does not create host authority. The standalone CLI does not self-issue `HOST_ATTESTED` recovery grants.
-- No package version bump or npm publication is part of this unreleased implementation.
+- Release preparation is local only; no package publication, tag, or release is performed by this implementation task.
 
 ## 1.3.0 - 2026-08-20
 

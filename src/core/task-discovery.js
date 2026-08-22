@@ -6,7 +6,7 @@ import { readTaskDescriptor } from "./task-descriptor.js";
 import { readJsonArtifact } from "./artifacts.js";
 import { readLockInfo } from "./task-lock.js";
 import { taskStorageKey } from "./task-identity.js";
-import { readTaskRecovery, taskClaimProjection } from "./task-recovery.js";
+import { resolveTaskClaimState } from "./task-claim-state.js";
 
 /**
  * Explicitly recognized legacy-incidental artifacts that may legitimately
@@ -123,13 +123,13 @@ export async function discoverTasks(target, packageRoot = getPackageRoot()) {
       const receiptPath = ensureWithin(target, taskArtifactPath(taskId, "receipt"));
       const hasReceipt = await fileExists(receiptPath);
 
-      const recoveryArtifact = await readTaskRecovery(target, { taskId, packageRoot });
-      const recovery = recoveryArtifact?.value ?? null;
-      const claimProjection = taskClaimProjection({
-        phase,
-        recovery,
-        writeClaims: descriptor.writeClaims ?? [],
+      const claimProjection = await resolveTaskClaimState(target, {
+        taskId,
+        packageRoot,
+        descriptor,
+        state,
       });
+      const recovery = claimProjection.recovery;
 
       tasks.push({
         taskId,
@@ -139,6 +139,7 @@ export async function discoverTasks(target, packageRoot = getPackageRoot()) {
         locked: lockInfo !== null,
         lockInfo,
         ...claimProjection,
+        ownershipValid: claimProjection.valid,
         recovery,
         operatorRecoveredAt: recovery?.recoveredAt ?? null,
         createdAt: descriptor.createdAt,
@@ -146,6 +147,7 @@ export async function discoverTasks(target, packageRoot = getPackageRoot()) {
         lastUpdated,
         hasContinuity,
         hasReceipt,
+        ...(claimProjection.errors.length > 0 ? { errors: claimProjection.errors } : {}),
         descriptor,
         directory: `${TASK_STATE_ROOT}/${descriptor.taskKey}`,
       });

@@ -27,6 +27,12 @@ export function createTaskContext({ target, taskId, descriptor = null, packageRo
   });
 }
 
+export function isOperationallyActiveTask(task) {
+  return task?.healthy !== false
+    && task?.phase !== "COMPLETE"
+    && task?.mutationAllowed !== false;
+}
+
 export async function resolveTaskContext(target, {
   taskId = null,
   envTaskId = process.env.FORGELOOP_TASK ?? null,
@@ -82,8 +88,10 @@ export async function resolveTaskContext(target, {
     throw error;
   }
 
-  if (healthyTasks.length === 1) {
-    const single = healthyTasks[0];
+  const operationalTasks = healthyTasks.filter(isOperationallyActiveTask);
+
+  if (operationalTasks.length === 1) {
+    const single = operationalTasks[0];
     return createTaskContext({
       target,
       taskId: single.taskId,
@@ -92,33 +100,9 @@ export async function resolveTaskContext(target, {
     });
   }
 
-  if (healthyTasks.length > 1) {
-    const activeTasks = healthyTasks.filter((t) => t.phase !== "COMPLETE");
-
-    // Exactly one active (non-COMPLETE) task -> select it implicitly
-    if (activeTasks.length === 1) {
-      const single = activeTasks[0];
-      return createTaskContext({
-        target,
-        taskId: single.taskId,
-        descriptor: single.descriptor,
-        packageRoot,
-      });
-    }
-
-    // Zero active and exactly one total task -> select it
-    if (activeTasks.length === 0 && healthyTasks.length === 1) {
-      const single = healthyTasks[0];
-      return createTaskContext({
-        target,
-        taskId: single.taskId,
-        descriptor: single.descriptor,
-        packageRoot,
-      });
-    }
-
+  if (operationalTasks.length > 1) {
     // Otherwise ambiguous
-    const candidates = (activeTasks.length > 0 ? activeTasks : healthyTasks).map((t) => t.taskId);
+    const candidates = operationalTasks.map((t) => t.taskId);
     const error = new Error(
       `Multiple active tasks exist (${candidates.join(", ")}). Select a task with --task <id> or FORGELOOP_TASK=<id>.`,
     );
@@ -127,9 +111,10 @@ export async function resolveTaskContext(target, {
     throw error;
   }
 
-  if (explicitRequired) {
+  if (explicitRequired || healthyTasks.length > 0) {
     const error = new Error("A task must be specified using --task <id> or created with 'forgeloop task-create'");
     error.code = E_TASK_REQUIRED;
+    error.tasks = healthyTasks.map((task) => task.taskId);
     throw error;
   }
 

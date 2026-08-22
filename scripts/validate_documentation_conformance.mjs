@@ -849,6 +849,22 @@ export async function validateDocumentationConformance({ rootDir = repositoryRoo
     }
   }
 
+  // Claim recovery is security-critical and intentionally cross-document.
+  // Guard its non-negotiable statements against future prose drift.
+  const claimRecoveryDocRequirements = [
+    ["README.md", readmeContent, "validatedClaimProjection=true"],
+    ["LOOP_ENGINEERING.md", await readFile(path.join(rootDir, "LOOP_ENGINEERING.md"), "utf8"), "E_TASK_CLAIM_OWNERSHIP_INCONSISTENT"],
+    ["PROTOCOL_INTEGRATION.md", await readFile(path.join(rootDir, "PROTOCOL_INTEGRATION.md"), "utf8"), "A project containing active task recovery state requires ForgeLoop 1.4.0 or newer"],
+    ["docs/TROUBLESHOOTING.md", troubleDocContent, "Never create, delete, or edit `recovery.json` manually"],
+    ["docs/CROSS_HARNESS_CONTINUITY.md", await readFile(path.join(rootDir, "docs", "CROSS_HARNESS_CONTINUITY.md"), "utf8"), "validatedClaimProjection=true"],
+    ["docs/RELEASE_CHECKLIST_1_4.md", await readFile(path.join(rootDir, "docs", "RELEASE_CHECKLIST_1_4.md"), "utf8"), "Project claim locks classify `NONE`, `LIVE`, `STALE`, `UNKNOWN`, and `CORRUPT`"],
+  ];
+  for (const [relativePath, content, requiredText] of claimRecoveryDocRequirements) {
+    if (!content.replace(/\s+/g, " ").includes(requiredText.replace(/\s+/g, " "))) {
+      errors.push(`DOC_CLAIM_RECOVERY_INVARIANT_MISSING: ${relativePath} must contain "${requiredText}"`);
+    }
+  }
+
   return {
     valid: errors.length === 0,
     errors,

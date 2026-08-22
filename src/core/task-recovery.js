@@ -1,11 +1,11 @@
 import { PROTOCOL_VERSION } from "./protocol.js";
 import { readJsonArtifact, writeJsonArtifact } from "./artifacts.js";
 import {
-  E_TASK_RECOVERED,
   E_TASK_RECOVERY_AUTHORITY_INVALID,
 } from "./error-codes.js";
 import { taskArtifactPath } from "./task-paths.js";
 import { getActiveTaskTransaction } from "./transaction.js";
+import { classifyRecoveryHistory } from "./recovery-history.js";
 
 export const TASK_RECOVERY_SCHEMA_VERSION = 1;
 export const TASK_RECOVERY_EVENT_TYPES = Object.freeze(new Set([
@@ -96,35 +96,45 @@ export function isTaskRecovered(recovery) {
 }
 
 export async function assertTaskNotRecovered(target, { taskId, packageRoot } = {}) {
-  const artifact = await readTaskRecovery(target, { taskId, packageRoot });
-  if (!isTaskRecovered(artifact?.value)) return null;
-  const error = new Error(
-    `Task ${taskId} is RECOVERED and its write claims are released; run task-resume before ordinary mutation`,
-  );
-  error.code = E_TASK_RECOVERED;
-  error.taskId = taskId;
-  error.recovery = artifact.value;
-  throw error;
+  const { assertTaskMutationAllowed } = await import("./task-claim-state.js");
+  return assertTaskMutationAllowed(target, { taskId, packageRoot });
 }
 
-export function effectiveTaskClaims({ phase, recovery, writeClaims = [] } = {}) {
-  return phase === "COMPLETE" || isTaskRecovered(recovery) ? [] : [...writeClaims];
+export function effectiveTaskClaims({
+  phase,
+  validatedClaimState = null,
+  historicalWriteClaims = null,
+  writeClaims = [],
+} = {}) {
+  const historical = historicalWriteClaims ?? writeClaims;
+  const validatedRelease = validatedClaimState?.valid === true
+    && ["RELEASED_BY_COMPLETION", "RELEASED_BY_RECOVERY"].includes(validatedClaimState.claimState);
+  return phase === "COMPLETE" || validatedRelease ? [] : [...historical];
 }
 
-export function taskClaimProjection({ phase, recovery, writeClaims = [] } = {}) {
-  const historicalWriteClaims = [...writeClaims];
-  const effectiveWriteClaims = effectiveTaskClaims({ phase, recovery, writeClaims });
+export function taskClaimProjection({
+  phase,
+  validatedClaimState = null,
+  historicalWriteClaims: suppliedHistoricalClaims = null,
+  writeClaims = [],
+} = {}) {
+  const historicalWriteClaims = [...(suppliedHistoricalClaims ?? writeClaims)];
+  const effectiveWriteClaims = effectiveTaskClaims({
+    phase,
+    validatedClaimState,
+    historicalWriteClaims,
+  });
   const claimState = phase === "COMPLETE"
     ? "RELEASED_BY_COMPLETION"
-    : isTaskRecovered(recovery)
-      ? "RELEASED_BY_RECOVERY"
+    : validatedClaimState?.valid === true
+      ? validatedClaimState.claimState
       : "ACTIVE";
   return {
     writeClaims: effectiveWriteClaims,
     historicalWriteClaims,
     effectiveWriteClaims,
     claimState,
-    mutationAllowed: !isTaskRecovered(recovery),
+    mutationAllowed: phase !== "COMPLETE" && claimState === "ACTIVE",
   };
 }
 
@@ -144,33 +154,24 @@ export function validateTaskRecoveryConsistency({
   recovery = null,
   events = [],
   historicalWriteClaims = null,
+  recoveryHistory = null,
 } = {}) {
-  const errors = [];
-  const recoveryEvents = events.filter((event) => TASK_RECOVERY_EVENT_TYPES.has(event.event));
-  const resumeEvents = events.filter((event) => event.event === "TASK_RECOVERY_RESUMED");
+  const history = recoveryHistory ?? classifyRecoveryHistory(events);
+  const errors = [...history.errors];
 
-  for (const resumed of resumeEvents) {
-    const matching = recoveryEvents.filter((event) => event.details?.recoveryId === resumed.details?.recoveryId);
-    if (matching.length !== 1 || matching[0].seq >= resumed.seq) {
+  if (!recovery) {
+    if (history.valid && history.activeRecovery) {
       errors.push(recoveryConsistencyError(
-        `TASK_RECOVERY_RESUMED at seq ${resumed.seq} does not reference exactly one preceding recovery event`,
+        `Recovery event ${history.activeRecovery.recoveryId} has neither an active recovery artifact nor a resume event`,
       ));
     }
+    return errors;
   }
-
-  for (const event of recoveryEvents) {
-    const matchingResumes = resumeEvents.filter((candidate) => candidate.details?.recoveryId === event.details?.recoveryId);
-    if (matchingResumes.length > 1) {
-      errors.push(recoveryConsistencyError(`Recovery ${event.details?.recoveryId ?? "unknown"} was resumed more than once`));
-    }
-    if (!recovery && matchingResumes.length === 0) {
-      errors.push(recoveryConsistencyError(
-        `Recovery event ${event.details?.recoveryId ?? "unknown"} has neither an active recovery artifact nor a resume event`,
-      ));
-    }
+  if (!history.activeRecovery || history.activeRecovery.recoveryId !== recovery.recoveryId) {
+    errors.push(recoveryConsistencyError(
+      `Recovery artifact ${recovery.recoveryId ?? "unknown"} does not match the active recovery history`,
+    ));
   }
-
-  if (!recovery) return errors;
   if (recovery.taskId !== taskId) {
     errors.push(recoveryConsistencyError(`Recovery artifact belongs to ${recovery.taskId}, not ${taskId}`));
   }
@@ -200,9 +201,6 @@ export function validateTaskRecoveryConsistency({
   }
   if (historicalWriteClaims && !sameList(historicalWriteClaims, recovery.releasedClaims)) {
     errors.push(recoveryConsistencyError("Recovery releasedClaims do not match the task descriptor's historical claims"));
-  }
-  if (resumeEvents.some((candidate) => candidate.details?.recoveryId === recovery.recoveryId)) {
-    errors.push(recoveryConsistencyError(`Recovery ${recovery.recoveryId} is both active and already resumed`));
   }
   return errors;
 }

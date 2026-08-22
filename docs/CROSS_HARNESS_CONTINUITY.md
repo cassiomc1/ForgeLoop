@@ -54,7 +54,7 @@ Key continuity invariants:
 | --- | --- | --- | --- |
 | **Task Descriptor** | `.forgeloop/task-state/<taskKey>/task.json` | Task ID, write claims, and task registration | Descriptor authority |
 | **Lifecycle Checkpoint** | `.forgeloop/task-state/<taskKey>/work-state.json` | Current phase, cycle, active guides, preflight binding | Canonical lifecycle truth |
-| **Recovery State** | `.forgeloop/task-state/<taskKey>/recovery.json` | Suspended mutation authority and released effective claims | Canonical claim-recovery truth; never completion evidence |
+| **Recovery State** | `.forgeloop/task-state/<taskKey>/recovery.json` | Candidate current suspension bound to ledger history | One input to canonical validated claim ownership; never sufficient alone and never completion evidence |
 | **Operational Continuity** | `.forgeloop/task-state/<taskKey>/continuity.json` | Active focus, remaining items, known issues, inspect-first paths | Operational context only (non-evidence) |
 | **Implementation Truth** | Git checkout / filesystem | Actual source code and files | Ground truth for changes |
 | **Task Intent** | `.forgeloop/task-state/<taskKey>/contract.json` | Objectives, constraints, deliverables, verification requirements | Contract authority |
@@ -192,9 +192,16 @@ forgeloop task-show --task auth-feature --json
 forgeloop task-resume --task auth-feature --json
 ```
 
-Do not edit or delete `recovery.json` manually. If another task owns an
+Do not create, edit, or delete `recovery.json` manually. Every harness must use
+the canonical validated descriptor + work-state + recovery + ledger projection;
+a tombstone alone never releases claims. If another task owns an
 overlapping path, `task-resume` fails with `E_TASK_SCOPE_CONFLICT` and leaves
 the recovery state intact.
+
+A project containing active task recovery state requires ForgeLoop 1.4.0 or
+newer and `features.taskClaimRecovery.validatedClaimProjection=true` in
+`protocol-info`. An unaware reader must fail closed rather than continue from
+descriptor-only ownership.
 
 ---
 
@@ -211,8 +218,8 @@ ForgeLoop handles edge cases deterministically:
 | **Multiple Active Tasks** | No `--task` or `FORGELOOP_TASK` supplied | `E_TASK_AMBIGUOUS` | List tasks with `task-list` and supply `--task` |
 | **Different Task ID** | Contract / state ID mismatch | `TASK_MISMATCH` | Do not merge contexts; complete or clear previous state |
 | **Malformed State** | Corrupted JSON or invalid hash chain | `INVALID` | Fails closed; inspect errors via `forgeloop doctor --json` |
-| **Recovered Task** | Valid `recovery.json` releases effective claims | `RESUME_RECOVERED_TASK` | Inspect ownership, then use `task-resume`; recovery is not completion |
-| **Recovery Inconsistency** | Artifact/event, lock, or freshness evidence is unreadable | `RESOLVE_RECOVERY_INCONSISTENCY` | Run `validate-protocol`; repair the named artifact instead of forcing recovery |
+| **Recovered Task** | `recovery.json` and its complete ledger history validate as one active recovery cycle | `RESUME_RECOVERED_TASK` | Inspect ownership, then use `task-resume`; recovery is not completion |
+| **Recovery Inconsistency** | Artifact/history, descriptor claims, lock, or ledger evidence is missing, corrupt, or mismatched | `RESOLVE_RECOVERY_INCONSISTENCY` | Historical claims remain reserved; run `validate-protocol` and repair the named artifact instead of forcing recovery |
 
 ---
 

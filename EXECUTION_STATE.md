@@ -16,12 +16,15 @@ Claim-release recovery has a separate current-state artifact:
 .forgeloop/task-state/<taskKey>/recovery.json
 ```
 
-`work-state.json` remains the lifecycle authority. `recovery.json` records that
-ordinary mutation is suspended and effective claims are released; it does not
+`work-state.json` remains the lifecycle authority. `recovery.json` records a
+request to suspend ordinary mutation and release effective claims; it does not
 change the phase, refresh repository evidence, erase failures, or imply
 completion. Its `recoveryId`, event sequence, previous revision, released
 claims, repository fingerprint, classification, and authority kind are bound
-to the append-only recovery event.
+to the append-only recovery event. Claims are released only after the canonical
+resolver validates that complete relationship. An unresolved recovery event
+with a missing tombstone, or a tombstone without its matching event, is
+`INCONSISTENT`, retains historical claims, and disables mutation.
 
 The file is local, ignored by Git, schema-versioned, and never a replacement
 for the manifest or the target project profile (installed as
@@ -79,8 +82,9 @@ Before resuming, compare:
 - the protocol version;
 - required artifacts and assumptions recorded by the task.
 
-If `recovery.json` is active, ordinary lifecycle mutation fails with
-`E_TASK_RECOVERED`. Resume claim ownership explicitly:
+If validated recovery state is active, ordinary lifecycle mutation fails with
+`E_TASK_RECOVERED`. If recovery ownership is inconsistent, mutation fails with
+`E_TASK_CLAIM_OWNERSHIP_INCONSISTENT`. Resume claim ownership explicitly:
 
 ```bash
 forgeloop task-resume --task <id> --json
@@ -89,7 +93,13 @@ forgeloop task-resume --task <id> --json
 Optional repeatable `--claim <path>` arguments replace the historical claim set
 only after normal overlap and clean-checkout enforcement succeeds. Recovery
 state deletion, any descriptor update, and `TASK_RECOVERY_RESUMED` are staged
-transactionally. A missing recovery artifact returns `E_TASK_NOT_RECOVERED`.
+transactionally. `TASK_RECOVERY_RESUMED` counts as meaningful activity. A
+missing artifact returns `E_TASK_NOT_RECOVERED` only when the ledger also proves
+there is no unresolved recovery; otherwise it is an ownership inconsistency.
+
+Never create, delete, or edit `recovery.json` manually. Never remove recovery
+state to resume a task. Never interpret `recovery.json` without validating its
+ledger binding.
 
 Any material difference produces `REVALIDATION_REQUIRED`. A non-Git target
 reports that branch/HEAD drift is not verifiable. Cheap checks may be rerun,

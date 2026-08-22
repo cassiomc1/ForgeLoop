@@ -10,6 +10,7 @@ import {
 export const E_TASK_REQUIRED = "E_TASK_REQUIRED";
 export const E_TASK_NOT_FOUND = "E_TASK_NOT_FOUND";
 export const E_TASK_ALREADY_EXISTS = "E_TASK_ALREADY_EXISTS";
+export const E_TASK_COMPLETE = "E_TASK_COMPLETE";
 export const E_TASK_AMBIGUOUS = "E_TASK_AMBIGUOUS";
 export const E_TASK_SELECTOR_CONFLICT = "E_TASK_SELECTOR_CONFLICT";
 export const E_TASK_DESCRIPTOR_INVALID = "E_TASK_DESCRIPTOR_INVALID";
@@ -18,6 +19,7 @@ export const E_TASK_CONTEXT_MISMATCH = "E_TASK_CONTEXT_MISMATCH";
 
 export const E_TASK_LOCKED = "E_TASK_LOCKED";
 export const E_TASK_LOCK_INVALID = "E_TASK_LOCK_INVALID";
+export const E_PROJECT_CLAIMS_LOCK_INCONSISTENT = "E_PROJECT_CLAIMS_LOCK_INCONSISTENT";
 
 export const E_TASK_SCOPE_REQUIRED = "E_TASK_SCOPE_REQUIRED";
 export const E_TASK_SCOPE_CONFLICT = "E_TASK_SCOPE_CONFLICT";
@@ -30,6 +32,7 @@ export const E_TASK_LAYOUT_LEGACY = "E_TASK_LAYOUT_LEGACY";
 export const E_TASK_MIGRATION_INVALID = "E_TASK_MIGRATION_INVALID";
 export const E_TASK_RECOVERY_UNSAFE = "E_TASK_RECOVERY_UNSAFE";
 export const E_TASK_RECOVERY_INCONSISTENT = "E_TASK_RECOVERY_INCONSISTENT";
+export const E_TASK_CLAIM_OWNERSHIP_INCONSISTENT = "E_TASK_CLAIM_OWNERSHIP_INCONSISTENT";
 export const E_TASK_RECOVERY_AUTHORIZATION_REQUIRED = "E_TASK_RECOVERY_AUTHORIZATION_REQUIRED";
 export const E_TASK_RECOVERY_AUTHORITY_INVALID = "E_TASK_RECOVERY_AUTHORITY_INVALID";
 export const E_TASK_RECOVERED = "E_TASK_RECOVERED";
@@ -159,12 +162,26 @@ export const PUBLIC_ERROR_CODES = Object.freeze({
     meaning: "Multiple tasks exist in the project but no task selector was provided.",
     safeResolution: "Select a task explicitly using --task <id> or FORGELOOP_TASK=<id>.",
   }),
+  E_TASK_COMPLETE: Object.freeze({
+    code: "E_TASK_COMPLETE",
+    category: "task-resolution",
+    classification: "PUBLIC_STABLE",
+    meaning: "A validator-backed COMPLETE task is terminal and cannot be mutated.",
+    safeResolution: "Create or select a non-terminal task for further work; do not modify terminal task state.",
+  }),
   E_TASK_LOCKED: Object.freeze({
     code: "E_TASK_LOCKED",
     category: "concurrency",
     classification: "PUBLIC_STABLE",
     meaning: "Task mutation is currently locked by another concurrent process or run-check.",
     safeResolution: "Wait for the active mutation to complete or inspect the lock with forgeloop task-show.",
+  }),
+  E_PROJECT_CLAIMS_LOCK_INCONSISTENT: Object.freeze({
+    code: "E_PROJECT_CLAIMS_LOCK_INCONSISTENT",
+    category: "concurrency",
+    classification: "PUBLIC_STABLE",
+    meaning: "The project-wide claim reservation lock has unknown, corrupt, or concurrently changed ownership metadata.",
+    safeResolution: "Inspect .forgeloop/.claims.lock and retry only after its lease and owner identity can be validated; never force-delete unknown ownership.",
   }),
   E_TASK_SCOPE_CONFLICT: Object.freeze({
     code: "E_TASK_SCOPE_CONFLICT",
@@ -186,6 +203,13 @@ export const PUBLIC_ERROR_CODES = Object.freeze({
     classification: "PUBLIC_STABLE",
     meaning: "Claim-release recovery was refused because the task state, recovery artifact, lock, or event ledger is inconsistent.",
     safeResolution: "Repair the underlying artifact through its dedicated recovery surface; do not force-complete an unreadable task.",
+  }),
+  E_TASK_CLAIM_OWNERSHIP_INCONSISTENT: Object.freeze({
+    code: "E_TASK_CLAIM_OWNERSHIP_INCONSISTENT",
+    category: "recovery",
+    classification: "PUBLIC_STABLE",
+    meaning: "ForgeLoop cannot prove whether a task still owns its historical write claims.",
+    safeResolution: "Repair and validate the task descriptor, recovery artifact, and complete event ledger before acquiring overlapping claims or mutating the task.",
   }),
   E_TASK_RECOVERY_AUTHORIZATION_REQUIRED: Object.freeze({
     code: "E_TASK_RECOVERY_AUTHORIZATION_REQUIRED",
@@ -510,6 +534,7 @@ export const ALL_KNOWN_ERROR_CODES = Object.freeze(new Set([
   E_TASK_REQUIRED,
   E_TASK_NOT_FOUND,
   E_TASK_ALREADY_EXISTS,
+  E_TASK_COMPLETE,
   E_TASK_AMBIGUOUS,
   E_TASK_SELECTOR_CONFLICT,
   E_TASK_DESCRIPTOR_INVALID,
@@ -517,6 +542,7 @@ export const ALL_KNOWN_ERROR_CODES = Object.freeze(new Set([
   E_TASK_CONTEXT_MISMATCH,
   E_TASK_LOCKED,
   E_TASK_LOCK_INVALID,
+  E_PROJECT_CLAIMS_LOCK_INCONSISTENT,
   E_TASK_SCOPE_REQUIRED,
   E_TASK_SCOPE_CONFLICT,
   E_TASK_SCOPE_DIRTY,
@@ -535,6 +561,7 @@ export const ALL_KNOWN_ERROR_CODES = Object.freeze(new Set([
   E_TASK_MIGRATION_INVALID,
   E_TASK_RECOVERY_UNSAFE,
   E_TASK_RECOVERY_INCONSISTENT,
+  E_TASK_CLAIM_OWNERSHIP_INCONSISTENT,
   E_TASK_RECOVERY_AUTHORIZATION_REQUIRED,
   E_TASK_RECOVERY_AUTHORITY_INVALID,
   E_TASK_RECOVERED,

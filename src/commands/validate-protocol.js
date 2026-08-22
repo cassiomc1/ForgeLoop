@@ -12,11 +12,7 @@ import { validateEventLedger, validateStateLedgerCoherence } from "../core/event
 import { validateChecksExecutionProvenance } from "../core/completion-artifacts.js";
 import { assertContinuitySemantics } from "../core/continuity.js";
 import { currentChangedPaths, currentRepositoryFingerprint } from "../core/repository.js";
-import { readTaskDescriptor } from "../core/task-descriptor.js";
-import {
-  readTaskRecovery,
-  validateTaskRecoveryConsistency,
-} from "../core/task-recovery.js";
+import { resolveTaskClaimState } from "../core/task-claim-state.js";
 
 async function readArtifact(target, relativePath, label) {
   if (!relativePath) return null;
@@ -169,18 +165,11 @@ export async function runValidateProtocol({
       })),
     ];
   }
-  let recovery = null;
   const recoveryErrors = [];
   if (effectiveTaskId) {
     try {
-      recovery = (await readTaskRecovery(target, { taskId: effectiveTaskId, packageRoot }))?.value ?? null;
-      const descriptor = await readTaskDescriptor(target, effectiveTaskId, packageRoot);
-      recoveryErrors.push(...validateTaskRecoveryConsistency({
-        taskId: effectiveTaskId,
-        recovery,
-        events: ledgerEvents,
-        historicalWriteClaims: descriptor.value.writeClaims ?? [],
-      }).map((error) => ({
+      const claimProjection = await resolveTaskClaimState(target, { taskId: effectiveTaskId, packageRoot });
+      recoveryErrors.push(...(claimProjection.ownershipErrors ?? []).map((error) => ({
         ...error,
         artifacts: [taskArtifactPath(effectiveTaskId, "recovery"), effectiveEventsFile],
       })));

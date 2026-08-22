@@ -1305,16 +1305,23 @@ corruption through three fundamental protocol mechanisms:
    - At verification and completion, Git modifications are validated to ensure no changes
      escaped the task's declared scope (`E_TASK_CHANGE_OUTSIDE_SCOPE`).
    - `task.json` retains historical claims. Effective claims are empty only after
-     validator-backed `COMPLETE` or while valid `recovery.json` records
-     `RECOVERED`. Every conflict reader uses this canonical projection.
+     validator-backed `COMPLETE` or when the canonical claim-state resolver
+     validates `recovery.json` against the descriptor, work state, and complete
+     hash-chained recovery history. A tombstone alone never releases claims.
+   - Fake, missing, corrupt, deleted, or mismatched recovery evidence is
+     `INCONSISTENT`: every provable historical claim remains reserved,
+     `mutationAllowed=false`, and overlapping claim acquisition fails with
+     `E_TASK_CLAIM_OWNERSHIP_INCONSISTENT`.
    - Recovery is not completion. `task-recover` accepts only deterministic
      `STALE` or `ABANDONED` classifications, preserves work state, receipts,
      failures, policy, continuity, and repository fingerprints, and suspends
      ordinary task mutation with `E_TASK_RECOVERED`.
    - Only `forgeloop task-resume --task <id>` may remove recovery state. It
-     reacquires the released (or explicitly supplied) claims through the normal
-     overlap and clean-checkout checks under the project claims lock. A claim
-     held by another task remains unavailable.
+     first validates recovery ownership and lifecycle revision, safely settles
+     only an unchanged stale task lease, then reacquires the released (or
+     explicitly supplied) claims through the normal overlap and clean-checkout
+     checks under the project claims lock. A claim held by another task remains
+     unavailable. `TASK_RECOVERY_RESUMED` is meaningful activity.
 
 3. **Per-Task Exclusive Mutex Locking**:
    Mutating lifecycle commands (`advance`, `preflight`, `run-check`, `complete`, etc.)
@@ -1329,6 +1336,10 @@ corruption through three fundamental protocol mechanisms:
    the task lock, safely settles an unchanged stale lease, then revalidates phase,
    work-state revision, ledger sequence, and the `STALE`/`ABANDONED` allowlist
    before committing `recovery.json` and its append-only event in one transaction.
+   The project claims lock itself uses the same `NONE`/`LIVE`/`STALE`/`UNKNOWN`/
+   `CORRUPT` lease classification and CAS-safe quarantine/restore semantics;
+   unknown, corrupt, or concurrently replaced ownership fails with
+   `E_PROJECT_CLAIMS_LOCK_INCONSISTENT`.
    The standalone acknowledgement flag does not grant host authority:
 
    ```text
@@ -1344,6 +1355,14 @@ corruption through three fundamental protocol mechanisms:
 
 4. **Task Resolution & Legacy Migration**:
    Commands select their target task via `--task <id>`, the `FORGELOOP_TASK` environment
-   variable, or implicit single-task fallback. If multiple active tasks exist without a
-   selector, ForgeLoop fails closed with `E_TASK_AMBIGUOUS`. Legacy ForgeLoop 1.0 single-task
+   variable, or implicit single-task fallback. Only mutation-active tasks are
+   implicit candidates; recovered, inconsistent, and `COMPLETE` tasks remain
+   explicitly addressable but do not make unrelated work ambiguous. If multiple
+   mutation-active tasks exist without a selector, ForgeLoop fails closed with
+   `E_TASK_AMBIGUOUS`. Legacy ForgeLoop 1.0 single-task
    layouts can be migrated into namespaced layout using `forgeloop task-migrate`.
+
+A project containing active task recovery state requires ForgeLoop 1.4.0 or
+newer.
+<a id="FL-CLAIM-002"></a> **FL-CLAIM-002 — Harnesses that cannot validate task-recovery schema v1 and its linked ledger history MUST refuse**
+ownership mutation rather than fall back to descriptor-only claims.

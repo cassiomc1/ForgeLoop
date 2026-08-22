@@ -5,7 +5,7 @@ import { test } from "node:test";
 const pinnedAction = /uses:\s+[^\s]+@[0-9a-f]{40}\s+#/g;
 
 async function readWorkflow(name) {
-  return readFile(`.github/workflows/${name}`, "utf8");
+  return (await readFile(`.github/workflows/${name}`, "utf8")).replace(/\r\n/g, "\n");
 }
 
 test("quality workflows install the lockfile and enforce the local toolchain", async () => {
@@ -31,6 +31,20 @@ test("quality workflows install the lockfile and enforce the local toolchain", a
   for (const workflow of [docs, audit, publish]) {
     assert.ok((workflow.match(pinnedAction) ?? []).length > 0);
   }
+});
+
+test("CLI portability timeout covers the slowest supported runner", async () => {
+  const docs = await readWorkflow("docs-quality.yml");
+  const portabilityJob = docs.match(/\n  cli-portability:\n([\s\S]*?)(?=\n  [a-z][^:\n]*:\n|$)/)?.[1];
+
+  assert.ok(portabilityJob, "cli-portability job must exist");
+  const timeoutMinutes = Number(
+    portabilityJob.match(/^    timeout-minutes:\s*(\d+)\s*$/m)?.[1],
+  );
+  assert.ok(
+    timeoutMinutes >= 15,
+    `cli-portability timeout must be at least 15 minutes; found ${timeoutMinutes}`,
+  );
 });
 
 test("security and release workflows are present and use pinned actions", async () => {

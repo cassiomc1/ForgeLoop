@@ -169,3 +169,86 @@ test("recoverIncompleteTransactions truncates an interrupted append to its recor
     await rm(target, { recursive: true, force: true });
   }
 });
+
+test("recoverIncompleteTransactions rolls back an interrupted recovery publication", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-transaction-"));
+  try {
+    const transactionId = "txn-interrupted-task-recover";
+    const root = path.join(target, `.forgeloop/.txn/${transactionId}`);
+    const recoveryPath = path.join(target, ".forgeloop/task-state/task/recovery.json");
+    const eventsPath = path.join(target, ".forgeloop/task-state/task/events.ndjson");
+    await mkdir(root, { recursive: true });
+    await mkdir(path.dirname(recoveryPath), { recursive: true });
+    await writeFile(recoveryPath, "partially-published-recovery\n");
+    await writeFile(eventsPath, "partially-published-event\n");
+    await writeFile(path.join(root, "manifest.json"), `${JSON.stringify({
+      schemaVersion: 1,
+      transactionId,
+      status: "COMMITTING",
+      writes: [
+        {
+          path: ".forgeloop/task-state/task/recovery.json",
+          hadPrevious: false,
+          published: true,
+        },
+        {
+          path: ".forgeloop/task-state/task/events.ndjson",
+          kind: "APPEND",
+          originalSize: 0,
+          appendStarted: true,
+          published: true,
+        },
+      ],
+    })}\n`);
+
+    assert.deepEqual(await recoverIncompleteTransactions(target), [{ transactionId, status: "ROLLED_BACK" }]);
+    await assert.rejects(() => readFile(recoveryPath, "utf8"), { code: "ENOENT" });
+    await assert.rejects(() => readFile(eventsPath, "utf8"), { code: "ENOENT" });
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
+test("recoverIncompleteTransactions restores recovery state after an interrupted resume", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-transaction-"));
+  try {
+    const transactionId = "txn-interrupted-task-resume";
+    const root = path.join(target, `.forgeloop/.txn/${transactionId}`);
+    const relativeRecoveryPath = ".forgeloop/task-state/task/recovery.json";
+    const relativeEventsPath = ".forgeloop/task-state/task/events.ndjson";
+    const recoveryPath = path.join(target, relativeRecoveryPath);
+    const eventsPath = path.join(target, relativeEventsPath);
+    await mkdir(path.join(root, "backup/.forgeloop/task-state/task"), { recursive: true });
+    await mkdir(path.dirname(eventsPath), { recursive: true });
+    await writeFile(path.join(root, `backup/${relativeRecoveryPath}`), "recovery-before-resume\n");
+    await writeFile(eventsPath, "before\nafter\n");
+    await writeFile(path.join(root, "manifest.json"), `${JSON.stringify({
+      schemaVersion: 1,
+      transactionId,
+      status: "COMMITTING",
+      writes: [
+        {
+          path: relativeRecoveryPath,
+          kind: "DELETE",
+          hadPrevious: true,
+          backupPending: true,
+          backupCreated: true,
+          published: true,
+        },
+        {
+          path: relativeEventsPath,
+          kind: "APPEND",
+          originalSize: 7,
+          appendStarted: true,
+          published: true,
+        },
+      ],
+    })}\n`);
+
+    assert.deepEqual(await recoverIncompleteTransactions(target), [{ transactionId, status: "ROLLED_BACK" }]);
+    assert.equal(await readFile(recoveryPath, "utf8"), "recovery-before-resume\n");
+    assert.equal(await readFile(eventsPath, "utf8"), "before\n");
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});

@@ -21,6 +21,7 @@ integration and guide context. Use this map before editing documentation.
 | Troubleshooting and recovery | [`docs/TROUBLESHOOTING.md`](./docs/TROUBLESHOOTING.md) | Symptom-first recovery and stable error code reference |
 | Operational recipes | [`docs/RECIPES.md`](./docs/RECIPES.md) | Short copy-paste recipes for daily workflows |
 | Documentation guide | [`docs/DOCUMENTATION_GUIDE.md`](./docs/DOCUMENTATION_GUIDE.md) | Rules and checklist for modifying documentation |
+| ForgeLoop 1.4 release checklist | [`docs/RELEASE_CHECKLIST_1_4.md`](./docs/RELEASE_CHECKLIST_1_4.md) | Claim-recovery, compatibility, package, and publication gates |
 | Lifecycle, gates, planning, verification, and recovery | [`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md) | Normative process for agents and developer workflows |
 | Capability levels, discovery, and degradation | [`PROTOCOL_INTEGRATION.md`](./PROTOCOL_INTEGRATION.md) | Vendor-neutral harness contract |
 | Host/orchestrator integration | [`ORCHESTRATOR_INTEGRATION.md`](./ORCHESTRATOR_INTEGRATION.md) | Serializable phases, transition boundaries, host responsibilities, and no-runtime integration contract |
@@ -46,6 +47,7 @@ integration and guide context. Use this map before editing documentation.
 | **Fixing a broken or stale state** | [`docs/TROUBLESHOOTING.md`](./docs/TROUBLESHOOTING.md) |
 | **Looking for quick recipes** | [`docs/RECIPES.md`](./docs/RECIPES.md) |
 | **Documentation contributor** | [`docs/DOCUMENTATION_GUIDE.md`](./docs/DOCUMENTATION_GUIDE.md) |
+| **Release maintainer** | [`docs/RELEASE_CHECKLIST_1_4.md`](./docs/RELEASE_CHECKLIST_1_4.md) |
 | **Protocol architect / maintainer** | [`LOOP_SYSTEM_DESIGN.md`](./LOOP_SYSTEM_DESIGN.md) + [`schemas/`](./schemas/) |
 | **Security auditor** | [`THREAT_MODEL.md`](./THREAT_MODEL.md) |
 | **Engineering guide author** | [`GUIDE_ROUTER.md`](./GUIDE_ROUTER.md) + [`ENG/`](./ENG/) |

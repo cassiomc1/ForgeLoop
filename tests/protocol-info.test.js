@@ -18,6 +18,12 @@ test("protocol-info exposes a complete public compatibility handshake", () => {
   assert.deepEqual(info.readsSchemaVersions.event, [1]);
   assert.deepEqual(info.writesSchemaVersions["work-state"], [1]);
   assert.deepEqual(info.readsSchemaVersions["task-recovery"], [1]);
+  assert.deepEqual(info.features.taskClaimRecovery, {
+    version: 1,
+    durableRecoveryState: true,
+    explicitResume: true,
+    validatedClaimProjection: true,
+  });
   assert.equal(info.compatibility.schemaVersion, 1);
   assert.ok(info.commands.some((command) => command.name === "protocol-info"));
   assert.ok(info.commands.some((command) => command.name === "task-resume"));

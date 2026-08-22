@@ -22,6 +22,9 @@ export function formatInspectResult(report) {
     ...(report.recovery
       ? [`Recovery: ${report.recovery.status} (${report.recovery.recoveryId})`]
       : []),
+    ...(report.claims
+      ? [`Claim state: ${report.claims.state}`, `Mutation allowed: ${report.claims.mutationAllowed ? "yes" : "no"}`]
+      : []),
     `Adapters: ${report.adapters.detected.length} detected`,
     `Findings: ${report.findings.length}`,
     report.ok ? "healthy: ForgeLoop target is ready" : "unhealthy: ForgeLoop target needs attention",

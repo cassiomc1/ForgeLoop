@@ -214,11 +214,15 @@ forgeloop complete --task auth-feature --json
 forgeloop task-migrate --json
 ```
 
-Recovery is not completion. `recovery.json` preserves the lifecycle checkpoint
-and historical descriptor claims while suspending ordinary mutation and making
-effective claims empty. The standalone acknowledgement flag is not
-host-attested authority. `task-resume` removes recovery state only after the
-normal claim-overlap and clean-checkout checks succeed.
+Recovery is not completion. Effective claims become empty only when the
+canonical claim-state resolver validates the relationship between `task.json`,
+`work-state.json`, `recovery.json`, and the complete hash-chained recovery
+history. Fake, missing, corrupt, deleted, or mismatched recovery evidence is
+`INCONSISTENT`: historical claims remain reserved and mutation remains
+disabled. The standalone acknowledgement flag is not host-attested authority.
+`task-resume` removes recovery state only after validated ownership, stale-lock
+settlement, normal claim-overlap, and clean-checkout checks succeed. Never
+create, edit, or delete `recovery.json` manually.
 
 ### Executable policy verification & brownfield baselines
 
@@ -286,6 +290,11 @@ serializable artifact contract is `schemaVersion: 1` and `protocolVersion: 1`.
 Consumers must reject unknown artifact fields rather than silently treating
 unrecognized protocol data as valid. The compatibility marker is
 [`tests/fixtures/compatibility/protocol-v1.json`](./tests/fixtures/compatibility/protocol-v1.json).
+
+A project containing active task recovery state requires ForgeLoop 1.4.0 or
+newer. A reader that does not advertise
+`features.taskClaimRecovery.validatedClaimProjection=true` must fail closed;
+it must not infer current ownership from `task.json` or `recovery.json` alone.
 
 ## Security and dependency boundary
 

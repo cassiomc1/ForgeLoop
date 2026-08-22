@@ -609,10 +609,13 @@ comparison explicitly `UNKNOWN` rather than assuming an empty baseline.
 
 <!-- forgeloop-doc: schema=task-recovery artifact=.forgeloop/task-state/<task-key>/recovery.json -->
 
-Durable current-state authority for claim-release recovery. It records the
+Durable current-state input for claim-release recovery. It records the
 classification and exact claims released while leaving lifecycle work state,
-receipts, failures, policy, and continuity unchanged. A valid artifact suspends
-ordinary task mutation until `task-resume` reacquires conflict-free claims.
+receipts, failures, policy, and continuity unchanged. Structural validity alone
+does not release claims: ForgeLoop must also validate the descriptor, work
+state, full ledger, referenced recovery event, and absence of a later matching
+resume. A mismatch is `INCONSISTENT`, preserves historical claims, and suspends
+ordinary mutation until the protocol-owned evidence is repaired.
 
 `CALLER_ACKNOWLEDGED` is not host attestation. `HOST_ATTESTED` requires a
 host-owned `grantRef`; the standalone CLI does not self-issue that authority.

@@ -43,6 +43,8 @@ test("documentation reference generator is deterministic and idempotent", async 
     await cp("README.md", path.join(tempDir, "README.md"));
     await cp("AGENTS.md", path.join(tempDir, "AGENTS.md"));
     await cp("CLAUDE.md", path.join(tempDir, "CLAUDE.md"));
+    await cp("LOOP_ENGINEERING.md", path.join(tempDir, "LOOP_ENGINEERING.md"));
+    await cp("PROTOCOL_INTEGRATION.md", path.join(tempDir, "PROTOCOL_INTEGRATION.md"));
     await cp(".cursor", path.join(tempDir, ".cursor"), { recursive: true });
     await cp(".github", path.join(tempDir, ".github"), { recursive: true });
     await cp("ORCHESTRATOR_INTEGRATION.md", path.join(tempDir, "ORCHESTRATOR_INTEGRATION.md"));
@@ -99,6 +101,8 @@ test("documentation generation and validation succeed in directory paths contain
     await cp("README.md", path.join(tempDir, "README.md"));
     await cp("AGENTS.md", path.join(tempDir, "AGENTS.md"));
     await cp("CLAUDE.md", path.join(tempDir, "CLAUDE.md"));
+    await cp("LOOP_ENGINEERING.md", path.join(tempDir, "LOOP_ENGINEERING.md"));
+    await cp("PROTOCOL_INTEGRATION.md", path.join(tempDir, "PROTOCOL_INTEGRATION.md"));
     await cp(".cursor", path.join(tempDir, ".cursor"), { recursive: true });
     await cp(".github", path.join(tempDir, ".github"), { recursive: true });
     await cp("ORCHESTRATOR_INTEGRATION.md", path.join(tempDir, "ORCHESTRATOR_INTEGRATION.md"));

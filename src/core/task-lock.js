@@ -4,7 +4,10 @@ import path from "node:path";
 import os from "node:os";
 import { assertSafePath, ensureWithin, fileExists } from "./filesystem.js";
 import { taskLockPath } from "./task-paths.js";
-import { E_TASK_LOCKED } from "./error-codes.js";
+import {
+  E_PROJECT_CLAIMS_LOCK_INCONSISTENT,
+  E_TASK_LOCKED,
+} from "./error-codes.js";
 
 export async function readLockInfo(target, taskId) {
   const relativePath = taskLockPath(taskId);
@@ -61,6 +64,80 @@ export async function readProjectClaimsLockInfo(target) {
   }
 }
 
+export function classifyProjectClaimsLock(lock, now = Date.now()) {
+  if (!lock) return { status: "NONE", stale: false };
+  if (lock.corrupted) return { status: "CORRUPT", stale: false };
+  const identityFieldsValid = lock.scope === "claims-reservation"
+    && typeof lock.lockId === "string"
+    && lock.lockId !== ""
+    && typeof lock.ownerInstanceId === "string"
+    && lock.ownerInstanceId !== ""
+    && typeof lock.heartbeatAt === "string"
+    && Number.isInteger(lock.leaseMs)
+    && lock.leaseMs > 0;
+  if (!identityFieldsValid) return { status: "UNKNOWN", stale: false };
+  return classifyLockStaleness(lock, now);
+}
+
+function projectClaimsLockError(classification, lockInfo, reason = null) {
+  if (classification.status === "LIVE") {
+    const error = new Error(
+      `Project write claims reservation is locked by operation "${lockInfo?.operation ?? "unknown"}" (pid: ${lockInfo?.pid ?? "unknown"}, acquired: ${lockInfo?.acquiredAt ?? "unknown"}).`,
+    );
+    error.code = E_TASK_LOCKED;
+    error.lockInfo = lockInfo;
+    error.classification = classification;
+    return error;
+  }
+  const error = new Error(
+    `Project write claims lock ownership is ${classification.status}${reason ? ` (${reason})` : ""}; refusing unsafe claim mutation`,
+  );
+  error.code = E_PROJECT_CLAIMS_LOCK_INCONSISTENT;
+  error.lockInfo = lockInfo;
+  error.classification = classification;
+  if (reason) error.reason = reason;
+  return error;
+}
+
+export async function releaseStaleProjectClaimsLockIfUnchanged(target, expectedLock, { now = Date.now() } = {}) {
+  await assertSafePath(target, CLAIMS_LOCK_REL_PATH);
+  const fullPath = ensureWithin(target, CLAIMS_LOCK_REL_PATH);
+  const expectedClassification = classifyProjectClaimsLock(expectedLock, now);
+  if (expectedClassification.status !== "STALE") {
+    return { released: false, reason: "EXPECTED_LOCK_NOT_STALE", classification: expectedClassification };
+  }
+
+  const quarantinePath = `${fullPath}.releasing-${randomUUID()}`;
+  try {
+    await rename(fullPath, quarantinePath);
+  } catch (error) {
+    if (error.code === "ENOENT") return { released: false, reason: "LOCK_MISSING" };
+    throw error;
+  }
+
+  let observed;
+  try {
+    observed = JSON.parse(await readFile(quarantinePath, "utf8"));
+  } catch {
+    await restoreQuarantinedLock(quarantinePath, fullPath);
+    return { released: false, reason: "LOCK_CORRUPT", classification: { status: "CORRUPT", stale: false } };
+  }
+
+  const observedClassification = classifyProjectClaimsLock(observed, now);
+  if (!sameObservedLock(observed, expectedLock) || observedClassification.status !== "STALE") {
+    await restoreQuarantinedLock(quarantinePath, fullPath);
+    return {
+      released: false,
+      reason: sameObservedLock(observed, expectedLock) ? "LOCK_NOT_STALE" : "LOCK_CHANGED",
+      currentLock: observed,
+      classification: observedClassification,
+    };
+  }
+
+  await unlink(quarantinePath);
+  return { released: true, previousLock: observed, classification: observedClassification };
+}
+
 export async function acquireProjectClaimsLock(target, operation = "claim-reservation") {
   await assertSafePath(target, CLAIMS_LOCK_REL_PATH);
   const fullPath = ensureWithin(target, CLAIMS_LOCK_REL_PATH);
@@ -81,20 +158,29 @@ export async function acquireProjectClaimsLock(target, operation = "claim-reserv
     leaseMs: 300000,
   };
 
-  let fileHandle;
-  try {
-    fileHandle = await open(fullPath, "wx");
-  } catch (error) {
-    if (error.code === "EEXIST") {
+  let fileHandle = null;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      fileHandle = await open(fullPath, "wx");
+      break;
+    } catch (error) {
+      if (error.code !== "EEXIST") throw error;
       const existing = await readProjectClaimsLockInfo(target);
-      const err = new Error(
-        `Project write claims reservation is locked by operation "${existing?.operation ?? "unknown"}" (pid: ${existing?.pid ?? "unknown"}, acquired: ${existing?.acquiredAt ?? "unknown"}).`,
-      );
-      err.code = E_TASK_LOCKED;
-      err.lockInfo = existing;
-      throw err;
+      const classification = classifyProjectClaimsLock(existing);
+      if (classification.status === "STALE" && attempt === 0) {
+        const released = await releaseStaleProjectClaimsLockIfUnchanged(target, existing);
+        if (released.released || released.reason === "LOCK_MISSING") continue;
+        throw projectClaimsLockError(
+          released.classification ?? { status: "UNKNOWN", stale: false },
+          released.currentLock ?? existing,
+          released.reason,
+        );
+      }
+      throw projectClaimsLockError(classification, existing);
     }
-    throw error;
+  }
+  if (!fileHandle) {
+    throw projectClaimsLockError({ status: "UNKNOWN", stale: false }, null, "ACQUISITION_RETRY_EXHAUSTED");
   }
 
   try {

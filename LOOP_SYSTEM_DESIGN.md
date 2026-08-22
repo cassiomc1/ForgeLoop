@@ -386,13 +386,16 @@ event, preflight, receipt, and recovery artifacts) under
 preserve that target layout; copying package-source root files directly is not
 equivalent to `forgeloop init`.
 
-Recovery uses a two-layer state model: `work-state.json` continues to own the
-lifecycle phase, while `recovery.json` durably suspends mutation authority and
-releases effective claims. The descriptor retains historical claims. Recovery
-never fabricates completion; `task-resume` is the only path that rechecks and
-reacquires claim ownership before removing the recovery artifact. Project
-claim serialization always precedes the per-task lock for create, scope,
-recover, and resume operations.
+Recovery uses a relational state model: `work-state.json` owns the lifecycle
+phase, `task.json` retains historical claims, `recovery.json` records current
+suspension, and the complete hash-chained ledger proves recovery/resume cycles.
+Only their canonical validated projection can release effective claims. Any
+missing, corrupt, forged, or mismatched relationship is `INCONSISTENT`, retains
+historical claims, and disables mutation. Recovery never fabricates completion;
+`task-resume` is the only path that rechecks and reacquires ownership before
+removing the recovery artifact. Project claim serialization always precedes
+the per-task lock for create, scope, recover, and resume operations, and both
+lock classes use lease classification plus CAS-safe stale settlement.
 
 The README explains the file set, activation behavior, current/relative/absolute
 target installation, first-run profile flow, local validation commands, and safe

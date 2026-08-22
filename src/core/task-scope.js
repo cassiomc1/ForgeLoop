@@ -1,6 +1,7 @@
 import path from "node:path";
 import {
   E_TASK_CHANGE_OUTSIDE_SCOPE,
+  E_TASK_CLAIM_OWNERSHIP_INCONSISTENT,
   E_TASK_DESCRIPTOR_INVALID,
   E_TASK_SCOPE_CONFLICT,
   E_TASK_SCOPE_DIRTY,
@@ -93,7 +94,9 @@ export function checkScopeConflicts(newClaims, existingTasks = [], currentTaskId
     // Only non-COMPLETE tasks hold active write claims
     if (task.phase === "COMPLETE") continue;
 
-    const taskClaims = normalizeWriteClaims(task.writeClaims ?? task.descriptor?.writeClaims ?? []);
+    const taskClaims = normalizeWriteClaims(task.claimState === undefined
+      ? (task.writeClaims ?? task.descriptor?.writeClaims ?? [])
+      : (task.effectiveWriteClaims ?? []));
     for (const newClaim of normalizedNew) {
       for (const existingClaim of taskClaims) {
         if (claimsOverlap(newClaim, existingClaim)) {
@@ -112,6 +115,35 @@ export function checkScopeConflicts(newClaims, existingTasks = [], currentTaskId
 }
 
 export function assertNoScopeConflicts(newClaims, existingTasks = [], currentTaskId = null) {
+  const normalizedNew = normalizeWriteClaims(newClaims);
+  if (normalizedNew.length > 0) {
+    const ownershipBlockers = existingTasks.filter((task) => {
+      if (task.taskId === currentTaskId) return false;
+      if (task.healthy === false) return true;
+      if (task.claimState !== "INCONSISTENT" && task.ownershipValid !== false) return false;
+      const retainedClaims = normalizeWriteClaims(
+        task.effectiveWriteClaims ?? task.writeClaims ?? task.descriptor?.writeClaims ?? [],
+      );
+      return retainedClaims.length === 0
+        || normalizedNew.some((claim) => retainedClaims.some((retained) => claimsOverlap(claim, retained)));
+    });
+    if (ownershipBlockers.length > 0) {
+      const error = new Error(
+        `Cannot acquire write claims while task ownership is inconsistent: ${ownershipBlockers
+          .map((task) => task.taskId ?? task.taskKey)
+          .join(", ")}`,
+      );
+      error.code = E_TASK_CLAIM_OWNERSHIP_INCONSISTENT;
+      error.tasks = ownershipBlockers.map((task) => ({
+        taskId: task.taskId ?? null,
+        taskKey: task.taskKey ?? null,
+        claimState: task.claimState ?? "INCONSISTENT",
+        reasonCodes: task.reasonCodes ?? [task.error?.code].filter(Boolean),
+      }));
+      throw error;
+    }
+  }
+
   const conflicts = checkScopeConflicts(newClaims, existingTasks, currentTaskId);
   if (conflicts.length > 0) {
     const first = conflicts[0];

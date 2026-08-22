@@ -15,7 +15,6 @@ export const TASK_ARTIFACT_FILES = Object.freeze({
   events: "events.ndjson",
   gates: "gates",
   executions: "executions",
-  lock: ".lock",
   policySnapshot: "policy-snapshot.json",
   recovery: "recovery.json",
 });
@@ -102,7 +101,7 @@ export function buildTaskArtifactPaths(taskId) {
     events: `${dir}/${TASK_ARTIFACT_FILES.events}`,
     gates: `${dir}/${TASK_ARTIFACT_FILES.gates}`,
     executions: `${dir}/${TASK_ARTIFACT_FILES.executions}`,
-    lock: `${dir}/${TASK_ARTIFACT_FILES.lock}`,
+    lock: taskLockPath(taskId),
     policySnapshot: `${dir}/${TASK_ARTIFACT_FILES.policySnapshot}`,
     recovery: `${dir}/${TASK_ARTIFACT_FILES.recovery}`,
   });

@@ -33,6 +33,14 @@ export function protocolInfo({ packageVersion = null } = {}) {
     readsSchemaVersions: schemaVersions,
     writesSchemaVersions: schemaVersions,
     compatibility: SCHEMA_COMPATIBILITY_POLICY,
+    features: {
+      taskClaimRecovery: {
+        version: 1,
+        durableRecoveryState: true,
+        explicitResume: true,
+        validatedClaimProjection: true,
+      },
+    },
     lifecycle: { phases: WORK_PHASES, transitions: WORK_TRANSITIONS },
     guides: Object.values(GUIDE_REGISTRY),
     commands: Object.values(CLI_COMMAND_DEFINITIONS).map(({ name, category, mutation, description }) => ({ name, category, mutation, description })),

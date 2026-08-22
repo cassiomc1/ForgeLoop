@@ -22,6 +22,9 @@ export async function runStatus({ target, packageRoot, contractFile = null, task
       historicalWriteClaims: taskInfo?.historicalWriteClaims ?? [],
       effectiveWriteClaims: taskInfo?.effectiveWriteClaims ?? [],
       mutationAllowed: taskInfo?.mutationAllowed ?? true,
+      ownershipValid: taskInfo?.ownershipValid ?? true,
+      ownershipErrors: taskInfo?.ownershipErrors ?? taskInfo?.errors ?? [],
+      reasonCodes: taskInfo?.reasonCodes ?? [],
       protocol,
       continuity,
       evidence: [...(state.evidence ?? []), ...(protocol.evidence ?? [])],
@@ -40,6 +43,8 @@ export function formatStatusResult(result) {
   if (result.reasons.length > 0) lines.push(`Reasons: ${result.reasons.join(", ")}`);
   if (result.recovery) {
     lines.push(`Recovery: ${result.recovery.status} (${result.recovery.recoveryId})`);
+  }
+  if (result.claimState) {
     lines.push(`Claim state: ${result.claimState}`);
     lines.push(`Mutation allowed: ${result.mutationAllowed ? "yes" : "no"}`);
   }

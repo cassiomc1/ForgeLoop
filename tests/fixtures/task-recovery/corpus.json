@@ -1,0 +1,21 @@
+[
+  { "id": "valid-recovered", "action": "none", "expectedClaimState": "RELEASED_BY_RECOVERY" },
+  { "id": "valid-resumed", "action": "resume", "expectedClaimState": "ACTIVE" },
+  { "id": "valid-two-recovery-cycles", "action": "two-recovery-cycles", "expectedClaimState": "ACTIVE" },
+  { "id": "invalid-fake-tombstone", "action": "fake-tombstone", "expectedClaimState": "INCONSISTENT" },
+  { "id": "invalid-orphan-recovery-event", "action": "delete-tombstone", "expectedClaimState": "INCONSISTENT" },
+  { "id": "invalid-orphan-resume-event", "action": "orphan-resume", "expectedClaimState": "INCONSISTENT" },
+  { "id": "invalid-claims-mismatch", "action": "artifact-field", "field": "releasedClaims", "value": ["src"], "expectedClaimState": "INCONSISTENT" },
+  { "id": "invalid-recovery-id-mismatch", "action": "artifact-field", "field": "recoveryId", "value": "recovery-mismatch", "expectedClaimState": "INCONSISTENT" },
+  { "id": "invalid-recovery-seq", "action": "artifact-field", "field": "recoveryEventSeq", "value": 999, "expectedClaimState": "INCONSISTENT" },
+  { "id": "invalid-classification-mismatch", "action": "artifact-field", "field": "classificationAtRecovery", "value": "STALE", "expectedClaimState": "INCONSISTENT" },
+  { "id": "invalid-task-id-mismatch", "action": "artifact-field", "field": "taskId", "value": "different-task", "expectedClaimState": "INCONSISTENT" },
+  { "id": "invalid-authority-mismatch", "action": "artifact-field", "field": "authority", "value": { "kind": "HOST_ATTESTED", "grantRef": "host-grant-fixture" }, "expectedClaimState": "INCONSISTENT" },
+  { "id": "invalid-schema-recovery", "action": "artifact-field", "field": "status", "value": "ACTIVE", "expectedClaimState": "INCONSISTENT" },
+  { "id": "invalid-corrupt-recovery", "action": "corrupt-recovery", "expectedClaimState": "INCONSISTENT" },
+  { "id": "invalid-corrupt-ledger", "action": "corrupt-ledger", "expectedClaimState": "INCONSISTENT" },
+  { "id": "invalid-ledger-event-missing", "action": "remove-recovery-event", "expectedClaimState": "INCONSISTENT" },
+  { "id": "invalid-resume-with-tombstone", "action": "resume-with-tombstone", "expectedClaimState": "INCONSISTENT" },
+  { "id": "invalid-two-unresolved-recoveries", "action": "second-recovery", "expectedClaimState": "INCONSISTENT" },
+  { "id": "invalid-duplicate-resume", "action": "duplicate-resume", "expectedClaimState": "INCONSISTENT" }
+]
