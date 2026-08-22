@@ -1,6 +1,6 @@
 {
   "name": "@cassiomc1/forgeloop",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Portable, verifiable engineering protocol for AI coding environments and developer workflows",
   "repository": {
     "type": "git",
@@ -72,11 +72,18 @@
     "docs:check": "node scripts/run-docs-check.js",
     "lint": "eslint .",
     "coverage": "c8 --all --include=src/**/*.js --reporter=text --reporter=lcov --check-coverage --lines=80 --functions=75 --branches=70 --statements=80 node scripts/run-tests.js",
-    "dependency:policy": "node scripts/check-dependency-policy.mjs"
+    "dependency:policy": "node scripts/check-dependency-policy.mjs",
+    "mcp:test": "node --test integrations/mcp/tests/*.test.js",
+    "mcp:setup": "node scripts/mcp-setup.mjs",
+    "mcp:pack:check": "node scripts/mcp-package-smoke.mjs"
   },
   "devDependencies": {
     "@mermaid-js/mermaid-cli": "^11.16.0",
     "c8": "^12.0.0",
     "eslint": "^9.39.5"
+  },
+  "exports": {
+    ".": "./src/cli.js",
+    "./integration": "./src/integration.js"
   }
 }

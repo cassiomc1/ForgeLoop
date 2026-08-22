@@ -234,7 +234,7 @@ test("CLI parser parity: foreign options are rejected for each command", () => {
 test("CLI parser does not reinterpret option values as commands", () => {
   const bundle = parseArgs(["bundle", "--task", "status"]);
   assert.equal(bundle.command, "bundle");
-  assert.equal(bundle.options.task, "status");
+  assert.equal(bundle.options.taskId, "status");
 
   const status = parseArgs(["status", "--path", "update"]);
   assert.equal(status.command, "status");
@@ -263,7 +263,7 @@ test("command names are valid values where syntax allows arbitrary strings", () 
   for (const commandName of COMMANDS) {
     const bundle = parseArgs(["bundle", "--task", commandName]);
     assert.equal(bundle.command, "bundle");
-    assert.equal(bundle.options.task, commandName);
+    assert.equal(bundle.options.taskId, commandName);
 
     const status = parseArgs(["status", "--path", commandName]);
     assert.equal(status.command, "status");
@@ -425,7 +425,7 @@ test("task-resume accepts an explicit task and repeatable claim reacquisition", 
     "--json",
   ]);
   assert.equal(parsed.command, "task-resume");
-  assert.equal(parsed.options.task, "recovered-task");
+  assert.equal(parsed.options.taskId, "recovered-task");
   assert.deepEqual(parsed.options.claims, ["src", "tests"]);
   assert.equal(parsed.options.json, true);
 });

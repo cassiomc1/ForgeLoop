@@ -4,59 +4,55 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { runDoctor } from "./commands/doctor.js";
-import { formatStatusResult, runStatus } from "./commands/status.js";
-import { formatValidateStateResult, runValidateState } from "./commands/validate-state.js";
-import { formatClearStateResult, runClearState } from "./commands/clear-state.js";
-import { formatInspectResult, inspectTarget } from "./commands/inspect.js";
-import { runInit } from "./commands/init.js";
-import { formatRouteResult, runRoute } from "./commands/route.js";
-import { runValidateReceipt } from "./commands/validate-receipt.js";
-import { formatValidateProtocolResult, runValidateProtocol } from "./commands/validate-protocol.js";
-import { runUpdate } from "./commands/update.js";
-import { formatActivateResult, runActivate } from "./commands/activate.js";
-import { formatAdvanceResult, runAdvance } from "./commands/advance.js";
-import { formatPreflightResult, runPreflight } from "./commands/preflight.js";
-import { formatCompleteResult, runComplete } from "./commands/complete.js";
-import { formatAuditResult, runAudit } from "./commands/audit.js";
-import { formatReportResult, runReport } from "./commands/report.js";
-import { formatPolicyResult, runPolicy } from "./commands/policy.js";
-import { formatPolicyDiscoverResult, runPolicyDiscover } from "./commands/policy-discover.js";
-import { formatPolicyStatusResult, runPolicyStatus } from "./commands/policy-status.js";
-import { formatPolicyDiffResult, runPolicyDiff } from "./commands/policy-diff.js";
-import { formatRuleVerifyResult, runRuleVerify } from "./commands/rule-verify.js";
-import { formatBaselineResult, runBaseline } from "./commands/baseline.js";
-import { formatProfileInterviewResult, runProfileInterview } from "./commands/profile-interview.js";
-import { formatBundleResult, runBundle } from "./commands/bundle.js";
-import { formatPrepareCompletionResult, runPrepareCompletion } from "./commands/prepare-completion.js";
-import { formatRecordCheckResult, runRecordCheck } from "./commands/record-check.js";
-import { formatRunCheckResult, runCheck } from "./commands/run-check.js";
-import { formatReconcileClosureResult, reconcileClosure } from "./commands/reconcile-closure.js";
-import { formatRecordTerminalResult, runRecordTerminalResult } from "./commands/record-terminal-result.js";
-import { formatRecordDiagnosisResult, runRecordDiagnosis } from "./commands/record-diagnosis.js";
-import { formatProgressResult, runProgress } from "./commands/progress.js";
-import { formatRecordDecisionCriterionResult, runRecordDecisionCriterion } from "./commands/record-decision-criterion.js";
-import { formatNextActionResult, runNext } from "./commands/next.js";
-import { formatContinuityResult, runContinuity } from "./commands/continuity.js";
-import { formatRecordContinuityResult, runRecordContinuity } from "./commands/record-continuity.js";
-import { formatReconcileContinuityResult, runReconcileContinuity } from "./commands/reconcile-continuity.js";
-import { formatClearContinuityResult, runClearContinuity } from "./commands/clear-continuity.js";
-import { formatTaskCreateResult, runTaskCreate } from "./commands/task-create.js";
-import { formatTaskListResult, runTaskList } from "./commands/task-list.js";
-import { formatTaskShowResult, runTaskShow } from "./commands/task-show.js";
-import { formatTaskScopeResult, runTaskScope } from "./commands/task-scope.js";
-import { formatTaskMigrateResult, runTaskMigrate } from "./commands/task-migrate.js";
-import { formatMigrateProtocolResult, runMigrateProtocol } from "./commands/migrate-protocol.js";
-import { formatTaskUnlockResult, runTaskUnlock } from "./commands/task-unlock.js";
-import { formatTaskRecoverResult, runTaskRecover } from "./commands/task-recover.js";
-import { formatTaskResumeResult, runTaskResume } from "./commands/task-resume.js";
+import { formatStatusResult } from "./commands/status.js";
+import { formatValidateStateResult } from "./commands/validate-state.js";
+import { formatClearStateResult } from "./commands/clear-state.js";
+import { formatInspectResult } from "./commands/inspect.js";
+import { formatRouteResult } from "./commands/route.js";
+import { formatValidateProtocolResult } from "./commands/validate-protocol.js";
+import { formatActivateResult } from "./commands/activate.js";
+import { formatAdvanceResult } from "./commands/advance.js";
+import { formatPreflightResult } from "./commands/preflight.js";
+import { formatCompleteResult } from "./commands/complete.js";
+import { formatAuditResult } from "./commands/audit.js";
+import { formatReportResult } from "./commands/report.js";
+import { formatPolicyResult } from "./commands/policy.js";
+import { formatPolicyDiscoverResult } from "./commands/policy-discover.js";
+import { formatPolicyStatusResult } from "./commands/policy-status.js";
+import { formatPolicyDiffResult } from "./commands/policy-diff.js";
+import { formatRuleVerifyResult } from "./commands/rule-verify.js";
+import { formatBaselineResult } from "./commands/baseline.js";
+import { formatProfileInterviewResult } from "./commands/profile-interview.js";
+import { formatBundleResult } from "./commands/bundle.js";
+import { formatPrepareCompletionResult } from "./commands/prepare-completion.js";
+import { formatRecordCheckResult } from "./commands/record-check.js";
+import { formatRunCheckResult } from "./commands/run-check.js";
+import { formatReconcileClosureResult } from "./commands/reconcile-closure.js";
+import { formatRecordTerminalResult } from "./commands/record-terminal-result.js";
+import { formatRecordDiagnosisResult } from "./commands/record-diagnosis.js";
+import { formatProgressResult } from "./commands/progress.js";
+import { formatRecordDecisionCriterionResult } from "./commands/record-decision-criterion.js";
+import { formatNextActionResult } from "./commands/next.js";
+import { formatContinuityResult } from "./commands/continuity.js";
+import { formatRecordContinuityResult } from "./commands/record-continuity.js";
+import { formatReconcileContinuityResult } from "./commands/reconcile-continuity.js";
+import { formatClearContinuityResult } from "./commands/clear-continuity.js";
+import { formatTaskCreateResult } from "./commands/task-create.js";
+import { formatTaskListResult } from "./commands/task-list.js";
+import { formatTaskShowResult } from "./commands/task-show.js";
+import { formatTaskScopeResult } from "./commands/task-scope.js";
+import { formatTaskMigrateResult } from "./commands/task-migrate.js";
+import { formatMigrateProtocolResult } from "./commands/migrate-protocol.js";
+import { formatTaskUnlockResult } from "./commands/task-unlock.js";
+import { formatTaskRecoverResult } from "./commands/task-recover.js";
+import { formatTaskResumeResult } from "./commands/task-resume.js";
 import {
   formatTaskRepairLegacyRecoveryResult,
-  runTaskRepairLegacyRecovery,
 } from "./commands/task-repair-legacy-recovery.js";
-import { formatTaskLockStatusResult, runTaskLockStatus } from "./commands/task-lock-status.js";
-import { formatProtocolInfoResult, runProtocolInfo } from "./commands/protocol-info.js";
-import { continuityOptionDefaults, validateContinuityOptions } from "./core/continuity-cli-options.js";
+import { formatTaskLockStatusResult } from "./commands/task-lock-status.js";
+import { formatProtocolInfoResult } from "./commands/protocol-info.js";
+import { defaultCommandInputValues, validateForgeLoopCommandInput } from "./core/command-input.js";
+import { COMMAND_EXECUTORS } from "./core/command-executors.js";
 import { resolveTarget } from "./core/filesystem.js";
 import { getPackageRoot } from "./core/templates.js";
 import { CLI_COMMAND_DEFINITIONS, buildOptionLookup, getPositionalDefinitions } from "./core/cli-command-definitions.js";
@@ -202,48 +198,7 @@ export function discoverCommand(argv) {
 }
 
 export function parseCliSyntax(argv) {
-  const options = {
-    path: ".",
-    dryRun: false,
-    json: false,
-    strict: false,
-    fix: false,
-    adopt: [],
-    work: null,
-    surfaces: [],
-    risks: [],
-    platforms: [],
-    behaviorChange: false,
-    executableChange: false,
-    to: null,
-    file: null,
-    contractFile: null,
-    routeFile: null,
-    stateFile: null,
-    receiptFile: null,
-    continuityFile: null,
-    ...continuityOptionDefaults(),
-    taskBriefFiles: [],
-    delegatedResultFiles: [],
-    checkId: null,
-    checkKind: null,
-    checkRequirement: null,
-    checkStatus: null,
-    checkEvidenceKind: null,
-    checkCommand: null,
-    checkResult: null,
-    checkExitCode: null,
-    checkDetails: null,
-    checkExecutionRef: null,
-    checkProvenance: null,
-    commandArgv: [],
-    checkType: null,
-    checkSource: null,
-    policy: null,
-    task: null,
-    help: false,
-    version: false,
-  };
+  const options = defaultCommandInputValues();
 
   const command = discoverCommand(argv);
   const bootstrapLookup = buildOptionLookup(null);
@@ -320,53 +275,7 @@ export function parseCliSyntax(argv) {
 }
 
 export function validateCliSemantics({ command, options } = {}) {
-  if (!command) return;
-
-  if (command === "policy" && !options.policy) {
-    throw new Error("policy requires a name");
-  }
-  if (command !== "policy" && options.policy) {
-    throw new Error(`Policy name is not valid for ${command}`);
-  }
-  if (command === "bundle" && !options.task) {
-    throw new Error("bundle requires --task");
-  }
-  if (command === "task-create" && !options.task) {
-    throw new Error("task-create requires --task");
-  }
-
-  validateContinuityOptions(command, options);
-
-  if (command === "record-check" && !options.help) {
-    if (!options.checkId) throw new Error("record-check requires --id");
-    if (!options.checkRequirement) throw new Error("record-check requires --requirement");
-    if (!options.checkStatus) throw new Error("record-check requires --status");
-    if (!options.checkEvidenceKind) throw new Error("record-check requires --evidence-kind");
-    if (!options.checkCommand && !options.checkResult) throw new Error("record-check requires --command or --result");
-  }
-  if (command === "run-check" && !options.help) {
-    if (!options.checkId) throw new Error("run-check requires --id");
-    if (!options.checkRequirement) throw new Error("run-check requires --requirement");
-    if (options.checkKind || options.checkStatus || options.checkEvidenceKind || options.checkCommand
-      || options.checkResult || options.checkExitCode !== null || options.checkExecutionRef || options.checkProvenance) {
-      throw new Error("run-check accepts only --id, --requirement, --details, --timeout-ms, and -- <argv>");
-    }
-    if (!Array.isArray(options.commandArgv) || options.commandArgv.length === 0) {
-      throw new Error("run-check requires -- followed by an exact command argv");
-    }
-  }
-  if (command === "reconcile-closure" && !options.help) {
-    if (!options.task) throw new Error("reconcile-closure requires --task");
-    if (!options.checkId) throw new Error("reconcile-closure requires --id");
-    if (!options.checkRequirement) throw new Error("reconcile-closure requires --requirement");
-    if (options.checkKind || options.checkStatus || options.checkEvidenceKind || options.checkCommand
-      || options.checkResult || options.checkExitCode !== null || options.checkExecutionRef || options.checkProvenance) {
-      throw new Error("reconcile-closure accepts only --id, --requirement, --details, and -- <argv>");
-    }
-    if (!Array.isArray(options.commandArgv) || options.commandArgv.length === 0) {
-      throw new Error("reconcile-closure requires -- followed by an exact command argv");
-    }
-  }
+  validateForgeLoopCommandInput({ command, input: options, help: options?.help ?? false });
 }
 
 export function parseArgs(argv) {
@@ -389,25 +298,23 @@ function printActions(actions) {
   }
 }
 
+function renderJsonOr(options, result, formatter) {
+  console.log(options.json ? JSON.stringify(result, null, 2) : formatter(result));
+}
+
 export const COMMAND_HANDLERS = Object.freeze({
   "protocol-info": async ({ packageVersion, options }) => {
-    const result = await runProtocolInfo({ packageVersion });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatProtocolInfoResult(result));
+    const { result } = await COMMAND_EXECUTORS["protocol-info"]({ packageVersion, options });
+    renderJsonOr(options, result, formatProtocolInfoResult);
     return 0;
   },
   init: async ({ target, packageRoot, packageVersion, options }) => {
-    const result = await runInit({ target, dryRun: options.dryRun, packageRoot, packageVersion });
+    const { result } = await COMMAND_EXECUTORS.init({ target, packageRoot, packageVersion, options });
     printActions(result.actions);
     return 0;
   },
   doctor: async ({ target, packageRoot, options }) => {
-    const result = await runDoctor({
-      target,
-      packageRoot,
-      adoptPaths: options.adopt,
-      strict: options.strict,
-      fix: options.fix,
-    });
+    const { result } = await COMMAND_EXECUTORS.doctor({ target, packageRoot, options });
     if (options.json) {
       console.log(JSON.stringify(result, null, 2));
     } else {
@@ -419,357 +326,241 @@ export const COMMAND_HANDLERS = Object.freeze({
     return result.ok ? 0 : 1;
   },
   route: async ({ target, packageRoot, options }) => {
-    const result = await runRoute({
-      target,
-      packageRoot,
-      workType: options.work,
-      surfaces: options.surfaces,
-      risks: options.risks,
-      platforms: options.platforms,
-      behaviorChange: options.behaviorChange,
-      executableChange: options.executableChange,
-      taskId: options.task,
-    });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatRouteResult(result));
+    const { result } = await COMMAND_EXECUTORS.route({ target, packageRoot, options });
+    renderJsonOr(options, result, formatRouteResult);
     return 0;
   },
   activate: async ({ target, packageRoot, options }) => {
-    const result = await runActivate({ target, packageRoot });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatActivateResult(result));
+    const { result } = await COMMAND_EXECUTORS.activate({ target, packageRoot, options });
+    renderJsonOr(options, result, formatActivateResult);
     return 0;
   },
   preflight: async ({ target, packageRoot, options }) => {
-    const result = await runPreflight({ target, packageRoot, strict: options.strict, taskId: options.task });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatPreflightResult(result));
-    return result.status === "READY" ? 0 : 1;
+    const { result, exitCode } = await COMMAND_EXECUTORS.preflight({ target, packageRoot, options });
+    renderJsonOr(options, result, formatPreflightResult);
+    return exitCode;
   },
   advance: async ({ target, packageRoot, options }) => {
-    const result = await runAdvance({ target, packageRoot, to: options.to, taskId: options.task });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatAdvanceResult(result));
+    const { result } = await COMMAND_EXECUTORS.advance({ target, packageRoot, options });
+    renderJsonOr(options, result, formatAdvanceResult);
     return 0;
   },
   next: async ({ target, packageRoot, options }) => {
-    const result = await runNext({ target, packageRoot, taskId: options.task });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatNextActionResult(result));
+    const { result } = await COMMAND_EXECUTORS.next({ target, packageRoot, options });
+    renderJsonOr(options, result, formatNextActionResult);
     return 0;
   },
   continuity: async ({ target, packageRoot, options }) => {
-    const result = await runContinuity({ target, packageRoot, taskId: options.task });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatContinuityResult(result));
+    const { result } = await COMMAND_EXECUTORS.continuity({ target, packageRoot, options });
+    renderJsonOr(options, result, formatContinuityResult);
     return 0;
   },
   "record-continuity": async ({ target, packageRoot, options }) => {
-    const result = await runRecordContinuity({
-      target, packageRoot,
-      focusId: options.continuityFocusId,
-      focusSummary: options.continuityFocusSummary,
-      remaining: options.continuityRemaining,
-      knownIssues: options.continuityKnownIssues,
-      changedAreas: options.continuityChangedAreas,
-      inspectFirst: options.continuityInspectFirst,
-      resumeNote: options.continuityResumeNote,
-      taskId: options.task,
-    });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatRecordContinuityResult(result));
+    const { result } = await COMMAND_EXECUTORS["record-continuity"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatRecordContinuityResult);
     return 0;
   },
   "reconcile-continuity": async ({ target, packageRoot, options }) => {
-    const result = await runReconcileContinuity({ target, packageRoot, taskId: options.task });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatReconcileContinuityResult(result));
+    const { result } = await COMMAND_EXECUTORS["reconcile-continuity"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatReconcileContinuityResult);
     return 0;
   },
   "clear-continuity": async ({ target, options }) => {
-    const result = await runClearContinuity({ target, taskId: options.task });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatClearContinuityResult(result));
+    const { result } = await COMMAND_EXECUTORS["clear-continuity"]({ target, options });
+    renderJsonOr(options, result, formatClearContinuityResult);
     return 0;
   },
   "prepare-completion": async ({ target, packageRoot, options }) => {
-    const result = await runPrepareCompletion({ target, packageRoot, taskId: options.task });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatPrepareCompletionResult(result));
+    const { result } = await COMMAND_EXECUTORS["prepare-completion"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatPrepareCompletionResult);
     return 0;
   },
   "run-check": async ({ target, packageRoot, options }) => {
-    const result = await runCheck({
-      target,
-      packageRoot,
-      id: options.checkId,
-      requirement: options.checkRequirement,
-      argv: options.commandArgv,
-      details: options.checkDetails ?? undefined,
-      timeoutMs: options.timeoutMs ?? undefined,
-      taskId: options.task,
-    });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatRunCheckResult(result));
-    return result.check.status === "passed" ? 0 : 1;
+    const { result, exitCode } = await COMMAND_EXECUTORS["run-check"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatRunCheckResult);
+    return exitCode;
   },
   "record-check": async ({ target, packageRoot, options }) => {
-    const result = await runRecordCheck({
-      target,
-      packageRoot,
-      id: options.checkId,
-      kind: options.checkKind ?? "command",
-      requirement: options.checkRequirement,
-      status: options.checkStatus,
-      evidenceKind: options.checkEvidenceKind,
-      command: options.checkCommand ?? undefined,
-      result: options.checkResult ?? undefined,
-      ...(options.checkExitCode === null ? {} : { exitCode: options.checkExitCode }),
-      details: options.checkDetails ?? undefined,
-      executionRef: options.checkExecutionRef ?? undefined,
-      provenance: options.checkProvenance ?? undefined,
-      taskId: options.task,
-    });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatRecordCheckResult(result));
+    const { result } = await COMMAND_EXECUTORS["record-check"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatRecordCheckResult);
     return 0;
   },
   "record-terminal-result": async ({ target, packageRoot, options }) => {
-    const result = await runRecordTerminalResult({
-      target,
-      packageRoot,
-      requirement: options.checkRequirement,
-      type: options.checkType,
-      status: options.checkStatus,
-      source: options.checkSource ?? options.checkCommand,
-      result: options.checkResult,
-      details: options.checkDetails ?? undefined,
-      taskId: options.task,
-    });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatRecordTerminalResult(result));
+    const { result } = await COMMAND_EXECUTORS["record-terminal-result"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatRecordTerminalResult);
     return 0;
   },
   "record-diagnosis": async ({ target, packageRoot, options }) => {
-    const result = await runRecordDiagnosis({
-      target,
-      packageRoot,
-      hypothesis: options.hypothesis,
-      failureClass: options.failureClass,
-      evidenceRefs: options.evidenceRefs,
-      settledBy: options.settledBy,
-      nextSafeAction: options.nextSafeAction,
-      taskId: options.task,
-    });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatRecordDiagnosisResult(result));
+    const { result } = await COMMAND_EXECUTORS["record-diagnosis"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatRecordDiagnosisResult);
     return 0;
   },
   progress: async ({ target, packageRoot, options }) => {
-    const result = await runProgress({ target, packageRoot, taskId: options.task });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatProgressResult(result));
-    return result.status === "STALLED" ? 1 : 0;
+    const { result, exitCode } = await COMMAND_EXECUTORS.progress({ target, packageRoot, options });
+    renderJsonOr(options, result, formatProgressResult);
+    return exitCode;
   },
   "record-decision-criterion": async ({ target, packageRoot, options }) => {
-    const result = await runRecordDecisionCriterion({
-      target,
-      packageRoot,
-      decision: options.decision,
-      settledBy: options.settledBy,
-      taskId: options.task,
-    });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatRecordDecisionCriterionResult(result));
+    const { result } = await COMMAND_EXECUTORS["record-decision-criterion"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatRecordDecisionCriterionResult);
     return 0;
   },
   complete: async ({ target, packageRoot, options }) => {
-    const result = await runComplete({ target, packageRoot, strict: options.strict, taskId: options.task });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatCompleteResult(result));
-    return result.status === "VALID" ? 0 : 1;
+    const { result, exitCode } = await COMMAND_EXECUTORS.complete({ target, packageRoot, options });
+    renderJsonOr(options, result, formatCompleteResult);
+    return exitCode;
   },
   audit: async ({ target, packageRoot, options }) => {
-    const result = await runAudit({ target, packageRoot, strict: options.strict, taskId: options.task });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatAuditResult(result));
-    return result.status === "VALID" ? 0 : 1;
+    const { result, exitCode } = await COMMAND_EXECUTORS.audit({ target, packageRoot, options });
+    renderJsonOr(options, result, formatAuditResult);
+    return exitCode;
   },
   report: async ({ target, packageRoot, options }) => {
-    const result = await runReport({ target, packageRoot, strict: options.strict, taskId: options.task });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatReportResult(result));
-    return result.verdict === "VALID" ? 0 : 1;
+    const { result, exitCode } = await COMMAND_EXECUTORS.report({ target, packageRoot, options });
+    renderJsonOr(options, result, formatReportResult);
+    return exitCode;
   },
   policy: async ({ target, packageRoot, options }) => {
-    const result = await runPolicy({ target, packageRoot, name: options.policy, taskId: options.task });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatPolicyResult(result));
+    const { result } = await COMMAND_EXECUTORS.policy({ target, packageRoot, options });
+    renderJsonOr(options, result, formatPolicyResult);
     return 0;
   },
   "policy-discover": async ({ target, packageRoot, options }) => {
-    const result = await runPolicyDiscover({ target, packageRoot, write: options.write });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatPolicyDiscoverResult(result));
+    const { result } = await COMMAND_EXECUTORS["policy-discover"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatPolicyDiscoverResult);
     return 0;
   },
   "policy-status": async ({ target, packageRoot, options }) => {
-    const result = await runPolicyStatus({ target, packageRoot, taskId: options.task });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatPolicyStatusResult(result));
-    return result.status === "VALID" ? 0 : 1;
+    const { result, exitCode } = await COMMAND_EXECUTORS["policy-status"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatPolicyStatusResult);
+    return exitCode;
   },
   "policy-diff": async ({ target, packageRoot, options }) => {
-    const result = await runPolicyDiff({ target, packageRoot, taskId: options.task, before: options.before, after: options.after });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatPolicyDiffResult(result));
+    const { result } = await COMMAND_EXECUTORS["policy-diff"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatPolicyDiffResult);
     return 0;
   },
   "rule-verify": async ({ target, packageRoot, options }) => {
-    const result = await runRuleVerify({ target, packageRoot, rule: options.rule });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatRuleVerifyResult(result));
-    return result.status === "VALID" ? 0 : 1;
+    const { result, exitCode } = await COMMAND_EXECUTORS["rule-verify"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatRuleVerifyResult);
+    return exitCode;
   },
   baseline: async ({ target, packageRoot, options }) => {
-    const result = await runBaseline({
-      target,
-      packageRoot,
-      record: options.record,
-      update: options.update,
-      policyResetAuthorized: options.policyResetAuthorized,
-    });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatBaselineResult(result));
+    const { result } = await COMMAND_EXECUTORS.baseline({ target, packageRoot, options });
+    renderJsonOr(options, result, formatBaselineResult);
     return 0;
   },
   "profile-interview": async ({ target, packageRoot, options }) => {
-    const result = await runProfileInterview({ target, packageRoot, dryRun: options.dryRun });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatProfileInterviewResult(result));
+    const { result } = await COMMAND_EXECUTORS["profile-interview"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatProfileInterviewResult);
     return 0;
   },
   bundle: async ({ target, packageRoot, options }) => {
-    const result = await runBundle({ target, packageRoot, taskId: options.task });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatBundleResult(result));
+    const { result } = await COMMAND_EXECUTORS.bundle({ target, packageRoot, options });
+    renderJsonOr(options, result, formatBundleResult);
     return 0;
   },
   inspect: async ({ target, packageRoot, options }) => {
-    const result = await inspectTarget({ target, packageRoot, contractFile: options.contractFile, taskId: options.task });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatInspectResult(result));
-    return result.ok ? 0 : 1;
+    const { result, exitCode } = await COMMAND_EXECUTORS.inspect({ target, packageRoot, options });
+    renderJsonOr(options, result, formatInspectResult);
+    return exitCode;
   },
   "validate-receipt": async ({ target, packageRoot, options }) => {
-    const result = await runValidateReceipt({ target, packageRoot, file: options.file, taskId: options.task });
+    const { result } = await COMMAND_EXECUTORS["validate-receipt"]({ target, packageRoot, options });
     console.log(options.json ? JSON.stringify(result, null, 2) : "valid: execution receipt");
     return 0;
   },
   "validate-protocol": async ({ target, packageRoot, options }) => {
-    const result = await runValidateProtocol({
-      target,
-      packageRoot,
-      stateFile: options.stateFile,
-      receiptFile: options.receiptFile,
-      routeFile: options.routeFile,
-      contractFile: options.contractFile,
-      continuityFile: options.continuityFile,
-      taskBriefFiles: options.taskBriefFiles,
-      delegatedResultFiles: options.delegatedResultFiles,
-      taskId: options.task,
-    });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatValidateProtocolResult(result));
-    return result.status === "VALID" ? 0 : 1;
+    const { result, exitCode } = await COMMAND_EXECUTORS["validate-protocol"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatValidateProtocolResult);
+    return exitCode;
   },
   status: async ({ target, packageRoot, options }) => {
-    const result = await runStatus({ target, packageRoot, contractFile: options.contractFile, taskId: options.task });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatStatusResult(result));
+    const { result } = await COMMAND_EXECUTORS.status({ target, packageRoot, options });
+    renderJsonOr(options, result, formatStatusResult);
     return 0;
   },
   "validate-state": async ({ target, packageRoot, options }) => {
-    const result = await runValidateState({ target, packageRoot, taskId: options.task });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatValidateStateResult(result));
-    return result.ok ? 0 : 1;
+    const { result, exitCode } = await COMMAND_EXECUTORS["validate-state"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatValidateStateResult);
+    return exitCode;
   },
   "clear-state": async ({ target, options }) => {
-    const result = await runClearState({ target, taskId: options.task });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatClearStateResult(result));
+    const { result } = await COMMAND_EXECUTORS["clear-state"]({ target, options });
+    renderJsonOr(options, result, formatClearStateResult);
     return 0;
   },
   "task-create": async ({ target, packageRoot, options }) => {
-    const result = await runTaskCreate({
-      target,
-      packageRoot,
-      taskId: options.task,
-      claims: options.claims,
-      contractFile: options.contractFile,
-    });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatTaskCreateResult(result));
+    const { result } = await COMMAND_EXECUTORS["task-create"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatTaskCreateResult);
     return 0;
   },
   "task-list": async ({ target, packageRoot, options }) => {
-    const result = await runTaskList({ target, packageRoot });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatTaskListResult(result));
+    const { result } = await COMMAND_EXECUTORS["task-list"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatTaskListResult);
     return 0;
   },
   "task-show": async ({ target, packageRoot, options }) => {
-    const result = await runTaskShow({ target, packageRoot, taskId: options.task });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatTaskShowResult(result));
+    const { result } = await COMMAND_EXECUTORS["task-show"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatTaskShowResult);
     return 0;
   },
   "task-lock-status": async ({ target, packageRoot, options }) => {
-    const result = await runTaskLockStatus({ target, packageRoot, taskId: options.task });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatTaskLockStatusResult(result));
+    const { result } = await COMMAND_EXECUTORS["task-lock-status"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatTaskLockStatusResult);
     return 0;
   },
   "task-scope": async ({ target, packageRoot, options }) => {
-    const result = await runTaskScope({
-      target,
-      packageRoot,
-      taskId: options.task,
-      claims: options.claims,
-    });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatTaskScopeResult(result));
+    const { result } = await COMMAND_EXECUTORS["task-scope"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatTaskScopeResult);
     return 0;
   },
   "task-migrate": async ({ target, packageRoot, options }) => {
-    const result = await runTaskMigrate({ target, packageRoot, dryRun: options.dryRun });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatTaskMigrateResult(result));
+    const { result } = await COMMAND_EXECUTORS["task-migrate"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatTaskMigrateResult);
     return 0;
   },
   "migrate-protocol": async ({ target, packageRoot, options }) => {
-    const result = await runMigrateProtocol({ target, packageRoot, to: options.to, dryRun: options.dryRun });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatMigrateProtocolResult(result));
+    const { result } = await COMMAND_EXECUTORS["migrate-protocol"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatMigrateProtocolResult);
     return 0;
   },
   "task-unlock": async ({ target, packageRoot, options }) => {
-    const result = await runTaskUnlock({ target, packageRoot, taskId: options.task, force: options.force, staleOnly: options.staleOnly });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatTaskUnlockResult(result));
+    const { result } = await COMMAND_EXECUTORS["task-unlock"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatTaskUnlockResult);
     return 0;
   },
   "task-recover": async ({ target, packageRoot, options }) => {
     if (options.operatorAuthorized && !options.acknowledgeRecovery) {
       console.error("DEPRECATION: --operator-authorized is caller acknowledgement, not host attestation; use --acknowledge-recovery.");
     }
-    const result = await runTaskRecover({
-      target,
-      packageRoot,
-      taskId: options.task,
-      acknowledgeRecovery: options.acknowledgeRecovery,
-      operatorAuthorized: options.operatorAuthorized,
-    });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatTaskRecoverResult(result));
+    const { result } = await COMMAND_EXECUTORS["task-recover"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatTaskRecoverResult);
     return 0;
   },
   "task-resume": async ({ target, packageRoot, options }) => {
-    const result = await runTaskResume({ target, packageRoot, taskId: options.task, claims: options.claims });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatTaskResumeResult(result));
+    const { result } = await COMMAND_EXECUTORS["task-resume"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatTaskResumeResult);
     return 0;
   },
   "task-repair-legacy-recovery": async ({ target, packageRoot, options }) => {
-    const result = await runTaskRepairLegacyRecovery({
-      target,
-      packageRoot,
-      taskId: options.task,
-      acknowledgeRecovery: options.acknowledgeRecovery,
-    });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatTaskRepairLegacyRecoveryResult(result));
+    const { result } = await COMMAND_EXECUTORS["task-repair-legacy-recovery"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatTaskRepairLegacyRecoveryResult);
     return 0;
   },
   "reconcile-closure": async ({ target, packageRoot, options }) => {
-    const result = await reconcileClosure({
-      target,
-      packageRoot,
-      taskId: options.task,
-      checkId: options.checkId,
-      checkRequirement: options.checkRequirement,
-      checkDetails: options.checkDetails,
-      commandArgv: options.commandArgv,
-    });
-    console.log(options.json ? JSON.stringify(result, null, 2) : formatReconcileClosureResult(result));
+    const { result } = await COMMAND_EXECUTORS["reconcile-closure"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatReconcileClosureResult);
     return 0;
   },
   update: async ({ target, packageRoot, packageVersion, options }) => {
-    const result = await runUpdate({ target, dryRun: options.dryRun, packageRoot, packageVersion });
+    const { result, exitCode } = await COMMAND_EXECUTORS.update({ target, packageRoot, packageVersion, options });
     printActions(result.actions);
     for (const conflict of result.conflicts) {
       const code = conflict.code ? `${conflict.code}: ` : "";
       console.log(`conflict: ${code}${conflict.path} - ${conflict.message}`);
     }
-    return result.conflicts.length === 0 ? 0 : 1;
+    return exitCode;
   },
 });
 

@@ -43,7 +43,7 @@ export const CLI_COMMON_OPTIONS = Object.freeze({
  */
 export const CLI_TASK_OPTION = Object.freeze({
   "--task": Object.freeze({
-    targetKey: "task",
+    targetKey: "taskId",
     parseType: "string",
     takesValue: true,
     valueName: "id",
@@ -133,7 +133,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     options: Object.freeze({
       ...CLI_COMMON_OPTIONS,
       ...CLI_TASK_OPTION,
-      "--work": Object.freeze({ targetKey: "work", parseType: "string", takesValue: true, valueName: "type", missingValueMessage: "--work requires a type", description: "declared work type" }),
+      "--work": Object.freeze({ targetKey: "workType", parseType: "string", takesValue: true, valueName: "type", missingValueMessage: "--work requires a type", description: "declared work type" }),
       "--surface": Object.freeze({ targetKey: "surfaces", parseType: "string", takesValue: true, valueName: "value", repeatable: true, missingValueMessage: "--surface requires a value", description: "affected surface" }),
       "--risk": Object.freeze({ targetKey: "risks", parseType: "string", takesValue: true, valueName: "value", repeatable: true, missingValueMessage: "--risk requires a value", description: "task risk" }),
       "--platform": Object.freeze({ targetKey: "platforms", parseType: "string", takesValue: true, valueName: "value", repeatable: true, missingValueMessage: "--platform requires a value", description: "affected platform" }),
