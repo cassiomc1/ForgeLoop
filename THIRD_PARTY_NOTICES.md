@@ -195,3 +195,17 @@ The contextual frontend taste guide is informed by Taste Skill:
 ForgeLoop includes a short, adapted guide under `ENG/taste-frontend-eng.md`.
 It does not vendor upstream runtime code, depend on its repository at runtime,
 or make its prescriptive examples universal.
+
+## Runtime dependencies with upstream notices
+
+### Model Context Protocol SDK (MCP package only)
+
+- Packages: [`@modelcontextprotocol/server`](https://www.npmjs.com/package/@modelcontextprotocol/server)
+  and [`@modelcontextprotocol/client`](https://www.npmjs.com/package/@modelcontextprotocol/client)
+  (test/smoke only), used by `integrations/mcp`.
+- License declared by the upstream project: MIT.
+- Use in this collection: official SDK transport/server primitives for the
+  local stdio ForgeLoop MCP adapter.
+- Boundary: the ForgeLoop core package (`@cassiomc1/forgeloop`) has no
+  dependency on the MCP SDK; the SDK ships only inside
+  `@cassiomc1/forgeloop-mcp`. Review upstream terms before redistribution.

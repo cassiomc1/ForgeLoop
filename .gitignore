@@ -12,3 +12,4 @@ __pycache__/
 !.forgeloop/forgeloop.gitignore
 docs/superpowers/
 *.py[cod]
+integrations/mcp/package-lock.json

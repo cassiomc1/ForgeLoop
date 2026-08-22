@@ -23,4 +23,7 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci --ignore-scripts
+      - run: npm run mcp:setup
+      - run: npm run mcp:test
+      - run: npm run mcp:pack:check
       - run: npm run pack:smoke

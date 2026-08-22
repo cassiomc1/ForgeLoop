@@ -373,6 +373,25 @@ ForgeLoop integrates executable verification rules directly into the lifecycle:
 - **Claim Recovery**: `forgeloop next` maps validated task ownership to `RECONCILE_CLOSURE`, `RECOVER_TASK`, `RESUME_RECOVERED_TASK`, or `RESOLVE_RECOVERY_INCONSISTENCY`. `task-recover` is restricted to `STALE`/`ABANDONED`; it writes durable `recovery.json` plus an append-only event without changing lifecycle evidence. `task-resume` validates the same ownership projection, safely settles an unchanged stale task lock, reuses canonical scope conflict checks, and removes recovery state transactionally.
 - **Task Scoping**: Task-specific policy snapshots and state live under `.forgeloop/task-state/<taskKey>/` to ensure clean multi-task isolation and cross-harness continuity.
 
+
+## Structured integration surfaces
+
+When a host provides an official ForgeLoop structured integration, prefer it
+for protocol operations; otherwise use the project-local ForgeLoop CLI. Both
+surfaces execute the same canonical commands and share one protocol authority:
+`.forgeloop/` state written only by ForgeLoop itself.
+
+- `@cassiomc1/forgeloop/integration` (integration API version 1): the
+  transport-neutral programmatic runtime. Domain rejections keep `ok:true`
+  with a non-zero exit code; public error codes are preserved verbatim.
+- `@cassiomc1/forgeloop-mcp` (local stdio MCP): an adapter over the same API.
+  It never edits `.forgeloop/` state directly, never synthesizes authority,
+  and never derives claim ownership outside the canonical resolver
+  (`features.integrationApi.version >= 1` in `protocol-info --json`).
+
+ForgeLoop applicability never depends on MCP availability: instruction-only
+hosts remain fully supported through the CLI and instruction adapters.
+
 `protocol-info --json` advertises claim-recovery capability version 1 under
 `features.taskClaimRecovery`. A project containing active task recovery state
 requires ForgeLoop 1.4.0 or newer.
