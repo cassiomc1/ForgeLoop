@@ -33,6 +33,20 @@ test("quality workflows install the lockfile and enforce the local toolchain", a
   }
 });
 
+test("CLI portability timeout covers the slowest supported runner", async () => {
+  const docs = await readWorkflow("docs-quality.yml");
+  const portabilityJob = docs.match(/\n  cli-portability:\n([\s\S]*?)(?=\n  [a-z][^:\n]*:\n|$)/)?.[1];
+
+  assert.ok(portabilityJob, "cli-portability job must exist");
+  const timeoutMinutes = Number(
+    portabilityJob.match(/^    timeout-minutes:\s*(\d+)\s*$/m)?.[1],
+  );
+  assert.ok(
+    timeoutMinutes >= 15,
+    `cli-portability timeout must be at least 15 minutes; found ${timeoutMinutes}`,
+  );
+});
+
 test("security and release workflows are present and use pinned actions", async () => {
   const codeql = await readWorkflow("codeql.yml");
   const dependencyReview = await readWorkflow("dependency-review.yml");
