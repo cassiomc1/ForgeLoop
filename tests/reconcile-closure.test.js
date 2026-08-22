@@ -244,7 +244,24 @@ test("reconcile-closure CLI accepts only contract-bound verification evidence", 
   });
 });
 
-test("reconcile-closure refuses tasks outside EXECUTING/VERIFYING", async () => {
+test("reconcile-closure refuses tasks outside EXECUTING/VERIFYING/REVIEWING", async () => {
+  await withTarget(async (target) => {
+    const { taskId } = await setupStaleExecutingTask(target, { phase: "DIAGNOSING", previousPhase: "VERIFYING" });
+    await assert.rejects(
+      () => runReconcileClosure({
+        target,
+        packageRoot,
+        taskId,
+        checkId: "regression-tests",
+        requirement: "pack tarball test asserts the README image is excluded from the npm package",
+        argv: ["node", "-e", "process.exit(0)"],
+      }),
+      (error) => error.code === "E_RECONCILE_PHASE_INVALID",
+    );
+  });
+});
+
+test("reconcile-closure refuses REVIEWING without authorized completion recovery", async () => {
   await withTarget(async (target) => {
     const { taskId } = await setupStaleExecutingTask(target, { phase: "REVIEWING", previousPhase: "VERIFYING" });
     await assert.rejects(
@@ -256,7 +273,9 @@ test("reconcile-closure refuses tasks outside EXECUTING/VERIFYING", async () => 
         requirement: "pack tarball test asserts the README image is excluded from the npm package",
         argv: ["node", "-e", "process.exit(0)"],
       }),
-      (error) => error.code === "E_RECONCILE_PHASE_INVALID",
+      (error) => error.code === "E_COMPLETION_RECOVERY_UNAUTHORIZED"
+        || error.code === "E_COMPLETION_REJECTION_LEDGER_MISMATCH"
+        || error.code === "E_COMPLETION_REJECTION_STATE_FINGERPRINT_MISMATCH",
     );
   });
 });

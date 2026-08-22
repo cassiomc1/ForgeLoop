@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { assertTaskId } from "../core/task-identity.js";
 import { createTaskDescriptor, writeTaskDescriptor } from "../core/task-descriptor.js";
 import { normalizeWriteClaims, assertNoScopeConflicts, assertScopeClean } from "../core/task-scope.js";
+import { inspectTaskConflictState } from "../core/task-conflict-inspection.js";
 import { discoverTasks, findTaskById } from "../core/task-discovery.js";
 import { withProjectClaimsLock } from "../core/task-lock.js";
 import { withTaskTransaction } from "../core/transaction.js";
@@ -16,6 +17,34 @@ function taskError(code, message, artifacts = []) {
   error.code = code;
   error.artifacts = artifacts;
   return error;
+}
+
+export async function assertNoScopeConflictsWithInspection(claims, existingTasks, currentTaskId, { target, packageRoot } = {}) {
+  try {
+    assertNoScopeConflicts(claims, existingTasks, currentTaskId);
+  } catch (error) {
+    if (error.code !== "E_TASK_SCOPE_CONFLICT") throw error;
+    const inspected = [];
+    for (const conflict of error.conflicts ?? []) {
+      let inspection = null;
+      try {
+        inspection = await inspectTaskConflictState(target, { taskId: conflict.taskId, packageRoot });
+      } catch (inspectionError) {
+        inspection = {
+          taskId: conflict.taskId,
+          classification: "INCONSISTENT",
+          reasonCodes: [inspectionError.code ?? "E_TASK_NOT_FOUND"],
+          recoverable: false,
+        };
+      }
+      inspected.push({ ...conflict, inspection });
+    }
+    error.conflicts = inspected;
+    error.message = `${error.message}; conflicting task classifications: ${inspected
+      .map((item) => `${item.taskId}=${item.inspection.classification}`)
+      .join(", ")}`;
+    throw error;
+  }
 }
 
 export async function runTaskCreate({ target, packageRoot, taskId, claims = [], contractFile = null } = {}) {
@@ -33,7 +62,7 @@ export async function runTaskCreate({ target, packageRoot, taskId, claims = [], 
 
   return withProjectClaimsLock(target, async () => {
     const allTasks = await discoverTasks(target, packageRoot);
-    assertNoScopeConflicts(normalizedClaims, allTasks, taskId);
+    await assertNoScopeConflictsWithInspection(normalizedClaims, allTasks, taskId, { target, packageRoot });
     if (normalizedClaims.length > 0) {
       await assertScopeClean(target, normalizedClaims);
     }

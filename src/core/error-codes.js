@@ -28,6 +28,9 @@ export const E_TASK_CHANGE_ATTRIBUTION_UNAVAILABLE = "E_TASK_CHANGE_ATTRIBUTION_
 
 export const E_TASK_LAYOUT_LEGACY = "E_TASK_LAYOUT_LEGACY";
 export const E_TASK_MIGRATION_INVALID = "E_TASK_MIGRATION_INVALID";
+export const E_TASK_RECOVERY_UNSAFE = "E_TASK_RECOVERY_UNSAFE";
+export const E_TASK_RECOVERY_INCONSISTENT = "E_TASK_RECOVERY_INCONSISTENT";
+export const E_TASK_RECOVERY_AUTHORIZATION_REQUIRED = "E_TASK_RECOVERY_AUTHORIZATION_REQUIRED";
 export const E_TASK_MIGRATION_IDENTITY_MISMATCH = "E_TASK_MIGRATION_IDENTITY_MISMATCH";
 export const E_PROTOCOL_MIGRATION_TARGET_UNSUPPORTED = "E_PROTOCOL_MIGRATION_TARGET_UNSUPPORTED";
 
@@ -163,7 +166,28 @@ export const PUBLIC_ERROR_CODES = Object.freeze({
     category: "scope",
     classification: "PUBLIC_STABLE",
     meaning: "Task write claims overlap with another non-complete task in the same checkout.",
-    safeResolution: "Adjust write claims to non-overlapping paths or run tasks in separate worktrees.",
+    safeResolution: "Inspect the conflicting task classification reported in error.conflicts, then reconcile or recover it through its reported official recovery commands before retrying task creation.",
+  }),
+  E_TASK_RECOVERY_UNSAFE: Object.freeze({
+    code: "E_TASK_RECOVERY_UNSAFE",
+    category: "recovery",
+    classification: "PUBLIC_STABLE",
+    meaning: "Operator recovery was refused because the conflicting task is active, inconsistent, already complete, or holds a live lease.",
+    safeResolution: "Resolve the reported classification first; live leases must expire or be released by their owner before recovery.",
+  }),
+  E_TASK_RECOVERY_INCONSISTENT: Object.freeze({
+    code: "E_TASK_RECOVERY_INCONSISTENT",
+    category: "recovery",
+    classification: "PUBLIC_STABLE",
+    meaning: "Operator recovery was refused because the task state or event ledger is inconsistent.",
+    safeResolution: "Repair the underlying artifact through its dedicated recovery surface; do not force-complete an unreadable task.",
+  }),
+  E_TASK_RECOVERY_AUTHORIZATION_REQUIRED: Object.freeze({
+    code: "E_TASK_RECOVERY_AUTHORIZATION_REQUIRED",
+    category: "recovery",
+    classification: "PUBLIC_STABLE",
+    meaning: "task-recover requires explicit operator authorization via --operator-authorized.",
+    safeResolution: "Re-run with --operator-authorized only when evidence shows the task has no active owner and official recovery paths are unavailable.",
   }),
   E_TASK_SCOPE_DIRTY: Object.freeze({
     code: "E_TASK_SCOPE_DIRTY",
@@ -469,6 +493,9 @@ export const ALL_KNOWN_ERROR_CODES = Object.freeze(new Set([
   E_TASK_CHANGE_ATTRIBUTION_UNAVAILABLE,
   E_TASK_LAYOUT_LEGACY,
   E_TASK_MIGRATION_INVALID,
+  E_TASK_RECOVERY_UNSAFE,
+  E_TASK_RECOVERY_INCONSISTENT,
+  E_TASK_RECOVERY_AUTHORIZATION_REQUIRED,
   E_TASK_MIGRATION_IDENTITY_MISMATCH,
   E_PROTOCOL_MIGRATION_TARGET_UNSUPPORTED,
   E_CHECK_INERT,

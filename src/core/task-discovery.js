@@ -5,6 +5,7 @@ import { TASK_STATE_ROOT, TASK_ARTIFACT_FILES, taskArtifactPath } from "./task-p
 import { readTaskDescriptor } from "./task-descriptor.js";
 import { readJsonArtifact } from "./artifacts.js";
 import { readLockInfo } from "./task-lock.js";
+import { readEventTail } from "./events.js";
 import { taskStorageKey } from "./task-identity.js";
 
 /**
@@ -122,6 +123,19 @@ export async function discoverTasks(target, packageRoot = getPackageRoot()) {
       const receiptPath = ensureWithin(target, taskArtifactPath(taskId, "receipt"));
       const hasReceipt = await fileExists(receiptPath);
 
+      // Operator recovery releases write claims without a completion claim.
+      let operatorRecoveredAt = null;
+      try {
+        const tail = await readEventTail(target, packageRoot, { taskId, limit: 20 });
+        const recoveryEvent = [...tail].reverse().find((event) => event.event === "OPERATOR_RECOVERY_RECORDED");
+        if (recoveryEvent) {
+          operatorRecoveredAt = recoveryEvent.at ?? null;
+        }
+      } catch {
+        // Ledger absence or unreadability must not break discovery; conflict
+        // inspection reports ledger problems separately.
+      }
+
       tasks.push({
         taskId,
         taskKey: descriptor.taskKey,
@@ -129,7 +143,8 @@ export async function discoverTasks(target, packageRoot = getPackageRoot()) {
         phase,
         locked: lockInfo !== null,
         lockInfo,
-        writeClaims: descriptor.writeClaims ?? [],
+        writeClaims: operatorRecoveredAt ? [] : (descriptor.writeClaims ?? []),
+        operatorRecoveredAt,
         createdAt: descriptor.createdAt,
         updatedAt: descriptor.updatedAt,
         lastUpdated,
