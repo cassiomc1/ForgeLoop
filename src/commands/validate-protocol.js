@@ -12,6 +12,11 @@ import { validateEventLedger, validateStateLedgerCoherence } from "../core/event
 import { validateChecksExecutionProvenance } from "../core/completion-artifacts.js";
 import { assertContinuitySemantics } from "../core/continuity.js";
 import { currentChangedPaths, currentRepositoryFingerprint } from "../core/repository.js";
+import { readTaskDescriptor } from "../core/task-descriptor.js";
+import {
+  readTaskRecovery,
+  validateTaskRecoveryConsistency,
+} from "../core/task-recovery.js";
 
 async function readArtifact(target, relativePath, label) {
   if (!relativePath) return null;
@@ -164,6 +169,29 @@ export async function runValidateProtocol({
       })),
     ];
   }
+  let recovery = null;
+  const recoveryErrors = [];
+  if (effectiveTaskId) {
+    try {
+      recovery = (await readTaskRecovery(target, { taskId: effectiveTaskId, packageRoot }))?.value ?? null;
+      const descriptor = await readTaskDescriptor(target, effectiveTaskId, packageRoot);
+      recoveryErrors.push(...validateTaskRecoveryConsistency({
+        taskId: effectiveTaskId,
+        recovery,
+        events: ledgerEvents,
+        historicalWriteClaims: descriptor.value.writeClaims ?? [],
+      }).map((error) => ({
+        ...error,
+        artifacts: [taskArtifactPath(effectiveTaskId, "recovery"), effectiveEventsFile],
+      })));
+    } catch (error) {
+      recoveryErrors.push({
+        code: "E_TASK_RECOVERY_INCONSISTENT",
+        message: `Recovery state is unreadable: ${error.message}`,
+        artifacts: [taskArtifactPath(effectiveTaskId, "recovery")],
+      });
+    }
+  }
   const continuityContext = continuity && state && !stateValidationError
     ? {
       contractFingerprint: state.contractFingerprint,
@@ -182,11 +210,11 @@ export async function runValidateProtocol({
     delegatedResults,
     events: ledgerEvents,
   });
-    if (readErrors.length > 0 || schemaErrors.length > 0 || readyConsistencyErrors.length > 0 || ledgerErrors.length > 0) {
+    if (readErrors.length > 0 || schemaErrors.length > 0 || readyConsistencyErrors.length > 0 || ledgerErrors.length > 0 || recoveryErrors.length > 0) {
       return {
         ...result,
         status: "INVALID",
-        errors: [...result.errors, ...readErrors, ...schemaErrors, ...readyConsistencyErrors, ...ledgerErrors]
+        errors: [...result.errors, ...readErrors, ...schemaErrors, ...readyConsistencyErrors, ...ledgerErrors, ...recoveryErrors]
           .sort((left, right) => left.code.localeCompare(right.code) || left.message.localeCompare(right.message)),
       };
     }

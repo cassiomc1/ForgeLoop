@@ -11,6 +11,7 @@ import { ensureWithin, fileExists } from "../core/filesystem.js";
 import { validateContract, writeContract } from "../core/contract.js";
 import { appendProtocolEvent } from "../core/events.js";
 import { E_TASK_REQUIRED, E_TASK_ALREADY_EXISTS, E_TASK_DESCRIPTOR_INVALID } from "../core/error-codes.js";
+import { recoveryGuidanceForClassification } from "../core/next-action-model.js";
 
 function taskError(code, message, artifacts = []) {
   const error = new Error(message);
@@ -37,7 +38,15 @@ export async function assertNoScopeConflictsWithInspection(claims, existingTasks
           recoverable: false,
         };
       }
-      inspected.push({ ...conflict, inspection });
+      const guidance = recoveryGuidanceForClassification(inspection.classification, conflict.taskId);
+      inspected.push({
+        ...conflict,
+        classification: inspection.classification,
+        reasonCodes: inspection.reasonCodes,
+        nextAction: guidance.nextAction,
+        commandSpecs: guidance.commandSpecs,
+        inspection,
+      });
     }
     error.conflicts = inspected;
     error.message = `${error.message}; conflicting task classifications: ${inspected

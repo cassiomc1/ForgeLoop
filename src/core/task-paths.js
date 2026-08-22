@@ -17,6 +17,7 @@ export const TASK_ARTIFACT_FILES = Object.freeze({
   executions: "executions",
   lock: ".lock",
   policySnapshot: "policy-snapshot.json",
+  recovery: "recovery.json",
 });
 
 export const POLICY_ROOT = ".forgeloop/policy";
@@ -103,5 +104,6 @@ export function buildTaskArtifactPaths(taskId) {
     executions: `${dir}/${TASK_ARTIFACT_FILES.executions}`,
     lock: `${dir}/${TASK_ARTIFACT_FILES.lock}`,
     policySnapshot: `${dir}/${TASK_ARTIFACT_FILES.policySnapshot}`,
+    recovery: `${dir}/${TASK_ARTIFACT_FILES.recovery}`,
   });
 }

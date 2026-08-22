@@ -412,6 +412,38 @@ test("CLI parser parity: semantic validation remains enforced", () => {
   assert.throws(() => parseArgs(["run-check", "--id", "chk-1", "--requirement", "req-1"]), /run-check requires -- followed by an exact command argv/);
 });
 
+test("task-resume accepts an explicit task and repeatable claim reacquisition", () => {
+  assert.ok(CLI_COMMAND_DEFINITIONS["task-resume"]);
+  const parsed = parseArgs([
+    "task-resume",
+    "--task",
+    "recovered-task",
+    "--claim",
+    "src",
+    "--claim",
+    "tests",
+    "--json",
+  ]);
+  assert.equal(parsed.command, "task-resume");
+  assert.equal(parsed.options.task, "recovered-task");
+  assert.deepEqual(parsed.options.claims, ["src", "tests"]);
+  assert.equal(parsed.options.json, true);
+});
+
+test("task-recover distinguishes caller acknowledgement from its deprecated alias", () => {
+  const definition = CLI_COMMAND_DEFINITIONS["task-recover"];
+  assert.ok(definition.options["--acknowledge-recovery"]);
+  assert.ok(definition.options["--operator-authorized"]);
+
+  const acknowledged = parseArgs(["task-recover", "--task", "stale-task", "--acknowledge-recovery"]);
+  assert.equal(acknowledged.options.acknowledgeRecovery, true);
+  assert.equal(acknowledged.options.operatorAuthorized, undefined);
+
+  const deprecated = parseArgs(["task-recover", "--task", "stale-task", "--operator-authorized"]);
+  assert.equal(deprecated.options.operatorAuthorized, true);
+  assert.equal(deprecated.options.acknowledgeRecovery, undefined);
+});
+
 test("generated CLI options never duplicate repeatable marker", () => {
   for (const command of COMMANDS) {
     const generated = generateCliOptionsForCommand(command);

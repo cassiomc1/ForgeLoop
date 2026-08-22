@@ -39,6 +39,26 @@ test("withTaskTransaction stages append-only ledger deltas until commit", async 
   }
 });
 
+test("withTaskTransaction stages deletion and publishes it only at commit", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-transaction-"));
+  const relativePath = ".forgeloop/task-state/recovery.json";
+  try {
+    await mkdir(path.dirname(path.join(target, relativePath)), { recursive: true });
+    await writeFile(path.join(target, relativePath), "recovery\n");
+
+    await withTaskTransaction({ target, taskId: "delete-transaction", operation: "test" }, async (tx) => {
+      assert.equal(typeof tx.stageDelete, "function");
+      await tx.stageDelete(relativePath);
+      assert.equal(await tx.readText(relativePath), null);
+      assert.equal(await readFile(path.join(target, relativePath), "utf8"), "recovery\n");
+    });
+
+    await assert.rejects(() => readFile(path.join(target, relativePath), "utf8"), { code: "ENOENT" });
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
 test("withTaskTransaction leaves no temporary atomic-write artifacts after durable publication", async () => {
   const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-transaction-"));
   try {

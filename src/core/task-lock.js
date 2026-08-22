@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, open, readFile, unlink } from "node:fs/promises";
+import { link, mkdir, open, readFile, rename, unlink } from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 import { assertSafePath, ensureWithin, fileExists } from "./filesystem.js";
@@ -24,7 +24,8 @@ export async function readLockInfo(target, taskId) {
 }
 
 export function classifyLockStaleness(lock, now = Date.now()) {
-  if (!lock || lock.corrupted) return { status: "UNKNOWN", stale: false };
+  if (!lock) return { status: "NONE", stale: false };
+  if (lock.corrupted) return { status: "CORRUPT", stale: false };
   const heartbeat = Date.parse(lock.heartbeatAt ?? lock.acquiredAt);
   const leaseMs = Number.isInteger(lock.leaseMs) && lock.leaseMs > 0 ? lock.leaseMs : 300000;
   if (!Number.isFinite(heartbeat)) return { status: "UNKNOWN", stale: false };
@@ -222,11 +223,81 @@ export async function forceUnlockTask(target, taskId, { staleOnly = false } = {}
 
   const existing = await readLockInfo(target, taskId);
   const classification = classifyLockStaleness(existing);
-  if (staleOnly && !classification.stale) {
-    return { unlocked: false, previousLock: existing, classification };
+  if (staleOnly) {
+    if (!classification.stale) {
+      return { unlocked: false, previousLock: existing, classification };
+    }
+    const released = await releaseStaleTaskLockIfUnchanged(target, taskId, existing);
+    return {
+      unlocked: released.released,
+      previousLock: released.previousLock ?? existing,
+      classification: released.classification ?? classification,
+      ...(released.reason ? { reason: released.reason } : {}),
+    };
   }
   await unlink(fullPath);
   return { unlocked: true, previousLock: existing, classification };
+}
+
+function sameObservedLock(left, right) {
+  return Boolean(left && right)
+    && left.lockId === right.lockId
+    && left.heartbeatAt === right.heartbeatAt
+    && left.ownerInstanceId === right.ownerInstanceId;
+}
+
+async function restoreQuarantinedLock(quarantinePath, fullPath) {
+  try {
+    await link(quarantinePath, fullPath);
+  } catch (error) {
+    if (error.code !== "EEXIST") throw error;
+  } finally {
+    try {
+      await unlink(quarantinePath);
+    } catch {
+      // ignore an already-consumed quarantine entry
+    }
+  }
+}
+
+export async function releaseStaleTaskLockIfUnchanged(target, taskId, expectedLock, { now = Date.now() } = {}) {
+  const relativePath = taskLockPath(taskId);
+  await assertSafePath(target, relativePath);
+  const fullPath = ensureWithin(target, relativePath);
+  const expectedClassification = classifyLockStaleness(expectedLock, now);
+  if (expectedClassification.status !== "STALE") {
+    return { released: false, reason: "EXPECTED_LOCK_NOT_STALE", classification: expectedClassification };
+  }
+
+  const quarantinePath = `${fullPath}.releasing-${randomUUID()}`;
+  try {
+    await rename(fullPath, quarantinePath);
+  } catch (error) {
+    if (error.code === "ENOENT") return { released: false, reason: "LOCK_MISSING" };
+    throw error;
+  }
+
+  let observed;
+  try {
+    observed = JSON.parse(await readFile(quarantinePath, "utf8"));
+  } catch {
+    await restoreQuarantinedLock(quarantinePath, fullPath);
+    return { released: false, reason: "LOCK_CORRUPT" };
+  }
+
+  const observedClassification = classifyLockStaleness(observed, now);
+  if (!sameObservedLock(observed, expectedLock) || observedClassification.status !== "STALE") {
+    await restoreQuarantinedLock(quarantinePath, fullPath);
+    return {
+      released: false,
+      reason: sameObservedLock(observed, expectedLock) ? "LOCK_NOT_STALE" : "LOCK_CHANGED",
+      currentLock: observed,
+      classification: observedClassification,
+    };
+  }
+
+  await unlink(quarantinePath);
+  return { released: true, previousLock: observed, classification: observedClassification };
 }
 
 export async function withTaskLock(target, taskId, operationOrCallback, callback) {

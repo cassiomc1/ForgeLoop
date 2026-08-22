@@ -223,4 +223,16 @@ export const ARTIFACT_REGISTRY = Object.freeze({
     isPersisted: true,
     description: "Task-scoped policy snapshot binding task activation to effective policy digest.",
   }),
+  recovery: Object.freeze({
+    key: "recovery",
+    scope: "TASK",
+    path: `${TASK_STATE_ROOT}/<task-key>/${TASK_ARTIFACT_FILES.recovery}`,
+    schema: "task-recovery",
+    owner: "PROTOCOL_GENERATED",
+    mutability: "RECOVERY_STATE_TRANSITIONS",
+    trustRole: "TASK_RECOVERY_STATE",
+    isPublic: true,
+    isPersisted: true,
+    description: "Durable task recovery state recording claim release and explicit resume requirements.",
+  }),
 });

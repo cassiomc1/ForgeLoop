@@ -6,6 +6,7 @@ import { readWorkState } from "../core/work-state.js";
 import { readContract } from "../core/contract.js";
 import { fileExists, ensureWithin } from "../core/filesystem.js";
 import { E_TASK_NOT_FOUND } from "../core/error-codes.js";
+import { readTaskRecovery, taskClaimProjection } from "../core/task-recovery.js";
 
 function taskError(code, message, artifacts = []) {
   const error = new Error(message);
@@ -30,6 +31,13 @@ export async function runTaskShow({ target, packageRoot, taskId } = {}) {
   }
 
   const state = await readWorkState(target, { packageRoot, taskId: effectiveTaskId });
+  const recoveryArtifact = await readTaskRecovery(target, { packageRoot, taskId: effectiveTaskId });
+  const recovery = recoveryArtifact?.value ?? null;
+  const claimProjection = taskClaimProjection({
+    phase: state?.phase ?? null,
+    recovery,
+    writeClaims: descriptor.writeClaims ?? [],
+  });
   let contract = null;
   try {
     const contractArtifact = await readContract(target, packageRoot, { taskId: effectiveTaskId });
@@ -40,7 +48,7 @@ export async function runTaskShow({ target, packageRoot, taskId } = {}) {
 
   const lockInfo = await readLockInfo(target, effectiveTaskId);
   const artifacts = {};
-  for (const name of ["contract", "route", "state", "preflight", "receipt", "continuity", "events"]) {
+  for (const name of ["contract", "route", "state", "preflight", "receipt", "continuity", "events", "recovery"]) {
     const rel = taskArtifactPath(effectiveTaskId, name);
     artifacts[name] = {
       path: rel,
@@ -53,7 +61,8 @@ export async function runTaskShow({ target, packageRoot, taskId } = {}) {
     taskKey: context.taskKey,
     directory: taskDirectory(effectiveTaskId),
     phase: state?.phase ?? "UNINITIALIZED",
-    writeClaims: descriptor.writeClaims ?? [],
+    ...claimProjection,
+    recovery,
     lock: lockInfo ? { ...lockInfo, classification: classifyLockStaleness(lockInfo) } : null,
     contract: contract ? { title: contract.title ?? null, taskType: contract.taskType ?? null } : null,
     artifacts,
@@ -73,6 +82,11 @@ export function formatTaskShowResult(result) {
     `Directory: ${result.directory}`,
     `Phase: ${result.phase}`,
     `Write Claims: ${claims}`,
+    `Claim State: ${result.claimState}`,
+    `Mutation Allowed: ${result.mutationAllowed ? "yes" : "no"}`,
+    ...(result.recovery
+      ? [`Recovery: ${result.recovery.recoveryId} at ${result.recovery.recoveredAt}`]
+      : []),
     `Lock: ${lockStatus}`,
     `Created: ${result.createdAt}`,
     `Updated: ${result.updatedAt}`,

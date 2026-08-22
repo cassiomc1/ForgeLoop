@@ -30,6 +30,7 @@ All artifact schemas are defined in `schemas/*.schema.json`. Persisted artifact 
 | `policy/baseline.json` | `policy-baseline` | Protocol Generated Or Operator | Monotonic Ratchet Down | Brownfield Baseline |
 | `policy/policy.lock` | `policy-lock` | Protocol Generated | Atomic Digest Compilation | Policy Integrity Lock |
 | `task-state/<task-key>/policy-snapshot.json` | `policy-snapshot` | Protocol Generated | Mutable Before Execution | Task Policy Attestation |
+| `task-state/<task-key>/recovery.json` | `task-recovery` | Protocol Generated | Recovery State Transitions | Task Recovery State |
 
 <!-- END FORGELOOP GENERATED: artifact-registry -->
 
@@ -601,3 +602,42 @@ comparison explicitly `UNKNOWN` rather than assuming an empty baseline.
 - `capturedAt` *(string, optional)*
 
 <!-- END FORGELOOP GENERATED: schema:policy-snapshot -->
+
+---
+
+### 2.19 `task-state/<taskKey>/recovery.json`
+
+<!-- forgeloop-doc: schema=task-recovery artifact=.forgeloop/task-state/<task-key>/recovery.json -->
+
+Durable current-state authority for claim-release recovery. It records the
+classification and exact claims released while leaving lifecycle work state,
+receipts, failures, policy, and continuity unchanged. A valid artifact suspends
+ordinary task mutation until `task-resume` reacquires conflict-free claims.
+
+`CALLER_ACKNOWLEDGED` is not host attestation. `HOST_ATTESTED` requires a
+host-owned `grantRef`; the standalone CLI does not self-issue that authority.
+
+#### Canonical Fields
+
+<!-- BEGIN FORGELOOP GENERATED: schema:task-recovery -->
+
+- `schemaVersion` *(number, required, const: 1)*
+- `protocolVersion` *(number, required, const: 1)*
+- `taskId` *(string, required, minLength: 1)*
+- `status` *(string, required, const: `RECOVERED`)*
+- `recoveredAt` *(string, required)*
+- `recoveryId` *(string, required, pattern: `^recovery-[A-Za-z0-9-]+$`)*
+- `recoveryEventSeq` *(integer, required, minimum: 1)*
+- `classificationAtRecovery` *(string, required, enum: `STALE`, `ABANDONED`)*
+- `reasonCodes` *(array<string>, required)*
+- `releasedClaims` *(array<string>, required)*
+- `previousPhase` *(string, required, minLength: 1)*
+- `previousRevision` *(integer, required, minimum: 0)*
+- `repositoryFingerprint` *(object, required)*
+  - `branch` *(string,null, required)*
+  - `head` *(string,null, required)*
+- `authority` *(object, required)*
+  - `kind` *(string, required, enum: `CALLER_ACKNOWLEDGED`, `HOST_ATTESTED`)*
+  - `grantRef` *(string, optional, minLength: 1)*
+
+<!-- END FORGELOOP GENERATED: schema:task-recovery -->

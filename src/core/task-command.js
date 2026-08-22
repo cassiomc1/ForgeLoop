@@ -1,5 +1,6 @@
 import { resolveTaskContext } from "./task-context.js";
 import { withTaskTransaction } from "./transaction.js";
+import { assertTaskNotRecovered } from "./task-recovery.js";
 
 export async function withResolvedTask(
   target,
@@ -33,6 +34,7 @@ export async function withTaskMutation(
 
   if (taskContext) {
     return withTaskTransaction({ target, taskId: taskContext.taskId, operation, packageRoot: options.packageRoot, recordCommitEvent: true }, async (transaction) => {
+      await assertTaskNotRecovered(target, { taskId: taskContext.taskId, packageRoot: options.packageRoot });
       return callback({ ...taskContext, transaction });
     });
   }

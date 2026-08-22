@@ -19,6 +19,9 @@ export function formatInspectResult(report) {
     `Authority source: ${report.authority.sourceType ?? "none configured"} / ${report.authority.trusted ? "TRUSTED" : report.authority.trustMode === "NONE" ? "UNATTESTED" : "UNTRUSTED"}`,
     `Authority trust: ${report.authority.trustMode}`,
     `State: ${report.state.status}`,
+    ...(report.recovery
+      ? [`Recovery: ${report.recovery.status} (${report.recovery.recoveryId})`]
+      : []),
     `Adapters: ${report.adapters.detected.length} detected`,
     `Findings: ${report.findings.length}`,
     report.ok ? "healthy: ForgeLoop target is ready" : "unhealthy: ForgeLoop target needs attention",

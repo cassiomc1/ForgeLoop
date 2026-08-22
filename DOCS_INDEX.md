@@ -57,6 +57,7 @@ integration and guide context. Use this map before editing documentation.
 - **Check CLI options and syntax**: [`docs/CLI_REFERENCE.md`](./docs/CLI_REFERENCE.md)
 - **Understand what `.forgeloop/` stores**: [`docs/ARTIFACT_REFERENCE.md`](./docs/ARTIFACT_REFERENCE.md)
 - **Fix a blocked, stale, or invalid state**: [`docs/TROUBLESHOOTING.md`](./docs/TROUBLESHOOTING.md)
+- **Recover a stale task or reacquire released claims**: [`docs/RECIPES.md`](./docs/RECIPES.md#recipe-15--release-and-reacquire-claims-for-an-abandoned-task)
 - **Find operational copy-paste commands**: [`docs/RECIPES.md`](./docs/RECIPES.md)
 - **Read the normative protocol specification**: [`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md)
 - **Integrate a new AI environment**: [`PROTOCOL_INTEGRATION.md`](./PROTOCOL_INTEGRATION.md)

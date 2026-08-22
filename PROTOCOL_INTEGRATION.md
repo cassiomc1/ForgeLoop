@@ -158,6 +158,7 @@ The following protocol artifacts are strictly owned by ForgeLoop:
 - `.forgeloop/task-state/<taskKey>/work-state.json`
 - `.forgeloop/task-state/<taskKey>/events.ndjson`
 - `.forgeloop/task-state/<taskKey>/execution-receipt.json`
+- `.forgeloop/task-state/<taskKey>/recovery.json`
 - `.forgeloop/task-state/<taskKey>/executions/<executionId>.json`
 - Canonical check, evidence, and terminal-result state
 
@@ -230,6 +231,14 @@ actor claim ≠ operator grant
 
 Authority cannot be self-issued by the actor consuming it. Boolean fields inside
 verification evidence are not sufficient proof of installation authority.
+
+The same rule applies to claim-release recovery. The standalone
+`--acknowledge-recovery` flag records `CALLER_ACKNOWLEDGED`; it is an explicit
+request, not a host grant. The deprecated `--operator-authorized` spelling is
+only a compatibility alias and has identical caller-acknowledgement semantics.
+`HOST_ATTESTED` recovery metadata is valid only when a host integration supplies
+a trusted grant reference through a boundary the active actor cannot mint or
+replace. The standalone CLI does not expose such a self-attestation option.
 
 ### Authority provenance
 
@@ -354,4 +363,5 @@ ForgeLoop integrates executable verification rules directly into the lifecycle:
 - **Autonomy Principle**: Non-interactive execution is preserved. Tools, commands, and validators operate unattended with standard input closed and without interactive prompt dependencies.
 - **Baseline Protection**: Re-recording baseline debt mid-task is rejected with `E_BASELINE_RECORD_DURING_ACTIVE_TASK`; only monotonic ratchet-down is allowed during active tasks (`baseline --update`). Explicit re-recording requires `--policy-reset-authorized`.
 - **Semantic Recovery**: `forgeloop next` maps policy findings directly to actionable recovery actions (`RESTORE_POLICY`, `REPAIR_CHECKER`, `REPAIR_POLICY`, `REVERIFY_AFTER_POLICY_CHANGE`, `RESTORE_BASELINE`, `CONTINUE_WITH_EXISTING_BASELINE`, `RESOLVE_INERT_CHECK`).
+- **Claim Recovery**: `forgeloop next` maps task ownership state to `RECONCILE_CLOSURE`, `RECOVER_TASK`, `RESUME_RECOVERED_TASK`, or `RESOLVE_RECOVERY_INCONSISTENCY`. `task-recover` is restricted to `STALE`/`ABANDONED`; it writes durable `recovery.json` plus an append-only event without changing lifecycle evidence. `task-resume` reuses canonical scope conflict checks and removes recovery state transactionally.
 - **Task Scoping**: Task-specific policy snapshots and state live under `.forgeloop/task-state/<taskKey>/` to ensure clean multi-task isolation and cross-harness continuity.

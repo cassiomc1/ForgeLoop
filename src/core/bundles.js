@@ -102,6 +102,7 @@ export async function exportTaskBundle(target, taskId, packageRoot) {
     [ARTIFACT_PATHS.sources, null, "sources.json", "source-registry"],
     [ARTIFACT_PATHS.config, null, "config.json", "config"],
     [taskArtifactPath(taskId, "continuity"), ARTIFACT_PATHS.continuity, "continuity.json", "continuity"],
+    [taskArtifactPath(taskId, "recovery"), null, "recovery.json", "task-recovery"],
   ];
   for (const [taskRel, legacyRel, destinationName, schemaName] of optional) {
     let copied = null;
@@ -180,6 +181,7 @@ export async function readTaskBundle(target, taskId, packageRoot) {
     "config.json": ["config", "config"],
     "continuity.json": ["continuity", "continuity"],
     "task.json": ["descriptor", "task-descriptor"],
+    "recovery.json": ["recovery", "task-recovery"],
   };
   const executions = {};
   for (const artifact of manifest.value.artifacts) {

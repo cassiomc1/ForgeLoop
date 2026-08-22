@@ -1,8 +1,12 @@
 import { classifyLoadedWorkState, readWorkState } from "./work-state.js";
 import { taskArtifactPath } from "./task-paths.js";
 import { readLockInfo, classifyLockStaleness } from "./task-lock.js";
-import { validateEventLedger } from "./events.js";
+import { validateEventLedger, validateStateLedgerCoherence } from "./events.js";
 import { currentRepositoryFingerprint } from "./repository.js";
+import {
+  readTaskRecovery,
+  validateTaskRecoveryConsistency,
+} from "./task-recovery.js";
 
 export const TASK_CONFLICT_CLASSIFICATIONS = Object.freeze([
   "ACTIVE",
@@ -10,6 +14,8 @@ export const TASK_CONFLICT_CLASSIFICATIONS = Object.freeze([
   "STALE",
   "ABANDONED",
   "INCONSISTENT",
+  "RECOVERED",
+  "COMPLETE",
 ]);
 
 const POST_EXECUTION_PHASES = new Set([
@@ -24,6 +30,17 @@ const POST_EXECUTION_PHASES = new Set([
 export const TASK_CONFLICT_IDLE_THRESHOLD_MS = 14 * 24 * 60 * 60 * 1000;
 
 const RECONCILABLE_DRIFT = new Set(["REPOSITORY_CHANGED"]);
+const MEANINGFUL_ACTIVITY_EVENTS = new Set([
+  "EXECUTION_STARTED",
+  "VERIFICATION_STARTED",
+  "CHECK_RECORDED",
+  "VERIFICATION_RECORDED",
+  "DIAGNOSIS_RECORDED",
+  "CORRECTION_STARTED",
+  "REVIEW_STARTED",
+  "CONTINUITY_RECORDED",
+  "CHECKPOINT_RECONCILED",
+]);
 
 function idleMs(lastUpdated, now) {
   const parsed = Date.parse(lastUpdated);
@@ -33,6 +50,20 @@ function idleMs(lastUpdated, now) {
 
 function passedCheckCount(state) {
   return (state?.checks ?? []).filter((check) => check.status === "passed").length;
+}
+
+function checkCount(state, status) {
+  return (state?.checks ?? []).filter((check) => check.status === status).length;
+}
+
+function lastMeaningfulActivity(state, events) {
+  const candidates = [
+    ...(state?.lastUpdated ? [{ at: state.lastUpdated, type: "WORK_STATE_UPDATED" }] : []),
+    ...events
+      .filter((event) => MEANINGFUL_ACTIVITY_EVENTS.has(event.event))
+      .map((event) => ({ at: event.at, type: event.event })),
+  ].filter((candidate) => Number.isFinite(Date.parse(candidate.at)));
+  return candidates.sort((left, right) => Date.parse(right.at) - Date.parse(left.at))[0] ?? null;
 }
 
 /**
@@ -49,7 +80,9 @@ export function classifyConflictEvidence(evidence, {
   if (!evidence || evidence.healthy === false) {
     return {
       classification: "INCONSISTENT",
-      reasonCodes: ["E_TASK_DESCRIPTOR_INVALID"],
+      reasonCodes: evidence?.healthReasonCodes?.length > 0
+        ? evidence.healthReasonCodes
+        : ["E_TASK_DESCRIPTOR_INVALID"],
       recoverable: false,
     };
   }
@@ -60,8 +93,12 @@ export function classifyConflictEvidence(evidence, {
     freshnessReasons,
     phase,
     lastUpdated,
+    lastMeaningfulActivityAt,
     ledgerValid,
     recordedChecks,
+    totalChecks,
+    verificationEvidenceCount,
+    recoveryStatus,
   } = evidence;
 
   if (!ledgerValid) {
@@ -83,6 +120,39 @@ export function classifyConflictEvidence(evidence, {
     };
   }
 
+
+  if (lockStatus === "LIVE") {
+    return {
+      classification: "ACTIVE",
+      reasonCodes: ["E_TASK_LOCKED"],
+      recoverable: false,
+    };
+  }
+
+  if (lockStatus === "UNKNOWN" || lockStatus === "CORRUPT") {
+    return {
+      classification: "INCONSISTENT",
+      reasonCodes: ["E_TASK_LOCK_STATE_UNKNOWN"],
+      recoverable: false,
+    };
+  }
+
+  if (freshnessStatus === "UNKNOWN") {
+    return {
+      classification: "INCONSISTENT",
+      reasonCodes: freshnessReasons?.length > 0 ? freshnessReasons : ["E_STATE_UNREADABLE"],
+      recoverable: false,
+    };
+  }
+
+  if (recoveryStatus === "RECOVERED") {
+    return {
+      classification: "RECOVERED",
+      reasonCodes: ["TASK_RECOVERED"],
+      recoverable: false,
+    };
+  }
+
   if (phase === "COMPLETE") {
     return {
       classification: "COMPLETE",
@@ -92,18 +162,17 @@ export function classifyConflictEvidence(evidence, {
     };
   }
 
-  const hasLiveLease = lockStatus === "LIVE";
   const drift = freshnessReasons ?? [];
   const staleOnlyRepositoryDrift = freshnessStatus === "REVALIDATION_REQUIRED"
     && drift.length > 0
     && drift.every((reason) => RECONCILABLE_DRIFT.has(reason));
-  const idle = idleMs(lastUpdated, now);
+  const idle = idleMs(lastMeaningfulActivityAt ?? lastUpdated, now);
   const idleBeyondThreshold = idle !== null && idle > idleThresholdMs;
 
-  if (hasLiveLease || freshnessStatus === "FRESH") {
+  if (freshnessStatus === "FRESH") {
     return {
       classification: "ACTIVE",
-      reasonCodes: hasLiveLease ? ["E_TASK_LOCKED"] : ["STATE_FRESH"],
+      reasonCodes: ["STATE_FRESH"],
       recoverable: false,
     };
   }
@@ -119,12 +188,13 @@ export function classifyConflictEvidence(evidence, {
           : ["forgeloop reconcile-closure", "canonical verification recording pipeline"],
       };
     }
-    if (idleBeyondThreshold && recordedChecks === 0) {
+    const recordedEvidence = (totalChecks ?? recordedChecks ?? 0) + (verificationEvidenceCount ?? 0);
+    if (idleBeyondThreshold && recordedEvidence === 0) {
       return {
         classification: "ABANDONED",
         reasonCodes: ["NO_RECORDED_EVIDENCE", "IDLE_BEYOND_THRESHOLD", ...drift],
         recoverable: false,
-        recoveredBy: ["forgeloop task-recover --task <id> --operator-authorized"],
+        recoveredBy: ["forgeloop task-recover --task <id> --acknowledge-recovery"],
       };
     }
     return {
@@ -139,7 +209,7 @@ export function classifyConflictEvidence(evidence, {
       classification: "STALE",
       reasonCodes: ["IDLE_BEYOND_THRESHOLD", ...(drift.length > 0 ? drift : ["STATE_FRESH"])],
       recoverable: false,
-      recoveredBy: ["forgeloop task-recover --task <id> --operator-authorized"],
+      recoveredBy: ["forgeloop task-recover --task <id> --acknowledge-recovery"],
     };
   }
 
@@ -150,13 +220,27 @@ export function classifyConflictEvidence(evidence, {
   };
 }
 
-export async function inspectTaskConflictState(target, { taskId, packageRoot, now = Date.now() } = {}) {
-  const [lockInfo, state] = await Promise.all([
+export async function inspectTaskConflictState(target, {
+  taskId,
+  packageRoot,
+  now = Date.now(),
+  ignoredLockId = null,
+} = {}) {
+  const [lockInfo, stateResult, recoveryResult] = await Promise.all([
     readLockInfo(target, taskId),
-    readWorkState(target, { packageRoot, taskId }),
+    readWorkState(target, { packageRoot, taskId })
+      .then((value) => ({ value, error: null }))
+      .catch((error) => ({ value: null, error })),
+    readTaskRecovery(target, { packageRoot, taskId })
+      .then((value) => ({ value, error: null }))
+      .catch((error) => ({ value: null, error })),
   ]);
+  const state = stateResult.value;
+  const recovery = recoveryResult.value?.value ?? null;
 
-  const lockClassification = classifyLockStaleness(lockInfo, now);
+  const lockClassification = ignoredLockId && lockInfo?.lockId === ignoredLockId
+    ? { status: "NONE", stale: false }
+    : classifyLockStaleness(lockInfo, now);
 
   let freshness = null;
   if (state) {
@@ -172,27 +256,56 @@ export async function inspectTaskConflictState(target, { taskId, packageRoot, no
   }
 
   let ledgerValid = true;
+  let ledgerEvents = [];
+  let ledgerErrors = [];
   try {
     const ledger = await validateEventLedger(target, packageRoot, { taskId });
-    ledgerValid = ledger.valid;
+    const coherenceErrors = state ? validateStateLedgerCoherence(state, ledger.events) : [];
+    ledgerValid = ledger.valid && coherenceErrors.length === 0;
+    ledgerEvents = ledger.events;
+    ledgerErrors = [...ledger.errors, ...coherenceErrors];
   } catch {
     ledgerValid = false;
   }
 
   const repository = await currentRepositoryFingerprint(target);
+  const meaningfulActivity = lastMeaningfulActivity(state, ledgerEvents);
+  const recoveryConsistencyErrors = validateTaskRecoveryConsistency({
+    taskId,
+    recovery,
+    events: ledgerEvents,
+  });
+  const healthReasonCodes = [
+    ...(stateResult.error ? ["E_STATE_UNREADABLE"] : []),
+    ...(recoveryResult.error ? ["E_TASK_RECOVERY_INCONSISTENT"] : []),
+    ...(recoveryConsistencyErrors.length > 0 ? ["E_TASK_RECOVERY_INCONSISTENT"] : []),
+  ];
 
   const evidence = {
-    healthy: true,
+    healthy: healthReasonCodes.length === 0,
+    healthReasonCodes,
+    descriptorHealthy: true,
     phase: state?.phase ?? null,
     lastUpdated: state?.lastUpdated ?? null,
+    lastMeaningfulActivityAt: meaningfulActivity?.at ?? null,
+    lastMeaningfulEventType: meaningfulActivity?.type ?? null,
     workStateRevision: state?.revision ?? 0,
     lockStatus: lockClassification.status,
+    lockId: lockInfo?.lockId ?? null,
     lockExpiresAt: lockClassification.expiresAt ?? null,
     freshnessStatus: freshness?.status ?? "UNKNOWN",
     freshnessReasons: freshness?.reasons ?? [],
     ledgerValid,
+    ledgerLastSeq: ledgerEvents.at(-1)?.seq ?? 0,
+    ledgerErrors,
     recordedChecks: passedCheckCount(state),
+    passedCheckCount: passedCheckCount(state),
+    failedCheckCount: checkCount(state, "failed"),
+    blockedCheckCount: checkCount(state, "blocked"),
     totalChecks: state?.checks?.length ?? 0,
+    verificationEvidenceCount: state?.verificationEvidence?.length ?? 0,
+    recoveryStatus: recovery?.status ?? null,
+    recoveryConsistencyErrors,
     repositoryBranch: repository.branch,
     repositoryHead: repository.head,
   };

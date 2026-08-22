@@ -22,7 +22,6 @@ import { normalizeRequirements } from "./evidence-readiness.js";
 import { classifyCommandResolution, validateVerificationAuthority } from "./verification-capability.js";
 import { readExecutionArtifact, validateExecutionBinding } from "./execution.js";
 import { taskArtifactPath, taskExecutionPath } from "./task-paths.js";
-import { readTaskDescriptor } from "./task-descriptor.js";
 import { assertClaimsCoverChangedPaths } from "./task-scope.js";
 import { discoverTasks } from "./task-discovery.js";
 
@@ -254,8 +253,8 @@ export async function prepareCompletion({
 
   let writeClaims = [];
   try {
-    const desc = taskId ? await readTaskDescriptor(target, taskId, packageRoot) : null;
-    writeClaims = desc?.value?.writeClaims ?? [];
+    const tasks = taskId ? await discoverTasks(target, packageRoot) : [];
+    writeClaims = tasks.find((task) => task.taskId === taskId && task.healthy !== false)?.writeClaims ?? [];
   } catch {
     // descriptor may not exist
   }

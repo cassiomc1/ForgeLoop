@@ -380,11 +380,19 @@ registry. If it is not available yet, the same commands can run as
 documents into `.forgeloop/kit/`, keeps only native instruction shims at the
 target root, and leaves project-scoped configuration under `.forgeloop/` while
 isolating modern mutable task protocol state (contract, route, gate, state,
-event, preflight, and receipt artifacts) under
+event, preflight, receipt, and recovery artifacts) under
 `.forgeloop/task-state/<taskKey>/`. Legacy singleton artifacts remain under
 `.forgeloop/` for compatibility and migration only. Manual copying must
 preserve that target layout; copying package-source root files directly is not
 equivalent to `forgeloop init`.
+
+Recovery uses a two-layer state model: `work-state.json` continues to own the
+lifecycle phase, while `recovery.json` durably suspends mutation authority and
+releases effective claims. The descriptor retains historical claims. Recovery
+never fabricates completion; `task-resume` is the only path that rechecks and
+reacquires claim ownership before removing the recovery artifact. Project
+claim serialization always precedes the per-task lock for create, scope,
+recover, and resume operations.
 
 The README explains the file set, activation behavior, current/relative/absolute
 target installation, first-run profile flow, local validation commands, and safe

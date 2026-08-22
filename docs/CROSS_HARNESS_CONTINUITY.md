@@ -54,6 +54,7 @@ Key continuity invariants:
 | --- | --- | --- | --- |
 | **Task Descriptor** | `.forgeloop/task-state/<taskKey>/task.json` | Task ID, write claims, and task registration | Descriptor authority |
 | **Lifecycle Checkpoint** | `.forgeloop/task-state/<taskKey>/work-state.json` | Current phase, cycle, active guides, preflight binding | Canonical lifecycle truth |
+| **Recovery State** | `.forgeloop/task-state/<taskKey>/recovery.json` | Suspended mutation authority and released effective claims | Canonical claim-recovery truth; never completion evidence |
 | **Operational Continuity** | `.forgeloop/task-state/<taskKey>/continuity.json` | Active focus, remaining items, known issues, inspect-first paths | Operational context only (non-evidence) |
 | **Implementation Truth** | Git checkout / filesystem | Actual source code and files | Ground truth for changes |
 | **Task Intent** | `.forgeloop/task-state/<taskKey>/contract.json` | Objectives, constraints, deliverables, verification requirements | Contract authority |
@@ -182,6 +183,19 @@ forgeloop next --task auth-feature --json
 
 Follow the deterministic action returned by ForgeLoop (e.g. `CONTINUE_IMPLEMENTATION`, `ENTER_VERIFYING`, or `RECORD_CHECK`).
 
+If `next` returns `RESUME_RECOVERED_TASK`, the handoff is still the same task,
+but ordinary mutation is suspended. Inspect the recovery metadata and current
+claim owners, then reacquire claims explicitly:
+
+```bash
+forgeloop task-show --task auth-feature --json
+forgeloop task-resume --task auth-feature --json
+```
+
+Do not edit or delete `recovery.json` manually. If another task owns an
+overlapping path, `task-resume` fails with `E_TASK_SCOPE_CONFLICT` and leaves
+the recovery state intact.
+
 ---
 
 ## 6. Stale, Inconsistent, or Missing Handoffs
@@ -197,6 +211,8 @@ ForgeLoop handles edge cases deterministically:
 | **Multiple Active Tasks** | No `--task` or `FORGELOOP_TASK` supplied | `E_TASK_AMBIGUOUS` | List tasks with `task-list` and supply `--task` |
 | **Different Task ID** | Contract / state ID mismatch | `TASK_MISMATCH` | Do not merge contexts; complete or clear previous state |
 | **Malformed State** | Corrupted JSON or invalid hash chain | `INVALID` | Fails closed; inspect errors via `forgeloop doctor --json` |
+| **Recovered Task** | Valid `recovery.json` releases effective claims | `RESUME_RECOVERED_TASK` | Inspect ownership, then use `task-resume`; recovery is not completion |
+| **Recovery Inconsistency** | Artifact/event, lock, or freshness evidence is unreadable | `RESOLVE_RECOVERY_INCONSISTENCY` | Run `validate-protocol`; repair the named artifact instead of forcing recovery |
 
 ---
 

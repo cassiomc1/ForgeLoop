@@ -11,12 +11,13 @@ const RECENT = "2026-08-21T00:00:00.000Z";
 const OLD = "2026-07-01T00:00:00.000Z";
 
 function evidence(overrides = {}) {
-  return {
+  const value = {
     healthy: true,
     phase: "EXECUTING",
     lastUpdated: RECENT,
+    lastMeaningfulActivityAt: RECENT,
     workStateRevision: 3,
-    lockStatus: "UNKNOWN",
+    lockStatus: "NONE",
     lockExpiresAt: null,
     freshnessStatus: "FRESH",
     freshnessReasons: [],
@@ -27,6 +28,10 @@ function evidence(overrides = {}) {
     repositoryHead: "a".repeat(64),
     ...overrides,
   };
+  if (Object.hasOwn(overrides, "lastUpdated") && !Object.hasOwn(overrides, "lastMeaningfulActivityAt")) {
+    value.lastMeaningfulActivityAt = overrides.lastUpdated;
+  }
+  return value;
 }
 
 test("live lease implies ACTIVE regardless of other signals", () => {
@@ -68,7 +73,7 @@ test("post-execution idle with zero recorded evidence is ABANDONED", () => {
   }), { now: NOW });
   assert.equal(verdict.classification, "ABANDONED");
   assert.equal(verdict.recoverable, false);
-  assert.ok(verdict.recoveredBy.includes("forgeloop task-recover --task <id> --operator-authorized"));
+  assert.ok(verdict.recoveredBy.includes("forgeloop task-recover --task <id> --acknowledge-recovery"));
 });
 
 test("idle pre-execution task is STALE", () => {
@@ -106,6 +111,67 @@ test("invalid ledger is INCONSISTENT", () => {
   const verdict = classifyConflictEvidence(evidence({ ledgerValid: false }), { now: NOW });
   assert.equal(verdict.classification, "INCONSISTENT");
   assert.deepEqual(verdict.reasonCodes, ["E_LEDGER_INVALID"]);
+});
+
+test("unknown or corrupt lock evidence is INCONSISTENT even when state is fresh", () => {
+  for (const lockStatus of ["UNKNOWN", "CORRUPT"]) {
+    const verdict = classifyConflictEvidence(evidence({ lockStatus }), { now: NOW });
+    assert.equal(verdict.classification, "INCONSISTENT");
+    assert.ok(verdict.reasonCodes.includes("E_TASK_LOCK_STATE_UNKNOWN"));
+  }
+});
+
+test("unknown freshness evidence is INCONSISTENT", () => {
+  const verdict = classifyConflictEvidence(evidence({
+    freshnessStatus: "UNKNOWN",
+    freshnessReasons: ["E_STATE_UNREADABLE"],
+  }), { now: NOW });
+  assert.equal(verdict.classification, "INCONSISTENT");
+  assert.deepEqual(verdict.reasonCodes, ["E_STATE_UNREADABLE"]);
+});
+
+test("failed checks count as recorded evidence and never produce NO_RECORDED_EVIDENCE", () => {
+  const verdict = classifyConflictEvidence(evidence({
+    phase: "VERIFYING",
+    lastUpdated: OLD,
+    freshnessStatus: "REVALIDATION_REQUIRED",
+    freshnessReasons: ["CONTRACT_NOT_VERIFIED"],
+    recordedChecks: 0,
+    totalChecks: 1,
+  }), { now: NOW });
+  assert.equal(verdict.classification, "ACTIVE");
+  assert.equal(verdict.reasonCodes.includes("NO_RECORDED_EVIDENCE"), false);
+});
+
+test("recent meaningful ledger activity prevents abandonment of an old checkpoint", () => {
+  const verdict = classifyConflictEvidence(evidence({
+    phase: "VERIFYING",
+    lastUpdated: OLD,
+    lastMeaningfulActivityAt: RECENT,
+    freshnessStatus: "REVALIDATION_REQUIRED",
+    freshnessReasons: ["CONTRACT_NOT_VERIFIED"],
+    recordedChecks: 0,
+    totalChecks: 0,
+  }), { now: NOW });
+  assert.equal(verdict.classification, "ACTIVE");
+  assert.equal(verdict.reasonCodes.includes("NO_RECORDED_EVIDENCE"), false);
+});
+
+test("a valid recovery tombstone is the canonical RECOVERED state", () => {
+  const verdict = classifyConflictEvidence(evidence({ recoveryStatus: "RECOVERED" }), { now: NOW });
+  assert.equal(verdict.classification, "RECOVERED");
+  assert.equal(verdict.recoverable, false);
+});
+
+test("unknown or corrupt lock evidence overrides a recovery tombstone", () => {
+  for (const lockStatus of ["UNKNOWN", "CORRUPT"]) {
+    const verdict = classifyConflictEvidence(evidence({
+      lockStatus,
+      recoveryStatus: "RECOVERED",
+    }), { now: NOW });
+    assert.equal(verdict.classification, "INCONSISTENT");
+    assert.deepEqual(verdict.reasonCodes, ["E_TASK_LOCK_STATE_UNKNOWN"]);
+  }
 });
 
 test("unhealthy descriptor is INCONSISTENT", () => {

@@ -2,6 +2,7 @@ import { readAndClassifyWorkState } from "../core/work-state.js";
 import { inspectSchemaHealth } from "../core/schema-validation.js";
 import { reconcileContinuity } from "../core/continuity-reconciliation.js";
 import { withResolvedTask } from "../core/task-command.js";
+import { findTaskById } from "../core/task-discovery.js";
 
 export async function runStatus({ target, packageRoot, contractFile = null, taskId, task } = {}) {
   return withResolvedTask(target, { taskId: taskId ?? task, packageRoot }, async (ctx) => {
@@ -11,10 +12,16 @@ export async function runStatus({ target, packageRoot, contractFile = null, task
       inspectSchemaHealth(target),
       reconcileContinuity({ target, packageRoot, taskId: effectiveTaskId }),
     ]);
+    const taskInfo = effectiveTaskId ? await findTaskById(target, effectiveTaskId, packageRoot) : null;
     return {
       ...state,
       taskId: effectiveTaskId,
       taskKey: ctx?.taskKey ?? null,
+      recovery: taskInfo?.recovery ?? null,
+      claimState: taskInfo?.claimState ?? null,
+      historicalWriteClaims: taskInfo?.historicalWriteClaims ?? [],
+      effectiveWriteClaims: taskInfo?.effectiveWriteClaims ?? [],
+      mutationAllowed: taskInfo?.mutationAllowed ?? true,
       protocol,
       continuity,
       evidence: [...(state.evidence ?? []), ...(protocol.evidence ?? [])],
@@ -31,6 +38,11 @@ export function formatStatusResult(result) {
     `Pending: ${result.pending.join(", ") || "none"}`,
   ];
   if (result.reasons.length > 0) lines.push(`Reasons: ${result.reasons.join(", ")}`);
+  if (result.recovery) {
+    lines.push(`Recovery: ${result.recovery.status} (${result.recovery.recoveryId})`);
+    lines.push(`Claim state: ${result.claimState}`);
+    lines.push(`Mutation allowed: ${result.mutationAllowed ? "yes" : "no"}`);
+  }
   if (result.warnings?.length > 0) lines.push(`Warnings: ${result.warnings.join(", ")}`);
   if (result.contractComparison) lines.push(`Contract: ${result.contractComparison}`);
   if (result.artifactComparison) lines.push(`Artifacts: ${result.artifactComparison}`);

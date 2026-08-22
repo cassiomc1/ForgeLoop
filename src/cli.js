@@ -49,6 +49,7 @@ import { formatTaskMigrateResult, runTaskMigrate } from "./commands/task-migrate
 import { formatMigrateProtocolResult, runMigrateProtocol } from "./commands/migrate-protocol.js";
 import { formatTaskUnlockResult, runTaskUnlock } from "./commands/task-unlock.js";
 import { formatTaskRecoverResult, runTaskRecover } from "./commands/task-recover.js";
+import { formatTaskResumeResult, runTaskResume } from "./commands/task-resume.js";
 import { formatTaskLockStatusResult, runTaskLockStatus } from "./commands/task-lock-status.js";
 import { formatProtocolInfoResult, runProtocolInfo } from "./commands/protocol-info.js";
 import { continuityOptionDefaults, validateContinuityOptions } from "./core/continuity-cli-options.js";
@@ -716,8 +717,22 @@ export const COMMAND_HANDLERS = Object.freeze({
     return 0;
   },
   "task-recover": async ({ target, packageRoot, options }) => {
-    const result = await runTaskRecover({ target, packageRoot, taskId: options.task, operatorAuthorized: options.operatorAuthorized });
+    if (options.operatorAuthorized && !options.acknowledgeRecovery) {
+      console.error("DEPRECATION: --operator-authorized is caller acknowledgement, not host attestation; use --acknowledge-recovery.");
+    }
+    const result = await runTaskRecover({
+      target,
+      packageRoot,
+      taskId: options.task,
+      acknowledgeRecovery: options.acknowledgeRecovery,
+      operatorAuthorized: options.operatorAuthorized,
+    });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatTaskRecoverResult(result));
+    return 0;
+  },
+  "task-resume": async ({ target, packageRoot, options }) => {
+    const result = await runTaskResume({ target, packageRoot, taskId: options.task, claims: options.claims });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatTaskResumeResult(result));
     return 0;
   },
   "reconcile-closure": async ({ target, packageRoot, options }) => {

@@ -20,6 +20,7 @@ import {
   recordCheckCommandSpec,
   recordDiagnosisCommandSpec,
   recordTerminalResultCommandSpec,
+  recoveryGuidanceForClassification,
   result,
   uniqueSorted,
 } from "./next-action-model.js";
@@ -37,6 +38,7 @@ import { currentCycleDiagnosis } from "./diagnosis-model.js";
 import { evaluateProgress, PROGRESS_STATUS } from "./progress.js";
 import { criterionForDecision } from "./settlement-model.js";
 import { readEvents } from "./events.js";
+import { inspectTaskConflictState } from "./task-conflict-inspection.js";
 
 export { NEXT_ACTIONS } from "./next-action-model.js";
 
@@ -145,6 +147,35 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
 
   const state = workState.value;
   const context = { taskId: state.taskId, currentPhase: state.phase };
+  if (explicitTaskId) {
+    let inspection;
+    try {
+      inspection = await inspectTaskConflictState(target, {
+        taskId: explicitTaskId,
+        packageRoot,
+      });
+    } catch (error) {
+      inspection = {
+        classification: "INCONSISTENT",
+        reasonCodes: [error.code ?? "E_TASK_RECOVERY_INCONSISTENT"],
+      };
+    }
+    if (!["ACTIVE", "COMPLETE"].includes(inspection.classification)) {
+      const guidance = recoveryGuidanceForClassification(inspection.classification, explicitTaskId);
+      return result({
+        ...context,
+        nextAction: guidance.nextAction,
+        commands: guidance.commands,
+        commandSpecs: guidance.commandSpecs,
+        reasons: inspection.reasonCodes.map((code) => artifactError(
+          code,
+          `Task conflict state is ${inspection.classification}; follow the structured recovery guidance.`,
+          [stateRel, eventsRel, taskArtifactPath(explicitTaskId, "recovery")],
+        )),
+        requiredArtifacts: [stateRel, eventsRel],
+      });
+    }
+  }
   if (state.phase === "RECEIVED") {
     return decision(
       context,

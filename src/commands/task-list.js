@@ -20,6 +20,11 @@ export async function runTaskList({ target, packageRoot } = {}) {
         healthy: true,
         phase: task.phase,
         writeClaims: task.writeClaims ?? [],
+        historicalWriteClaims: task.historicalWriteClaims ?? [],
+        effectiveWriteClaims: task.effectiveWriteClaims ?? [],
+        claimState: task.claimState,
+        recovery: task.recovery,
+        mutationAllowed: task.mutationAllowed,
         locked: task.locked,
         hasContinuity: task.hasContinuity,
         hasReceipt: task.hasReceipt,
@@ -40,8 +45,9 @@ export function formatTaskListResult(result) {
       lines.push(`- ${task.taskKey} [CORRUPT]: ${task.error?.message ?? "unhealthy task namespace"}`);
     } else {
       const lockStr = task.locked ? " [LOCKED]" : "";
+      const recoveryStr = task.claimState === "RELEASED_BY_RECOVERY" ? " [RECOVERED]" : "";
       const claimsStr = task.writeClaims.length > 0 ? ` (claims: ${task.writeClaims.join(", ")})` : "";
-      lines.push(`- ${task.taskId}: ${task.phase ?? "UNINITIALIZED"}${lockStr}${claimsStr}`);
+      lines.push(`- ${task.taskId}: ${task.phase ?? "UNINITIALIZED"}${lockStr}${recoveryStr}${claimsStr}`);
     }
   }
   return `${lines.join("\n")}\n`;

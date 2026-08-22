@@ -1,5 +1,30 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Durable task recovery state in `recovery.json`, explicit `task-resume` claim reacquisition, and recovery-aware `forgeloop next` command specifications.
+- Recovery schema, artifact/event consistency validation, effective-claim projections, and concurrency regression coverage.
+
+### Changed
+
+- `task-recover` accepts only `STALE` and `ABANDONED`, preserves lifecycle evidence, and records caller acknowledgement without presenting it as host attestation.
+- Recovered tasks reject ordinary mutations until `task-resume` reacquires conflict-free claims under the project claims lock.
+- Lock and freshness classification now distinguish absent, stale, unknown, and corrupt evidence and fail closed where ownership cannot be proven.
+
+### Security and reliability
+
+- Recovery claim release is transactionally bound to an append-only event and durable tombstone; event-tail eviction cannot reactivate claims.
+- Stale task locks are released only when the observed lock ID, heartbeat, and owner instance remain unchanged, and recovery preconditions are revalidated under deterministic lock ordering.
+
+### Compatibility
+
+- Protocol version remains `1`; `protocol-info` advertises the new `task-recovery` schema and `task-resume` command. Consumers that interpret recovered claims must use a package version containing this change.
+- The ledger continues to write `OPERATOR_RECOVERY_RECORDED` for PR #66 reader compatibility, while its authority is explicitly `CALLER_ACKNOWLEDGED`; readers also accept the neutral `TASK_RECOVERY_RECORDED` name.
+- `--operator-authorized` remains a deprecated alias for `--acknowledge-recovery` and does not create host authority. The standalone CLI does not self-issue `HOST_ATTESTED` recovery grants.
+- No package version bump or npm publication is part of this unreleased implementation.
+
 ## 1.3.0 - 2026-08-20
 
 ### Added

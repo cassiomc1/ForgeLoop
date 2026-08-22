@@ -1289,7 +1289,7 @@ corruption through three fundamental protocol mechanisms:
    `taskKey` derived as `SHA-256(taskId)` in 64 lowercase hexadecimal characters. All
    task-scoped artifacts (`task.json`, `contract.json`, `routing-result.json`,
    `preflight.json`, `work-state.json`, `events.ndjson`, `execution-receipt.json`,
-   `continuity.json`, gates, and execution records) are stored strictly under
+   `continuity.json`, `recovery.json`, gates, and execution records) are stored strictly under
    `.forgeloop/task-state/<taskKey>/`. Shared repository configuration and sources
    (`config.json`, `sources.json`) remain at `.forgeloop/`.
 
@@ -1304,13 +1304,43 @@ corruption through three fundamental protocol mechanisms:
      (`E_TASK_SCOPE_FROZEN`).
    - At verification and completion, Git modifications are validated to ensure no changes
      escaped the task's declared scope (`E_TASK_CHANGE_OUTSIDE_SCOPE`).
+   - `task.json` retains historical claims. Effective claims are empty only after
+     validator-backed `COMPLETE` or while valid `recovery.json` records
+     `RECOVERED`. Every conflict reader uses this canonical projection.
+   - Recovery is not completion. `task-recover` accepts only deterministic
+     `STALE` or `ABANDONED` classifications, preserves work state, receipts,
+     failures, policy, continuity, and repository fingerprints, and suspends
+     ordinary task mutation with `E_TASK_RECOVERED`.
+   - Only `forgeloop task-resume --task <id>` may remove recovery state. It
+     reacquires the released (or explicitly supplied) claims through the normal
+     overlap and clean-checkout checks under the project claims lock. A claim
+     held by another task remains unavailable.
 
 3. **Per-Task Exclusive Mutex Locking**:
    Mutating lifecycle commands (`advance`, `preflight`, `run-check`, `complete`, etc.)
-   acquire an exclusive filesystem lock at `.forgeloop/task-state/<taskKey>/.lock` using
+   acquire an exclusive filesystem lock at `.forgeloop/locks/<taskKey>.lock` using
    atomic creation flags (`wx`). Concurrent mutations on the same task reject with
    `E_TASK_LOCKED`. Read-only commands (`status`, `audit`, `inspect`, `continuity`) bypass
-   locking. Stale locks can be cleared with `forgeloop task-unlock --task <id> --force`.
+   locking. Lock inspection distinguishes `NONE`, `LIVE`, `STALE`, `UNKNOWN`,
+   and `CORRUPT`; unknown or corrupt ownership fails closed. Stale-only release
+   compares the observed lock ID, heartbeat, and owner instance before deletion.
+
+Recovery that changes claim ownership acquires the project claims lock before
+the task lock, safely settles an unchanged stale lease, then revalidates phase,
+work-state revision, ledger sequence, and the `STALE`/`ABANDONED` allowlist
+before committing `recovery.json` and its append-only event in one transaction.
+The standalone acknowledgement flag does not grant host authority:
+
+```text
+--acknowledge-recovery
+≠
+HOST_ATTESTED
+```
+
+`forgeloop next --task <id> --json` maps conflict evidence to structured
+`RECONCILE_CLOSURE`, `RECOVER_TASK`, `RESUME_RECOVERED_TASK`, or
+`RESOLVE_RECOVERY_INCONSISTENCY` guidance. A `RECOVERABLE` task must use its
+canonical reconciliation path and cannot release claims through `task-recover`.
 
 4. **Task Resolution & Legacy Migration**:
    Commands select their target task via `--task <id>`, the `FORGELOOP_TASK` environment
