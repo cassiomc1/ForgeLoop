@@ -8,7 +8,8 @@
     "node": ">=20"
   },
   "bin": {
-    "forgeloop-mcp": "./bin/forgeloop-mcp.js"
+    "forgeloop-mcp": "./bin/forgeloop-mcp.js",
+    "forgeloop-mcp-http": "./bin/forgeloop-mcp-http.js"
   },
   "main": "./src/server.js",
   "files": [
