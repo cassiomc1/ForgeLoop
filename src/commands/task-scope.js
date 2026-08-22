@@ -1,6 +1,7 @@
 import { resolveTaskContext } from "../core/task-context.js";
 import { readTaskDescriptor, writeTaskDescriptor } from "../core/task-descriptor.js";
-import { normalizeWriteClaims, assertNoScopeConflicts, assertScopeClean, assertScopeNotFrozen } from "../core/task-scope.js";
+import { normalizeWriteClaims, assertScopeClean, assertScopeNotFrozen } from "../core/task-scope.js";
+import { assertNoScopeConflictsWithInspection } from "./task-create.js";
 import { discoverTasks } from "../core/task-discovery.js";
 import { readWorkState } from "../core/work-state.js";
 import { withProjectClaimsLock, withTaskLock } from "../core/task-lock.js";
@@ -39,7 +40,7 @@ export async function runTaskScope({ target, packageRoot, taskId, claims } = {})
 
         const normalizedClaims = normalizeWriteClaims(claims);
         const allTasks = await discoverTasks(target, packageRoot);
-        assertNoScopeConflicts(normalizedClaims, allTasks, effectiveTaskId);
+        await assertNoScopeConflictsWithInspection(normalizedClaims, allTasks, effectiveTaskId, { target, packageRoot });
         if (normalizedClaims.length > 0) {
           await assertScopeClean(target, normalizedClaims);
         }

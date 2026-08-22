@@ -303,6 +303,41 @@ export FORGELOOP_TASK="<task-id>"
 
 ---
 
+### Symptom: Task Creation Blocked by a Write-Claim Conflict (`E_TASK_SCOPE_CONFLICT`)
+
+#### What it means
+
+Another non-`COMPLETE` task already holds a write claim that overlaps the claims you requested. ForgeLoop inspects the conflicting task automatically before failing and attaches a deterministic classification to the error.
+
+#### Inspect
+
+The conflict error carries `error.conflicts[].inspection` with:
+
+- `classification`: one of `ACTIVE`, `RECOVERABLE`, `STALE`, `ABANDONED`, `INCONSISTENT`, or `COMPLETE`;
+- `reasonCodes`: the deterministic evidence codes behind the classification;
+- `recoverable` / `recoveredBy`: whether an official recovery path exists and which commands implement it.
+
+Classification is derived from machine state only (lock/lease, checkpoint freshness, drift kinds, ledger validity, recorded evidence, idle time). A `REVIEWING` phase plus an old timestamp alone is never classified `STALE`; post-execution tasks whose only drift is `REPOSITORY_CHANGED` remain `RECOVERABLE`.
+
+#### Safe recovery
+
+Follow the classification:
+
+```bash
+# RECOVERABLE: reconcile through the official pipeline first
+forgeloop reconcile-closure --task <task-id> --id <verification-id> \
+  --requirement "<exact contract verification text>" -- <command>
+
+# STALE / ABANDONED / deadlocked beyond official paths: operator-authorized recovery
+forgeloop task-recover --task <task-id> --operator-authorized --json
+```
+
+`task-recover` refuses `ACTIVE` tasks (live lease or fresh checkpoint) and `INCONSISTENT` state, records an append-only `OPERATOR_RECOVERY_RECORDED` ledger event, refreshes the stale repository checkpoint, and releases the task's write claims without fabricating a completion claim. Claims release canonically when the task reaches validator-backed `COMPLETE`, or through explicit operator recovery as above.
+
+Never edit `.forgeloop/task-state/<taskKey>/` files directly to clear a conflict; that bypasses locks, transactions, expected revisions, and the append-only ledger.
+
+---
+
 ### Symptom: Verification Tool is Missing
 
 #### Error Code: `E_VERIFICATION_TOOL_UNAVAILABLE`
@@ -695,8 +730,11 @@ forgeloop next --task <id> --json
 | `E_TASK_MIGRATION_IDENTITY_MISMATCH` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_TASK_MIGRATION_INVALID` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_TASK_NOT_FOUND` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
+| `E_TASK_RECOVERY_AUTHORIZATION_REQUIRED` | task-recover requires explicit operator authorization via --operator-authorized. | Re-run with --operator-authorized only when evidence shows the task has no active owner and official recovery paths are unavailable. |
+| `E_TASK_RECOVERY_INCONSISTENT` | Operator recovery was refused because the task state or event ledger is inconsistent. | Repair the underlying artifact through its dedicated recovery surface; do not force-complete an unreadable task. |
+| `E_TASK_RECOVERY_UNSAFE` | Operator recovery was refused because the conflicting task is active, inconsistent, already complete, or holds a live lease. | Resolve the reported classification first; live leases must expire or be released by their owner before recovery. |
 | `E_TASK_REQUIRED` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
-| `E_TASK_SCOPE_CONFLICT` | Task write claims overlap with another non-complete task in the same checkout. | Adjust write claims to non-overlapping paths or run tasks in separate worktrees. |
+| `E_TASK_SCOPE_CONFLICT` | Task write claims overlap with another non-complete task in the same checkout. | Inspect the conflicting task classification reported in error.conflicts, then reconcile or recover it through its reported official recovery commands before retrying task creation. |
 | `E_TASK_SCOPE_DIRTY` | Claimed paths contain pre-existing uncommitted changes. | Commit or stash changes in claimed paths before defining or adopting the scope. |
 | `E_TASK_SCOPE_FROZEN` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_TASK_SCOPE_REQUIRED` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |

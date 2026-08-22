@@ -1,6 +1,6 @@
 import { readContract } from "./contract.js";
 import { canonicalFingerprint, readJsonArtifact, writeJsonArtifact } from "./artifacts.js";
-import { appendProtocolEvent, validateEventLedger } from "./events.js";
+import { appendProtocolEvent, validateEventLedger, readEvents, validateCompletionRecoveryAuthorization } from "./events.js";
 import { runCommandExecution } from "./execution.js";
 import { createReceipt } from "./receipt.js";
 import { currentRepositoryFingerprint } from "./repository.js";
@@ -11,7 +11,7 @@ export const RECONCILE_EVENT = "CHECKPOINT_RECONCILED";
 
 const RECONCILABLE_DRIFT = new Set(["REPOSITORY_CHANGED"]);
 
-const RECONCILABLE_PHASES = new Set(["EXECUTING", "VERIFYING"]);
+const RECONCILABLE_PHASES = new Set(["EXECUTING", "VERIFYING", "REVIEWING"]);
 
 function reconcileError(code, message, artifacts = []) {
   const error = new Error(message);
@@ -21,12 +21,13 @@ function reconcileError(code, message, artifacts = []) {
 }
 
 /**
- * Canonical recovery for an EXECUTING or VERIFYING task whose objective is
- * already satisfied in the current repository but whose work-state
- * checkpoint is stale because the repository fingerprint moved.
+ * Canonical recovery for an EXECUTING, VERIFYING, or REVIEWING task whose
+ * objective is already satisfied in the current repository but whose
+ * work-state checkpoint is stale because the repository fingerprint moved.
  *
  * The command refreshes the checkpoint repository fingerprint only after:
- *   - the task is EXECUTING or VERIFYING,
+ *   - the task is EXECUTING, VERIFYING, or (with authorized completion
+ *     recovery) REVIEWING,
  *   - classification requires revalidation and the only drift is
  *     REPOSITORY_CHANGED,
  *   - the append-only event ledger is valid,
@@ -74,9 +75,27 @@ export async function runReconcileClosure({
   if (!RECONCILABLE_PHASES.has(state.phase)) {
     throw reconcileError(
       "E_RECONCILE_PHASE_INVALID",
-      `reconcile-closure supports EXECUTING or VERIFYING tasks whose objective is already satisfied; found ${state.phase}`,
+      `reconcile-closure supports EXECUTING, VERIFYING, or REVIEWING tasks whose objective is already satisfied; found ${state.phase}`,
       [stateRel],
     );
+  }
+  if (state.phase === "REVIEWING") {
+    let receipt = null;
+    try {
+      receipt = (await readJsonArtifact(target, receiptRel, "execution-receipt", packageRoot))?.value ?? null;
+    } catch {
+      receipt = null;
+    }
+    const events = await readEvents(target, packageRoot, { taskId });
+    const recoveryAuth = validateCompletionRecoveryAuthorization({ state, receipt, events });
+    if (!recoveryAuth.authorized) {
+      const first = recoveryAuth.errors?.[0] ?? {};
+      throw reconcileError(
+        first.code ?? "E_COMPLETION_RECOVERY_UNAUTHORIZED",
+        `REVIEWING reconciliation requires authorized completion recovery: ${first.message ?? "unauthorized"}`,
+        [stateRel, receiptRel],
+      );
+    }
   }
 
   const freshness = await classifyLoadedWorkState({ target, state, contractFile: contractRel });
@@ -107,9 +126,12 @@ export async function runReconcileClosure({
   }
 
   const contract = await readContract(target, packageRoot, { taskId });
-  const verificationItem = (contract.value.verification ?? []).find(
-    (item) => item.type === "VERIFICATION" && item.id === checkId && item.text === requirement,
-  );
+  const verificationItem = (contract.value.verification ?? []).find((item) => {
+    if (typeof item === "string") {
+      return item === requirement;
+    }
+    return item.type === "VERIFICATION" && item.id === checkId && item.text === requirement;
+  });
   if (!verificationItem) {
     throw reconcileError(
       "E_RECONCILE_REQUIREMENT_UNKNOWN",

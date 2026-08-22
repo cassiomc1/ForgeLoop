@@ -40,7 +40,7 @@ ForgeLoop uses a definition-driven command-line parser:
 | Category | Commands |
 | --- | --- |
 | **Inspection & Diagnostics** | [`protocol-info`](#protocol-info), [`doctor`](#doctor), [`progress`](#progress), [`profile-interview`](#profile-interview), [`inspect`](#inspect), [`status`](#status), [`validate-state`](#validate-state), [`validate-protocol`](#validate-protocol) |
-| **Setup & Maintenance** | [`init`](#init), [`update`](#update), [`task-migrate`](#task-migrate), [`migrate-protocol`](#migrate-protocol), [`task-unlock`](#task-unlock) |
+| **Setup & Maintenance** | [`init`](#init), [`update`](#update), [`task-migrate`](#task-migrate), [`migrate-protocol`](#migrate-protocol), [`task-unlock`](#task-unlock), [`task-recover`](#task-recover) |
 | **Lifecycle & State** | [`activate`](#activate), [`route`](#route), [`preflight`](#preflight), [`advance`](#advance), [`next`](#next), [`record-diagnosis`](#record-diagnosis), [`record-decision-criterion`](#record-decision-criterion), [`complete`](#complete), [`clear-state`](#clear-state), [`reconcile-closure`](#reconcile-closure), [`task-create`](#task-create), [`task-list`](#task-list), [`task-show`](#task-show), [`task-lock-status`](#task-lock-status), [`task-scope`](#task-scope) |
 | **Cross-Harness Continuity** | [`continuity`](#continuity), [`record-continuity`](#record-continuity), [`reconcile-continuity`](#reconcile-continuity), [`clear-continuity`](#clear-continuity) |
 | **Verification & Completion** | [`prepare-completion`](#prepare-completion), [`run-check`](#run-check), [`record-check`](#record-check), [`record-terminal-result`](#record-terminal-result), [`audit`](#audit), [`report`](#report), [`validate-receipt`](#validate-receipt) |
@@ -1283,4 +1283,27 @@ Forces the release of a stale task lock.
 
   ```bash
   forgeloop task-unlock --task task-001 --force --json
+  ```
+
+### `task-recover`
+
+Recovers an ownerless deadlocked task under explicit operator authorization.
+
+- **Purpose**: Records an append-only operator recovery event, refreshes the stale repository checkpoint, and releases the task's write claims without fabricating a completion claim.
+- **Mutation**: Appends `OPERATOR_RECOVERY_RECORDED` to the task ledger; updates work-state repository fingerprint.
+- **Options**:
+
+<!-- BEGIN FORGELOOP GENERATED: cli:task-recover:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--operator-authorized`: explicit operator authorization to recover an ownerless deadlocked task (required)
+- `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:task-recover:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop task-recover --task task-001 --operator-authorized --json
   ```

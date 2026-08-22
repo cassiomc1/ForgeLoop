@@ -48,6 +48,7 @@ import { formatTaskScopeResult, runTaskScope } from "./commands/task-scope.js";
 import { formatTaskMigrateResult, runTaskMigrate } from "./commands/task-migrate.js";
 import { formatMigrateProtocolResult, runMigrateProtocol } from "./commands/migrate-protocol.js";
 import { formatTaskUnlockResult, runTaskUnlock } from "./commands/task-unlock.js";
+import { formatTaskRecoverResult, runTaskRecover } from "./commands/task-recover.js";
 import { formatTaskLockStatusResult, runTaskLockStatus } from "./commands/task-lock-status.js";
 import { formatProtocolInfoResult, runProtocolInfo } from "./commands/protocol-info.js";
 import { continuityOptionDefaults, validateContinuityOptions } from "./core/continuity-cli-options.js";
@@ -712,6 +713,11 @@ export const COMMAND_HANDLERS = Object.freeze({
   "task-unlock": async ({ target, packageRoot, options }) => {
     const result = await runTaskUnlock({ target, packageRoot, taskId: options.task, force: options.force, staleOnly: options.staleOnly });
     console.log(options.json ? JSON.stringify(result, null, 2) : formatTaskUnlockResult(result));
+    return 0;
+  },
+  "task-recover": async ({ target, packageRoot, options }) => {
+    const result = await runTaskRecover({ target, packageRoot, taskId: options.task, operatorAuthorized: options.operatorAuthorized });
+    console.log(options.json ? JSON.stringify(result, null, 2) : formatTaskRecoverResult(result));
     return 0;
   },
   "reconcile-closure": async ({ target, packageRoot, options }) => {

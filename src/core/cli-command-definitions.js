@@ -1,5 +1,5 @@
 /**
- * Canonical, declarative definition of all 42 ForgeLoop CLI commands.
+ * Canonical, declarative definition of all ForgeLoop CLI commands.
  * This is the machine source of truth for CLI option parsing, help text,
  * metadata, documentation generation, and conformance validation.
  *
@@ -770,6 +770,21 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     removes: [".forgeloop/task-state/<taskKey>/.lock"],
     mayExecuteExternalProcess: false,
     description: "Removes an orphaned task lock file to recover an interrupted task.",
+  }),
+  "task-recover": Object.freeze({
+    name: "task-recover",
+    category: "project-maintenance",
+    mutation: "MUTATING",
+    options: Object.freeze({
+      ...CLI_COMMON_OPTIONS,
+      ...CLI_TASK_OPTION,
+      "--operator-authorized": Object.freeze({ targetKey: "operatorAuthorized", parseType: "boolean", takesValue: false, description: "explicit operator authorization to recover an ownerless deadlocked task (required)" }),
+      "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
+    }),
+    writes: [".forgeloop/task-state/<taskKey>/work-state.json", ".forgeloop/task-state/<taskKey>/events.ndjson"],
+    removes: [],
+    mayExecuteExternalProcess: false,
+    description: "Operator-authorized recovery of a provably ownerless deadlocked task; records an append-only recovery event and releases its write claims.",
   }),
 });
 
