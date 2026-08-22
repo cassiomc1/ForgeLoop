@@ -9,11 +9,11 @@ import path from "node:path";
 export function runNpm(args, options = {}) {
   const nodeDir = path.dirname(process.execPath);
   const candidates = [
-    process.env.npm_node_execpath,
-    path.join(nodeDir, "npm-cli.js"),
-    path.join(nodeDir, "node_modules", "npm", "bin", "npm-cli.js"),
+    // npm_execpath is set by npm itself and points at its own CLI entry.
+    process.env.npm_execpath,
     path.join(nodeDir, "..", "lib", "node_modules", "npm", "bin", "npm-cli.js"),
-  ].filter(Boolean);
+    path.join(nodeDir, "node_modules", "npm", "bin", "npm-cli.js"),
+  ].filter((candidate) => typeof candidate === "string" && existsSync(candidate));
   for (const candidate of candidates) {
     if (existsSync(candidate)) {
       return execFileSync(process.execPath, [candidate, ...args], options);
