@@ -18,6 +18,11 @@
 
 ### Security and reliability
 
+- Legacy recovery repair CAS-settles only unchanged stale task locks; live, unknown, and corrupt locks are refused with the lock preserved.
+- `alreadyRepaired` requires a fully valid canonical recovery relationship, not just matching identifiers.
+- Helper claim APIs (`effectiveTaskClaims`/`taskClaimProjection`) no longer infer completion release from phase alone.
+- Claim-state classification is side-effect free over the collected evidence.
+- Legacy recovery migration v1 accepts only CALLER_ACKNOWLEDGED authority.
 - COMPLETE task claim release now requires canonical lifecycle/ledger proof; manually or inconsistently terminal state fails closed and retains historical claim ownership.
 - Task lock classification now rejects incomplete owner identity metadata as UNKNOWN rather than inferring live or stale ownership.
 - Implicit task selection distinguishes read-only inspection from mutation.

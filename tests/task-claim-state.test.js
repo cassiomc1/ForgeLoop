@@ -36,8 +36,8 @@ function assertFailClosed(result, expectedClaims = ["tests"]) {
 
 test("pure claim projection never trusts a raw recovery artifact", () => {
   assert.deepEqual(taskClaimProjection({
-    phase: "VERIFYING",
-    recovery: { status: "RECOVERED" },
+    phase: "COMPLETE",
+    validatedClaimState: null,
     writeClaims: ["tests"],
   }), {
     writeClaims: ["tests"],

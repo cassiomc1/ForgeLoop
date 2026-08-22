@@ -6,16 +6,13 @@ import { runTaskCreate } from "../src/commands/task-create.js";
 import { runTaskRepairLegacyRecovery } from "../src/commands/task-repair-legacy-recovery.js";
 import { runTaskResume } from "../src/commands/task-resume.js";
 import { appendProtocolEvent, eventHash, validateEventLedger } from "../src/core/events.js";
-import { resolveTaskClaimState } from "../src/core/task-claim-state.js";
+import { assertTaskMutationAllowed, resolveTaskClaimState } from "../src/core/task-claim-state.js";
 import { acquireTaskLock } from "../src/core/task-lock.js";
-import { taskArtifactPath } from "../src/core/task-paths.js";
-import { ensureWithin } from "../src/core/filesystem.js";
+import { taskArtifactPath, taskLockPath } from "../src/core/task-paths.js";
+import { ensureWithin, fileExists } from "../src/core/filesystem.js";
 import {
   legacyRecoveryMigrationId,
 } from "../src/core/task-recovery-migration.js";
-import {
-  assertTaskMutationAllowed,
-} from "../src/core/task-claim-state.js";
 import { packageRoot, setupAbandonedTask, withRecoveryTarget } from "./helpers/task-recovery-fixture.js";
 
 const LEGACY_DETAILS = Object.freeze({
@@ -237,6 +234,165 @@ test("tampered ledger refuses repair fail-closed", async () => {
     first.taskId = `${first.taskId}-x`;
     lines[0] = JSON.stringify(first);
     await writeFile(eventsPath, `${lines.join("\n")}\n`, "utf8");
+
+    await assert.rejects(
+      () => runTaskRepairLegacyRecovery({ target, packageRoot, taskId, acknowledgeRecovery: true }),
+      (error) => error.code === "E_LEGACY_RECOVERY_MIGRATION_INVALID",
+    );
+  });
+});
+
+async function writeTaskLockFile(target, taskId, lockData) {
+  const lockPath = ensureWithin(target, taskLockPath(taskId));
+  await writeFile(lockPath, `${JSON.stringify(lockData)}\n`, "utf8");
+  return lockPath;
+}
+
+function staleLockFixture(taskId) {
+  return {
+    taskId,
+    lockId: "stale-repair-lock",
+    operation: "crashed-cmd",
+    ownerInstanceId: "stale-owner",
+    acquiredAt: "2020-01-01T00:00:00.000Z",
+    heartbeatAt: "2020-01-01T00:00:00.000Z",
+    leaseMs: 1,
+  };
+}
+
+test("STALE task lock is CAS-settled by the official repair and repair succeeds", async () => {
+  await withRecoveryTarget(async (target) => {
+    const { taskId } = await setupLegacyBoundaryTask(target, {});
+    const lockPath = await writeTaskLockFile(target, taskId, staleLockFixture(taskId));
+
+    const result = await runTaskRepairLegacyRecovery({ target, packageRoot, taskId, acknowledgeRecovery: true });
+    assert.equal(result.repaired, 1);
+    assert.equal(await fileExists(lockPath), false);
+  });
+});
+
+test("STALE lock replaced by a live owner refuses repair and preserves the replacement", async () => {
+  await withRecoveryTarget(async (target) => {
+    const { taskId } = await setupLegacyBoundaryTask(target, {});
+    const lockPath = await writeTaskLockFile(target, taskId, staleLockFixture(taskId));
+    const replacement = {
+      ...staleLockFixture(taskId),
+      lockId: "replacement-owner-lock",
+      ownerInstanceId: "replacement-owner",
+      acquiredAt: new Date().toISOString(),
+      heartbeatAt: new Date().toISOString(),
+      leaseMs: 300000,
+    };
+    await writeTaskLockFile(target, taskId, replacement);
+
+    await assert.rejects(
+      () => runTaskRepairLegacyRecovery({ target, packageRoot, taskId, acknowledgeRecovery: true }),
+      (error) => error.code === "E_TASK_LOCKED",
+    );
+    const preserved = JSON.parse(await readFile(lockPath, "utf8"));
+    assert.equal(preserved.lockId, "replacement-owner-lock");
+  });
+});
+
+test("UNKNOWN task lock refuses repair and preserves the lock", async () => {
+  await withRecoveryTarget(async (target) => {
+    const { taskId } = await setupLegacyBoundaryTask(target, {});
+    const lockPath = await writeTaskLockFile(target, taskId, {
+      taskId,
+      acquiredAt: "2020-01-01T00:00:00.000Z",
+      heartbeatAt: "2020-01-01T00:00:00.000Z",
+      leaseMs: 1,
+    });
+
+    await assert.rejects(
+      () => runTaskRepairLegacyRecovery({ target, packageRoot, taskId, acknowledgeRecovery: true }),
+      (error) => error.code === "E_LEGACY_RECOVERY_MIGRATION_INVALID",
+    );
+    assert.ok(await fileExists(lockPath));
+  });
+});
+
+test("CORRUPT task lock refuses repair and preserves the lock", async () => {
+  await withRecoveryTarget(async (target) => {
+    const { taskId } = await setupLegacyBoundaryTask(target, {});
+    const lockPath = ensureWithin(target, taskLockPath(taskId));
+    await writeFile(lockPath, "{\"taskId\":", "utf8");
+
+    await assert.rejects(
+      () => runTaskRepairLegacyRecovery({ target, packageRoot, taskId, acknowledgeRecovery: true }),
+      (error) => error.code === "E_LEGACY_RECOVERY_MIGRATION_INVALID",
+    );
+    assert.ok(await fileExists(lockPath));
+  });
+});
+
+async function repairOnce(target, taskId) {
+  const first = await runTaskRepairLegacyRecovery({ target, packageRoot, taskId, acknowledgeRecovery: true });
+  assert.equal(first.repaired, 1);
+  return first;
+}
+
+async function assertTamperRefused(target, taskId, mutate) {
+  const recoveryPath = ensureWithin(target, taskArtifactPath(taskId, "recovery"));
+  const artifact = JSON.parse(await readFile(recoveryPath, "utf8"));
+  await writeFile(recoveryPath, `${JSON.stringify(mutate(artifact), null, 2)}\n`, "utf8");
+  await assert.rejects(
+    () => runTaskRepairLegacyRecovery({ target, packageRoot, taskId, acknowledgeRecovery: true }),
+    (error) => error.code === "E_TASK_RECOVERY_INCONSISTENT",
+  );
+}
+
+test("alreadyRepaired fails closed on any tampered recovery relationship field", async () => {
+  await withRecoveryTarget(async (target) => {
+    const { taskId } = await setupLegacyBoundaryTask(target, { writeClaims: ["tests"] });
+    await repairOnce(target, taskId);
+    await assertTamperRefused(target, taskId, (a) => ({ ...a, releasedClaims: ["docs"] }));
+  });
+
+  await withRecoveryTarget(async (target) => {
+    const { taskId } = await setupLegacyBoundaryTask(target, {});
+    await repairOnce(target, taskId);
+    await assertTamperRefused(target, taskId, (a) => ({ ...a, classificationAtRecovery: "STALE" }));
+  });
+
+  await withRecoveryTarget(async (target) => {
+    const { taskId } = await setupLegacyBoundaryTask(target, {});
+    await repairOnce(target, taskId);
+    await assertTamperRefused(target, taskId, (a) => ({ ...a, previousRevision: 99 }));
+  });
+
+  await withRecoveryTarget(async (target) => {
+    const { taskId } = await setupLegacyBoundaryTask(target, {});
+    await repairOnce(target, taskId);
+    await assertTamperRefused(target, taskId, (a) => ({
+      ...a,
+      repositoryFingerprint: { ...a.repositoryFingerprint, head: "0".repeat(40) },
+    }));
+  });
+
+  await withRecoveryTarget(async (target) => {
+    const { taskId } = await setupLegacyBoundaryTask(target, {});
+    await repairOnce(target, taskId);
+    await assertTamperRefused(target, taskId, (a) => ({
+      ...a,
+      authority: { kind: "HOST_ATTESTED", grantRef: "grant://forged" },
+    }));
+  });
+});
+
+test("migration event authority HOST_ATTESTED is invalid for v1", async () => {
+  await withRecoveryTarget(async (target) => {
+    const { taskId } = await setupLegacyBoundaryTask(target, {});
+    await repairOnce(target, taskId);
+    const ledger = await validateEventLedger(target, packageRoot, { taskId });
+    const migration = ledger.events.find((event) => event.event === "LEGACY_RECOVERY_MIGRATION_RECORDED");
+    const forged = { ...migration, details: { ...migration.details, authorityKind: "HOST_ATTESTED" } };
+    delete forged.hash;
+    forged.hash = eventHash(forged);
+    const eventsPath = ensureWithin(target, taskArtifactPath(taskId, "events"));
+    const lines = (await readFile(eventsPath, "utf8")).trim().split("\n").map((line) => JSON.parse(line));
+    lines[lines.findIndex((line) => line.event === "LEGACY_RECOVERY_MIGRATION_RECORDED")] = forged;
+    await writeFile(eventsPath, `${lines.map((line) => JSON.stringify(line)).join("\n")}\n`, "utf8");
 
     await assert.rejects(
       () => runTaskRepairLegacyRecovery({ target, packageRoot, taskId, acknowledgeRecovery: true }),
