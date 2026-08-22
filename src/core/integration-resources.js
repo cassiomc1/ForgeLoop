@@ -77,7 +77,7 @@ export async function readForgeLoopIntegrationResource(uri, {
       return { uri, data: await runProtocolInfo({ packageVersion }) };
     }
     case "project/tasks": {
-      const { tasks } = await discoverTasks(projectPath, packageRoot);
+      const tasks = await discoverTasks(projectPath, packageRoot);
       return {
         uri,
         data: {
