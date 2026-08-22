@@ -240,6 +240,13 @@ only a compatibility alias and has identical caller-acknowledgement semantics.
 a trusted grant reference through a boundary the active actor cannot mint or
 replace. The standalone CLI does not expose such a self-attestation option.
 
+Claim ownership is a validated relationship, not an artifact preference.
+<a id="FL-CLAIM-001"></a> **FL-CLAIM-001 — Every harness MUST consume the canonical claim-state resolver**
+over the descriptor, work state, recovery artifact, and complete validated
+recovery history. The resolver retains historical claims and disables mutation
+when that relationship is `INCONSISTENT`; reading `recovery.json` alone is
+non-conforming.
+
 ### Authority provenance
 
 Authority provenance is external to actor-authored project state. An external
@@ -363,5 +370,11 @@ ForgeLoop integrates executable verification rules directly into the lifecycle:
 - **Autonomy Principle**: Non-interactive execution is preserved. Tools, commands, and validators operate unattended with standard input closed and without interactive prompt dependencies.
 - **Baseline Protection**: Re-recording baseline debt mid-task is rejected with `E_BASELINE_RECORD_DURING_ACTIVE_TASK`; only monotonic ratchet-down is allowed during active tasks (`baseline --update`). Explicit re-recording requires `--policy-reset-authorized`.
 - **Semantic Recovery**: `forgeloop next` maps policy findings directly to actionable recovery actions (`RESTORE_POLICY`, `REPAIR_CHECKER`, `REPAIR_POLICY`, `REVERIFY_AFTER_POLICY_CHANGE`, `RESTORE_BASELINE`, `CONTINUE_WITH_EXISTING_BASELINE`, `RESOLVE_INERT_CHECK`).
-- **Claim Recovery**: `forgeloop next` maps task ownership state to `RECONCILE_CLOSURE`, `RECOVER_TASK`, `RESUME_RECOVERED_TASK`, or `RESOLVE_RECOVERY_INCONSISTENCY`. `task-recover` is restricted to `STALE`/`ABANDONED`; it writes durable `recovery.json` plus an append-only event without changing lifecycle evidence. `task-resume` reuses canonical scope conflict checks and removes recovery state transactionally.
+- **Claim Recovery**: `forgeloop next` maps validated task ownership to `RECONCILE_CLOSURE`, `RECOVER_TASK`, `RESUME_RECOVERED_TASK`, or `RESOLVE_RECOVERY_INCONSISTENCY`. `task-recover` is restricted to `STALE`/`ABANDONED`; it writes durable `recovery.json` plus an append-only event without changing lifecycle evidence. `task-resume` validates the same ownership projection, safely settles an unchanged stale task lock, reuses canonical scope conflict checks, and removes recovery state transactionally.
 - **Task Scoping**: Task-specific policy snapshots and state live under `.forgeloop/task-state/<taskKey>/` to ensure clean multi-task isolation and cross-harness continuity.
+
+`protocol-info --json` advertises claim-recovery capability version 1 under
+`features.taskClaimRecovery`. A project containing active task recovery state
+requires ForgeLoop 1.4.0 or newer.
+<a id="FL-CLAIM-003"></a> **FL-CLAIM-003 — A reader without `validatedClaimProjection=true` MUST fail closed**
+and must not mutate claims.

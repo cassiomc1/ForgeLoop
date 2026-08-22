@@ -5,6 +5,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
+import { pathToFileURL } from "node:url";
 
 const run = promisify(execFile);
 const npm = process.platform === "win32" ? "npm.cmd" : "npm";
@@ -24,8 +25,19 @@ try {
   const installedRoot = path.join(target, "node_modules", ...packageName.split("/"));
   const { stdout: info } = await run(process.execPath, [path.join(installedRoot, "src", "cli.js"), "protocol-info", "--json"], { cwd: target });
   const parsed = JSON.parse(info);
-  if (parsed.protocolVersion !== 1 || !Array.isArray(parsed.commands)) {
+  if (parsed.protocolVersion !== 1
+    || !Array.isArray(parsed.commands)
+    || parsed.features?.taskClaimRecovery?.validatedClaimProjection !== true
+    || !parsed.readsSchemaVersions?.["task-recovery"]?.includes(1)) {
     throw new Error("Installed package did not return a valid ForgeLoop protocol handshake");
+  }
+  const recoveryCore = await import(pathToFileURL(path.join(installedRoot, "src", "core", "recovery-history.js")));
+  const history = recoveryCore.classifyRecoveryHistory([
+    { seq: 1, event: "OPERATOR_RECOVERY_RECORDED", details: { recoveryId: "recovery-smoke" } },
+    { seq: 2, event: "TASK_RECOVERY_RESUMED", details: { recoveryId: "recovery-smoke" } },
+  ]);
+  if (!history.valid || history.completedRecoveries.length !== 1 || history.activeRecovery !== null) {
+    throw new Error("Installed package did not preserve validated recovery history behavior");
   }
   console.log(`package smoke passed: ${packed[0].filename}`);
 } finally {

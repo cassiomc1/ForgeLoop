@@ -110,8 +110,14 @@ export async function evaluateAudit({
   } catch {
     // Completion already reports missing or invalid preflight artifacts.
   }
-  const errors = sortErrors([...completion.errors, ...readyConsistencyErrors]);
   const taskInfo = taskId ? await findTaskById(target, taskId, packageRoot) : null;
+  const ownershipErrors = taskInfo?.ownershipValid === false
+    ? (taskInfo.ownershipErrors ?? taskInfo.errors ?? []).map((error) => ({
+      ...error,
+      artifacts: error.artifacts ?? [taskArtifactPath(taskId, "recovery"), taskArtifactPath(taskId, "events")],
+    }))
+    : [];
+  const errors = sortErrors([...completion.errors, ...readyConsistencyErrors, ...ownershipErrors]);
   const changedPaths = await compareChangedPaths(target, packageRoot, { taskId, receiptPath });
   if (changedPaths.status === "MISMATCH") {
     errors.push({
@@ -174,6 +180,8 @@ export async function evaluateAudit({
       historical: taskInfo.historicalWriteClaims,
       effective: taskInfo.effectiveWriteClaims,
       mutationAllowed: taskInfo.mutationAllowed,
+      ownershipValid: taskInfo.ownershipValid,
+      ownershipErrors: taskInfo.ownershipErrors ?? taskInfo.errors ?? [],
     } : null,
     changedPaths,
     publicationStatus: completion.publicationStatus,

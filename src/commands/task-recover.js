@@ -20,10 +20,9 @@ import {
 import { readTaskDescriptor } from "../core/task-descriptor.js";
 import {
   createTaskRecovery,
-  isTaskRecovered,
-  readTaskRecovery,
   writeTaskRecovery,
 } from "../core/task-recovery.js";
+import { resolveTaskClaimState } from "../core/task-claim-state.js";
 
 export const TASK_RECOVERY_ALLOWED_CLASSIFICATIONS = Object.freeze(new Set([
   "STALE",
@@ -40,6 +39,23 @@ function alreadyRecoveredError(taskId, recovery) {
   const error = recoveryError(E_TASK_ALREADY_RECOVERED, `Task ${taskId} is already RECOVERED`);
   error.recovery = recovery;
   return error;
+}
+
+async function assertConsistentRecoverableOwnership(target, taskId, packageRoot) {
+  const projection = await resolveTaskClaimState(target, { taskId, packageRoot });
+  if (!projection.valid) {
+    const error = recoveryError(
+      E_TASK_RECOVERY_INCONSISTENT,
+      `Task ${taskId} claim ownership is inconsistent; repair recovery state before task-recover`,
+    );
+    error.reasonCodes = projection.reasonCodes;
+    error.recoveryErrors = projection.ownershipErrors;
+    throw error;
+  }
+  if (projection.claimState === "RELEASED_BY_RECOVERY") {
+    throw alreadyRecoveredError(taskId, projection.recovery);
+  }
+  return projection;
 }
 
 function assertRecoveryAllowed(taskId, inspection) {
@@ -80,16 +96,10 @@ export async function runTaskRecover({
     );
   }
 
-  const existingRecovery = await readTaskRecovery(target, { taskId: effectiveTaskId, packageRoot });
-  if (isTaskRecovered(existingRecovery?.value)) {
-    throw alreadyRecoveredError(effectiveTaskId, existingRecovery.value);
-  }
+  await assertConsistentRecoverableOwnership(target, effectiveTaskId, packageRoot);
 
   return withProjectClaimsLock(target, "task-recover", async () => {
-    const lockedRecovery = await readTaskRecovery(target, { taskId: effectiveTaskId, packageRoot });
-    if (isTaskRecovered(lockedRecovery?.value)) {
-      throw alreadyRecoveredError(effectiveTaskId, lockedRecovery.value);
-    }
+    await assertConsistentRecoverableOwnership(target, effectiveTaskId, packageRoot);
 
     const inspectionBeforeLock = await inspectTaskConflictState(target, {
       taskId: effectiveTaskId,
@@ -115,10 +125,7 @@ export async function runTaskRecover({
       packageRoot,
       recordCommitEvent: true,
     }, async (transaction) => {
-      const currentRecovery = await readTaskRecovery(target, { taskId: effectiveTaskId, packageRoot });
-      if (isTaskRecovered(currentRecovery?.value)) {
-        throw alreadyRecoveredError(effectiveTaskId, currentRecovery.value);
-      }
+      await assertConsistentRecoverableOwnership(target, effectiveTaskId, packageRoot);
 
       const inspection = await inspectTaskConflictState(target, {
         taskId: effectiveTaskId,

@@ -3,10 +3,7 @@ import { taskArtifactPath } from "./task-paths.js";
 import { readLockInfo, classifyLockStaleness } from "./task-lock.js";
 import { validateEventLedger, validateStateLedgerCoherence } from "./events.js";
 import { currentRepositoryFingerprint } from "./repository.js";
-import {
-  readTaskRecovery,
-  validateTaskRecoveryConsistency,
-} from "./task-recovery.js";
+import { resolveTaskClaimState } from "./task-claim-state.js";
 
 export const TASK_CONFLICT_CLASSIFICATIONS = Object.freeze([
   "ACTIVE",
@@ -40,6 +37,7 @@ const MEANINGFUL_ACTIVITY_EVENTS = new Set([
   "REVIEW_STARTED",
   "CONTINUITY_RECORDED",
   "CHECKPOINT_RECONCILED",
+  "TASK_RECOVERY_RESUMED",
 ]);
 
 function idleMs(lastUpdated, now) {
@@ -226,17 +224,15 @@ export async function inspectTaskConflictState(target, {
   now = Date.now(),
   ignoredLockId = null,
 } = {}) {
-  const [lockInfo, stateResult, recoveryResult] = await Promise.all([
+  const [lockInfo, stateResult, claimProjection] = await Promise.all([
     readLockInfo(target, taskId),
     readWorkState(target, { packageRoot, taskId })
       .then((value) => ({ value, error: null }))
       .catch((error) => ({ value: null, error })),
-    readTaskRecovery(target, { packageRoot, taskId })
-      .then((value) => ({ value, error: null }))
-      .catch((error) => ({ value: null, error })),
+    resolveTaskClaimState(target, { packageRoot, taskId }),
   ]);
   const state = stateResult.value;
-  const recovery = recoveryResult.value?.value ?? null;
+  const recovery = claimProjection.recovery;
 
   const lockClassification = ignoredLockId && lockInfo?.lockId === ignoredLockId
     ? { status: "NONE", stale: false }
@@ -270,15 +266,12 @@ export async function inspectTaskConflictState(target, {
 
   const repository = await currentRepositoryFingerprint(target);
   const meaningfulActivity = lastMeaningfulActivity(state, ledgerEvents);
-  const recoveryConsistencyErrors = validateTaskRecoveryConsistency({
-    taskId,
-    recovery,
-    events: ledgerEvents,
-  });
+  const recoveryConsistencyErrors = claimProjection.ownershipErrors ?? claimProjection.errors ?? [];
   const healthReasonCodes = [
     ...(stateResult.error ? ["E_STATE_UNREADABLE"] : []),
-    ...(recoveryResult.error ? ["E_TASK_RECOVERY_INCONSISTENT"] : []),
-    ...(recoveryConsistencyErrors.length > 0 ? ["E_TASK_RECOVERY_INCONSISTENT"] : []),
+    ...(claimProjection.ownershipValid === false
+      ? claimProjection.reasonCodes
+      : []),
   ];
 
   const evidence = {
@@ -304,8 +297,16 @@ export async function inspectTaskConflictState(target, {
     blockedCheckCount: checkCount(state, "blocked"),
     totalChecks: state?.checks?.length ?? 0,
     verificationEvidenceCount: state?.verificationEvidence?.length ?? 0,
-    recoveryStatus: recovery?.status ?? null,
+    recoveryStatus: claimProjection.claimState === "RELEASED_BY_RECOVERY"
+      ? "RECOVERED"
+      : recovery?.status ?? null,
     recoveryConsistencyErrors,
+    claimState: claimProjection.claimState,
+    historicalWriteClaims: claimProjection.historicalWriteClaims,
+    effectiveWriteClaims: claimProjection.effectiveWriteClaims,
+    mutationAllowed: claimProjection.mutationAllowed,
+    ownershipValid: claimProjection.ownershipValid,
+    ownershipErrors: recoveryConsistencyErrors,
     repositoryBranch: repository.branch,
     repositoryHead: repository.head,
   };

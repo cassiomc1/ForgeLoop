@@ -6,6 +6,24 @@
       "statement": "A receiving harness MUST reconcile continuity against the current work state and checkout before acting on it.",
       "tests": ["tests/continuity.test.js", "tests/documentation-conformance.test.js"],
       "validator": "src/core/continuity.js"
+    },
+    "FL-CLAIM-001": {
+      "source": "PROTOCOL_INTEGRATION.md",
+      "statement": "Every harness MUST consume the canonical validated claim-state resolver.",
+      "tests": ["tests/task-claim-state.test.js", "tests/task-recovery-tamper.test.js"],
+      "validator": "src/core/task-claim-state.js"
+    },
+    "FL-CLAIM-002": {
+      "source": "LOOP_ENGINEERING.md",
+      "statement": "Readers without task-recovery schema v1 support MUST refuse claim ownership mutation.",
+      "tests": ["tests/protocol-info.test.js", "tests/documentation-conformance.test.js"],
+      "validator": "scripts/validate_documentation_conformance.mjs"
+    },
+    "FL-CLAIM-003": {
+      "source": "PROTOCOL_INTEGRATION.md",
+      "statement": "A reader without validated claim projection MUST fail closed.",
+      "tests": ["tests/protocol-info.test.js", "tests/package.test.js"],
+      "validator": "src/core/protocol-info.js"
     }
   }
 }

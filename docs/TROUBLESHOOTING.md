@@ -321,7 +321,9 @@ The conflict error carries machine-readable fields directly on each
 - `commandSpecs`: direct-process command metadata and required inputs;
 - `inspection`: the complete classification evidence.
 
-Classification is derived from machine state only: recovery state, lock/lease,
+Classification is derived from machine state only: the validated relationship
+between descriptor, work state, recovery artifact, and complete recovery
+history; lock/lease,
 checkpoint freshness, drift kinds, ledger validity, all recorded check statuses,
 verification evidence, meaningful ledger activity, and idle time. Lock state
 distinguishes `NONE`, `LIVE`, `STALE`, `UNKNOWN`, and `CORRUPT`; unknown,
@@ -362,7 +364,10 @@ event name `OPERATOR_RECOVERY_RECORDED`, but records
 `TASK_RECOVERY_RECORDED`. Recovery does not refresh `work-state.json`, change
 phase, erase evidence, alter policy/continuity, or fabricate completion.
 Historical descriptor claims remain visible, while canonical effective claims
-are empty and ordinary mutations fail with `E_TASK_RECOVERED`.
+are empty only when that relationship validates; ordinary mutations then fail
+with `E_TASK_RECOVERED`. Fake, missing, corrupt, deleted, or mismatched recovery
+evidence is `INCONSISTENT`, keeps historical claims effective, disables
+mutation, and routes `next` to `RESOLVE_RECOVERY_INCONSISTENCY`.
 
 `--acknowledge-recovery` is a caller declaration, not host-attested authority.
 The deprecated `--operator-authorized` alias has the same limited meaning.
@@ -370,7 +375,20 @@ Only `task-resume` can transactionally remove recovery state and reacquire
 claims. If another task owns an overlapping path, resume returns
 `E_TASK_SCOPE_CONFLICT` and leaves the recovered task suspended.
 
-Never edit `.forgeloop/task-state/<taskKey>/` files directly to clear a conflict; that bypasses locks, transactions, expected revisions, and the append-only ledger.
+Never create, delete, or edit `recovery.json` manually. Never remove task
+recovery state to resume a task. Never interpret `recovery.json` without
+validating its ledger binding. Direct changes bypass locks, transactions,
+expected revisions, and the append-only ledger.
+
+If `.forgeloop/.claims.lock` is stale, ForgeLoop quarantines and removes it only
+when `lockId`, `heartbeatAt`, and `ownerInstanceId` still match. A live lock
+returns `E_TASK_LOCKED`; unknown, corrupt, or concurrently replaced ownership
+returns `E_PROJECT_CLAIMS_LOCK_INCONSISTENT`. Do not force-delete unknown lock
+ownership.
+
+A project containing active task recovery state requires ForgeLoop 1.4.0 or
+newer. An older reader that cannot advertise validated claim projection must
+fail closed instead of inferring ownership from the descriptor or tombstone.
 
 ---
 
@@ -725,6 +743,7 @@ forgeloop next --task <id> --json
 | `E_PROFILE_SOURCE_UNKNOWN` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_PROFILE_UNVERIFIED` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_PROGRESS_STALLED` | Persisted correction history shows no new diagnostic information. | Use an independent check, revisit assumptions, or record a materially different diagnosis. |
+| `E_PROJECT_CLAIMS_LOCK_INCONSISTENT` | The project-wide claim reservation lock has unknown, corrupt, or concurrently changed ownership metadata. | Inspect .forgeloop/.claims.lock and retry only after its lease and owner identity can be validated; never force-delete unknown ownership. |
 | `E_PROTOCOL_MIGRATION_TARGET_UNSUPPORTED` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_PUBLICATION_CLAIM_UNVERIFIED` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_PUBLICATION_REQUIREMENT_PENDING` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
@@ -758,6 +777,8 @@ forgeloop next --task <id> --json
 | `E_TASK_AMBIGUOUS` | Multiple tasks exist in the project but no task selector was provided. | Select a task explicitly using --task <id> or FORGELOOP_TASK=<id>. |
 | `E_TASK_CHANGE_ATTRIBUTION_UNAVAILABLE` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_TASK_CHANGE_OUTSIDE_SCOPE` | Modified paths in repository exceed the declared task write claims. | Update write claims with forgeloop task-scope or revert out-of-scope modifications. |
+| `E_TASK_CLAIM_OWNERSHIP_INCONSISTENT` | ForgeLoop cannot prove whether a task still owns its historical write claims. | Repair and validate the task descriptor, recovery artifact, and complete event ledger before acquiring overlapping claims or mutating the task. |
+| `E_TASK_COMPLETE` | A validator-backed COMPLETE task is terminal and cannot be mutated. | Create or select a non-terminal task for further work; do not modify terminal task state. |
 | `E_TASK_CONTEXT_MISMATCH` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_TASK_DESCRIPTOR_INVALID` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_TASK_KEY_MISMATCH` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |

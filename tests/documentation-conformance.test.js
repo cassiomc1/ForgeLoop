@@ -50,6 +50,8 @@ async function copyDocsFixture(tempDir) {
   await cp("README.md", path.join(tempDir, "README.md"));
   await cp("AGENTS.md", path.join(tempDir, "AGENTS.md"));
   await cp("CLAUDE.md", path.join(tempDir, "CLAUDE.md"));
+  await cp("LOOP_ENGINEERING.md", path.join(tempDir, "LOOP_ENGINEERING.md"));
+  await cp("PROTOCOL_INTEGRATION.md", path.join(tempDir, "PROTOCOL_INTEGRATION.md"));
   await cp(".cursor", path.join(tempDir, ".cursor"), { recursive: true });
   await cp(".github", path.join(tempDir, ".github"), { recursive: true });
   await cp("LOOP_SYSTEM_DESIGN.md", path.join(tempDir, "LOOP_SYSTEM_DESIGN.md"));
@@ -60,6 +62,8 @@ async function copyDocsFixture(tempDir) {
   await normalizeFixtureToLF(path.join(tempDir, "README.md"));
   await normalizeFixtureToLF(path.join(tempDir, "AGENTS.md"));
   await normalizeFixtureToLF(path.join(tempDir, "CLAUDE.md"));
+  await normalizeFixtureToLF(path.join(tempDir, "LOOP_ENGINEERING.md"));
+  await normalizeFixtureToLF(path.join(tempDir, "PROTOCOL_INTEGRATION.md"));
   await normalizeFixtureToLF(path.join(tempDir, "LOOP_SYSTEM_DESIGN.md"));
   await normalizeFixtureToLF(path.join(tempDir, "ORCHESTRATOR_INTEGRATION.md"));
   return tempDir;

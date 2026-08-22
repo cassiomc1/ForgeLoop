@@ -7,9 +7,12 @@ import { runTaskCreate } from "../src/commands/task-create.js";
 import { discoverTasks } from "../src/core/task-discovery.js";
 import { readEvents } from "../src/core/events.js";
 import { ensureWithin, fileExists } from "../src/core/filesystem.js";
-import { taskArtifactPath } from "../src/core/task-paths.js";
+import { taskArtifactPath, taskLockPath } from "../src/core/task-paths.js";
 import { createWorkState, readWorkState, writeWorkState } from "../src/core/work-state.js";
 import { readTaskDescriptor } from "../src/core/task-descriptor.js";
+import { resolveTaskContext } from "../src/core/task-context.js";
+import { inspectTaskConflictState } from "../src/core/task-conflict-inspection.js";
+import { acquireTaskLock, readLockInfo } from "../src/core/task-lock.js";
 import {
   packageRoot,
   setupAbandonedTask,
@@ -143,5 +146,92 @@ test("task-resume succeeds after the conflicting owner reaches COMPLETE", async 
     const tasks = await discoverTasks(target, packageRoot);
     assert.deepEqual(tasks.find((task) => task.taskId === "completed-owner").writeClaims, []);
     assert.deepEqual(tasks.find((task) => task.taskId === taskId).writeClaims, ["tests"]);
+  });
+});
+
+test("task-resume activity prevents immediate abandoned reclassification", async () => {
+  const { runTaskResume } = await import("../src/commands/task-resume.js");
+  await withRecoveryTarget(async (target) => {
+    const { taskId } = await setupAbandonedTask(target, { taskId: "resume-is-activity" });
+    await runTaskRecover({ target, packageRoot, taskId, acknowledgeRecovery: true });
+    await runTaskResume({ target, packageRoot, taskId });
+
+    const inspection = await inspectTaskConflictState(target, { taskId, packageRoot });
+    assert.notEqual(inspection.classification, "ABANDONED");
+    assert.equal(inspection.evidence.lastMeaningfulEventType, "TASK_RECOVERY_RESUMED");
+  });
+});
+
+test("implicit task resolution ignores recovered tasks when one mutation-active task exists", async () => {
+  await withRecoveryTarget(async (target) => {
+    const { taskId } = await setupAbandonedTask(target, {
+      taskId: "implicit-recovered",
+      writeClaims: ["tests/recovered"],
+    });
+    await runTaskRecover({ target, packageRoot, taskId, acknowledgeRecovery: true });
+    await runTaskCreate({
+      target,
+      packageRoot,
+      taskId: "implicit-active",
+      claims: ["tests/active"],
+    });
+
+    const context = await resolveTaskContext(target, { packageRoot });
+    assert.equal(context.taskId, "implicit-active");
+  });
+});
+
+test("task-resume CAS-settles an unchanged stale task lock", async () => {
+  const { runTaskResume } = await import("../src/commands/task-resume.js");
+  await withRecoveryTarget(async (target) => {
+    const { taskId } = await setupAbandonedTask(target, { taskId: "resume-stale-lock" });
+    await runTaskRecover({ target, packageRoot, taskId, acknowledgeRecovery: true });
+    const handle = await acquireTaskLock(target, taskId, "crashed-owner");
+    const stale = {
+      ...handle.lockData,
+      acquiredAt: "2020-01-01T00:00:00.000Z",
+      heartbeatAt: "2020-01-01T00:00:00.000Z",
+      leaseMs: 1,
+    };
+    const lockPath = ensureWithin(target, taskLockPath(taskId));
+    await writeFile(lockPath, `${JSON.stringify(stale)}\n`, "utf8");
+
+    const result = await runTaskResume({ target, packageRoot, taskId });
+    assert.equal(result.resumed, true);
+    assert.equal(await readLockInfo(target, taskId), null);
+  });
+});
+
+test("task-resume preserves and rejects a live replacement task lock", async () => {
+  const { runTaskResume } = await import("../src/commands/task-resume.js");
+  await withRecoveryTarget(async (target) => {
+    const { taskId } = await setupAbandonedTask(target, { taskId: "resume-replacement-lock" });
+    await runTaskRecover({ target, packageRoot, taskId, acknowledgeRecovery: true });
+    const replacement = await acquireTaskLock(target, taskId, "replacement-owner");
+
+    await assert.rejects(
+      () => runTaskResume({ target, packageRoot, taskId }),
+      (error) => error.code === "E_TASK_LOCKED",
+    );
+    assert.equal((await readLockInfo(target, taskId)).lockId, replacement.lockData.lockId);
+    await replacement.release();
+  });
+});
+
+test("task-resume fails closed for corrupt and unknown task-lock ownership", async () => {
+  const { runTaskResume } = await import("../src/commands/task-resume.js");
+  await withRecoveryTarget(async (target) => {
+    const { taskId } = await setupAbandonedTask(target, { taskId: "resume-invalid-lock" });
+    await runTaskRecover({ target, packageRoot, taskId, acknowledgeRecovery: true });
+    const lockPath = ensureWithin(target, taskLockPath(taskId));
+
+    for (const invalidLock of ["{broken", `${JSON.stringify({ taskId, heartbeatAt: "not-a-date" })}\n`]) {
+      await writeFile(lockPath, invalidLock, "utf8");
+      await assert.rejects(
+        () => runTaskResume({ target, packageRoot, taskId }),
+        (error) => error.code === "E_TASK_RECOVERY_INCONSISTENT",
+      );
+      assert.equal(await readFile(lockPath, "utf8"), invalidLock);
+    }
   });
 });

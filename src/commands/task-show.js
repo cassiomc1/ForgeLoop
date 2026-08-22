@@ -6,7 +6,7 @@ import { readWorkState } from "../core/work-state.js";
 import { readContract } from "../core/contract.js";
 import { fileExists, ensureWithin } from "../core/filesystem.js";
 import { E_TASK_NOT_FOUND } from "../core/error-codes.js";
-import { readTaskRecovery, taskClaimProjection } from "../core/task-recovery.js";
+import { resolveTaskClaimState } from "../core/task-claim-state.js";
 
 function taskError(code, message, artifacts = []) {
   const error = new Error(message);
@@ -31,13 +31,13 @@ export async function runTaskShow({ target, packageRoot, taskId } = {}) {
   }
 
   const state = await readWorkState(target, { packageRoot, taskId: effectiveTaskId });
-  const recoveryArtifact = await readTaskRecovery(target, { packageRoot, taskId: effectiveTaskId });
-  const recovery = recoveryArtifact?.value ?? null;
-  const claimProjection = taskClaimProjection({
-    phase: state?.phase ?? null,
-    recovery,
-    writeClaims: descriptor.writeClaims ?? [],
+  const claimProjection = await resolveTaskClaimState(target, {
+    taskId: effectiveTaskId,
+    packageRoot,
+    descriptor,
+    state,
   });
+  const recovery = claimProjection.recovery;
   let contract = null;
   try {
     const contractArtifact = await readContract(target, packageRoot, { taskId: effectiveTaskId });

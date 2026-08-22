@@ -80,6 +80,21 @@ export async function inspectTarget({ target, packageRoot, contractFile = null, 
   const continuityIssue = continuityFinding(continuity);
   if (continuityIssue) findings.push(continuityIssue);
 
+  if (taskInfo?.ownershipValid === false) {
+    findings.push({
+      code: "task-claim-ownership-inconsistent",
+      severity: "error",
+      path: taskArtifactPath(taskId, "recovery"),
+      message: "Task claim ownership cannot be validated from recovery state and ledger history.",
+      remediation: `Run forgeloop validate-protocol --task ${taskId} --json and repair the reported protocol-owned artifact.`,
+      evidence: createEvidence({
+        kind: "BLOCKED",
+        source: taskArtifactPath(taskId, "events"),
+        result: "E_TASK_CLAIM_OWNERSHIP_INCONSISTENT",
+      }),
+    });
+  }
+
   if (state.status === "INVALID") {
     findings.push({
       code: "state-invalid",
@@ -140,6 +155,8 @@ export async function inspectTarget({ target, packageRoot, contractFile = null, 
       historical: taskInfo.historicalWriteClaims,
       effective: taskInfo.effectiveWriteClaims,
       mutationAllowed: taskInfo.mutationAllowed,
+      ownershipValid: taskInfo.ownershipValid,
+      ownershipErrors: taskInfo.ownershipErrors ?? taskInfo.errors ?? [],
     } : null,
     continuity,
     compatibility: {
@@ -151,6 +168,7 @@ export async function inspectTarget({ target, packageRoot, contractFile = null, 
     ok: doctor.ok
       && !manifestError
       && schemaHealth.status === "valid"
+      && taskInfo?.ownershipValid !== false
       && !["INVALID", "REVALIDATION_REQUIRED"].includes(state.status)
       && continuityIsHealthy(continuity),
   };
