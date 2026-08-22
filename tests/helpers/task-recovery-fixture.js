@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -11,6 +11,7 @@ import { persistRoute } from "../../src/core/route-artifact.js";
 import { getPackageRoot } from "../../src/core/templates.js";
 import { createTaskDescriptor, writeTaskDescriptor } from "../../src/core/task-descriptor.js";
 import { createWorkState, readWorkState, writeWorkState } from "../../src/core/work-state.js";
+import { removeTempTree } from "./rm-safe.js";
 
 export const packageRoot = getPackageRoot();
 export const STALE_HEAD = "d6b8991dd0da318543a17d0d1c537687567992d1";
@@ -21,7 +22,7 @@ export async function withRecoveryTarget(run) {
   try {
     await run(target);
   } finally {
-    await rm(target, { recursive: true, force: true });
+    await removeTempTree(target);
   }
 }
 
