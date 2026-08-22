@@ -3,6 +3,7 @@
 // both tarballs into a temp project, and drives the installed MCP server over
 // stdio with the official MCP client. Verifies publication boundaries.
 import { execFileSync } from "node:child_process";
+import { runNpm } from "./npm-command.mjs";
 import { copyFileSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,7 +12,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const mcpDir = path.join(repoRoot, "integrations", "mcp");
 
 function pack(cwd) {
-  const out = JSON.parse(execFileSync("npm", ["pack", "--json"], { cwd, encoding: "utf8" }));
+  const out = JSON.parse(runNpm(["pack", "--json"], { cwd, encoding: "utf8" }));
   return path.join(cwd, out[0].filename);
 }
 
@@ -29,7 +30,7 @@ try {
   copyFileSync(coreTarball, path.join(temp, path.basename(coreTarball)));
   copyFileSync(mcpTarball, path.join(temp, path.basename(mcpTarball)));
 
-  execFileSync("npm", [
+  runNpm([
     "install",
     "--no-audit",
     "--no-fund",
@@ -50,7 +51,7 @@ if (!init.ok && !String(init.error?.message).match(/exist|already|manifest/i)) {
 
 const transport = new StdioClientTransport({
   command: process.execPath,
-  args: [process.cwd() + "/node_modules/.bin/forgeloop-mcp", "--project", process.cwd(), "--mode", "safe"],
+  args: [process.cwd() + "/node_modules/@cassiomc1/forgeloop-mcp/bin/forgeloop-mcp.js", "--project", process.cwd(), "--mode", "safe"],
 });
 const client = new Client({ name: "smoke-client", version: "0.0.0" });
 await client.connect(transport);
