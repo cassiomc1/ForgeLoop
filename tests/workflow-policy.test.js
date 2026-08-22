@@ -5,7 +5,7 @@ import { test } from "node:test";
 const pinnedAction = /uses:\s+[^\s]+@[0-9a-f]{40}\s+#/g;
 
 async function readWorkflow(name) {
-  return readFile(`.github/workflows/${name}`, "utf8");
+  return (await readFile(`.github/workflows/${name}`, "utf8")).replace(/\r\n/g, "\n");
 }
 
 test("quality workflows install the lockfile and enforce the local toolchain", async () => {
