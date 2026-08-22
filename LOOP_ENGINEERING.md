@@ -1325,22 +1325,22 @@ corruption through three fundamental protocol mechanisms:
    and `CORRUPT`; unknown or corrupt ownership fails closed. Stale-only release
    compares the observed lock ID, heartbeat, and owner instance before deletion.
 
-Recovery that changes claim ownership acquires the project claims lock before
-the task lock, safely settles an unchanged stale lease, then revalidates phase,
-work-state revision, ledger sequence, and the `STALE`/`ABANDONED` allowlist
-before committing `recovery.json` and its append-only event in one transaction.
-The standalone acknowledgement flag does not grant host authority:
+   Recovery that changes claim ownership acquires the project claims lock before
+   the task lock, safely settles an unchanged stale lease, then revalidates phase,
+   work-state revision, ledger sequence, and the `STALE`/`ABANDONED` allowlist
+   before committing `recovery.json` and its append-only event in one transaction.
+   The standalone acknowledgement flag does not grant host authority:
 
-```text
---acknowledge-recovery
-≠
-HOST_ATTESTED
-```
+   ```text
+   --acknowledge-recovery
+   ≠
+   HOST_ATTESTED
+   ```
 
-`forgeloop next --task <id> --json` maps conflict evidence to structured
-`RECONCILE_CLOSURE`, `RECOVER_TASK`, `RESUME_RECOVERED_TASK`, or
-`RESOLVE_RECOVERY_INCONSISTENCY` guidance. A `RECOVERABLE` task must use its
-canonical reconciliation path and cannot release claims through `task-recover`.
+   `forgeloop next --task <id> --json` maps conflict evidence to structured
+   `RECONCILE_CLOSURE`, `RECOVER_TASK`, `RESUME_RECOVERED_TASK`, or
+   `RESOLVE_RECOVERY_INCONSISTENCY` guidance. A `RECOVERABLE` task must use its
+   canonical reconciliation path and cannot release claims through `task-recover`.
 
 4. **Task Resolution & Legacy Migration**:
    Commands select their target task via `--task <id>`, the `FORGELOOP_TASK` environment
