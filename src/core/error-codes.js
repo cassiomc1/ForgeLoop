@@ -32,6 +32,8 @@ export const E_TASK_LAYOUT_LEGACY = "E_TASK_LAYOUT_LEGACY";
 export const E_TASK_MIGRATION_INVALID = "E_TASK_MIGRATION_INVALID";
 export const E_TASK_RECOVERY_UNSAFE = "E_TASK_RECOVERY_UNSAFE";
 export const E_TASK_RECOVERY_INCONSISTENT = "E_TASK_RECOVERY_INCONSISTENT";
+export const E_LEGACY_RECOVERY_MIGRATION_INVALID = "E_LEGACY_RECOVERY_MIGRATION_INVALID";
+export const E_COMPLETION_OWNERSHIP_UNPROVEN = "E_COMPLETION_OWNERSHIP_UNPROVEN";
 export const E_TASK_CLAIM_OWNERSHIP_INCONSISTENT = "E_TASK_CLAIM_OWNERSHIP_INCONSISTENT";
 export const E_TASK_RECOVERY_AUTHORIZATION_REQUIRED = "E_TASK_RECOVERY_AUTHORIZATION_REQUIRED";
 export const E_TASK_RECOVERY_AUTHORITY_INVALID = "E_TASK_RECOVERY_AUTHORITY_INVALID";
@@ -203,6 +205,20 @@ export const PUBLIC_ERROR_CODES = Object.freeze({
     classification: "PUBLIC_STABLE",
     meaning: "Claim-release recovery was refused because the task state, recovery artifact, lock, or event ledger is inconsistent.",
     safeResolution: "Repair the underlying artifact through its dedicated recovery surface; do not force-complete an unreadable task.",
+  }),
+  E_LEGACY_RECOVERY_MIGRATION_INVALID: Object.freeze({
+    code: "E_LEGACY_RECOVERY_MIGRATION_INVALID",
+    category: "recovery",
+    classification: "PUBLIC_STABLE",
+    meaning: "The legacy recovery-event repair was refused because the ledger does not match the exact known legacy defect signature, has incompatible later activity, holds a live lock, or is otherwise ambiguous.",
+    safeResolution: "Inspect the structured plan/errors; ambiguous or tampered ledgers stay INCONSISTENT and are never migrated.",
+  }),
+  E_COMPLETION_OWNERSHIP_UNPROVEN: Object.freeze({
+    code: "E_COMPLETION_OWNERSHIP_UNPROVEN",
+    category: "recovery",
+    classification: "PUBLIC_STABLE",
+    meaning: "Work-state claims COMPLETE but the canonical lifecycle/ledger completion proof is missing or invalid, so historical claims stay reserved.",
+    safeResolution: "Restore the canonical completion event and a valid ledger, or re-run the official completion pipeline; phase=COMPLETE alone never releases claims.",
   }),
   E_TASK_CLAIM_OWNERSHIP_INCONSISTENT: Object.freeze({
     code: "E_TASK_CLAIM_OWNERSHIP_INCONSISTENT",
@@ -561,6 +577,8 @@ export const ALL_KNOWN_ERROR_CODES = Object.freeze(new Set([
   E_TASK_MIGRATION_INVALID,
   E_TASK_RECOVERY_UNSAFE,
   E_TASK_RECOVERY_INCONSISTENT,
+  E_LEGACY_RECOVERY_MIGRATION_INVALID,
+  E_COMPLETION_OWNERSHIP_UNPROVEN,
   E_TASK_CLAIM_OWNERSHIP_INCONSISTENT,
   E_TASK_RECOVERY_AUTHORIZATION_REQUIRED,
   E_TASK_RECOVERY_AUTHORITY_INVALID,

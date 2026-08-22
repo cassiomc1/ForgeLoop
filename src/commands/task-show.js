@@ -1,4 +1,4 @@
-import { resolveTaskContext } from "../core/task-context.js";
+import { resolveTaskContext, TASK_SELECTION_MODES } from "../core/task-context.js";
 import { readTaskDescriptor } from "../core/task-descriptor.js";
 import { classifyLockStaleness, readLockInfo } from "../core/task-lock.js";
 import { taskDirectory, taskArtifactPath } from "../core/task-paths.js";
@@ -16,7 +16,7 @@ function taskError(code, message, artifacts = []) {
 }
 
 export async function runTaskShow({ target, packageRoot, taskId } = {}) {
-  const context = await resolveTaskContext(target, { taskId, packageRoot, explicitRequired: true });
+  const context = await resolveTaskContext(target, { taskId, packageRoot, explicitRequired: true, selectionMode: TASK_SELECTION_MODES.READ });
   const effectiveTaskId = context.taskId;
 
   let descriptor = null;

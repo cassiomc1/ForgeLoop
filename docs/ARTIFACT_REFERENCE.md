@@ -631,7 +631,7 @@ host-owned `grantRef`; the standalone CLI does not self-issue that authority.
 - `recoveredAt` *(string, required)*
 - `recoveryId` *(string, required, pattern: `^recovery-[A-Za-z0-9-]+$`)*
 - `recoveryEventSeq` *(integer, required, minimum: 1)*
-- `classificationAtRecovery` *(string, required, enum: `STALE`, `ABANDONED`)*
+- `classificationAtRecovery` *(string, required, enum: `STALE`, `ABANDONED`, `LEGACY_BOUNDARY_MIGRATED`)*
 - `reasonCodes` *(array<string>, required)*
 - `releasedClaims` *(array<string>, required)*
 - `previousPhase` *(string, required, minLength: 1)*

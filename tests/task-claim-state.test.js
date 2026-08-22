@@ -213,7 +213,7 @@ test("resolveTaskClaimState conservatively reserves both descriptor and recovery
   });
 });
 
-test("resolveTaskClaimState makes COMPLETE tasks claim-free and mutation-disabled", async () => {
+test("forged COMPLETE work-state cannot release claims and fails closed", async () => {
   await withRecoveryTarget(async (target) => {
     const { taskId } = await setupAbandonedTask(target, { taskId: "claim-state-complete" });
     const descriptor = (await readTaskDescriptor(target, taskId, packageRoot)).value;
@@ -226,13 +226,15 @@ test("resolveTaskClaimState makes COMPLETE tasks claim-free and mutation-disable
       state: { ...state, phase: "COMPLETE" },
     });
 
-    assert.equal(result.claimState, "RELEASED_BY_COMPLETION");
+    assert.equal(result.claimState, "INCONSISTENT");
     assert.equal(result.mutationAllowed, false);
-    assert.deepEqual(result.effectiveWriteClaims, []);
+    assert.deepEqual(result.effectiveWriteClaims, ["tests"]);
+    assert.equal(result.ownershipValid, false);
+    assert.ok(result.reasonCodes.includes("E_COMPLETION_OWNERSHIP_UNPROVEN"));
   });
 });
 
-test("ordinary mutation rejects a COMPLETE task with a stable terminal error", async () => {
+test("ordinary mutation rejects a forged COMPLETE task as ownership-inconsistent", async () => {
   await withRecoveryTarget(async (target) => {
     const { taskId } = await setupAbandonedTask(target, { taskId: "complete-mutation-guard" });
     const state = await readWorkState(target, { packageRoot, taskId });
@@ -246,12 +248,13 @@ test("ordinary mutation rejects a COMPLETE task with a stable terminal error", a
 
     await assert.rejects(
       () => withTaskMutation(target, { taskId, packageRoot }, "post-complete", async () => null),
-      (error) => error.code === "E_TASK_COMPLETE",
+      (error) => error.code === "E_TASK_CLAIM_OWNERSHIP_INCONSISTENT"
+        && error.reasonCodes.includes("E_COMPLETION_OWNERSHIP_UNPROVEN"),
     );
   });
 });
 
-test("task-list, task-show, and status agree that COMPLETE is claim-free and mutation-disabled", async () => {
+test("task-list, task-show, and status agree that forged COMPLETE is inconsistent and mutation-disabled", async () => {
   await withRecoveryTarget(async (target) => {
     const { taskId } = await setupAbandonedTask(target, { taskId: "complete-ownership-surfaces" });
     const state = await readWorkState(target, { packageRoot, taskId });
@@ -268,9 +271,10 @@ test("task-list, task-show, and status agree that COMPLETE is claim-free and mut
     const shown = await runTaskShow({ target, packageRoot, taskId });
     const status = await runStatus({ target, packageRoot, taskId });
     for (const result of [listed, shown, status]) {
-      assert.equal(result.claimState, "RELEASED_BY_COMPLETION");
-      assert.deepEqual(result.effectiveWriteClaims, []);
+      assert.equal(result.claimState, "INCONSISTENT");
+      assert.deepEqual(result.effectiveWriteClaims, ["tests"]);
       assert.equal(result.mutationAllowed, false);
+      assert.equal(result.ownershipValid, false);
     }
   });
 });

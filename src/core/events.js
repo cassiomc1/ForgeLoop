@@ -15,6 +15,13 @@ import { getActiveTaskTransaction, withTaskTransaction } from "./transaction.js"
 
 import { assertDiagnosisDetails } from "./diagnosis-model.js";
 import { assertDecisionCriterionDetails } from "./settlement-model.js";
+import {
+  LEGACY_RECOVERY_MIGRATION_EVENT,
+  assertLegacyMigrationDetails,
+  isLegacyRecoveryDetailsShape,
+  isLegacyRecoveryEventShape,
+  legacyRecoveryMigrationId,
+} from "./task-recovery-migration.js";
 
 const EVENT_SCHEMA_VERSION = 1;
 export const LIFECYCLE_MILESTONES = Object.freeze([
@@ -98,8 +105,17 @@ export function validateKnownEventDetails(event) {
       assertReconcileClosureDetails(event.details);
       return;
     case "TASK_RECOVERY_RECORDED":
-    case "OPERATOR_RECOVERY_RECORDED":
       assertRecoveryRecordedDetails(event.details);
+      return;
+    case "OPERATOR_RECOVERY_RECORDED":
+      // The exact known legacy defect signature is tolerated here so the
+      // ledger can be parsed and classified. It only becomes valid through an
+      // official migration event (enforced by validateEventLedger).
+      if (!event.details?.recoveryId && isLegacyRecoveryDetailsShape(event.details)) return;
+      assertRecoveryRecordedDetails(event.details);
+      return;
+    case "LEGACY_RECOVERY_MIGRATION_RECORDED":
+      assertLegacyMigrationDetails(event.details);
       return;
     case "TASK_RECOVERY_RESUMED":
       assertRecoveryResumedDetails(event.details);
@@ -164,7 +180,7 @@ function assertReconcileClosureDetails(details) {
   }
 }
 
-function eventHash(event) {
+export function eventHash(event) {
   const { hash, ...body } = event;
   return canonicalFingerprint(body);
 }
@@ -285,6 +301,73 @@ export async function appendProtocolEvent(target, input, packageRoot, options = 
   return event;
 }
 
+/**
+ * Validates the append-only pairing between unmigrated legacy recovery events
+ * and their official migration events. Strict by default; the official repair
+ * command validates intermediate state with `allowUnmigratedLegacyRecoveryEvents`
+ * before appending the migration events.
+ */
+function validateLegacyRecoveryMigrations(events, errors, { allowUnmigratedLegacyRecoveryEvents = false } = {}) {
+  const migrationBySeq = new Map();
+  for (const event of events) {
+    if (event.event !== LEGACY_RECOVERY_MIGRATION_EVENT) continue;
+    try {
+      assertLegacyMigrationDetails(event.details);
+    } catch (err) {
+      errors.push({ code: err.code ?? "E_EVENT_INVALID", message: `event ${event.seq} (${event.event}): ${err.message}` });
+      continue;
+    }
+    if (migrationBySeq.has(event.details.legacyEventSeq)) {
+      errors.push({
+        code: "E_EVENT_INVALID",
+        message: `event ${event.seq} (${event.event}): duplicate migration for legacy recovery event seq ${event.details.legacyEventSeq}`,
+      });
+      continue;
+    }
+    migrationBySeq.set(event.details.legacyEventSeq, event);
+  }
+  for (const event of events) {
+    if (!isLegacyRecoveryEventShape(event)) continue;
+    const migration = migrationBySeq.get(event.seq);
+    if (!migration) {
+      if (!allowUnmigratedLegacyRecoveryEvents) {
+        errors.push({
+          code: "E_EVENT_INVALID",
+          message: `legacy recovery event ${event.seq} is not officially migrated (run forgeloop task-repair-legacy-recovery)`,
+        });
+      }
+      continue;
+    }
+    migrationBySeq.delete(event.seq);
+    const expectedRecoveryId = legacyRecoveryMigrationId({ taskId: event.taskId, seq: event.seq, hash: event.hash });
+    // Tail-binding: the migration event is appended at the ledger tail and may
+    // sit anywhere after its historical source. It binds by reference only.
+    if (migration.seq <= event.seq) {
+      errors.push({
+        code: "E_EVENT_INVALID",
+        message: `migration event ${migration.seq} must follow legacy recovery event ${event.seq}`,
+      });
+    }
+    if (migration.taskId !== event.taskId
+      || migration.details.legacyTaskId !== event.taskId
+      || migration.details.recoveryId !== expectedRecoveryId
+      || migration.details.legacyEventHash !== event.hash
+      || migration.details.legacyEventAt !== event.at
+      || migration.details.legacyEventType !== event.event) {
+      errors.push({
+        code: "E_LEDGER_HASH_INVALID",
+        message: `migration event ${migration.seq} does not bind legacy recovery event ${event.seq}`,
+      });
+    }
+  }
+  for (const [legacySeq, migration] of migrationBySeq) {
+    errors.push({
+      code: "E_EVENT_INVALID",
+      message: `migration event ${migration.seq} references unknown legacy recovery event seq ${legacySeq}`,
+    });
+  }
+}
+
 export async function validateEventLedger(target, packageRoot, options = {}) {
   const relPath = options?.eventsPath ?? options?.relativePath ?? (options?.taskId ? taskArtifactPath(options.taskId, "events") : ARTIFACT_PATHS.events);
   let events;
@@ -366,6 +449,9 @@ export async function validateEventLedger(target, packageRoot, options = {}) {
       errors.push({ code: "E_PHASE_CHRONOLOGY_INVALID", message: "completion rejected before verification started" });
     }
   }
+  validateLegacyRecoveryMigrations(events, errors, {
+    allowUnmigratedLegacyRecoveryEvents: options?.allowUnmigratedLegacyRecoveryEvents === true,
+  });
   return { valid: errors.length === 0, events, errors };
 }
 

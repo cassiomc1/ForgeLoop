@@ -68,8 +68,57 @@ test("process start token pairs the active PID with a stable start epoch", () =>
   assert.equal(value[1], "7500");
 });
 
+function validTaskLock(overrides = {}) {
+  return {
+    taskId: "task-fixture",
+    lockId: "lock-fixture",
+    operation: "fixture-op",
+    ownerInstanceId: "owner-fixture",
+    acquiredAt: "2020-01-01T00:00:00.000Z",
+    heartbeatAt: "2020-01-01T00:00:00.000Z",
+    leaseMs: 1,
+    ...overrides,
+  };
+}
+
 test("classifyLockStaleness distinguishes an expired lease", () => {
-  assert.equal(classifyLockStaleness({ acquiredAt: "2020-01-01T00:00:00.000Z", heartbeatAt: "2020-01-01T00:00:00.000Z", leaseMs: 1 }, Date.parse("2020-01-01T00:00:00.002Z")).status, "STALE");
+  assert.equal(classifyLockStaleness(validTaskLock(), Date.parse("2020-01-01T00:00:00.002Z")).status, "STALE");
+  assert.equal(
+    classifyLockStaleness(validTaskLock({
+      heartbeatAt: new Date().toISOString(),
+      acquiredAt: new Date().toISOString(),
+      leaseMs: 300000,
+    })).status,
+    "LIVE",
+  );
+});
+
+test("incomplete owner identity classifies UNKNOWN even with valid timestamps", () => {
+  const now = Date.parse("2020-01-01T00:00:00.002Z");
+  assert.equal(classifyLockStaleness(validTaskLock({ lockId: undefined }), now).status, "UNKNOWN");
+  assert.equal(classifyLockStaleness(validTaskLock({ ownerInstanceId: "" }), now).status, "UNKNOWN");
+  assert.equal(classifyLockStaleness(validTaskLock({ operation: undefined }), now).status, "UNKNOWN");
+  assert.equal(classifyLockStaleness(validTaskLock({ taskId: undefined }), now).status, "UNKNOWN");
+  assert.equal(classifyLockStaleness(validTaskLock({ leaseMs: 0 }), now).status, "UNKNOWN");
+  assert.equal(classifyLockStaleness(validTaskLock({ leaseMs: "soon" }), now).status, "UNKNOWN");
+  assert.equal(classifyLockStaleness(validTaskLock({ heartbeatAt: "not-a-date" }), now).status, "UNKNOWN");
+});
+
+test("CAS stale release never removes an UNKNOWN malformed expected lock", async () => {
+  await withTarget(async (target) => {
+    const taskId = "task-cas-unknown-lock";
+    const handle = await acquireTaskLock(target, taskId, "crashed-cmd");
+    const lockFile = path.join(target, taskLockPath(taskId));
+    const malformed = { ...handle.lockData };
+    delete malformed.lockId;
+    await writeFile(lockFile, `${JSON.stringify(malformed)}\n`, "utf8");
+
+    const released = await releaseStaleTaskLockIfUnchanged(target, taskId, malformed);
+    assert.equal(released.released, false);
+    assert.equal(released.reason, "EXPECTED_LOCK_NOT_STALE");
+    assert.equal(released.classification.status, "UNKNOWN");
+    assert.ok(await fileExists(lockFile));
+  });
 });
 
 test("classifyLockStaleness distinguishes absence, corruption, and incomplete metadata", () => {
@@ -125,6 +174,27 @@ test("forceUnlockTask removes active lock", async () => {
 
     const after = await readLockInfo(target, taskId);
     assert.equal(after, null);
+  });
+});
+
+test("CAS stale release refuses a lock bound to a different taskId", async () => {
+  await withTarget(async (target) => {
+    const taskId = "task-cas-wrong-id";
+    const handle = await acquireTaskLock(target, taskId, "crashed-cmd");
+    const lockFile = path.join(target, taskLockPath(taskId));
+    const stale = {
+      ...handle.lockData,
+      taskId: "a-different-task",
+      acquiredAt: "2020-01-01T00:00:00.000Z",
+      heartbeatAt: "2020-01-01T00:00:00.000Z",
+      leaseMs: 1,
+    };
+    await writeFile(lockFile, `${JSON.stringify(stale)}\n`, "utf8");
+
+    const released = await releaseStaleTaskLockIfUnchanged(target, taskId, stale);
+    assert.equal(released.released, false);
+    assert.equal(released.reason, "LOCK_CHANGED");
+    assert.ok(await fileExists(lockFile));
   });
 });
 

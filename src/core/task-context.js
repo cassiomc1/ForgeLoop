@@ -33,11 +33,29 @@ export function isOperationallyActiveTask(task) {
     && task?.mutationAllowed !== false;
 }
 
+export const TASK_SELECTION_MODES = Object.freeze({
+  READ: "READ",
+  MUTATION: "MUTATION",
+});
+
+/**
+ * READ selection = task discoverability: any single healthy task may be
+ * inspected implicitly. MUTATION selection = task operational authority:
+ * only operationally active tasks are eligible implicit mutation targets.
+ */
+export function candidateTasksForSelection(tasks, selectionMode = TASK_SELECTION_MODES.MUTATION) {
+  if (selectionMode === TASK_SELECTION_MODES.READ) {
+    return tasks.filter((task) => task.healthy !== false);
+  }
+  return tasks.filter(isOperationallyActiveTask);
+}
+
 export async function resolveTaskContext(target, {
   taskId = null,
   envTaskId = process.env.FORGELOOP_TASK ?? null,
   explicitRequired = false,
   packageRoot = getPackageRoot(),
+  selectionMode = TASK_SELECTION_MODES.MUTATION,
 } = {}) {
   const flagId = typeof taskId === "string" && taskId.trim() ? taskId.trim() : null;
   const envId = typeof envTaskId === "string" && envTaskId.trim() ? envTaskId.trim() : null;
@@ -88,10 +106,10 @@ export async function resolveTaskContext(target, {
     throw error;
   }
 
-  const operationalTasks = healthyTasks.filter(isOperationallyActiveTask);
+  const candidateTasks = candidateTasksForSelection(healthyTasks, selectionMode);
 
-  if (operationalTasks.length === 1) {
-    const single = operationalTasks[0];
+  if (candidateTasks.length === 1) {
+    const single = candidateTasks[0];
     return createTaskContext({
       target,
       taskId: single.taskId,
@@ -100,9 +118,9 @@ export async function resolveTaskContext(target, {
     });
   }
 
-  if (operationalTasks.length > 1) {
+  if (candidateTasks.length > 1) {
     // Otherwise ambiguous
-    const candidates = operationalTasks.map((t) => t.taskId);
+    const candidates = candidateTasks.map((t) => t.taskId);
     const error = new Error(
       `Multiple active tasks exist (${candidates.join(", ")}). Select a task with --task <id> or FORGELOOP_TASK=<id>.`,
     );

@@ -40,7 +40,7 @@ ForgeLoop uses a definition-driven command-line parser:
 | Category | Commands |
 | --- | --- |
 | **Inspection & Diagnostics** | [`protocol-info`](#protocol-info), [`doctor`](#doctor), [`progress`](#progress), [`profile-interview`](#profile-interview), [`inspect`](#inspect), [`status`](#status), [`validate-state`](#validate-state), [`validate-protocol`](#validate-protocol) |
-| **Setup & Maintenance** | [`init`](#init), [`update`](#update), [`task-migrate`](#task-migrate), [`migrate-protocol`](#migrate-protocol), [`task-unlock`](#task-unlock), [`task-recover`](#task-recover), [`task-resume`](#task-resume) |
+| **Setup & Maintenance** | [`init`](#init), [`update`](#update), [`task-migrate`](#task-migrate), [`migrate-protocol`](#migrate-protocol), [`task-unlock`](#task-unlock), [`task-recover`](#task-recover), [`task-repair-legacy-recovery`](#task-repair-legacy-recovery), [`task-resume`](#task-resume) |
 | **Lifecycle & State** | [`activate`](#activate), [`route`](#route), [`preflight`](#preflight), [`advance`](#advance), [`next`](#next), [`record-diagnosis`](#record-diagnosis), [`record-decision-criterion`](#record-decision-criterion), [`complete`](#complete), [`clear-state`](#clear-state), [`reconcile-closure`](#reconcile-closure), [`task-create`](#task-create), [`task-list`](#task-list), [`task-show`](#task-show), [`task-lock-status`](#task-lock-status), [`task-scope`](#task-scope) |
 | **Cross-Harness Continuity** | [`continuity`](#continuity), [`record-continuity`](#record-continuity), [`reconcile-continuity`](#reconcile-continuity), [`clear-continuity`](#clear-continuity) |
 | **Verification & Completion** | [`prepare-completion`](#prepare-completion), [`run-check`](#run-check), [`record-check`](#record-check), [`record-terminal-result`](#record-terminal-result), [`audit`](#audit), [`report`](#report), [`validate-receipt`](#validate-receipt) |
@@ -1343,3 +1343,32 @@ active recovery artifact. It returns `E_TASK_SCOPE_CONFLICT` without removing
 recovery state when another active task owns an overlapping path.
 The resume event counts as meaningful task activity. Never create, edit, or
 delete `recovery.json` manually to emulate this command.
+
+### `task-repair-legacy-recovery`
+
+Migrates one recognized legacy recovery boundary event into the modern durable recovery representation.
+
+- **Purpose**: Proves that a historical `OPERATOR_RECOVERY_RECORDED` without `recoveryId` marks the effective task boundary and materializes its modern representation as an append-only `LEGACY_RECOVERY_MIGRATION_RECORDED` event plus a transactional `recovery.json`. The original legacy event is never modified.
+- **Mutation**: Appends the migration event at the ledger tail and writes `recovery.json` in one transaction under project claims locking.
+- **Options**:
+
+<!-- BEGIN FORGELOOP GENERATED: cli:task-repair-legacy-recovery:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--acknowledge-recovery`: fresh explicit acknowledgement of the legacy boundary migration (required)
+- `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:task-repair-legacy-recovery:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop task-repair-legacy-recovery --task task-001 --acknowledge-recovery --json
+  ```
+
+Only the exact known legacy signature is eligible; ambiguous, tampered, or
+post-boundary-active ledgers fail closed with
+`E_LEGACY_RECOVERY_MIGRATION_INVALID` and ownership stays INCONSISTENT. The
+repair itself never releases claims directly; ownership becomes validated
+recovery state and ordinary mutation remains blocked until `task-resume`.
