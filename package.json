@@ -72,7 +72,10 @@
     "docs:check": "node scripts/run-docs-check.js",
     "lint": "eslint .",
     "coverage": "c8 --all --include=src/**/*.js --reporter=text --reporter=lcov --check-coverage --lines=80 --functions=75 --branches=70 --statements=80 node scripts/run-tests.js",
-    "dependency:policy": "node scripts/check-dependency-policy.mjs"
+    "dependency:policy": "node scripts/check-dependency-policy.mjs",
+    "mcp:test": "node --test integrations/mcp/tests/*.test.js",
+    "mcp:setup": "node scripts/mcp-setup.mjs",
+    "mcp:pack:check": "node scripts/mcp-package-smoke.mjs"
   },
   "devDependencies": {
     "@mermaid-js/mermaid-cli": "^11.16.0",

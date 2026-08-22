@@ -3,6 +3,7 @@ import {
   executeForgeLoopCommand,
 } from "./core/command-runtime.js";
 import { validateForgeLoopCommandInput, defaultCommandInputValues } from "./core/command-input.js";
+import { CLI_COMMAND_DEFINITIONS } from "./core/cli-command-definitions.js";
 import {
   INTEGRATION_RISK_CLASSES,
   classifyForgeLoopInvocation,
@@ -19,6 +20,7 @@ export {
   readForgeLoopIntegrationResource,
   INTEGRATION_RISK_CLASSES,
   INTEGRATION_RESOURCE_DEFINITIONS,
+  CLI_COMMAND_DEFINITIONS,
 };
 
 export const FORGELOOP_INTEGRATION_API_VERSION = FORGELOOP_INTEGRATION_RUNTIME_VERSION;

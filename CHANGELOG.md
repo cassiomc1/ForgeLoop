@@ -3,6 +3,16 @@
 ## Unreleased
 
 ### Added
+- Transport-neutral programmatic integration API v1 at
+  `@cassiomc1/forgeloop/integration`: structured command executors and runtime,
+  shared semantic input validation, invocation-level risk classification, and
+  canonical integration resources including task/ownership derived exclusively
+  from the validated claim resolver.
+- Separate local MCP package (`@cassiomc1/forgeloop-mcp`, stdio, official SDK):
+  deterministic tool/resource catalogs generated from canonical metadata,
+  immutable project root, explicit taskId on task-aware mutations, launch-level
+  capability gates (external execution, maintenance, recovery, legacy repair,
+  force), no generic shell, no HTTP.
 
 - `forgeloop task-repair-legacy-recovery`: migrates one recognized legacy `OPERATOR_RECOVERY_RECORDED` boundary event (no `recoveryId`) into the modern durable recovery representation via an append-only `LEGACY_RECOVERY_MIGRATION_RECORDED` tail event plus a transactional `recovery.json`; the original ledger event is never modified, ambiguous or tampered evidence fails closed, and ordinary mutation stays blocked until `task-resume`.
 - Durable task recovery state in `recovery.json`, explicit `task-resume` claim reacquisition, and recovery-aware `forgeloop next` command specifications.
