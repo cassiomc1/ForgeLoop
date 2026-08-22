@@ -303,6 +303,41 @@ export FORGELOOP_TASK="<task-id>"
 
 ---
 
+### Symptom: Task Creation Blocked by a Write-Claim Conflict (`E_TASK_SCOPE_CONFLICT`)
+
+#### What it means
+
+Another non-`COMPLETE` task already holds a write claim that overlaps the claims you requested. ForgeLoop inspects the conflicting task automatically before failing and attaches a deterministic classification to the error.
+
+#### Inspect
+
+The conflict error carries `error.conflicts[].inspection` with:
+
+- `classification`: one of `ACTIVE`, `RECOVERABLE`, `STALE`, `ABANDONED`, `INCONSISTENT`, or `COMPLETE`;
+- `reasonCodes`: the deterministic evidence codes behind the classification;
+- `recoverable` / `recoveredBy`: whether an official recovery path exists and which commands implement it.
+
+Classification is derived from machine state only (lock/lease, checkpoint freshness, drift kinds, ledger validity, recorded evidence, idle time). A `REVIEWING` phase plus an old timestamp alone is never classified `STALE`; post-execution tasks whose only drift is `REPOSITORY_CHANGED` remain `RECOVERABLE`.
+
+#### Safe recovery
+
+Follow the classification:
+
+```bash
+# RECOVERABLE: reconcile through the official pipeline first
+forgeloop reconcile-closure --task <task-id> --id <verification-id> \
+  --requirement "<exact contract verification text>" -- <command>
+
+# STALE / ABANDONED / deadlocked beyond official paths: operator-authorized recovery
+forgeloop task-recover --task <task-id> --operator-authorized --json
+```
+
+`task-recover` refuses `ACTIVE` tasks (live lease or fresh checkpoint) and `INCONSISTENT` state, records an append-only `OPERATOR_RECOVERY_RECORDED` ledger event, refreshes the stale repository checkpoint, and releases the task's write claims without fabricating a completion claim. Claims release canonically when the task reaches validator-backed `COMPLETE`, or through explicit operator recovery as above.
+
+Never edit `.forgeloop/task-state/<taskKey>/` files directly to clear a conflict; that bypasses locks, transactions, expected revisions, and the append-only ledger.
+
+---
+
 ### Symptom: Verification Tool is Missing
 
 #### Error Code: `E_VERIFICATION_TOOL_UNAVAILABLE`

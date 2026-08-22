@@ -83,6 +83,15 @@ export function classifyConflictEvidence(evidence, {
     };
   }
 
+  if (phase === "COMPLETE") {
+    return {
+      classification: "COMPLETE",
+      reasonCodes: ["TASK_COMPLETE"],
+      recoverable: false,
+      terminal: true,
+    };
+  }
+
   const hasLiveLease = lockStatus === "LIVE";
   const drift = freshnessReasons ?? [];
   const staleOnlyRepositoryDrift = freshnessStatus === "REVALIDATION_REQUIRED"
@@ -96,15 +105,6 @@ export function classifyConflictEvidence(evidence, {
       classification: "ACTIVE",
       reasonCodes: hasLiveLease ? ["E_TASK_LOCKED"] : ["STATE_FRESH"],
       recoverable: false,
-    };
-  }
-
-  if (phase === "COMPLETE") {
-    return {
-      classification: "COMPLETE",
-      reasonCodes: ["TASK_COMPLETE"],
-      recoverable: false,
-      terminal: true,
     };
   }
 
