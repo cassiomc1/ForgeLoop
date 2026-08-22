@@ -10,6 +10,8 @@ import { ensureWithin } from "../src/core/filesystem.js";
 import { taskArtifactPath, taskDirectory } from "../src/core/task-paths.js";
 import { createTaskRecovery, writeTaskRecovery } from "../src/core/task-recovery.js";
 import { readWorkState } from "../src/core/work-state.js";
+import { resolveTaskClaimState } from "../src/core/task-claim-state.js";
+import { inspectTaskConflictState } from "../src/core/task-conflict-inspection.js";
 import {
   packageRoot,
   setupAbandonedTask,
@@ -93,5 +95,43 @@ test("an unhealthy task namespace blocks all new claim acquisition", async () =>
       () => runTaskCreate({ target, packageRoot, taskId: "blocked-by-namespace", claims: ["src"] }),
       (error) => error.code === "E_TASK_CLAIM_OWNERSHIP_INCONSISTENT",
     );
+  });
+});
+
+test("ownership surfaces remain deterministic on a large append-only ledger", async () => {
+  await withRecoveryTarget(async (target) => {
+    const { taskId } = await setupAbandonedTask(target, { taskId: "large-ledger-task" });
+    const { readFile: rf, writeFile: wf } = await import("node:fs/promises");
+    const { eventHash } = await import("../src/core/events.js");
+    const eventsPath = ensureWithin(target, taskArtifactPath(taskId, "events"));
+    const lines = (await rf(eventsPath, "utf8")).trim().split("\n").map((line) => JSON.parse(line));
+    let previousHash = lines.at(-1).hash;
+    const baseSeq = lines.length;
+    const baseAt = Date.parse(lines[0].at);
+    const count = 5000 - baseSeq;
+    for (let i = 0; i < count; i += 1) {
+      const event = {
+        seq: baseSeq + i + 1,
+        schemaVersion: 1,
+        protocolVersion: 1,
+        taskId,
+        event: "CONTINUITY_RECORDED",
+        at: new Date(baseAt + (i + 1) * 1000).toISOString(),
+        previousHash,
+        details: { note: `checkpoint ${i}` },
+      };
+      event.hash = eventHash(event);
+      previousHash = event.hash;
+      lines.push(event);
+    }
+    await wf(eventsPath, `${lines.map((line) => JSON.stringify(line)).join("\n")}\n`, "utf8");
+
+    const startedAt = Date.now();
+    const projection = await resolveTaskClaimState(target, { taskId, packageRoot });
+    const conflict = await inspectTaskConflictState(target, { taskId, packageRoot });
+    const elapsed = Date.now() - startedAt;
+    assert.equal(projection.claimState, "ACTIVE");
+    assert.equal(conflict.evidence.claimState, "ACTIVE");
+    assert.ok(elapsed < 60000, `ownership resolution should complete promptly, took ${elapsed}ms`);
   });
 });

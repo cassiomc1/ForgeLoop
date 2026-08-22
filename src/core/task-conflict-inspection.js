@@ -1,9 +1,9 @@
 import { classifyLoadedWorkState, readWorkState } from "./work-state.js";
 import { taskArtifactPath } from "./task-paths.js";
 import { readLockInfo, classifyLockStaleness } from "./task-lock.js";
-import { validateEventLedger, validateStateLedgerCoherence } from "./events.js";
+import { validateStateLedgerCoherence } from "./events.js";
 import { currentRepositoryFingerprint } from "./repository.js";
-import { resolveTaskClaimState } from "./task-claim-state.js";
+import { collectTaskClaimEvidence, classifyTaskClaimState } from "./task-claim-state.js";
 
 export const TASK_CONFLICT_CLASSIFICATIONS = Object.freeze([
   "ACTIVE",
@@ -224,13 +224,14 @@ export async function inspectTaskConflictState(target, {
   now = Date.now(),
   ignoredLockId = null,
 } = {}) {
-  const [lockInfo, stateResult, claimProjection] = await Promise.all([
+  const [lockInfo, stateResult, ownershipEvidence] = await Promise.all([
     readLockInfo(target, taskId),
     readWorkState(target, { packageRoot, taskId })
       .then((value) => ({ value, error: null }))
       .catch((error) => ({ value: null, error })),
-    resolveTaskClaimState(target, { packageRoot, taskId }),
+    collectTaskClaimEvidence(target, { packageRoot, taskId }),
   ]);
+  const claimProjection = classifyTaskClaimState(ownershipEvidence);
   const state = stateResult.value;
   const recovery = claimProjection.recovery;
 
@@ -251,18 +252,14 @@ export async function inspectTaskConflictState(target, {
     }
   }
 
-  let ledgerValid = true;
-  let ledgerEvents = [];
-  let ledgerErrors = [];
-  try {
-    const ledger = await validateEventLedger(target, packageRoot, { taskId });
-    const coherenceErrors = state ? validateStateLedgerCoherence(state, ledger.events) : [];
-    ledgerValid = ledger.valid && coherenceErrors.length === 0;
-    ledgerEvents = ledger.events;
-    ledgerErrors = [...ledger.errors, ...coherenceErrors];
-  } catch {
-    ledgerValid = false;
-  }
+  // Reuse the ownership snapshot's already-validated ledger; no second full
+  // ledger parse inside this immutable inspection.
+  const coherenceErrors = ownershipEvidence.state && ownershipEvidence.ledger
+    ? validateStateLedgerCoherence(ownershipEvidence.state, ownershipEvidence.ledger.events)
+    : [];
+  const ledgerValid = ownershipEvidence.ledger.valid && coherenceErrors.length === 0;
+  const ledgerEvents = ownershipEvidence.ledger.events;
+  const ledgerErrors = [...ownershipEvidence.ledger.errors, ...coherenceErrors];
 
   const repository = await currentRepositoryFingerprint(target);
   const meaningfulActivity = lastMeaningfulActivity(state, ledgerEvents);

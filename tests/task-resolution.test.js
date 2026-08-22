@@ -145,3 +145,32 @@ test("task context exposes only the canonical coordination lock path", () => {
   const context = createTaskContext({ target: "/tmp/forgeloop-context", taskId: "canonical-lock" });
   assert.equal(context.paths.lock, taskLockPath("canonical-lock"));
 });
+
+test("READ and MUTATION implicit selection follow the ownership matrices", async () => {
+  const { candidateTasksForSelection } = await import("../src/core/task-context.js");
+
+  const active = { taskId: "active", healthy: true, phase: "EXECUTING", mutationAllowed: true };
+  const recovered = { taskId: "recovered", healthy: true, phase: "RECOVERED", mutationAllowed: false };
+  const complete = { taskId: "complete", healthy: true, phase: "COMPLETE", mutationAllowed: false };
+  const unhealthy = { taskId: "unhealthy", healthy: false };
+
+  // READ selection = discoverability
+  assert.deepEqual(candidateTasksForSelection([active], "READ").map((t) => t.taskId), ["active"]);
+  assert.deepEqual(candidateTasksForSelection([recovered], "READ").map((t) => t.taskId), ["recovered"]);
+  assert.deepEqual(candidateTasksForSelection([complete], "READ").map((t) => t.taskId), ["complete"]);
+
+  // MUTATION selection = operational authority
+  assert.deepEqual(candidateTasksForSelection([active], "MUTATION").map((t) => t.taskId), ["active"]);
+  assert.deepEqual(candidateTasksForSelection([recovered], "MUTATION").map((t) => t.taskId), []);
+  assert.deepEqual(candidateTasksForSelection([complete], "MUTATION").map((t) => t.taskId), []);
+  assert.deepEqual(
+    candidateTasksForSelection([recovered, active], "MUTATION").map((t) => t.taskId),
+    ["active"],
+  );
+  assert.deepEqual(
+    candidateTasksForSelection([complete, active], "MUTATION").map((t) => t.taskId),
+    ["active"],
+  );
+  assert.equal(candidateTasksForSelection([active, { ...active, taskId: "b" }], "MUTATION").length, 2);
+  assert.deepEqual(candidateTasksForSelection([unhealthy], "READ").map((t) => t.taskId), []);
+});

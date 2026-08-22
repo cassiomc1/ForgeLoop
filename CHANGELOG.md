@@ -18,6 +18,10 @@
 
 ### Security and reliability
 
+- COMPLETE task claim release now requires canonical lifecycle/ledger proof; manually or inconsistently terminal state fails closed and retains historical claim ownership.
+- Task lock classification now rejects incomplete owner identity metadata as UNKNOWN rather than inferring live or stale ownership.
+- Implicit task selection distinguishes read-only inspection from mutation.
+- Claim-state and conflict inspection reuse validated ownership evidence within one snapshot while preserving TOCTOU revalidation boundaries.
 - Claim ownership now requires a validated relationship between the task descriptor, work state, recovery artifact, and complete append-only recovery history before recovery can release claims.
 - Fake, missing, corrupt, deleted, or mismatched recovery state fails closed, preserves every provable historical claim, and cannot restore mutation authority.
 - Unhealthy task namespaces block claim acquisition when ownership cannot be proven; ordinary mutation and portable bundle export also reject inconsistent ownership.

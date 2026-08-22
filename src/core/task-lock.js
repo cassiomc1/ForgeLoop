@@ -26,15 +26,50 @@ export async function readLockInfo(target, taskId) {
   }
 }
 
+/**
+ * Structural identity requirements shared by every persisted lease lock.
+ * Incomplete identity is UNKNOWN and is never eligible for stale release;
+ * default lease values belong at creation time, never validation time.
+ */
+function hasLeaseIdentity(lock) {
+  return typeof lock.lockId === "string"
+    && lock.lockId !== ""
+    && typeof lock.ownerInstanceId === "string"
+    && lock.ownerInstanceId !== ""
+    && typeof lock.operation === "string"
+    && lock.operation !== ""
+    && Number.isInteger(lock.leaseMs)
+    && lock.leaseMs > 0;
+}
+
+export function isValidTaskLockIdentity(lock) {
+  return Boolean(lock)
+    && !lock.corrupted
+    && typeof lock.taskId === "string"
+    && lock.taskId !== ""
+    && hasLeaseIdentity(lock);
+}
+
+export function isValidProjectClaimsLockIdentity(lock) {
+  return Boolean(lock)
+    && !lock.corrupted
+    && lock.scope === "claims-reservation"
+    && hasLeaseIdentity(lock);
+}
+
+function classifyLeaseWindow(lock, now) {
+  const heartbeat = Date.parse(lock.heartbeatAt ?? lock.acquiredAt);
+  if (!Number.isFinite(heartbeat)) return { status: "UNKNOWN", stale: false };
+  return now > heartbeat + lock.leaseMs
+    ? { status: "STALE", stale: true, expiresAt: new Date(heartbeat + lock.leaseMs).toISOString() }
+    : { status: "LIVE", stale: false, expiresAt: new Date(heartbeat + lock.leaseMs).toISOString() };
+}
+
 export function classifyLockStaleness(lock, now = Date.now()) {
   if (!lock) return { status: "NONE", stale: false };
   if (lock.corrupted) return { status: "CORRUPT", stale: false };
-  const heartbeat = Date.parse(lock.heartbeatAt ?? lock.acquiredAt);
-  const leaseMs = Number.isInteger(lock.leaseMs) && lock.leaseMs > 0 ? lock.leaseMs : 300000;
-  if (!Number.isFinite(heartbeat)) return { status: "UNKNOWN", stale: false };
-  return now > heartbeat + leaseMs
-    ? { status: "STALE", stale: true, expiresAt: new Date(heartbeat + leaseMs).toISOString() }
-    : { status: "LIVE", stale: false, expiresAt: new Date(heartbeat + leaseMs).toISOString() };
+  if (!isValidTaskLockIdentity(lock)) return { status: "UNKNOWN", stale: false };
+  return classifyLeaseWindow(lock, now);
 }
 
 /**
@@ -67,16 +102,8 @@ export async function readProjectClaimsLockInfo(target) {
 export function classifyProjectClaimsLock(lock, now = Date.now()) {
   if (!lock) return { status: "NONE", stale: false };
   if (lock.corrupted) return { status: "CORRUPT", stale: false };
-  const identityFieldsValid = lock.scope === "claims-reservation"
-    && typeof lock.lockId === "string"
-    && lock.lockId !== ""
-    && typeof lock.ownerInstanceId === "string"
-    && lock.ownerInstanceId !== ""
-    && typeof lock.heartbeatAt === "string"
-    && Number.isInteger(lock.leaseMs)
-    && lock.leaseMs > 0;
-  if (!identityFieldsValid) return { status: "UNKNOWN", stale: false };
-  return classifyLockStaleness(lock, now);
+  if (!isValidProjectClaimsLockIdentity(lock)) return { status: "UNKNOWN", stale: false };
+  return classifyLeaseWindow(lock, now);
 }
 
 function projectClaimsLockError(classification, lockInfo, reason = null) {
@@ -124,11 +151,14 @@ export async function releaseStaleProjectClaimsLockIfUnchanged(target, expectedL
   }
 
   const observedClassification = classifyProjectClaimsLock(observed, now);
-  if (!sameObservedLock(observed, expectedLock) || observedClassification.status !== "STALE") {
+  if (!sameObservedLock(observed, expectedLock, { identityIsValid: isValidProjectClaimsLockIdentity })
+    || observedClassification.status !== "STALE") {
     await restoreQuarantinedLock(quarantinePath, fullPath);
     return {
       released: false,
-      reason: sameObservedLock(observed, expectedLock) ? "LOCK_NOT_STALE" : "LOCK_CHANGED",
+      reason: sameObservedLock(observed, expectedLock, { identityIsValid: isValidProjectClaimsLockIdentity })
+        ? "LOCK_NOT_STALE"
+        : "LOCK_CHANGED",
       currentLock: observed,
       classification: observedClassification,
     };
@@ -325,11 +355,18 @@ export async function forceUnlockTask(target, taskId, { staleOnly = false } = {}
   return { unlocked: true, previousLock: existing, classification };
 }
 
-function sameObservedLock(left, right) {
-  return Boolean(left && right)
-    && left.lockId === right.lockId
+function sameObservedLock(left, right, { identityIsValid = isValidTaskLockIdentity } = {}) {
+  if (!identityIsValid(left) || !identityIsValid(right)) return false;
+  return left.lockId === right.lockId
     && left.heartbeatAt === right.heartbeatAt
     && left.ownerInstanceId === right.ownerInstanceId;
+}
+
+function sameObservedTaskLock(left, right, taskId) {
+  return taskId !== null
+    && sameObservedLock(left, right)
+    && left.taskId === right.taskId
+    && right.taskId === taskId;
 }
 
 async function restoreQuarantinedLock(quarantinePath, fullPath) {
@@ -372,11 +409,11 @@ export async function releaseStaleTaskLockIfUnchanged(target, taskId, expectedLo
   }
 
   const observedClassification = classifyLockStaleness(observed, now);
-  if (!sameObservedLock(observed, expectedLock) || observedClassification.status !== "STALE") {
+  if (!sameObservedTaskLock(observed, expectedLock, taskId) || observedClassification.status !== "STALE") {
     await restoreQuarantinedLock(quarantinePath, fullPath);
     return {
       released: false,
-      reason: sameObservedLock(observed, expectedLock) ? "LOCK_NOT_STALE" : "LOCK_CHANGED",
+      reason: sameObservedTaskLock(observed, expectedLock, taskId) ? "LOCK_NOT_STALE" : "LOCK_CHANGED",
       currentLock: observed,
       classification: observedClassification,
     };

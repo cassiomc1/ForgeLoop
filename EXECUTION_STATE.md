@@ -24,7 +24,12 @@ claims, repository fingerprint, classification, and authority kind are bound
 to the append-only recovery event. Claims are released only after the canonical
 resolver validates that complete relationship. An unresolved recovery event
 with a missing tombstone, or a tombstone without its matching event, is
-`INCONSISTENT`, retains historical claims, and disables mutation.
+`INCONSISTENT`, retains historical claims, and disables mutation. The same
+fail-closed rule applies to completion: `phase: COMPLETE` alone never releases
+claims — the canonical completion ownership proof (validated ledger with the
+task-bound `COMPLETION_VALIDATED` event and coherent state) is required, and a
+forged or unproven COMPLETE state is `INCONSISTENT` with historical claims
+retained.
 
 The file is local, ignored by Git, schema-versioned, and never a replacement
 for the manifest or the target project profile (installed as

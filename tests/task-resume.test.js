@@ -123,22 +123,57 @@ test("task-resume fails closed when historical descriptor claims no longer match
   });
 });
 
-test("task-resume succeeds after the conflicting owner reaches COMPLETE", async () => {
+test("task-resume succeeds after the conflicting owner reaches canonical COMPLETE", async () => {
   const { runTaskResume } = await import("../src/commands/task-resume.js");
+  const { runComplete } = await import("../src/commands/complete.js");
+  const { prepareCompletion, recordCheck: recordCheckArtifact } = await import("../src/core/completion-artifacts.js");
+  const { recordManualCheck } = await import("./helpers/record-check-compat.js");
+  const { advanceWorkState } = await import("../src/core/phase.js");
+  const recordCheck = (input) => recordManualCheck(recordCheckArtifact, input);
+  const { setupRecoverableTask } = await import("./helpers/task-recovery-fixture.js");
   await withRecoveryTarget(async (target) => {
-    const { taskId } = await setupAbandonedTask(target, { taskId: "resume-after-complete" });
-    await runTaskRecover({ target, packageRoot, taskId, acknowledgeRecovery: true });
-    await runTaskCreate({ target, packageRoot, taskId: "completed-owner", claims: ["tests"] });
-
-    const sourceState = await readWorkState(target, { packageRoot, taskId });
-    await writeWorkState(target, createWorkState({
-      ...sourceState,
+    // Drive completed-owner through the official completion pipeline first
+    // (single-task target) so its COMPLETE state carries canonical proof.
+    const { currentRepositoryFingerprint } = await import("../src/core/repository.js");
+    const ownerRepo = await currentRepositoryFingerprint(target);
+    const { setupRecoverableTask } = await import("./helpers/task-recovery-fixture.js");
+    await setupRecoverableTask(target, { taskId: "completed-owner", writeClaims: ["tests"] });
+    const ownerState = await readWorkState(target, { packageRoot, taskId: "completed-owner" });
+    await writeWorkState(target, createWorkState({ ...ownerState, repositoryFingerprint: ownerRepo }), { packageRoot, taskId: "completed-owner" });
+    const { prepareCompletion, recordCheck: recordCheckArtifact } = await import("../src/core/completion-artifacts.js");
+    const { recordManualCheck } = await import("./helpers/record-check-compat.js");
+    await prepareCompletion({ target, packageRoot, taskId: "completed-owner" });
+    await recordManualCheck(recordCheckArtifact, {
+      target,
+      packageRoot,
       taskId: "completed-owner",
-      phase: "COMPLETE",
-      previousPhase: "REVIEWING",
-      verificationEvidence: [{ kind: "OBSERVED", source: "fixture", result: "passed" }],
-      evidenceCoverage: [],
-    }), { packageRoot, taskId: "completed-owner" });
+      id: "final-check",
+      requirement: "tests",
+      status: "passed",
+      evidenceKind: "OBSERVED",
+      command: "npm test",
+      result: "Passed",
+    });
+    await recordManualCheck(recordCheckArtifact, {
+      target,
+      packageRoot,
+      taskId: "completed-owner",
+      id: "objective-check",
+      requirement: "objective is present in the current repository",
+      status: "passed",
+      evidenceKind: "OBSERVED",
+      command: "npm test",
+      result: "Passed",
+    });
+    const { advanceWorkState } = await import("../src/core/phase.js");
+    await advanceWorkState(target, "REVIEWING", { packageRoot, taskId: "completed-owner" });
+    const { runComplete } = await import("../src/commands/complete.js");
+    const completion = await runComplete({ target, packageRoot, taskId: "completed-owner" });
+    assert.equal(completion.status, "VALID", JSON.stringify(completion.errors ?? [], null, 1));
+
+    // Then create and recover the resumable task.
+    const { taskId } = await setupAbandonedTask(target, { taskId: "resume-after-complete", writeClaims: ["tests"] });
+    await runTaskRecover({ target, packageRoot, taskId, acknowledgeRecovery: true });
 
     const result = await runTaskResume({ target, packageRoot, taskId });
     assert.equal(result.resumed, true);

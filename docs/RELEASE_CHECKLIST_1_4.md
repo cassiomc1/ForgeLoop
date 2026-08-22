@@ -10,6 +10,13 @@ This checklist prepares the validated claim-recovery capability for release. It 
 - [ ] `task-recover` remains restricted to `STALE` and `ABANDONED`; `RECOVERABLE` keeps its canonical reconciliation path.
 - [ ] `task-resume` validates ownership, settles only an unchanged stale task lock, and reacquires claims under the project claims lock.
 - [ ] Project claim locks classify `NONE`, `LIVE`, `STALE`, `UNKNOWN`, and `CORRUPT`, with CAS-safe stale settlement.
+- [ ] Manually forged COMPLETE state cannot release claims.
+- [ ] Canonically completed task does release claims.
+- [ ] Corrupt/missing completion lifecycle proof retains historical claims.
+- [ ] Task locks with incomplete identity classify UNKNOWN.
+- [ ] Single COMPLETE/RECOVERED task can be inspected implicitly by READ commands.
+- [ ] Single COMPLETE/RECOVERED task cannot be selected implicitly for mutation.
+- [ ] Ownership ledger validation is not redundantly repeated inside one immutable snapshot.
 
 ## Compatibility and package gates
 

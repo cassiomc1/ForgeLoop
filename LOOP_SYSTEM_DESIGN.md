@@ -389,13 +389,23 @@ equivalent to `forgeloop init`.
 Recovery uses a relational state model: `work-state.json` owns the lifecycle
 phase, `task.json` retains historical claims, `recovery.json` records current
 suspension, and the complete hash-chained ledger proves recovery/resume cycles.
-Only their canonical validated projection can release effective claims. Any
+Only their canonical validated projection can release effective claims. The
+same holds for completion: `RELEASED_BY_COMPLETION` requires the canonical
+completion ownership proof (COMPLETE phase plus a validated ledger containing
+the task-bound `COMPLETION_VALIDATED` event with coherent state and no
+contradicting later lifecycle event); a manually forged COMPLETE state is
+`INCONSISTENT`, retains historical claims, and disables mutation. Any
 missing, corrupt, forged, or mismatched relationship is `INCONSISTENT`, retains
 historical claims, and disables mutation. Recovery never fabricates completion;
 `task-resume` is the only path that rechecks and reacquires ownership before
 removing the recovery artifact. Project claim serialization always precedes
 the per-task lock for create, scope, recover, and resume operations, and both
-lock classes use lease classification plus CAS-safe stale settlement.
+lock classes use lease classification plus CAS-safe stale settlement. Task
+locks additionally require complete owner identity (`taskId`, `lockId`,
+`ownerInstanceId`, `operation`, heartbeat, positive lease): incomplete identity
+classifies `UNKNOWN` and is never eligible for stale release. Implicit task
+selection distinguishes read-only discoverability (`READ`: any single healthy
+task) from mutation authority (`MUTATION`: only operationally active tasks).
 
 The README explains the file set, activation behavior, current/relative/absolute
 target installation, first-run profile flow, local validation commands, and safe

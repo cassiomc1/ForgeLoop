@@ -1,8 +1,8 @@
-import { resolveTaskContext } from "../core/task-context.js";
+import { resolveTaskContext, TASK_SELECTION_MODES } from "../core/task-context.js";
 import { classifyLockStaleness, readLockInfo } from "../core/task-lock.js";
 
 export async function runTaskLockStatus({ target, packageRoot, taskId } = {}) {
-  const context = await resolveTaskContext(target, { taskId, packageRoot, explicitRequired: true });
+  const context = await resolveTaskContext(target, { taskId, packageRoot, explicitRequired: true, selectionMode: TASK_SELECTION_MODES.READ });
   const lock = await readLockInfo(target, context.taskId);
   if (!lock) {
     return {

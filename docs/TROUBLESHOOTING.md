@@ -236,6 +236,14 @@ forgeloop complete --task <id>
 ```
 
 Write claims release only when completion is validator-backed (`COMPLETE`).
+A `phase: COMPLETE` that was never produced by the official completion pipeline
+is not sufficient: the ownership resolver requires canonical lifecycle proof (a
+validated ledger containing the task-bound `COMPLETION_VALIDATED` event with
+coherent state). Unproven completion reports
+`E_COMPLETION_OWNERSHIP_UNPROVEN` / `E_TASK_CLAIM_OWNERSHIP_INCONSISTENT`,
+retains historical claims, and blocks mutation and overlapping acquisition.
+Re-run the official completion pipeline or restore the canonical completion
+event; never edit `work-state.json` by hand.
 
 ---
 

@@ -1,9 +1,11 @@
 import {
+  E_COMPLETION_OWNERSHIP_UNPROVEN,
   E_TASK_CLAIM_OWNERSHIP_INCONSISTENT,
   E_TASK_COMPLETE,
   E_TASK_RECOVERED,
   E_TASK_RECOVERY_INCONSISTENT,
 } from "./error-codes.js";
+import { validateCompletionOwnershipProof } from "./completion-ownership.js";
 import { validateEventLedger } from "./events.js";
 import { classifyRecoveryHistory } from "./recovery-history.js";
 import { readTaskDescriptor } from "./task-descriptor.js";
@@ -31,35 +33,13 @@ function appendClaims(target, claims, errors, source) {
   }
 }
 
-function inconsistentResult({ taskId, phase, historicalWriteClaims, recovery, errors }) {
-  const reasonCodes = [
-    E_TASK_CLAIM_OWNERSHIP_INCONSISTENT,
-    ...errors.flatMap((error) => [error.code, error.causeCode]).filter(Boolean),
-  ];
-  return {
-    taskId,
-    phase,
-    historicalWriteClaims,
-    effectiveWriteClaims: historicalWriteClaims,
-    writeClaims: historicalWriteClaims,
-    claimState: "INCONSISTENT",
-    mutationAllowed: false,
-    recovery,
-    recoveryStatus: "INCONSISTENT",
-    valid: false,
-    ownershipValid: false,
-    reasonCodes: [...new Set(reasonCodes)],
-    errors,
-    ownershipErrors: errors,
-  };
-}
-
 /**
- * Resolve claim ownership from the task descriptor, work state, recovery
- * tombstone, and the complete validated task ledger. Any disagreement retains
- * every claim that can be recovered from validated inputs and fails closed.
+ * Collects every input needed to resolve claim ownership from one immutable
+ * snapshot: descriptor, work state, recovery tombstone, validated ledger, and
+ * classified recovery history. Classification is a pure function of this
+ * evidence, so conflict inspection can reuse it without rereading artifacts.
  */
-export async function resolveTaskClaimState(target, {
+export async function collectTaskClaimEvidence(target, {
   taskId,
   packageRoot,
   descriptor: suppliedDescriptor = null,
@@ -86,32 +66,6 @@ export async function resolveTaskClaimState(target, {
     }
   }
 
-  const phase = state?.phase ?? null;
-  const descriptorClaims = [];
-  appendClaims(descriptorClaims, descriptor?.writeClaims, errors, "descriptor");
-  const normalizedDescriptorClaims = normalizeWriteClaims(descriptorClaims);
-
-  // Completion independently and permanently removes mutation authority and
-  // claim ownership. Recovery state cannot make a COMPLETE task mutable again.
-  if (phase === "COMPLETE" && errors.length === 0) {
-    return {
-      taskId,
-      phase,
-      historicalWriteClaims: normalizedDescriptorClaims,
-      effectiveWriteClaims: [],
-      writeClaims: [],
-      claimState: "RELEASED_BY_COMPLETION",
-      mutationAllowed: false,
-      recovery: null,
-      recoveryStatus: "NOT_APPLICABLE",
-      valid: true,
-      ownershipValid: true,
-      reasonCodes: [],
-      errors: [],
-      ownershipErrors: [],
-    };
-  }
-
   try {
     recovery = (await readTaskRecovery(target, { taskId, packageRoot }))?.value ?? null;
   } catch (error) {
@@ -133,13 +87,69 @@ export async function resolveTaskClaimState(target, {
   }
 
   const history = classifyRecoveryHistory(ledger.events);
+  const descriptorClaims = [];
+  appendClaims(descriptorClaims, descriptor?.writeClaims, errors, "descriptor");
+  const normalizedDescriptorClaims = normalizeWriteClaims(descriptorClaims);
 
   const historicalClaims = [...normalizedDescriptorClaims];
   for (const cycle of history.recoveries) {
     appendClaims(historicalClaims, cycle.event?.details?.releasedClaims, errors, "recovery ledger");
   }
   appendClaims(historicalClaims, recovery?.releasedClaims, errors, "recovery artifact");
-  const historicalWriteClaims = normalizeWriteClaims(historicalClaims);
+
+  return {
+    taskId,
+    phase: state?.phase ?? null,
+    descriptor,
+    state,
+    recovery,
+    ledger,
+    history,
+    normalizedDescriptorClaims,
+    historicalWriteClaims: normalizeWriteClaims(historicalClaims),
+    errors,
+  };
+}
+
+function inconsistentResult({ taskId, phase, historicalWriteClaims, recovery, errors }) {
+  const reasonCodes = [
+    E_TASK_CLAIM_OWNERSHIP_INCONSISTENT,
+    ...errors.flatMap((error) => [error.code, error.causeCode]).filter(Boolean),
+  ];
+  return {
+    taskId,
+    phase,
+    historicalWriteClaims,
+    effectiveWriteClaims: historicalWriteClaims,
+    writeClaims: historicalWriteClaims,
+    claimState: "INCONSISTENT",
+    mutationAllowed: false,
+    recovery,
+    recoveryStatus: "INCONSISTENT",
+    valid: false,
+    ownershipValid: false,
+    reasonCodes: [...new Set(reasonCodes)],
+    errors,
+    ownershipErrors: errors,
+  };
+}
+
+/**
+ * Deterministic claim-ownership decision table over collected evidence.
+ * Claims are released only for validated canonical completion or validated
+ * active recovery; everything else fails closed.
+ */
+export function classifyTaskClaimState(evidence) {
+  const {
+    taskId,
+    phase,
+    recovery,
+    ledger,
+    history,
+    normalizedDescriptorClaims,
+    historicalWriteClaims,
+    errors,
+  } = evidence;
 
   errors.push(...validateTaskRecoveryConsistency({
     taskId,
@@ -151,6 +161,41 @@ export async function resolveTaskClaimState(target, {
 
   if (errors.length > 0) {
     return inconsistentResult({ taskId, phase, historicalWriteClaims, recovery, errors });
+  }
+
+  if (phase === "COMPLETE") {
+    const proof = validateCompletionOwnershipProof({ taskId, state: evidence.state, ledger });
+    if (!proof.valid) {
+      return inconsistentResult({
+        taskId,
+        phase,
+        historicalWriteClaims,
+        recovery,
+        errors: [
+          ownershipError(
+            "COMPLETE work-state lacks canonical lifecycle/ledger completion proof; claims stay reserved",
+            { code: E_COMPLETION_OWNERSHIP_UNPROVEN },
+          ),
+          ...proof.errors.map((error) => ownershipError(error.message, { code: error.code })),
+        ],
+      });
+    }
+    return {
+      taskId,
+      phase,
+      historicalWriteClaims,
+      effectiveWriteClaims: [],
+      writeClaims: [],
+      claimState: "RELEASED_BY_COMPLETION",
+      mutationAllowed: false,
+      recovery: null,
+      recoveryStatus: "NOT_APPLICABLE",
+      valid: true,
+      ownershipValid: true,
+      reasonCodes: [],
+      errors: [],
+      ownershipErrors: [],
+    };
   }
 
   if (history.activeRecovery) {
@@ -190,6 +235,16 @@ export async function resolveTaskClaimState(target, {
     errors: [],
     ownershipErrors: [],
   };
+}
+
+/**
+ * Resolve claim ownership from the task descriptor, work state, recovery
+ * tombstone, and the complete validated task ledger. Any disagreement retains
+ * every claim that can be recovered from validated inputs and fails closed.
+ */
+export async function resolveTaskClaimState(target, options = {}) {
+  const evidence = await collectTaskClaimEvidence(target, options);
+  return classifyTaskClaimState(evidence);
 }
 
 export async function assertTaskMutationAllowed(target, options = {}) {

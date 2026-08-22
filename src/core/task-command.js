@@ -1,4 +1,4 @@
-import { resolveTaskContext } from "./task-context.js";
+import { resolveTaskContext, TASK_SELECTION_MODES } from "./task-context.js";
 import { withTaskTransaction } from "./transaction.js";
 import { assertTaskMutationAllowed } from "./task-claim-state.js";
 
@@ -13,6 +13,7 @@ export async function withResolvedTask(
     taskId: taskOption,
     explicitRequired,
     packageRoot: options.packageRoot,
+    selectionMode: TASK_SELECTION_MODES.READ,
   });
 
   return callback(taskContext);
@@ -30,6 +31,7 @@ export async function withTaskMutation(
     taskId: taskOption,
     explicitRequired,
     packageRoot: options.packageRoot,
+    selectionMode: TASK_SELECTION_MODES.MUTATION,
   });
 
   if (taskContext) {

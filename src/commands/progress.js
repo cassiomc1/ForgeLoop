@@ -1,12 +1,16 @@
 import { evaluateProgress, PROGRESS_STATUS } from "../core/progress.js";
 import { readEvents } from "../core/events.js";
 import { readWorkState } from "../core/work-state.js";
-import { resolveTaskContext } from "../core/task-context.js";
+import { resolveTaskContext, TASK_SELECTION_MODES } from "../core/task-context.js";
 
 export { evaluateProgress };
 
 export async function runProgress({ target, packageRoot, taskId, task }) {
-  const resolved = await resolveTaskContext(target, { packageRoot, explicitTaskId: taskId ?? task });
+  const resolved = await resolveTaskContext(target, {
+    packageRoot,
+    taskId: taskId ?? task,
+    selectionMode: TASK_SELECTION_MODES.READ,
+  });
   const activeTaskId = resolved.taskId;
 
   const state = await readWorkState(target, { packageRoot, taskId: activeTaskId });
