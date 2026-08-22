@@ -82,13 +82,13 @@ export const COMMAND_EXECUTORS = {
     result: await runRoute({
       target,
       packageRoot,
-      workType: options.work,
+      workType: options.workType,
       surfaces: options.surfaces,
       risks: options.risks,
       platforms: options.platforms,
       behaviorChange: options.behaviorChange,
       executableChange: options.executableChange,
-      taskId: options.task,
+      taskId: options.taskId,
     }),
     exitCode: 0,
   }),
@@ -97,19 +97,19 @@ export const COMMAND_EXECUTORS = {
     exitCode: 0,
   }),
   preflight: async ({ target, packageRoot, options }) => {
-    const result = await runPreflight({ target, packageRoot, strict: options.strict, taskId: options.task });
+    const result = await runPreflight({ target, packageRoot, strict: options.strict, taskId: options.taskId });
     return { result, exitCode: result.status === "READY" ? 0 : 1 };
   },
   advance: async ({ target, packageRoot, options }) => ({
-    result: await runAdvance({ target, packageRoot, to: options.to, taskId: options.task }),
+    result: await runAdvance({ target, packageRoot, to: options.to, taskId: options.taskId }),
     exitCode: 0,
   }),
   next: async ({ target, packageRoot, options }) => ({
-    result: await runNext({ target, packageRoot, taskId: options.task }),
+    result: await runNext({ target, packageRoot, taskId: options.taskId }),
     exitCode: 0,
   }),
   continuity: async ({ target, packageRoot, options }) => ({
-    result: await runContinuity({ target, packageRoot, taskId: options.task }),
+    result: await runContinuity({ target, packageRoot, taskId: options.taskId }),
     exitCode: 0,
   }),
   "record-continuity": async ({ target, packageRoot, options }) => ({
@@ -123,20 +123,20 @@ export const COMMAND_EXECUTORS = {
       changedAreas: options.continuityChangedAreas,
       inspectFirst: options.continuityInspectFirst,
       resumeNote: options.continuityResumeNote,
-      taskId: options.task,
+      taskId: options.taskId,
     }),
     exitCode: 0,
   }),
   "reconcile-continuity": async ({ target, packageRoot, options }) => ({
-    result: await runReconcileContinuity({ target, packageRoot, taskId: options.task }),
+    result: await runReconcileContinuity({ target, packageRoot, taskId: options.taskId }),
     exitCode: 0,
   }),
   "clear-continuity": async ({ target, options }) => ({
-    result: await runClearContinuity({ target, taskId: options.task }),
+    result: await runClearContinuity({ target, taskId: options.taskId }),
     exitCode: 0,
   }),
   "prepare-completion": async ({ target, packageRoot, options }) => ({
-    result: await runPrepareCompletion({ target, packageRoot, taskId: options.task }),
+    result: await runPrepareCompletion({ target, packageRoot, taskId: options.taskId }),
     exitCode: 0,
   }),
   "run-check": async ({ target, packageRoot, options }) => {
@@ -148,7 +148,7 @@ export const COMMAND_EXECUTORS = {
       argv: options.commandArgv,
       details: options.checkDetails ?? undefined,
       timeoutMs: options.timeoutMs ?? undefined,
-      taskId: options.task,
+      taskId: options.taskId,
     });
     return { result, exitCode: result.check.status === "passed" ? 0 : 1 };
   },
@@ -167,7 +167,7 @@ export const COMMAND_EXECUTORS = {
       details: options.checkDetails ?? undefined,
       executionRef: options.checkExecutionRef ?? undefined,
       provenance: options.checkProvenance ?? undefined,
-      taskId: options.task,
+      taskId: options.taskId,
     }),
     exitCode: 0,
   }),
@@ -181,7 +181,7 @@ export const COMMAND_EXECUTORS = {
       source: options.checkSource ?? options.checkCommand,
       result: options.checkResult,
       details: options.checkDetails ?? undefined,
-      taskId: options.task,
+      taskId: options.taskId,
     }),
     exitCode: 0,
   }),
@@ -194,12 +194,12 @@ export const COMMAND_EXECUTORS = {
       evidenceRefs: options.evidenceRefs,
       settledBy: options.settledBy,
       nextSafeAction: options.nextSafeAction,
-      taskId: options.task,
+      taskId: options.taskId,
     }),
     exitCode: 0,
   }),
   progress: async ({ target, packageRoot, options }) => {
-    const result = await runProgress({ target, packageRoot, taskId: options.task });
+    const result = await runProgress({ target, packageRoot, taskId: options.taskId });
     return { result, exitCode: result.status === "STALLED" ? 1 : 0 };
   },
   "record-decision-criterion": async ({ target, packageRoot, options }) => ({
@@ -208,24 +208,24 @@ export const COMMAND_EXECUTORS = {
       packageRoot,
       decision: options.decision,
       settledBy: options.settledBy,
-      taskId: options.task,
+      taskId: options.taskId,
     }),
     exitCode: 0,
   }),
   complete: async ({ target, packageRoot, options }) => {
-    const result = await runComplete({ target, packageRoot, strict: options.strict, taskId: options.task });
+    const result = await runComplete({ target, packageRoot, strict: options.strict, taskId: options.taskId });
     return { result, exitCode: result.status === "VALID" ? 0 : 1 };
   },
   audit: async ({ target, packageRoot, options }) => {
-    const result = await runAudit({ target, packageRoot, strict: options.strict, taskId: options.task });
+    const result = await runAudit({ target, packageRoot, strict: options.strict, taskId: options.taskId });
     return { result, exitCode: result.status === "VALID" ? 0 : 1 };
   },
   report: async ({ target, packageRoot, options }) => {
-    const result = await runReport({ target, packageRoot, strict: options.strict, taskId: options.task });
+    const result = await runReport({ target, packageRoot, strict: options.strict, taskId: options.taskId });
     return { result, exitCode: result.verdict === "VALID" ? 0 : 1 };
   },
   policy: async ({ target, packageRoot, options }) => ({
-    result: await runPolicy({ target, packageRoot, name: options.policy, taskId: options.task }),
+    result: await runPolicy({ target, packageRoot, name: options.policy, taskId: options.taskId }),
     exitCode: 0,
   }),
   "policy-discover": async ({ target, packageRoot, options }) => ({
@@ -233,11 +233,11 @@ export const COMMAND_EXECUTORS = {
     exitCode: 0,
   }),
   "policy-status": async ({ target, packageRoot, options }) => {
-    const result = await runPolicyStatus({ target, packageRoot, taskId: options.task });
+    const result = await runPolicyStatus({ target, packageRoot, taskId: options.taskId });
     return { result, exitCode: result.status === "VALID" ? 0 : 1 };
   },
   "policy-diff": async ({ target, packageRoot, options }) => ({
-    result: await runPolicyDiff({ target, packageRoot, taskId: options.task, before: options.before, after: options.after }),
+    result: await runPolicyDiff({ target, packageRoot, taskId: options.taskId, before: options.before, after: options.after }),
     exitCode: 0,
   }),
   "rule-verify": async ({ target, packageRoot, options }) => {
@@ -259,15 +259,15 @@ export const COMMAND_EXECUTORS = {
     exitCode: 0,
   }),
   bundle: async ({ target, packageRoot, options }) => ({
-    result: await runBundle({ target, packageRoot, taskId: options.task }),
+    result: await runBundle({ target, packageRoot, taskId: options.taskId }),
     exitCode: 0,
   }),
   inspect: async ({ target, packageRoot, options }) => {
-    const result = await inspectTarget({ target, packageRoot, contractFile: options.contractFile, taskId: options.task });
+    const result = await inspectTarget({ target, packageRoot, contractFile: options.contractFile, taskId: options.taskId });
     return { result, exitCode: result.ok ? 0 : 1 };
   },
   "validate-receipt": async ({ target, packageRoot, options }) => ({
-    result: await runValidateReceipt({ target, packageRoot, file: options.file, taskId: options.task }),
+    result: await runValidateReceipt({ target, packageRoot, file: options.file, taskId: options.taskId }),
     exitCode: 0,
   }),
   "validate-protocol": async ({ target, packageRoot, options }) => {
@@ -281,27 +281,27 @@ export const COMMAND_EXECUTORS = {
       continuityFile: options.continuityFile,
       taskBriefFiles: options.taskBriefFiles,
       delegatedResultFiles: options.delegatedResultFiles,
-      taskId: options.task,
+      taskId: options.taskId,
     });
     return { result, exitCode: result.status === "VALID" ? 0 : 1 };
   },
   status: async ({ target, packageRoot, options }) => ({
-    result: await runStatus({ target, packageRoot, contractFile: options.contractFile, taskId: options.task }),
+    result: await runStatus({ target, packageRoot, contractFile: options.contractFile, taskId: options.taskId }),
     exitCode: 0,
   }),
   "validate-state": async ({ target, packageRoot, options }) => {
-    const result = await runValidateState({ target, packageRoot, taskId: options.task });
+    const result = await runValidateState({ target, packageRoot, taskId: options.taskId });
     return { result, exitCode: result.ok ? 0 : 1 };
   },
   "clear-state": async ({ target, options }) => ({
-    result: await runClearState({ target, taskId: options.task }),
+    result: await runClearState({ target, taskId: options.taskId }),
     exitCode: 0,
   }),
   "task-create": async ({ target, packageRoot, options }) => ({
     result: await runTaskCreate({
       target,
       packageRoot,
-      taskId: options.task,
+      taskId: options.taskId,
       claims: options.claims,
       contractFile: options.contractFile,
     }),
@@ -312,18 +312,18 @@ export const COMMAND_EXECUTORS = {
     exitCode: 0,
   }),
   "task-show": async ({ target, packageRoot, options }) => ({
-    result: await runTaskShow({ target, packageRoot, taskId: options.task }),
+    result: await runTaskShow({ target, packageRoot, taskId: options.taskId }),
     exitCode: 0,
   }),
   "task-lock-status": async ({ target, packageRoot, options }) => ({
-    result: await runTaskLockStatus({ target, packageRoot, taskId: options.task }),
+    result: await runTaskLockStatus({ target, packageRoot, taskId: options.taskId }),
     exitCode: 0,
   }),
   "task-scope": async ({ target, packageRoot, options }) => ({
     result: await runTaskScope({
       target,
       packageRoot,
-      taskId: options.task,
+      taskId: options.taskId,
       claims: options.claims,
     }),
     exitCode: 0,
@@ -337,28 +337,28 @@ export const COMMAND_EXECUTORS = {
     exitCode: 0,
   }),
   "task-unlock": async ({ target, packageRoot, options }) => ({
-    result: await runTaskUnlock({ target, packageRoot, taskId: options.task, force: options.force, staleOnly: options.staleOnly }),
+    result: await runTaskUnlock({ target, packageRoot, taskId: options.taskId, force: options.force, staleOnly: options.staleOnly }),
     exitCode: 0,
   }),
   "task-recover": async ({ target, packageRoot, options }) => ({
     result: await runTaskRecover({
       target,
       packageRoot,
-      taskId: options.task,
+      taskId: options.taskId,
       acknowledgeRecovery: options.acknowledgeRecovery,
       operatorAuthorized: options.operatorAuthorized,
     }),
     exitCode: 0,
   }),
   "task-resume": async ({ target, packageRoot, options }) => ({
-    result: await runTaskResume({ target, packageRoot, taskId: options.task, claims: options.claims }),
+    result: await runTaskResume({ target, packageRoot, taskId: options.taskId, claims: options.claims }),
     exitCode: 0,
   }),
   "task-repair-legacy-recovery": async ({ target, packageRoot, options }) => ({
     result: await runTaskRepairLegacyRecovery({
       target,
       packageRoot,
-      taskId: options.task,
+      taskId: options.taskId,
       acknowledgeRecovery: options.acknowledgeRecovery,
     }),
     exitCode: 0,
@@ -367,7 +367,7 @@ export const COMMAND_EXECUTORS = {
     result: await reconcileClosure({
       target,
       packageRoot,
-      taskId: options.task,
+      taskId: options.taskId,
       checkId: options.checkId,
       checkRequirement: options.checkRequirement,
       checkDetails: options.checkDetails,

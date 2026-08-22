@@ -90,7 +90,7 @@ test("canonical thrown errors preserve their public codes", async () => {
       input: { task: "missing-task" },
     });
     assert.equal(envelope.ok, false);
-    assert.equal(envelope.error.code, "E_TASK_NOT_FOUND");
+    assert.equal(envelope.error.code, "E_TASK_REQUIRED");
     assert.equal(envelope.exitCode, 1);
   });
 });

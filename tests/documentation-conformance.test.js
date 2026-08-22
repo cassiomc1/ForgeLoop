@@ -174,7 +174,7 @@ test("CLI parser behavior matches CLI_COMMAND_DEFINITIONS options", () => {
 
   // Test route accepts --work and flags
   const parsedRoute = parseArgs(["route", "--work", "code", "--behavior-change"]);
-  assert.equal(parsedRoute.options.work, "code");
+  assert.equal(parsedRoute.options.workType, "code");
   assert.equal(parsedRoute.options.behaviorChange, true);
 });
 

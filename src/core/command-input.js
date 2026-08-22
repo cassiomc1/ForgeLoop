@@ -13,7 +13,7 @@ export function defaultCommandInputValues() {
     strict: false,
     fix: false,
     adopt: [],
-    work: null,
+    workType: null,
     surfaces: [],
     risks: [],
     platforms: [],
@@ -43,7 +43,7 @@ export function defaultCommandInputValues() {
     checkType: null,
     checkSource: null,
     policy: null,
-    task: null,
+    taskId: null,
     help: false,
     version: false,
     ...continuityOptionDefaults(),
@@ -65,10 +65,10 @@ export function validateForgeLoopCommandInput({ command, input, help = false } =
   if (command !== "policy" && options.policy) {
     throw new Error(`Policy name is not valid for ${command}`);
   }
-  if (command === "bundle" && !options.task) {
+  if (command === "bundle" && !options.taskId) {
     throw new Error("bundle requires --task");
   }
-  if (command === "task-create" && !options.task) {
+  if (command === "task-create" && !options.taskId) {
     throw new Error("task-create requires --task");
   }
 
@@ -93,7 +93,7 @@ export function validateForgeLoopCommandInput({ command, input, help = false } =
     }
   }
   if (command === "reconcile-closure" && !help) {
-    if (!options.task) throw new Error("reconcile-closure requires --task");
+    if (!options.taskId) throw new Error("reconcile-closure requires --task");
     if (!options.checkId) throw new Error("reconcile-closure requires --id");
     if (!options.checkRequirement) throw new Error("reconcile-closure requires --requirement");
     if (options.checkKind || options.checkStatus || options.checkEvidenceKind || options.checkCommand
