@@ -52,6 +52,25 @@ Preparation checklist for the `@cassiomc1/forgeloop` 1.5.0 and
 - [ ] THIRD_PARTY_NOTICES covers the Model Context Protocol SDK.
 - [ ] CHANGELOG entries present.
 
+## Exact output-bound gates (post-PR #80)
+
+- [ ] Output bounds measure the exact UTF-8 serialization transmitted
+      (pretty-printed included), not compact JSON.
+- [ ] Compact-below/pretty-above regression covered by tests.
+- [ ] UTF-8 byte-count regression covered by tests.
+- [ ] `forgeloop_capabilities` complete result is bounded like command tools.
+- [ ] Non-size serialization errors are rethrown, not mislabeled as overflow.
+- [ ] Structured tool input is byte-bounded (`E_MCP_INPUT_TOO_LARGE`).
+
+## Documentation gates
+
+- [ ] Repository-wide documentation audit complete.
+- [ ] Documentation manifest/index current.
+- [ ] Generated references current (`docs:generate` leaves no diff).
+- [ ] README / CHANGELOG current.
+- [ ] MCP / Universal Integration docs current.
+- [ ] Security docs current.
+
 ## Publication boundary
 
 - [ ] Release identity verification passes.
