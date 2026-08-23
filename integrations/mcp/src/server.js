@@ -16,6 +16,7 @@ import { resolveProjectContext } from "./project-context.js";
 import { buildToolRegistrations } from "./tool-registry.js";
 import { registerIntegrationResources } from "./resource-registry.js";
 import { stringifyBoundedMcpJson } from "./output-policy.js";
+import { enforceOutputBound } from "./error-mapping.js";
 import { logToolCall } from "./logging.js";
 
 const MCP_PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -74,13 +75,14 @@ export function buildForgeLoopMcpServer({ projectContext, policy, packageRoot })
     },
     async () => {
       const data = capabilitiesResult({ policy, projectRoot: projectContext.projectRoot });
-      // §10: capabilities is never an unbounded path.
+      // §10 + exact-bound fix: the transmitted text is measured exactly, and
+      // capabilities is bounded like any ordinary command tool result.
       const text = stringifyBoundedMcpJson(data);
-      return {
+      return enforceOutputBound({
         isError: false,
         content: [{ type: "text", text }],
         structuredContent: data,
-      };
+      });
     },
   );
 
