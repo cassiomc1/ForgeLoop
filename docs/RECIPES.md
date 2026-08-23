@@ -345,3 +345,51 @@ work resumes. Claims are released only after ForgeLoop validates the recovery
 artifact against the complete ledger history. If `next` returns
 `RESOLVE_RECOVERY_INCONSISTENCY`, run `validate-protocol`; do not create, edit,
 or delete `recovery.json` manually.
+
+## Run ForgeLoop through MCP (safe mode)
+
+Start the local MCP adapter and inspect what it exposes:
+
+```bash
+forgeloop-mcp --project . --mode safe
+```
+
+`safe` mode permits reads, normal loop mutations, and canonical `task-resume`.
+Call the `forgeloop_capabilities` tool first: it reports versions, features,
+launch policy, and the resource list. Task ownership is available from the
+`forgeloop://task/{taskId}/ownership` resource — always the canonical claim
+resolver projection.
+
+## Resume a recovered task through MCP
+
+Recovered tasks stay mutation-disabled until claims are reacquired:
+
+```json
+{ "tool": "forgeloop_task_resume", "arguments": { "taskId": "my-task" } }
+```
+
+Conflicting claims fail with `E_TASK_SCOPE_CONFLICT` and keep recovery intact.
+Ordinary mutations against a recovered task are refused by core regardless of
+transport.
+
+## Deliberately opt into external execution
+
+`run-check`/`reconcile-closure` require a full-mode launch flag; tool input
+cannot grant it:
+
+```bash
+forgeloop-mcp --mode full --allow-external-execution
+```
+
+Execution uses exact argv arrays only — there is no generic shell tool — and
+the server `--max-execution-time-ms` ceiling always applies. Output is bounded
+on the exact UTF-8 serialization transmitted (`E_MCP_RESULT_TOO_LARGE`);
+oversized structured input fails with `E_MCP_INPUT_TOO_LARGE`.
+
+## Diagnose loopback-only HTTP errors
+
+`forgeloop-mcp-http` binds loopback only. A non-loopback bind fails closed
+with `E_MCP_REMOTE_NOT_SUPPORTED`; remote/authenticated HTTP is unsupported.
+Host/Origin validation is DNS-rebinding defense, not authentication. Under
+load, requests beyond the in-flight ceiling receive 503 `E_MCP_HTTP_BUSY`
+with `Retry-After`.

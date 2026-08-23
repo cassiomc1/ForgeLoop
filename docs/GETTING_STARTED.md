@@ -382,6 +382,7 @@ forgeloop task-migrate --json
 ## 8. Next Steps
 
 - Continue a task across different AI harnesses: [`docs/CROSS_HARNESS_CONTINUITY.md`](./CROSS_HARNESS_CONTINUITY.md)
+- Optional: use ForgeLoop through MCP or the Integration API — [`docs/MCP.md`](./MCP.md) and [`docs/UNIVERSAL_INTEGRATION.md`](./UNIVERSAL_INTEGRATION.md). MCP is not required; CLI and MCP share the same canonical project/task state.
 - Complete command reference: [`docs/CLI_REFERENCE.md`](./CLI_REFERENCE.md)
 - Artifact and schema reference: [`docs/ARTIFACT_REFERENCE.md`](./ARTIFACT_REFERENCE.md)
 - Common symptoms and recovery: [`docs/TROUBLESHOOTING.md`](./TROUBLESHOOTING.md)

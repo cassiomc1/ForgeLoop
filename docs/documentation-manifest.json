@@ -363,7 +363,8 @@
       "id": "mcp",
       "class": "guide",
       "audience": [
-        "user"
+        "user",
+        "integrator"
       ],
       "canonicalFor": [
         "mcp"
@@ -375,7 +376,8 @@
       "id": "universal-integration",
       "class": "guide",
       "audience": [
-        "user"
+        "user",
+        "integrator"
       ],
       "canonicalFor": [
         "universal-integration"
@@ -385,9 +387,9 @@
     {
       "path": "docs/RELEASE_CHECKLIST_1_5_MCP.md",
       "id": "release-checklist-1-5-mcp",
-      "class": "guide",
+      "class": "reference",
       "audience": [
-        "user"
+        "maintainer"
       ],
       "canonicalFor": [
         "release-checklist-1-5-mcp"

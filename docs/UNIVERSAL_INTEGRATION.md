@@ -40,7 +40,7 @@ import {
 | Surface | Entry |
 | --- | --- |
 | ForgeLoop CLI | human terminal rendering over the same executors |
-| ForgeLoop MCP | `@cassiomc1/forgeloop-mcp` (stdio; see [MCP.md](./MCP.md)) |
+| ForgeLoop MCP | `@cassiomc1/forgeloop-mcp`: stdio (default/recommended) plus optional strict-modern loopback-only HTTP; see [MCP.md](./MCP.md) |
 | Studio / IDE / CI adapters | the same integration subpath |
 
 All consumers share one protocol authority: `.forgeloop/` state written only
