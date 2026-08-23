@@ -34,7 +34,7 @@ export async function executeForgeLoopCommand({
 } = {}) {
   const metadata = Object.freeze({
     protocolVersion: PROTOCOL_VERSION,
-    integrationRuntimeVersion: FORGELOOP_INTEGRATION_RUNTIME_VERSION,
+    integrationApiVersion: FORGELOOP_INTEGRATION_RUNTIME_VERSION,
   });
 
   if (typeof command !== "string" || !CLI_COMMAND_DEFINITIONS[command]) {

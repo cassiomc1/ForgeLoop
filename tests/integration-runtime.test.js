@@ -50,7 +50,7 @@ test("read command produces a deterministic envelope with metadata and no output
       assert.equal(envelope.exitCode, 0);
       assert.equal(envelope.error, null);
       assert.equal(typeof envelope.metadata.packageVersion, "string");
-      assert.equal(envelope.metadata.integrationRuntimeVersion, 1);
+      assert.equal(envelope.metadata.integrationApiVersion, 1);
       assert.ok(envelope.result.features.taskClaimRecovery.validatedClaimProjection === true);
     });
   } finally {

@@ -1,7 +1,13 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { McpServer } from "@modelcontextprotocol/server";
 
 import {
   FORGELOOP_INTEGRATION_API_VERSION,
+  getForgeLoopCapabilities,
+  INTEGRATION_RESOURCE_DEFINITIONS,
 } from "@cassiomc1/forgeloop/integration";
 
 import { resolveLaunchPolicy, SERVER_MODES } from "./capability-policy.js";
@@ -9,6 +15,34 @@ import { resolveProjectContext } from "./project-context.js";
 import { buildToolRegistrations } from "./tool-registry.js";
 import { registerIntegrationResources } from "./resource-registry.js";
 import { logToolCall } from "./logging.js";
+
+const MCP_PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+/** §22: the package.json version is the single source of truth. */
+export function mcpServerVersion() {
+  const manifest = JSON.parse(readFileSync(path.join(MCP_PACKAGE_ROOT, "package.json"), "utf8"));
+  return manifest.version;
+}
+
+function capabilitiesResult({ policy, projectRoot }) {
+  void projectRoot;
+  return {
+    ...getForgeLoopCapabilities(),
+    server: {
+      package: "@cassiomc1/forgeloop-mcp",
+      version: mcpServerVersion(),
+      mode: policy.mode,
+      transportCapabilities: {
+        allowExternalExecution: policy.allowExternalExecution,
+        allowMaintenance: policy.allowMaintenance,
+        allowRecovery: policy.allowRecovery,
+        allowLegacyRepair: policy.allowLegacyRepair,
+        allowForceRecovery: policy.allowForceRecovery,
+      },
+    },
+    resources: Object.keys(INTEGRATION_RESOURCE_DEFINITIONS),
+  };
+}
 
 /**
  * Construct a fresh MCP server product over an already-validated launch
@@ -18,8 +52,33 @@ import { logToolCall } from "./logging.js";
 export function buildForgeLoopMcpServer({ projectContext, policy, packageRoot }) {
   const server = new McpServer({
     name: "forgeloop-mcp",
-    version: "0.1.0",
+    version: mcpServerVersion(),
   });
+
+  // Integration-specific capability introspection (§12): READ_ONLY,
+  // deterministic, available in every mode; never a fake CLI command.
+  server.registerTool(
+    "forgeloop_capabilities",
+    {
+      title: "ForgeLoop: capabilities",
+      description: "Reports ForgeLoop/MCP versions, protocol features, command risk classes, and the canonical resource list.",
+      inputSchema: undefined,
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    async () => {
+      const data = capabilitiesResult({ policy, projectRoot: projectContext.projectRoot });
+      return {
+        isError: false,
+        content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+        structuredContent: data,
+      };
+    },
+  );
 
   for (const registration of buildToolRegistrations({ projectRoot: projectContext.projectRoot, policy })) {
     server.registerTool(

@@ -44,3 +44,10 @@ HTTP transport in this release.
 - Tool/resource catalogs are deterministic; project state never changes them.
 - stdout carries only the MCP protocol; diagnostics go to stderr.
 - Public ForgeLoop error codes are preserved verbatim.
+
+## Transports
+
+- **stdio** (default, recommended): `forgeloop-mcp --project /repo --mode safe`.
+- **HTTP** (optional): `forgeloop-mcp-http` serves the strict modern stateless
+  MCP 2026 model. Loopback-only — non-loopback binds fail closed with
+  `E_MCP_REMOTE_NOT_SUPPORTED` until an authenticated remote design exists.
