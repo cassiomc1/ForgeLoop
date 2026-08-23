@@ -49,7 +49,7 @@ export async function createForgeLoopHttpHandler({
   if (FORGELOOP_INTEGRATION_API_VERSION !== 1) {
     throw new Error(`E_MCP_FORGELOOP_INTEGRATION_UNSUPPORTED: ForgeLoop integration API ${FORGELOOP_INTEGRATION_API_VERSION} is not supported (required: 1)`);
   }
-  const projectContext = resolveProjectContext(projectPath);
+  const projectContext = await resolveProjectContext(projectPath);
   const policy = resolveLaunchPolicy({
     mode,
     allowExternalExecution,

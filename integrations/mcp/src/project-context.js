@@ -1,14 +1,14 @@
-import { realpathSync } from "node:fs";
-import path from "node:path";
+import { resolveForgeLoopProjectRoot } from "@cassiomc1/forgeloop/integration";
 
 /**
- * The project root is pinned at server startup: realpathed once and frozen.
- * It is never accepted as tool input and never derived per call.
+ * The project root is pinned at server startup using the canonical ForgeLoop
+ * root resolver (symlinks rejected, same semantics as the CLI target
+ * resolver). It is frozen once and never accepted as tool input.
  */
-export function resolveProjectContext(projectPath) {
+export async function resolveProjectContext(projectPath) {
   if (typeof projectPath !== "string" || projectPath.trim() === "") {
     throw new Error("A project path is required to start the ForgeLoop MCP server");
   }
-  const resolved = realpathSync(path.resolve(projectPath));
+  const resolved = await resolveForgeLoopProjectRoot(projectPath);
   return Object.freeze({ projectRoot: resolved });
 }

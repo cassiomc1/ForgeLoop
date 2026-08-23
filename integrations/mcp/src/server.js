@@ -87,7 +87,7 @@ export async function createForgeLoopMcpServer({
   maxExecutionTimeMs = 600000,
   packageRoot = undefined,
 } = {}) {
-  const projectContext = resolveProjectContext(projectPath);
+  const projectContext = await resolveProjectContext(projectPath);
   const policy = validateLaunchContext({
     mode,
     allowExternalExecution,
