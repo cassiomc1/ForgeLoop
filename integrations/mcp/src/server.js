@@ -2,7 +2,6 @@ import { McpServer } from "@modelcontextprotocol/server";
 
 import {
   FORGELOOP_INTEGRATION_API_VERSION,
-  getForgeLoopCapabilities,
 } from "@cassiomc1/forgeloop/integration";
 
 import { resolveLaunchPolicy, SERVER_MODES } from "./capability-policy.js";
@@ -12,39 +11,11 @@ import { registerIntegrationResources } from "./resource-registry.js";
 import { logToolCall } from "./logging.js";
 
 /**
- * Create the ForgeLoop MCP server. The MCP layer is an adapter: it registers
- * deterministic tools/resources over the canonical ForgeLoop integration API
- * and contains no lifecycle, ownership, recovery, lock, or transaction logic.
+ * Construct a fresh MCP server product over an already-validated launch
+ * context. Used directly by the stateless HTTP transport (one product per
+ * request) and once by the stdio entrypoint.
  */
-export async function createForgeLoopMcpServer({
-  projectPath,
-  mode = SERVER_MODES.SAFE,
-  allowExternalExecution = false,
-  allowMaintenance = false,
-  allowRecovery = false,
-  allowLegacyRepair = false,
-  allowForceRecovery = false,
-  maxExecutionTimeMs = 600000,
-  packageRoot = undefined,
-} = {}) {
-  const projectContext = resolveProjectContext(projectPath);
-  const policy = resolveLaunchPolicy({
-    mode,
-    allowExternalExecution,
-    allowMaintenance,
-    allowRecovery,
-    allowLegacyRepair,
-    allowForceRecovery,
-    maxExecutionTimeMs,
-  });
-
-  // Startup compatibility check against the installed ForgeLoop core.
-  if (FORGELOOP_INTEGRATION_API_VERSION !== 1) {
-    throw new Error(`E_MCP_FORGELOOP_INTEGRATION_UNSUPPORTED: ForgeLoop integration API ${FORGELOOP_INTEGRATION_API_VERSION} is not supported (required: 1)`);
-  }
-  const capabilities = await getForgeLoopCapabilities();
-  void capabilities;
-
+export function buildForgeLoopMcpServer({ projectContext, policy, packageRoot }) {
   const server = new McpServer({
     name: "forgeloop-mcp",
     version: "0.1.0",
@@ -82,5 +53,52 @@ export async function createForgeLoopMcpServer({
     packageRoot,
   });
 
+  return server;
+}
+
+function validateLaunchContext({ mode, allowExternalExecution, allowMaintenance, allowRecovery, allowLegacyRepair, allowForceRecovery, maxExecutionTimeMs }) {
+  if (FORGELOOP_INTEGRATION_API_VERSION !== 1) {
+    throw new Error(`E_MCP_FORGELOOP_INTEGRATION_UNSUPPORTED: ForgeLoop integration API ${FORGELOOP_INTEGRATION_API_VERSION} is not supported (required: 1)`);
+  }
+  return resolveLaunchPolicy({
+    mode,
+    allowExternalExecution,
+    allowMaintenance,
+    allowRecovery,
+    allowLegacyRepair,
+    allowForceRecovery,
+    maxExecutionTimeMs,
+  });
+}
+
+/**
+ * Create the ForgeLoop MCP server. The MCP layer is an adapter: it registers
+ * deterministic tools/resources over the canonical ForgeLoop integration API
+ * and contains no lifecycle, ownership, recovery, lock, or transaction logic.
+ */
+export async function createForgeLoopMcpServer({
+  projectPath,
+  mode = SERVER_MODES.SAFE,
+  allowExternalExecution = false,
+  allowMaintenance = false,
+  allowRecovery = false,
+  allowLegacyRepair = false,
+  allowForceRecovery = false,
+  maxExecutionTimeMs = 600000,
+  packageRoot = undefined,
+} = {}) {
+  const projectContext = resolveProjectContext(projectPath);
+  const policy = validateLaunchContext({
+    mode,
+    allowExternalExecution,
+    allowMaintenance,
+    allowRecovery,
+    allowLegacyRepair,
+    allowForceRecovery,
+    maxExecutionTimeMs,
+  });
+  const server = buildForgeLoopMcpServer({ projectContext, policy, packageRoot });
   return Object.freeze({ server, policy, projectContext });
 }
+
+export { SERVER_MODES };

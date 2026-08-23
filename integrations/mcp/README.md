@@ -17,7 +17,7 @@ forgeloop-mcp --project /repo --mode safe
 ### Modes
 
 | Mode | Read tools | Loop mutations | task-resume | External execution | Maintenance | Recovery | Legacy repair | Force |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | `readonly` | yes | no | no | no | no | no | no | no |
 | `safe` (default) | yes | yes | yes | no | no | no | no | no |
 | `full` | yes | yes | yes | opt-in | opt-in | opt-in | opt-in | opt-in |

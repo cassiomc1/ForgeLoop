@@ -23,7 +23,7 @@ every ownership value comes from the canonical claim resolver.
 ## Modes
 
 | Mode | Read | Loop mutations | task-resume | External | Maintenance | Recovery | Legacy repair | Force |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | `readonly` | yes | no | no | no | no | no | no | no |
 | `safe` (default) | yes | yes | yes | no | no | no | no | no |
 | `full` | yes | yes | yes | opt-in | opt-in | opt-in | opt-in | opt-in |
@@ -43,3 +43,20 @@ Capability flags (process-scoped, immutable after launch):
 
 Raw recovery artifacts, transaction journals, lock files, and unbounded event
 ledgers are intentionally not exposed.
+
+## Optional stateless HTTP transport
+
+`forgeloop-mcp-http` serves the same deterministic catalog over the modern
+stateless MCP HTTP model:
+
+```bash
+forgeloop-mcp-http --project /repo --mode safe                 # 127.0.0.1:3333
+forgeloop-mcp-http --project /repo --host 0.0.0.0 --allow-remote
+```
+
+- Loopback binding is the default; any non-loopback bind requires explicit
+  `--allow-remote`.
+- DNS-rebinding protection validates `Host` and `Origin` on every request.
+- Stateless: no session identity is issued, so transport metadata is never
+  ForgeLoop authority.
+- Request bodies are bounded (4 MiB) and only `POST` is served.

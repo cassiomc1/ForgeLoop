@@ -9,7 +9,8 @@ import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 
 import { removeTempTree } from "../../../tests/helpers/rm-safe.js";
 
-const mcpPackageRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
+import { fileURLToPath } from "node:url";
+const mcpPackageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const serverEntry = path.join(mcpPackageRoot, "bin", "forgeloop-mcp.js");
 
 /**

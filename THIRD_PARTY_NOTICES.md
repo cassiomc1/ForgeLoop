@@ -200,9 +200,10 @@ or make its prescriptive examples universal.
 
 ### Model Context Protocol SDK (MCP package only)
 
-- Packages: [`@modelcontextprotocol/server`](https://www.npmjs.com/package/@modelcontextprotocol/server)
-  and [`@modelcontextprotocol/client`](https://www.npmjs.com/package/@modelcontextprotocol/client)
-  (test/smoke only), used by `integrations/mcp`.
+- Packages: `@modelcontextprotocol/server` and `@modelcontextprotocol/client`
+  (test/smoke only), used by `integrations/mcp`. Published from the canonical
+  upstream repository:
+  [modelcontextprotocol/typescript-sdk](https://github.com/modelcontextprotocol/typescript-sdk).
 - License declared by the upstream project: MIT.
 - Use in this collection: official SDK transport/server primitives for the
   local stdio ForgeLoop MCP adapter.
