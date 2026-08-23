@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 
@@ -72,4 +73,42 @@ test("mcpServerVersion reads the package manifest as single source of truth (§2
   assert.equal(mcpServerVersion(), expected);
   // The registered product uses the same version (§22 serverInfo parity).
   assert.equal(mcpServerVersion(), "0.1.0");
+});
+
+test("capabilities report the installed core version and never leak projectRoot", async () => {
+  const { client, cleanup } = await connectServer({ mode: SERVER_MODES.SAFE });
+  try {
+    const result = await client.callTool({ name: "forgeloop_capabilities", arguments: {} });
+    assert.notEqual(result.isError, true);
+    const data = result.structuredContent;
+
+    // §14-17: core packageVersion is real, not null.
+    const coreManifest = JSON.parse(readFileSync(
+      path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "node_modules", "@cassiomc1", "forgeloop", "package.json"),
+      "utf8",
+    ));
+    assert.equal(data.packageVersion, coreManifest.version);
+    assert.equal(data.integrationApiVersion, 1);
+    assert.equal(data.protocolVersion, 1);
+    assert.equal(data.server.version, mcpServerVersion());
+    // §28: projectRoot must never be exposed through capabilities.
+    assert.equal(JSON.stringify(data).includes("projectRoot"), false);
+  } finally {
+    await cleanup();
+  }
+});
+
+test("capabilities resource list matches the canonical registry (§30)", async () => {
+  const { client, cleanup } = await connectServer({ mode: SERVER_MODES.SAFE });
+  try {
+    const result = await client.callTool({ name: "forgeloop_capabilities", arguments: {} });
+    const data = result.structuredContent;
+    const { INTEGRATION_RESOURCE_DEFINITIONS: definitions } = await import("@cassiomc1/forgeloop/integration");
+    assert.deepEqual(
+      [...data.resources].sort(),
+      Object.keys(definitions).sort(),
+    );
+  } finally {
+    await cleanup();
+  }
 });

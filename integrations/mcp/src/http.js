@@ -161,6 +161,10 @@ export async function startForgeLoopHttpServer({
   projectPath,
   host = "127.0.0.1",
   port = 0,
+  // Test-only injection point (closing plan §25): an async hook awaited
+  // inside the in-flight region so concurrency shedding can be exercised
+  // deterministically. Never used by the production entrypoints.
+  requestGate = undefined,
   ...serverOptions
 } = {}) {
   const boundHost = validateHttpBind({ host });
@@ -181,6 +185,7 @@ export async function startForgeLoopHttpServer({
       }
       inFlight += 1;
       try {
+        if (requestGate) await requestGate(req);
         if (req.method !== "POST") {
           res.writeHead(405, { "content-type": "application/json", allow: "POST" });
           res.end(JSON.stringify({
@@ -222,6 +227,12 @@ export async function startForgeLoopHttpServer({
   return Object.freeze({
     host: boundHost,
     port: typeof address === "object" ? address.port : port,
+    transportBounds: Object.freeze({
+      headersTimeoutMs: httpServer.headersTimeout,
+      requestTimeoutMs: httpServer.requestTimeout,
+      keepAliveTimeoutMs: httpServer.keepAliveTimeout,
+      maxInFlightRequests: HTTP_TRANSPORT_BOUNDS.maxInFlightRequests,
+    }),
     close: async () => {
       httpServer.closeAllConnections?.();
       await new Promise((resolve) => httpServer.close(resolve));

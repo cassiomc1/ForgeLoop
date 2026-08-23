@@ -12,6 +12,23 @@ import {
 import { readForgeLoopIntegrationResource, INTEGRATION_RESOURCE_DEFINITIONS } from "./core/integration-resources.js";
 import { resolveForgeLoopProjectRoot } from "./core/project-root.js";
 import { INTEGRATION_LIMITS } from "./core/integration-limits.js";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+/**
+ * Version of the installed @cassiomc1/forgeloop package providing this
+ * integration API (closing plan §14-16): lets external adapters report the
+ * real core version without hardcoding or deep-importing package internals.
+ */
+export function getForgeLoopPackageVersion() {
+  const packageJsonPath = path.join(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "..",
+    "package.json",
+  );
+  return JSON.parse(readFileSync(packageJsonPath, "utf8")).version;
+}
 
 export {
   executeForgeLoopCommand,

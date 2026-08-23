@@ -4,6 +4,8 @@ import {
 } from "@cassiomc1/forgeloop/integration";
 import { ResourceTemplate } from "@modelcontextprotocol/server";
 
+import { stringifyBoundedMcpJson } from "./output-policy.js";
+
 import { logResourceRead } from "./logging.js";
 
 const TASK_RESOURCE_KINDS = ["status", "ownership", "contract", "continuity"];
@@ -27,7 +29,7 @@ export function registerIntegrationResources(server, { projectRoot, packageRoot 
       return { contents: [{
         uri: uri.href,
         mimeType: "application/json",
-        text: JSON.stringify(resource.data, null, 2),
+        text: stringifyBoundedMcpJson(resource.data),
       }] };
     } catch (error) {
       logResourceRead({ uri: `task/${kind}`, durationMs: Date.now() - startedAt, ok: false });
@@ -44,7 +46,7 @@ export function registerIntegrationResources(server, { projectRoot, packageRoot 
         projectPath: projectRoot,
         packageRoot,
       });
-      return { contents: [{ uri: uri.href, mimeType: "application/json", text: JSON.stringify(resource.data, null, 2) }] };
+      return { contents: [{ uri: uri.href, mimeType: "application/json", text: stringifyBoundedMcpJson(resource.data) }] };
     },
   );
 
@@ -57,7 +59,7 @@ export function registerIntegrationResources(server, { projectRoot, packageRoot 
         projectPath: projectRoot,
         packageRoot,
       });
-      return { contents: [{ uri: uri.href, mimeType: "application/json", text: JSON.stringify(resource.data, null, 2) }] };
+      return { contents: [{ uri: uri.href, mimeType: "application/json", text: stringifyBoundedMcpJson(resource.data) }] };
     },
   );
 

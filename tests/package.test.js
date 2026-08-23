@@ -51,6 +51,7 @@ test("npm tarball contains the CLI, templates, and license notices only", () => 
     "docs/RELEASE_CHECKLIST_1_4.md",
     "docs/MCP.md",
     "docs/UNIVERSAL_INTEGRATION.md",
+    "docs/RELEASE_CHECKLIST_1_5_MCP.md",
     "docs/forgeloop-flow.mmd",
     "docs/assets/forgeloop-flow.svg",
     "scripts/CI_VALIDATORS.md",
@@ -125,4 +126,26 @@ test("supported Node engine versions are exercised in docs CI", async () => {
     workflow,
     /actions\/setup-node@820762786026740c76f36085b0efc47a31fe5020/,
   );
+});
+
+test("documentation manifest packaged:true entries always ship in the core tarball", async () => {
+  const manifest = JSON.parse(await readFile("docs/documentation-manifest.json", "utf8"));
+  const expectedDocs = manifest.documents
+    .filter((entry) => entry.packaged === true)
+    .map((entry) => entry.path)
+    .sort();
+
+  const output = execFileSync(npmCommand, ["pack", "--dry-run", "--json"], {
+    encoding: "utf8",
+    shell: process.platform === "win32",
+  });
+  const listing = JSON.parse(output)[0].files.map((entry) => entry.path);
+
+  assert.ok(expectedDocs.length > 0, "manifest must declare at least one packaged document");
+  for (const docPath of expectedDocs) {
+    assert.ok(
+      listing.includes(docPath),
+      `documentation manifest marks ${docPath} packaged:true but the core tarball omits it`,
+    );
+  }
 });

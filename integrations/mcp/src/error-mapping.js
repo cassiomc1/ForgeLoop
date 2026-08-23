@@ -4,20 +4,21 @@
  * environment values, and raw child-process stderr are never exposed.
  */
 import { sanitizeErrorPayload, sanitizeClientMessage } from "./error-sanitization.js";
-
-const MAX_OUTPUT_BYTES = 4 * 1024 * 1024;
+import { assertMcpOutputWithinBound } from "./output-policy.js";
 
 /**
  * Bounded result guarantee (§13): canonical JSON is never silently
  * truncated — an oversized payload becomes a deterministic transport error.
  */
 export function enforceOutputBound(toolResult) {
-  const serialized = JSON.stringify({
-    content: toolResult.content,
-    structuredContent: toolResult.structuredContent,
-  });
-  if (Buffer.byteLength(serialized, "utf8") > MAX_OUTPUT_BYTES) {
-    return {
+  try {
+    assertMcpOutputWithinBound({
+      content: toolResult.content,
+      structuredContent: toolResult.structuredContent,
+    });
+  } catch (
+        error) {
+      return {
       isError: true,
       content: [{
         type: "text",
@@ -25,7 +26,7 @@ export function enforceOutputBound(toolResult) {
           ok: false,
           error: {
             code: "E_MCP_RESULT_TOO_LARGE",
-            message: `Serialized result exceeds the ${MAX_OUTPUT_BYTES} byte MCP output bound`,
+            message: "Serialized MCP result exceeds the output bound",
           },
         }, null, 2),
       }],
@@ -33,9 +34,9 @@ export function enforceOutputBound(toolResult) {
         ok: false,
         error: { code: "E_MCP_RESULT_TOO_LARGE" },
       },
-    };
-  }
-  return toolResult;
+      };
+    }
+    return toolResult;
 }
 
 export function envelopeToToolResult(envelope) {

@@ -1,7 +1,7 @@
 {
   "name": "@cassiomc1/forgeloop-mcp",
   "version": "0.1.0",
-  "description": "Local stdio MCP server exposing the canonical ForgeLoop programmatic integration API. ForgeLoop MCP is an adapter over ForgeLoop, never another implementation.",
+  "description": "Local-first MCP server exposing the canonical ForgeLoop programmatic integration API over stdio and optional loopback-only HTTP.",
   "type": "module",
   "license": "MIT",
   "engines": {
