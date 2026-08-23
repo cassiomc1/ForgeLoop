@@ -144,10 +144,17 @@ test("legacy-era initialize is rejected by strict-modern mode", async () => {
   }
 });
 
-test("transport bounds: GET rejected, oversized body 413, timeout knobs set", async () => {
+test("effective transport bounds are observable and match the declared constants", async () => {
   const target = await mkdtemp(path.join(tmpdir(), "forgeloop-mcp-http-bounds-"));
   const listener = await startForgeLoopHttpServer({ projectPath: target, mode: "safe", port: 0 });
   try {
+    // §24/§26: the real Node server timeouts are wired and observable.
+    assert.deepEqual(listener.transportBounds, {
+      headersTimeoutMs: HTTP_TRANSPORT_BOUNDS.headersTimeoutMs,
+      requestTimeoutMs: HTTP_TRANSPORT_BOUNDS.requestTimeoutMs,
+      keepAliveTimeoutMs: HTTP_TRANSPORT_BOUNDS.keepAliveTimeoutMs,
+      maxInFlightRequests: HTTP_TRANSPORT_BOUNDS.maxInFlightRequests,
+    });
     const base = `http://127.0.0.1:${listener.port}`;
 
     const getResponse = await fetch(base + "/mcp", { method: "GET" });
@@ -166,8 +173,74 @@ test("transport bounds: GET rejected, oversized body 413, timeout knobs set", as
     await listener.close();
     await removeTempTree(target);
   }
+});
 
-  void HTTP_TRANSPORT_BOUNDS;
+test("the 33rd in-flight request is shed with 503 E_MCP_HTTP_BUSY", async () => {
+  const target = await mkdtemp(path.join(tmpdir(), "forgeloop-mcp-http-busy-"));
+
+  // Deterministic hold: each accepted request parks on this gate until we
+  // release it. No sleeps — shedding is observed purely by occupancy.
+  let held = 0;
+  const releaseQueue = [];
+  const requestGate = () => new Promise((resolve) => {
+    held += 1;
+    releaseQueue.push(resolve);
+  });
+
+  const listener = await startForgeLoopHttpServer({
+    projectPath: target,
+    mode: "safe",
+    port: 0,
+    requestGate,
+  });
+  try {
+    const base = `http://127.0.0.1:${listener.port}`;
+    const envelope = {
+      [PROTOCOL_VERSION_META_KEY]: MODERN_PROTOCOL_VERSION,
+      [CLIENT_INFO_META_KEY]: { name: "busy-client", version: "0.0.1" },
+      [CLIENT_CAPABILITIES_META_KEY]: {},
+    };
+    const heldPromises = [];
+    for (let i = 0; i < HTTP_TRANSPORT_BOUNDS.maxInFlightRequests; i += 1) {
+      heldPromises.push(fetch(base + "/mcp", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          accept: "application/json",
+          "mcp-protocol-version": MODERN_PROTOCOL_VERSION,
+          "mcp-method": "ping",
+        },
+        body: JSON.stringify({ jsonrpc: "2.0", id: i, method: "ping" }),
+      }).catch((error) => ({ fetchError: error })));
+    }
+
+    // Wait until the ceiling is genuinely occupied, then probe with one more.
+    let shed = null;
+    for (let attempt = 0; attempt < 100 && !shed; attempt += 1) {
+      const probe = await fetch(base + "/mcp", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 999, method: "ping" }),
+      });
+      if (probe.status === 503) {
+        assert.equal(probe.headers.get("retry-after"), "1");
+        const probeBody = await probe.json();
+        assert.equal(probeBody.error.code, "E_MCP_HTTP_BUSY");
+        shed = true;
+      } else {
+        await probe.arrayBuffer().catch(() => {});
+      }
+    }
+    assert.equal(shed, true, "ceiling was never reached");
+
+    // Release the held requests and drain every socket cleanly.
+    while (releaseQueue.length > 0) releaseQueue.shift()();
+    const settled = await Promise.allSettled(heldPromises);
+    void settled;
+  } finally {
+    await listener.close();
+    await removeTempTree(target);
+  }
 });
 
 test("safe-mode capability gating over HTTP", async () => {

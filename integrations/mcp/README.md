@@ -34,8 +34,7 @@ canonical command-level acknowledgement:
 ```
 
 Tool input can never upgrade launch policy. `acknowledgeRecovery: true` in tool
-input is not an authorization grant. There is no generic shell tool and no
-HTTP transport in this release.
+input is not an authorization grant. There is no generic shell tool.
 
 ## Security model
 

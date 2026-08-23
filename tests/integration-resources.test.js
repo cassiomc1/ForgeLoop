@@ -100,3 +100,95 @@ test("task resources require an existing subject and protocol/info works without
     );
   });
 });
+
+test("contract and continuity resources resolve for an existing task", async () => {
+  await withRecoveryTarget(async (target) => {
+    const { taskId } = await setupAbandonedTask(target, { taskId: "resource-contract-continuity" });
+
+    const contract = await readForgeLoopIntegrationResource("task/contract", {
+      projectPath: target,
+      packageRoot,
+      taskId,
+    });
+    assert.equal(contract.data.taskId, taskId);
+
+    const continuity = await readForgeLoopIntegrationResource("task/continuity", {
+      projectPath: target,
+      packageRoot,
+      taskId,
+    });
+    assert.ok(continuity.data !== undefined);
+  });
+});
+
+test("task/contract failures surface a resource-scoped message", async () => {
+  await withRecoveryTarget(async (target) => {
+    await setupAbandonedTask(target, { taskId: "resource-contract-missing" });
+    const { rm } = await import("node:fs/promises");
+    const { taskArtifactPath, taskDirectory } = await import("../src/core/task-paths.js");
+    const { ensureWithin } = await import("../src/core/filesystem.js");
+    void taskDirectory;
+    await rm(ensureWithin(target, taskArtifactPath("resource-contract-missing", "contract")));
+    await assert.rejects(
+      () => readForgeLoopIntegrationResource("task/contract", {
+        projectPath: target,
+        packageRoot,
+        taskId: "resource-contract-missing",
+      }),
+      /task\/contract unavailable/,
+    );
+  });
+});
+
+test("project/tasks and task/status resources resolve through canonical discovery", async () => {
+  await withRecoveryTarget(async (target) => {
+    const { taskId } = await setupAbandonedTask(target, { taskId: "resource-status-tasks" });
+
+    const tasksResource = await readForgeLoopIntegrationResource("project/tasks", {
+      projectPath: target,
+      packageRoot,
+    });
+    assert.equal(tasksResource.data.count >= 1, true);
+    const projected = tasksResource.data.tasks.find((task) => task.taskId === taskId);
+    assert.ok(projected);
+    assert.equal(projected.healthy, true);
+    assert.equal(projected.mutationAllowed, true);
+
+    const status = await readForgeLoopIntegrationResource("task/status", {
+      projectPath: target,
+      packageRoot,
+      taskId,
+    });
+    assert.equal(status.data.taskId, taskId);
+    assert.equal(status.data.claimState, "ACTIVE");
+  });
+});
+
+test("task-scoped resources refuse missing taskId", async () => {
+  await withRecoveryTarget(async (target) => {
+    for (const uri of ["task/status", "task/ownership", "task/contract", "task/continuity"]) {
+      await assert.rejects(
+        () => readForgeLoopIntegrationResource(uri, { projectPath: target, packageRoot }),
+        (error) => error.code === "E_TASK_REQUIRED",
+        uri,
+      );
+    }
+  });
+});
+
+test("project/tasks projects recovered tasks as non-mutable", async () => {
+  await withRecoveryTarget(async (target) => {
+    const { taskId } = await setupAbandonedTask(target, { taskId: "resource-tasks-recovered" });
+    const { runTaskRecover } = await import("../src/commands/task-recover.js");
+    await runTaskRecover({ target, packageRoot, taskId, acknowledgeRecovery: true });
+
+    const tasksResource = await readForgeLoopIntegrationResource("project/tasks", {
+      projectPath: target,
+      packageRoot,
+    });
+    const projected = tasksResource.data.tasks.find((task) => task.taskId === taskId);
+    assert.equal(projected.mutationAllowed, false);
+    // Recovery suspends mutation authority without rewriting lifecycle phase.
+    assert.equal(projected.phase, "VERIFYING");
+  });
+});

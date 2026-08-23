@@ -27,6 +27,15 @@
   secret-shaped values while preserving canonical codes; a real
   `forgeloop_capabilities` tool reports versions, features, policy, and
   resources in every server mode.
+- Closing pass: structured MCP input is byte-bounded
+  (`E_MCP_INPUT_TOO_LARGE`); output bounds apply to command tools,
+  `forgeloop_capabilities`, and every integration resource through one
+  canonical helper (`E_MCP_RESULT_TOO_LARGE`); capabilities reports the real
+  installed ForgeLoop core version; the documentation manifest
+  `packaged:true` set is invariant against the core tarball; HTTP timeout
+  bounds are observable and concurrency shedding (503 `E_MCP_HTTP_BUSY`) is
+  deterministically proven; stdio/HTTP catalog parity is verified at the
+  transport level across representative modes.
 
 - `forgeloop task-repair-legacy-recovery`: migrates one recognized legacy `OPERATOR_RECOVERY_RECORDED` boundary event (no `recoveryId`) into the modern durable recovery representation via an append-only `LEGACY_RECOVERY_MIGRATION_RECORDED` tail event plus a transactional `recovery.json`; the original ledger event is never modified, ambiguous or tampered evidence fails closed, and ordinary mutation stays blocked until `task-resume`.
 - Durable task recovery state in `recovery.json`, explicit `task-resume` claim reacquisition, and recovery-aware `forgeloop next` command specifications.

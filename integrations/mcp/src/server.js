@@ -7,6 +7,7 @@ import { McpServer } from "@modelcontextprotocol/server";
 import {
   FORGELOOP_INTEGRATION_API_VERSION,
   getForgeLoopCapabilities,
+  getForgeLoopPackageVersion,
   INTEGRATION_RESOURCE_DEFINITIONS,
 } from "@cassiomc1/forgeloop/integration";
 
@@ -14,6 +15,7 @@ import { resolveLaunchPolicy, SERVER_MODES } from "./capability-policy.js";
 import { resolveProjectContext } from "./project-context.js";
 import { buildToolRegistrations } from "./tool-registry.js";
 import { registerIntegrationResources } from "./resource-registry.js";
+import { stringifyBoundedMcpJson } from "./output-policy.js";
 import { logToolCall } from "./logging.js";
 
 const MCP_PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -27,7 +29,7 @@ export function mcpServerVersion() {
 function capabilitiesResult({ policy, projectRoot }) {
   void projectRoot;
   return {
-    ...getForgeLoopCapabilities(),
+    ...getForgeLoopCapabilities({ packageVersion: getForgeLoopPackageVersion() }),
     server: {
       package: "@cassiomc1/forgeloop-mcp",
       version: mcpServerVersion(),
@@ -72,9 +74,11 @@ export function buildForgeLoopMcpServer({ projectContext, policy, packageRoot })
     },
     async () => {
       const data = capabilitiesResult({ policy, projectRoot: projectContext.projectRoot });
+      // §10: capabilities is never an unbounded path.
+      const text = stringifyBoundedMcpJson(data);
       return {
         isError: false,
-        content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+        content: [{ type: "text", text }],
         structuredContent: data,
       };
     },

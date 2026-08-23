@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Optional stateless HTTP entrypoint (plan §PR12). Loopback by default;
-// Loopback-only release: remote binds are refused until an authenticated// remote design exists. No session authority.
+// Loopback-only release: remote binds are refused until an authenticated
+// remote design exists. No session authority.
 import { parseArgs } from "node:util";
 
 import { startForgeLoopHttpServer } from "../src/http.js";

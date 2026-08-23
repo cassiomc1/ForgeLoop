@@ -8,6 +8,7 @@ import { fromJsonSchema } from "@modelcontextprotocol/server";
 
 import { invocationAllowed, annotationsFor, toolEnabled } from "./capability-policy.js";
 import { applyExecutionPolicy } from "./execution-policy.js";
+import { enforceStructuredInputBound } from "./input-policy.js";
 import { jsonSchemaForCommand } from "./schema-adapter.js";
 import { envelopeToToolResult, capabilityRefusalResult } from "./error-mapping.js";
 
@@ -59,14 +60,20 @@ export function buildToolRegistrations({ projectRoot, policy }) {
         }
         let effectiveArgs = args ?? {};
         try {
+          // §3-6: structured input byte bound precedes execution policy.
+          effectiveArgs = enforceStructuredInputBound(effectiveArgs);
           effectiveArgs = applyExecutionPolicy({ classification: liveClassification, args: effectiveArgs, policy });
         } catch (error) {
-          return capabilityRefusalResult({
-            code: error.code ?? "E_MCP_EXECUTION_TIMEOUT_INVALID",
-            requiredCapability: "bounded timeoutMs",
-            command,
-            messageOverride: error.message,
-          });
+          if (error.code === "E_MCP_INPUT_TOO_LARGE" || error.code === "E_MCP_EXECUTION_TIMEOUT_INVALID"
+            || error.code === "E_MCP_EXECUTION_TIMEOUT_EXCEEDS_LIMIT") {
+            return capabilityRefusalResult({
+              code: error.code,
+              requiredCapability: error.code === "E_MCP_INPUT_TOO_LARGE" ? "bounded structured input" : "bounded timeoutMs",
+              command,
+              messageOverride: error.message,
+            });
+          }
+          throw error;
         }
         void FORGELOOP_INTEGRATION_API_VERSION;
         const envelope = await executeForgeLoopCommand({

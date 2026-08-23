@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import path from "node:path";
 import { test } from "node:test";
 
 import {
@@ -91,4 +92,35 @@ test("bundle is classified MAINTENANCE because it writes bundle artifacts", asyn
   assert.equal(classification.readOnly, false);
   assert.equal(classification.mutatesProtocol, true);
   assert.equal(classification.requiredCapability, "allowMaintenance");
+});
+
+test("integration helper defaults and risk fallbacks behave deterministically", async () => {
+  const { defaultIntegrationProjectPath } = await import("../src/core/project-root.js");
+  const { classifyForgeLoopInvocation } = await import("../src/core/integration-invocation-policy.js");
+
+  assert.ok(path.isAbsolute(defaultIntegrationProjectPath()));
+
+  // Unknown-to-static-table commands fall back to MAINTENANCE conservatively.
+  const { CLI_COMMAND_DEFINITIONS } = await import("../src/core/cli-command-definitions.js");
+  for (const name of Object.keys(CLI_COMMAND_DEFINITIONS)) {
+    const classification = classifyForgeLoopInvocation(name);
+    assert.match(classification.riskClass, /^[A-Z_]+$/, name);
+  }
+
+  // FORCE_DESTRUCTIVE refinement requires exactly force:true.
+  assert.notEqual(
+    classifyForgeLoopInvocation("task-unlock", { force: false }).riskClass,
+    "FORCE_DESTRUCTIVE",
+  );
+});
+
+test("baseRiskClass fails closed and covers artifact/process metadata directions", async () => {
+  const { baseRiskClass } = await import("../src/core/integration-invocation-policy.js");
+  assert.throws(() => baseRiskClass("__missing__"), /no integration risk classification/);
+
+  const { classifyForgeLoopInvocation } = await import("../src/core/integration-invocation-policy.js");
+  // removes-driven classification directions.
+  assert.equal(classifyForgeLoopInvocation("clear-state").removesArtifacts, true);
+  assert.equal(classifyForgeLoopInvocation("clear-continuity").removesArtifacts, true);
+  assert.equal(classifyForgeLoopInvocation("status").removesArtifacts, false);
 });

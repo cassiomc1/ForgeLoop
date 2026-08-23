@@ -53,9 +53,9 @@ function ownershipProjection(projection) {
     mutationAllowed: projection.mutationAllowed,
     ownershipValid: projection.ownershipValid,
     recoveryStatus: projection.recoveryStatus,
-    historicalWriteClaims: [...(projection.historicalWriteClaims ?? [])],
-    effectiveWriteClaims: [...(projection.effectiveWriteClaims ?? [])],
-    reasonCodes: [...(projection.reasonCodes ?? [])],
+    historicalWriteClaims: [...projection.historicalWriteClaims],
+    effectiveWriteClaims: [...projection.effectiveWriteClaims],
+    reasonCodes: [...projection.reasonCodes],
   };
 }
 
@@ -102,8 +102,6 @@ export async function readForgeLoopIntegrationResource(uri, {
       }
       break;
     }
-    default:
-      break;
   }
 
   if (uri === "task/ownership") {
