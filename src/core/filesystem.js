@@ -10,6 +10,30 @@ import {
   unlink,
 } from "node:fs/promises";
 import path from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
+
+const WINDOWS_REALPATH_RETRY_DELAYS_MS = Object.freeze([5, 10, 20, 40]);
+
+export async function realpathWithTransientWindowsRetry(filePath, {
+  platform = process.platform,
+  retryDelaysMs = WINDOWS_REALPATH_RETRY_DELAYS_MS,
+  realpathImpl = realpath,
+  delayImpl = delay,
+} = {}) {
+  let retryIndex = 0;
+  while (true) {
+    try {
+      return await realpathImpl(filePath);
+    } catch (error) {
+      const retryable = platform === "win32"
+        && (error?.code === "EPERM" || error?.code === "EACCES")
+        && retryIndex < retryDelaysMs.length;
+      if (!retryable) throw error;
+      await delayImpl(retryDelaysMs[retryIndex]);
+      retryIndex += 1;
+    }
+  }
+}
 
 export function ensureWithin(root, relativePath) {
   if (path.isAbsolute(relativePath)) {
@@ -54,8 +78,8 @@ export async function assertSafePath(root, relativePath) {
       if (info.isSymbolicLink()) {
         throw new Error(`Path uses a symlink inside target directory: ${relativePath}`);
       }
-      const resolvedRoot = await realpath(absoluteRoot);
-      const resolvedExisting = await realpath(existing);
+      const resolvedRoot = await realpathWithTransientWindowsRetry(absoluteRoot);
+      const resolvedExisting = await realpathWithTransientWindowsRetry(existing);
       const relativeResolved = path.relative(resolvedRoot, resolvedExisting);
       if (relativeResolved === ".." || relativeResolved.startsWith(`..${path.sep}`) || path.isAbsolute(relativeResolved)) {
         throw new Error(`Path escapes target directory: ${relativePath}`);
