@@ -10,6 +10,55 @@ import {
   unlink,
 } from "node:fs/promises";
 import path from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
+
+const WINDOWS_TRANSIENT_RETRY_DELAYS_MS = Object.freeze([5, 10, 20, 40]);
+
+async function fsCallWithTransientWindowsRetry(fsImpl, filePath, {
+  platform = process.platform,
+  retryDelaysMs = WINDOWS_TRANSIENT_RETRY_DELAYS_MS,
+  delayImpl = delay,
+} = {}) {
+  let retryIndex = 0;
+  while (true) {
+    try {
+      return await fsImpl(filePath);
+    } catch (error) {
+      const retryable = platform === "win32"
+        && (error?.code === "EPERM" || error?.code === "EACCES")
+        && retryIndex < retryDelaysMs.length;
+      if (!retryable) throw error;
+      await delayImpl(retryDelaysMs[retryIndex]);
+      retryIndex += 1;
+    }
+  }
+}
+
+export async function realpathWithTransientWindowsRetry(filePath, {
+  platform = process.platform,
+  retryDelaysMs = WINDOWS_TRANSIENT_RETRY_DELAYS_MS,
+  realpathImpl = realpath,
+  delayImpl = delay,
+} = {}) {
+  return fsCallWithTransientWindowsRetry(realpathImpl, filePath, {
+    platform,
+    retryDelaysMs,
+    delayImpl,
+  });
+}
+
+export function lstatWithTransientWindowsRetry(filePath, {
+  platform = process.platform,
+  retryDelaysMs = WINDOWS_TRANSIENT_RETRY_DELAYS_MS,
+  lstatImpl = lstat,
+  delayImpl = delay,
+} = {}) {
+  return fsCallWithTransientWindowsRetry(lstatImpl, filePath, {
+    platform,
+    retryDelaysMs,
+    delayImpl,
+  });
+}
 
 export function ensureWithin(root, relativePath) {
   if (path.isAbsolute(relativePath)) {
@@ -27,7 +76,7 @@ export function ensureWithin(root, relativePath) {
 export async function assertSafePath(root, relativePath) {
   const destination = ensureWithin(root, relativePath);
   const absoluteRoot = path.resolve(root);
-  const rootInfo = await lstat(absoluteRoot);
+  const rootInfo = await lstatWithTransientWindowsRetry(absoluteRoot);
   if (rootInfo.isSymbolicLink() || !rootInfo.isDirectory()) {
     throw new Error(`Target directory must not be a symlink: ${absoluteRoot}`);
   }
@@ -37,7 +86,7 @@ export async function assertSafePath(root, relativePath) {
   for (const segment of segments) {
     current = path.join(current, segment);
     try {
-      const info = await lstat(current);
+      const info = await lstatWithTransientWindowsRetry(current);
       if (info.isSymbolicLink()) {
         throw new Error(`Path uses a symlink inside target directory: ${relativePath}`);
       }
@@ -50,12 +99,12 @@ export async function assertSafePath(root, relativePath) {
   let existing = destination;
   while (true) {
     try {
-      const info = await lstat(existing);
+      const info = await lstatWithTransientWindowsRetry(existing);
       if (info.isSymbolicLink()) {
         throw new Error(`Path uses a symlink inside target directory: ${relativePath}`);
       }
-      const resolvedRoot = await realpath(absoluteRoot);
-      const resolvedExisting = await realpath(existing);
+      const resolvedRoot = await realpathWithTransientWindowsRetry(absoluteRoot);
+      const resolvedExisting = await realpathWithTransientWindowsRetry(existing);
       const relativeResolved = path.relative(resolvedRoot, resolvedExisting);
       if (relativeResolved === ".." || relativeResolved.startsWith(`..${path.sep}`) || path.isAbsolute(relativeResolved)) {
         throw new Error(`Path escapes target directory: ${relativePath}`);

@@ -28,6 +28,9 @@ exclude = [
   '^https://docs\.ansible\.com/projects/molecule(?:/.*)?$',
   # Testcontainers blocks automated checks on shared CI runners.
   '^https://(?:www\.)?testcontainers\.com(?:/.*)?$',
+  # The official OWASP OAuth2 cheat sheet intermittently returns 503 to shared CI runners.
+  # Keep the exact reference visible while continuing to validate every other OWASP URL.
+  '^https://cheatsheetseries\.owasp\.org/cheatsheets/OAuth2_Cheat_Sheet\.html$',
 ]
 
 [hosts."docs.ansible.com"]
