@@ -7,6 +7,7 @@ import {
 import { fromJsonSchema } from "@modelcontextprotocol/server";
 
 import { invocationAllowed, annotationsFor, toolEnabled } from "./capability-policy.js";
+import { applyExecutionPolicy } from "./execution-policy.js";
 import { jsonSchemaForCommand } from "./schema-adapter.js";
 import { envelopeToToolResult, capabilityRefusalResult } from "./error-mapping.js";
 
@@ -56,11 +57,22 @@ export function buildToolRegistrations({ projectRoot, policy }) {
         if (taskAwareMutation && typeof args?.taskId !== "string") {
           return capabilityRefusalResult({ code: "E_MCP_TASK_ID_REQUIRED", requiredCapability: "explicit taskId", command });
         }
+        let effectiveArgs = args ?? {};
+        try {
+          effectiveArgs = applyExecutionPolicy({ classification: liveClassification, args: effectiveArgs, policy });
+        } catch (error) {
+          return capabilityRefusalResult({
+            code: error.code ?? "E_MCP_EXECUTION_TIMEOUT_INVALID",
+            requiredCapability: "bounded timeoutMs",
+            command,
+            messageOverride: error.message,
+          });
+        }
         void FORGELOOP_INTEGRATION_API_VERSION;
         const envelope = await executeForgeLoopCommand({
           command,
           projectPath: projectRoot,
-          input: args ?? {},
+          input: effectiveArgs,
         });
         const result = envelopeToToolResult(envelope);
         result._diagnostics = { tool: commandToToolName(command), durationMs: Date.now() - startedAt };

@@ -66,3 +66,8 @@ test("readonly catalog contains only read-only tools", () => {
   assert.ok(names.includes("forgeloop_status"));
   assert.equal(names.includes("forgeloop_route"), false);
 });
+
+test("safe-mode catalog excludes the bundle tool", () => {
+  const names = buildToolRegistrations({ projectRoot: ".", policy }).map((r) => r.name);
+  assert.equal(names.includes("forgeloop_bundle"), false);
+});
