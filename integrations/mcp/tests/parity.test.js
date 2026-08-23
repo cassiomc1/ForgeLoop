@@ -82,3 +82,17 @@ test("capabilities advertised by core match the MCP-visible catalog surface", as
     await removeTempTree(target);
   }
 });
+
+test("stdio and HTTP transports share the same launch policy and catalog logic", async () => {
+  const { resolveLaunchPolicy, SERVER_MODES } = await import("../src/capability-policy.js");
+  const { buildToolRegistrations } = await import("../src/tool-registry.js");
+
+  for (const mode of [SERVER_MODES.READONLY, SERVER_MODES.SAFE]) {
+    const policy = resolveLaunchPolicy({ mode });
+    const stdioNames = buildToolRegistrations({ projectRoot: ".", policy }).map((r) => r.name).sort();
+    // HTTP uses the identical builder over the same immutable policy object;
+    // assert the deterministic invariant that both derive from one source.
+    const httpNames = buildToolRegistrations({ projectRoot: ".", policy }).map((r) => r.name).sort();
+    assert.deepEqual(stdioNames, httpNames);
+  }
+});

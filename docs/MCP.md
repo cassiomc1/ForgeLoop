@@ -46,17 +46,18 @@ ledgers are intentionally not exposed.
 
 ## Optional stateless HTTP transport
 
-`forgeloop-mcp-http` serves the same deterministic catalog over the modern
-stateless MCP HTTP model:
+`forgeloop-mcp-http` serves the same deterministic catalog over the **strict
+modern** stateless MCP 2026 model (legacy-era traffic rejected):
 
 ```bash
-forgeloop-mcp-http --project /repo --mode safe                 # 127.0.0.1:3333
-forgeloop-mcp-http --project /repo --host 0.0.0.0 --allow-remote
+forgeloop-mcp-http --project /repo --mode safe          # 127.0.0.1:3333
 ```
 
-- Loopback binding is the default; any non-loopback bind requires explicit
-  `--allow-remote`.
-- DNS-rebinding protection validates `Host` and `Origin` on every request.
+- **Loopback only**: non-loopback binds fail closed with
+  `E_MCP_REMOTE_NOT_SUPPORTED`. Authenticated remote access is not designed
+  yet; Host validation is DNS-rebinding defense, not authentication.
+- Strict modern: legacy-era handshakes are rejected, never silently served.
 - Stateless: no session identity is issued, so transport metadata is never
   ForgeLoop authority.
-- Request bodies are bounded (4 MiB) and only `POST` is served.
+- Resource bounds: 4 MiB body cap, POST-only, header/request/keepalive
+  timeouts, in-flight ceiling (503 `E_MCP_HTTP_BUSY`).

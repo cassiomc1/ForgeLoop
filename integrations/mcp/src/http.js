@@ -16,21 +16,29 @@ import { FORGELOOP_INTEGRATION_API_VERSION } from "@cassiomc1/forgeloop/integrat
 const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "::1"]);
 
 /**
- * Plan §77/§PR12: stateless modern HTTP transport.
+ * Strict stateless MCP 2026 HTTP transport (hardening §6-8).
  *
  * - The project root stays server-pinned; never a request input.
- * - Loopback binding is the default; any non-loopback bind requires the
- *   explicit process-level --allow-remote opt-in.
- * - DNS-rebinding protection validates Host and Origin on every request.
+ * - LOOPBACK ONLY. Non-loopback binds are refused with
+ *   E_MCP_REMOTE_NOT_SUPPORTED until an authenticated remote design exists;
+ *   Host/Origin validation is not authentication.
+ * - Strict modern protocol: legacy-era traffic is rejected, never silently
+ *   served by a fallback.
+ * - Transport resource bounds: header/request/keepalive timeouts and an
+ *   in-flight request ceiling are transport controls, not authority.
  * - No session identity exists: each request carries its own stateless
  *   exchange, so MCP transport metadata is never ForgeLoop authority.
  */
-export function validateHttpBind({ host = "127.0.0.1", allowRemote = false }) {
+export const HTTP_TRANSPORT_BOUNDS = Object.freeze({
+  headersTimeoutMs: 10_000,
+  requestTimeoutMs: 30_000,
+  keepAliveTimeoutMs: 5_000,
+  maxInFlightRequests: 32,
+});
+
+export function validateHttpBind({ host = "127.0.0.1" } = {}) {
   if (LOOPBACK_HOSTS.has(host)) return host;
-  if (allowRemote !== true) {
-    throw new Error(`E_MCP_REMOTE_BIND_REQUIRES_OPT_IN: binding to non-loopback host "${host}" requires explicit --allow-remote`);
-  }
-  return host;
+  throw new Error(`E_MCP_REMOTE_NOT_SUPPORTED: only loopback binds (127.0.0.1, localhost, ::1) are supported; authenticated remote access is not designed yet`);
 }
 
 export async function createForgeLoopHttpHandler({
@@ -60,10 +68,11 @@ export async function createForgeLoopHttpHandler({
     maxExecutionTimeMs,
   });
 
-  // Stateless: a fresh product per request keeps no session authority.
+  // Stateless strict-modern: a fresh product per request keeps no session
+  // authority, and legacy-era traffic is rejected instead of served.
   const mcp = createMcpHandler(
     () => buildForgeLoopMcpServer({ projectContext, policy, packageRoot }),
-    { responseMode: "json" },
+    { responseMode: "json", legacy: "reject" },
   );
 
   const hosts = allowedHosts ?? localhostAllowedHostnames();
@@ -94,18 +103,25 @@ function readBodyBuffer(req) {
   return new Promise((resolve, reject) => {
     const chunks = [];
     let size = 0;
+    let oversized = false;
     req.on("data", (chunk) => {
+      if (oversized) return; // drain the rest so the client never hits EPIPE
       size += chunk.length;
       if (size > MAX_HTTP_BODY_BYTES) {
-        const error = new Error("HTTP request body exceeds the MCP size bound");
-        error.code = "E_MCP_HTTP_BODY_TOO_LARGE";
-        reject(error);
-        req.destroy();
+        oversized = true;
         return;
       }
       chunks.push(chunk);
     });
-    req.on("end", () => resolve(Buffer.concat(chunks)));
+    req.on("end", () => {
+      if (oversized) {
+        const error = new Error("HTTP request body exceeds the MCP size bound");
+        error.code = "E_MCP_HTTP_BODY_TOO_LARGE";
+        reject(error);
+        return;
+      }
+      resolve(Buffer.concat(chunks));
+    });
     req.on("error", reject);
   });
 }
@@ -145,25 +161,40 @@ export async function startForgeLoopHttpServer({
   projectPath,
   host = "127.0.0.1",
   port = 0,
-  allowRemote = false,
   ...serverOptions
 } = {}) {
-  const boundHost = validateHttpBind({ host, allowRemote });
+  const boundHost = validateHttpBind({ host });
   const { handle, close: closeHandler } = await createForgeLoopHttpHandler({ projectPath, ...serverOptions });
 
+  let inFlight = 0;
   const httpServer = createNodeHttpServer(async (req, res) => {
     try {
-      if (req.method !== "POST") {
-        res.writeHead(405, { "content-type": "application/json", allow: "POST" });
+      // Transport resource control (not authority): shed load when the
+      // in-flight ceiling is reached instead of queueing unboundedly.
+      if (inFlight >= HTTP_TRANSPORT_BOUNDS.maxInFlightRequests) {
+        res.writeHead(503, { "content-type": "application/json", "retry-after": "1" });
         res.end(JSON.stringify({
           ok: false,
-          error: { code: "E_MCP_HTTP_METHOD_NOT_ALLOWED", message: "Only POST is supported on the stateless MCP HTTP endpoint" },
+          error: { code: "E_MCP_HTTP_BUSY", message: "Too many in-flight MCP HTTP requests" },
         }));
         return;
       }
-      const request = await nodeRequestToWebRequest(req);
-      const response = await handle(request);
-      await writeWebResponseToNode(response, res);
+      inFlight += 1;
+      try {
+        if (req.method !== "POST") {
+          res.writeHead(405, { "content-type": "application/json", allow: "POST" });
+          res.end(JSON.stringify({
+            ok: false,
+            error: { code: "E_MCP_HTTP_METHOD_NOT_ALLOWED", message: "Only POST is supported on the stateless MCP HTTP endpoint" },
+          }));
+          return;
+        }
+        const request = await nodeRequestToWebRequest(req);
+        const response = await handle(request);
+        await writeWebResponseToNode(response, res);
+      } finally {
+        inFlight -= 1;
+      }
     } catch (error) {
       const status = error?.code === "E_MCP_HTTP_BODY_TOO_LARGE" ? 413 : 500;
       if (!res.headersSent) {
@@ -175,6 +206,12 @@ export async function startForgeLoopHttpServer({
       }));
     }
   });
+
+  // Transport resource bounds (hardening §8): these are connection hygiene
+  // controls, never ForgeLoop authority.
+  httpServer.headersTimeout = HTTP_TRANSPORT_BOUNDS.headersTimeoutMs;
+  httpServer.requestTimeout = HTTP_TRANSPORT_BOUNDS.requestTimeoutMs;
+  httpServer.keepAliveTimeout = HTTP_TRANSPORT_BOUNDS.keepAliveTimeoutMs;
 
   await new Promise((resolve, reject) => {
     httpServer.once("error", reject);

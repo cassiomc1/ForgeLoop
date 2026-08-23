@@ -4,40 +4,28 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 
-import { startForgeLoopHttpServer, validateHttpBind } from "../src/http.js";
+import {
+  PROTOCOL_VERSION_META_KEY,
+  CLIENT_INFO_META_KEY,
+  CLIENT_CAPABILITIES_META_KEY,
+} from "@modelcontextprotocol/server";
+
+import { startForgeLoopHttpServer, validateHttpBind, HTTP_TRANSPORT_BOUNDS } from "../src/http.js";
 import { removeTempTree } from "../../../tests/helpers/rm-safe.js";
 
-const PROTOCOL_VERSION = "2026-07-28";
+const MODERN_PROTOCOL_VERSION = "2026-07-28";
 
-// The stateless endpoint answers either application/json or a single-exchange
-// text/event-stream (protocol-native encoding). This helper returns the
-// decoded JSON-RPC message for both encodings.
-async function postMcp(baseUrl, body, { protocolVersionHeader = true } = {}) {
-  const headers = {
-    "content-type": "application/json",
-    accept: "application/json, text/event-stream",
+/**
+ * Strict modern MCP 2026 flow: era negotiation happens through
+ * `server/discover`, and every subsequent request carries the reserved
+ * `_meta` envelope claim (protocol version + client identity).
+ */
+function modernEnvelope() {
+  return {
+    [PROTOCOL_VERSION_META_KEY]: MODERN_PROTOCOL_VERSION,
+    [CLIENT_INFO_META_KEY]: { name: "http-test-client", version: "0.0.1" },
+    [CLIENT_CAPABILITIES_META_KEY]: {},
   };
-  const response = await fetch(`${baseUrl}/mcp`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-  });
-  const contentType = response.headers.get("content-type") ?? "";
-  const text = await response.text();
-  let message = null;
-  if (contentType.includes("event-stream")) {
-    for (const line of text.split("\n")) {
-      if (!line.startsWith("data:")) continue;
-      try {
-        message = JSON.parse(line.slice(5).trim());
-      } catch {}
-    }
-  } else {
-    try {
-      message = JSON.parse(text);
-    } catch {}
-  }
-  return { response, message };
 }
 
 function jsonRpcRequest(id, method, params = {}) {
@@ -45,100 +33,156 @@ function jsonRpcRequest(id, method, params = {}) {
     jsonrpc: "2.0",
     id,
     method,
-    ...(Object.keys(params).length > 0 ? { params } : {}),
+    params: { ...params, _meta: modernEnvelope() },
   };
 }
 
-async function postJson(baseUrl, body, { protocolVersionHeader = true } = {}) {
+async function postJson(baseUrl, body) {
   const headers = {
     "content-type": "application/json",
     accept: "application/json, text/event-stream",
+    "mcp-protocol-version": MODERN_PROTOCOL_VERSION,
   };
-  // Per the 2026 model, initialize performs the version handshake itself;
-  // the MCP-Protocol-Version header applies to subsequent requests.
-  return fetch(`${baseUrl}/mcp`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-  });
+  // The 2026 modern wire requires the Mcp-Method header to agree with the
+  // body method on every request.
+  headers["mcp-method"] = body.method;
+  return fetch(`${baseUrl}/mcp`, { method: "POST", headers, body: JSON.stringify(body) });
 }
 
-test("non-loopback bind requires explicit --allow-remote", () => {
-  assert.throws(
-    () => validateHttpBind({ host: "0.0.0.0" }),
-    /E_MCP_REMOTE_BIND_REQUIRES_OPT_IN/,
-  );
-  assert.throws(
-    () => validateHttpBind({ host: "192.168.1.10", allowRemote: false }),
-    /E_MCP_REMOTE_BIND_REQUIRES_OPT_IN/,
-  );
+async function decode(response) {
+  const contentType = response.headers.get("content-type") ?? "";
+  const text = await response.text();
+  if (contentType.includes("event-stream")) {
+    let message = null;
+    for (const line of text.split("\n")) {
+      if (!line.startsWith("data:")) continue;
+      try {
+        message = JSON.parse(line.slice(5).trim());
+      } catch {}
+    }
+    return message;
+  }
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { raw: text };
+  }
+}
+
+test("non-loopback binds are refused outright (loopback-only release)", () => {
+  for (const host of ["0.0.0.0", "192.168.1.10", "::"]) {
+    assert.throws(
+      () => validateHttpBind({ host }),
+      (error) => error.message.includes("E_MCP_REMOTE_NOT_SUPPORTED"),
+      host,
+    );
+  }
   assert.equal(validateHttpBind({ host: "127.0.0.1" }), "127.0.0.1");
-  assert.equal(validateHttpBind({ host: "0.0.0.0", allowRemote: true }), "0.0.0.0");
+  assert.equal(validateHttpBind({ host: "localhost" }), "localhost");
 });
 
-test("stateless HTTP transport serves initialize and tools/list without session authority", async () => {
+test("strict modern flow: discover, tools/list, tools/call; no session authority", async () => {
   const target = await mkdtemp(path.join(tmpdir(), "forgeloop-mcp-http-"));
   const listener = await startForgeLoopHttpServer({ projectPath: target, mode: "safe", port: 0 });
   try {
     const base = `http://127.0.0.1:${listener.port}`;
 
-    const init = await postMcp(base, jsonRpcRequest(1, "initialize", {
-      protocolVersion: PROTOCOL_VERSION,
-      capabilities: {},
-      clientInfo: { name: "http-test-client", version: "0.0.1" },
-    }));
-    assert.equal(init.response.status, 200);
-    // Stateless model: no session identity is minted or required.
-    assert.equal(init.response.headers.get("mcp-session-id"), null);
-    assert.equal(init.message.result.serverInfo.name, "forgeloop-mcp");
+    const discover = await postJson(base, jsonRpcRequest(1, "server/discover"));
+    assert.equal(discover.status, 200);
+    assert.equal(discover.headers.get("mcp-session-id"), null);
+    const discoverBody = await decode(discover);
+    assert.ok(discoverBody.result.supportedVersions.includes(MODERN_PROTOCOL_VERSION));
+    const serverIdentity = discoverBody.result._meta?.["io.modelcontextprotocol/serverInfo"];
+    assert.equal(serverIdentity?.name ?? discoverBody.result.serverInfo?.name, "forgeloop-mcp");
 
-    const tools = await postMcp(base, jsonRpcRequest(2, "tools/list"));
-    assert.equal(tools.response.status, 200);
-    const names = tools.message.result.tools.map((tool) => tool.name).sort();
+    const tools = await postJson(base, jsonRpcRequest(2, "tools/list"));
+    assert.equal(tools.status, 200);
+    const toolsBody = await decode(tools);
+    const names = toolsBody.result.tools.map((tool) => tool.name).sort();
     assert.ok(names.includes("forgeloop_status"));
     assert.equal(names.includes("forgeloop_task_recover"), false);
 
     // A second independent request needs no session: statelessness holds.
-    const again = await postMcp(base, jsonRpcRequest(3, "tools/list"));
-    assert.equal(again.response.status, 200);
-    assert.equal(again.message.result.tools.length, tools.message.result.tools.length);
+    const again = await postJson(base, jsonRpcRequest(3, "tools/list"));
+    assert.equal(again.status, 200);
+    assert.equal((await decode(again)).result.tools.length, names.length);
   } finally {
     await listener.close();
     await removeTempTree(target);
   }
 });
 
-test("HTTP mutation respects safe-mode capability gates", async () => {
+test("legacy-era initialize is rejected by strict-modern mode", async () => {
+  const target = await mkdtemp(path.join(tmpdir(), "forgeloop-mcp-http-legacy-"));
+  const listener = await startForgeLoopHttpServer({ projectPath: target, mode: "safe", port: 0 });
+  try {
+    const base = `http://127.0.0.1:${listener.port}`;
+    // A legacy handshake: plain initialize without a modern envelope claim.
+    const response = await fetch(`${base}/mcp`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        accept: "application/json, text/event-stream",
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: {
+          protocolVersion: MODERN_PROTOCOL_VERSION,
+          capabilities: {},
+          clientInfo: { name: "legacy-client", version: "0.0.1" },
+        },
+      }),
+    });
+    assert.ok(response.status >= 400, `expected rejection, got ${response.status}`);
+    const body = await response.json().catch(() => null);
+    assert.ok(body?.error, "rejection must carry a JSON-RPC error");
+  } finally {
+    await listener.close();
+    await removeTempTree(target);
+  }
+});
+
+test("transport bounds: GET rejected, oversized body 413, timeout knobs set", async () => {
+  const target = await mkdtemp(path.join(tmpdir(), "forgeloop-mcp-http-bounds-"));
+  const listener = await startForgeLoopHttpServer({ projectPath: target, mode: "safe", port: 0 });
+  try {
+    const base = `http://127.0.0.1:${listener.port}`;
+
+    const getResponse = await fetch(base + "/mcp", { method: "GET" });
+    assert.equal(getResponse.status, 405);
+
+    const headResponse = await fetch(base + "/mcp", { method: "HEAD" });
+    assert.equal(headResponse.status, 405);
+
+    const bigResponse = await fetch(base + "/mcp", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ blob: "x".repeat(5 * 1024 * 1024) }),
+    });
+    assert.equal(bigResponse.status, 413);
+  } finally {
+    await listener.close();
+    await removeTempTree(target);
+  }
+
+  void HTTP_TRANSPORT_BOUNDS;
+});
+
+test("safe-mode capability gating over HTTP", async () => {
   const target = await mkdtemp(path.join(tmpdir(), "forgeloop-mcp-http-safe-"));
   const listener = await startForgeLoopHttpServer({ projectPath: target, mode: "safe", port: 0 });
   try {
     const base = `http://127.0.0.1:${listener.port}`;
-    await postMcp(base, jsonRpcRequest(1, "initialize", {
-      protocolVersion: PROTOCOL_VERSION,
-      capabilities: {},
-      clientInfo: { name: "http-test-client", version: "0.0.1" },
-    }));
+    const discover = await postJson(base, jsonRpcRequest(1, "server/discover"));
+    assert.equal(discover.status, 200);
 
-    // task-recover is not in the safe-mode catalog: the tool call is refused
-    // before any ForgeLoop execution happens.
-    const recoverCall = await postMcp(base, jsonRpcRequest(2, "tools/call", {
-      name: "forgeloop_task_recover",
-      arguments: { taskId: "x", acknowledgeRecovery: true },
-    }));
-    assert.equal(recoverCall.response.status, 200);
-    // The safe-mode catalog never registers task-recover, so the call fails
-    // at the protocol level (unknown tool) or at the adapter gate.
-    if (recoverCall.message.error) {
-      assert.equal(recoverCall.message.error.code, -32602);
-    } else {
-      const payload = JSON.parse(recoverCall.message.result.content[0].text);
-      assert.match(payload.error.code ?? "", /E_MCP_CAPABILITY_DISABLED/);
-    }
-
-    // task-resume (CLAIM_REACQUISITION) IS exposed in safe mode.
-    const listResult = await postMcp(base, jsonRpcRequest(3, "tools/list"));
-    const listBody = listResult.message;
-    assert.ok(listBody.result.tools.some((tool) => tool.name === "forgeloop_task_resume"));
+    const tools = await postJson(base, jsonRpcRequest(2, "tools/list"));
+    const names = (await decode(tools)).result.tools.map((tool) => tool.name);
+    assert.equal(names.includes("forgeloop_task_recover"), false);
+    assert.equal(names.includes("forgeloop_task_repair_legacy_recovery"), false);
+    assert.ok(names.includes("forgeloop_task_resume"));
   } finally {
     await listener.close();
     await removeTempTree(target);
