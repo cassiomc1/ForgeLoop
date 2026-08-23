@@ -63,11 +63,16 @@ function refineRiskClass(command, input) {
   if (command === "task-unlock" && input?.force === true) {
     return INTEGRATION_RISK_CLASSES.FORCE_DESTRUCTIVE;
   }
-  return STATIC_RISK_CLASSES[command] ?? INTEGRATION_RISK_CLASSES.MAINTENANCE;
+  // Fail closed: every canonical command must be explicitly classified.
+  return baseRiskClass(command);
 }
 
 export function baseRiskClass(command) {
-  return STATIC_RISK_CLASSES[command] ?? null;
+  const riskClass = STATIC_RISK_CLASSES[command];
+  if (!riskClass) {
+    throw new Error(`Command ${command} has no integration risk classification`);
+  }
+  return riskClass;
 }
 
 export function getForgeLoopCapabilities({ packageVersion = null } = {}) {
@@ -148,9 +153,8 @@ export function classifyForgeLoopInvocation(command, input = {}) {
       INTEGRATION_RISK_CLASSES.LEGACY_MIGRATION,
       INTEGRATION_RISK_CLASSES.FORCE_DESTRUCTIVE,
     ].includes(riskClass),
-    removesArtifacts: (definition.removes ?? []).length > 0 || command === "clear-state" || command === "clear-continuity",
-    executesExternalProcess: definition.mayExecuteExternalProcess === true
-      || ["run-check", "reconcile-closure"].includes(command),
+    removesArtifacts: definition.removes.length > 0,
+    executesExternalProcess: definition.mayExecuteExternalProcess === true,
     affectsClaimAuthority: [
       "task-resume", "task-recover", "task-repair-legacy-recovery",
       "task-create", "task-scope", "complete",
