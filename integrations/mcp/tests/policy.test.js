@@ -58,3 +58,14 @@ test("force unlock escalates to FORCE_DESTRUCTIVE and needs its own capability",
   assert.equal(forced.riskClass, INTEGRATION_RISK_CLASSES.FORCE_DESTRUCTIVE);
   assert.equal(toolEnabled("task-unlock", forced, policy), false);
 });
+
+test("bundle is maintenance-gated: hidden in readonly/safe, exposed only with --allow-maintenance in full", () => {
+  for (const mode of [SERVER_MODES.READONLY, SERVER_MODES.SAFE]) {
+    const policy = resolveLaunchPolicy({ mode });
+    assert.equal(toolEnabled("bundle", classifyForgeLoopInvocation("bundle"), policy), false, mode);
+  }
+  const full = resolveLaunchPolicy({ mode: SERVER_MODES.FULL });
+  assert.equal(toolEnabled("bundle", classifyForgeLoopInvocation("bundle"), full), false);
+  const fullWithMaintenance = resolveLaunchPolicy({ mode: SERVER_MODES.FULL, allowMaintenance: true });
+  assert.equal(toolEnabled("bundle", classifyForgeLoopInvocation("bundle"), fullWithMaintenance), true);
+});

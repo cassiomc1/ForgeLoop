@@ -82,3 +82,13 @@ test("shared semantic validation runs identically for any transport", async () =
   assert.equal(envelope.ok, false);
   assert.match(envelope.error.message, /record-check requires --id/);
 });
+
+test("bundle is classified MAINTENANCE because it writes bundle artifacts", async () => {
+  const { classifyForgeLoopInvocation } = await import("../src/core/integration-invocation-policy.js");
+  const { INTEGRATION_RISK_CLASSES } = await import("../src/core/integration-invocation-policy.js");
+  const classification = classifyForgeLoopInvocation("bundle");
+  assert.equal(classification.riskClass, INTEGRATION_RISK_CLASSES.MAINTENANCE);
+  assert.equal(classification.readOnly, false);
+  assert.equal(classification.mutatesProtocol, true);
+  assert.equal(classification.requiredCapability, "allowMaintenance");
+});

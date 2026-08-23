@@ -28,7 +28,7 @@ export function envelopeToToolResult(envelope) {
   };
 }
 
-export function capabilityRefusalResult({ code, requiredCapability, command }) {
+export function capabilityRefusalResult({ code, requiredCapability, command, messageOverride = null }) {
   const flagFor = {
     allowExternalExecution: "--allow-external-execution",
     allowMaintenance: "--allow-maintenance",
@@ -46,7 +46,7 @@ export function capabilityRefusalResult({ code, requiredCapability, command }) {
         command,
         error: {
           code,
-          message: `Server launch policy does not enable this capability (${requiredCapability}). Restart the ForgeLoop MCP server with ${flag} in --mode full.`,
+          message: messageOverride ?? `Server launch policy does not enable this capability (${requiredCapability}). Restart the ForgeLoop MCP server with ${flag} in --mode full.`,
         },
       }, null, 2),
     }],

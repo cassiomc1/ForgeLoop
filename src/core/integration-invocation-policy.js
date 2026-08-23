@@ -50,7 +50,9 @@ const STATIC_RISK_CLASSES = Object.freeze({
   "policy-discover": INTEGRATION_RISK_CLASSES.MAINTENANCE,
   baseline: INTEGRATION_RISK_CLASSES.MAINTENANCE,
   "task-unlock": INTEGRATION_RISK_CLASSES.MAINTENANCE,
-  bundle: INTEGRATION_RISK_CLASSES.READ_ONLY,
+  // bundle writes a bundle artifact set under the task namespace; it is not
+  // read-only despite producing no protocol-state mutations.
+  bundle: INTEGRATION_RISK_CLASSES.MAINTENANCE,
   "profile-interview": INTEGRATION_RISK_CLASSES.MAINTENANCE,
   "task-recover": INTEGRATION_RISK_CLASSES.CLAIM_RELEASE_RECOVERY,
   "task-repair-legacy-recovery": INTEGRATION_RISK_CLASSES.LEGACY_MIGRATION,
@@ -116,7 +118,7 @@ export function classifyForgeLoopInvocation(command, input = {}) {
     throw new Error(`Unknown ForgeLoop command: ${command}`);
   }
   const riskClass = refineRiskClass(command, input);
-  const readOnly = riskClass === INTEGRATION_RISK_CLASSES.READ_ONLY || command === "bundle";
+  const readOnly = riskClass === INTEGRATION_RISK_CLASSES.READ_ONLY;
   const requiredCapability = (() => {
     switch (riskClass) {
       case INTEGRATION_RISK_CLASSES.EXTERNAL_EXECUTION:
