@@ -31,9 +31,23 @@ Reason-code truth       -> exported protocol constants (src/core/error-codes.js,
 Guide registry truth    -> canonical guide registry (src/config/guides.json)
 Package contents truth  -> package.json + package tests (tests/package.test.js)
 Documentation routing   -> DOCS_INDEX.md
+Integration API truth   -> src/integration.js (exports, envelope, limits, risk classes, resources)
+MCP behavior truth      -> integrations/mcp/src/* and integrations/mcp/package.json
+MCP package boundary    -> MCP package tests + scripts/mcp-package-smoke.mjs
 ```
 
 Operational documentation must explain canonical behavior, not redefine it.
+
+Documentation-impact questions for integration/MCP changes:
+
+- Did a server mode or capability gate change?
+- Did an MCP transport change?
+- Did an adapter error code change?
+- Did an integration limit or resource list change?
+
+Anti-drift invariant: every `documentation-manifest.json` entry marked
+`packaged: true` is mechanically checked against the core npm tarball
+contents (`tests/package.test.js`).
 
 Canonical phase and transition inventories must be derived from `WORK_PHASES`
 and `WORK_TRANSITIONS`; do not maintain independent hand-written transition

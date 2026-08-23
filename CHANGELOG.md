@@ -36,6 +36,9 @@
   bounds are observable and concurrency shedding (503 `E_MCP_HTTP_BUSY`) is
   deterministically proven; stdio/HTTP catalog parity is verified at the
   transport level across representative modes.
+- MCP output bounds now measure the exact UTF-8 serialization transmitted,
+  including pretty-printed tool/resource text; unrelated serialization failures
+  are not misclassified as output overflow.
 
 - `forgeloop task-repair-legacy-recovery`: migrates one recognized legacy `OPERATOR_RECOVERY_RECORDED` boundary event (no `recoveryId`) into the modern durable recovery representation via an append-only `LEGACY_RECOVERY_MIGRATION_RECORDED` tail event plus a transactional `recovery.json`; the original ledger event is never modified, ambiguous or tampered evidence fails closed, and ordinary mutation stays blocked until `task-resume`.
 - Durable task recovery state in `recovery.json`, explicit `task-resume` claim reacquisition, and recovery-aware `forgeloop next` command specifications.
@@ -67,8 +70,10 @@
 
 ### Compatibility
 
-- Package version advances to `1.4.0` while protocol version remains `1`; `protocol-info` advertises validated claim recovery version 1.
-- A project containing active `task-recovery` schema v1 state requires ForgeLoop `>=1.4.0`; older readers that do not understand validated recovery ownership must refuse the project rather than infer claims from `task.json` alone.
+- The repository core package is now `1.5.0`; ForgeLoop protocol remains `1`; Integration API remains `1`. `protocol-info` advertises validated claim recovery version 1 and `features.integrationApi` version 1.
+- A project containing active `task-recovery` schema v1 state still requires ForgeLoop `>=1.4.0`; older readers that do not understand validated recovery ownership must refuse the project rather than infer claims from `task.json` alone.
+- The MCP package (`@cassiomc1/forgeloop-mcp`) requires ForgeLoop `>=1.5.0 <2`.
+- Repository implementation state is separate from external publication; no npm publication, tag, or release is performed by these tasks.
 - The ledger continues to write `OPERATOR_RECOVERY_RECORDED` for PR #66 reader compatibility, while its authority is explicitly `CALLER_ACKNOWLEDGED`; readers also accept the neutral `TASK_RECOVERY_RECORDED` name.
 - `--operator-authorized` remains a deprecated alias for `--acknowledge-recovery` and does not create host authority. The standalone CLI does not self-issue `HOST_ATTESTED` recovery grants.
 - Release preparation is local only; no package publication, tag, or release is performed by this implementation task.

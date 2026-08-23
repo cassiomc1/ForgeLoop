@@ -21,3 +21,10 @@ without a host-attested authority grant. Paths must remain within the selected
 target and cannot traverse symlinks. Transaction journals, task locks, and
 hash-chained events are integrity mechanisms, not a substitute for operating
 system access control.
+
+## MCP local boundary
+
+The optional ForgeLoop MCP HTTP transport is **loopback-only**; non-loopback
+binds are refused (`E_MCP_REMOTE_NOT_SUPPORTED`) and authenticated remote MCP
+is unsupported. Host/Origin validation is DNS-rebinding defense, not remote
+authentication. Security reports covering the MCP adapter are in scope.
