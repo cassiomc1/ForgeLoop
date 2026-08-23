@@ -38,6 +38,7 @@ test("Lychee excludes only documented unavailable references", async () => {
   assert.ok(config.includes("  '^https://fast-check\\.dev/$',"));
   assert.ok(config.includes("  '^https://gradientsaas\\.blogspot\\.com(?:/|$)',"));
   assert.ok(config.includes("  '^https://(?:www\\.)?testcontainers\\.com(?:/.*)?$',"));
+  assert.ok(config.includes("  '^https://cheatsheetseries\\.owasp\\.org/cheatsheets/OAuth2_Cheat_Sheet\\.html$',"));
 });
 
 test("Lychee throttles the Ansible documentation host", async () => {
