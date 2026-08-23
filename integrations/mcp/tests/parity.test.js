@@ -13,7 +13,8 @@ import { createForgeLoopMcpServer } from "../src/server.js";
 import { commandToToolName } from "../src/tool-registry.js";
 import { removeTempTree } from "../../../tests/helpers/rm-safe.js";
 
-const repoRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..", "..", "..");
+import { fileURLToPath } from "node:url";
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 async function connectServer(projectPath) {
   const { server } = await createForgeLoopMcpServer({ projectPath, mode: "safe" });
