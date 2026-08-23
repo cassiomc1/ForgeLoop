@@ -14,9 +14,19 @@
   immutable project root, explicit taskId on task-aware mutations, launch-level
   capability gates (external execution, maintenance, recovery, legacy repair,
   force), and no generic shell.
-- Optional stateless HTTP transport (`forgeloop-mcp-http`, PR12): loopback by
-  default with explicit non-loopback opt-in, DNS-rebinding protection, bounded
-  request bodies, POST-only, and no session-based authority.
+- Optional stateless HTTP transport (`forgeloop-mcp-http`, PR12 hardened):
+  strict modern MCP 2026 only (legacy traffic rejected), loopback-only binding
+  (non-loopback refused with `E_MCP_REMOTE_NOT_SUPPORTED`), DNS-rebinding
+  protection, bounded request bodies (413), header/request/keepalive timeouts,
+  in-flight ceiling (503 `E_MCP_HTTP_BUSY`), POST-only, and no session-based
+  authority.
+- Hardening: bundle is MAINTENANCE-gated; launch `maxExecutionTimeMs` is
+  enforced on every external-execution invocation; project roots resolve
+  through canonical CLI semantics (symlinks rejected); integration input and
+  output limits bound the transport surface; client-visible errors redact
+  secret-shaped values while preserving canonical codes; a real
+  `forgeloop_capabilities` tool reports versions, features, policy, and
+  resources in every server mode.
 
 - `forgeloop task-repair-legacy-recovery`: migrates one recognized legacy `OPERATOR_RECOVERY_RECORDED` boundary event (no `recoveryId`) into the modern durable recovery representation via an append-only `LEGACY_RECOVERY_MIGRATION_RECORDED` tail event plus a transactional `recovery.json`; the original ledger event is never modified, ambiguous or tampered evidence fails closed, and ordinary mutation stays blocked until `task-resume`.
 - Durable task recovery state in `recovery.json`, explicit `task-resume` claim reacquisition, and recovery-aware `forgeloop next` command specifications.

@@ -381,6 +381,18 @@
         "universal-integration"
       ],
       "packaged": true
+    },
+    {
+      "path": "docs/RELEASE_CHECKLIST_1_5_MCP.md",
+      "id": "release-checklist-1-5-mcp",
+      "class": "guide",
+      "audience": [
+        "user"
+      ],
+      "canonicalFor": [
+        "release-checklist-1-5-mcp"
+      ],
+      "packaged": true
     }
   ]
 }

@@ -55,7 +55,9 @@
     "docs/RECIPES.md",
     "docs/DOCUMENTATION_GUIDE.md",
     "docs/RELEASE_CHECKLIST_1_4.md",
-    "scripts/CI_VALIDATORS.md"
+    "scripts/CI_VALIDATORS.md",
+    "docs/MCP.md",
+    "docs/UNIVERSAL_INTEGRATION.md"
   ],
   "scripts": {
     "test": "node scripts/run-tests.js",

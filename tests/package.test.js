@@ -16,6 +16,14 @@ test("npm tarball contains the CLI, templates, and license notices only", () => 
 
   for (const expected of [
     "src/cli.js",
+    "src/integration.js",
+    "src/core/command-runtime.js",
+    "src/core/command-executors.js",
+    "src/core/command-input.js",
+    "src/core/integration-invocation-policy.js",
+    "src/core/integration-resources.js",
+    "src/core/integration-limits.js",
+    "src/core/project-root.js",
     "src/config/guides.json",
     "src/core/discovery-surfaces.js",
     "src/core/verification-capability.js",
@@ -41,6 +49,8 @@ test("npm tarball contains the CLI, templates, and license notices only", () => 
     "PROTOCOL_INTEGRATION.md",
     "DOCS_INDEX.md",
     "docs/RELEASE_CHECKLIST_1_4.md",
+    "docs/MCP.md",
+    "docs/UNIVERSAL_INTEGRATION.md",
     "docs/forgeloop-flow.mmd",
     "docs/assets/forgeloop-flow.svg",
     "scripts/CI_VALIDATORS.md",
@@ -56,6 +66,8 @@ test("npm tarball contains the CLI, templates, and license notices only", () => 
     ".forgeloop/work-state.json",
     "docs/assets/eng_readme_forgeloop.png",
     "docs/superpowers/plans/2026-08-11-10-of-10-roadmap-implementation.md",
+    // The MCP package ships separately, never inside the core tarball.
+    ...listing.filter((entry) => entry.startsWith("integrations/")),
   ]) {
     assert.equal(listing.includes(excluded), false, `unexpected ${excluded}`);
   }
