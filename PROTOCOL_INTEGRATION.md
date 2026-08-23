@@ -373,7 +373,6 @@ ForgeLoop integrates executable verification rules directly into the lifecycle:
 - **Claim Recovery**: `forgeloop next` maps validated task ownership to `RECONCILE_CLOSURE`, `RECOVER_TASK`, `RESUME_RECOVERED_TASK`, or `RESOLVE_RECOVERY_INCONSISTENCY`. `task-recover` is restricted to `STALE`/`ABANDONED`; it writes durable `recovery.json` plus an append-only event without changing lifecycle evidence. `task-resume` validates the same ownership projection, safely settles an unchanged stale task lock, reuses canonical scope conflict checks, and removes recovery state transactionally.
 - **Task Scoping**: Task-specific policy snapshots and state live under `.forgeloop/task-state/<taskKey>/` to ensure clean multi-task isolation and cross-harness continuity.
 
-
 ## Structured integration surfaces
 
 When a host provides an official ForgeLoop structured integration, prefer it

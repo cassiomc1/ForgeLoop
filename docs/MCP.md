@@ -23,7 +23,7 @@ every ownership value comes from the canonical claim resolver.
 ## Modes
 
 | Mode | Read | Loop mutations | task-resume | External | Maintenance | Recovery | Legacy repair | Force |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | `readonly` | yes | no | no | no | no | no | no | no |
 | `safe` (default) | yes | yes | yes | no | no | no | no | no |
 | `full` | yes | yes | yes | opt-in | opt-in | opt-in | opt-in | opt-in |

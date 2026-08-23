@@ -38,7 +38,7 @@ import {
 ## Consumers
 
 | Surface | Entry |
-|---|---|
+| --- | --- |
 | ForgeLoop CLI | human terminal rendering over the same executors |
 | ForgeLoop MCP | `@cassiomc1/forgeloop-mcp` (stdio; see [MCP.md](./MCP.md)) |
 | Studio / IDE / CI adapters | the same integration subpath |

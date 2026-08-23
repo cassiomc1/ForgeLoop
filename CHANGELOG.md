@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+
 - Transport-neutral programmatic integration API v1 at
   `@cassiomc1/forgeloop/integration`: structured command executors and runtime,
   shared semantic input validation, invocation-level risk classification, and
