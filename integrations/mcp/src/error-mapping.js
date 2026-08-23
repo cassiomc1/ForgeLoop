@@ -16,9 +16,16 @@ export function enforceOutputBound(toolResult) {
       content: toolResult.content,
       structuredContent: toolResult.structuredContent,
     });
-  } catch (
-        error) {
-      return {
+
+    return toolResult;
+  } catch (error) {
+    // Only actual byte overflow maps to the bounded-result error; unrelated
+    // serialization/programming failures must surface unchanged.
+    if (error?.code !== "E_MCP_RESULT_TOO_LARGE") {
+      throw error;
+    }
+
+    return {
       isError: true,
       content: [{
         type: "text",
@@ -32,11 +39,12 @@ export function enforceOutputBound(toolResult) {
       }],
       structuredContent: {
         ok: false,
-        error: { code: "E_MCP_RESULT_TOO_LARGE" },
+        error: {
+          code: "E_MCP_RESULT_TOO_LARGE",
+        },
       },
-      };
-    }
-    return toolResult;
+    };
+  }
 }
 
 export function envelopeToToolResult(envelope) {
