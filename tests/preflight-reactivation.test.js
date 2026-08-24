@@ -126,6 +126,12 @@ test("preflight returns READY with fresh details after a BLOCKED outcome superse
     const readyEvents = ledger.events.filter((event) => event.event === "PREFLIGHT_READY" && event.taskId === taskId);
     assert.equal(readyEvents.length, 2);
     assert.equal(readyEvents[1].fingerprint, revisedHash);
+
+    // Re-running preflight after re-readiness stays READY and appends nothing new.
+    const refreshed = await runPreflight({ target, packageRoot, taskId });
+    assert.equal(refreshed.status, "READY");
+    const ledgerAfterRefresh = await validateEventLedger(target, packageRoot, { taskId });
+    assert.equal(ledgerAfterRefresh.events.filter((event) => event.event === "PREFLIGHT_READY" && event.taskId === taskId).length, 2);
   });
 });
 
