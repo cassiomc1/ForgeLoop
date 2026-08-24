@@ -152,6 +152,42 @@ test("preflight derives the PLANNED resume phase from a recorded PLAN_RECORDED m
   });
 });
 
+test("execution prerequisites bind to the latest PREFLIGHT_READY after re-readiness", async () => {
+  await withTarget(async (target) => {
+    const { taskId } = await setupTaskThroughReady(target);
+    await appendProtocolEvent(target, { taskId, event: "PLAN_RECORDED" }, packageRoot, { taskId });
+
+    // Contract evolves; a preflight cycle records BLOCKED before the gate is satisfied.
+    const revised = buildContract(taskId, "Revised objective for execution-prerequisites binding.");
+    const revisedHash = contractFingerprint(revised);
+    await writeContract(target, revised, packageRoot, { taskId });
+    const route = evaluateRoute({ workType: "documentation", surfaces: ["documentation"], platforms: [] });
+    const revisedRoute = await persistRoute(target, route, packageRoot, { contractFingerprint: revisedHash, taskId });
+    await appendProtocolEvent(target, {
+      taskId,
+      event: "PREFLIGHT_BLOCKED",
+      fingerprint: revisedHash,
+      details: {
+        requiredGates: ["threat-boundary"],
+        satisfiedGates: [],
+        routingFingerprint: revisedRoute.fingerprint,
+      },
+    }, packageRoot, { taskId });
+    const { unlink } = await import("node:fs/promises");
+    const { taskDirectory } = await import("../src/core/task-paths.js");
+    await unlink(path.join(target, taskDirectory(taskId), "work-state.json"));
+
+    const preflight = await runPreflight({ target, packageRoot, taskId });
+    assert.equal(preflight.status, "READY");
+
+    // Entering EXECUTING must validate against the latest READY event.
+    const state = await advanceWorkState(target, "EXECUTING", { packageRoot, taskId });
+    assert.equal(state.phase, "EXECUTING");
+    const ledger = await validateEventLedger(target, packageRoot, { taskId });
+    assert.equal(ledger.valid, true);
+  });
+});
+
 test("preflight still refuses a READY refresh whose details differ without an intervening BLOCKED outcome", async () => {
   await withTarget(async (target) => {
     const { taskId } = await setupTaskThroughReady(target);
