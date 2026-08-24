@@ -102,7 +102,10 @@ function prerequisiteLedgerErrors(ledger, taskId, preflight, route) {
       ));
     }
   }
-  const preflightEvent = currentEvents.find((event) => event.event === "PREFLIGHT_READY");
+  // Bind to the latest PREFLIGHT_READY: an append-only lifecycle may contain an
+  // older READY event superseded by a BLOCKED outcome and a fresh READY with
+  // current details (see preflight-reactivation recovery).
+  const preflightEvent = currentEvents.findLast((event) => event.event === "PREFLIGHT_READY");
   if (preflightEvent && (!sameStringSet(preflightEvent.details?.requiredGates, preflight.requiredGates)
     || !sameStringSet(preflightEvent.details?.satisfiedGates, preflight.satisfiedGates))) {
     errors.push(issue(
