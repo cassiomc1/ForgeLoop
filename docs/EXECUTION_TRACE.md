@@ -42,7 +42,9 @@ Attempt cardinality comes primarily from ledger chronology: one ledger attempt p
 forgeloop reflect --task <id> [--json]
 ```
 
-Whole-task retrospective: verification cycles, failure surfaces, hypothesis summary, intervention effectiveness (`PENDING | INFORMATIVE | NON_INFORMATIVE | IMPROVED | REGRESSED`), strategy fingerprints, oscillation patterns, signals, and a recommended protocol action. Deterministic — ForgeLoop does not call an LLM.
+Whole-task retrospective (gain truth comes from the canonical cycle analysis;
+`stallAnalysis` explains historical repetition without changing the fail-fast
+stall decision): verification cycles, failure surfaces, hypothesis summary, intervention effectiveness (`PENDING | INFORMATIVE | NON_INFORMATIVE | IMPROVED | REGRESSED`), strategy fingerprints, oscillation patterns, signals, and a recommended protocol action. Deterministic — ForgeLoop does not call an LLM.
 
 ## inspect --task
 

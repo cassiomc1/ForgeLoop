@@ -67,6 +67,21 @@ Hypothesis status is projected forward from append-only chronology (case creatio
 
 Structured cases require at least one hypothesis; `CHECK_RESULT` observations must resolve to a real check from the active verification cycle; a `VERIFICATION_FAILURE` case must bind at least one hypothesis or observation to failed/blocked evidence from the active cycle. Revision chains are revalidated at read time (`revision N.previousDiagnosticFingerprint == revision N-1.diagnosticFingerprint`).
 
+## Effective gain definition
+
+Effective Information Gain exists when a diagnostic cycle changes a meaningful
+semantic dimension of the verified engineering state:
+
+```text
+new observation        new contributor       new hypothesis
+new evidence           hypothesis disposition hypothesis elimination
+failure signature      failure surface        intervention semantics
+strategy
+```
+
+All of these participate in `effectiveGain`. Semantic noise — new IDs,
+timestamps, property order, whitespace-equivalent paraphrases — never does.
+
 ## Classification vs effective gain
 
 The compatibility classification (`FIRST_DIAGNOSIS`, `NEW_HYPOTHESIS`,
@@ -81,7 +96,23 @@ effectiveGain = true
 
 `effectiveGain` is computed once from the final dimensions by the authoritative
 cycle analysis projection; consumers (progress, reflect, next, inspect,
-continuity) must not recompute or post-mutate it. Semantic noise — new IDs,
+continuity) must not recompute or post-mutate it.
+
+## Stall policy (fail-fast)
+
+A structured diagnostic state is **stalled** when its latest comparable
+diagnostic state has no effective information gain. There is no two-cycle
+threshold: one no-gain comparison blocks another blind correction retry with
+`E_DIAGNOSIS_NO_NEW_INFORMATION`, and progress/reflect/next/inspect expose the
+same condition. The first diagnosis is never stalled. High correction-cycle
+count alone remains advisory (`WATCH`), never `STALLED`.
+
+Stall is not terminal: recording a diagnostic with meaningful new information
+(a new observation, contributor, evidence, hypothesis change, and so on)
+clears it immediately. Strategy oscillation (`A -> B -> A`) keeps the more
+specific `INTRODUCE_NEW_OBSERVATION` guidance over generic no-gain guidance.
+Historical repetition metrics remain available as reflective explanation
+(`stallAnalysis`) but do not change the stall decision. Semantic noise — new IDs,
 timestamps, property order, whitespace-equivalent paraphrases — never counts as
 gain or as hypothesis elimination.
 

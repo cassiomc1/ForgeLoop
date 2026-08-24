@@ -58,16 +58,20 @@ function failureStateByCycle(taskEvents) {
   return { surfaces, signatures };
 }
 
-function interventionFingerprintsBySeq(taskEvents) {
-  return taskEvents
-    .filter((event) => event.event === "INTERVENTION_RECORDED")
-    .map((event) => ({
-      seq: event.seq,
-      cycle: event.details?.verificationCycle,
-      fingerprint: event.details?.interventionSemanticFingerprint
-        ?? `${event.details?.intervention?.statement ?? ""}`.trim().toLowerCase(),
-    }))
-    .filter((entry) => entry.fingerprint);
+function interventionFingerprintsByCycle(taskEvents) {
+  const byCycle = new Map();
+  for (const event of taskEvents) {
+    if (event.event !== "INTERVENTION_RECORDED") continue;
+    const fingerprint = event.details?.interventionSemanticFingerprint
+      ?? `${event.details?.intervention?.statement ?? ""}`.trim().toLowerCase();
+    if (!fingerprint) continue;
+    const cycle = Number.isInteger(event.details?.verificationCycle)
+      ? event.details.verificationCycle
+      : 1;
+    if (!byCycle.has(cycle)) byCycle.set(cycle, new Set());
+    byCycle.get(cycle).add(fingerprint);
+  }
+  return byCycle;
 }
 
 function strategyFingerprintFor(diagnosticEvent, interventionsUpTo) {
@@ -87,6 +91,37 @@ function strategyFingerprintFor(diagnosticEvent, interventionsUpTo) {
   ]);
 }
 
+function snapshotHasContentDelta(previousDetails, currentDetails) {
+  const statementsOf = (details) => ({
+    observations: new Set((details.observations ?? []).map((o) => `${o.statement}`.trim().toLowerCase())),
+    contributors: new Set((details.contributors ?? []).map((c) => `${c.statement}`.trim().toLowerCase())),
+    hypotheses: new Set((details.hypotheses ?? []).map((h) => `${h.statement}`.trim().toLowerCase())),
+    legacyHypothesis: details.hypothesis ? new Set([`${details.hypothesis}`.trim().toLowerCase()]) : null,
+    evidence: new Set([
+      ...((details.hypotheses ?? []).flatMap((h) => h.evidenceRefs ?? [])),
+      ...((details.observations ?? []).map((o) => o.evidenceRef).filter(Boolean)),
+      ...(details.evidenceRefs ?? []),
+    ]),
+  });
+  const prev = statementsOf(previousDetails);
+  const cur = statementsOf(currentDetails);
+  const differs = (a, b) => {
+    if (!a || !b) return false;
+    for (const value of b) if (!a.has(value)) return true;
+    return false;
+  };
+  return differs(prev.observations, cur.observations)
+    || differs(prev.contributors, cur.contributors)
+    || differs(prev.hypotheses, cur.hypotheses)
+    || differs(prev.legacyHypothesis, cur.legacyHypothesis)
+    || differs(prev.evidence, cur.evidence);
+}
+
+const cycleOf = (diagnosticEvent) => {
+  const cycle = diagnosticEvent?.details?.verificationCycle;
+  return Number.isInteger(cycle) ? cycle : 1;
+};
+
 export function buildInformationGainProjection(events, taskId) {
   const taskEvents = (events ?? [])
     .filter((event) => !taskId || !event.taskId || event.taskId === taskId)
@@ -97,7 +132,7 @@ export function buildInformationGainProjection(events, taskId) {
   if (diagnosticEvents.length === 0) return [];
 
   const failure = failureStateByCycle(taskEvents);
-  const interventionsBySeq = interventionFingerprintsBySeq(taskEvents);
+  const interventionsByCycle = interventionFingerprintsByCycle(taskEvents);
 
   // Build final per-cycle entries first; effectiveGain is computed once at the
   // end from fully final dimensions (no post-mutation anywhere).
@@ -110,20 +145,33 @@ export function buildInformationGainProjection(events, taskId) {
     const hypothesisDispositionChanged =
       interval.some((event) => event.event === "HYPOTHESIS_DISPOSITION_RECORDED");
 
-    const cumulativeInterventionsUpTo = (seq) =>
-      interventionsBySeq.filter((entry) => entry.seq <= seq);
-    const currentInterventions = cumulativeInterventionsUpTo(diagnostic.seq)
-      .filter((entry) => !previousDiagnostic || entry.seq > intervalStart);
-    void currentInterventions;
-    const interventionSetAt = (seq) => new Set(
-      cumulativeInterventionsUpTo(seq).map((entry) => entry.fingerprint),
+    // Intervention deltas recognize only genuinely NEW semantic interventions:
+    // recorded after the previous diagnosis, attributed to the current
+    // correction cycle, and never attempted before. Repeating an already-known
+    // intervention — or merely having executed the previous cycle's corrective
+    // action — is not new information.
+    const knownUpToPrev = new Set(
+      taskEvents
+        .filter((event) => event.event === "INTERVENTION_RECORDED"
+          && (previousDiagnostic ? (event.seq ?? 0) <= previousDiagnostic.seq : false))
+        .map((event) => event.details?.interventionSemanticFingerprint
+          ?? `${event.details?.intervention?.statement ?? ""}`.trim().toLowerCase())
+        .filter(Boolean),
     );
-    const interventionChanged = previousDiagnostic
-      ? !sameSortedSet(
-          [...interventionSetAt(diagnostic.seq)],
-          [...interventionSetAt(previousDiagnostic.seq)],
-        )
-      : false;
+    const novelInInterval = interval
+      .filter((event) => event.event === "INTERVENTION_RECORDED")
+      .map((event) => event.details?.interventionSemanticFingerprint
+        ?? `${event.details?.intervention?.statement ?? ""}`.trim().toLowerCase())
+      .filter((fingerprint) => fingerprint && !knownUpToPrev.has(fingerprint));
+    // A genuinely new intervention counts as information only when the
+    // diagnosis itself moves: an identical re-proposal of the previous
+    // diagnosis after executing its already-known corrective action carries
+    // no new semantic state.
+    const sameSemanticsAsPrevious = Boolean(previousDiagnostic)
+      && !snapshotHasContentDelta(previousDiagnostic.details ?? {}, diagnostic.details ?? {});
+    const interventionChanged = Boolean(previousDiagnostic)
+      && novelInInterval.length > 0
+      && !sameSemanticsAsPrevious;
 
     const cycle = diagnostic.details?.verificationCycle ?? 1;
     const previousCycle = previousDiagnostic?.details?.verificationCycle ?? null;
@@ -143,11 +191,11 @@ export function buildInformationGainProjection(events, taskId) {
       ? !sameSortedSet(signatures, previousSignatures)
       : false;
 
-    const strategyFingerprint = strategyFingerprintFor(diagnostic,
-      cumulativeInterventionsUpTo(diagnostic.seq));
+    // Strategy compares the PROPOSED diagnostic approach: the case's own
+    // semantic content on both sides (identical bases, so the delta is real).
+    const strategyFingerprint = strategyFingerprintFor(diagnostic, []);
     const previousStrategyFingerprint = previousDiagnostic
-      ? strategyFingerprintFor(previousDiagnostic,
-          cumulativeInterventionsUpTo(previousDiagnostic.seq))
+      ? strategyFingerprintFor(previousDiagnostic, [])
       : null;
     const strategyChanged = Boolean(previousStrategyFingerprint
       && strategyFingerprint !== previousStrategyFingerprint);
@@ -222,6 +270,31 @@ export function buildInformationGainProjection(events, taskId) {
       effectiveGain,
     });
   });
+}
+
+// One canonical structured-stall policy (fail-fast):
+//   The latest comparable diagnostic state that produces no effective
+//   information gain is stalled and may not trigger another blind correction
+//   retry. The first diagnosis is never stalled. Legacy diagnosis keeps its
+//   own compatibility rule (informationGain === NONE).
+export function evaluateStructuredDiagnosticStall(gainProjection, { verificationCycle = null } = {}) {
+  const candidates = verificationCycle == null
+    ? (gainProjection ?? [])
+    : (gainProjection ?? []).filter((entry) => entry.verificationCycle === verificationCycle);
+
+  const latest = candidates.at(-1) ?? null;
+  if (!latest) {
+    return { stalled: false, latestGain: null, reason: null };
+  }
+  if (latest.classification === "FIRST_DIAGNOSIS") {
+    return { stalled: false, latestGain: latest, reason: null };
+  }
+  const stalled = latest.effectiveGain === false;
+  return {
+    stalled,
+    latestGain: latest,
+    reason: stalled ? "NO_DIAGNOSTIC_INFORMATION_GAIN" : null,
+  };
 }
 
 export function computeCycleInformationGain(events, taskId, verificationCycle) {

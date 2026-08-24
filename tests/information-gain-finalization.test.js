@@ -74,16 +74,28 @@ test("gain consistency: interventions and dispositions correlate to their interv
     ev(16, "INTERVENTION_RECORDED", { verificationCycle: 2, interventionSemanticFingerprint: "fp-i2", intervention: { id: "i2" } }),
     ev(17, "VERIFICATION_STARTED", { verificationCycle: 3 }),
     ev(18, "VERIFICATION_RECORDED", { id: "check-tests", requirement: "tests", status: "failed", verificationCycle: 3 }),
-    structuredCase(19, 3),
+    structuredCase(19, 3, { observations: ["refresh token expired before failure"] }),
   ];
   const projection = buildInformationGainProjection(events, TASK);
   const byCycle = new Map(projection.map((entry) => [entry.verificationCycle, entry]));
 
   assert.equal(byCycle.get(1).dimensions.interventionChanged, false, "cycle 1 must not receive later deltas retroactively");
   assert.equal(byCycle.get(1).dimensions.hypothesisDispositionChanged, false);
-  assert.equal(byCycle.get(2).dimensions.interventionChanged, true);
   assert.equal(byCycle.get(2).dimensions.hypothesisDispositionChanged, true);
+  // A genuinely new intervention alongside a moved diagnosis is information...
   assert.equal(byCycle.get(3).dimensions.interventionChanged, true);
+  // ...but repeating an already-known corrective action with an otherwise
+  // identical re-proposal of the prior diagnosis is NOT (fail-fast anti-blind-retry).
+  const repeatEvents = [
+    ev(9, "VERIFICATION_RECORDED", { id: "check-tests", requirement: "tests", status: "failed", verificationCycle: 1 }),
+    structuredCase(10, 1),
+    ev(11, "INTERVENTION_RECORDED", { verificationCycle: 1, interventionSemanticFingerprint: "fp-i1", intervention: { id: "i1" } }),
+    ev(12, "VERIFICATION_RECORDED", { id: "check-tests", requirement: "tests", status: "failed", verificationCycle: 2 }),
+    structuredCase(13, 2),
+  ];
+  const repeatProjection = buildInformationGainProjection(repeatEvents, TASK);
+  assert.equal(repeatProjection.at(-1).dimensions.interventionChanged, false);
+  assert.equal(repeatProjection.at(-1).effectiveGain, false);
 });
 
 test("gain consistency: semantic noise yields NONE / effectiveGain=false", () => {

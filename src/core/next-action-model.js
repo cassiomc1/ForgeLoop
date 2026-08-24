@@ -107,6 +107,7 @@ export function result({
   requiredArtifacts = [],
   missingArtifacts = [],
   progress = undefined,
+  diagnosticGuidance = undefined,
 }) {
   const normalizedReasons = reasons
     .map((reason) => {
@@ -139,6 +140,7 @@ export function result({
     requiredArtifacts: uniqueSorted(requiredArtifacts),
     missingArtifacts: uniqueSorted(missingArtifacts),
     ...(progress ? { progress: structuredClone(progress) } : {}),
+    ...(diagnosticGuidance ? { diagnosticGuidance: structuredClone(diagnosticGuidance) } : {}),
   };
 }
 

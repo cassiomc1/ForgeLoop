@@ -1,7 +1,10 @@
 import { buildTaskTrace } from "./trace.js";
 import { readEvents } from "./events.js";
 import { projectHypothesisStates } from "./hypothesis-projection.js";
-import { buildInformationGainProjection } from "./information-gain-projection.js";
+import {
+  buildInformationGainProjection,
+  evaluateStructuredDiagnosticStall,
+} from "./information-gain-projection.js";
 import { computeFailureSignature } from "./failure-signature.js";
 import {
   computeStrategyFingerprints as computeStrategyFingerprintsImpl,
@@ -15,21 +18,6 @@ export const REFLECTION_STATUS = Object.freeze({
   STALLED: "STALLED",
 });
 
-function informationGainDimensions(previousCase, currentCase, context = {}) {
-  const dimensions = {
-    newObservation: !(previousCase && (currentCase.observations ?? []).every((o) =>
-      (previousCase.observations ?? []).some((p) => JSON.stringify(p.statement ?? "") === JSON.stringify(o.statement ?? "")))),
-    newContributor: !(previousCase && (currentCase.contributors ?? []).every((c) =>
-      (previousCase.contributors ?? []).some((p) => p.statement === c.statement))),
-    newHypothesis: !(previousCase && (currentCase.hypotheses ?? []).every((h) =>
-      (previousCase.hypotheses ?? []).some((p) => p.statement === h.statement))),
-    hypothesisDispositionChanged: Boolean(context.hypothesisDispositionChanged),
-    failureSignatureChanged: Boolean(context.failureSignatureChanged),
-    failureSurfaceChanged: Boolean(context.failureSurfaceChanged),
-    interventionChanged: Boolean(context.interventionChanged),
-  };
-  return dimensions;
-}
 
 export function summarizeHypotheses(trace) {
   const summary = { created: 0, supported: 0, weakened: 0, falsified: 0, superseded: 0, unresolved: 0, open: 0 };
@@ -192,7 +180,9 @@ export function deriveDiagnosticContext(events = [], state = null) {
 
 export async function buildTaskReflection({ target, packageRoot, taskId = null } = {}) {
   const trace = await buildTaskTrace({ target, packageRoot, taskId });
-  const rawEvents = await readEvents(target, packageRoot, { taskId });
+  // Read the canonical ledger without a scoped-path redirect; the gain
+  // projection filters by taskId itself.
+  const rawEvents = await readEvents(target, packageRoot);
 
   // Authoritative surfaces come from the canonical trace projection.
   const surfaceEntries = {};
@@ -243,16 +233,16 @@ export async function buildTaskReflection({ target, packageRoot, taskId = null }
     .filter((entry) => !entry.effectiveGain)
     .map((entry) => entry.verificationCycle);
 
-  const lastTwoIneffective = gainProjection.length >= 2
-    && !gainProjection.at(-1).effectiveGain
-    && !gainProjection.at(-2).effectiveGain
-    && JSON.stringify(gainProjection.at(-1).evidence.failureSurface)
-      === JSON.stringify(gainProjection.at(-2).evidence.failureSurface)
-    && JSON.stringify(gainProjection.at(-1).evidence.failureSignatures)
-      === JSON.stringify(gainProjection.at(-2).evidence.failureSignatures)
-    && gainProjection.at(-1).evidence.strategyFingerprint
-      === gainProjection.at(-2).evidence.strategyFingerprint;
-  if (lastTwoIneffective) {
+  // One canonical structured-stall truth shared with phase and progress.
+  const stallAnalysis = evaluateStructuredDiagnosticStall(gainProjection);
+  const latestNoGain = Boolean(stallAnalysis.stalled);
+  let consecutiveNoGainCycles = 0;
+  for (let i = gainProjection.length - 1; i >= 0 && gainProjection[i].effectiveGain === false; i--) {
+    consecutiveNoGainCycles += 1;
+  }
+  const previousEntry = gainProjection.length >= 2 ? gainProjection.at(-2) : null;
+  const currentEntry = gainProjection.at(-1) ?? null;
+  if (latestNoGain) {
     status = REFLECTION_STATUS.STALLED;
     if (!signals.includes("NO_EFFECTIVE_INFORMATION_GAIN")) signals.push("NO_EFFECTIVE_INFORMATION_GAIN");
   }
@@ -289,8 +279,18 @@ export async function buildTaskReflection({ target, packageRoot, taskId = null }
     strategies,
     oscillation,
     signals,
+    stallAnalysis: {
+      latestNoGain,
+      consecutiveNoGainCycles,
+      sameStrategyAsPrevious: Boolean(previousEntry && currentEntry
+        && previousEntry.evidence.strategyFingerprint === currentEntry.evidence.strategyFingerprint),
+      sameFailureSurfaceAsPrevious: Boolean(previousEntry && currentEntry
+        && JSON.stringify(previousEntry.evidence.failureSurface) === JSON.stringify(currentEntry.evidence.failureSurface)),
+      sameFailureSignaturesAsPrevious: Boolean(previousEntry && currentEntry
+        && JSON.stringify(previousEntry.evidence.failureSignatures) === JSON.stringify(currentEntry.evidence.failureSignatures)),
+    },
     recommendedProtocolAction,
   };
 }
 
-export { informationGainDimensions, computeStrategyFingerprintsImpl as computeStrategyFingerprints };
+export { computeStrategyFingerprintsImpl as computeStrategyFingerprints };
