@@ -165,10 +165,34 @@ function sameBlockedPreflightEvent(event, result) {
     && event.details?.routingFingerprint === result.fingerprints.routing;
 }
 
+/**
+ * Returns the latest recorded preflight outcome event (READY or BLOCKED) for
+ * the task. An append-only lifecycle may legitimately contain an older READY
+ * event that was superseded by a later BLOCKED outcome (for example after the
+ * contract evolved or a gate requirement was added); the binding chronology is
+ * the latest outcome, not the first READY ever recorded.
+ */
+function latestPreflightOutcomeEvent(events, taskId) {
+  let latest = null;
+  for (const event of events) {
+    if ((event.event === "PREFLIGHT_READY" || event.event === "PREFLIGHT_BLOCKED")
+      && event.taskId === taskId) {
+      latest = event;
+    }
+  }
+  return latest;
+}
+
 export function assertExistingReadyLifecycleCompatibility(ledger, result) {
   if (result.status !== "READY") return;
-  const existingReady = ledger?.events?.find((event) => event.event === "PREFLIGHT_READY" && event.taskId === result.taskId);
-  if (existingReady && !sameReadyPreflightEvent(existingReady, result)) {
+  const events = ledger?.events ?? [];
+  const existingReady = events.find((event) => event.event === "PREFLIGHT_READY" && event.taskId === result.taskId);
+  if (!existingReady) return;
+  const latestOutcome = latestPreflightOutcomeEvent(events, result.taskId);
+  // A READY outcome superseded by a later BLOCKED outcome may be replaced by a
+  // fresh READY with different details once the blocked preflight is resolved.
+  if (latestOutcome?.event === "PREFLIGHT_BLOCKED") return;
+  if (!sameReadyPreflightEvent(existingReady, result)) {
     throw preflightError(
       "E_PHASE_CHRONOLOGY_INVALID",
       "PREFLIGHT_READY already exists with different READY preflight details; repair the contract, route, or gate lifecycle before refreshing preflight",
@@ -201,15 +225,17 @@ export async function appendActivationEvents(target, packageRoot, ledger, result
   }
 
   const existingReady = events.find((event) => event.event === "PREFLIGHT_READY" && event.taskId === result.taskId);
+  const latestOutcome = latestPreflightOutcomeEvent(events, result.taskId);
+  const readySupersededByBlocked = existingReady && latestOutcome?.event === "PREFLIGHT_BLOCKED";
   if (result.status === "READY") {
-    if (existingReady && !sameReadyPreflightEvent(existingReady, result)) {
+    if (existingReady && !readySupersededByBlocked && !sameReadyPreflightEvent(existingReady, result)) {
       throw preflightError(
         "E_PHASE_CHRONOLOGY_INVALID",
         "PREFLIGHT_READY already exists with different READY preflight details; repair the contract, route, or gate lifecycle before refreshing preflight",
         [ARTIFACT_PATHS.preflight, ARTIFACT_PATHS.events, ARTIFACT_PATHS.contract, ARTIFACT_PATHS.route, ARTIFACT_PATHS.gates],
       );
     }
-    if (!existingReady) {
+    if (!existingReady || readySupersededByBlocked) {
       await append({
         taskId: result.taskId,
         event: "PREFLIGHT_READY",
