@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildInformationGainProjection, computeCycleInformationGain } from "../src/core/information-gain-projection.js";
+import { buildInformationGainProjection } from "../src/core/information-gain-projection.js";
 import { computeFailureSignature } from "../src/core/failure-signature.js";
 
 const TASK = "t-gain";

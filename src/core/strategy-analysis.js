@@ -61,7 +61,7 @@ export function detectOscillation(strategies) {
 export function evaluateInterventionEffectiveness(trace, surfacesByCycle) {
   const interventions = [];
   const list = trace.diagnostics.interventions;
-  for (const [index, entry] of list.entries()) {
+  for (const entry of list) {
     const cycle = entry.verificationCycle;
     const laterVerificationCycles = Object.keys(surfacesByCycle).map(Number).filter((value) => value > cycle);
     const nextCycle = laterVerificationCycles.length > 0 ? Math.min(...laterVerificationCycles) : null;

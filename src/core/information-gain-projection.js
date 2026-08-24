@@ -58,21 +58,6 @@ function failureStateByCycle(taskEvents) {
   return { surfaces, signatures };
 }
 
-function interventionFingerprintsByCycle(taskEvents) {
-  const byCycle = new Map();
-  for (const event of taskEvents) {
-    if (event.event !== "INTERVENTION_RECORDED") continue;
-    const fingerprint = event.details?.interventionSemanticFingerprint
-      ?? `${event.details?.intervention?.statement ?? ""}`.trim().toLowerCase();
-    if (!fingerprint) continue;
-    const cycle = Number.isInteger(event.details?.verificationCycle)
-      ? event.details.verificationCycle
-      : 1;
-    if (!byCycle.has(cycle)) byCycle.set(cycle, new Set());
-    byCycle.get(cycle).add(fingerprint);
-  }
-  return byCycle;
-}
 
 function strategyFingerprintFor(diagnosticEvent, interventionsUpTo) {
   const details = diagnosticEvent?.details ?? {};
@@ -117,11 +102,6 @@ function snapshotHasContentDelta(previousDetails, currentDetails) {
     || differs(prev.evidence, cur.evidence);
 }
 
-const cycleOf = (diagnosticEvent) => {
-  const cycle = diagnosticEvent?.details?.verificationCycle;
-  return Number.isInteger(cycle) ? cycle : 1;
-};
-
 export function buildInformationGainProjection(events, taskId) {
   const taskEvents = (events ?? [])
     .filter((event) => !taskId || !event.taskId || event.taskId === taskId)
@@ -132,7 +112,6 @@ export function buildInformationGainProjection(events, taskId) {
   if (diagnosticEvents.length === 0) return [];
 
   const failure = failureStateByCycle(taskEvents);
-  const interventionsByCycle = interventionFingerprintsByCycle(taskEvents);
 
   // Build final per-cycle entries first; effectiveGain is computed once at the
   // end from fully final dimensions (no post-mutation anywhere).

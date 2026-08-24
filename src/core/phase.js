@@ -24,7 +24,6 @@ import { E_TASK_SCOPE_REQUIRED } from "./error-codes.js";
 import { resolveCurrentCycleDiagnostic } from "./diagnostic-projection.js";
 import {
   buildInformationGainProjection,
-  computeCycleInformationGain,
   evaluateStructuredDiagnosticStall,
 } from "./information-gain-projection.js";
 

@@ -6,7 +6,6 @@ import path from "node:path";
 import { createHash } from "node:crypto";
 import { removeTempTree } from "./helpers/rm-safe.js";
 import { getPackageRoot } from "../src/core/templates.js";
-import { createWorkState, writeWorkState } from "../src/core/work-state.js";
 import { appendProtocolEvent } from "../src/core/events.js";
 import { buildTaskTrace } from "../src/core/trace.js";
 import { buildTaskReflection, deriveDiagnosticContext } from "../src/core/reflection.js";
