@@ -30,6 +30,10 @@ forgeloop trace --task <id> --json
 
 Machine-readable reconstruction containing events, lifecycle transitions (including `VERIFICATION_STARTED`), check attempts, diagnostics (legacy diagnoses, structured cases, interventions, dispositions), failure signatures/surfaces, executions, evidence, continuity, recovery, completion, integrity, and snapshot anchors.
 
+Failure surfaces include every canonically verified cycle; a successful
+verification appears explicitly as `surface: []`, enabling deterministic
+`REDUCED -> empty` and intervention `IMPROVED` classification.
+
 Attempt cardinality comes primarily from ledger chronology: one ledger attempt plus its state checkpoint counts once; two distinct ledger events count twice; a state-only check appears as one fallback attempt (`source: "state-fallback"`). Phases are reconstructed forward from milestone events (`TASK_RECEIVED -> RECEIVED` ... `COMPLETION_VALIDATED -> COMPLETE`); events between milestones carry derived phases (for example failed verification -> `DIAGNOSING`, recorded intervention -> `CORRECTING`) with `phaseQuality: "authoritative" | "derived" | "unknown"`. Determinism: identical canonical artifacts produce identical traces except `snapshot.capturedAt`.
 
 ## reflect

@@ -2,6 +2,7 @@ import { buildTaskTrace } from "./trace.js";
 import { readEvents } from "./events.js";
 import { projectHypothesisStates } from "./hypothesis-projection.js";
 import { buildInformationGainProjection } from "./information-gain-projection.js";
+import { computeFailureSignature } from "./failure-signature.js";
 import {
   computeStrategyFingerprints as computeStrategyFingerprintsImpl,
   detectOscillation as detectOscillationImpl,
@@ -109,13 +110,37 @@ export function deriveDiagnosticContext(events = [], state = null) {
   const cycle = state?.verificationCycle ?? null;
   const taskEvents = events.filter((event) => !state?.taskId || event.taskId === state.taskId);
 
+  // Canonical failure-signature hashes for the active verification cycle.
   const activeFailureSignatures = [...new Set(
     taskEvents
       .filter((event) => event.event === "VERIFICATION_RECORDED"
         && ["failed", "blocked"].includes(event.details?.status)
         && (cycle === null || event.details?.verificationCycle === cycle))
-      .map((event) => event.details?.requirement ?? event.details?.id ?? event.details?.checkId)
-      .filter(Boolean),
+      .map((event) => {
+        const d = event.details;
+        return computeFailureSignature({
+          requirement: d.requirement ?? d.id ?? d.checkId,
+          status: d.status,
+          exitCode: Number.isInteger(d.exitCode) ? d.exitCode : null,
+          failureToken: typeof d.failureToken === "string" && d.failureToken
+            ? d.failureToken
+            : (typeof d.details?.failureToken === "string" ? d.details.failureToken : null),
+        });
+      }),
+  )].sort();
+
+  const activeFailedRequirements = [...new Set(
+    [
+      ...taskEvents
+        .filter((event) => event.event === "VERIFICATION_RECORDED"
+          && ["failed", "blocked"].includes(event.details?.status)
+          && (cycle === null || event.details?.verificationCycle === cycle))
+        .map((event) => event.details?.requirement ?? event.details?.id ?? event.details?.checkId),
+      ...((state?.checks ?? []))
+        .filter((check) => ["failed", "blocked"].includes(check.status)
+          && (cycle === null || check.details?.verificationCycle === cycle))
+        .map((check) => check.requirement ?? check.id ?? check.checkId),
+    ].filter(Boolean),
   )].sort();
 
   const projection = projectHypothesisStates(taskEvents);
@@ -157,6 +182,7 @@ export function deriveDiagnosticContext(events = [], state = null) {
 
   return {
     activeFailureSignatures,
+    activeFailedRequirements,
     openHypotheses,
     latestIntervention,
     nextExperiment: null,
@@ -210,31 +236,9 @@ export async function buildTaskReflection({ target, packageRoot, taskId = null }
     status = status === REFLECTION_STATUS.ADVANCING ? REFLECTION_STATUS.WATCH : status;
   }
 
-  // Information Gain v2: one authoritative per-cycle gain projection.
+  // Information Gain v2 truth comes fully from the authoritative cycle
+  // analysis projection. Consumers must not redefine gain semantics.
   const gainProjection = buildInformationGainProjection(rawEvents, taskId ?? null);
-  for (let i = 1; i < gainProjection.length; i++) {
-    const currentCycle = gainProjection[i].verificationCycle;
-    const previousCycle = gainProjection[i - 1].verificationCycle;
-    gainProjection[i].dimensions.interventionChanged = Boolean(
-      gainProjection[i].dimensions.interventionChanged
-      || trace.diagnostics.interventions.some((intervention) => intervention.verificationCycle === currentCycle),
-    );
-    gainProjection[i].dimensions.failureSurfaceChanged = Boolean(
-      gainProjection[i].dimensions.failureSurfaceChanged
-      || JSON.stringify(surfaceEntries[currentCycle]?.surface ?? [])
-        !== JSON.stringify(surfaceEntries[previousCycle]?.surface ?? []),
-    );
-    gainProjection[i].dimensions.failureSignatureChanged = Boolean(
-      gainProjection[i].dimensions.failureSignatureChanged
-      || JSON.stringify(surfaceEntries[currentCycle]?.signatures ?? [])
-        !== JSON.stringify(surfaceEntries[previousCycle]?.signatures ?? []),
-    );
-    const currentStrategy = strategies.find((strategy) => strategy.verificationCycle === currentCycle);
-    const previousStrategy = strategies.find((strategy) => strategy.verificationCycle === previousCycle);
-    if (currentStrategy && previousStrategy) {
-      gainProjection[i].dimensions.strategyChanged = currentStrategy.strategyFingerprint !== previousStrategy.strategyFingerprint;
-    }
-  }
   const cyclesWithoutEffectiveGain = gainProjection
     .filter((entry) => !entry.effectiveGain)
     .map((entry) => entry.verificationCycle);
@@ -242,8 +246,12 @@ export async function buildTaskReflection({ target, packageRoot, taskId = null }
   const lastTwoIneffective = gainProjection.length >= 2
     && !gainProjection.at(-1).effectiveGain
     && !gainProjection.at(-2).effectiveGain
-    && strategies.length >= 2
-    && strategies.at(-1).strategyFingerprint === strategies.at(-2).strategyFingerprint;
+    && JSON.stringify(gainProjection.at(-1).evidence.failureSurface)
+      === JSON.stringify(gainProjection.at(-2).evidence.failureSurface)
+    && JSON.stringify(gainProjection.at(-1).evidence.failureSignatures)
+      === JSON.stringify(gainProjection.at(-2).evidence.failureSignatures)
+    && gainProjection.at(-1).evidence.strategyFingerprint
+      === gainProjection.at(-2).evidence.strategyFingerprint;
   if (lastTwoIneffective) {
     status = REFLECTION_STATUS.STALLED;
     if (!signals.includes("NO_EFFECTIVE_INFORMATION_GAIN")) signals.push("NO_EFFECTIVE_INFORMATION_GAIN");

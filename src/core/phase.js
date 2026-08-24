@@ -259,7 +259,7 @@ export async function advanceWorkState(target, toPhase, options = {}) {
       ? computeCycleInformationGain(ledger.events, state.taskId, cycle)
       : null;
     const gainClassification = diagEvent.sourceModel === "STRUCTURED_DIAGNOSTIC_CASE_V1"
-      ? (gain?.classification ?? "FIRST_DIAGNOSIS")
+      ? ((gain?.classification === "NONE" && gain?.effectiveGain) ? "EFFECTIVE_GAIN_V2" : (gain?.classification ?? "FIRST_DIAGNOSIS"))
       : diagEvent.details?.informationGain;
     if (!diagEvent.details || gainClassification === "NONE") {
       throw phaseError(

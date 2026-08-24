@@ -1,22 +1,39 @@
 export function projectFailureSurfaces({ state = null, events = [] } = {}) {
   const failedRequirementsByCycle = new Map();
+  // Track every canonically verified cycle so a successful verification
+  // appears explicitly as surface: [] instead of silently disappearing.
+  const knownCycles = new Set();
   const record = (cycle, requirement) => {
-    if (!requirement) return;
+    if (!Number.isInteger(cycle)) cycle = Number(cycle) || 1;
+    knownCycles.add(cycle);
     if (!failedRequirementsByCycle.has(cycle)) failedRequirementsByCycle.set(cycle, new Set());
+    if (!requirement) return;
     failedRequirementsByCycle.get(cycle).add(requirement);
+  };
+  const knowCycle = (cycle) => {
+    if (Number.isInteger(cycle)) knownCycles.add(cycle);
   };
 
   for (const event of events) {
+    if (event.event === "VERIFICATION_STARTED") {
+      knowCycle(event.details?.verificationCycle);
+    }
     if (event.event !== "VERIFICATION_RECORDED") continue;
     const d = event.details ?? {};
     if (d.status === "failed" || d.status === "blocked") {
       record(d.verificationCycle ?? 1, d.requirement ?? d.id ?? d.checkId);
+    } else {
+      knowCycle(d.verificationCycle);
     }
   }
 
   for (const check of state?.checks ?? []) {
+    knowCycle(check.details?.verificationCycle ?? state?.verificationCycle ?? 1);
     if (check.status !== "failed" && check.status !== "blocked") continue;
     record(check.details?.verificationCycle ?? state?.verificationCycle ?? 1, check.requirement ?? check.id ?? check.checkId);
+  }
+  for (const cycle of knownCycles) {
+    if (!failedRequirementsByCycle.has(cycle)) failedRequirementsByCycle.set(cycle, new Set());
   }
 
   return [...failedRequirementsByCycle.entries()]

@@ -67,6 +67,73 @@ Hypothesis status is projected forward from append-only chronology (case creatio
 
 Structured cases require at least one hypothesis; `CHECK_RESULT` observations must resolve to a real check from the active verification cycle; a `VERIFICATION_FAILURE` case must bind at least one hypothesis or observation to failed/blocked evidence from the active cycle. Revision chains are revalidated at read time (`revision N.previousDiagnosticFingerprint == revision N-1.diagnosticFingerprint`).
 
+## Classification vs effective gain
+
+The compatibility classification (`FIRST_DIAGNOSIS`, `NEW_HYPOTHESIS`,
+`NEW_EVIDENCE`, `NEW_HYPOTHESIS_AND_EVIDENCE`, `NONE`) intentionally does not
+encode every v2 dimension. A cycle can therefore report:
+
+```text
+classification = NONE
+failureSurfaceChanged = true
+effectiveGain = true
+```
+
+`effectiveGain` is computed once from the final dimensions by the authoritative
+cycle analysis projection; consumers (progress, reflect, next, inspect,
+continuity) must not recompute or post-mutate it. Semantic noise — new IDs,
+timestamps, property order, whitespace-equivalent paraphrases — never counts as
+gain or as hypothesis elimination.
+
+## Failure surface evolution
+
+Every canonically verified cycle appears in failure surfaces, including
+successful ones:
+
+```text
+cycle 2 ["lint"]
+cycle 3 []        <- explicit empty successful cycle, direction REDUCED
+```
+
+A full reduction to `[]` classifies the preceding intervention as `IMPROVED`.
+
+## Intervention repetition
+
+```text
+repeatedSemanticIntervention
+  = the same intervention semantic fingerprint was recorded before
+
+NON_INFORMATIVE
+  = later verification produced no meaningful semantic change
+```
+
+Recording an intervention returns `repeatedSemanticIntervention` plus
+`effectiveness: "PENDING"`. Only a subsequent completed verification cycle can
+classify `IMPROVED | REGRESSED | INFORMATIVE | NON_INFORMATIVE`.
+
+## Continuity diagnostic context
+
+```json
+{
+  "activeFailureSignatures": ["<sha256-like canonical fingerprint>"],
+  "activeFailedRequirements": ["auth-tests"],
+  "openHypotheses": [],
+  "latestIntervention": null,
+  "nextExperiment": null,
+  "doNotRepeat": []
+}
+```
+
+`activeFailureSignatures` contains canonical `computeFailureSignature` hashes
+scoped to the active verification cycle; requirement names are exposed
+separately in `activeFailedRequirements`.
+
+## Structured case hypothesis invariant
+
+At least one hypothesis is mandatory: `hypotheses.minItems = 1` is enforced
+identically by the JSON schema, the runtime validator, ledger validation, and
+the record-diagnosis command path.
+
 ## Information gain
 
 Compatibility values (`FIRST_DIAGNOSIS`, `NEW_HYPOTHESIS`, `NEW_EVIDENCE`, `NEW_HYPOTHESIS_AND_EVIDENCE`, `NONE`) remain valid. Structured dimensions add observation/contributor/hypothesis novelty, disposition changes, failure-signature change, failure-surface change, and intervention change. New IDs, timestamps, whitespace, paraphrases, and identical reruns never constitute gain.

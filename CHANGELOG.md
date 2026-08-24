@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.6.0 - 2026-08-24
+
 ### Fixed
 
 - Structured diagnostic cases now satisfy every legacy diagnosis gate: one
@@ -36,6 +38,23 @@
 - Capability advertising aligned via additive
   `features.observabilityStability`; `E_TRACE_SNAPSHOT_INCONSISTENT` and all
   diagnosis/progress codes registered as stable public error codes.
+- Information Gain v2 is single-source: one authoritative per-cycle cycle
+  analysis computes all dimensions before `effectiveGain`; no consumer
+  recomputes or post-mutates gain truth; semantic noise (IDs, timestamps,
+  ordering) never creates gain or false hypothesis elimination.
+- Successful verification cycles are projected explicitly as `surface: []`,
+  enabling deterministic full-recovery classification of interventions as
+  `IMPROVED`.
+- `hypotheses.minItems = 1` is enforced identically by the JSON schema, runtime
+  validator, event-ledger validation, and the record-diagnosis command path.
+- `record-intervention` reports `repeatedSemanticIntervention` with retrospective
+  `effectiveness: "PENDING"` instead of claiming `without gain` before any
+  later verification exists.
+- Continuity `diagnosticContext.activeFailureSignatures` now carries canonical
+  failure-signature hashes scoped to the active cycle, with requirement names
+  exposed separately via `activeFailedRequirements`.
+- Package metadata synchronized: `package.json` and `package-lock.json` both
+  identify 1.6.0.
 
 ### Added
 
