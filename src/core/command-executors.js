@@ -28,6 +28,11 @@ import { runCheck } from "../commands/run-check.js";
 import { reconcileClosure } from "../commands/reconcile-closure.js";
 import { runRecordTerminalResult } from "../commands/record-terminal-result.js";
 import { runRecordDiagnosis } from "../commands/record-diagnosis.js";
+import { runRecordIntervention } from "../commands/record-intervention.js";
+import { runRecordHypothesisDisposition } from "../commands/record-hypothesis-disposition.js";
+import { runHistory } from "../commands/history.js";
+import { runTrace } from "../commands/trace.js";
+import { runReflect } from "../commands/reflect.js";
 import { runProgress } from "../commands/progress.js";
 import { runRecordDecisionCriterion } from "../commands/record-decision-criterion.js";
 import { runNext } from "../commands/next.js";
@@ -189,6 +194,7 @@ export const COMMAND_EXECUTORS = {
     result: await runRecordDiagnosis({
       target,
       packageRoot,
+      file: options.file ?? null,
       hypothesis: options.hypothesis,
       failureClass: options.failureClass,
       evidenceRefs: options.evidenceRefs,
@@ -198,6 +204,52 @@ export const COMMAND_EXECUTORS = {
     }),
     exitCode: 0,
   }),
+  "record-intervention": async ({ target, packageRoot, options }) => ({
+    result: await runRecordIntervention({
+      target,
+      packageRoot,
+      file: options.file ?? null,
+      taskId: options.taskId,
+    }),
+    exitCode: 0,
+  }),
+  "record-hypothesis-disposition": async ({ target, packageRoot, options }) => ({
+    result: await runRecordHypothesisDisposition({
+      target,
+      packageRoot,
+      hypothesis: options.hypothesis,
+      status: options.dispositionStatus,
+      evidenceRefs: options.evidenceRefs,
+      reason: options.reason,
+      taskId: options.taskId,
+    }),
+    exitCode: 0,
+  }),
+  history: async ({ target, packageRoot, options }) => {
+    const result = await runHistory({
+      target,
+      packageRoot,
+      taskId: options.taskId,
+      filters: {
+        type: options.historyType ?? null,
+        phase: options.historyPhase ?? null,
+        failures: Boolean(options.historyFailures),
+        checks: Boolean(options.historyChecks),
+        since: options.historySince ?? null,
+        until: options.historyUntil ?? null,
+        limit: Number.isInteger(options.historyLimit) ? options.historyLimit : null,
+      },
+    });
+    return { result, exitCode: result.integrity.valid ? 0 : 1 };
+  },
+  trace: async ({ target, packageRoot, options }) => {
+    const result = await runTrace({ target, packageRoot, taskId: options.taskId });
+    return { result, exitCode: result.integrity.valid ? 0 : 1 };
+  },
+  reflect: async ({ target, packageRoot, options }) => {
+    const result = await runReflect({ target, packageRoot, taskId: options.taskId });
+    return { result, exitCode: result.status === "STALLED" ? 1 : 0 };
+  },
   progress: async ({ target, packageRoot, options }) => {
     const result = await runProgress({ target, packageRoot, taskId: options.taskId });
     return { result, exitCode: result.status === "STALLED" ? 1 : 0 };

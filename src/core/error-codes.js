@@ -50,6 +50,22 @@ export const E_DIAGNOSIS_EVIDENCE_INVALID = "E_DIAGNOSIS_EVIDENCE_INVALID";
 export const E_DIAGNOSIS_CYCLE_MISMATCH = "E_DIAGNOSIS_CYCLE_MISMATCH";
 export const E_DIAGNOSIS_NO_NEW_INFORMATION = "E_DIAGNOSIS_NO_NEW_INFORMATION";
 export const E_PROGRESS_STALLED = "E_PROGRESS_STALLED";
+export const E_DIAGNOSTIC_CASE_INVALID = "E_DIAGNOSTIC_CASE_INVALID";
+export const E_DIAGNOSTIC_CASE_CYCLE_MISMATCH = "E_DIAGNOSTIC_CASE_CYCLE_MISMATCH";
+export const E_DIAGNOSTIC_CASE_EVIDENCE_INVALID = "E_DIAGNOSTIC_CASE_EVIDENCE_INVALID";
+export const E_OBSERVATION_INVALID = "E_OBSERVATION_INVALID";
+export const E_CONTRIBUTOR_INVALID = "E_CONTRIBUTOR_INVALID";
+export const E_CONTRIBUTOR_REFERENCE_INVALID = "E_CONTRIBUTOR_REFERENCE_INVALID";
+export const E_HYPOTHESIS_INVALID = "E_HYPOTHESIS_INVALID";
+export const E_HYPOTHESIS_SETTLEMENT_MISSING = "E_HYPOTHESIS_SETTLEMENT_MISSING";
+export const E_HYPOTHESIS_DISPOSITION_INVALID = "E_HYPOTHESIS_DISPOSITION_INVALID";
+export const E_HYPOTHESIS_DISPOSITION_EVIDENCE_INVALID = "E_HYPOTHESIS_DISPOSITION_EVIDENCE_INVALID";
+export const E_INTERVENTION_INVALID = "E_INTERVENTION_INVALID";
+export const E_INTERVENTION_HYPOTHESIS_MISSING = "E_INTERVENTION_HYPOTHESIS_MISSING";
+export const E_INTERVENTION_REFERENCE_INVALID = "E_INTERVENTION_REFERENCE_INVALID";
+export const E_FAILURE_SIGNATURE_INVALID = "E_FAILURE_SIGNATURE_INVALID";
+export const E_NO_INFORMATION_GAIN = "E_NO_INFORMATION_GAIN";
+export const E_STRATEGY_OSCILLATION = "E_STRATEGY_OSCILLATION";
 export const E_DECISION_CRITERION_INVALID = "E_DECISION_CRITERION_INVALID";
 export const E_DECISION_NOT_UNRESOLVED = "E_DECISION_NOT_UNRESOLVED";
 
@@ -380,6 +396,76 @@ export const PUBLIC_ERROR_CODES = Object.freeze({
     classification: "PUBLIC_STABLE",
     meaning: "Persisted correction history shows no new diagnostic information.",
     safeResolution: "Use an independent check, revisit assumptions, or record a materially different diagnosis.",
+  }),
+  E_DIAGNOSTIC_CASE_INVALID: Object.freeze({
+    code: "E_DIAGNOSTIC_CASE_INVALID",
+    category: "diagnosis",
+    classification: "PUBLIC_STABLE",
+    meaning: "Structured diagnostic case details or parameters are malformed.",
+    safeResolution: "Provide valid observations, contributors, hypotheses with settlement criteria, and nextSafeAction.",
+  }),
+  E_DIAGNOSTIC_CASE_CYCLE_MISMATCH: Object.freeze({
+    code: "E_DIAGNOSTIC_CASE_CYCLE_MISMATCH",
+    category: "diagnosis",
+    classification: "PUBLIC_STABLE",
+    meaning: "Diagnostic case verification cycle does not match the active work state verification cycle.",
+    safeResolution: "Record the diagnostic case for the current active verification cycle.",
+  }),
+  E_DIAGNOSTIC_CASE_EVIDENCE_INVALID: Object.freeze({
+    code: "E_DIAGNOSTIC_CASE_EVIDENCE_INVALID",
+    category: "diagnosis",
+    classification: "PUBLIC_STABLE",
+    meaning: "A diagnostic case evidence reference does not match any check from the active verification cycle.",
+    safeResolution: "Reference check IDs recorded during the active verification cycle.",
+  }),
+  E_HYPOTHESIS_SETTLEMENT_MISSING: Object.freeze({
+    code: "E_HYPOTHESIS_SETTLEMENT_MISSING",
+    category: "diagnosis",
+    classification: "PUBLIC_STABLE",
+    meaning: "An open hypothesis lacks a falsifiable settlement condition.",
+    safeResolution: "Provide a structured settledBy predicate, check status, or observation binding.",
+  }),
+  E_HYPOTHESIS_DISPOSITION_INVALID: Object.freeze({
+    code: "E_HYPOTHESIS_DISPOSITION_INVALID",
+    category: "diagnosis",
+    classification: "PUBLIC_STABLE",
+    meaning: "Hypothesis disposition is malformed or references an unknown hypothesis or disallowed transition.",
+    safeResolution: "Record a disposition for a known hypothesis using an allowed status transition.",
+  }),
+  E_HYPOTHESIS_DISPOSITION_EVIDENCE_INVALID: Object.freeze({
+    code: "E_HYPOTHESIS_DISPOSITION_EVIDENCE_INVALID",
+    category: "diagnosis",
+    classification: "PUBLIC_STABLE",
+    meaning: "Hypothesis disposition evidence references do not resolve to checks of the active cycle.",
+    safeResolution: "Reference at least one check ID recorded in the active verification cycle.",
+  }),
+  E_INTERVENTION_INVALID: Object.freeze({
+    code: "E_INTERVENTION_INVALID",
+    category: "diagnosis",
+    classification: "PUBLIC_STABLE",
+    meaning: "Intervention record is malformed.",
+    safeResolution: "Provide id, kind, statement, and at least one bound hypothesisRef.",
+  }),
+  E_INTERVENTION_HYPOTHESIS_MISSING: Object.freeze({
+    code: "E_INTERVENTION_HYPOTHESIS_MISSING",
+    category: "diagnosis",
+    classification: "PUBLIC_STABLE",
+    meaning: "Intervention does not bind to any hypothesis.",
+    safeResolution: "Bind the intervention to at least one recorded hypothesis.",
+  }),
+  E_INTERVENTION_REFERENCE_INVALID: Object.freeze({
+    code: "E_INTERVENTION_REFERENCE_INVALID",
+    category: "diagnosis",
+    classification: "PUBLIC_STABLE",
+    meaning: "Intervention references an unknown hypothesis.",
+    safeResolution: "Record the diagnostic case containing the hypothesis before recording the intervention.",
+  }),
+  E_STRATEGY_OSCILLATION: Object.freeze({
+    code: "E_STRATEGY_OSCILLATION",
+    category: "progress",
+    classification: "PUBLIC_STABLE",
+    meaning: "Correction history oscillates between previously exhausted strategies without new information.",
+    safeResolution: "Gather a genuinely new observation or test a materially different falsifiable hypothesis.",
   }),
   E_DECISION_CRITERION_INVALID: Object.freeze({
     code: "E_DECISION_CRITERION_INVALID",

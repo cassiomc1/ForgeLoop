@@ -39,9 +39,9 @@ ForgeLoop uses a definition-driven command-line parser:
 
 | Category | Commands |
 | --- | --- |
-| **Inspection & Diagnostics** | [`protocol-info`](#protocol-info), [`doctor`](#doctor), [`progress`](#progress), [`profile-interview`](#profile-interview), [`inspect`](#inspect), [`status`](#status), [`validate-state`](#validate-state), [`validate-protocol`](#validate-protocol) |
+| **Inspection & Diagnostics** | [`protocol-info`](#protocol-info), [`doctor`](#doctor), [`history`](#history), [`trace`](#trace), [`reflect`](#reflect), [`progress`](#progress), [`profile-interview`](#profile-interview), [`inspect`](#inspect), [`status`](#status), [`validate-state`](#validate-state), [`validate-protocol`](#validate-protocol) |
 | **Setup & Maintenance** | [`init`](#init), [`update`](#update), [`task-migrate`](#task-migrate), [`migrate-protocol`](#migrate-protocol), [`task-unlock`](#task-unlock), [`task-recover`](#task-recover), [`task-repair-legacy-recovery`](#task-repair-legacy-recovery), [`task-resume`](#task-resume) |
-| **Lifecycle & State** | [`activate`](#activate), [`route`](#route), [`preflight`](#preflight), [`advance`](#advance), [`next`](#next), [`record-diagnosis`](#record-diagnosis), [`record-decision-criterion`](#record-decision-criterion), [`complete`](#complete), [`clear-state`](#clear-state), [`reconcile-closure`](#reconcile-closure), [`task-create`](#task-create), [`task-list`](#task-list), [`task-show`](#task-show), [`task-lock-status`](#task-lock-status), [`task-scope`](#task-scope) |
+| **Lifecycle & State** | [`activate`](#activate), [`route`](#route), [`preflight`](#preflight), [`advance`](#advance), [`next`](#next), [`record-diagnosis`](#record-diagnosis), [`record-intervention`](#record-intervention), [`record-hypothesis-disposition`](#record-hypothesis-disposition), [`record-decision-criterion`](#record-decision-criterion), [`complete`](#complete), [`clear-state`](#clear-state), [`reconcile-closure`](#reconcile-closure), [`task-create`](#task-create), [`task-list`](#task-list), [`task-show`](#task-show), [`task-lock-status`](#task-lock-status), [`task-scope`](#task-scope) |
 | **Cross-Harness Continuity** | [`continuity`](#continuity), [`record-continuity`](#record-continuity), [`reconcile-continuity`](#reconcile-continuity), [`clear-continuity`](#clear-continuity) |
 | **Verification & Completion** | [`prepare-completion`](#prepare-completion), [`run-check`](#run-check), [`record-check`](#record-check), [`record-terminal-result`](#record-terminal-result), [`audit`](#audit), [`report`](#report), [`validate-receipt`](#validate-receipt) |
 | **Policy & Auditing** | [`policy`](#policy), [`policy-discover`](#policy-discover), [`policy-status`](#policy-status), [`policy-diff`](#policy-diff), [`rule-verify`](#rule-verify), [`baseline`](#baseline), [`bundle`](#bundle) |
@@ -496,6 +496,7 @@ Records an append-only diagnosis event in the lifecycle event ledger for the act
 
 - `--path <directory>`: target project directory (default: current directory)
 - `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--file <path>`: structured diagnostic case JSON file (mutually exclusive with legacy diagnosis fields)
 - `--hypothesis <text>`: specific root-cause hypothesis explaining the verification failure
 - `--failure-class <class>`: canonical failure class taxonomy
 - `--evidence-ref <check-id>`: reference to failed/blocked check from current cycle (repeatable)
@@ -514,6 +515,63 @@ Records an append-only diagnosis event in the lifecycle event ledger for the act
     --evidence-ref="unit-tests" \
     --settled-by="Test returns expected slice length" \
     --next-safe-action="Adjust offset +1 in slice.js"
+  ```
+
+### `record-intervention`
+
+Records an append-only intervention bound to hypotheses; the described change is never executed by ForgeLoop.
+
+- **Purpose**: Records corrective or experimental changes (code, config, tests, instrumentation) associated with one or more hypotheses.
+- **When to use**: In `CORRECTING` phase after a structured diagnostic case has been recorded.
+- **Mutation**: Appends `INTERVENTION_RECORDED` to event ledger.
+- **Options**:
+
+<!-- BEGIN FORGELOOP GENERATED: cli:record-intervention:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--file <path>`: intervention JSON file describing the recorded change (never executed)
+- `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:record-intervention:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop record-intervention --task checkout --file intervention.json --json
+  ```
+
+### `record-hypothesis-disposition`
+
+Records an evidence-bound hypothesis disposition update in the lifecycle event ledger.
+
+- **Purpose**: Updates hypothesis status (SUPPORTED, WEAKENED, FALSIFIED, SUPERSEDED, UNRESOLVED) based on recorded evidence.
+- **When to use**: After new verification evidence resolves an open hypothesis.
+- **Mutation**: Appends `HYPOTHESIS_DISPOSITION_RECORDED` to event ledger.
+- **Options**:
+
+<!-- BEGIN FORGELOOP GENERATED: cli:record-hypothesis-disposition:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--hypothesis <id>`: existing hypothesis ID to disposition
+- `--status <status>`: SUPPORTED, WEAKENED, FALSIFIED, SUPERSEDED, or UNRESOLVED
+- `--evidence-ref <check-id>`: check ID supporting this disposition (repeatable)
+- `--reason <text>`: evidence-bound reason for the disposition
+- `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:record-hypothesis-disposition:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop record-hypothesis-disposition \
+    --task checkout \
+    --hypothesis h-timeout-latency \
+    --status SUPPORTED \
+    --evidence-ref checkout-tests \
+    --reason "Instrumented dependency time exceeded the timeout." \
+    --json
   ```
 
 ### `validate-state`
@@ -840,6 +898,81 @@ Inspects checkout changes and compares them against contract deliverables.
 
   ```bash
   forgeloop inspect --json
+  ```
+
+### `history`
+
+Shows chronological protocol history reconstructed from canonical ForgeLoop state.
+
+- **Purpose**: Answers "what happened during this task?" with deterministic, read-only reconstruction from the event ledger.
+- **Mutation**: Read-only.
+- **Options**:
+
+<!-- BEGIN FORGELOOP GENERATED: cli:history:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--type <list>`: comma-separated event types or categories to include
+- `--phase <list>`: comma-separated lifecycle phases to include
+- `--failures`: show only failed/blocked verification events
+- `--checks`: show only verification events
+- `--since <timestamp>`: include events at or after this timestamp
+- `--until <timestamp>`: include events at or before this timestamp
+- `--limit <number>`: show only the last N events after filtering
+- `--compact`: one line per event
+- `--verbose`: show full event data
+- `--json`: emit structured history output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:history:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop history --task auth-feature --json
+  ```
+
+### `trace`
+
+Emits detailed structured task trace with provenance and artifact relationships.
+
+- **Purpose**: Machine-readable protocol reconstruction consumed by history, reflect, task-level inspect, and external integrations.
+- **Mutation**: Read-only.
+- **Options**:
+
+<!-- BEGIN FORGELOOP GENERATED: cli:trace:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--json`: emit structured trace output as JSON (default rendering is a summary)
+
+<!-- END FORGELOOP GENERATED: cli:trace:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop trace --task auth-feature --json
+  ```
+
+### `reflect`
+
+Analyzes diagnostic and correction history deterministically for information gain, repeated failures, ineffective interventions, and oscillation.
+
+- **Purpose**: Whole-task retrospective that reports whether the run actually learned anything, without calling an LLM.
+- **Mutation**: Read-only.
+- **Options**:
+
+<!-- BEGIN FORGELOOP GENERATED: cli:reflect:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--json`: emit structured reflection output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:reflect:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop reflect --task auth-feature --json
   ```
 
 ### `policy`

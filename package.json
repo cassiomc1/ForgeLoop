@@ -58,6 +58,8 @@
     "scripts/CI_VALIDATORS.md",
     "docs/MCP.md",
     "docs/UNIVERSAL_INTEGRATION.md",
+    "docs/DIAGNOSTIC_MODEL.md",
+    "docs/EXECUTION_TRACE.md",
     "docs/RELEASE_CHECKLIST_1_5_MCP.md"
   ],
   "scripts": {

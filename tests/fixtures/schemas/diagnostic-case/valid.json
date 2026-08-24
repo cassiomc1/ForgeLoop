@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "verificationCycle": 2,
+  "diagnosticRevision": 1,
+  "failureClass": "VERIFICATION_FAILURE",
+  "observations": [
+    {
+      "id": "obs-auth-401",
+      "kind": "CHECK_RESULT",
+      "evidenceRef": "auth-tests",
+      "statement": "Refresh-token test expected 200 and received 401.",
+      "provenance": "FORGELOOP_EXECUTED"
+    }
+  ],
+  "contributors": [
+    {
+      "id": "c-timeout-budget",
+      "type": "CONFIGURATION",
+      "statement": "Checkout timeout is fixed at 2000ms.",
+      "basis": [
+        "obs-auth-401"
+      ],
+      "status": "OBSERVED"
+    }
+  ],
+  "hypotheses": [
+    {
+      "id": "h-timeout-latency",
+      "statement": "Elevated database latency combined with the fixed timeout causes the checkout request to fail.",
+      "contributorRefs": [
+        "c-timeout-budget"
+      ],
+      "evidenceRefs": [
+        "auth-tests"
+      ],
+      "settledBy": {
+        "type": "PREDICATE",
+        "statement": "Measured request dependency time exceeds the configured timeout under the failing fixture."
+      },
+      "status": "OPEN"
+    }
+  ],
+  "nextSafeAction": {
+    "statement": "Instrument the failing dependency path."
+  },
+  "diagnosticFingerprint": "eb8a9394fe9df9541b249d5d5f51764eb79498e5adcb46fd7fd0dffe4225812e"
+}

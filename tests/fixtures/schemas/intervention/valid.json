@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "verificationCycle": 2,
+  "intervention": {
+    "id": "i-latency-trace",
+    "kind": "INSTRUMENTATION",
+    "statement": "Record DB latency in failing test path.",
+    "targets": [
+      "tests/checkout"
+    ],
+    "hypothesisRefs": [
+      "h-timeout-latency"
+    ],
+    "expectedObservation": "Measured latency can be compared to the timeout budget.",
+    "reversible": true
+  },
+  "interventionSemanticFingerprint": "bacec758fdedc65b78ca4f32760d615d40ee65f8e54e1f949c98a2081477957c"
+}

@@ -698,6 +698,8 @@ forgeloop next --task <id> --json
 | `E_CONTRACT_MISSING` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_CONTRACT_STALE` | Contract modified after downstream artifacts were generated. | Re-run forgeloop route and forgeloop preflight. |
 | `E_CONTRACT_UNRESOLVED_DECISION` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
+| `E_CONTRIBUTOR_INVALID` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
+| `E_CONTRIBUTOR_REFERENCE_INVALID` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_DECISION_CRITERION_INVALID` | Decision settlement criterion details or parameters are malformed. | Provide non-empty decision text and settledBy criterion. |
 | `E_DECISION_NOT_UNRESOLVED` | A settlement criterion referenced a decision not present in current unresolvedDecisions. | Use the exact current unresolved decision text or update the contract first. |
 | `E_DIAGNOSIS_CYCLE_MISMATCH` | Diagnosis verification cycle does not match the active work state verification cycle. | Record diagnosis for the current active verification cycle. |
@@ -705,6 +707,9 @@ forgeloop next --task <id> --json
 | `E_DIAGNOSIS_INVALID` | Diagnosis record details or parameters are malformed. | Provide valid failureClass, hypothesis, evidenceRefs, settledBy, and nextSafeAction. |
 | `E_DIAGNOSIS_NO_NEW_INFORMATION` | The proposed retry repeats the previous hypothesis with the same evidence. | Change the hypothesis, collect independent evidence, or change strategy. |
 | `E_DIAGNOSIS_REQUIRED` | Current correction cycle has no append-only diagnosis record. | Run forgeloop record-diagnosis with current failed evidence before correcting. |
+| `E_DIAGNOSTIC_CASE_CYCLE_MISMATCH` | Diagnostic case verification cycle does not match the active work state verification cycle. | Record the diagnostic case for the current active verification cycle. |
+| `E_DIAGNOSTIC_CASE_EVIDENCE_INVALID` | A diagnostic case evidence reference does not match any check from the active verification cycle. | Reference check IDs recorded during the active verification cycle. |
+| `E_DIAGNOSTIC_CASE_INVALID` | Structured diagnostic case details or parameters are malformed. | Provide valid observations, contributors, hypotheses with settlement criteria, and nextSafeAction. |
 | `E_EVIDENCE_COVERAGE_INVALID` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_EVIDENCE_COVERAGE_PARTIAL` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_EVIDENCE_INVALID` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
@@ -718,8 +723,15 @@ forgeloop next --task <id> --json
 | `E_GATE_REQUIRED` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_GATE_STALE` | Referenced gate artifact changed after approval. | Update artifact SHA-256 in gate file. |
 | `E_GATE_UNVERIFIED` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
+| `E_HYPOTHESIS_DISPOSITION_EVIDENCE_INVALID` | Hypothesis disposition evidence references do not resolve to checks of the active cycle. | Reference at least one check ID recorded in the active verification cycle. |
+| `E_HYPOTHESIS_DISPOSITION_INVALID` | Hypothesis disposition is malformed or references an unknown hypothesis or disallowed transition. | Record a disposition for a known hypothesis using an allowed status transition. |
+| `E_HYPOTHESIS_INVALID` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
+| `E_HYPOTHESIS_SETTLEMENT_MISSING` | An open hypothesis lacks a falsifiable settlement condition. | Provide a structured settledBy predicate, check status, or observation binding. |
 | `E_INIT_KIT_CONFLICT` | A canonical ForgeLoop kit destination already exists with content that does not match the shipped canonical template. | Inspect the conflicting `.forgeloop/kit/...` file. If it is stale or partial ForgeLoop output, remove or restore it and rerun `forgeloop init`. Do not overwrite unknown content automatically. |
 | `E_INSTALLATION_AUTHORITY_REQUIRED` | Attempted software installation without host authority grant. | Use local non-installing binaries or request host authority grant. |
+| `E_INTERVENTION_HYPOTHESIS_MISSING` | Intervention does not bind to any hypothesis. | Bind the intervention to at least one recorded hypothesis. |
+| `E_INTERVENTION_INVALID` | Intervention record is malformed. | Provide id, kind, statement, and at least one bound hypothesisRef. |
+| `E_INTERVENTION_REFERENCE_INVALID` | Intervention references an unknown hypothesis. | Record the diagnostic case containing the hypothesis before recording the intervention. |
 | `E_LEGACY_RECOVERY_MIGRATION_INVALID` | The legacy recovery-event repair was refused because the ledger does not match the exact known legacy defect signature, has incompatible later activity, holds a live lock, or is otherwise ambiguous. | Inspect the structured plan/errors; ambiguous or tampered ledgers stay INCONSISTENT and are never migrated. |
 | `E_MIGRATION_INCOMPLETE` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_MIGRATION_WRITE_VERIFY` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
@@ -727,6 +739,7 @@ forgeloop next --task <id> --json
 | `E_NATIVE_ADAPTER_STALE` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_NATIVE_ADAPTER_TARGET_MISSING` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_NEW_POLICY_VIOLATION` | New executable policy violation detected that is not present in brownfield baseline. | Fix the violation before completing the task. |
+| `E_OBSERVATION_INVALID` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_PHASE_CHRONOLOGY_INVALID` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_PHASE_PREREQUISITE_MISSING` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_PHASE_TRANSITION_INVALID` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
@@ -782,6 +795,7 @@ forgeloop next --task <id> --json
 | `E_STATE_MISSING_AFTER_PREFLIGHT_READY` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_STATE_REVALIDATION_REQUIRED` | The work-state checkpoint must be revalidated before the lifecycle can continue. | Run forgeloop reconcile-closure for externally satisfied EXECUTING tasks, or inspect the freshness reasons for other drift. |
 | `E_STATE_TASK_MISMATCH` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
+| `E_STRATEGY_OSCILLATION` | Correction history oscillates between previously exhausted strategies without new information. | Gather a genuinely new observation or test a materially different falsifiable hypothesis. |
 | `E_TASK_ALREADY_EXISTS` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_TASK_ALREADY_RECOVERED` | The task already has active durable recovered state. | Inspect the existing recovery metadata; use task-resume to reacquire claims or leave the task recovered. |
 | `E_TASK_AMBIGUOUS` | Multiple tasks exist in the project but no task selector was provided. | Select a task explicitly using --task <id> or FORGELOOP_TASK=<id>. |

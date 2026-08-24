@@ -1,5 +1,26 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Unified observability and diagnostic intelligence (Protocol v1 additive):
+  read-only `history`, `trace`, and `reflect` commands reconstructed from the
+  canonical event ledger through a shared snapshot/trace projection core
+  (`buildTaskSnapshot`, `buildTaskTrace`); structured diagnostic cases with
+  observations, multifactor contributors, multiple falsifiable hypotheses,
+  semantic fingerprints, and append-only revision chains via
+  `record-diagnosis --file`; `record-intervention` and
+  `record-hypothesis-disposition` mutation commands; information-gain v2
+  dimensions, failure signatures, failure surfaces, strategy fingerprints, and
+  oscillation detection; task-level `inspect --task` additive
+  `taskInspection` section; continuity `diagnosticContext` with bounded
+  `doNotRepeat`; `next` diagnostic guidance (`REQUIRE_NEW_DIAGNOSTIC_INFORMATION`,
+  `INTRODUCE_NEW_OBSERVATION`, `RECORD_INTERVENTION`) without changing existing
+  actions; `protocol-info` capability advertising; three new public schemas
+  (`diagnostic-case`, `intervention`, `hypothesis-disposition`) and new stable
+  error codes. Legacy single-hypothesis diagnosis remains fully valid.
+
 ## 1.5.0 - 2026-08-23
 
 ### Added

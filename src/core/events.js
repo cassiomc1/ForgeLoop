@@ -14,6 +14,11 @@ import { taskArtifactPath } from "./task-paths.js";
 import { getActiveTaskTransaction, withTaskTransaction } from "./transaction.js";
 
 import { assertDiagnosisDetails } from "./diagnosis-model.js";
+import {
+  assertDiagnosticCaseDetails,
+  assertInterventionDetails,
+  assertHypothesisDispositionDetails,
+} from "./diagnostic-model.js";
 import { assertDecisionCriterionDetails } from "./settlement-model.js";
 import {
   LEGACY_RECOVERY_MIGRATION_EVENT,
@@ -97,6 +102,15 @@ export function validateKnownEventDetails(event) {
   switch (event.event) {
     case "DIAGNOSIS_RECORDED":
       assertDiagnosisDetails(event.details);
+      return;
+    case "DIAGNOSTIC_CASE_RECORDED":
+      assertDiagnosticCaseDetails(event.details);
+      return;
+    case "INTERVENTION_RECORDED":
+      assertInterventionDetails(event.details);
+      return;
+    case "HYPOTHESIS_DISPOSITION_RECORDED":
+      assertHypothesisDispositionDetails(event.details);
       return;
     case "DECISION_CRITERION_RECORDED":
       assertDecisionCriterionDetails(event.details);
