@@ -285,7 +285,7 @@ export async function recordIntervention({
       && event.taskId === state.taskId
       && event.details?.interventionSemanticFingerprint === details.interventionSemanticFingerprint,
   );
-  const repeatedWithoutGain = priorInterventions.length > 0;
+  const repeatedSemanticIntervention = priorInterventions.length > 0;
 
   const event = await appendProtocolEvent(
     target,
@@ -294,7 +294,13 @@ export async function recordIntervention({
     { taskId: taskId ?? null },
   );
 
-  return { event, state, intervention: details, repeatedWithoutGain };
+  return {
+    event,
+    state,
+    intervention: details,
+    repeatedSemanticIntervention,
+    effectiveness: "PENDING",
+  };
 }
 
 export async function recordHypothesisDisposition({

@@ -269,8 +269,10 @@ export function assertDiagnosticCaseDetails(details) {
   }
   details.contributors.forEach((contributor, index) => assertContributor(contributor, `contributors[${index}]`));
 
-  if (!Array.isArray(details.hypotheses) || details.hypotheses.length > LIMITS.hypothesesPerCase) {
-    invalid("E_HYPOTHESIS_INVALID", `hypotheses must be an array of at most ${LIMITS.hypothesesPerCase}`);
+  if (!Array.isArray(details.hypotheses)
+    || details.hypotheses.length < 1
+    || details.hypotheses.length > LIMITS.hypothesesPerCase) {
+    invalid("E_DIAGNOSTIC_CASE_INVALID", `hypotheses must contain between 1 and ${LIMITS.hypothesesPerCase} hypotheses`);
   }
   details.hypotheses.forEach((hypothesis, index) => assertHypothesis(hypothesis, `hypotheses[${index}]`));
 

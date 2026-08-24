@@ -41,3 +41,12 @@ test("protocol-info CLI supports human and JSON output", () => {
   assert.equal(human.status, 0, human.stderr);
   assert.match(human.stdout, /Protocol version: 1/);
 });
+
+test("diagnostics capability advertising matches delivered runtime semantics", () => {
+  const info = protocolInfo();
+  assert.equal(info.features.diagnostics.informationGainV2, true);
+  assert.equal(info.features.diagnostics.strategyOscillationDetection, true);
+  assert.equal(info.features.observabilityStability?.informationGainV2, "stable");
+  assert.equal(info.features.observabilityStability?.strategyOscillationDetection, "stable");
+  assert.equal(info.protocolVersion, 1);
+});

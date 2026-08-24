@@ -30,6 +30,6 @@ export function formatRecordInterventionResult(result) {
     `KIND: ${intervention.kind}`,
     `STATEMENT: ${intervention.statement}`,
     `HYPOTHESES: ${(intervention.hypothesisRefs ?? []).join(", ")}`,
-    result.repeatedWithoutGain ? "WARNING: this semantic intervention was recorded before without observed information gain" : null,
+    result.repeatedSemanticIntervention ? "WARNING: this semantic intervention has been recorded before" : null,
   ].filter((line) => line !== null).join("\n") + "\n";
 }

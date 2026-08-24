@@ -47,8 +47,16 @@ export function evaluateProgress({ state, events = [] } = {}) {
     const gainProjection = buildInformationGainProjection(taskEvents, state.taskId);
     const matching = gainProjection.filter((entry) => entry.verificationCycle === (state.verificationCycle ?? null));
     const cycleGain = matching.at(-1) ?? gainProjection.at(-1) ?? null;
-    latestGainClassification = cycleGain?.classification ?? "FIRST_DIAGNOSIS";
     latestDiag.effectiveInformationGain = cycleGain?.effectiveGain ?? true;
+    if (!latestDiag.effectiveInformationGain) {
+      latestGainClassification = "NONE";
+    } else {
+      latestGainClassification = cycleGain?.classification ?? "FIRST_DIAGNOSIS";
+      if (latestGainClassification === "NONE") {
+        // Compatibility classification is NONE but v2 dimensions prove gain.
+        latestGainClassification = "EFFECTIVE_GAIN_V2";
+      }
+    }
   }
 
   // Build checksById index for resolving requirement from check IDs

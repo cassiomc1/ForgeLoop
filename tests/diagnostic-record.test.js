@@ -171,7 +171,7 @@ test("intervention requires CORRECTING phase, known hypothesis, and detects repe
 
     const first = await recordIntervention({ target, packageRoot, interventionInput, taskId });
     assert.equal(first.event.event, "INTERVENTION_RECORDED");
-    assert.equal(first.repeatedWithoutGain, false);
+    assert.equal(first.repeatedSemanticIntervention, false);
 
     const second = await recordIntervention({
       target,
@@ -179,7 +179,7 @@ test("intervention requires CORRECTING phase, known hypothesis, and detects repe
       interventionInput: { ...interventionInput, id: "i-different-id" },
       taskId,
     });
-    assert.equal(second.repeatedWithoutGain, true);
+    assert.equal(second.repeatedSemanticIntervention, true);
 
     const ledger = await validateEventLedger(target, packageRoot, { taskId });
     assert.equal(ledger.valid, true);
