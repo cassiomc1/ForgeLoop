@@ -7,6 +7,7 @@ import { test } from "node:test";
 import { runPreflight } from "../src/commands/preflight.js";
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { appendProtocolEvent, validateEventLedger } from "../src/core/events.js";
+import { advanceWorkState } from "../src/core/phase.js";
 import { evaluateRoute } from "../src/core/router.js";
 import { persistRoute } from "../src/core/route-artifact.js";
 import { getPackageRoot } from "../src/core/templates.js";
@@ -125,6 +126,29 @@ test("preflight returns READY with fresh details after a BLOCKED outcome superse
     const readyEvents = ledger.events.filter((event) => event.event === "PREFLIGHT_READY" && event.taskId === taskId);
     assert.equal(readyEvents.length, 2);
     assert.equal(readyEvents[1].fingerprint, revisedHash);
+  });
+});
+
+test("preflight derives the PLANNED resume phase from a recorded PLAN_RECORDED milestone", async () => {
+  await withTarget(async (target) => {
+    const { taskId } = await setupTaskThroughReady(target);
+    await appendProtocolEvent(target, { taskId, event: "PLAN_RECORDED" }, packageRoot, { taskId });
+
+    const { unlink } = await import("node:fs/promises");
+    const { taskDirectory } = await import("../src/core/task-paths.js");
+    await unlink(path.join(target, taskDirectory(taskId), "work-state.json"));
+
+    const preflight = await runPreflight({ target, packageRoot, taskId });
+    assert.equal(preflight.status, "READY");
+
+    const restored = await readWorkState(target, { packageRoot, taskId });
+    assert.equal(restored.phase, "PLANNED");
+
+    // Advancing from the restored checkpoint appends EXECUTION_STARTED exactly once.
+    await advanceWorkState(target, "EXECUTING", { packageRoot, taskId });
+    const ledger = await validateEventLedger(target, packageRoot, { taskId });
+    assert.equal(ledger.valid, true);
+    assert.equal(ledger.events.filter((event) => event.event === "EXECUTION_STARTED" && event.taskId === taskId).length, 1);
   });
 });
 
