@@ -12,6 +12,7 @@ const DEFAULT_PENDING_STEPS = ["planning", "implementation", "verification"];
  * must resume at the phase the recorded chronology supports.
  */
 const RESUME_PHASE_BY_MILESTONE = Object.freeze({
+  PLAN_RECORDED: "PLANNED",
   EXECUTION_STARTED: "EXECUTING",
   VERIFICATION_STARTED: "VERIFYING",
   VERIFICATION_RECORDED: "VERIFYING",
