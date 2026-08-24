@@ -203,6 +203,13 @@ forgeloop status --task <id> --json
    forgeloop validate-protocol --task <id> --json
    ```
 
+If a checkpoint must be recreated after `clear-state` (or loss), `preflight`
+rebuilds a resumable checkpoint from the preserved contract and route artifacts.
+The resume phase is derived from the validated ledger chronology: a ledger that
+already records `EXECUTION_STARTED` (or a later verification milestone) resumes
+at the phase that chronology supports instead of restarting at `ROUTED`, so no
+duplicate non-repeatable lifecycle milestone is ever appended.
+
 ---
 
 ### Symptom: `EXECUTING`/`VERIFYING` task is stale because the repository moved (`E_REPOSITORY_CHANGED`)
@@ -220,7 +227,7 @@ forgeloop reconcile-closure --task <id> --id <verification-id> \
 
 `reconcile-closure` requires:
 
-1. The task is `EXECUTING` or `VERIFYING` (later phases are not reconcilable; work must return to a verification phase first).
+1. The task is `EXECUTING`, `VERIFYING`, or `REVIEWING`. A `REVIEWING` task additionally requires authorized completion recovery (a persisted evidence-only rejection bound to the current checkpoint), or a rejection snapshot that can be rebound (see below).
 2. The only drift is `REPOSITORY_CHANGED` (contract or required-artifact drift stays blocked).
 3. The append-only event ledger is valid.
 4. `--id` and `--requirement` exactly match a `VERIFICATION` item of the task contract, and the executed command exits 0, proving the objective is present in the current repository.
@@ -234,6 +241,28 @@ forgeloop run-check --task <id> --id <id> --requirement "<text>" -- <command>
 forgeloop advance --task <id> --to REVIEWING
 forgeloop complete --task <id>
 ```
+
+#### Drifted completion-rejection snapshots (`E_COMPLETION_REJECTION_STATE_FINGERPRINT_MISMATCH`)
+
+A `REVIEWING` task with a persisted evidence-only completion rejection can lose
+its snapshot binding when the checkpoint is mutated after the rejection (for
+example by a recovery/resume cycle or a repository move). Both sanctioned
+closure paths — `reconcile-closure` from `REVIEWING` and the
+`REVIEWING -> VERIFYING` recovery transition — then fail with
+`E_COMPLETION_REJECTION_STATE_FINGERPRINT_MISMATCH`, while `complete` cannot
+persist a fresh snapshot because it deduplicates logically identical rejections.
+This deadlocks the task.
+
+ForgeLoop resolves this with an append-only **rejection rebind**: when the only
+authorization failures are state/receipt fingerprint mismatches and the
+rejection's logical fields (`verificationCycle`, sorted `reasonCodes`, sorted
+`missingRequirementIds`) are still identical between work-state and the latest
+matching ledger rejection, the recovery surfaces automatically append a rebound
+`COMPLETION_REJECTED` event carrying the current fingerprints (referencing the
+snapshot it supersedes via `reboundFromStateFingerprint`) and re-bind the
+execution receipt. The original rejection is never modified, any logical
+difference is still refused, and closure must still produce fresh observed
+evidence in the current repository.
 
 Write claims release only when completion is validator-backed (`COMPLETE`).
 A `phase: COMPLETE` that was never produced by the official completion pipeline

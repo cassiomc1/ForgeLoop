@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+### Fixed
+
+- Completion-recovery fingerprint deadlock: a `REVIEWING` task whose persisted
+  evidence-only rejection snapshot no longer matches the live checkpoint (after
+  repository drift or a recovery/resume cycle) could not reach closure through
+  any sanctioned path. `reconcile-closure` and the `REVIEWING -> VERIFYING`
+  recovery transition now rebind the rejection append-only when — and only when
+  — the logical fields (`verificationCycle`, sorted `reasonCodes`, sorted
+  `missingRequirementIds`) are identical between work-state and the latest
+  matching ledger rejection; the rebound `COMPLETION_REJECTED` event carries the
+  current fingerprints and references the superseded snapshot via
+  `reboundFromStateFingerprint`. Logical differences still fail closed.
+- Checkpoint restoration is chronology-aware: when `preflight` recreates a
+  missing work-state from preserved contract/route artifacts, the resume phase
+  is derived from the validated ledger milestones instead of always restarting
+  at `ROUTED`, so restored tasks never append duplicate non-repeatable lifecycle
+  milestones such as `EXECUTION_STARTED`.
+
 ## 1.6.0 - 2026-08-24
 
 ### Fixed
