@@ -3,13 +3,13 @@ import { readContract } from "./contract.js";
 import {
   appendProtocolEvent,
   LIFECYCLE_MILESTONES,
-  validateCompletionRecoveryAuthorization,
   validateEventLedger,
   validateStateLedgerCoherence,
 } from "./events.js";
 import { readPersistedRoute } from "./route-artifact.js";
 import { assertWorkPhase, isValidTransition } from "./protocol.js";
 import { readWorkState, mutateWorkState } from "./work-state.js";
+import { authorizeCompletionRecoveryOrRebind } from "./completion-recovery-rebind.js";
 import { evaluateCompletion } from "./completion.js";
 import { evaluatePreflight } from "./preflight.js";
 import { requiredEvidenceForTarget } from "./completion-artifacts.js";
@@ -168,10 +168,9 @@ export async function advanceWorkState(target, toPhase, options = {}) {
   } = normalizedOptions;
   assertWorkPhase(toPhase);
 
-  const state = await readWorkState(target, { packageRoot, taskId, statePath });
+  let state = await readWorkState(target, { packageRoot, taskId, statePath });
   const stateRel = statePath ?? (taskId ? taskArtifactPath(taskId, "state") : ARTIFACT_PATHS.state);
   if (!state) throw phaseError("E_PHASE_PREREQUISITE_MISSING", "Cannot advance without work state", [stateRel]);
-
   const eventsRel = eventsPath ?? (taskId ? taskArtifactPath(taskId, "events") : ARTIFACT_PATHS.events);
   const receiptRel = receiptPath ?? (taskId ? taskArtifactPath(taskId, "receipt") : ARTIFACT_PATHS.receipt);
 
@@ -227,25 +226,28 @@ export async function advanceWorkState(target, toPhase, options = {}) {
   const eventType = PHASE_EVENTS[toPhase];
   const reenteringVerification = toPhase === "VERIFYING" && ["CORRECTING", "REVIEWING"].includes(state.phase);
   if (toPhase === "VERIFYING" && state.phase === "REVIEWING") {
-    let currentReceipt = null;
-    try {
-      const receiptArtifact = await readJsonArtifact(target, receiptRel, "execution-receipt", packageRoot);
-      currentReceipt = receiptArtifact?.value;
-    } catch {
-      // If receipt is not present, pass null
-    }
-    const recoveryAuth = validateCompletionRecoveryAuthorization({
-      state,
-      receipt: currentReceipt,
-      events: ledger.events,
+    const recovery = await authorizeCompletionRecoveryOrRebind({
+      target,
+      packageRoot,
+      taskId,
+      statePath,
+      contractPath,
+      routePath,
+      receiptPath,
+      eventsPath,
+      authorityContext,
+      runtimeContext,
     });
-    if (!recoveryAuth.authorized) {
-      const firstError = recoveryAuth.errors[0] ?? {};
+    if (!recovery.recoveryAuth.authorized) {
+      const firstError = recovery.recoveryAuth.errors[0] ?? {};
       throw phaseError(
         firstError.code ?? "E_COMPLETION_RECOVERY_UNAUTHORIZED",
         firstError.message ?? "REVIEWING -> VERIFYING requires authorized completion recovery",
         [stateRel, eventsRel],
       );
+    }
+    if (recovery.rebound) {
+      state = recovery.state;
     }
   }
   if (toPhase === "CORRECTING" && state.phase === "DIAGNOSING") {

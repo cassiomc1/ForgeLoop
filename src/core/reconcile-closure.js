@@ -1,6 +1,7 @@
 import { readContract } from "./contract.js";
 import { canonicalFingerprint, readJsonArtifact, writeJsonArtifact } from "./artifacts.js";
-import { appendProtocolEvent, validateEventLedger, readEvents, validateCompletionRecoveryAuthorization } from "./events.js";
+import { appendProtocolEvent, validateEventLedger } from "./events.js";
+import { authorizeCompletionRecoveryOrRebind } from "./completion-recovery-rebind.js";
 import { runCommandExecution } from "./execution.js";
 import { createReceipt } from "./receipt.js";
 import { currentRepositoryFingerprint } from "./repository.js";
@@ -68,7 +69,7 @@ export async function runReconcileClosure({
   const eventsRel = taskArtifactPath(taskId, "events");
   const receiptRel = taskArtifactPath(taskId, "receipt");
 
-  const state = await readWorkState(target, { packageRoot, taskId });
+  let state = await readWorkState(target, { packageRoot, taskId });
   if (!state) {
     throw reconcileError("E_RECONCILE_PHASE_INVALID", "Cannot reconcile without work state", [stateRel]);
   }
@@ -80,21 +81,23 @@ export async function runReconcileClosure({
     );
   }
   if (state.phase === "REVIEWING") {
-    let receipt = null;
-    try {
-      receipt = (await readJsonArtifact(target, receiptRel, "execution-receipt", packageRoot))?.value ?? null;
-    } catch {
-      receipt = null;
-    }
-    const events = await readEvents(target, packageRoot, { taskId });
-    const recoveryAuth = validateCompletionRecoveryAuthorization({ state, receipt, events });
-    if (!recoveryAuth.authorized) {
-      const first = recoveryAuth.errors?.[0] ?? {};
+    const recovery = await authorizeCompletionRecoveryOrRebind({
+      target,
+      packageRoot,
+      taskId,
+      authorityContext,
+      runtimeContext,
+    });
+    if (!recovery.recoveryAuth.authorized) {
+      const first = recovery.recoveryAuth.errors?.[0] ?? {};
       throw reconcileError(
         first.code ?? "E_COMPLETION_RECOVERY_UNAUTHORIZED",
         `REVIEWING reconciliation requires authorized completion recovery: ${first.message ?? "unauthorized"}`,
         [stateRel, receiptRel],
       );
+    }
+    if (recovery.rebound) {
+      state = recovery.state;
     }
   }
 
