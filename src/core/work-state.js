@@ -538,13 +538,18 @@ export async function classifyLoadedWorkState({ target, state, contractFile = nu
   };
 }
 
-export async function readAndClassifyWorkState({ target, packageRoot = getPackageRoot(), contractFile = null, maxAgeMs } = {}) {
+export async function readAndClassifyWorkState({ target, packageRoot = getPackageRoot(), contractFile = null, maxAgeMs, taskId = null, stateFile = null, statePath = null } = {}) {
+  const effectiveStateRel = stateFile ?? statePath ?? (taskId ? taskArtifactPath(taskId, "state") : WORK_STATE_PATH);
   let state = null;
   try {
-    state = await readWorkState(target, packageRoot);
+    state = await readWorkState(target, {
+      packageRoot,
+      ...(taskId ? { taskId } : {}),
+      ...(stateFile || statePath ? { statePath: effectiveStateRel } : {}),
+    });
   } catch (error) {
     return {
-      path: WORK_STATE_PATH,
+      path: effectiveStateRel,
       present: true,
       status: "INVALID",
       reasons: ["STATE_INVALID"],
@@ -565,7 +570,7 @@ export async function readAndClassifyWorkState({ target, packageRoot = getPackag
   if (!state) {
     const repository = await currentRepositoryFingerprint(target);
     return {
-      path: WORK_STATE_PATH,
+      path: effectiveStateRel,
       present: false,
       status: "ABSENT",
       reasons: ["NO_CHECKPOINT"],
@@ -589,7 +594,7 @@ export async function readAndClassifyWorkState({ target, packageRoot = getPackag
 
   const classification = await classifyLoadedWorkState({ target, state, contractFile, maxAgeMs });
   return {
-    path: WORK_STATE_PATH,
+    path: effectiveStateRel,
     present: true,
     ...classification,
     phase: state.phase,

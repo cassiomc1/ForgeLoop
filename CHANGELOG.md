@@ -2,6 +2,41 @@
 
 ## Unreleased
 
+### Fixed
+
+- Structured diagnostic cases now satisfy every legacy diagnosis gate: one
+  canonical resolver (`diagnostic-projection.js`) backs `DIAGNOSING ->
+  CORRECTING`, `CORRECTING -> VERIFYING`, `next`, and `progress`; structured-only
+  tasks no longer hit `E_DIAGNOSIS_REQUIRED` and no duplicate legacy event is
+  written.
+- Hypothesis dispositions validate against an authoritative append-only state
+  projection (`hypothesis-projection.js`) using the canonical transition table;
+  terminal states fail closed instead of resetting to `OPEN`.
+- `inspect --task` reads the selected task's raw work state (task-isolated) and
+  feeds raw state (not the classified wrapper) to progress evaluation; human
+  output renders a full task inspection report.
+- Trace correctness: check-attempt cardinality is ledger-primary with
+  deterministic deduplication against state checkpoints; phase chronology is
+  reconstructed forward (`RECEIVED`..`COMPLETE`) including `VERIFICATION_STARTED`
+  and derived `DIAGNOSING`/`CORRECTING`; the phantom
+  `VERIFICATION_STARTED_PLACEHOLDER` is gone; diagnostic revision chains are
+  revalidated at read time.
+- `trace.failureSignatures` / `failureSurfaces` are populated from the canonical
+  failure-analysis projectors and reflection consumes them instead of rebuilding;
+  per-cycle signature sets are real.
+- Information Gain v2 is computed centrally (`information-gain.js`,
+  `information-gain-projection.js`) for progress/reflect/next/inspect/continuity;
+  `STALLED` is reachable; semantic noise never counts as gain.
+- Evidence hardening: structured cases require >=1 hypothesis, observation
+  evidence must resolve in the active cycle, `VERIFICATION_FAILURE` cases must
+  bind failed/blocked active-cycle evidence.
+- Continuity `doNotRepeat` requires semantic repetition plus two completed
+  post-intervention verification cycles plus unchanged failure surface
+  (repetition alone is not non-informative).
+- Capability advertising aligned via additive
+  `features.observabilityStability`; `E_TRACE_SNAPSHOT_INCONSISTENT` and all
+  diagnosis/progress codes registered as stable public error codes.
+
 ### Added
 
 - Unified observability and diagnostic intelligence (Protocol v1 additive):

@@ -1,5 +1,12 @@
 import { buildTaskTrace } from "./trace.js";
-import { compareFailureSurface } from "./failure-surface.js";
+import { readEvents } from "./events.js";
+import { projectHypothesisStates } from "./hypothesis-projection.js";
+import { buildInformationGainProjection } from "./information-gain-projection.js";
+import {
+  computeStrategyFingerprints as computeStrategyFingerprintsImpl,
+  detectOscillation as detectOscillationImpl,
+  evaluateInterventionEffectiveness as evaluateInterventionEffectivenessImpl,
+} from "./strategy-analysis.js";
 
 export const REFLECTION_STATUS = Object.freeze({
   ADVANCING: "ADVANCING",
@@ -7,7 +14,7 @@ export const REFLECTION_STATUS = Object.freeze({
   STALLED: "STALLED",
 });
 
-function informationGainDimensions(previousCase, currentCase) {
+function informationGainDimensions(previousCase, currentCase, context = {}) {
   const dimensions = {
     newObservation: !(previousCase && (currentCase.observations ?? []).every((o) =>
       (previousCase.observations ?? []).some((p) => JSON.stringify(p.statement ?? "") === JSON.stringify(o.statement ?? "")))),
@@ -15,129 +22,87 @@ function informationGainDimensions(previousCase, currentCase) {
       (previousCase.contributors ?? []).some((p) => p.statement === c.statement))),
     newHypothesis: !(previousCase && (currentCase.hypotheses ?? []).every((h) =>
       (previousCase.hypotheses ?? []).some((p) => p.statement === h.statement))),
-    hypothesisDispositionChanged: false,
-    failureSignatureChanged: false,
-    failureSurfaceChanged: false,
-    interventionChanged: false,
+    hypothesisDispositionChanged: Boolean(context.hypothesisDispositionChanged),
+    failureSignatureChanged: Boolean(context.failureSignatureChanged),
+    failureSurfaceChanged: Boolean(context.failureSurfaceChanged),
+    interventionChanged: Boolean(context.interventionChanged),
   };
   return dimensions;
 }
 
-function strategyFingerprints(trace) {
-  const byCycle = new Map();
-  const add = (cycle, component, fingerprint) => {
-    if (!byCycle.has(cycle)) byCycle.set(cycle, { hypotheses: new Set(), contributors: new Set(), interventions: new Set() });
-    byCycle.get(cycle)[component].add(fingerprint);
-  };
-  for (const diagnosticCase of trace.diagnostics.cases) {
-    for (const hypothesis of diagnosticCase.hypotheses ?? []) {
-      add(diagnosticCase.verificationCycle, "hypotheses", `${hypothesis.statement}`.trim().toLowerCase());
-    }
-    for (const contributor of diagnosticCase.contributors ?? []) {
-      add(diagnosticCase.verificationCycle, "contributors", `${contributor.statement}`.trim().toLowerCase());
-    }
-  }
-  for (const legacy of trace.diagnostics.legacyDiagnoses) {
-    add(legacy.verificationCycle, "hypotheses", `${legacy.hypothesis}`.trim().toLowerCase());
-  }
-  for (const intervention of trace.diagnostics.interventions) {
-    add(intervention.verificationCycle, "interventions", intervention.interventionSemanticFingerprint ?? `${intervention.intervention?.statement ?? ""}`.trim().toLowerCase());
-  }
-
-  return [...byCycle.entries()]
-    .sort(([a], [b]) => a - b)
-    .map(([cycle, components]) => ({
-      verificationCycle: cycle,
-      strategyFingerprint: JSON.stringify([
-        [...components.hypotheses].sort(),
-        [...components.contributors].sort(),
-        [...components.interventions].sort(),
-      ]),
-      components: {
-        hypotheses: [...components.hypotheses].sort(),
-        contributors: [...components.contributors].sort(),
-        interventions: [...components.interventions].sort(),
-      },
-    }));
-}
-
-export function detectOscillation(strategies) {
-  const fingerprints = strategies.map((strategy) => strategy.strategyFingerprint);
-  const patterns = [];
-  for (let i = 2; i < fingerprints.length; i++) {
-    if (fingerprints[i] === fingerprints[i - 2] && fingerprints[i] !== fingerprints[i - 1]) {
-      patterns.push({ kind: "A_B_A", cycles: [strategies[i - 2].verificationCycle, strategies[i - 1].verificationCycle, strategies[i].verificationCycle] });
-    }
-  }
-  for (let i = 3; i < fingerprints.length; i++) {
-    if (fingerprints[i] === fingerprints[i - 2]
-      && fingerprints[i - 1] === fingerprints[i - 3]
-      && fingerprints[i] !== fingerprints[i - 1]) {
-      patterns.push({ kind: "A_B_A_B", cycles: [strategies[i - 3].verificationCycle, strategies[i - 2].verificationCycle, strategies[i - 1].verificationCycle, strategies[i].verificationCycle] });
-    }
-  }
-  const detected = patterns.length > 0;
-  return { detected, patterns };
-}
-
 export function summarizeHypotheses(trace) {
   const summary = { created: 0, supported: 0, weakened: 0, falsified: 0, superseded: 0, unresolved: 0, open: 0 };
-  const seen = new Set();
-  for (const diagnosticCase of trace.diagnostics.cases) {
-    for (const hypothesis of diagnosticCase.hypotheses ?? []) {
-      if (!seen.has(hypothesis.id)) {
-        seen.add(hypothesis.id);
-        summary.created += 1;
-        summary.open += 1;
-      }
+
+  const pseudoEvents = [
+    ...trace.diagnostics.cases.map((diagnosticCase) => ({
+      seq: diagnosticCase.sequence,
+      event: "DIAGNOSTIC_CASE_RECORDED",
+      details: diagnosticCase,
+    })),
+    ...trace.diagnostics.legacyDiagnoses.map((legacy) => ({
+      seq: legacy.sequence,
+      event: "DIAGNOSIS_RECORDED",
+      details: legacy,
+    })),
+    ...trace.diagnostics.dispositions.map((disposition) => ({
+      seq: disposition.sequence,
+      event: "HYPOTHESIS_DISPOSITION_RECORDED",
+      details: disposition,
+    })),
+  ];
+  const projection = projectHypothesisStates(pseudoEvents);
+
+  for (const hypothesis of projection.hypotheses) {
+    if (hypothesis.id === "h-legacy" && hypothesis.sourceEventSeq !== null) {
+      summary.created += 1;
+    } else if (hypothesis.id !== "h-legacy") {
+      summary.created += 1;
     }
+    const status = hypothesis.currentStatus.toLowerCase();
+    if (summary[status] !== undefined) summary[status] += 1;
   }
-  if (trace.diagnostics.legacyDiagnoses.length > 0) {
-    summary.created += trace.diagnostics.legacyDiagnoses.length;
-    summary.open += trace.diagnostics.legacyDiagnoses.length;
-  }
-  for (const disposition of trace.diagnostics.dispositions) {
-    const key = disposition.hypothesisRef;
-    if (!seen.has(key)) continue;
-    if (summary[disposition.status.toLowerCase()] !== undefined) {
-      if (summary.open > 0) summary.open -= 1;
-      summary[disposition.status.toLowerCase()] += 1;
-    }
-  }
+  summary.open = projection.openHypotheses.length;
   return summary;
 }
 
-export function evaluateInterventionEffectiveness(trace, surfacesByCycle) {
-  const interventions = [];
-  const list = trace.diagnostics.interventions;
-  for (const [index, entry] of list.entries()) {
-    const cycle = entry.verificationCycle;
-    const subsequent = list.slice(index + 1).find((candidate) => candidate.verificationCycle >= cycle);
-    const laterVerificationCycles = Object.keys(surfacesByCycle).map(Number).filter((value) => value > cycle);
-    const nextCycle = laterVerificationCycles.length > 0 ? Math.min(...laterVerificationCycles) : null;
+export function detectOscillation(strategies) {
+  return detectOscillationImpl(strategies);
+}
 
-    let effectiveness = "PENDING";
-    if (nextCycle !== null) {
-      const previousSurface = surfacesByCycle[cycle]?.surface ?? [];
-      const currentSurface = surfacesByCycle[nextCycle]?.surface ?? [];
-      const comparison = compareFailureSurface(previousSurface, currentSurface);
-      const signatureChanged = JSON.stringify(surfacesByCycle[cycle]?.signatures ?? []) !== JSON.stringify(surfacesByCycle[nextCycle]?.signatures ?? []);
-      if (comparison.direction === "REDUCED") effectiveness = "IMPROVED";
-      else if (comparison.direction === "EXPANDED") effectiveness = "REGRESSED";
-      else if (signatureChanged || comparison.changed) effectiveness = "INFORMATIVE";
-      else effectiveness = "NON_INFORMATIVE";
+export function evaluateInterventionEffectiveness(trace, surfacesByCycle) {
+  return evaluateInterventionEffectivenessImpl(trace, surfacesByCycle);
+}
+
+function failedRequirementSurfacesFromEvents(events = [], state = null) {
+  const byCycle = new Map();
+  const record = (cycle, requirement) => {
+    if (!requirement) return;
+    if (!byCycle.has(cycle)) byCycle.set(cycle, new Set());
+    byCycle.get(cycle).add(requirement);
+  };
+  for (const event of events) {
+    if (event.event !== "VERIFICATION_RECORDED") continue;
+    const d = event.details ?? {};
+    if (d.status === "failed" || d.status === "blocked") {
+      record(d.verificationCycle ?? 1, d.requirement ?? d.id ?? d.checkId);
     }
-    void subsequent;
-    interventions.push({
-      id: entry.intervention?.id ?? null,
-      sequence: entry.sequence,
-      verificationCycle: cycle,
-      kind: entry.intervention?.kind ?? null,
-      reversible: entry.intervention?.reversible ?? null,
-      effectiveness,
-    });
   }
-  return interventions;
+  for (const check of state?.checks ?? []) {
+    if (check.status !== "failed" && check.status !== "blocked") continue;
+    record(check.details?.verificationCycle ?? state?.verificationCycle ?? 1, check.requirement ?? check.id ?? check.checkId);
+  }
+  return byCycle;
+}
+
+function signatureSetsByCycle(trace) {
+  const byCycle = new Map();
+  for (const entry of trace.failureSignatures) {
+    for (const cycle of entry.cycles ?? []) {
+      if (!byCycle.has(cycle)) byCycle.set(cycle, new Set());
+      byCycle.get(cycle).add(entry.signature);
+    }
+  }
+  return byCycle;
 }
 
 export function deriveDiagnosticContext(events = [], state = null) {
@@ -153,28 +118,42 @@ export function deriveDiagnosticContext(events = [], state = null) {
       .filter(Boolean),
   )].sort();
 
-  const latestCase = taskEvents.findLast((event) => event.event === "DIAGNOSTIC_CASE_RECORDED");
-  const dispositionedRefs = new Set(
-    taskEvents.filter((event) => event.event === "HYPOTHESIS_DISPOSITION_RECORDED")
-      .map((event) => event.details?.hypothesisRef),
-  );
-  const openHypotheses = (latestCase?.details?.hypotheses ?? [])
-    .filter((hypothesis) => !dispositionedRefs.has(hypothesis.id))
-    .map((hypothesis) => hypothesis.id);
+  const projection = projectHypothesisStates(taskEvents);
+  const openHypotheses = [...projection.openHypotheses].sort();
 
   const interventions = taskEvents.filter((event) => event.event === "INTERVENTION_RECORDED");
   const latestIntervention = interventions.at(-1)?.details?.intervention?.id ?? null;
 
-  const fingerprintCounts = new Map();
+  // doNotRepeat requires semantic repetition AND at least two completed
+  // post-intervention verification cycles AND unchanged failure surface.
+  const surfacesByCycle = failedRequirementSurfacesFromEvents(taskEvents, state);
+  const completedCycles = [...new Set(
+    taskEvents.filter((event) => event.event === "VERIFICATION_STARTED")
+      .map((event) => event.details?.verificationCycle)
+      .filter(Number.isInteger),
+  )].sort((a, b) => a - b);
+
+  const fingerprintGroups = new Map();
   for (const event of interventions) {
     const fingerprint = event.details?.interventionSemanticFingerprint;
     if (!fingerprint) continue;
-    fingerprintCounts.set(fingerprint, (fingerprintCounts.get(fingerprint) ?? 0) + 1);
+    if (!fingerprintGroups.has(fingerprint)) fingerprintGroups.set(fingerprint, []);
+    fingerprintGroups.get(fingerprint).push(event);
   }
-  const doNotRepeat = [...fingerprintCounts.entries()]
-    .filter(([, count]) => count >= 2)
-    .map(([fingerprint]) => fingerprint)
-    .sort();
+
+  const doNotRepeat = [];
+  for (const [fingerprint, group] of fingerprintGroups.entries()) {
+    if (group.length < 2) continue;
+    const lastInterventionCycle = Math.max(...group.map((event) => event.details?.verificationCycle ?? 1));
+    const postCycles = completedCycles.filter((completed) => completed > lastInterventionCycle);
+    if (postCycles.length < 2) continue;
+    const firstSurface = [...(surfacesByCycle.get(lastInterventionCycle) ?? [])].sort();
+    const latestSurface = [...(surfacesByCycle.get(postCycles.at(-1)) ?? [])].sort();
+    if (JSON.stringify(firstSurface) === JSON.stringify(latestSurface)) {
+      doNotRepeat.push(fingerprint);
+    }
+  }
+  doNotRepeat.sort();
 
   return {
     activeFailureSignatures,
@@ -187,36 +166,32 @@ export function deriveDiagnosticContext(events = [], state = null) {
 
 export async function buildTaskReflection({ target, packageRoot, taskId = null } = {}) {
   const trace = await buildTaskTrace({ target, packageRoot, taskId });
+  const rawEvents = await readEvents(target, packageRoot, { taskId });
 
-  const failureSurfaces = [];
+  // Authoritative surfaces come from the canonical trace projection.
   const surfaceEntries = {};
+  for (const entry of trace.failureSurfaces) {
+    surfaceEntries[entry.verificationCycle] = { surface: entry.surface, signatures: [] };
+  }
+  const signatureSets = signatureSetsByCycle(trace);
+  for (const [cycle, signatures] of signatureSets.entries()) {
+    if (!surfaceEntries[cycle]) surfaceEntries[cycle] = { surface: [], signatures: [] };
+    surfaceEntries[cycle].signatures = [...signatures].sort();
+  }
+
   const cycles = [...new Set([
-    ...trace.checks.flatMap((check) => check.attempts.map((attempt) => attempt.verificationCycle).filter(Boolean)),
+    ...trace.failureSurfaces.map((entry) => entry.verificationCycle),
     ...trace.diagnostics.cases.map((diagnosticCase) => diagnosticCase.verificationCycle),
   ])].sort((a, b) => a - b);
 
-  for (const cycle of cycles) {
-    const failedRequirements = new Set();
-    for (const check of trace.checks) {
-      for (const attempt of check.attempts) {
-        if ((attempt.status === "failed" || attempt.status === "blocked") && attempt.verificationCycle === cycle) {
-          failedRequirements.add(check.requirement ?? check.id);
-        }
-      }
-    }
-    const surface = [...failedRequirements].sort();
-    const cycleSignatures = [];
-    failureSurfaces.push({ verificationCycle: cycle, surface, size: surface.length });
-    surfaceEntries[cycle] = { surface, signatures: cycleSignatures };
-  }
-
-  const strategies = strategyFingerprints(trace);
+  const strategies = computeStrategyFingerprintsImpl(trace);
   const oscillation = detectOscillation(strategies);
 
   const signals = [];
   let status = REFLECTION_STATUS.ADVANCING;
 
-  const repeatedNonInformative = evaluateInterventionEffectiveness(trace, surfaceEntries)
+  const evaluatedInterventions = evaluateInterventionEffectiveness(trace, surfaceEntries);
+  const repeatedNonInformative = evaluatedInterventions
     .filter((intervention) => intervention.effectiveness === "NON_INFORMATIVE");
   if (oscillation.detected) {
     signals.push("OSCILLATING_STRATEGY");
@@ -235,6 +210,45 @@ export async function buildTaskReflection({ target, packageRoot, taskId = null }
     status = status === REFLECTION_STATUS.ADVANCING ? REFLECTION_STATUS.WATCH : status;
   }
 
+  // Information Gain v2: one authoritative per-cycle gain projection.
+  const gainProjection = buildInformationGainProjection(rawEvents, taskId ?? null);
+  for (let i = 1; i < gainProjection.length; i++) {
+    const currentCycle = gainProjection[i].verificationCycle;
+    const previousCycle = gainProjection[i - 1].verificationCycle;
+    gainProjection[i].dimensions.interventionChanged = Boolean(
+      gainProjection[i].dimensions.interventionChanged
+      || trace.diagnostics.interventions.some((intervention) => intervention.verificationCycle === currentCycle),
+    );
+    gainProjection[i].dimensions.failureSurfaceChanged = Boolean(
+      gainProjection[i].dimensions.failureSurfaceChanged
+      || JSON.stringify(surfaceEntries[currentCycle]?.surface ?? [])
+        !== JSON.stringify(surfaceEntries[previousCycle]?.surface ?? []),
+    );
+    gainProjection[i].dimensions.failureSignatureChanged = Boolean(
+      gainProjection[i].dimensions.failureSignatureChanged
+      || JSON.stringify(surfaceEntries[currentCycle]?.signatures ?? [])
+        !== JSON.stringify(surfaceEntries[previousCycle]?.signatures ?? []),
+    );
+    const currentStrategy = strategies.find((strategy) => strategy.verificationCycle === currentCycle);
+    const previousStrategy = strategies.find((strategy) => strategy.verificationCycle === previousCycle);
+    if (currentStrategy && previousStrategy) {
+      gainProjection[i].dimensions.strategyChanged = currentStrategy.strategyFingerprint !== previousStrategy.strategyFingerprint;
+    }
+  }
+  const cyclesWithoutEffectiveGain = gainProjection
+    .filter((entry) => !entry.effectiveGain)
+    .map((entry) => entry.verificationCycle);
+
+  const lastTwoIneffective = gainProjection.length >= 2
+    && !gainProjection.at(-1).effectiveGain
+    && !gainProjection.at(-2).effectiveGain
+    && strategies.length >= 2
+    && strategies.at(-1).strategyFingerprint === strategies.at(-2).strategyFingerprint;
+  if (lastTwoIneffective) {
+    status = REFLECTION_STATUS.STALLED;
+    if (!signals.includes("NO_EFFECTIVE_INFORMATION_GAIN")) signals.push("NO_EFFECTIVE_INFORMATION_GAIN");
+  }
+
   const recommendedProtocolAction = oscillation.detected
     ? "INTRODUCE_NEW_OBSERVATION"
     : (status === REFLECTION_STATUS.STALLED ? "REQUIRE_NEW_DIAGNOSTIC_INFORMATION" : "CONTINUE");
@@ -248,10 +262,10 @@ export async function buildTaskReflection({ target, packageRoot, taskId = null }
     snapshotConsistent: trace.snapshot.consistent,
     status,
     verificationCycles: cycles.length,
-    failureSurfaces,
+    failureSurfaces: trace.failureSurfaces,
     hypotheses: summarizeHypotheses(trace),
     interventions: (() => {
-      const evaluated = evaluateInterventionEffectiveness(trace, surfaceEntries);
+      const evaluated = evaluatedInterventions;
       return {
         count: evaluated.length,
         informative: evaluated.filter((intervention) => ["INFORMATIVE", "IMPROVED"].includes(intervention.effectiveness)).length,
@@ -261,7 +275,8 @@ export async function buildTaskReflection({ target, packageRoot, taskId = null }
     })(),
     informationGain: {
       cyclesWithCases: trace.diagnostics.cases.map((diagnosticCase) => diagnosticCase.verificationCycle),
-      cyclesWithoutEffectiveGain: [],
+      cyclesWithoutEffectiveGain,
+      cycles: gainProjection.map(({ dimensions, ...rest }) => ({ ...rest, dimensions })),
     },
     strategies,
     oscillation,
@@ -270,4 +285,4 @@ export async function buildTaskReflection({ target, packageRoot, taskId = null }
   };
 }
 
-export { informationGainDimensions, strategyFingerprints as computeStrategyFingerprints };
+export { informationGainDimensions, computeStrategyFingerprintsImpl as computeStrategyFingerprints };

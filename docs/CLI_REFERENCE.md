@@ -879,7 +879,7 @@ Displays human-readable or structured summary of current task state.
 
 ### `inspect`
 
-Inspects checkout changes and compares them against contract deliverables.
+Inspects checkout changes and compares them against contract deliverables. With `--task <id>`, human output renders a task inspection report (phase, cycle, ledger/snapshot health, progress, verification attempts, diagnostics, failure surface, signals, next command); `--json` keeps the full additive `taskInspection` section.
 
 - **Purpose**: Shows modified files, untracked files, and deliverable coverage.
 - **Mutation**: Read-only.

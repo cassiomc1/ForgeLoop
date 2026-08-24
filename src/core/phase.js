@@ -21,7 +21,8 @@ import { discoverTasks } from "./task-discovery.js";
 import { assertNoScopeConflicts, assertScopeClean } from "./task-scope.js";
 import { readTaskDescriptor } from "./task-descriptor.js";
 import { E_TASK_SCOPE_REQUIRED } from "./error-codes.js";
-import { currentCycleDiagnosis } from "./diagnosis-model.js";
+import { resolveCurrentCycleDiagnostic } from "./diagnostic-projection.js";
+import { computeCycleInformationGain } from "./information-gain-projection.js";
 
 function phaseError(code, message, artifacts = []) {
   const error = new Error(message);
@@ -246,7 +247,7 @@ export async function advanceWorkState(target, toPhase, options = {}) {
   }
   if (toPhase === "CORRECTING" && state.phase === "DIAGNOSING") {
     const cycle = state.verificationCycle ?? 1;
-    const diagEvent = currentCycleDiagnosis(ledger.events, state.taskId, cycle);
+    const diagEvent = resolveCurrentCycleDiagnostic(ledger.events, state.taskId, cycle);
     if (!diagEvent) {
       throw phaseError(
         "E_DIAGNOSIS_REQUIRED",
@@ -254,8 +255,13 @@ export async function advanceWorkState(target, toPhase, options = {}) {
         [eventsRel],
       );
     }
-    const details = diagEvent.details;
-    if (!details || details.informationGain === "NONE") {
+    const gain = diagEvent.sourceModel === "STRUCTURED_DIAGNOSTIC_CASE_V1"
+      ? computeCycleInformationGain(ledger.events, state.taskId, cycle)
+      : null;
+    const gainClassification = diagEvent.sourceModel === "STRUCTURED_DIAGNOSTIC_CASE_V1"
+      ? (gain?.classification ?? "FIRST_DIAGNOSIS")
+      : diagEvent.details?.informationGain;
+    if (!diagEvent.details || gainClassification === "NONE") {
       throw phaseError(
         "E_DIAGNOSIS_NO_NEW_INFORMATION",
         "The proposed retry repeats the previous hypothesis with the same evidence without new information",
@@ -265,7 +271,7 @@ export async function advanceWorkState(target, toPhase, options = {}) {
   }
   if (toPhase === "VERIFYING" && state.phase === "CORRECTING") {
     const cycle = state.verificationCycle ?? 1;
-    const diagEvent = currentCycleDiagnosis(ledger.events, state.taskId, cycle);
+    const diagEvent = resolveCurrentCycleDiagnostic(ledger.events, state.taskId, cycle);
     if (!diagEvent) {
       throw phaseError(
         "E_DIAGNOSIS_REQUIRED",

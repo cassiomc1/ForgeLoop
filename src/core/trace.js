@@ -5,6 +5,8 @@ import {
   assertInterventionDetails,
   assertHypothesisDispositionDetails,
 } from "./diagnostic-model.js";
+import { projectFailureSignatures } from "./failure-signature.js";
+import { projectFailureSurfaces } from "./failure-surface.js";
 
 export const EVENT_CATEGORIES = Object.freeze([
   "task",
@@ -60,7 +62,7 @@ const LIFECYCLE_TRANSITIONS = Object.freeze([
   "ROUTE_VALIDATED",
   "PREFLIGHT_READY",
   "EXECUTION_STARTED",
-  "VERIFICATION_STARTED_PLACEHOLDER",
+  "VERIFICATION_STARTED",
   "REVIEW_STARTED",
   "COMPLETION_VALIDATED",
   "COMPLETION_REJECTED",
@@ -143,6 +145,7 @@ export function normalizeProtocolEvent(event, context = {}) {
     type: event.event,
     category: eventCategory(event.event),
     phase,
+    phaseQuality: context.phaseQuality ?? "unknown",
     source: {
       kind: "ledger",
       artifact: context.artifactPath ?? ".forgeloop/task-state/<task-key>/events.ndjson",
@@ -187,11 +190,14 @@ function projectChecks(snapshot) {
     attemptsByCheck.get(key).push(attempt);
   };
 
+  // Ledger chronology is the primary source of historical attempts.
+  const ledgerIdentityKeys = new Set();
   for (const event of snapshot.events) {
     if (event.event !== "VERIFICATION_RECORDED") continue;
     const d = event.details ?? {};
     const key = d.id ?? d.checkId ?? d.requirement ?? null;
     if (!key) continue;
+    ledgerIdentityKeys.add(`${key}@@${d.verificationCycle ?? "*"}`);
     pushAttempt(key, {
       sequence: event.seq,
       at: event.at,
@@ -204,12 +210,16 @@ function projectChecks(snapshot) {
         ? "executed"
         : (d.provenance === "ACTOR_REPORTED" || d.provenance === "MANUAL_OBSERVATION" ? "observed" : (d.executionId ? "executed" : "unknown")),
       failureToken: d.failureToken ?? d.details?.failureToken ?? null,
+      source: "ledger",
     });
   }
 
+  // State checks only enrich or fill legacy gaps; never duplicate ledger attempts.
   for (const check of state?.checks ?? []) {
     const key = check.id ?? check.checkId ?? null;
     if (!key) continue;
+    const identityKey = `${key}@@${check.details?.verificationCycle ?? "*"}`;
+    if (ledgerIdentityKeys.has(identityKey) || ledgerIdentityKeys.has(`${key}@@*`)) continue;
     pushAttempt(key, {
       sequence: null,
       at: check.at ?? check.lastUpdatedAt ?? null,
@@ -220,11 +230,16 @@ function projectChecks(snapshot) {
       provenance: check.provenance ?? null,
       executionMode: check.provenance === "ACTOR_REPORTED" || check.provenance === "MANUAL_OBSERVATION" ? "observed" : "executed",
       failureToken: check.details?.failureToken ?? null,
+      source: "state-fallback",
     });
   }
 
   const checks = [];
+  const MAX = Number.MAX_SAFE_INTEGER;
   for (const [id, attempts] of [...attemptsByCheck.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+    attempts.sort((a, b) =>
+      ((a.verificationCycle ?? MAX) - (b.verificationCycle ?? MAX))
+      || ((a.sequence ?? MAX) - (b.sequence ?? MAX)));
     checks.push({
       id,
       requirement: attempts.findLast((a) => a.requirement)?.requirement ?? null,
@@ -250,10 +265,26 @@ function structuredDiagnostics(events) {
   const cases = [];
   const interventions = [];
   const dispositions = [];
+  const invalidRevisions = [];
+  const lastCaseByCycle = new Map();
   for (const event of events) {
     try {
       if (event.event === "DIAGNOSTIC_CASE_RECORDED") {
         assertDiagnosticCaseDetails(event.details);
+        const cycle = event.details?.verificationCycle;
+        const previous = lastCaseByCycle.get(cycle);
+        if (Number.isInteger(event.details?.diagnosticRevision) && event.details.diagnosticRevision > 1 && previous) {
+          if (event.details.previousDiagnosticFingerprint !== previous.diagnosticFingerprint) {
+            invalidRevisions.push({
+              sequence: event.seq,
+              verificationCycle: cycle,
+              code: "E_DIAGNOSTIC_CASE_INVALID",
+              message: "Revision chain broken: previousDiagnosticFingerprint does not match the prior case fingerprint.",
+            });
+            continue;
+          }
+        }
+        lastCaseByCycle.set(cycle, event.details);
         cases.push({ sequence: event.seq, at: event.at, ...event.details });
       } else if (event.event === "INTERVENTION_RECORDED") {
         assertInterventionDetails(event.details);
@@ -267,7 +298,51 @@ function structuredDiagnostics(events) {
       // projections must not crash on them.
     }
   }
-  return { cases, interventions, dispositions };
+  return { cases, interventions, dispositions, invalidRevisions };
+}
+
+const PHASE_MILESTONES = Object.freeze({
+  TASK_RECEIVED: { phase: "RECEIVED", quality: "authoritative" },
+  CONTRACT_VALIDATED: { phase: "CONTRACT_READY", quality: "authoritative" },
+  ROUTE_VALIDATED: { phase: "ROUTED", quality: "authoritative" },
+  DESIGN_GATE_STARTED: { phase: "DESIGNING", quality: "authoritative" },
+  PLAN_RECORDED: { phase: "PLANNED", quality: "authoritative" },
+  EXECUTION_STARTED: { phase: "EXECUTING", quality: "authoritative" },
+  VERIFICATION_STARTED: { phase: "VERIFYING", quality: "authoritative" },
+  REVIEW_STARTED: { phase: "REVIEWING", quality: "authoritative" },
+  COMPLETION_VALIDATED: { phase: "COMPLETE", quality: "authoritative" },
+});
+
+const PHASE_DERIVATIONS = Object.freeze({
+  VERIFICATION_RECORDED: (details) => (["failed", "blocked"].includes(details?.status) ? "DIAGNOSING" : null),
+  DIAGNOSIS_RECORDED: () => "DIAGNOSING",
+  DIAGNOSTIC_CASE_RECORDED: () => "DIAGNOSING",
+  HYPOTHESIS_DISPOSITION_RECORDED: () => "CORRECTING",
+  INTERVENTION_RECORDED: () => "CORRECTING",
+});
+
+function reconstructPhaseChronology(events) {
+  let currentPhase = null;
+  const phaseBySequence = new Map();
+  const qualityBySequence = new Map();
+  for (const event of events) {
+    const milestone = PHASE_MILESTONES[event.event];
+    if (milestone) {
+      currentPhase = milestone.phase;
+      qualityBySequence.set(event.seq, milestone.quality);
+    } else {
+      const derive = PHASE_DERIVATIONS[event.event];
+      const derived = derive ? derive(event.details ?? {}) : null;
+      if (derived) {
+        currentPhase = derived;
+        qualityBySequence.set(event.seq, "derived");
+      } else {
+        qualityBySequence.set(event.seq, currentPhase ? "derived" : "unknown");
+      }
+    }
+    phaseBySequence.set(event.seq, currentPhase);
+  }
+  return { phaseBySequence, qualityBySequence };
 }
 
 export function historyQualityFor({ snapshot, normalizedEvents }) {
@@ -289,18 +364,15 @@ export async function buildTaskTrace({ target, packageRoot, taskId = null, event
   const snapshot = await buildTaskSnapshot({ target, packageRoot, taskId, eventsPath });
   const artifactPath = eventsPath ?? ".forgeloop/task-state/<task-key>/events.ndjson";
 
-  let currentPhase = snapshot.state?.phase ?? null;
+  const taskEvents = taskId ? snapshot.events.filter((event) => !event.taskId || event.taskId === taskId) : snapshot.events;
+  const { phaseBySequence, qualityBySequence } = reconstructPhaseChronology(taskEvents);
   const normalizedEvents = [];
-  const phaseBySequence = new Map();
-  for (const event of snapshot.events) {
-    const transitionPhases = {
-      EXECUTION_STARTED: "EXECUTING",
-      REVIEW_STARTED: "REVIEWING",
-      COMPLETION_VALIDATED: "COMPLETE",
-    };
-    if (transitionPhases[event.event]) currentPhase = transitionPhases[event.event];
-    phaseBySequence.set(event.seq, currentPhase);
-    normalizedEvents.push(normalizeProtocolEvent(event, { phase: currentPhase, artifactPath }));
+  for (const event of taskEvents) {
+    normalizedEvents.push(normalizeProtocolEvent(event, {
+      phase: phaseBySequence.get(event.seq) ?? null,
+      artifactPath,
+      phaseQuality: qualityBySequence.get(event.seq) ?? "unknown",
+    }));
   }
 
   const integrity = {
@@ -308,6 +380,54 @@ export async function buildTaskTrace({ target, packageRoot, taskId = null, event
     errors: snapshot.integrity.errors,
   };
   const historyQuality = historyQualityFor({ snapshot, normalizedEvents });
+  const diagnostics = structuredDiagnostics(taskEvents);
+
+  const failureSignatures = projectFailureSignatures({ state: snapshot.state, events: taskEvents });
+  const failureSurfaces = projectFailureSurfaces({ state: snapshot.state, events: taskEvents });
+
+  const executions = [];
+  const seenExecutions = new Set();
+  for (const event of taskEvents) {
+    const d = event.details ?? {};
+    const executionId = d.executionId ?? d.executionRef ?? null;
+    if (!executionId || seenExecutions.has(executionId)) continue;
+    seenExecutions.add(executionId);
+    executions.push({
+      executionId,
+      sequence: event.seq,
+      at: event.at,
+      status: d.status ?? null,
+      exitCode: d.exitCode ?? null,
+      resolution: d.resolution ?? null,
+    });
+  }
+
+  const evidenceSources = new Map();
+  for (const event of taskEvents) {
+    const refs = [
+      ...(Array.isArray(event.details?.evidenceRefs) ? event.details.evidenceRefs : []),
+      ...(Array.isArray(event.details?.hypotheses)
+        ? event.details.hypotheses.flatMap((hypothesis) => hypothesis.evidenceRefs ?? [])
+        : []),
+    ];
+    for (const ref of refs) {
+      if (!ref) continue;
+      if (!evidenceSources.has(ref)) evidenceSources.set(ref, { ref, sources: [] });
+      if (!evidenceSources.get(ref).sources.includes(event.event)) evidenceSources.get(ref).sources.push(event.event);
+    }
+  }
+  const evidence = [...evidenceSources.values()].sort((a, b) => a.ref.localeCompare(b.ref));
+
+  const recovery = taskEvents
+    .filter((event) => ["TASK_RECOVERY_RECORDED", "TASK_RECOVERY_RESUMED", "OPERATOR_RECOVERY_RECORDED", "LEGACY_RECOVERY_MIGRATION_RECORDED"].includes(event.event))
+    .map((event) => ({ sequence: event.seq, at: event.at, type: event.event, details: event.details ?? {} }));
+
+  const completionEvents = taskEvents.filter((event) => ["COMPLETION_VALIDATED", "COMPLETION_REJECTED"].includes(event.event));
+  const completion = {
+    validatedAt: completionEvents.findLast((event) => event.event === "COMPLETION_VALIDATED")?.at ?? null,
+    rejectedAt: completionEvents.findLast((event) => event.event === "COMPLETION_REJECTED")?.at ?? null,
+    attempts: completionEvents.map((event) => ({ sequence: event.seq, at: event.at, type: event.event })),
+  };
 
   return {
     schemaVersion: 1,
@@ -331,20 +451,22 @@ export async function buildTaskTrace({ target, packageRoot, taskId = null, event
     integrity,
     artifacts: {},
     events: normalizedEvents,
-    transitions: lifecycleTransitions(snapshot.events),
-    executions: [],
+    transitions: lifecycleTransitions(taskEvents),
+    executions,
     checks: projectChecks(snapshot),
-    evidence: [],
+    evidence,
     diagnostics: {
-      legacyDiagnoses: legacyDiagnoses(snapshot.events, snapshot.taskId),
-      ...structuredDiagnostics(snapshot.events),
+      legacyDiagnoses: legacyDiagnoses(taskEvents, snapshot.taskId),
+      ...diagnostics,
     },
-    failureSignatures: [],
-    failureSurfaces: [],
-    continuity: [],
-    recovery: [],
+    failureSignatures,
+    failureSurfaces,
+    continuity: taskEvents
+      .filter((event) => ["CONTINUITY_RECORDED", "CHECKPOINT_RECONCILED"].includes(event.event))
+      .map((event) => ({ sequence: event.seq, at: event.at, type: event.event })),
+    recovery,
     policy: {},
     audit: {},
-    completion: {},
+    completion,
   };
 }
