@@ -186,7 +186,7 @@ function latestPreflightOutcomeEvent(events, taskId) {
 export function assertExistingReadyLifecycleCompatibility(ledger, result) {
   if (result.status !== "READY") return;
   const events = ledger?.events ?? [];
-  const existingReady = events.find((event) => event.event === "PREFLIGHT_READY" && event.taskId === result.taskId);
+  const existingReady = events.findLast((event) => event.event === "PREFLIGHT_READY" && event.taskId === result.taskId);
   if (!existingReady) return;
   const latestOutcome = latestPreflightOutcomeEvent(events, result.taskId);
   // A READY outcome superseded by a later BLOCKED outcome may be replaced by a
@@ -224,7 +224,7 @@ export async function appendActivationEvents(target, packageRoot, ledger, result
     }
   }
 
-  const existingReady = events.find((event) => event.event === "PREFLIGHT_READY" && event.taskId === result.taskId);
+  const existingReady = events.findLast((event) => event.event === "PREFLIGHT_READY" && event.taskId === result.taskId);
   const latestOutcome = latestPreflightOutcomeEvent(events, result.taskId);
   const readySupersededByBlocked = existingReady && latestOutcome?.event === "PREFLIGHT_BLOCKED";
   if (result.status === "READY") {
