@@ -19,6 +19,14 @@
   is derived from the validated ledger milestones instead of always restarting
   at `ROUTED`, so restored tasks never append duplicate non-repeatable lifecycle
   milestones such as `EXECUTION_STARTED`.
+- Preflight re-readiness after a blocked cycle: an append-only lifecycle may
+  contain a `PREFLIGHT_READY` that was superseded by a later `PREFLIGHT_BLOCKED`
+  outcome (contract evolution, added gate requirement). The compatibility check
+  now binds to the latest preflight outcome, so resolving the blocked preflight
+  appends a fresh `PREFLIGHT_READY` with current details; a READY refresh whose
+  details differ without an intervening BLOCKED outcome is still refused, and
+  `PREFLIGHT_READY` joined the repeatable milestones so the rebound event keeps
+  the ledger valid while milestone-order guards remain in force.
 
 ## 1.6.0 - 2026-08-24
 

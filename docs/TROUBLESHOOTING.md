@@ -210,6 +210,13 @@ already records `EXECUTION_STARTED` (or a later verification milestone) resumes
 at the phase that chronology supports instead of restarting at `ROUTED`, so no
 duplicate non-repeatable lifecycle milestone is ever appended.
 
+A `PREFLIGHT_READY` that was superseded by a later `PREFLIGHT_BLOCKED` outcome
+(contract evolution, added gate requirement) does not block re-readiness: once
+the blocked preflight is resolved, `preflight` appends a fresh
+`PREFLIGHT_READY` bound to the current contract and route. A READY refresh whose
+details differ *without* an intervening BLOCKED outcome is still refused with
+`E_PHASE_CHRONOLOGY_INVALID`.
+
 ---
 
 ### Symptom: `EXECUTING`/`VERIFYING` task is stale because the repository moved (`E_REPOSITORY_CHANGED`)

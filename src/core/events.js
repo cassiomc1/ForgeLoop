@@ -51,6 +51,7 @@ const REPEATABLE_MILESTONES = new Set([
   "VERIFICATION_RECORDED",
   "REVIEW_STARTED",
   "TERMINAL_RESULT_RECORDED",
+  "PREFLIGHT_READY",
 ]);
 
 function eventIndexPath(eventsPath) {
