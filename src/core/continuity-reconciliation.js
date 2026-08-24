@@ -169,20 +169,25 @@ export function classifyContinuity({
   });
 }
 
-export async function reconcileContinuity({ target, packageRoot } = {}) {
+export async function reconcileContinuity({ target, packageRoot, taskId = null } = {}) {
   const [{ readWorkState }, { readContract }, repository] = await Promise.all([
     import("./work-state.js"),
     import("./contract.js"),
     import("./repository.js"),
   ]);
 
-  const state = await readWorkState(target, packageRoot);
+  const state = await readWorkState(target, { packageRoot, taskId });
   let continuityArtifact;
   try {
-    continuityArtifact = await readContinuity(target, packageRoot);
+    continuityArtifact = await readContinuity(target, { packageRoot, taskId });
   } catch (error) {
     if (error.code === "ARTIFACT_MISSING") {
-      return { ...classifyContinuity({ continuity: null, state }), path: ".forgeloop/continuity.json", present: false };
+      return {
+        ...classifyContinuity({ continuity: null, state }),
+        path: ".forgeloop/continuity.json",
+        present: false,
+        diagnosticContext: await deriveDiagnosticContextSafe({ target, packageRoot, state }),
+      };
     }
     return {
       ...baseResult("INVALID", {
@@ -220,5 +225,19 @@ export async function reconcileContinuity({ target, packageRoot } = {}) {
     present: true,
     fingerprint: continuityArtifact.fingerprint,
     continuity: continuityArtifact.value,
+    diagnosticContext: await deriveDiagnosticContextSafe({ target, packageRoot, state }),
   };
+}
+
+async function deriveDiagnosticContextSafe({ target, packageRoot, state }) {
+  try {
+    const [{ readEvents }, { deriveDiagnosticContext }] = await Promise.all([
+      import("./events.js"),
+      import("./reflection.js"),
+    ]);
+    const events = await readEvents(target, packageRoot, { taskId: state?.taskId ?? null });
+    return { present: true, ...deriveDiagnosticContext(events, state) };
+  } catch {
+    return { present: false };
+  }
 }

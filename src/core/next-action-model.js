@@ -16,6 +16,9 @@ export const NEXT_ACTIONS = Object.freeze({
   RECORD_DIAGNOSIS: "RECORD_DIAGNOSIS",
   CORRECT: "CORRECT",
   CHANGE_STRATEGY: "CHANGE_STRATEGY",
+  REQUIRE_NEW_DIAGNOSTIC_INFORMATION: "REQUIRE_NEW_DIAGNOSTIC_INFORMATION",
+  INTRODUCE_NEW_OBSERVATION: "INTRODUCE_NEW_OBSERVATION",
+  RECORD_INTERVENTION: "RECORD_INTERVENTION",
   ENTER_REVIEWING: "ENTER_REVIEWING",
   RECORD_TERMINAL_RESULT: "RECORD_TERMINAL_RESULT",
   PREPARE_COMPLETION: "PREPARE_COMPLETION",
@@ -182,6 +185,18 @@ export function recordDiagnosisCommandSpec() {
       { name: "evidenceRef", option: "--evidence-ref=<check-id>", repeatable: true },
       { name: "settledBy", option: "--settled-by=<text>" },
       { name: "nextSafeAction", option: "--next-safe-action=<text>" },
+    ],
+  };
+}
+
+export function recordInterventionCommandSpec(taskId = null) {
+  return {
+    commandId: "record-intervention",
+    executable: "forgeloop",
+    subcommand: "record-intervention",
+    argv: ["record-intervention", ...(taskId ? [`--task=${taskId}`] : [])],
+    requiredInputs: [
+      { name: "file", option: "--file=<intervention-json-path>" },
     ],
   };
 }

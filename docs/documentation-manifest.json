@@ -395,6 +395,33 @@
         "release-checklist-1-5-mcp"
       ],
       "packaged": true
+    },
+    {
+      "path": "docs/DIAGNOSTIC_MODEL.md",
+      "id": "diagnostic-model",
+      "class": "reference",
+      "audience": [
+        "harness",
+        "maintainer"
+      ],
+      "canonicalFor": [
+        "diagnostics"
+      ],
+      "packaged": true
+    },
+    {
+      "path": "docs/EXECUTION_TRACE.md",
+      "id": "execution-trace",
+      "class": "reference",
+      "audience": [
+        "harness",
+        "maintainer",
+        "integrator"
+      ],
+      "canonicalFor": [
+        "observability"
+      ],
+      "packaged": true
     }
   ]
 }

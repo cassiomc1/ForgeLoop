@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "verificationCycle": 2,
+  "diagnosticRevision": 1,
+  "failureClass": "VERIFICATION_FAILURE",
+  "observations": [],
+  "contributors": [],
+  "hypotheses": [
+    {
+      "id": "h-missing-settlement",
+      "statement": "No settlement condition hypothesis.",
+      "contributorRefs": [],
+      "evidenceRefs": [],
+      "status": "OPEN"
+    }
+  ],
+  "nextSafeAction": {
+    "statement": "Repair this case."
+  },
+  "diagnosticFingerprint": "not-a-fingerprint"
+}

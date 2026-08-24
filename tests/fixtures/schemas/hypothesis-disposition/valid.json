@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "verificationCycle": 3,
+  "hypothesisRef": "h-timeout-latency",
+  "status": "WEAKENED",
+  "evidenceRefs": ["checkout-integration"],
+  "reason": "Failure persisted while measured DB latency remained within normal range."
+}

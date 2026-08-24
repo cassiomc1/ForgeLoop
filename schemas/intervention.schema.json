@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "forgeloop://schemas/intervention.schema.json",
+  "title": "ForgeLoop intervention record",
+  "type": "object",
+  "required": ["schemaVersion", "verificationCycle", "intervention"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "verificationCycle": { "type": "integer", "minimum": 1 },
+    "intervention": {
+      "type": "object",
+      "required": ["id", "kind", "statement", "hypothesisRefs"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" },
+        "kind": { "enum": ["CODE_CHANGE", "CONFIG_CHANGE", "TEST_CHANGE", "FIXTURE_CHANGE", "ENVIRONMENT_CHANGE", "DEPENDENCY_CHANGE", "ROLLBACK", "ISOLATION", "INSTRUMENTATION", "NO_MUTATION_EXPERIMENT", "OTHER"] },
+        "statement": { "type": "string", "minLength": 1, "maxLength": 4096 },
+        "targets": { "type": "array", "maxItems": 32, "items": { "type": "string", "minLength": 1 } },
+        "hypothesisRefs": { "type": "array", "minItems": 1, "maxItems": 32, "items": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" } },
+        "expectedObservation": { "type": "string", "maxLength": 4096 },
+        "reversible": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "interventionSemanticFingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  },
+  "additionalProperties": false
+}

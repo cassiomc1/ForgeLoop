@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "verificationCycle": 3,
+  "hypothesisRef": "h-timeout-latency",
+  "status": "PROVEN_ROOT_CAUSE",
+  "evidenceRefs": [],
+  "reason": ""
+}

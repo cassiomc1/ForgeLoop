@@ -30,6 +30,11 @@ import { formatRunCheckResult } from "./commands/run-check.js";
 import { formatReconcileClosureResult } from "./commands/reconcile-closure.js";
 import { formatRecordTerminalResult } from "./commands/record-terminal-result.js";
 import { formatRecordDiagnosisResult } from "./commands/record-diagnosis.js";
+import { formatRecordInterventionResult } from "./commands/record-intervention.js";
+import { formatRecordHypothesisDispositionResult } from "./commands/record-hypothesis-disposition.js";
+import { formatHistoryResult } from "./commands/history.js";
+import { formatTraceResult } from "./commands/trace.js";
+import { formatReflectResult } from "./commands/reflect.js";
 import { formatProgressResult } from "./commands/progress.js";
 import { formatRecordDecisionCriterionResult } from "./commands/record-decision-criterion.js";
 import { formatNextActionResult } from "./commands/next.js";
@@ -394,6 +399,45 @@ export const COMMAND_HANDLERS = Object.freeze({
     const { result } = await COMMAND_EXECUTORS["record-diagnosis"]({ target, packageRoot, options });
     renderJsonOr(options, result, formatRecordDiagnosisResult);
     return 0;
+  },
+  "record-intervention": async ({ target, packageRoot, options }) => {
+    const { result } = await COMMAND_EXECUTORS["record-intervention"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatRecordInterventionResult);
+    return 0;
+  },
+  "record-hypothesis-disposition": async ({ target, packageRoot, options }) => {
+    const { result } = await COMMAND_EXECUTORS["record-hypothesis-disposition"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatRecordHypothesisDispositionResult);
+    return 0;
+  },
+  history: async ({ target, packageRoot, options }) => {
+    const { result, exitCode } = await COMMAND_EXECUTORS.history({ target, packageRoot, options });
+    if (options.json) {
+      console.log(JSON.stringify(result, null, 2));
+    } else if (options.compact) {
+      for (const event of result.events) {
+        console.log(`${event.timestamp ?? "--:--:--"} ${event.type}`);
+      }
+    } else if (options.verbose) {
+      console.log(formatHistoryResult(result));
+      for (const event of result.events) {
+        console.log(`--- ${event.sequence} ${event.type} ---`);
+        console.log(JSON.stringify(event.data, null, 2));
+      }
+    } else {
+      console.log(formatHistoryResult(result));
+    }
+    return exitCode;
+  },
+  trace: async ({ target, packageRoot, options }) => {
+    const { result, exitCode } = await COMMAND_EXECUTORS.trace({ target, packageRoot, options });
+    renderJsonOr(options, result, formatTraceResult);
+    return exitCode;
+  },
+  reflect: async ({ target, packageRoot, options }) => {
+    const { result, exitCode } = await COMMAND_EXECUTORS.reflect({ target, packageRoot, options });
+    renderJsonOr(options, result, formatReflectResult);
+    return exitCode;
   },
   progress: async ({ target, packageRoot, options }) => {
     const { result, exitCode } = await COMMAND_EXECUTORS.progress({ target, packageRoot, options });

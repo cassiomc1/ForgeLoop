@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "forgeloop://schemas/diagnostic-case.schema.json",
+  "title": "ForgeLoop structured diagnostic case",
+  "type": "object",
+  "required": ["schemaVersion", "verificationCycle", "diagnosticRevision", "failureClass", "observations", "contributors", "hypotheses", "nextSafeAction", "diagnosticFingerprint"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "verificationCycle": { "type": "integer", "minimum": 1 },
+    "diagnosticRevision": { "type": "integer", "minimum": 1 },
+    "failureClass": { "type": "string", "minLength": 1 },
+    "observations": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "statement"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" },
+          "kind": { "enum": ["CHECK_RESULT", "EXECUTION_RESULT", "REPOSITORY_STATE", "ENVIRONMENT_STATE", "DEPENDENCY_STATE", "MANUAL_OBSERVATION", "PROTOCOL_STATE"] },
+          "evidenceRef": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" },
+          "statement": { "type": "string", "minLength": 1, "maxLength": 4096 },
+          "verificationCycle": { "type": "integer", "minimum": 1 },
+          "provenance": { "enum": ["FORGELOOP_EXECUTED", "ACTOR_REPORTED", "MANUAL_OBSERVATION"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "contributors": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "statement"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" },
+          "type": { "enum": ["CODE", "CONFIGURATION", "ARCHITECTURE", "DEPENDENCY", "ENVIRONMENT", "DATA", "TIMING", "CONCURRENCY", "STATE", "AUTHORITY", "CAPABILITY", "ASSUMPTION", "INTERFACE", "PROCESS", "EXTERNAL_SERVICE", "UNKNOWN"] },
+          "statement": { "type": "string", "minLength": 1, "maxLength": 4096 },
+          "basis": { "type": "array", "maxItems": 32, "items": { "type": "string", "minLength": 1 } },
+          "status": { "enum": ["OBSERVED", "INFERRED", "SUSPECTED", "ELIMINATED", "CONFIRMED_RELEVANT"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "hypotheses": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "required": ["id", "statement", "settledBy"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" },
+          "statement": { "type": "string", "minLength": 1, "maxLength": 4096 },
+          "contributorRefs": { "type": "array", "maxItems": 32, "items": { "type": "string", "minLength": 1 } },
+          "evidenceRefs": { "type": "array", "maxItems": 32, "items": { "type": "string", "minLength": 1 } },
+          "settledBy": {
+            "type": "object",
+            "required": ["type"],
+            "properties": {
+              "type": { "enum": ["PREDICATE", "CHECK_STATUS", "FAILURE_SIGNATURE_CHANGE", "REQUIREMENT_STATUS", "MANUAL_OBSERVATION"] },
+              "statement": { "type": "string", "minLength": 1, "maxLength": 4096 },
+              "checkId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" },
+              "expectedStatus": { "type": "string", "minLength": 1 }
+            },
+            "additionalProperties": false
+          },
+          "status": { "const": "OPEN" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "nextSafeAction": {
+      "type": "object",
+      "required": ["statement"],
+      "properties": {
+        "statement": { "type": "string", "minLength": 1, "maxLength": 4096 }
+      },
+      "additionalProperties": false
+    },
+    "diagnosticFingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "previousDiagnosticFingerprint": { "oneOf": [{ "type": "null" }, { "type": "string", "pattern": "^[a-f0-9]{64}$" }] }
+  },
+  "additionalProperties": false
+}

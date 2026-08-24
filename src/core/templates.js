@@ -67,6 +67,9 @@ export const TEMPLATE_PATHS = [
   "schemas/authority.schema.json",
   "schemas/task-descriptor.schema.json",
   "schemas/task-recovery.schema.json",
+  "schemas/diagnostic-case.schema.json",
+  "schemas/intervention.schema.json",
+  "schemas/hypothesis-disposition.schema.json",
 ];
 
 export function getPackageRoot() {

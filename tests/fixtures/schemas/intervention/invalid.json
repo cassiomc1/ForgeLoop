@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "verificationCycle": 2,
+  "intervention": {
+    "id": "i-unbound-intervention",
+    "kind": "CODE_CHANGE",
+    "statement": "Change code without binding to any hypothesis.",
+    "hypothesisRefs": []
+  }
+}

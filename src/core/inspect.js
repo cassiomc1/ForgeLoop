@@ -12,6 +12,92 @@ import { trustedAuthorityConfiguration } from "./trusted-authority.js";
 import { reconcileContinuity } from "./continuity-reconciliation.js";
 import { continuityFinding, continuityIsHealthy } from "./continuity-observability.js";
 import { findTaskById } from "./task-discovery.js";
+import { buildTaskTrace } from "./trace.js";
+import { evaluateProgress } from "./progress.js";
+import { readEvents } from "./events.js";
+
+function reasonCodesFor({ state, trace, progress }) {
+  const codes = [];
+  codes.push(trace.integrity.valid ? "LEDGER_VALID" : "LEDGER_INCONSISTENT");
+  if (state?.status === "VALID" || state?.status === "FRESH") codes.push("REPOSITORY_FRESH");
+  if (["STALE", "REVALIDATION_REQUIRED"].includes(state?.status)) codes.push("REPOSITORY_STALE");
+  if (trace.task.phase === "COMPLETE") codes.push("COMPLETION_VALID");
+  else codes.push("COMPLETION_INCOMPLETE");
+  if (progress.status === "ADVANCING") codes.push("DIAGNOSTIC_PROGRESS_ADVANCING");
+  if (progress.status === "STALLED") codes.push("DIAGNOSTIC_PROGRESS_STALLED");
+  return codes;
+}
+
+async function buildTaskInspection({ target, packageRoot, taskId, state }) {
+  const trace = await buildTaskTrace({ target, packageRoot, taskId });
+  const events = await readEvents(target, packageRoot, { taskId });
+  const progress = evaluateProgress({ state, events });
+  const failedRequirements = [...new Set(
+    trace.checks
+      .filter((check) => check.currentResult === "failed" || check.currentResult === "blocked")
+      .map((check) => check.requirement ?? check.id),
+  )].sort();
+
+  const issues = [];
+  if (!trace.snapshot.consistent) {
+    issues.push({ code: "E_TRACE_SNAPSHOT_INCONSISTENT", message: "Task artifacts changed while being read; rerun inspect for a consistent view." });
+  }
+  for (const error of trace.integrity.errors) {
+    issues.push({ code: error.code ?? "E_EVENT_INVALID", message: error.message });
+  }
+  if (failedRequirements.length > 0 && trace.diagnostics.cases.length === 0 && trace.diagnostics.legacyDiagnoses.length === 0) {
+    issues.push({ code: "E_DIAGNOSIS_REQUIRED", message: "Failed requirements have no recorded diagnosis." });
+  }
+
+  const explanation = {
+    result: failedRequirements.length > 0 ? "INCOMPLETE_VERIFICATION" : (trace.task.phase === "COMPLETE" ? "COMPLETE" : "INCOMPLETE"),
+    reasons: reasonCodesFor({ state, trace, progress }),
+  };
+
+  return {
+    snapshot: {
+      consistent: trace.snapshot.consistent,
+      stateRevision: trace.snapshot.stateRevision,
+      ledgerTailSequence: trace.snapshot.ledgerTailSequence,
+    },
+    lifecycle: {
+      phase: trace.task.phase,
+      verificationCycle: trace.task.verificationCycle,
+      transitions: trace.transitions,
+    },
+    history: {
+      eventCount: trace.events.length,
+      quality: trace.historyQuality,
+    },
+    verification: {
+      checks: trace.checks.map((check) => ({
+        id: check.id,
+        requirement: check.requirement,
+        currentResult: check.currentResult,
+        attemptCount: check.attemptCount,
+        failedAttempts: check.failedAttempts,
+      })),
+      failedRequirements,
+    },
+    diagnostics: {
+      legacyDiagnosisCount: trace.diagnostics.legacyDiagnoses.length,
+      diagnosticCaseCount: trace.diagnostics.cases.length,
+      interventionCount: trace.diagnostics.interventions.length,
+      dispositionCount: trace.diagnostics.dispositions.length,
+      latestCase: trace.diagnostics.cases.at(-1) ?? null,
+    },
+    progress,
+    integrity: {
+      valid: trace.integrity.valid,
+      errors: trace.integrity.errors,
+    },
+    audit: {},
+    completion: {},
+    issues,
+    explanation,
+    next: { command: `forgeloop next --task ${taskId} --json` },
+  };
+}
 
 function profileMetadata(bytes) {
   const text = bytes.toString("utf8");
@@ -116,6 +202,9 @@ export async function inspectTarget({ target, packageRoot, contractFile = null, 
     ...(state.evidence ?? []),
     ...protocolEvidence,
   ];
+  const taskInspection = taskId
+    ? await buildTaskInspection({ target, packageRoot, taskId, state })
+    : null;
   return {
     target: { path: target },
     authority: trustedAuthorityConfiguration({ target, authorityContext, runtimeContext }),
@@ -165,6 +254,7 @@ export async function inspectTarget({ target, packageRoot, contractFile = null, 
     },
     findings,
     evidence,
+    ...(taskInspection ? { taskInspection } : {}),
     ok: doctor.ok
       && !manifestError
       && schemaHealth.status === "valid"

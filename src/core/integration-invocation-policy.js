@@ -25,6 +25,7 @@ const READ_ONLY_COMMANDS = Object.freeze(new Set([
   "task-list", "task-show", "task-lock-status", "progress", "audit", "report",
   "inspect", "validate-state", "validate-protocol", "validate-receipt",
   "policy-status", "policy-diff", "rule-verify", "policy",
+  "history", "trace", "reflect",
 ]));
 
 const LOOP_MUTATION_COMMANDS = Object.freeze(new Set([
@@ -32,6 +33,7 @@ const LOOP_MUTATION_COMMANDS = Object.freeze(new Set([
   "record-continuity", "clear-continuity", "prepare-completion",
   "record-check", "record-diagnosis", "record-decision-criterion",
   "record-terminal-result", "complete",
+  "record-intervention", "record-hypothesis-disposition",
 ]));
 
 const STATIC_RISK_CLASSES = Object.freeze({

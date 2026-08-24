@@ -19,6 +19,7 @@ import {
   decision,
   recordCheckCommandSpec,
   recordDiagnosisCommandSpec,
+  recordInterventionCommandSpec,
   recordTerminalResultCommandSpec,
   recoveryGuidanceForClassification,
   result,
@@ -35,6 +36,7 @@ import {
 import { PHASES_REQUIRING_EXECUTION_CHRONOLOGY } from "./next-action-phases.js";
 import { evaluateContinuityNextAction } from "./next-action-continuity.js";
 import { currentCycleDiagnosis } from "./diagnosis-model.js";
+import { buildTaskReflection } from "./reflection.js";
 import { evaluateProgress, PROGRESS_STATUS } from "./progress.js";
 import { criterionForDecision } from "./settlement-model.js";
 import { readEvents } from "./events.js";
@@ -547,6 +549,13 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
     }
     const progress = evaluateProgress({ state, events: ledger.events });
     if (progress.status === PROGRESS_STATUS.STALLED) {
+      let oscillating = false;
+      try {
+        const reflection = await buildTaskReflection({ target, packageRoot, taskId: normalized.taskId ?? null });
+        oscillating = reflection.oscillation.detected;
+      } catch {
+        // Reflection is advisory guidance; stall handling must not depend on it.
+      }
       return result({
         ...context,
         nextAction: NEXT_ACTIONS.CHANGE_STRATEGY,
@@ -558,6 +567,11 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
           ),
         ],
         progress,
+        diagnosticGuidance: {
+          action: oscillating ? NEXT_ACTIONS.INTRODUCE_NEW_OBSERVATION : NEXT_ACTIONS.REQUIRE_NEW_DIAGNOSTIC_INFORMATION,
+          signals: oscillating ? ["OSCILLATING_STRATEGY"] : ["NO_INFORMATION_GAIN", ...progress.signals.map((signal) => signal.code)],
+          errorCodes: oscillating ? ["E_STRATEGY_OSCILLATION", "E_PROGRESS_STALLED"] : ["E_PROGRESS_STALLED"],
+        },
         requiredArtifacts,
       });
     }
@@ -573,6 +587,34 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
     });
   }
   if (state.phase === "CORRECTING") {
+    const ledgerForCorrection = await validateEventLedger(target, packageRoot, { taskId: normalized.taskId ?? null });
+    const correctionCycle = state.verificationCycle ?? 1;
+    const hasStructuredCase = ledgerForCorrection.events.some(
+      (event) => event.event === "DIAGNOSTIC_CASE_RECORDED"
+        && event.taskId === state.taskId
+        && event.details?.verificationCycle === correctionCycle,
+    );
+    const hasIntervention = ledgerForCorrection.events.some(
+      (event) => event.event === "INTERVENTION_RECORDED"
+        && event.taskId === state.taskId
+        && event.details?.verificationCycle === correctionCycle,
+    );
+    if (hasStructuredCase && !hasIntervention) {
+      return result({
+        ...context,
+        nextAction: NEXT_ACTIONS.ENTER_VERIFYING,
+        reasons: [
+          artifactError("PHASE_CORRECTING", "A structured diagnostic case is awaiting a recorded intervention"),
+        ],
+        diagnosticGuidance: {
+          action: NEXT_ACTIONS.RECORD_INTERVENTION,
+          signals: ["INTERVENTION_NOT_BOUND_TO_HYPOTHESIS"],
+          errorCodes: [],
+          commandSpecs: [recordInterventionCommandSpec(normalized.taskId)],
+        },
+        requiredArtifacts,
+      });
+    }
     return decision(context, NEXT_ACTIONS.ENTER_VERIFYING, artifactError("PHASE_CORRECTING", "Correction is ready for verification"));
   }
   if (state.phase === "REVIEWING") {
