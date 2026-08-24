@@ -49,6 +49,24 @@ forgeloop record-hypothesis-disposition --task <id> \
 
 Allowed transitions: `OPEN → {SUPPORTED, WEAKENED, FALSIFIED, SUPERSEDED, UNRESOLVED}`, `SUPPORTED → {WEAKENED, FALSIFIED, SUPERSEDED}`, `WEAKENED → {SUPPORTED, FALSIFIED, SUPERSEDED}`.
 
+## Diagnostic precedence
+
+One canonical resolver backs every lifecycle gate, `next`, `progress`, and reflection:
+
+1. latest valid structured diagnostic case (`DIAGNOSTIC_CASE_RECORDED`) for the active task/cycle;
+2. latest valid legacy diagnosis (`DIAGNOSIS_RECORDED`) for the active task/cycle;
+3. none.
+
+Structured diagnosis is therefore a first-class protocol-native diagnostic source: a task using only `record-diagnosis --file` can traverse `DIAGNOSING -> CORRECTING -> VERIFYING` without any legacy event, and no duplicate legacy event is synthesized. Legacy diagnosis remains fully valid as a compatibility input.
+
+## Hypothesis state projection
+
+Hypothesis status is projected forward from append-only chronology (case creation in `OPEN`, then each disposition validated against the last effective projected state) — never re-read from the source case. Terminal states (`FALSIFIED`, `SUPERSEDED`, `UNRESOLVED`) do not transition unless a future protocol revision explicitly allows reopening. Invalid transitions fail closed with `E_HYPOTHESIS_DISPOSITION_INVALID`. `trace`, `reflect`, and continuity `openHypotheses` all consume this same projection.
+
+## Evidence binding
+
+Structured cases require at least one hypothesis; `CHECK_RESULT` observations must resolve to a real check from the active verification cycle; a `VERIFICATION_FAILURE` case must bind at least one hypothesis or observation to failed/blocked evidence from the active cycle. Revision chains are revalidated at read time (`revision N.previousDiagnosticFingerprint == revision N-1.diagnosticFingerprint`).
+
 ## Information gain
 
 Compatibility values (`FIRST_DIAGNOSIS`, `NEW_HYPOTHESIS`, `NEW_EVIDENCE`, `NEW_HYPOTHESIS_AND_EVIDENCE`, `NONE`) remain valid. Structured dimensions add observation/contributor/hypothesis novelty, disposition changes, failure-signature change, failure-surface change, and intervention change. New IDs, timestamps, whitespace, paraphrases, and identical reruns never constitute gain.
@@ -56,7 +74,8 @@ Compatibility values (`FIRST_DIAGNOSIS`, `NEW_HYPOTHESIS`, `NEW_EVIDENCE`, `NEW_
 ## Stall and oscillation
 
 - High correction-cycle count alone is advisory (`WATCH`), never `STALLED`.
-- Strong stall requires identical failure signature, strategy, contributors, hypotheses, surface, and no new evidence across consecutive cycles.
+- Strong stall requires identical failure signature, strategy, contributors, hypotheses, surface, and no new evidence across consecutive cycles. Two consecutive correction cycles without effective gain under the same strategy reach `STALLED` (`REQUIRE_NEW_DIAGNOSTIC_INFORMATION`).
+- Repetition of an intervention is not automatically non-informative: effectiveness (`PENDING | IMPROVED | REGRESSED | INFORMATIVE | NON_INFORMATIVE`) is classified only after subsequent verification. Continuity `doNotRepeat` requires semantic repetition AND at least two completed post-intervention verification cycles AND unchanged failure surface.
 - Oscillation (`A→B→A`) surfaces as `OSCILLATING_STRATEGY`; `next` recommends `INTRODUCE_NEW_OBSERVATION`.
 
 ## Capability discovery

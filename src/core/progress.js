@@ -1,4 +1,6 @@
 import { diagnosisEventsForTask } from "./diagnosis-model.js";
+import { resolveCurrentCycleDiagnostic } from "./diagnostic-projection.js";
+import { buildInformationGainProjection } from "./information-gain-projection.js";
 
 export const PROGRESS_STATUS = Object.freeze({
   ADVANCING: "ADVANCING",
@@ -32,7 +34,22 @@ export function evaluateProgress({ state, events = [] } = {}) {
 
   const taskEvents = Array.isArray(events) ? events.filter((e) => !state.taskId || e.taskId === state.taskId) : [];
   const diagEvents = diagnosisEventsForTask(taskEvents, state.taskId);
-  const latestDiag = diagEvents.at(-1)?.details ?? null;
+  const resolvedDiagnostic = resolveCurrentCycleDiagnostic(taskEvents, state.taskId, state.verificationCycle ?? null);
+  const latestDiag = resolvedDiagnostic?.details ?? diagEvents.at(-1)?.details ?? null;
+
+  let latestGainClassification = latestDiag?.informationGain ?? null;
+  if (resolvedDiagnostic?.sourceModel === "STRUCTURED_DIAGNOSTIC_CASE_V1") {
+    if (!Array.isArray(latestDiag.evidenceRefs)) {
+      latestDiag.evidenceRefs = [...new Set(
+        (latestDiag.hypotheses ?? []).flatMap((hypothesis) => hypothesis.evidenceRefs ?? []),
+      )];
+    }
+    const gainProjection = buildInformationGainProjection(taskEvents, state.taskId);
+    const matching = gainProjection.filter((entry) => entry.verificationCycle === (state.verificationCycle ?? null));
+    const cycleGain = matching.at(-1) ?? gainProjection.at(-1) ?? null;
+    latestGainClassification = cycleGain?.classification ?? "FIRST_DIAGNOSIS";
+    latestDiag.effectiveInformationGain = cycleGain?.effectiveGain ?? true;
+  }
 
   // Build checksById index for resolving requirement from check IDs
   const checksById = new Map();
@@ -48,7 +65,7 @@ export function evaluateProgress({ state, events = [] } = {}) {
   }
 
   // 1. Check if latest diagnosis has NO information gain (global stall)
-  if (latestDiag && latestDiag.informationGain === "NONE") {
+  if (latestDiag && latestGainClassification === "NONE") {
     status = PROGRESS_STATUS.STALLED;
     signals.push({
       code: PROGRESS_SIGNAL.NO_DIAGNOSTIC_INFORMATION_GAIN,
@@ -88,7 +105,7 @@ export function evaluateProgress({ state, events = [] } = {}) {
   for (const [req, cyclesSet] of [...reqCycles.entries()].sort(([a], [b]) => a.localeCompare(b))) {
     if (cyclesSet.size >= 3) {
       const sortedCycles = [...cyclesSet].sort((a, b) => a - b);
-      const isLatestStalledForThisReq = latestDiag && latestDiag.informationGain === "NONE" && latestDiagReqs.includes(req);
+      const isLatestStalledForThisReq = latestDiag && latestGainClassification === "NONE" && latestDiagReqs.includes(req);
       if (isLatestStalledForThisReq) {
         if (!signals.some((s) => s.code === PROGRESS_SIGNAL.REPEATED_FAILURE_WITH_SAME_DIAGNOSIS && s.requirement === req)) {
           signals.push({

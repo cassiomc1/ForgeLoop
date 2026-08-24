@@ -35,7 +35,7 @@ import {
 } from "./next-action-artifacts.js";
 import { PHASES_REQUIRING_EXECUTION_CHRONOLOGY } from "./next-action-phases.js";
 import { evaluateContinuityNextAction } from "./next-action-continuity.js";
-import { currentCycleDiagnosis } from "./diagnosis-model.js";
+import { resolveCurrentCycleDiagnostic } from "./diagnostic-projection.js";
 import { buildTaskReflection } from "./reflection.js";
 import { evaluateProgress, PROGRESS_STATUS } from "./progress.js";
 import { criterionForDecision } from "./settlement-model.js";
@@ -531,7 +531,7 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
   if (state.phase === "DIAGNOSING") {
     const ledger = await validateEventLedger(target, packageRoot, { taskId: normalized.taskId ?? null });
     const cycle = state.verificationCycle ?? 1;
-    const diagEvent = currentCycleDiagnosis(ledger.events, state.taskId, cycle);
+    const diagEvent = resolveCurrentCycleDiagnostic(ledger.events, state.taskId, cycle);
     if (!diagEvent) {
       return result({
         ...context,

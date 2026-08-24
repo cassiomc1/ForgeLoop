@@ -28,7 +28,7 @@ function reasonCodesFor({ state, trace, progress }) {
   return codes;
 }
 
-async function buildTaskInspection({ target, packageRoot, taskId, state }) {
+async function buildTaskInspection({ target, packageRoot, taskId, state, classifiedStatus = null }) {
   const trace = await buildTaskTrace({ target, packageRoot, taskId });
   const events = await readEvents(target, packageRoot, { taskId });
   const progress = evaluateProgress({ state, events });
@@ -51,10 +51,11 @@ async function buildTaskInspection({ target, packageRoot, taskId, state }) {
 
   const explanation = {
     result: failedRequirements.length > 0 ? "INCOMPLETE_VERIFICATION" : (trace.task.phase === "COMPLETE" ? "COMPLETE" : "INCOMPLETE"),
-    reasons: reasonCodesFor({ state, trace, progress }),
+    reasons: reasonCodesFor({ state: { status: classifiedStatus }, trace, progress }),
   };
 
   return {
+    task: taskId,
     snapshot: {
       consistent: trace.snapshot.consistent,
       stateRevision: trace.snapshot.stateRevision,
@@ -87,6 +88,12 @@ async function buildTaskInspection({ target, packageRoot, taskId, state }) {
       latestCase: trace.diagnostics.cases.at(-1) ?? null,
     },
     progress,
+    failureSurfaces: trace.failureSurfaces,
+    failureSignatures: trace.failureSignatures.map((entry) => ({
+      signature: entry.signature,
+      requirements: entry.requirements,
+      cycles: entry.cycles,
+    })),
     integrity: {
       valid: trace.integrity.valid,
       errors: trace.integrity.errors,
@@ -126,7 +133,8 @@ export async function inspectTarget({ target, packageRoot, contractFile = null, 
   const effectiveStateRel = stateFile ?? (taskId ? taskArtifactPath(taskId, "state") : WORK_STATE_PATH);
   const statePath = ensureWithin(target, effectiveStateRel);
   const statePresent = await fileExists(statePath);
-  const state = await readAndClassifyWorkState({ target, packageRoot, contractFile, taskId, stateFile: effectiveStateRel });
+  const classifiedState = await readAndClassifyWorkState({ target, packageRoot, contractFile, taskId, stateFile: effectiveStateRel });
+  const rawState = classifiedState?.state ?? null;
   const taskInfo = taskId ? await findTaskById(target, taskId, packageRoot) : null;
   const continuity = await reconcileContinuity({ target, packageRoot, taskId });
   const schemaRoot = manifest?.layoutVersion >= 2
@@ -181,12 +189,12 @@ export async function inspectTarget({ target, packageRoot, contractFile = null, 
     });
   }
 
-  if (state.status === "INVALID") {
+  if (classifiedState.status === "INVALID") {
     findings.push({
       code: "state-invalid",
       severity: "error",
-      path: WORK_STATE_PATH,
-      message: state.error ?? "Work state is invalid.",
+      path: effectiveStateRel,
+      message: classifiedState.error ?? "Work state is invalid.",
       remediation: "Repair or clear the checkpoint after reviewing the parse error.",
       evidence: createEvidence({ kind: "BLOCKED", source: WORK_STATE_PATH, result: "invalid" }),
     });
@@ -199,11 +207,11 @@ export async function inspectTarget({ target, packageRoot, contractFile = null, 
   })];
   const evidence = [
     ...(doctor.evidence ?? []),
-    ...(state.evidence ?? []),
+    ...(classifiedState.evidence ?? []),
     ...protocolEvidence,
   ];
   const taskInspection = taskId
-    ? await buildTaskInspection({ target, packageRoot, taskId, state })
+    ? await buildTaskInspection({ target, packageRoot, taskId, state: rawState, classifiedStatus: classifiedState.status })
     : null;
   return {
     target: { path: target },
@@ -237,7 +245,7 @@ export async function inspectTarget({ target, packageRoot, contractFile = null, 
       schemas: schemaHealth.schemas,
       evidence: protocolEvidence,
     },
-    state: { ...state, path: WORK_STATE_PATH, present: statePresent },
+    state: { ...classifiedState, path: effectiveStateRel, present: statePresent },
     recovery: taskInfo?.recovery ?? null,
     claims: taskInfo ? {
       state: taskInfo.claimState,
@@ -259,7 +267,7 @@ export async function inspectTarget({ target, packageRoot, contractFile = null, 
       && !manifestError
       && schemaHealth.status === "valid"
       && taskInfo?.ownershipValid !== false
-      && !["INVALID", "REVALIDATION_REQUIRED"].includes(state.status)
+      && !["INVALID", "REVALIDATION_REQUIRED"].includes(classifiedState.status)
       && continuityIsHealthy(continuity),
   };
 }
