@@ -249,6 +249,16 @@ export async function prepareCompletion({
   if (existing && existingValue.stateFingerprint === undefined) {
     throw artifactError("E_RECEIPT_STATE_MISMATCH", "Execution receipt requires the current work-state fingerprint", [receiptRel]);
   }
+  // A checkpoint recreated after clear-state/loss starts with empty checks; a
+  // receipt still bound to the previous checkpoint fingerprint belongs to a
+  // superseded epoch and must not be adopted into the fresh one. The prior
+  // epoch remains auditable through the executions/ artifacts and the
+  // append-only ledger.
+  const receiptFromSupersededEpoch = Boolean(existing)
+    && existingValue.stateFingerprint !== undefined
+    && existingValue.stateFingerprint !== canonicalFingerprint(state)
+    && (state.checks ?? []).length === 0;
+  const adoptedValue = receiptFromSupersededEpoch ? {} : existingValue;
   assertStateIdentity({ contract, route, state });
 
   let writeClaims = [];
@@ -286,23 +296,23 @@ export async function prepareCompletion({
 
   const changedPaths = observedPaths !== null
     ? [...observedPaths]
-    : existing
+    : !receiptFromSupersededEpoch && existing
       ? [...(existingValue.changedPaths ?? [])]
       : [];
-  const checks = existing ? [...existingValue.checks] : [...state.checks];
-  const evidence = existing ? [...(existingValue.evidence ?? [])] : [...state.verificationEvidence];
+  const checks = !receiptFromSupersededEpoch && existing ? [...existingValue.checks] : [...state.checks];
+  const evidence = !receiptFromSupersededEpoch && existing ? [...(existingValue.evidence ?? [])] : [...state.verificationEvidence];
   const receipt = await createReceipt({
-    ...existingValue,
+    ...adoptedValue,
     taskId: contract.value.taskId,
     contractFingerprint: contract.fingerprint,
     routeFingerprint: route.fingerprint,
     stateFingerprint: canonicalFingerprint(state),
     verificationCycle: state.verificationCycle ?? 1,
-    status: existingValue.status ?? "in-progress",
-    taskStatus: existingValue.taskStatus ?? "in-progress",
-    verificationStatus: existingValue.verificationStatus ?? "not-verified",
-    publicationStatus: existingValue.publicationStatus ?? "local-only",
-    productionReadiness: existingValue.productionReadiness ?? "not-verified",
+    status: adoptedValue.status ?? "in-progress",
+    taskStatus: adoptedValue.taskStatus ?? "in-progress",
+    verificationStatus: adoptedValue.verificationStatus ?? "not-verified",
+    publicationStatus: adoptedValue.publicationStatus ?? "local-only",
+    productionReadiness: adoptedValue.productionReadiness ?? "not-verified",
     selectedGuides: [...route.value.guides],
     changedPaths,
     checks,
@@ -312,9 +322,9 @@ export async function prepareCompletion({
       taskId: contract.value.taskId,
       options: { authorityContext, runtimeContext },
     }),
-    review: existingValue.review ?? { status: "not-run", independent: false },
-    limitations: [...(existingValue.limitations ?? [])],
-    publication: existingValue.publication ?? {
+    review: adoptedValue.review ?? { status: "not-run", independent: false },
+    limitations: [...(adoptedValue.limitations ?? [])],
+    publication: adoptedValue.publication ?? {
       committed: false,
       pushed: false,
       pullRequest: null,
