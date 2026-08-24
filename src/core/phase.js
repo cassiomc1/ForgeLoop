@@ -22,7 +22,10 @@ import { assertNoScopeConflicts, assertScopeClean } from "./task-scope.js";
 import { readTaskDescriptor } from "./task-descriptor.js";
 import { E_TASK_SCOPE_REQUIRED } from "./error-codes.js";
 import { resolveCurrentCycleDiagnostic } from "./diagnostic-projection.js";
-import { computeCycleInformationGain } from "./information-gain-projection.js";
+import {
+  buildInformationGainProjection,
+  evaluateStructuredDiagnosticStall,
+} from "./information-gain-projection.js";
 
 function phaseError(code, message, artifacts = []) {
   const error = new Error(message);
@@ -255,13 +258,21 @@ export async function advanceWorkState(target, toPhase, options = {}) {
         [eventsRel],
       );
     }
-    const gain = diagEvent.sourceModel === "STRUCTURED_DIAGNOSTIC_CASE_V1"
-      ? computeCycleInformationGain(ledger.events, state.taskId, cycle)
-      : null;
+    let stalledNoGain = false;
+    if (diagEvent.sourceModel === "STRUCTURED_DIAGNOSTIC_CASE_V1") {
+      // One canonical structured-stall truth, shared with progress/reflect.
+      const stall = evaluateStructuredDiagnosticStall(
+        buildInformationGainProjection(ledger.events, state.taskId),
+        { verificationCycle: cycle },
+      );
+      stalledNoGain = stall.stalled;
+    }
     const gainClassification = diagEvent.sourceModel === "STRUCTURED_DIAGNOSTIC_CASE_V1"
-      ? ((gain?.classification === "NONE" && gain?.effectiveGain) ? "EFFECTIVE_GAIN_V2" : (gain?.classification ?? "FIRST_DIAGNOSIS"))
+      ? null
       : diagEvent.details?.informationGain;
-    if (!diagEvent.details || gainClassification === "NONE") {
+    if (!diagEvent.details
+      || stalledNoGain
+      || (diagEvent.sourceModel !== "STRUCTURED_DIAGNOSTIC_CASE_V1" && gainClassification === "NONE")) {
       throw phaseError(
         "E_DIAGNOSIS_NO_NEW_INFORMATION",
         "The proposed retry repeats the previous hypothesis with the same evidence without new information",

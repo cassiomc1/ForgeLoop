@@ -1,6 +1,9 @@
 import { diagnosisEventsForTask } from "./diagnosis-model.js";
 import { resolveCurrentCycleDiagnostic } from "./diagnostic-projection.js";
-import { buildInformationGainProjection } from "./information-gain-projection.js";
+import {
+  buildInformationGainProjection,
+  evaluateStructuredDiagnosticStall,
+} from "./information-gain-projection.js";
 
 export const PROGRESS_STATUS = Object.freeze({
   ADVANCING: "ADVANCING",
@@ -38,25 +41,20 @@ export function evaluateProgress({ state, events = [] } = {}) {
   const latestDiag = resolvedDiagnostic?.details ?? diagEvents.at(-1)?.details ?? null;
 
   let latestGainClassification = latestDiag?.informationGain ?? null;
+  let structuredStall = null;
   if (resolvedDiagnostic?.sourceModel === "STRUCTURED_DIAGNOSTIC_CASE_V1") {
     if (!Array.isArray(latestDiag.evidenceRefs)) {
       latestDiag.evidenceRefs = [...new Set(
         (latestDiag.hypotheses ?? []).flatMap((hypothesis) => hypothesis.evidenceRefs ?? []),
       )];
     }
-    const gainProjection = buildInformationGainProjection(taskEvents, state.taskId);
-    const matching = gainProjection.filter((entry) => entry.verificationCycle === (state.verificationCycle ?? null));
-    const cycleGain = matching.at(-1) ?? gainProjection.at(-1) ?? null;
-    latestDiag.effectiveInformationGain = cycleGain?.effectiveGain ?? true;
-    if (!latestDiag.effectiveInformationGain) {
-      latestGainClassification = "NONE";
-    } else {
-      latestGainClassification = cycleGain?.classification ?? "FIRST_DIAGNOSIS";
-      if (latestGainClassification === "NONE") {
-        // Compatibility classification is NONE but v2 dimensions prove gain.
-        latestGainClassification = "EFFECTIVE_GAIN_V2";
-      }
-    }
+    // Canonical structured-stall truth; compatibility classification is presentation only.
+    structuredStall = evaluateStructuredDiagnosticStall(
+      buildInformationGainProjection(taskEvents, state.taskId),
+      { verificationCycle: state.verificationCycle ?? null },
+    );
+    latestDiag.effectiveInformationGain = !(structuredStall.stalled);
+    latestGainClassification = structuredStall.latestGain?.classification ?? null;
   }
 
   // Build checksById index for resolving requirement from check IDs
@@ -73,13 +71,20 @@ export function evaluateProgress({ state, events = [] } = {}) {
   }
 
   // 1. Check if latest diagnosis has NO information gain (global stall)
-  if (latestDiag && latestGainClassification === "NONE") {
+  const legacyStalled = resolvedDiagnostic?.sourceModel !== "STRUCTURED_DIAGNOSTIC_CASE_V1"
+    && Boolean(latestDiag) && latestGainClassification === "NONE";
+  if (structuredStall?.stalled || legacyStalled) {
     status = PROGRESS_STATUS.STALLED;
     signals.push({
       code: PROGRESS_SIGNAL.NO_DIAGNOSTIC_INFORMATION_GAIN,
       severity: "BLOCKING_FOR_RETRY",
-      message: "Latest diagnosis repeats the prior hypothesis with the same evidence.",
+      message: resolvedDiagnostic?.sourceModel === "STRUCTURED_DIAGNOSTIC_CASE_V1"
+        ? "Latest diagnostic state introduces no effective new information relative to the prior comparable diagnostic state."
+        : "Latest diagnosis repeats the prior hypothesis with the same evidence.",
       verificationCycles: [latestDiag.verificationCycle],
+      ...(structuredStall?.latestGain
+        ? { classification: structuredStall.latestGain.classification, effectiveGain: false }
+        : {}),
     });
   }
 

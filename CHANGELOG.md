@@ -55,6 +55,12 @@
   exposed separately via `activeFailedRequirements`.
 - Package metadata synchronized: `package.json` and `package-lock.json` both
   identify 1.6.0.
+- Unified structured-diagnostic stall semantics across phase, progress,
+  reflection, next-action, and task inspection; all meaningful Information
+  Gain v2 dimensions, including new observations, contributors, and semantic
+  hypothesis elimination, now participate in effectiveGain. Stall is fail-fast,
+  recoverable by meaningful new diagnostic information, and oscillation keeps
+  the more specific INTRODUCE_NEW_OBSERVATION guidance.
 
 ### Added
 

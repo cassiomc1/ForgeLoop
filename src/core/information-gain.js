@@ -16,6 +16,15 @@ function statementSet(values) {
 }
 
 export function normalizeDiagnosticSnapshot(input) {
+  // Idempotent: already-normalized snapshots pass through unchanged so
+  // repeated normalization never fabricates empty semantic sets.
+  if (input
+    && input.observationStatements instanceof Set
+    && input.contributorStatements instanceof Set
+    && input.hypothesisStatements instanceof Set
+    && input.evidenceRefs instanceof Set) {
+    return input;
+  }
   if (!input) {
     return {
       observationStatements: new Set(),
@@ -65,11 +74,9 @@ export function compareDiagnosticCycles(previousInput, currentInput, context = {
     interventionChanged: Boolean(context.interventionChanged),
     strategyChanged: Boolean(context.strategyChanged),
     newEvidence: hasNewValue(previous.evidenceRefs, current.evidenceRefs),
-    hypothesisEliminated: Boolean(
-      context.hypothesisEliminated
-      || (previous.hypothesisIds instanceof Set && current.hypothesisIds instanceof Set
-        && [...previous.hypothesisIds].some((id) => !current.hypothesisIds.has(id))),
-    ),
+    // Elimination is decided semantically by the cycle analysis projection:
+    // an id disappearing while its statement survives is ID-only churn, not gain.
+    hypothesisEliminated: Boolean(context.hypothesisEliminated),
   };
   return dimensions;
 }
@@ -94,13 +101,20 @@ export function classifyGain(dimensions, { first = false } = {}) {
 
 export function isEffectiveGain(dimensions, classification) {
   if (classification !== CLASSIFICATION.NONE) return true;
-  return GAIN_DIMENSIONS.some((dimension) => dimension === "strategyChanged"
-    || dimension === "hypothesisDispositionChanged"
-    || dimension === "failureSignatureChanged"
-    || dimension === "failureSurfaceChanged"
-    || dimension === "interventionChanged"
-    ? dimensions[dimension]
-    : false);
+
+  // Every meaningful semantic dimension counts as effective gain.
+  // newHypothesis and newEvidence remain covered by the compatibility
+  // classification above; the remaining dimensions are checked explicitly.
+  return Boolean(
+    dimensions.newObservation
+    || dimensions.newContributor
+    || dimensions.hypothesisDispositionChanged
+    || dimensions.failureSignatureChanged
+    || dimensions.failureSurfaceChanged
+    || dimensions.interventionChanged
+    || dimensions.strategyChanged
+    || dimensions.hypothesisEliminated
+  );
 }
 
 export function computeInformationGain(entries) {
