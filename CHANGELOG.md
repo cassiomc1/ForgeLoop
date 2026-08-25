@@ -18,23 +18,6 @@
   `EXTERNAL_OBSERVED`); `executeDurableAction()` returns canonical
   `authorization` evidence.
 
-### Added
-
-- Canonical `forgeloop action-authorize` surface delegating to the core
-  authorization service; trusted host authority still arrives only through the
-  out-of-band executor context, never actor-controlled arguments.
-- Durable external actions with immutable idempotency identity, capability
-  policy decisions, fingerprint-bound approvals, exact-argv execution,
-  host-reported provenance, explicit `COMMIT_UNKNOWN` reconciliation, and
-  completion/audit/bundle safeguards.
-- Read-only action and trajectory projections (`trace`, `metrics`, and
-  project-local `eval`) with unknown usage preservation and optional reference
-  efficiency.
-- Read-only integration/MCP resources for actions, approvals, metrics,
-  evaluations, and capability policy.
-
-### Fixed
-
 - Completion-recovery fingerprint deadlock: a `REVIEWING` task whose persisted
   evidence-only rejection snapshot no longer matches the live checkpoint (after
   repository drift or a recovery/resume cycle) could not reach closure through
