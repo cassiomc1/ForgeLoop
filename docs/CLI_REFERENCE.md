@@ -106,7 +106,7 @@ only exact argv. Caller-reported and externally observed provenance are not host
 - `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
 - `--action <id>`: durable action ID
 - `--state <state>`: next canonical action state
-- `--provenance <value>`: HOST_REPORTED or EXTERNAL_OBSERVED
+- `--provenance <value>`: CALLER_REPORTED or EXTERNAL_OBSERVED
 - `--evidence-ref <ref>`: bounded external evidence reference
 - `--json`: emit structured output as JSON
 
