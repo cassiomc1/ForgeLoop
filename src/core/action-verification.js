@@ -56,6 +56,21 @@ async function resolveActionVerificationEvidence({
       "action execution is commit evidence, not independent postcondition verification",
     );
   }
+  // Verification evidence must cover the exact immutable action requirement;
+  // a passed check for any other requirement is not postcondition evidence
+  // (INV-FINAL-VERIFY-01).
+  if (typeof action.requirement !== "string" || action.requirement.length === 0) {
+    throw verificationError(
+      E_ACTION_VERIFICATION_INVALID,
+      `action ${action.actionId} has no canonical requirement to verify`,
+    );
+  }
+  if (execution.requirement !== action.requirement) {
+    throw verificationError(
+      E_ACTION_VERIFICATION_INVALID,
+      `verification evidence covers requirement ${JSON.stringify(execution.requirement)} instead of ${JSON.stringify(action.requirement)}`,
+    );
+  }
   return { kind: "FORGELOOP_EXECUTION", evidenceRef };
 }
 

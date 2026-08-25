@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -54,7 +54,7 @@ test("raw forged VERIFIED state without trusted evidence is UNTRUSTED", async ()
     const { action } = await proposeAction(target, { packageRoot, taskId, input: {
       actionId: "action-forged", effectClass: "REVERSIBLE_WRITE", capability: "filesystem.write",
       target: "file", operation: "write", idempotencyKey: "forged:v1",
-      requiredForCompletion: true, requirement: null, provenance: "CALLER_REPORTED",
+      requiredForCompletion: true, requirement: "forged-postcondition", provenance: "CALLER_REPORTED",
     } });
     const { writeFile } = await import("node:fs/promises");
     const { taskActionPath } = await import("../src/core/task-paths.js");
@@ -85,5 +85,46 @@ test("correctly authorized + committed + verified action is SATISFIED", async ()
     const summary = await evaluateRequiredActionReadiness({ target, packageRoot, taskId });
     assert.equal(summary.satisfied, 1);
     assert.equal(summary.unresolved, 0);
+  } finally { await rm(target, { recursive: true, force: true }); }
+});
+
+test("legacy required action without a requirement is readable but never trusted-satisfied", async () => {
+  const { proposeAction } = await import("../src/core/actions.js");
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-ready-legacy-noreq-"));
+  const taskId = "ready-legacy-noreq";
+  try {
+    // Simulate a historical 1.6.0 artifact by writing it directly.
+    const { canonicalActionFingerprint } = await import("../src/core/action-model.js");
+    const { taskActionPath } = await import("../src/core/task-paths.js");
+    const { writeFile } = await import("node:fs/promises");
+    const now = "2026-01-01T00:00:00.000Z";
+    const identityInput = {
+      taskId, actionId: "action-legacy-noreq", effectClass: "REVERSIBLE_WRITE",
+      capability: "filesystem.write", target: "f", operation: "op",
+      idempotencyKey: "legacy:noreq:v1", requiredForCompletion: true, requirement: null,
+    };
+    const legacy = {
+      schemaVersion: 1,
+      ...identityInput,
+      actionFingerprint: canonicalActionFingerprint(identityInput),
+      provenance: "HOST_REPORTED",
+      state: "VERIFIED",
+      revision: 3,
+      lastEvidenceRef: "external:legacy",
+      createdAt: now,
+      updatedAt: now,
+    };
+    await mkdir(path.join(target, path.dirname(taskActionPath(taskId, legacy.actionId))), { recursive: true });
+    await writeFile(path.join(target, taskActionPath(taskId, legacy.actionId)), JSON.stringify(legacy, null, 2) + "\n", "utf8");
+
+    const readiness = await evaluateActionReadiness({ target, packageRoot, taskId, action: legacy });
+    // The artifact is readable; it is untrusted both because its label has no
+    // trusted chronology and because a required action without a requirement
+    // can never be strongly verified.
+    assert.equal(readiness.status, "UNTRUSTED");
+
+    const summary = await evaluateRequiredActionReadiness({ target, packageRoot, taskId });
+    assert.equal(summary.untrusted, 1);
+    assert.equal(summary.satisfied, 0);
   } finally { await rm(target, { recursive: true, force: true }); }
 });

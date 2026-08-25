@@ -64,6 +64,18 @@ export async function evaluateActionReadiness({
     ], { authorization: ledger.authorization, verification: ledger.verification });
   }
 
+  // A required action without a requirement can never be strongly verified:
+  // legacy artifacts stay readable but cannot become trusted-satisfied
+  // (INV-FINAL-VERIFY-02).
+  if (
+    resolved.requiredForCompletion
+    && (typeof resolved.requirement !== "string" || resolved.requirement.length === 0)
+  ) {
+    return result(resolved.actionId, "UNTRUSTED", [
+      "required action has no canonical requirement binding",
+    ], { authorization: ledger.authorization, verification: ledger.verification });
+  }
+
   // VERIFIED label present: trust requires modern authorization evidence.
   if (!ledger.authorization.valid) {
     return result(resolved.actionId, "UNTRUSTED", [
