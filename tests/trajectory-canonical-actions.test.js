@@ -18,7 +18,7 @@ test("metrics expose trusted action readiness and one comparable-step owner", as
     await proposeAction(target, { packageRoot, taskId, input: {
       actionId: "action-traj", effectClass: "REVERSIBLE_WRITE", capability: "filesystem.write",
       target: "f", operation: "op", idempotencyKey: "traj:v1",
-      requiredForCompletion: true, requirement: null, provenance: "CALLER_REPORTED",
+      requiredForCompletion: true, requirement: "traj-postcondition", provenance: "CALLER_REPORTED",
     } });
     // Forge the artifact to a raw VERIFIED label without any trusted evidence.
     const { readAction } = await import("../src/core/actions.js");
