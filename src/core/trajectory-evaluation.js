@@ -7,6 +7,7 @@ import { buildTrajectoryMetrics } from "./trajectory-metrics.js";
 import { assertSchema, readSchema } from "./schema-validation.js";
 import { taskEvaluationPath } from "./task-paths.js";
 import { appendProtocolEvent } from "./events.js";
+import { assertSafePath, ensureWithin } from "./filesystem.js";
 import { withTaskTransaction } from "./transaction.js";
 
 const COMPARABLE_EVENTS = new Set([
@@ -21,8 +22,12 @@ export async function evaluateTrajectory({ target, packageRoot, taskId, scenario
     throw evaluationError("E_TRAJECTORY_SCENARIO_INVALID", "scenario path must be a relative project-local file");
   }
   let scenario;
-  try { scenario = JSON.parse(await readFile(path.join(target, scenarioPath), "utf8")); }
-  catch (error) { throw evaluationError("E_TRAJECTORY_SCENARIO_INVALID", `unable to read scenario: ${error.message}`); }
+  try {
+    await assertSafePath(target, scenarioPath);
+    scenario = JSON.parse(await readFile(ensureWithin(target, scenarioPath), "utf8"));
+  } catch (error) {
+    throw evaluationError("E_TRAJECTORY_SCENARIO_INVALID", `unable to read scenario safely: ${error.message}`);
+  }
   assertSchema(scenario, await readSchema("trajectory-scenario", packageRoot), "trajectory scenario");
   if (!/^eval-[A-Za-z0-9_-]+$/.test(evaluationId)) throw evaluationError("E_TRAJECTORY_SCENARIO_INVALID", "evaluationId is invalid");
   const trace = await buildTaskTrace({ target, packageRoot, taskId });
