@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "forgeloop://schemas/trajectory-scenario.schema.json",
+  "title": "ForgeLoop trajectory reference scenario",
+  "type": "object",
+  "required": ["schemaVersion", "scenarioId", "requiredMilestones"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "scenarioId": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "description": { "type": "string", "maxLength": 512 },
+    "requiredMilestones": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1, "maxLength": 64 }
+    },
+    "forbidden": {
+      "type": "object",
+      "properties": {
+        "completionBeforeVerification": { "type": "boolean" },
+        "unresolvedRequiredAction": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "limits": {
+      "type": "object",
+      "properties": {
+        "maxVerificationCycles": { "type": "integer", "minimum": 1 },
+        "maxNonInformativeInterventions": { "type": "integer", "minimum": 0 },
+        "maxAmbiguousActions": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "reference": {
+      "type": "object",
+      "properties": {
+        "comparableSteps": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

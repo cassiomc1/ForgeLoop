@@ -705,6 +705,21 @@ forgeloop next --task <id> --json
 
 | Code | Meaning | Safe Resolution |
 | --- | --- | --- |
+| `E_ACTION_APPROVAL_REQUIRED` | Policy requires a current fingerprint-bound approval before this action may proceed. | Request approval with forgeloop approval-request and resolve it via forgeloop approval-resolve, then rerun the action. |
+| `E_ACTION_AUTHORITY_REQUIRED` | Policy requires host-attested authority that was not supplied through a host trust boundary. | Perform the action through a host integration that supplies trusted authority context; standalone CLI cannot mint it. |
+| `E_ACTION_CAPABILITY_DENIED` | Capability policy denies this capability. | Obtain an operator policy change outside the task, or do not perform the action. |
+| `E_ACTION_CAPABILITY_UNKNOWN` | Action capability is not part of the canonical capability vocabulary. | Use a documented capability from forgeloop protocol-info; unknown capabilities fail closed. |
+| `E_ACTION_COMMIT_UNKNOWN` | External commit state of a started action cannot be proven. | Do not retry; reconcile the observed external state with forgeloop action-reconcile. |
+| `E_ACTION_EVIDENCE_INVALID` | Evidence supplied for verification or reconciliation is missing, malformed, or unbounded. | Supply bounded evidence references appropriate to the action type; do not paste raw external output into the ledger. |
+| `E_ACTION_IDEMPOTENCY_CONFLICT` | The idempotency key already binds to a different canonical action fingerprint in this task. | Use a new idempotency key with a new actionId, or reuse the existing logical action unchanged; never relabel an executed effect. |
+| `E_ACTION_IDEMPOTENCY_REQUIRED` | Side-effecting action class requires an idempotency key. | Supply a stable --idempotency-key that identifies the logical external action. |
+| `E_ACTION_INVALID` | Durable action artifact or parameters are malformed or schema-invalid. | Correct the action fields reported by the structured error, then retry through forgeloop action-propose or run-action. |
+| `E_ACTION_NOT_FOUND` | Referenced durable action ID does not exist for the task. | List actions with forgeloop action-show or propose the action first. |
+| `E_ACTION_RECONCILIATION_REQUIRED` | An action is COMMIT_UNKNOWN and blocks progress until explicitly reconciled. | Observe the external system and run forgeloop action-reconcile --outcome COMMITTED|NOT_COMMITTED|UNKNOWN with evidence references. |
+| `E_ACTION_STATE_MISMATCH` | Requested durable action transition is not part of the canonical state machine. | Inspect current action state with forgeloop action-show and use a legal transition; never edit action artifacts by hand. |
+| `E_APPROVAL_ALREADY_RESOLVED` | Approval is one-time resolvable and has already been approved or rejected. | Request a new approval if another decision is required. |
+| `E_APPROVAL_INVALID` | Approval artifact is malformed or does not bind the required fingerprint tuple. | Request a new approval with forgeloop approval-request; never hand-edit approval artifacts. |
+| `E_APPROVAL_STALE` | Approval no longer matches the current action fingerprint, contract fingerprint, task revision, or capability. | Request and resolve a fresh approval against the current action revision. |
 | `E_AUTHORITY_INVALID` | Authority grant file is malformed or expired. | Obtain a valid authority grant from host operator. |
 | `E_AUTHORITY_SCOPE_MISMATCH` | Authority grant does not cover the requested package. | Request updated authority scope. |
 | `E_AUTHORITY_UNTRUSTED_SOURCE` | Authority file placed inside untrusted project tree. | Place authority file in host-managed trusted location. |
@@ -868,6 +883,8 @@ forgeloop next --task <id> --json
 | `E_TERMINAL_REQUIREMENT_UNKNOWN` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_TERMINAL_STATUS_REGRESSION` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_TRACE_SNAPSHOT_INCONSISTENT` | Task artifacts changed while the execution trace was being read. | Rerun the read-only projection to obtain a consistent view. |
+| `E_TRAJECTORY_REFERENCE_REQUIRED` | Comparative efficiency requires a reference scenario with positive comparableSteps. | Provide --scenario with reference.comparableSteps, or omit efficiency from the result. |
+| `E_TRAJECTORY_SCENARIO_INVALID` | Trajectory scenario file is missing required fields or schema-invalid. | Correct the scenario JSON against schemas/trajectory-scenario.schema.json. |
 | `E_VERIFICATION_TOOL_UNAVAILABLE` | Required verification executable is missing in environment. | Use local equivalent, obtain host authority, or record NOT_VERIFIED. |
 
 <!-- END FORGELOOP GENERATED: public-error-codes -->
