@@ -123,6 +123,25 @@ export async function evaluateAudit({
     for (const actionError of await validateActionLedgerConsistency(target, { packageRoot, taskId })) {
       errors.push({ ...actionError, artifacts: [taskArtifactPath(taskId, "actions"), taskArtifactPath(taskId, "events")] });
     }
+    // Surface specific untrusted/ambiguous required actions with reasons.
+    const { evaluateRequiredActionReadiness } = await import("./action-readiness.js");
+    const readiness = await evaluateRequiredActionReadiness({ target, packageRoot, taskId });
+    for (const item of readiness.actions) {
+      if (item.status === "SATISFIED" || item.status === "PENDING") continue;
+      const code = item.status === "AMBIGUOUS"
+        ? "E_ACTION_RECONCILIATION_REQUIRED"
+        : item.status === "UNTRUSTED"
+          ? "E_ACTION_VERIFICATION_REQUIRED"
+          : "E_ACTION_STATE_MISMATCH";
+      errors.push({
+        code,
+        message: `Required action ${item.actionId} is not trusted-satisfied (${item.status}): ${item.reasons[0] ?? ""}`,
+        artifacts: [taskArtifactPath(taskId, "actions"), taskArtifactPath(taskId, "events")],
+        actionId: item.actionId,
+        readiness: item.status,
+        reasons: item.reasons,
+      });
+    }
   }
   const changedPaths = await compareChangedPaths(target, packageRoot, { taskId, receiptPath });
   if (changedPaths.status === "MISMATCH") {

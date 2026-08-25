@@ -15,6 +15,7 @@ export const INTEGRATION_RISK_CLASSES = Object.freeze({
   CLAIM_REACQUISITION: "CLAIM_REACQUISITION",
   EXTERNAL_EXECUTION: "EXTERNAL_EXECUTION",
   AUTHORITY_MUTATION: "AUTHORITY_MUTATION",
+  EXTERNAL_STATE_ATTESTATION: "EXTERNAL_STATE_ATTESTATION",
   MAINTENANCE: "MAINTENANCE",
   CLAIM_RELEASE_RECOVERY: "CLAIM_RELEASE_RECOVERY",
   LEGACY_MIGRATION: "LEGACY_MIGRATION",
@@ -46,6 +47,7 @@ const STATIC_RISK_CLASSES = Object.freeze({
   "reconcile-closure": INTEGRATION_RISK_CLASSES.EXTERNAL_EXECUTION,
   "action-propose": INTEGRATION_RISK_CLASSES.LOOP_MUTATION,
   "action-record": INTEGRATION_RISK_CLASSES.LOOP_MUTATION,
+  "action-verify": INTEGRATION_RISK_CLASSES.LOOP_MUTATION,
   "action-reconcile": INTEGRATION_RISK_CLASSES.LOOP_MUTATION,
   "approval-request": INTEGRATION_RISK_CLASSES.LOOP_MUTATION,
   "approval-resolve": INTEGRATION_RISK_CLASSES.AUTHORITY_MUTATION,
@@ -74,6 +76,15 @@ const STATIC_RISK_CLASSES = Object.freeze({
 function refineRiskClass(command, input) {
   if (command === "task-unlock" && input?.force === true) {
     return INTEGRATION_RISK_CLASSES.FORCE_DESTRUCTIVE;
+  }
+  // Settling external commit state is independently gated: recording an
+  // UNKNOWN observation stays LOOP_MUTATION, while COMMITTED / NOT_COMMITTED
+  // settlements attest external state and require their own capability.
+  if (
+    command === "action-reconcile"
+    && ["COMMITTED", "NOT_COMMITTED"].includes(input?.reconciliationOutcome)
+  ) {
+    return INTEGRATION_RISK_CLASSES.EXTERNAL_STATE_ATTESTATION;
   }
   // Fail closed: every canonical command must be explicitly classified.
   return baseRiskClass(command);
@@ -158,6 +169,8 @@ export function classifyForgeLoopInvocation(command, input = {}) {
         return "allowExternalExecution";
       case INTEGRATION_RISK_CLASSES.AUTHORITY_MUTATION:
         return "allowApprovalResolution";
+      case INTEGRATION_RISK_CLASSES.EXTERNAL_STATE_ATTESTATION:
+        return "allowActionReconciliationSettlement";
       case INTEGRATION_RISK_CLASSES.MAINTENANCE:
         return "allowMaintenance";
       case INTEGRATION_RISK_CLASSES.CLAIM_RELEASE_RECOVERY:
@@ -179,6 +192,7 @@ export function classifyForgeLoopInvocation(command, input = {}) {
       INTEGRATION_RISK_CLASSES.CLAIM_REACQUISITION,
       INTEGRATION_RISK_CLASSES.EXTERNAL_EXECUTION,
       INTEGRATION_RISK_CLASSES.AUTHORITY_MUTATION,
+      INTEGRATION_RISK_CLASSES.EXTERNAL_STATE_ATTESTATION,
       INTEGRATION_RISK_CLASSES.MAINTENANCE,
       INTEGRATION_RISK_CLASSES.CLAIM_RELEASE_RECOVERY,
       INTEGRATION_RISK_CLASSES.LEGACY_MIGRATION,

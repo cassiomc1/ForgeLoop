@@ -452,11 +452,21 @@ commit uncertainty, reconciliation, and verification without introducing a
 workflow runtime, scheduler, queue, or second ledger.
 
 The external side-effect boundary is deliberately conservative: exact argv is
-launched only through `run-action` with no shell mode; host-reported actions
-remain `HOST_REPORTED`; and project capability policy cannot manufacture
-`HOST_ATTESTED` authority. A started action whose external result is uncertain
-becomes `COMMIT_UNKNOWN`, which forbids retry until explicit reconciliation.
-This reduces duplicate-effect risk but cannot provide a universal exactly-once
+launched only through `run-action` with no shell mode; project capability
+policy cannot manufacture `HOST_ATTESTED` authority, and trusted host context
+travels out-of-band only (never inside command input, CLI flags, or tool
+arguments). Authorization and verification are canonical core services:
+callers cannot mint `AUTHORIZED` or `VERIFIED`, verification requires an
+independent passed ForgeLoop execution artifact, and required completion
+consumes the canonical action-readiness projection rather than raw state
+labels. Capability policy participates in policy identity: its digest is bound
+into the policy lock, the task policy snapshot, and authorization evidence, so
+drift blocks before any side effect. A started action whose external result is
+uncertain becomes `COMMIT_UNKNOWN`, which forbids retry until explicit
+reconciliation; settling ambiguity as `COMMITTED`/`NOT_COMMITTED` requires
+trusted host attestation plus evidence, and a trusted `NOT_COMMITTED` returns
+the action to `PROPOSED` so stale authorization can never be reused. This
+reduces duplicate-effect risk but cannot provide a universal exactly-once
 guarantee for arbitrary external systems.
 
 Metrics and trajectory evaluation are deterministic read-only projections of

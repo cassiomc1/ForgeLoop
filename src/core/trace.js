@@ -463,6 +463,19 @@ export async function buildTaskTrace({ target, packageRoot, taskId = null, event
   const actions = snapshot.taskId
     ? await listActions(target, { packageRoot, taskId: snapshot.taskId })
     : [];
+  // Artifacts are the current-state materialization; chronology comes from
+  // the canonical ledger replay projection, never from artifacts alone.
+  const { projectActionLedger } = await import("./action-ledger-projection.js");
+  const projections = [];
+  for (const action of actions) {
+    projections.push(await projectActionLedger({
+      target,
+      packageRoot,
+      taskId: snapshot.taskId,
+      actionId: action.actionId,
+      artifact: action,
+    }));
+  }
   const actionEvents = taskEvents.filter((event) => event.event.startsWith("ACTION_") || event.event.startsWith("APPROVAL_"));
   const byState = Object.fromEntries([...new Set(actions.map((action) => action.state))].sort()
     .map((state) => [state, actions.filter((action) => action.state === state).length]));
@@ -478,6 +491,14 @@ export async function buildTaskTrace({ target, packageRoot, taskId = null, event
     ambiguous: actions.filter((action) => action.state === "COMMIT_UNKNOWN").length,
     failed: actions.filter((action) => action.state === "FAILED").length,
     verified: actions.filter((action) => action.state === "VERIFIED").length,
+    trustedSatisfied: projections.filter(
+      (projection) => projection.valid && projection.state === "VERIFIED"
+        && projection.authorization.valid && projection.verification.valid,
+    ).length,
+    untrustedRequired: projections.filter((projection) =>
+      !projection.valid
+      || (projection.state === "VERIFIED" && !(projection.authorization.valid && projection.verification.valid))
+    ).length,
     repeatedIdempotencyAttempts,
     reconciliationCount: taskEvents.filter((event) => event.event === "ACTION_RECONCILED").length,
     eventCount: actionEvents.length,

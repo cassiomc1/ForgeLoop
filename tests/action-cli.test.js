@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { proposeAction, transitionAction } from "../src/core/actions.js";
+import { proposeAction, transitionAction, transitionAuthorizedAction } from "../src/core/actions.js";
 import { runActionRecord } from "../src/commands/action-record.js";
 import { getPackageRoot } from "../src/core/templates.js";
 
@@ -22,8 +22,15 @@ test("host-reported transitions cannot skip states or claim ForgeLoop execution"
     await assert.rejects(transitionAction(target, { packageRoot, taskId,
       actionId: action.actionId, to: "COMMITTED" }),
     (error) => error.code === "E_ACTION_STATE_MISMATCH");
-    const authorized = await transitionAction(target, { packageRoot, taskId,
-      actionId: action.actionId, to: "AUTHORIZED" });
+    const authorized = await transitionAuthorizedAction(target, { packageRoot, taskId,
+      actionId: action.actionId,
+      details: {
+        actionFingerprint: action.actionFingerprint,
+        capabilityDecision: "ALLOW",
+        capabilityPolicyFingerprint: "a".repeat(64),
+        policyLockDigest: `sha256:${"b".repeat(64)}`,
+        taskPolicyDigest: `sha256:${"c".repeat(64)}`,
+      } });
     assert.equal(authorized.provenance, "HOST_REPORTED");
     await assert.rejects(runActionRecord({ target, packageRoot, taskId,
       actionId: action.actionId, state: "STARTED", provenance: "FORGELOOP_EXECUTED" }),

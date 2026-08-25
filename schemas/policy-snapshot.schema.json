@@ -10,6 +10,8 @@
     "rules": { "type": "array", "items": { "type": ["string", "object"] } },
     "baseline": { "type": "object" },
     "baselineDigest": { "type": "string" },
+    "capabilityPolicyDigest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "capabilityPolicyFingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
     "capturedAt": { "type": "string" }
   },
   "additionalProperties": false

@@ -10,6 +10,7 @@
     "digest": { "type": "string", "minLength": 1 },
     "rulesDigest": { "type": "string" },
     "baselineDigest": { "type": "string" },
+    "capabilityPolicyDigest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
     "capturedAt": { "type": "string" }
   },
   "additionalProperties": false

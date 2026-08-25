@@ -1,7 +1,10 @@
 import { proposeAction, transitionAction } from "./actions.js";
 import { actionRequiresIdempotency } from "./action-model.js";
-import { evaluateActionCapability } from "./capability-policy.js";
-import { runCommandExecution } from "./execution.js";
+import { authorizeAction } from "./action-authorization.js";
+import {
+  prepareCommandExecution,
+  runPreparedCommandExecution,
+} from "./prepared-execution.js";
 
 function actionExecutionError(code, message) {
   const error = new Error(message);
@@ -16,8 +19,17 @@ function startedExecutionOutcome(action, execution) {
   return "COMMIT_UNKNOWN";
 }
 
+/**
+ * Execute a durable side-effecting action.
+ *
+ * Ordering is the security contract (INV-EXEC-01):
+ *   propose -> prepare (deterministic pre-launch checks, no durable write)
+ *           -> authorize (policy-bound AUTHORIZED)
+ *           -> ACTION_STARTED (last protocol mutation before launch)
+ *           -> exact-argv launch (INV-EXEC-02 conservative outcomes).
+ */
 export async function executeDurableAction({
-  target, packageRoot, taskId, input, argv, approvalId, authorityContext, timeoutMs,
+  target, packageRoot, taskId, input, argv, approvalId, authorityContext, runtimeContext, timeoutMs,
 }) {
   if (!Array.isArray(argv) || argv.length === 0) {
     throw actionExecutionError("E_ACTION_INVALID", "run-action requires exact argv after --");
@@ -33,26 +45,22 @@ export async function executeDurableAction({
   if (action.state !== "PROPOSED") {
     throw actionExecutionError("E_ACTION_STATE_MISMATCH", `action ${action.actionId} is already ${action.state}`);
   }
-  const capability = await evaluateActionCapability({
-    target, packageRoot, action, authorityContext, approval: approvalId ? { approvalId } : undefined,
+
+  // Deterministic pre-launch checks. Any failure here leaves the action
+  // PROPOSED with no ACTION_STARTED event and no ambiguity about whether the
+  // external effect may have happened.
+  const prepared = await prepareCommandExecution({
+    target,
+    taskId,
+    argv,
+    details: { requirement: input.requirement ?? null },
+    authorityContext,
+    runtimeContext,
   });
-  if (!capability.allowed) {
-    throw actionExecutionError(capability.reasonCode, `capability ${action.capability} is not authorized: ${capability.decision}`);
-  }
-  const authorized = await transitionAction(target, {
-    packageRoot, taskId, actionId: action.actionId, to: "AUTHORIZED",
-    expectedRevision: action.revision, expectedFingerprint: action.actionFingerprint,
-    details: {
-      capabilityDecision: capability.decision,
-      capabilityPolicyFingerprint: capability.policyFingerprint,
-      ...(capability.approvalId ? { approvalId: capability.approvalId } : {}),
-      ...(authorityContext?.trustMode === "HOST_ATTESTED"
-        ? {
-            authorityKind: "HOST_ATTESTED",
-            ...(typeof authorityContext.grantRef === "string" ? { authorityRef: authorityContext.grantRef } : {}),
-          }
-        : {}),
-    },
+
+  const { action: authorized, capability } = await authorizeAction({
+    target, packageRoot, taskId, actionId: action.actionId,
+    approvalId, authorityContext,
   });
   const started = await transitionAction(target, {
     packageRoot, taskId, actionId: action.actionId, to: "STARTED",
@@ -60,12 +68,14 @@ export async function executeDurableAction({
   });
   let execution;
   try {
-    execution = await runCommandExecution({
+    execution = await runPreparedCommandExecution({
       target, packageRoot, taskId, checkId: `action:${action.actionId}`,
       requirement: input.requirement ?? `durable action ${action.actionId}`,
-      argv, timeoutMs, authorityContext,
+      prepared, timeoutMs,
     });
   } catch (error) {
+    // Persistence uncertainty after the launch boundary can never downgrade a
+    // side effect to FAILED: recover to COMMIT_UNKNOWN instead.
     const to = actionRequiresIdempotency(action.effectClass) ? "COMMIT_UNKNOWN" : "FAILED";
     await transitionAction(target, {
       packageRoot, taskId, actionId: action.actionId, to,

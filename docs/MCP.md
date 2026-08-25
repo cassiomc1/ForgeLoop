@@ -59,6 +59,27 @@ not expose `run-action` or host-attestation minting over MCP. An action that is
 transport/session metadata cannot authorize a retry or manufacture
 `HOST_ATTESTED` authority. Capability policy remains policy, not authority.
 
+### Approval resolution and reconciliation settlement capabilities
+
+Two launch flags expose transport surfaces; neither creates host authority:
+
+- `--allow-approval-resolution` exposes the `approval-resolve` tool.
+  Resolving an approval as `HOST_ATTESTED` still requires a trusted
+  out-of-band authority context supplied by the embedding host through
+  `createForgeLoopMcpServer({ authorityContextProvider })`. Without a
+  provider, `HOST_ATTESTED` resolutions fail closed with
+  `E_ACTION_AUTHORITY_REQUIRED`. Tool arguments can never carry the context:
+  any actor-supplied `authorityContext` property is stripped before dispatch.
+- `--allow-reconciliation-settlement` exposes settlement-class
+  `action-reconcile` invocations (`--outcome COMMITTED|NOT_COMMITTED`).
+  Recording an `UNKNOWN` observation needs no special capability, but settling
+  external commit state is independently gated and still requires trusted
+  host attestation plus evidence at the core layer.
+
+Capability introspection reports whether these surfaces are enabled
+(`hostAttestationAvailable: false` by default) but never exposes grant
+content.
+
 Raw recovery artifacts, transaction journals, lock files, and unbounded event
 ledgers are intentionally not exposed.
 

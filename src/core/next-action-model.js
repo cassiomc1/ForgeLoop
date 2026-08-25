@@ -37,6 +37,7 @@ export const NEXT_ACTIONS = Object.freeze({
   RECONCILE_CLOSURE: "RECONCILE_CLOSURE",
   RECONCILE_ACTION: "RECONCILE_ACTION",
   RESOLVE_ACTION_APPROVAL: "RESOLVE_ACTION_APPROVAL",
+  VERIFY_EXTERNAL_ACTION: "VERIFY_EXTERNAL_ACTION",
   RECOVER_TASK: "RECOVER_TASK",
   RESUME_RECOVERED_TASK: "RESUME_RECOVERED_TASK",
   RESOLVE_RECOVERY_INCONSISTENCY: "RESOLVE_RECOVERY_INCONSISTENCY",
@@ -110,6 +111,8 @@ export function result({
   missingArtifacts = [],
   progress = undefined,
   diagnosticGuidance = undefined,
+  authorityRequired = undefined,
+  reconciliationAuthorityRequired = undefined,
 }) {
   const normalizedReasons = reasons
     .map((reason) => {
@@ -143,6 +146,10 @@ export function result({
     missingArtifacts: uniqueSorted(missingArtifacts),
     ...(progress ? { progress: structuredClone(progress) } : {}),
     ...(diagnosticGuidance ? { diagnosticGuidance: structuredClone(diagnosticGuidance) } : {}),
+    ...(authorityRequired ? { authorityRequired: structuredClone(authorityRequired) } : {}),
+    ...(reconciliationAuthorityRequired
+      ? { reconciliationAuthorityRequired: structuredClone(reconciliationAuthorityRequired) }
+      : {}),
   };
 }
 

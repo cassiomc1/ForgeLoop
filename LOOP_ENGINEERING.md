@@ -1293,12 +1293,53 @@ policy is a decision input (`ALLOW`, `DENY`, `REQUIRE_AUTHORITY`, or
 only cross the existing host trust boundary, and `run-action` accepts exact
 argv with no shell mode.
 
-`COMMIT_UNKNOWN` is an explicit external-state boundary. It forbids automatic
-retry and blocks required completion until `action-reconcile` records bounded
-evidence as `COMMITTED`, `NOT_COMMITTED`, or `UNKNOWN`. ForgeLoop reports
-idempotency protection and reconciliation outcomes, but never claims universal
-exactly-once execution. `FORGELOOP_EXECUTED`, `HOST_REPORTED`, and
-`EXTERNAL_OBSERVED` remain distinct provenance values.
+### Durable action trust boundaries (hardened)
+
+The following invariants are enforced in core code and are regression-tested:
+
+- **Authorization is canonical.** No caller-controlled surface (`action-record`,
+  CLI flags, MCP tool arguments, project files, environment) can mint
+  `AUTHORIZED`. Only the core authorization service may transition
+  `PROPOSED -> AUTHORIZED`, and only after the current capability policy, the
+  persisted policy lock, and the task policy snapshot agree. Every modern
+  `ACTION_AUTHORIZED` event binds the capability decision, capability-policy
+  fingerprint, policy-lock digest, task-policy digest, and — for
+  `REQUIRE_AUTHORITY`/`REQUIRE_APPROVAL` — the exact host authority or
+  fingerprint-bound approval.
+- **Verification is canonical and independent.** `COMMITTED != VERIFIED`.
+  A command exiting 0 proves only local completion. `VERIFIED` is produced
+  exclusively by `forgeloop action-verify` (or the equivalent core service)
+  against a passed ForgeLoop execution artifact that is independent of the
+  action's own commit execution.
+- **Completion consumes readiness.** Required-action completion truth comes
+  from the canonical action-readiness projection, never from raw state labels.
+  A forged or legacy `VERIFIED` label without trusted authorization and
+  canonical verification evidence yields `UNTRUSTED` and blocks completion.
+- **Settling ambiguity requires trust.** Recording an `UNKNOWN`
+  reconciliation observation is always safe. Settling `COMMIT_UNKNOWN` as
+  `COMMITTED` or `NOT_COMMITTED` requires a trusted out-of-band host authority
+  context plus bounded evidence references bound to the event. Trusted
+  `NOT_COMMITTED` returns the action to `PROPOSED`, so any retry re-evaluates
+  policy, approval, authority, and the task policy snapshot; stale
+  authorization can never be reused.
+- **STARTED marks the launch boundary.** Deterministic pre-launch checks
+  (argv normalization, command resolution, installation authority, policy
+  identity, approvals) all run before `ACTION_STARTED`; post-start outcomes
+  remain conservative: spawn failure without launch is `FAILED`; anything
+  unproven is `COMMIT_UNKNOWN`.
+- **Capability policy participates in policy identity.** When
+  `.forgeloop/policy/capabilities.json` exists, its digest participates in the
+  policy lock, the active task policy snapshot, and authorization evidence.
+  Drift blocks before any side effect (`E_ACTION_POLICY_DRIFT`).
+- **Host context is out-of-band.** Trusted authority travels as an execution
+  context object supplied by an embedding host (`executeForgeLoopCommand` /
+  `createForgeLoopMcpServer({ authorityContextProvider })`). CLI flags such as
+  `--authority HOST_ATTESTED` are requested kinds, never proof. MCP launch
+  flags expose transport surfaces only; tool arguments can never carry
+  `authorityContext`.
+- **Guidance never lies about authority.** `forgeloop next` returns a
+  structured `authorityRequired` requirement for host-bound approvals instead
+  of recommending a command that cannot satisfy the blocker.
 
 Trajectory metrics and reference evaluations are read-only projections over the
 canonical trace, reflection, actions, and events. Missing tokens, costs,

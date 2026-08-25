@@ -38,6 +38,7 @@ function capabilitiesResult({ policy, projectRoot }) {
       transportCapabilities: {
         allowExternalExecution: policy.allowExternalExecution,
         allowApprovalResolution: policy.allowApprovalResolution,
+        allowActionReconciliationSettlement: policy.allowActionReconciliationSettlement,
         allowMaintenance: policy.allowMaintenance,
         allowRecovery: policy.allowRecovery,
         allowLegacyRepair: policy.allowLegacyRepair,
@@ -53,7 +54,7 @@ function capabilitiesResult({ policy, projectRoot }) {
  * context. Used directly by the stateless HTTP transport (one product per
  * request) and once by the stdio entrypoint.
  */
-export function buildForgeLoopMcpServer({ projectContext, policy, packageRoot }) {
+export function buildForgeLoopMcpServer({ projectContext, policy, packageRoot, authorityContextProvider }) {
   const server = new McpServer({
     name: "forgeloop-mcp",
     version: mcpServerVersion(),
@@ -87,7 +88,11 @@ export function buildForgeLoopMcpServer({ projectContext, policy, packageRoot })
     },
   );
 
-  for (const registration of buildToolRegistrations({ projectRoot: projectContext.projectRoot, policy })) {
+  for (const registration of buildToolRegistrations({
+    projectRoot: projectContext.projectRoot,
+    policy,
+    authorityContextProvider,
+  })) {
     server.registerTool(
       registration.name,
       {
@@ -122,7 +127,7 @@ export function buildForgeLoopMcpServer({ projectContext, policy, packageRoot })
   return server;
 }
 
-function validateLaunchContext({ mode, allowExternalExecution, allowApprovalResolution, allowMaintenance, allowRecovery, allowLegacyRepair, allowForceRecovery, maxExecutionTimeMs }) {
+function validateLaunchContext({ mode, allowExternalExecution, allowApprovalResolution, allowActionReconciliationSettlement, allowMaintenance, allowRecovery, allowLegacyRepair, allowForceRecovery, maxExecutionTimeMs }) {
   if (FORGELOOP_INTEGRATION_API_VERSION !== 1) {
     throw new Error(`E_MCP_FORGELOOP_INTEGRATION_UNSUPPORTED: ForgeLoop integration API ${FORGELOOP_INTEGRATION_API_VERSION} is not supported (required: 1)`);
   }
@@ -130,6 +135,7 @@ function validateLaunchContext({ mode, allowExternalExecution, allowApprovalReso
     mode,
     allowExternalExecution,
     allowApprovalResolution,
+    allowActionReconciliationSettlement,
     allowMaintenance,
     allowRecovery,
     allowLegacyRepair,
@@ -148,25 +154,34 @@ export async function createForgeLoopMcpServer({
   mode = SERVER_MODES.SAFE,
   allowExternalExecution = false,
   allowApprovalResolution = false,
+  allowActionReconciliationSettlement = false,
   allowMaintenance = false,
   allowRecovery = false,
   allowLegacyRepair = false,
   allowForceRecovery = false,
   maxExecutionTimeMs = 600000,
   packageRoot = undefined,
+  authorityContextProvider = undefined,
 } = {}) {
   const projectContext = await resolveProjectContext(projectPath);
   const policy = validateLaunchContext({
     mode,
     allowExternalExecution,
     allowApprovalResolution,
+    allowActionReconciliationSettlement,
     allowMaintenance,
     allowRecovery,
     allowLegacyRepair,
     allowForceRecovery,
     maxExecutionTimeMs,
   });
-  const server = buildForgeLoopMcpServer({ projectContext, policy, packageRoot });
+  // Launch flags are transport permissions only; they never mint host
+  // authority. A trusted context can arrive exclusively through this
+  // embedding-controlled provider.
+  if (authorityContextProvider !== undefined && typeof authorityContextProvider !== "function") {
+    throw new Error("authorityContextProvider must be a function supplied by the embedding host");
+  }
+  const server = buildForgeLoopMcpServer({ projectContext, policy, packageRoot, authorityContextProvider });
   return Object.freeze({ server, policy, projectContext });
 }
 

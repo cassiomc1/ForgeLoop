@@ -379,6 +379,8 @@ The cryptographically compiled verification receipt required for task completion
   - `count` *(integer, required, minimum: 0)*
   - `required` *(integer, required, minimum: 0)*
   - `verified` *(integer, required, minimum: 0)*
+  - `trustedSatisfied` *(integer, optional, minimum: 0)*
+  - `unresolvedRequired` *(integer, optional, minimum: 0)*
   - `failed` *(integer, required, minimum: 0)*
   - `ambiguous` *(integer, required, minimum: 0)*
   - `pending` *(integer, required, minimum: 0)*
@@ -583,6 +585,7 @@ silently ignored.
 - `digest` *(string, required, minLength: 1)*
 - `rulesDigest` *(string, required)*
 - `baselineDigest` *(string, required)*
+- `capabilityPolicyDigest` *(string, optional, pattern: `^sha256:[a-f0-9]{64}$`)*
 - `capturedAt` *(string, optional)*
 
 <!-- END FORGELOOP GENERATED: schema:policy-lock -->
@@ -611,6 +614,8 @@ comparison explicitly `UNKNOWN` rather than assuming an empty baseline.
 - `rules` *(array<string,object>, required)*
 - `baseline` *(object, optional)*
 - `baselineDigest` *(string, optional)*
+- `capabilityPolicyDigest` *(string, optional, pattern: `^sha256:[a-f0-9]{64}$`)*
+- `capabilityPolicyFingerprint` *(string, optional, pattern: `^[a-f0-9]{64}$`)*
 - `capturedAt` *(string, optional)*
 
 <!-- END FORGELOOP GENERATED: schema:policy-snapshot -->

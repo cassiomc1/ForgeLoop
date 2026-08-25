@@ -90,6 +90,15 @@ export const E_ACTION_APPROVAL_REQUIRED = "E_ACTION_APPROVAL_REQUIRED";
 export const E_ACTION_COMMIT_UNKNOWN = "E_ACTION_COMMIT_UNKNOWN";
 export const E_ACTION_RECONCILIATION_REQUIRED = "E_ACTION_RECONCILIATION_REQUIRED";
 export const E_ACTION_EVIDENCE_INVALID = "E_ACTION_EVIDENCE_INVALID";
+export const E_ACTION_AUTHORIZATION_INVALID = "E_ACTION_AUTHORIZATION_INVALID";
+export const E_ACTION_VERIFICATION_REQUIRED = "E_ACTION_VERIFICATION_REQUIRED";
+export const E_ACTION_VERIFICATION_INVALID = "E_ACTION_VERIFICATION_INVALID";
+export const E_ACTION_POLICY_DRIFT = "E_ACTION_POLICY_DRIFT";
+export const E_ACTION_POLICY_LOCK_REQUIRED = "E_ACTION_POLICY_LOCK_REQUIRED";
+export const E_ACTION_RECONCILIATION_AUTHORITY_REQUIRED =
+  "E_ACTION_RECONCILIATION_AUTHORITY_REQUIRED";
+export const E_ACTION_RECONCILIATION_EVIDENCE_INVALID =
+  "E_ACTION_RECONCILIATION_EVIDENCE_INVALID";
 export const E_APPROVAL_INVALID = "E_APPROVAL_INVALID";
 export const E_APPROVAL_STALE = "E_APPROVAL_STALE";
 export const E_APPROVAL_ALREADY_RESOLVED = "E_APPROVAL_ALREADY_RESOLVED";
@@ -709,6 +718,55 @@ export const PUBLIC_ERROR_CODES = Object.freeze({
     meaning: "Evidence supplied for verification or reconciliation is missing, malformed, or unbounded.",
     safeResolution: "Supply bounded evidence references appropriate to the action type; do not paste raw external output into the ledger.",
   }),
+  E_ACTION_AUTHORIZATION_INVALID: Object.freeze({
+    code: "E_ACTION_AUTHORIZATION_INVALID",
+    category: "durable-action",
+    classification: "PUBLIC_STABLE",
+    meaning: "Action authorization evidence is missing, incomplete, or was not produced by the canonical authorization service.",
+    safeResolution: "Authorize the action through forgeloop run-action or a trusted embedding host; caller surfaces can never mint AUTHORIZED.",
+  }),
+  E_ACTION_VERIFICATION_REQUIRED: Object.freeze({
+    code: "E_ACTION_VERIFICATION_REQUIRED",
+    category: "durable-action",
+    classification: "PUBLIC_STABLE",
+    meaning: "The action cannot reach VERIFIED through this surface; canonical independent postcondition evidence is required.",
+    safeResolution: "Run an independent verification check, then record it with forgeloop action-verify; exit code 0 alone is not verification.",
+  }),
+  E_ACTION_VERIFICATION_INVALID: Object.freeze({
+    code: "E_ACTION_VERIFICATION_INVALID",
+    category: "durable-action",
+    classification: "PUBLIC_STABLE",
+    meaning: "Verification evidence does not resolve to a canonical passed ForgeLoop artifact bound to this task and action.",
+    safeResolution: "Supply a canonical execution or check reference produced by run-check for this task; arbitrary strings fail closed.",
+  }),
+  E_ACTION_POLICY_DRIFT: Object.freeze({
+    code: "E_ACTION_POLICY_DRIFT",
+    category: "capability-policy",
+    classification: "PUBLIC_STABLE",
+    meaning: "The current capability policy does not match the policy lock or task policy snapshot binding this task.",
+    safeResolution: "Restore the policy epoch recorded at task activation or create a new valid lock and snapshot before side effects.",
+  }),
+  E_ACTION_POLICY_LOCK_REQUIRED: Object.freeze({
+    code: "E_ACTION_POLICY_LOCK_REQUIRED",
+    category: "capability-policy",
+    classification: "PUBLIC_STABLE",
+    meaning: "A capability policy is present but no valid policy lock exists to bind authorization identity.",
+    safeResolution: "Record a valid policy lock (forgeloop baseline or policy-discover --write) before authorizing durable actions.",
+  }),
+  E_ACTION_RECONCILIATION_AUTHORITY_REQUIRED: Object.freeze({
+    code: "E_ACTION_RECONCILIATION_AUTHORITY_REQUIRED",
+    category: "durable-action",
+    classification: "PUBLIC_STABLE",
+    meaning: "Settling COMMIT_UNKNOWN external state requires trusted host attestation that was not supplied out-of-band.",
+    safeResolution: "Reconcile through a trusted embedding host boundary; actor-supplied observations may only record UNKNOWN.",
+  }),
+  E_ACTION_RECONCILIATION_EVIDENCE_INVALID: Object.freeze({
+    code: "E_ACTION_RECONCILIATION_EVIDENCE_INVALID",
+    category: "durable-action",
+    classification: "PUBLIC_STABLE",
+    meaning: "Settling reconciliation requires at least one bounded evidence reference binding the observation to the action.",
+    safeResolution: "Supply bounded external-state evidence references alongside trusted authority before settling ambiguity.",
+  }),
   E_APPROVAL_INVALID: Object.freeze({
     code: "E_APPROVAL_INVALID",
     category: "durable-approval",
@@ -847,6 +905,13 @@ export const ALL_KNOWN_ERROR_CODES = Object.freeze(new Set([
   E_ACTION_COMMIT_UNKNOWN,
   E_ACTION_RECONCILIATION_REQUIRED,
   E_ACTION_EVIDENCE_INVALID,
+  E_ACTION_AUTHORIZATION_INVALID,
+  E_ACTION_VERIFICATION_REQUIRED,
+  E_ACTION_VERIFICATION_INVALID,
+  E_ACTION_POLICY_DRIFT,
+  E_ACTION_POLICY_LOCK_REQUIRED,
+  E_ACTION_RECONCILIATION_AUTHORITY_REQUIRED,
+  E_ACTION_RECONCILIATION_EVIDENCE_INVALID,
   E_APPROVAL_INVALID,
   E_APPROVAL_STALE,
   E_APPROVAL_ALREADY_RESOLVED,

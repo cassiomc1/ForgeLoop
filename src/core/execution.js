@@ -1,5 +1,3 @@
-import { createHash, randomUUID } from "node:crypto";
-import { spawn } from "node:child_process";
 import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { ensureWithin, fileExists } from "./filesystem.js";
@@ -7,128 +5,25 @@ import {
   ARTIFACT_PATHS,
   executionArtifactPath,
   readJsonArtifact,
-  writeJsonArtifact,
 } from "./artifacts.js";
 import { taskArtifactPath, taskExecutionPath } from "./task-paths.js";
-import {
-  resolveExecutionResolution,
-  validateVerificationAuthority,
-  E_COMMAND_RESOLUTION_AMBIGUOUS,
-} from "./verification-capability.js";
 
-export { E_COMMAND_RESOLUTION_AMBIGUOUS };
-export const EXECUTION_KIND = "COMMAND_EXECUTION";
+export { E_COMMAND_RESOLUTION_AMBIGUOUS } from "./verification-capability.js";
+import {
+  prepareCommandExecution,
+  runPreparedCommandExecution,
+} from "./prepared-execution.js";
+export {
+  prepareCommandExecution,
+  runPreparedCommandExecution,
+  TERMINATION_GRACE_MS_PREPARED as TERMINATION_GRACE_MS,
+} from "./prepared-execution.js";
 
 function executionError(code, message, artifacts = []) {
   const error = new Error(message);
   error.code = code;
   error.artifacts = artifacts;
   return error;
-}
-
-function normalizeArgv(argv) {
-  if (!Array.isArray(argv) || argv.length === 0 || argv.some((item) => typeof item !== "string" || item.trim() === "")) {
-    throw executionError("E_EXECUTION_INVALID", "Execution argv must contain at least one non-empty string");
-  }
-  return [...argv];
-}
-
-function validateAuthorityBeforeLaunch({ target, taskId, argv, resolution, details, authorityContext, runtimeContext }) {
-  if (!resolution.mayInstall) return;
-  const check = {
-    kind: "command",
-    source: argv[0],
-    details: {
-      ...(details ?? {}),
-      execution: { resolution },
-    },
-  };
-  const authority = validateVerificationAuthority(check, {
-    target,
-    taskId,
-    authorityContext,
-    runtimeContext,
-  });
-  if (!authority.valid) {
-    throw executionError(authority.error.code ?? "E_INSTALLATION_AUTHORITY_REQUIRED", authority.error.message);
-  }
-}
-
-const MAX_CAPTURED_OUTPUT_BYTES = 64 * 1024;
-export const TERMINATION_GRACE_MS = 1_000;
-
-function digest(bytes) {
-  return createHash("sha256").update(bytes).digest("hex");
-}
-
-function executeProcess(argv, cwd, { timeoutMs = null } = {}) {
-  return new Promise((resolve) => {
-    let spawnError = null;
-    let timedOut = false;
-    let settled = false;
-    let timeout = null;
-    let forceTermination = null;
-    const stdout = [];
-    const stderr = [];
-    let stdoutBytes = 0;
-    let stderrBytes = 0;
-    let outputTruncated = false;
-    const capture = (chunks, chunk, total) => {
-      const available = MAX_CAPTURED_OUTPUT_BYTES - total;
-      if (available <= 0) {
-        outputTruncated = true;
-        return total;
-      }
-      if (chunk.length > available) {
-        chunks.push(chunk.subarray(0, available));
-        outputTruncated = true;
-        return total + available;
-      }
-      chunks.push(chunk);
-      return total + chunk.length;
-    };
-    const finish = (result) => {
-      if (settled) return;
-      settled = true;
-      if (timeout) clearTimeout(timeout);
-      if (forceTermination) clearTimeout(forceTermination);
-      resolve({
-        ...result,
-        timedOut,
-        stdout: Buffer.concat(stdout),
-        stderr: Buffer.concat(stderr),
-        stdoutBytes,
-        stderrBytes,
-        outputTruncated,
-      });
-    };
-    try {
-      const child = spawn(argv[0], argv.slice(1), {
-        cwd,
-        shell: false,
-        stdio: ["ignore", "pipe", "pipe"],
-      });
-      child.stdout?.on("data", (chunk) => { stdoutBytes = capture(stdout, chunk, stdoutBytes); });
-      child.stderr?.on("data", (chunk) => { stderrBytes = capture(stderr, chunk, stderrBytes); });
-      child.once("error", (error) => {
-        spawnError = error;
-      });
-      child.once("close", (exitCode, signal) => {
-        finish({ exitCode, signal, spawnError });
-      });
-      if (Number.isInteger(timeoutMs) && timeoutMs > 0) {
-        timeout = setTimeout(() => {
-          timedOut = true;
-          child.kill("SIGTERM");
-          forceTermination = setTimeout(() => {
-            child.kill("SIGKILL");
-          }, TERMINATION_GRACE_MS);
-        }, timeoutMs);
-      }
-    } catch (error) {
-      finish({ exitCode: null, signal: null, spawnError: error });
-    }
-  });
 }
 
 /**
@@ -148,6 +43,12 @@ export async function resolveExecutionArtifactPath(target, taskId, executionId) 
   return executionArtifactPath(executionId);
 }
 
+/**
+ * Deterministic pre-launch preparation followed by an exact-argv launch.
+ * Kept as the canonical single-command entrypoint for non-durable callers
+ * (run-check); durable actions use the two phases separately so that
+ * ACTION_STARTED lands exactly on the launch boundary (INV-EXEC-01).
+ */
 export async function runCommandExecution({
   target,
   packageRoot,
@@ -162,87 +63,24 @@ export async function runCommandExecution({
   executionPath,
   timeoutMs = null,
 } = {}) {
-  const commandArgv = normalizeArgv(argv);
-  const resolution = await resolveExecutionResolution({
-    argv: commandArgv,
-    cwd: target,
-  });
-
-  if (
-    resolution.resolutionMode === "UNKNOWN"
-    && resolution.mayInstall === true
-    && (
-      resolution.reason === "NPM_WORKSPACE_SCRIPT_UNRESOLVED"
-      || resolution.reason === "NPM_SUBCOMMAND_AMBIGUOUS"
-      || resolution.reason === "NPM_COMMAND_UNCLASSIFIED"
-      || resolution.reason === "NPM_OPTION_VALUE_AMBIGUOUS"
-    )
-  ) {
-    const error = new Error(
-      resolution.reason === "NPM_WORKSPACE_SCRIPT_UNRESOLVED"
-        ? "npm workspace script execution cannot be proven from the current target. Run ForgeLoop against the selected workspace directory."
-        : "Command execution context could not be proven safe before launch."
-    );
-    error.code = E_COMMAND_RESOLUTION_AMBIGUOUS;
-    error.resolution = resolution;
-    throw error;
-  }
-
-  validateAuthorityBeforeLaunch({
+  const prepared = await prepareCommandExecution({
     target,
-    taskId,
-    argv: commandArgv,
-    resolution,
+    argv,
     details,
     authorityContext,
     runtimeContext,
   });
-
-  const executionId = `exec-${randomUUID()}`;
-  const startedAt = new Date().toISOString();
-  const processResult = await executeProcess(commandArgv, target, { timeoutMs });
-  const finishedAt = new Date().toISOString();
-  const execution = {
-    schemaVersion: 1,
-    protocolVersion: 1,
-    executionId,
+  return runPreparedCommandExecution({
+    target,
+    packageRoot,
     taskId,
     checkId,
     requirement,
     verificationCycle,
-    kind: EXECUTION_KIND,
-    argv: commandArgv,
-    cwd: target,
-    resolution: {
-      resolutionMode: resolution.resolutionMode,
-      mayInstall: resolution.mayInstall,
-      installer: resolution.installer,
-      tool: resolution.tool,
-    },
-    ...(resolution.dispatch ? { dispatch: resolution.dispatch } : {}),
-    startedAt,
-    finishedAt,
-    status: processResult.exitCode === 0 && !processResult.spawnError && !processResult.timedOut ? "passed" : "failed",
-    exitCode: processResult.exitCode,
-    durationMs: Math.max(0, Date.parse(finishedAt) - Date.parse(startedAt)),
-    termination: processResult.spawnError ? "spawn-error" : processResult.timedOut ? "timeout" : processResult.signal ? "signal" : "exit",
-    signal: processResult.signal ?? null,
-    stdoutSha256: digest(processResult.stdout),
-    stderrSha256: digest(processResult.stderr),
-    stdoutBytes: processResult.stdoutBytes,
-    stderrBytes: processResult.stderrBytes,
-    outputTruncated: processResult.outputTruncated,
-    ...(Number.isInteger(timeoutMs) && timeoutMs > 0 ? { timeoutMs, terminationGraceMs: TERMINATION_GRACE_MS } : {}),
-  };
-  const execPath = executionPath ?? await resolveExecutionArtifactPath(target, taskId, executionId);
-  const written = await writeJsonArtifact(target, execPath, execution, "execution", packageRoot);
-  return {
-    path: written.path,
-    execution: written.value,
-    result: processResult.spawnError
-      ? "process failed to start"
-      : `process exited with code ${processResult.exitCode}`,
-  };
+    prepared,
+    timeoutMs,
+    executionPath,
+  });
 }
 
 export async function readExecutionArtifact({ target, executionRef, packageRoot, taskId } = {}) {
@@ -287,7 +125,7 @@ export async function readExecutionArtifact({ target, executionRef, packageRoot,
 }
 
 export function validateExecutionBinding({ execution, taskId, checkId, requirement, verificationCycle = 1 } = {}) {
-  if (!execution || execution.kind !== EXECUTION_KIND
+  if (!execution || execution.kind !== "COMMAND_EXECUTION"
     || execution.taskId !== taskId
     || execution.checkId !== checkId
     || execution.requirement !== requirement

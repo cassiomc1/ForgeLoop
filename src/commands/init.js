@@ -187,7 +187,7 @@ export async function runInit({
   const { discoverPolicy } = await import("../core/policy-discovery.js");
   const {
     loadEffectiveRules,
-    computePolicyLockData,
+    computePersistedPolicyLockData,
     writeDiscoveryReport,
     writePolicyLock,
     detectPolicyCapability,
@@ -210,7 +210,7 @@ export async function runInit({
     }
     baseline = createBaselineFromViolations([]);
     effectiveRules = await loadEffectiveRules(target, packageRoot);
-    lock = computePolicyLockData(effectiveRules, baseline);
+    lock = await computePersistedPolicyLockData(target, packageRoot, effectiveRules, baseline);
   } catch (cause) {
     throw policyInitializationError(cause);
   }

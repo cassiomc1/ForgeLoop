@@ -9,6 +9,7 @@ import {
   ACTION_PROVENANCE,
   ACTION_STATES,
   CAPABILITY_DECISIONS,
+  COMMIT_UNKNOWN_RESULT_CODES,
   SIDE_EFFECTING_EFFECT_CLASSES,
 } from "./action-constants.js";
 import {
@@ -17,6 +18,7 @@ import {
   E_ACTION_IDEMPOTENCY_CONFLICT,
   E_ACTION_IDEMPOTENCY_REQUIRED,
   E_ACTION_STATE_MISMATCH,
+  E_ACTION_VERIFICATION_REQUIRED,
   E_APPROVAL_INVALID,
   E_POLICY_INVALID,
   E_TRAJECTORY_SCENARIO_INVALID,
@@ -35,7 +37,7 @@ export const ACTION_TRANSITIONS = Object.freeze(
     ["COMMITTED", Object.freeze(["VERIFIED", "COMMIT_UNKNOWN"])],
     ["VERIFIED", Object.freeze([])],
     ["FAILED", Object.freeze([])],
-    ["COMMIT_UNKNOWN", Object.freeze(["COMMITTED", "AUTHORIZED", "COMMIT_UNKNOWN"])],
+    ["COMMIT_UNKNOWN", Object.freeze(["COMMITTED", "PROPOSED", "COMMIT_UNKNOWN"])],
     ["CANCELLED", Object.freeze([])],
   ]),
 );
@@ -179,6 +181,30 @@ export function validateActionArtifact(action) {
 
   assertTimestamp(action.createdAt, "createdAt", { required: true });
   assertTimestamp(action.updatedAt, "updatedAt", { required: true });
+
+  if (action.lastEvidenceRef !== undefined && action.lastEvidenceRef !== null) {
+    assertBoundedText(action.lastEvidenceRef, "lastEvidenceRef", 256);
+  }
+
+  if (action.lastReconciliationAt !== undefined && action.lastReconciliationAt !== null) {
+    assertTimestamp(action.lastReconciliationAt, "lastReconciliationAt", { required: true });
+  }
+
+  if (action.commitResultCode !== undefined && action.commitResultCode !== null) {
+    assertEnum(
+      action.commitResultCode,
+      COMMIT_UNKNOWN_RESULT_CODES,
+      "commitResultCode",
+    );
+  }
+
+  // VERIFIED is a trust claim: it must always carry canonical evidence.
+  if (action.state === "VERIFIED" && !action.lastEvidenceRef) {
+    throw actionError(
+      E_ACTION_VERIFICATION_REQUIRED,
+      "VERIFIED actions require a canonical verification evidence reference",
+    );
+  }
 
   const allowedKeys = new Set([
     "schemaVersion",
@@ -393,8 +419,93 @@ function assertBoundedEventText(details, key, maxLength, { required = true } = {
   }
 }
 
-export function assertActionEventDetails(event) {
-  const details = event.details;
+/**
+ * Mandatory details for a modern ACTION_AUTHORIZED event. Legacy events that
+ * omit these fields remain ledger-readable but are not trusted authorization
+ * evidence for new required-action completion.
+ */
+export function assertActionAuthorizationDetails(details, { legacyAllowed = false } = {}) {
+  const required = legacyAllowed
+    ? []
+    : [
+      "capabilityDecision",
+      "actionFingerprint",
+      "capabilityPolicyFingerprint",
+      "policyLockDigest",
+      "taskPolicyDigest",
+    ];
+  for (const key of required) {
+    assertBoundedEventText(details, key, 512);
+  }
+  if (details.capabilityDecision !== undefined) {
+    if (!["ALLOW", "REQUIRE_AUTHORITY", "REQUIRE_APPROVAL"].includes(details.capabilityDecision)) {
+      throw actionError(
+        E_ACTION_EVIDENCE_INVALID,
+        "capabilityDecision must be ALLOW, REQUIRE_AUTHORITY, or REQUIRE_APPROVAL",
+      );
+    }
+    if (
+      typeof details.capabilityPolicyFingerprint !== "string" ||
+      !SHA256_HEX_REGEX.test(details.capabilityPolicyFingerprint)
+    ) {
+      throw actionError(
+        E_ACTION_EVIDENCE_INVALID,
+        "capabilityPolicyFingerprint must bind ACTION_AUTHORIZED to the exact project policy",
+      );
+    }
+    if (typeof details.policyLockDigest !== "string" || !details.policyLockDigest.startsWith("sha256:")) {
+      throw actionError(
+        E_ACTION_EVIDENCE_INVALID,
+        "policyLockDigest must bind ACTION_AUTHORIZED to the persisted policy lock",
+      );
+    }
+    if (typeof details.taskPolicyDigest !== "string" || !details.taskPolicyDigest.startsWith("sha256:")) {
+      throw actionError(
+        E_ACTION_EVIDENCE_INVALID,
+        "taskPolicyDigest must bind ACTION_AUTHORIZED to the task policy snapshot",
+      );
+    }
+    if (details.capabilityDecision === "REQUIRE_AUTHORITY") {
+      if (details.authorityKind !== "HOST_ATTESTED") {
+        throw actionError(
+          E_ACTION_EVIDENCE_INVALID,
+          "REQUIRE_AUTHORIZATION decisions require authorityKind=HOST_ATTESTED",
+        );
+      }
+      assertBoundedEventText(details, "authorityRef", 256);
+    }
+    if (details.capabilityDecision === "REQUIRE_APPROVAL") {
+      assertBoundedEventText(details, "approvalId", 256);
+      if (typeof details.approvalFingerprint !== "string") {
+        throw actionError(
+          E_ACTION_EVIDENCE_INVALID,
+          "REQUIRE_APPROVAL authorizations require approvalFingerprint",
+        );
+      }
+      if (details.authorityKind !== "HOST_ATTESTED") {
+        throw actionError(
+          E_ACTION_EVIDENCE_INVALID,
+          "REQUIRE_APPROVAL authorizations require authorityKind=HOST_ATTESTED",
+        );
+      }
+      assertBoundedEventText(details, "authorityRef", 256);
+    }
+  }
+  return true;
+}
+
+/**
+ * Mandatory details for a modern ACTION_VERIFIED event: canonical evidence
+ * reference and kind are unconditional.
+ */
+export function assertActionVerificationDetails(details) {
+  assertBoundedEventText(details, "evidenceRef", 256);
+  assertBoundedEventText(details, "evidenceKind", 64);
+  assertTimestamp(details.verifiedAt, "verifiedAt", { required: true });
+  return true;
+}
+
+export function assertActionEventDetails(event) {  const details = event.details;
   if (!details || typeof details !== "object" || Array.isArray(details)) {
     throw actionError(E_ACTION_EVIDENCE_INVALID, `${event.event} requires structured details`);
   }

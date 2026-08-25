@@ -277,6 +277,31 @@ configuration
 trust
 ```
 
+For durable actions, trusted host authority travels **out-of-band** through the
+programmatic integration API:
+
+```js
+await executeForgeLoopCommand({
+  command: "approval-resolve",
+  projectPath,
+  input: { /* actor-controlled command input only */ },
+  authorityContext: trustedHostContext, // host-supplied, never from input
+});
+```
+
+`authorityContext` and `runtimeContext` are separate executor parameters; they
+are never merged into `input`, never accepted as tool arguments, and cannot be
+minted by CLI flags, project files, environment variables, or transport
+sessions. MCP embeddings supply an immutable provider instead:
+
+```js
+createForgeLoopMcpServer({
+  projectPath,
+  allowApprovalResolution: true,      // transport surface only
+  authorityContextProvider: async ({ command }) => trustedContextOrNull,
+});
+```
+
 The host-attested source must still resolve outside the actor-writable target. A
 project-local authority reference may identify a grant, but it does not create
 the root of trust.

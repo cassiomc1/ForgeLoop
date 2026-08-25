@@ -8,6 +8,7 @@ import {
   proposeAction,
   readAction,
   transitionAction,
+  transitionAuthorizedAction,
   listActions,
   findActionByIdempotencyKey,
 } from "../src/core/actions.js";
@@ -126,12 +127,17 @@ test("transitionAction enforces the state machine, revision, and ledger pairing"
       (error) => error.code === "E_ACTION_STATE_MISMATCH",
     );
 
-    const started = await transitionAction(target, {
+    const started = await transitionAuthorizedAction(target, {
       packageRoot,
       taskId: "transition-task",
       actionId: action.actionId,
-      to: "AUTHORIZED",
-      details: {},
+      details: {
+        actionFingerprint: action.actionFingerprint,
+        capabilityDecision: "ALLOW",
+        capabilityPolicyFingerprint: "a".repeat(64),
+        policyLockDigest: `sha256:${"b".repeat(64)}`,
+        taskPolicyDigest: `sha256:${"c".repeat(64)}`,
+      },
     });
     assert.equal(started.state, "AUTHORIZED");
 

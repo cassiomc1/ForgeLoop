@@ -5,7 +5,7 @@ import path from "node:path";
 import test from "node:test";
 
 import { runPreflight } from "../src/commands/preflight.js";
-import { proposeAction, transitionAction } from "../src/core/actions.js";
+import { proposeAction, transitionAction, transitionAuthorizedAction } from "../src/core/actions.js";
 import { prepareCompletion, recordCheck as recordCheckArtifact } from "../src/core/completion-artifacts.js";
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { appendProtocolEvent } from "../src/core/events.js";
@@ -152,7 +152,20 @@ test("COMMIT_UNKNOWN adds reconciliation guidance without downgrading STALLED", 
       requirement: null,
       provenance: "FORGELOOP_EXECUTED",
     } });
-    const authorized = await transitionAction(target, { packageRoot, taskId: TASK_ID, actionId: action.actionId, to: "AUTHORIZED" });
+    const authorized = await transitionAuthorizedAction(target, {
+      packageRoot,
+      taskId: TASK_ID,
+      actionId: action.actionId,
+      expectedRevision: 0,
+      expectedFingerprint: action.actionFingerprint,
+      details: {
+        actionFingerprint: action.actionFingerprint,
+        capabilityDecision: "ALLOW",
+        capabilityPolicyFingerprint: "a".repeat(64),
+        policyLockDigest: `sha256:${"b".repeat(64)}`,
+        taskPolicyDigest: `sha256:${"c".repeat(64)}`,
+      },
+    });
     const started = await transitionAction(target, { packageRoot, taskId: TASK_ID, actionId: action.actionId, to: "STARTED", expectedRevision: authorized.revision });
     await transitionAction(target, {
       packageRoot,

@@ -1170,3 +1170,43 @@ test("unsafe artifacts return repair guidance without writes and results are det
     });
   });
 });
+
+test("next never recommends CALLER_ACKNOWLEDGED for a required host approval", async () => {
+  const { mkdtemp, rm } = await import("node:fs/promises");
+  const os = await import("node:os");
+  const path = await import("node:path");
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-next-approval-"));
+  try {
+    const { createWorkState, writeWorkState } = await import("../src/core/work-state.js");
+    const { proposeAction } = await import("../src/core/actions.js");
+    const { requestApproval } = await import("../src/core/approvals.js");
+    const { createTaskDescriptor, writeTaskDescriptor } = await import("../src/core/task-descriptor.js");
+    const fingerprint = "a".repeat(64);
+    const taskId = "next-approval-task";
+    await writeTaskDescriptor(target, createTaskDescriptor({ taskId, writeClaims: ["src"] }), packageRoot);
+    const { action } = await proposeAction(target, { packageRoot, taskId, input: {
+      actionId: "action-next", effectClass: "EXTERNAL_PUBLICATION", capability: "repository.push",
+      target: "origin/main", operation: "push", idempotencyKey: "next:push:v1",
+      requiredForCompletion: true, requirement: null, provenance: "FORGELOOP_EXECUTED",
+    } });
+    await requestApproval(target, { packageRoot, taskId, input: {
+      approvalId: "approval-next", actionId: action.actionId,
+      actionFingerprint: action.actionFingerprint, contractFingerprint: fingerprint,
+      taskRevision: 0, capability: action.capability,
+    } });
+    await writeWorkState(target, createWorkState({
+      taskId, contractFingerprint: fingerprint, phase: "EXECUTING", revision: 4,
+    }), { packageRoot, taskId });
+
+    const result = await getNextAction({ target, packageRoot, taskId });
+    assert.equal(result.nextAction, NEXT_ACTIONS.RESOLVE_ACTION_APPROVAL);
+    assert.equal(
+      (result.commands ?? []).some((command) => command.includes("CALLER_ACKNOWLEDGED")),
+      false,
+      "guidance must never recommend a non-authorizing approval command",
+    );
+    assert.ok(result.authorityRequired, "structured authority requirement is surfaced");
+    assert.equal(result.authorityRequired.kind, "HOST_ATTESTED");
+    assert.equal(result.authorityRequired.approvalId, "approval-next");
+  } finally { await rm(target, { recursive: true, force: true }); }
+});

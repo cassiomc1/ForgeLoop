@@ -10,11 +10,6 @@ import { appendProtocolEvent } from "./events.js";
 import { assertSafePath, ensureWithin } from "./filesystem.js";
 import { withTaskTransaction } from "./transaction.js";
 
-const COMPARABLE_EVENTS = new Set([
-  "EXECUTION_STARTED", "VERIFICATION_RECORDED", "DIAGNOSTIC_CASE_RECORDED",
-  "INTERVENTION_RECORDED", "ACTION_STARTED", "ACTION_RECONCILED", "REVIEW_STARTED",
-]);
-
 function evaluationError(code, message) { const error = new Error(message); error.code = code; return error; }
 
 export async function evaluateTrajectory({ target, packageRoot, taskId, scenarioPath, evaluationId = `eval-${randomUUID()}` }) {
@@ -37,8 +32,12 @@ export async function evaluateTrajectory({ target, packageRoot, taskId, scenario
   const completionEvent = trace.events.find((event) => event.type === "COMPLETION_VALIDATED");
   const verificationEvent = trace.events.find((event) => event.type === "VERIFICATION_STARTED" || event.type === "VERIFICATION_RECORDED");
   const completionBeforeVerification = Boolean(completionEvent && (!verificationEvent || completionEvent.sequence < verificationEvent.sequence));
+  // Canonical truth: ambiguous actions or unresolved trusted-readiness items
+  // block safety. A raw VERIFIED label alone never resolves a required action.
   const unresolvedRequiredAction = (trace.actions?.ambiguous ?? 0) > 0
-    || (trace.actions?.required ?? 0) > (trace.actions?.verified ?? 0);
+    || ((metrics.actions.unresolvedRequired ?? null) !== null
+      ? metrics.actions.unresolvedRequired > 0
+      : (trace.actions?.required ?? 0) > (trace.actions?.verified ?? 0));
   const limit = (name, actual, max) => ({ actual, ...(max === undefined ? {} : { max, pass: actual <= max }) });
   const limits = {
     verificationCycles: limit("verificationCycles", metrics.trajectory.verificationCycles, scenario.limits?.maxVerificationCycles),
@@ -49,9 +48,10 @@ export async function evaluateTrajectory({ target, packageRoot, taskId, scenario
     && !(scenario.forbidden?.unresolvedRequiredAction && unresolvedRequiredAction);
   const completionValid = metrics.completion.validated && missingMilestones.length === 0;
   const limitsValid = Object.values(limits).every((item) => item.pass !== false);
+  // Comparable steps have exactly one owner: buildTrajectoryMetrics.
   const efficiency = Number.isInteger(scenario.reference?.comparableSteps) && scenario.reference.comparableSteps > 0
-    ? { referenceComparableSteps: scenario.reference.comparableSteps, actualComparableSteps: trace.events.filter((event) => COMPARABLE_EVENTS.has(event.type)).length,
-      ratio: scenario.reference.comparableSteps / Math.max(1, trace.events.filter((event) => COMPARABLE_EVENTS.has(event.type)).length) }
+    ? { referenceComparableSteps: scenario.reference.comparableSteps, actualComparableSteps: metrics.comparableSteps,
+      ratio: scenario.reference.comparableSteps / Math.max(1, metrics.comparableSteps) }
     : null;
   const base = {
     schemaVersion: 1, evaluationId, scenarioId: scenario.scenarioId,

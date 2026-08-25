@@ -358,14 +358,36 @@ policy and fingerprint-bound approval, and execute with an exact argument list:
 forgeloop action-propose --task release --id action-publish --capability external.publish --effect-class EXTERNAL_PUBLICATION --target registry/release --operation "publish release" --idempotency-key release:publish:v1 --required-for-completion
 forgeloop approval-request --task release --approval approval-publish --action action-publish --reason "reviewed release"
 forgeloop approval-resolve --task release --approval approval-publish --decision APPROVED --authority CALLER_ACKNOWLEDGED
-forgeloop run-action --task release --action action-publish --capability external.publish --effect-class EXTERNAL_PUBLICATION --target registry/release --idempotency-key release:publish:v1 --required-for-completion --approval approval-publish -- npm run publish
+forgeloop run-action --task release --action action-publish --capability external.publish --effect-class EXTERNAL_PUBLICATION --target registry/release --idempotency-key release:publish:v1 --required-for-completion -- npm publish
 # If the external outcome cannot be proven after start, do not retry:
-forgeloop action-reconcile --task release --action action-publish --outcome COMMITTED --evidence-ref provider:release-123
+forgeloop action-reconcile --task release --action action-publish --outcome UNKNOWN
 ```
 
-`COMMIT_UNKNOWN` is an explicit reconciliation boundary, not a failed retry.
-After the external postcondition is verified, inspect the observed trajectory
-without inventing usage data:
+Provenance and authority truths for this recipe:
+
+- `CALLER_ACKNOWLEDGED` approval resolution records an acknowledgement; if the
+  capability policy requires `REQUIRE_APPROVAL`, only a fresh `HOST_ATTESTED`
+  approval resolved through a trusted embedding-host boundary authorizes the
+  action. The standalone CLI can never mint it.
+- `COMMIT_UNKNOWN` is an explicit reconciliation boundary, not a failed retry.
+  Recording `UNKNOWN` keeps the action ambiguous. Settling `COMMITTED` or
+  `NOT_COMMITTED` requires trusted host attestation plus evidence through a
+  trusted integration boundary. A trusted `NOT_COMMITTED` returns the action
+  to `PROPOSED` so authorization is re-evaluated before any retry.
+
+After commit ambiguity is settled as `COMMITTED`, verify the independent
+postcondition before completion:
+
+```bash
+forgeloop run-check --task release --id check-release-live --requirement publication -- node scripts/check-release-live.js
+forgeloop action-verify --task release --action action-publish --evidence <execution-ref>
+```
+
+`COMMITTED != VERIFIED`: exit code 0 from the action command proves local
+completion only. Verification requires canonical evidence from an independent
+check execution.
+
+Inspect the observed trajectory without inventing usage data:
 
 ```bash
 forgeloop metrics --task release --json
