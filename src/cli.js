@@ -27,6 +27,7 @@ import { formatBundleResult } from "./commands/bundle.js";
 import { formatPrepareCompletionResult } from "./commands/prepare-completion.js";
 import { formatRecordCheckResult } from "./commands/record-check.js";
 import { formatRunCheckResult } from "./commands/run-check.js";
+import { formatRunActionResult } from "./commands/run-action.js";
 import { formatReconcileClosureResult } from "./commands/reconcile-closure.js";
 import { formatRecordTerminalResult } from "./commands/record-terminal-result.js";
 import { formatRecordDiagnosisResult } from "./commands/record-diagnosis.js";
@@ -383,6 +384,11 @@ export const COMMAND_HANDLERS = Object.freeze({
   "run-check": async ({ target, packageRoot, options }) => {
     const { result, exitCode } = await COMMAND_EXECUTORS["run-check"]({ target, packageRoot, options });
     renderJsonOr(options, result, formatRunCheckResult);
+    return exitCode;
+  },
+  "run-action": async ({ target, packageRoot, options }) => {
+    const { result, exitCode } = await COMMAND_EXECUTORS["run-action"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatRunActionResult);
     return exitCode;
   },
   "record-check": async ({ target, packageRoot, options }) => {

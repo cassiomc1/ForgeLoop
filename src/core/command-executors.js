@@ -25,6 +25,7 @@ import { runBundle } from "../commands/bundle.js";
 import { runPrepareCompletion } from "../commands/prepare-completion.js";
 import { runRecordCheck } from "../commands/record-check.js";
 import { runCheck } from "../commands/run-check.js";
+import { runAction } from "../commands/run-action.js";
 import { reconcileClosure } from "../commands/reconcile-closure.js";
 import { runRecordTerminalResult } from "../commands/record-terminal-result.js";
 import { runRecordDiagnosis } from "../commands/record-diagnosis.js";
@@ -156,6 +157,15 @@ export const COMMAND_EXECUTORS = {
       taskId: options.taskId,
     });
     return { result, exitCode: result.check.status === "passed" ? 0 : 1 };
+  },
+  "run-action": async ({ target, packageRoot, options }) => {
+    const result = await runAction({ target, packageRoot, taskId: options.taskId,
+      actionId: options.actionId, capability: options.actionCapability,
+      effectClass: options.actionEffectClass, actionTarget: options.actionTarget,
+      idempotencyKey: options.actionIdempotencyKey, requirement: options.actionRequirement,
+      requiredForCompletion: options.actionRequiredForCompletion, argv: options.commandArgv,
+      approvalId: options.approvalId, timeoutMs: options.timeoutMs });
+    return { result, exitCode: result.action.state === "COMMITTED" ? 0 : 1 };
   },
   "record-check": async ({ target, packageRoot, options }) => ({
     result: await runRecordCheck({
