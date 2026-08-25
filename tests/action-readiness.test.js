@@ -89,7 +89,6 @@ test("correctly authorized + committed + verified action is SATISFIED", async ()
 });
 
 test("legacy required action without a requirement is readable but never trusted-satisfied", async () => {
-  const { proposeAction } = await import("../src/core/actions.js");
   const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-ready-legacy-noreq-"));
   const taskId = "ready-legacy-noreq";
   try {
