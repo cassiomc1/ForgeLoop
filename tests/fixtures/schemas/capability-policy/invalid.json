@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "defaultDecision": "REQUIRE_APPROVAL",
+  "rules": [
+    {
+      "capability": "network.read",
+      "decision": "ALLOW"
+    },
+    {
+      "capability": "repository.push",
+      "decision": "REQUIRE_APPROVAL"
+    },
+    {
+      "capability": "dependency.install",
+      "decision": "REQUIRE_AUTHORITY"
+    },
+    {
+      "capability": "external.delete",
+      "decision": "DENY"
+    }
+  ]
+}

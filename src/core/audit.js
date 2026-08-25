@@ -7,6 +7,7 @@ import { currentChangedPaths } from "./repository.js";
 import { validateReadyProtocolConsistency } from "./preflight.js";
 import { taskArtifactPath } from "./task-paths.js";
 import { findTaskById } from "./task-discovery.js";
+import { validateActionLedgerConsistency } from "./actions.js";
 
 function sortErrors(errors) {
   return [...errors].sort((left, right) => left.code.localeCompare(right.code)
@@ -118,6 +119,11 @@ export async function evaluateAudit({
     }))
     : [];
   const errors = sortErrors([...completion.errors, ...readyConsistencyErrors, ...ownershipErrors]);
+  if (taskId) {
+    for (const actionError of await validateActionLedgerConsistency(target, { packageRoot, taskId })) {
+      errors.push({ ...actionError, artifacts: [taskArtifactPath(taskId, "actions"), taskArtifactPath(taskId, "events")] });
+    }
+  }
   const changedPaths = await compareChangedPaths(target, packageRoot, { taskId, receiptPath });
   if (changedPaths.status === "MISMATCH") {
     errors.push({

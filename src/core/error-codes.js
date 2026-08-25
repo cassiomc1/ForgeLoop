@@ -78,6 +78,24 @@ export const E_RECONCILE_EVIDENCE_FAILED = "E_RECONCILE_EVIDENCE_FAILED";
 export const E_REPOSITORY_CHANGED = "E_REPOSITORY_CHANGED";
 export const E_STATE_REVALIDATION_REQUIRED = "E_STATE_REVALIDATION_REQUIRED";
 
+export const E_ACTION_INVALID = "E_ACTION_INVALID";
+export const E_ACTION_NOT_FOUND = "E_ACTION_NOT_FOUND";
+export const E_ACTION_STATE_MISMATCH = "E_ACTION_STATE_MISMATCH";
+export const E_ACTION_IDEMPOTENCY_REQUIRED = "E_ACTION_IDEMPOTENCY_REQUIRED";
+export const E_ACTION_IDEMPOTENCY_CONFLICT = "E_ACTION_IDEMPOTENCY_CONFLICT";
+export const E_ACTION_CAPABILITY_UNKNOWN = "E_ACTION_CAPABILITY_UNKNOWN";
+export const E_ACTION_CAPABILITY_DENIED = "E_ACTION_CAPABILITY_DENIED";
+export const E_ACTION_AUTHORITY_REQUIRED = "E_ACTION_AUTHORITY_REQUIRED";
+export const E_ACTION_APPROVAL_REQUIRED = "E_ACTION_APPROVAL_REQUIRED";
+export const E_ACTION_COMMIT_UNKNOWN = "E_ACTION_COMMIT_UNKNOWN";
+export const E_ACTION_RECONCILIATION_REQUIRED = "E_ACTION_RECONCILIATION_REQUIRED";
+export const E_ACTION_EVIDENCE_INVALID = "E_ACTION_EVIDENCE_INVALID";
+export const E_APPROVAL_INVALID = "E_APPROVAL_INVALID";
+export const E_APPROVAL_STALE = "E_APPROVAL_STALE";
+export const E_APPROVAL_ALREADY_RESOLVED = "E_APPROVAL_ALREADY_RESOLVED";
+export const E_TRAJECTORY_SCENARIO_INVALID = "E_TRAJECTORY_SCENARIO_INVALID";
+export const E_TRAJECTORY_REFERENCE_REQUIRED = "E_TRAJECTORY_REFERENCE_REQUIRED";
+
 /**
  * Public, stable ForgeLoop error and reason codes documented for users and harnesses.
  */
@@ -607,6 +625,125 @@ export const PUBLIC_ERROR_CODES = Object.freeze({
     meaning: "A canonical ForgeLoop kit destination already exists with content that does not match the shipped canonical template.",
     safeResolution: "Inspect the conflicting `.forgeloop/kit/...` file. If it is stale or partial ForgeLoop output, remove or restore it and rerun `forgeloop init`. Do not overwrite unknown content automatically.",
   }),
+  E_ACTION_INVALID: Object.freeze({
+    code: "E_ACTION_INVALID",
+    category: "durable-action",
+    classification: "PUBLIC_STABLE",
+    meaning: "Durable action artifact or parameters are malformed or schema-invalid.",
+    safeResolution: "Correct the action fields reported by the structured error, then retry through forgeloop action-propose or run-action.",
+  }),
+  E_ACTION_NOT_FOUND: Object.freeze({
+    code: "E_ACTION_NOT_FOUND",
+    category: "durable-action",
+    classification: "PUBLIC_STABLE",
+    meaning: "Referenced durable action ID does not exist for the task.",
+    safeResolution: "List actions with forgeloop action-show or propose the action first.",
+  }),
+  E_ACTION_STATE_MISMATCH: Object.freeze({
+    code: "E_ACTION_STATE_MISMATCH",
+    category: "durable-action",
+    classification: "PUBLIC_STABLE",
+    meaning: "Requested durable action transition is not part of the canonical state machine.",
+    safeResolution: "Inspect current action state with forgeloop action-show and use a legal transition; never edit action artifacts by hand.",
+  }),
+  E_ACTION_IDEMPOTENCY_REQUIRED: Object.freeze({
+    code: "E_ACTION_IDEMPOTENCY_REQUIRED",
+    category: "durable-action",
+    classification: "PUBLIC_STABLE",
+    meaning: "Side-effecting action class requires an idempotency key.",
+    safeResolution: "Supply a stable --idempotency-key that identifies the logical external action.",
+  }),
+  E_ACTION_IDEMPOTENCY_CONFLICT: Object.freeze({
+    code: "E_ACTION_IDEMPOTENCY_CONFLICT",
+    category: "durable-action",
+    classification: "PUBLIC_STABLE",
+    meaning: "The idempotency key already binds to a different canonical action fingerprint in this task.",
+    safeResolution: "Use a new idempotency key with a new actionId, or reuse the existing logical action unchanged; never relabel an executed effect.",
+  }),
+  E_ACTION_CAPABILITY_UNKNOWN: Object.freeze({
+    code: "E_ACTION_CAPABILITY_UNKNOWN",
+    category: "capability-policy",
+    classification: "PUBLIC_STABLE",
+    meaning: "Action capability is not part of the canonical capability vocabulary.",
+    safeResolution: "Use a documented capability from forgeloop protocol-info; unknown capabilities fail closed.",
+  }),
+  E_ACTION_CAPABILITY_DENIED: Object.freeze({
+    code: "E_ACTION_CAPABILITY_DENIED",
+    category: "capability-policy",
+    classification: "PUBLIC_STABLE",
+    meaning: "Capability policy denies this capability.",
+    safeResolution: "Obtain an operator policy change outside the task, or do not perform the action.",
+  }),
+  E_ACTION_AUTHORITY_REQUIRED: Object.freeze({
+    code: "E_ACTION_AUTHORITY_REQUIRED",
+    category: "authority",
+    classification: "PUBLIC_STABLE",
+    meaning: "Policy requires host-attested authority that was not supplied through a host trust boundary.",
+    safeResolution: "Perform the action through a host integration that supplies trusted authority context; standalone CLI cannot mint it.",
+  }),
+  E_ACTION_APPROVAL_REQUIRED: Object.freeze({
+    code: "E_ACTION_APPROVAL_REQUIRED",
+    category: "durable-approval",
+    classification: "PUBLIC_STABLE",
+    meaning: "Policy requires a current fingerprint-bound approval before this action may proceed.",
+    safeResolution: "Request approval with forgeloop approval-request and resolve it via forgeloop approval-resolve, then rerun the action.",
+  }),
+  E_ACTION_COMMIT_UNKNOWN: Object.freeze({
+    code: "E_ACTION_COMMIT_UNKNOWN",
+    category: "durable-action",
+    classification: "PUBLIC_STABLE",
+    meaning: "External commit state of a started action cannot be proven.",
+    safeResolution: "Do not retry; reconcile the observed external state with forgeloop action-reconcile.",
+  }),
+  E_ACTION_RECONCILIATION_REQUIRED: Object.freeze({
+    code: "E_ACTION_RECONCILIATION_REQUIRED",
+    category: "durable-action",
+    classification: "PUBLIC_STABLE",
+    meaning: "An action is COMMIT_UNKNOWN and blocks progress until explicitly reconciled.",
+    safeResolution: "Observe the external system and run forgeloop action-reconcile --outcome COMMITTED|NOT_COMMITTED|UNKNOWN with evidence references.",
+  }),
+  E_ACTION_EVIDENCE_INVALID: Object.freeze({
+    code: "E_ACTION_EVIDENCE_INVALID",
+    category: "durable-action",
+    classification: "PUBLIC_STABLE",
+    meaning: "Evidence supplied for verification or reconciliation is missing, malformed, or unbounded.",
+    safeResolution: "Supply bounded evidence references appropriate to the action type; do not paste raw external output into the ledger.",
+  }),
+  E_APPROVAL_INVALID: Object.freeze({
+    code: "E_APPROVAL_INVALID",
+    category: "durable-approval",
+    classification: "PUBLIC_STABLE",
+    meaning: "Approval artifact is malformed or does not bind the required fingerprint tuple.",
+    safeResolution: "Request a new approval with forgeloop approval-request; never hand-edit approval artifacts.",
+  }),
+  E_APPROVAL_STALE: Object.freeze({
+    code: "E_APPROVAL_STALE",
+    category: "durable-approval",
+    classification: "PUBLIC_STABLE",
+    meaning: "Approval no longer matches the current action fingerprint, contract fingerprint, task revision, or capability.",
+    safeResolution: "Request and resolve a fresh approval against the current action revision.",
+  }),
+  E_APPROVAL_ALREADY_RESOLVED: Object.freeze({
+    code: "E_APPROVAL_ALREADY_RESOLVED",
+    category: "durable-approval",
+    classification: "PUBLIC_STABLE",
+    meaning: "Approval is one-time resolvable and has already been approved or rejected.",
+    safeResolution: "Request a new approval if another decision is required.",
+  }),
+  E_TRAJECTORY_SCENARIO_INVALID: Object.freeze({
+    code: "E_TRAJECTORY_SCENARIO_INVALID",
+    category: "trajectory-evaluation",
+    classification: "PUBLIC_STABLE",
+    meaning: "Trajectory scenario file is missing required fields or schema-invalid.",
+    safeResolution: "Correct the scenario JSON against schemas/trajectory-scenario.schema.json.",
+  }),
+  E_TRAJECTORY_REFERENCE_REQUIRED: Object.freeze({
+    code: "E_TRAJECTORY_REFERENCE_REQUIRED",
+    category: "trajectory-evaluation",
+    classification: "PUBLIC_STABLE",
+    meaning: "Comparative efficiency requires a reference scenario with positive comparableSteps.",
+    safeResolution: "Provide --scenario with reference.comparableSteps, or omit efficiency from the result.",
+  }),
 });
 
 export const E_CHECK_INERT = "E_CHECK_INERT";
@@ -698,6 +835,23 @@ export const ALL_KNOWN_ERROR_CODES = Object.freeze(new Set([
   E_BASELINE_RECORD_DURING_ACTIVE_TASK,
   E_POLICY_INITIALIZATION_FAILED,
   E_INIT_KIT_CONFLICT,
+  E_ACTION_INVALID,
+  E_ACTION_NOT_FOUND,
+  E_ACTION_STATE_MISMATCH,
+  E_ACTION_IDEMPOTENCY_REQUIRED,
+  E_ACTION_IDEMPOTENCY_CONFLICT,
+  E_ACTION_CAPABILITY_UNKNOWN,
+  E_ACTION_CAPABILITY_DENIED,
+  E_ACTION_AUTHORITY_REQUIRED,
+  E_ACTION_APPROVAL_REQUIRED,
+  E_ACTION_COMMIT_UNKNOWN,
+  E_ACTION_RECONCILIATION_REQUIRED,
+  E_ACTION_EVIDENCE_INVALID,
+  E_APPROVAL_INVALID,
+  E_APPROVAL_STALE,
+  E_APPROVAL_ALREADY_RESOLVED,
+  E_TRAJECTORY_SCENARIO_INVALID,
+  E_TRAJECTORY_REFERENCE_REQUIRED,
   E_DIAGNOSIS_REQUIRED,
   E_DIAGNOSIS_INVALID,
   E_DIAGNOSIS_EVIDENCE_INVALID,

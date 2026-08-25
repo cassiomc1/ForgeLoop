@@ -396,3 +396,24 @@ hosts remain fully supported through the CLI and instruction adapters.
 requires ForgeLoop 1.4.0 or newer.
 <a id="FL-CLAIM-003"></a> **FL-CLAIM-003 — A reader without `validatedClaimProjection=true` MUST fail closed**
 and must not mutate claims.
+
+## Durable actions and authority boundary
+
+Durable action support is additive to the integration contract. Read-only
+resources may expose action, approval, metrics, evaluation, and capability
+policy projections, but an integration must not treat transport metadata,
+session IDs, project policy, or actor prose as host authority. `HOST_ATTESTED`
+is accepted only from the existing host trust boundary.
+
+`run-action` is an exact-argv surface with no shell mode. Hosts that perform an
+operation themselves must record it as `HOST_REPORTED`; external observations
+used to settle uncertainty are `EXTERNAL_OBSERVED`. A started action whose
+external outcome cannot be proven is `COMMIT_UNKNOWN`: integrations must surface
+`E_ACTION_RECONCILIATION_REQUIRED` and must not retry automatically. The only
+forward path is explicit `action-reconcile` with bounded evidence.
+
+Trajectory metrics and evaluations are read-only projections over canonical
+events and trace/reflection data. Missing token/cost/model data remains unknown,
+and efficiency is comparable only when a project-local scenario supplies a
+positive reference step count. ForgeLoop remains an evidence protocol, not an
+agent runtime or workflow engine.

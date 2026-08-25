@@ -70,6 +70,11 @@ export const TEMPLATE_PATHS = [
   "schemas/diagnostic-case.schema.json",
   "schemas/intervention.schema.json",
   "schemas/hypothesis-disposition.schema.json",
+  "schemas/action.schema.json",
+  "schemas/approval.schema.json",
+  "schemas/capability-policy.schema.json",
+  "schemas/trajectory-evaluation.schema.json",
+  "schemas/trajectory-scenario.schema.json",
 ];
 
 export function getPackageRoot() {

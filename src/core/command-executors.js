@@ -25,6 +25,15 @@ import { runBundle } from "../commands/bundle.js";
 import { runPrepareCompletion } from "../commands/prepare-completion.js";
 import { runRecordCheck } from "../commands/record-check.js";
 import { runCheck } from "../commands/run-check.js";
+import { runAction } from "../commands/run-action.js";
+import { runActionPropose } from "../commands/action-propose.js";
+import { runActionRecord } from "../commands/action-record.js";
+import { runActionShow } from "../commands/action-show.js";
+import { runActionReconcile } from "../commands/action-reconcile.js";
+import { runMetrics } from "../commands/metrics.js";
+import { runEval } from "../commands/eval.js";
+import { runApprovalRequest } from "../commands/approval-request.js";
+import { runApprovalResolve } from "../commands/approval-resolve.js";
 import { reconcileClosure } from "../commands/reconcile-closure.js";
 import { runRecordTerminalResult } from "../commands/record-terminal-result.js";
 import { runRecordDiagnosis } from "../commands/record-diagnosis.js";
@@ -157,6 +166,42 @@ export const COMMAND_EXECUTORS = {
     });
     return { result, exitCode: result.check.status === "passed" ? 0 : 1 };
   },
+  "run-action": async ({ target, packageRoot, options }) => {
+    const result = await runAction({ target, packageRoot, taskId: options.taskId,
+      actionId: options.actionId, capability: options.actionCapability,
+      effectClass: options.actionEffectClass, actionTarget: options.actionTarget,
+      idempotencyKey: options.actionIdempotencyKey, requirement: options.actionRequirement,
+      requiredForCompletion: options.actionRequiredForCompletion, argv: options.commandArgv,
+      approvalId: options.approvalId, timeoutMs: options.timeoutMs });
+    return { result, exitCode: result.action.state === "COMMITTED" ? 0 : 1 };
+  },
+  "action-propose": async ({ target, packageRoot, options }) => ({ result: await runActionPropose({
+    target, packageRoot, taskId: options.taskId, input: { actionId: options.actionId,
+      capability: options.actionCapability, effectClass: options.actionEffectClass,
+      target: options.actionTarget, operation: options.actionOperation,
+      idempotencyKey: options.actionIdempotencyKey, requirement: options.actionRequirement,
+      requiredForCompletion: options.actionRequiredForCompletion },
+  }), exitCode: 0 }),
+  "action-record": async ({ target, packageRoot, options }) => ({ result: await runActionRecord({
+    target, packageRoot, taskId: options.taskId, actionId: options.actionId,
+    state: options.actionState, provenance: options.actionProvenance,
+    evidenceRef: options.actionEvidenceRef,
+  }), exitCode: 0 }),
+  "action-show": async ({ target, packageRoot, options }) => ({ result: await runActionShow({
+    target, packageRoot, taskId: options.taskId, actionId: options.actionId,
+  }), exitCode: 0 }),
+  "action-reconcile": async ({ target, packageRoot, options }) => ({ result: await runActionReconcile({
+    target, packageRoot, taskId: options.taskId, actionId: options.actionId,
+    outcome: options.reconciliationOutcome, evidenceRefs: options.evidenceRefs ?? [],
+    observedAt: options.observedAt,
+  }), exitCode: 0 }),
+  metrics: async ({ target, packageRoot, options }) => ({ result: await runMetrics({ target, packageRoot, taskId: options.taskId }), exitCode: 0 }),
+  eval: async ({ target, packageRoot, options }) => {
+    const result = await runEval({ target, packageRoot, taskId: options.taskId, scenarioPath: options.scenarioPath });
+    return { result, exitCode: result.result === "PASS" ? 0 : 1 };
+  },
+  "approval-request": async ({ target, packageRoot, options }) => ({ result: await runApprovalRequest({ target, packageRoot, taskId: options.taskId, approvalId: options.approvalId, actionId: options.actionId, reason: options.reason }), exitCode: 0 }),
+  "approval-resolve": async ({ target, packageRoot, options }) => ({ result: await runApprovalResolve({ target, packageRoot, taskId: options.taskId, approvalId: options.approvalId, decision: options.approvalDecision, authorityKind: options.approvalAuthorityKind, hostGrantRef: options.hostGrantRef, reason: options.reason }), exitCode: 0 }),
   "record-check": async ({ target, packageRoot, options }) => ({
     result: await runRecordCheck({
       target,

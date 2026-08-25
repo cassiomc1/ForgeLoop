@@ -442,3 +442,25 @@ machine and not a general memory subsystem. Work state owns lifecycle truth;
 the checkout owns implementation truth; checks/executions own verification
 truth; completion owns certification. Continuity only narrows what a receiving
 executor should inspect and continue.
+
+## Durable action and trajectory boundary
+
+Durable actions are protocol-owned task artifacts (`actions/`, `approvals/`,
+and `evaluations/`) projected through the existing hash-chained event ledger.
+They record intent, capability policy, approval binding, execution provenance,
+commit uncertainty, reconciliation, and verification without introducing a
+workflow runtime, scheduler, queue, or second ledger.
+
+The external side-effect boundary is deliberately conservative: exact argv is
+launched only through `run-action` with no shell mode; host-reported actions
+remain `HOST_REPORTED`; and project capability policy cannot manufacture
+`HOST_ATTESTED` authority. A started action whose external result is uncertain
+becomes `COMMIT_UNKNOWN`, which forbids retry until explicit reconciliation.
+This reduces duplicate-effect risk but cannot provide a universal exactly-once
+guarantee for arbitrary external systems.
+
+Metrics and trajectory evaluation are deterministic read-only projections of
+canonical trace/reflection evidence. They preserve unknown usage values and
+only compare efficiency when a project-local reference scenario exists. The
+existing diagnostic and reflection model remains the authority for information
+gain, intervention effectiveness, failure signatures, and oscillation.

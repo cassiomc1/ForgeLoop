@@ -248,8 +248,14 @@ export async function buildTaskReflection({ target, packageRoot, taskId = null }
     status = REFLECTION_STATUS.STALLED;
     if (!signals.includes("NO_EFFECTIVE_INFORMATION_GAIN")) signals.push("NO_EFFECTIVE_INFORMATION_GAIN");
   }
+  if ((trace.actions?.ambiguous ?? 0) > 0) {
+    signals.push("EXTERNAL_ACTION_RECONCILIATION_REQUIRED");
+    status = REFLECTION_STATUS.WATCH;
+  }
 
-  const recommendedProtocolAction = oscillation.detected
+  const recommendedProtocolAction = (trace.actions?.ambiguous ?? 0) > 0
+    ? "RECONCILE_EXTERNAL_ACTION"
+    : oscillation.detected
     ? "INTRODUCE_NEW_OBSERVATION"
     : (status === REFLECTION_STATUS.STALLED ? "REQUIRE_NEW_DIAGNOSTIC_INFORMATION" : "CONTINUE");
 
@@ -292,6 +298,7 @@ export async function buildTaskReflection({ target, packageRoot, taskId = null }
         && JSON.stringify(previousEntry.evidence.failureSignatures) === JSON.stringify(currentEntry.evidence.failureSignatures)),
     },
     recommendedProtocolAction,
+    actions: trace.actions,
   };
 }
 

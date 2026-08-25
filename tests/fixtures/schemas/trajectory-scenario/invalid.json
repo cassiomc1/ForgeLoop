@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 2,
+  "scenarioId": "bug-fix-standard",
+  "requiredMilestones": [
+    "CONTRACT_VALIDATED",
+    "PREFLIGHT_READY",
+    "COMPLETION_VALIDATED"
+  ],
+  "forbidden": {
+    "completionBeforeVerification": true
+  },
+  "limits": {
+    "maxVerificationCycles": 4
+  },
+  "reference": {
+    "comparableSteps": 12
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "taskId": "task-1",
+  "actionId": "action-push",
+  "actionFingerprint": "c8a189e9b0e33eea50d0a74669bc94f00669fd0f57e33154a3cdc66ee3b1c2a9",
+  "effectClass": "EXTERNAL_PUBLICATION",
+  "capability": "repository.push",
+  "operation": "push branch",
+  "target": "origin/main",
+  "idempotencyKey": "task-1:push:origin-main:v1",
+  "requiredForCompletion": true,
+  "requirement": "publication",
+  "provenance": "HOST_REPORTED",
+  "state": "MAYBE",
+  "revision": 0,
+  "createdAt": "2026-08-25T00:00:00.000Z",
+  "updatedAt": "2026-08-25T00:00:00.000Z"
+}

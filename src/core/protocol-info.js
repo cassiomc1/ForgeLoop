@@ -74,6 +74,17 @@ export function protocolInfo({ packageVersion = null } = {}) {
         informationGainV2: true,
         strategyOscillationDetection: true,
       },
+      durableActions: {
+        version: 1,
+        supported: true,
+        states: ["PROPOSED", "AUTHORIZED", "STARTED", "COMMITTED", "VERIFIED", "FAILED", "COMMIT_UNKNOWN", "CANCELLED"],
+        reconciliation: true,
+        exactlyOnce: false,
+      },
+      capabilityPolicy: { version: 1, supported: true, decisions: ["ALLOW", "DENY", "REQUIRE_AUTHORITY", "REQUIRE_APPROVAL"] },
+      durableApprovals: { version: 1, supported: true, fingerprintBound: true, hostAttestationMinting: false },
+      trajectoryMetrics: { version: 1, supported: true, usageUnknownWhenUnreported: true, overallScore: false },
+      trajectoryEvaluation: { version: 1, supported: true, requiresReferenceScenario: true, source: "PROJECT_LOCAL_REFERENCE" },
       observabilityStability: {
         executionHistory: "stable",
         structuredTrace: "stable",

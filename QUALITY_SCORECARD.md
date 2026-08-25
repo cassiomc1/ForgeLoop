@@ -31,6 +31,8 @@ policy are all present.
 | Contextual frontend taste | Taste is routed only to applicable premium frontend work, remains advisory, respects accessibility/performance/evidence, and has attribution without runtime dependency. |
 | Multi-agent coordination | Self-contained briefs, write/write and write/read ownership checks, dependency-set validation, reviewer independence, normalized results, and inline fallback. |
 | Security boundaries | Realpath containment, bounded untrusted JSON, threat model, nested secret scanning, publication evidence, and explicit authority rules. |
+| Durable external actions | Immutable action identity, idempotency conflict rejection, capability policy, fingerprint-bound approvals, exact-argv provenance, `COMMIT_UNKNOWN` reconciliation, completion blocking, and audit evidence. |
+| Trajectory evaluation | Read-only trace/reflection metrics, unknown usage preservation, canonical comparable-step definition, and scenario-bound efficiency without an arbitrary overall score. |
 | Maintenance quality | Small modules, built-in runtime, deterministic JSON contracts, malformed/version fixtures, package gates, and backward-compatible protocol versions. |
 
 ## Score rules

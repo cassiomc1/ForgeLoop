@@ -158,6 +158,7 @@ export async function createReceipt(input, packageRoot, options = {}) {
     selectedGuides: [...(input.selectedGuides ?? [])],
     changedPaths: [...(input.changedPaths ?? [])],
     checks: [...(input.checks ?? [])],
+    ...(input.actions !== undefined ? { actions: structuredClone(input.actions) } : {}),
     evidence: [...(input.evidence ?? [])],
     ...(input.evidenceCoverage !== undefined ? { evidenceCoverage: [...input.evidenceCoverage] } : {}),
     review: input.review ?? { status: "not-run", independent: false },

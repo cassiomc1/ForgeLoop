@@ -46,6 +46,18 @@ Capability flags (process-scoped, immutable after launch):
 - `forgeloop://task/{taskId}/ownership` — canonical validated ownership
 - `forgeloop://task/{taskId}/contract`
 - `forgeloop://task/{taskId}/continuity`
+- `forgeloop://task/{taskId}/actions`
+- `forgeloop://task/{taskId}/action/{actionId}`
+- `forgeloop://task/{taskId}/approvals`
+- `forgeloop://task/{taskId}/metrics`
+- `forgeloop://task/{taskId}/evaluations`
+- `forgeloop://project/capability-policy`
+
+The durable-action resources are read-only projections. The first release does
+not expose `run-action` or host-attestation minting over MCP. An action that is
+`COMMIT_UNKNOWN` is surfaced as an external reconciliation requirement; MCP
+transport/session metadata cannot authorize a retry or manufacture
+`HOST_ATTESTED` authority. Capability policy remains policy, not authority.
 
 Raw recovery artifacts, transaction journals, lock files, and unbounded event
 ledgers are intentionally not exposed.

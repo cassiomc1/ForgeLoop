@@ -15,6 +15,12 @@ import { getActiveTaskTransaction, withTaskTransaction } from "./transaction.js"
 
 import { assertDiagnosisDetails } from "./diagnosis-model.js";
 import {
+  assertActionEventDetails,
+  assertApprovalEventDetails,
+  isActionEventName,
+  isApprovalEventName,
+} from "./action-model.js";
+import {
   assertDiagnosticCaseDetails,
   assertInterventionDetails,
   assertHypothesisDispositionDetails,
@@ -135,7 +141,22 @@ export function validateKnownEventDetails(event) {
     case "TASK_RECOVERY_RESUMED":
       assertRecoveryResumedDetails(event.details);
       return;
+    case "TRAJECTORY_EVALUATED":
+      if (!event.details || !/^eval-[A-Za-z0-9_-]+$/.test(event.details.evaluationId ?? "")
+        || typeof event.details.scenarioId !== "string" || !/^[a-f0-9]{64}$/.test(event.details.evaluationFingerprint ?? "")
+        || event.fingerprint !== event.details.evaluationFingerprint) {
+        throw protocolError("E_EVENT_INVALID", "TRAJECTORY_EVALUATED requires a bound evaluationId, scenarioId, and fingerprint");
+      }
+      return;
     default:
+      if (isActionEventName(event.event)) {
+        assertActionEventDetails(event);
+        return;
+      }
+      if (isApprovalEventName(event.event)) {
+        assertApprovalEventDetails(event);
+        return;
+      }
       return;
   }
 }

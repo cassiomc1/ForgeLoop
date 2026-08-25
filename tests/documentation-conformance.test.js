@@ -154,7 +154,7 @@ test("CLI_COMMAND_DEFINITIONS and CLI_COMMAND_METADATA cover every declared comm
     assert.ok(meta, `Command ${command} must exist in CLI_COMMAND_METADATA`);
     assert.equal(def.name, command);
     assert.equal(meta.name, command);
-    assert.ok(["lifecycle", "continuity", "verification", "policy-audit", "project-maintenance", "diagnostics", "task"].includes(def.category));
+    assert.ok(["lifecycle", "continuity", "verification", "policy-audit", "project-maintenance", "diagnostics", "actions", "task"].includes(def.category));
     assert.ok(["READ_ONLY", "MUTATING", "EXTERNAL_EXECUTION"].includes(def.mutation));
     assert.ok(Array.isArray(meta.options));
     assert.ok(meta.options.includes("--help"));

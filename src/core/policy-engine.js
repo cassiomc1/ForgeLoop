@@ -190,12 +190,22 @@ export function canonicalizeBaseline(baseline) {
   };
 }
 
-export function computePolicyLockData(rules, baseline) {
+export function computePolicyLockData(rules, baseline, capabilityPolicy = null) {
   const canonicalRules = canonicalizeRules(rules);
   const canonicalBase = canonicalizeBaseline(baseline);
   const rulesDigest = sha256(canonicalFingerprint(canonicalRules));
   const baselineDigest = sha256(canonicalFingerprint(canonicalBase));
-  const fullDigest = sha256(`${rulesDigest}:${baselineDigest}`);
+  // The capability policy participates in the lock only when the artifact
+  // exists, keeping historical locks stable for projects that never adopt
+  // durable actions.
+  const capabilityPolicyDigest =
+    capabilityPolicy && typeof capabilityPolicy === "object"
+      ? sha256(canonicalFingerprint(capabilityPolicy))
+      : null;
+  const fullDigest =
+    capabilityPolicyDigest === null
+      ? sha256(`${rulesDigest}:${baselineDigest}`)
+      : sha256(`${rulesDigest}:${baselineDigest}:${capabilityPolicyDigest}`);
 
   return {
     schemaVersion: 1,
@@ -203,6 +213,9 @@ export function computePolicyLockData(rules, baseline) {
     digest: `sha256:${fullDigest}`,
     rulesDigest: `sha256:${rulesDigest}`,
     baselineDigest: `sha256:${baselineDigest}`,
+    ...(capabilityPolicyDigest === null
+      ? {}
+      : { capabilityPolicyDigest: `sha256:${capabilityPolicyDigest}` }),
     capturedAt: new Date().toISOString(),
   };
 }
@@ -223,7 +236,18 @@ export async function verifyPolicyLock(target, packageRoot) {
 
   const rules = await loadEffectiveRules(target, packageRoot);
   const baseline = await readBaseline(target, packageRoot);
-  const expectedLock = computePolicyLockData(rules, baseline);
+  let capabilityPolicy = null;
+  try {
+    const { loadCapabilityPolicy } = await import("./capability-policy.js");
+    const loadedCapabilityPolicy = await loadCapabilityPolicy(target, packageRoot);
+    capabilityPolicy = loadedCapabilityPolicy?.policy ?? null;
+  } catch (error) {
+    if (error.code === "E_POLICY_INVALID") {
+      return { status: "INVALID", error: "Capability policy artifact is malformed" };
+    }
+    throw error;
+  }
+  const expectedLock = computePolicyLockData(rules, baseline, capabilityPolicy);
 
   const mismatches = [];
   if (persistedLock.algorithm !== expectedLock.algorithm) {
@@ -237,6 +261,12 @@ export async function verifyPolicyLock(target, packageRoot) {
   }
   if (persistedLock.baselineDigest !== expectedLock.baselineDigest) {
     mismatches.push("baselineDigest");
+  }
+  if (
+    expectedLock.capabilityPolicyDigest !== undefined &&
+    persistedLock.capabilityPolicyDigest !== expectedLock.capabilityPolicyDigest
+  ) {
+    mismatches.push("capabilityPolicyDigest");
   }
 
   if (mismatches.length > 0) {
@@ -254,6 +284,9 @@ export async function verifyPolicyLock(target, packageRoot) {
         digest: persistedLock.digest ?? null,
         rulesDigest: persistedLock.rulesDigest ?? null,
         baselineDigest: persistedLock.baselineDigest ?? null,
+        ...(expectedLock.capabilityPolicyDigest === undefined
+          ? {}
+          : { capabilityPolicyDigest: persistedLock.capabilityPolicyDigest ?? null }),
       },
     };
   }

@@ -41,6 +41,8 @@ import { evaluateProgress, PROGRESS_STATUS } from "./progress.js";
 import { criterionForDecision } from "./settlement-model.js";
 import { readEvents } from "./events.js";
 import { inspectTaskConflictState } from "./task-conflict-inspection.js";
+import { listActions } from "./actions.js";
+import { listApprovals } from "./approvals.js";
 
 export { NEXT_ACTIONS } from "./next-action-model.js";
 
@@ -177,6 +179,25 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
         requiredArtifacts: [stateRel, eventsRel],
       });
     }
+  }
+  const ambiguousAction = (await listActions(target, { packageRoot, taskId: state.taskId }))
+    .find((action) => action.state === "COMMIT_UNKNOWN");
+  if (ambiguousAction) {
+    return result({ ...context, nextAction: NEXT_ACTIONS.RECONCILE_ACTION,
+      commands: [`forgeloop action-reconcile --task ${state.taskId} --action ${ambiguousAction.actionId}`],
+      reasons: [artifactError("E_ACTION_RECONCILIATION_REQUIRED",
+        `Action ${ambiguousAction.actionId} has an unknown external commit outcome; retry is forbidden until reconciliation.`)],
+      requiredArtifacts: [taskArtifactPath(state.taskId, "actions"), eventsRel] });
+  }
+  const actionsForApproval = await listActions(target, { packageRoot, taskId: state.taskId });
+  const approvals = await listApprovals(target, { packageRoot, taskId: state.taskId });
+  const pendingApproval = approvals.find((approval) => approval.status === "PENDING"
+    && actionsForApproval.some((action) => action.actionId === approval.actionId && action.requiredForCompletion));
+  if (pendingApproval) {
+    return result({ ...context, nextAction: NEXT_ACTIONS.RESOLVE_ACTION_APPROVAL,
+      commands: [`forgeloop approval-resolve --task ${state.taskId} --approval ${pendingApproval.approvalId} --decision APPROVED --authority CALLER_ACKNOWLEDGED`],
+      reasons: [artifactError("E_ACTION_APPROVAL_REQUIRED", `Required action ${pendingApproval.actionId} is waiting for approval.`)],
+      requiredArtifacts: [taskArtifactPath(state.taskId, "approvals"), eventsRel] });
   }
   if (state.phase === "RECEIVED") {
     return decision(

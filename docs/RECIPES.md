@@ -21,6 +21,7 @@ Concise, copy-paste friendly recipes for common ForgeLoop tasks.
 13. [Record Decision Settlement Criteria](#recipe-13--record-decision-settlement-criteria)
 14. [Executable Policy, Baseline Ratchet, and Recovery](#recipe-14--executable-policy-baseline-ratchet-and-recovery)
 15. [Release and Reacquire Claims for an Abandoned Task](#recipe-15--release-and-reacquire-claims-for-an-abandoned-task)
+16. [Execute a Durable External Action Safely](#recipe-16--execute-a-durable-external-action-safely)
 
 ---
 
@@ -345,6 +346,35 @@ work resumes. Claims are released only after ForgeLoop validates the recovery
 artifact against the complete ledger history. If `next` returns
 `RESOLVE_RECOVERY_INCONSISTENCY`, run `validate-protocol`; do not create, edit,
 or delete `recovery.json` manually.
+
+---
+
+### Recipe 16 — Execute a Durable External Action Safely
+
+Record the intended external effect before execution, satisfy the capability
+policy and fingerprint-bound approval, and execute with an exact argument list:
+
+```bash
+forgeloop action-propose --task release --id action-publish --capability external.publish --effect-class EXTERNAL_PUBLICATION --target registry/release --operation "publish release" --idempotency-key release:publish:v1 --required-for-completion
+forgeloop approval-request --task release --approval approval-publish --action action-publish --reason "reviewed release"
+forgeloop approval-resolve --task release --approval approval-publish --decision APPROVED --authority CALLER_ACKNOWLEDGED
+forgeloop run-action --task release --action action-publish --capability external.publish --effect-class EXTERNAL_PUBLICATION --target registry/release --idempotency-key release:publish:v1 --required-for-completion --approval approval-publish -- npm run publish
+# If the external outcome cannot be proven after start, do not retry:
+forgeloop action-reconcile --task release --action action-publish --outcome COMMITTED --evidence-ref provider:release-123
+```
+
+`COMMIT_UNKNOWN` is an explicit reconciliation boundary, not a failed retry.
+After the external postcondition is verified, inspect the observed trajectory
+without inventing usage data:
+
+```bash
+forgeloop metrics --task release --json
+forgeloop eval --task release --scenario scenarios/release.json --json
+```
+
+The efficiency comparison is present only when the scenario declares a
+positive `reference.comparableSteps`; absent host token/cost/model data stays
+unknown.
 
 ## Run ForgeLoop through MCP (safe mode)
 
