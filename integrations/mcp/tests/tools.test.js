@@ -12,7 +12,8 @@ test("tool names are deterministic and collision-free", () => {
   const names = registrations.map((r) => r.name);
   assert.deepEqual(names, [...names].sort());
   assert.equal(new Set(names).size, names.length);
-  assert.equal(names[0], "forgeloop_advance");
+  assert.ok(names.includes("forgeloop_advance"));
+  assert.ok(names.includes("forgeloop_action_propose"));
   assert.ok(names.includes("forgeloop_task_resume"));
 });
 

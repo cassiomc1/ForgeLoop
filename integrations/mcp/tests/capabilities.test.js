@@ -46,7 +46,20 @@ test("forgeloop_capabilities exists and reports versions, features, policy, and 
     assert.equal(typeof data.server.transportCapabilities.allowRecovery, "boolean");
     assert.deepEqual(
       data.resources,
-      ["protocol/info", "project/tasks", "task/status", "task/ownership", "task/contract", "task/continuity"],
+      [
+        "protocol/info",
+        "project/tasks",
+        "task/status",
+        "task/ownership",
+        "task/contract",
+        "task/continuity",
+        "task/actions",
+        "task/action",
+        "task/approvals",
+        "task/metrics",
+        "task/evaluations",
+        "project/capability-policy",
+      ],
     );
   } finally {
     await cleanup();
