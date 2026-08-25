@@ -28,6 +28,9 @@ import { formatPrepareCompletionResult } from "./commands/prepare-completion.js"
 import { formatRecordCheckResult } from "./commands/record-check.js";
 import { formatRunCheckResult } from "./commands/run-check.js";
 import { formatRunActionResult } from "./commands/run-action.js";
+import { formatActionProposeResult } from "./commands/action-propose.js";
+import { formatActionRecordResult } from "./commands/action-record.js";
+import { formatActionShowResult } from "./commands/action-show.js";
 import { formatReconcileClosureResult } from "./commands/reconcile-closure.js";
 import { formatRecordTerminalResult } from "./commands/record-terminal-result.js";
 import { formatRecordDiagnosisResult } from "./commands/record-diagnosis.js";
@@ -390,6 +393,18 @@ export const COMMAND_HANDLERS = Object.freeze({
     const { result, exitCode } = await COMMAND_EXECUTORS["run-action"]({ target, packageRoot, options });
     renderJsonOr(options, result, formatRunActionResult);
     return exitCode;
+  },
+  "action-propose": async ({ target, packageRoot, options }) => {
+    const { result } = await COMMAND_EXECUTORS["action-propose"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatActionProposeResult); return 0;
+  },
+  "action-record": async ({ target, packageRoot, options }) => {
+    const { result } = await COMMAND_EXECUTORS["action-record"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatActionRecordResult); return 0;
+  },
+  "action-show": async ({ target, packageRoot, options }) => {
+    const { result } = await COMMAND_EXECUTORS["action-show"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatActionShowResult); return 0;
   },
   "record-check": async ({ target, packageRoot, options }) => {
     const { result } = await COMMAND_EXECUTORS["record-check"]({ target, packageRoot, options });

@@ -26,6 +26,9 @@ import { runPrepareCompletion } from "../commands/prepare-completion.js";
 import { runRecordCheck } from "../commands/record-check.js";
 import { runCheck } from "../commands/run-check.js";
 import { runAction } from "../commands/run-action.js";
+import { runActionPropose } from "../commands/action-propose.js";
+import { runActionRecord } from "../commands/action-record.js";
+import { runActionShow } from "../commands/action-show.js";
 import { reconcileClosure } from "../commands/reconcile-closure.js";
 import { runRecordTerminalResult } from "../commands/record-terminal-result.js";
 import { runRecordDiagnosis } from "../commands/record-diagnosis.js";
@@ -167,6 +170,21 @@ export const COMMAND_EXECUTORS = {
       approvalId: options.approvalId, timeoutMs: options.timeoutMs });
     return { result, exitCode: result.action.state === "COMMITTED" ? 0 : 1 };
   },
+  "action-propose": async ({ target, packageRoot, options }) => ({ result: await runActionPropose({
+    target, packageRoot, taskId: options.taskId, input: { actionId: options.actionId,
+      capability: options.actionCapability, effectClass: options.actionEffectClass,
+      target: options.actionTarget, operation: options.actionOperation,
+      idempotencyKey: options.actionIdempotencyKey, requirement: options.actionRequirement,
+      requiredForCompletion: options.actionRequiredForCompletion },
+  }), exitCode: 0 }),
+  "action-record": async ({ target, packageRoot, options }) => ({ result: await runActionRecord({
+    target, packageRoot, taskId: options.taskId, actionId: options.actionId,
+    state: options.actionState, provenance: options.actionProvenance,
+    evidenceRef: options.actionEvidenceRef,
+  }), exitCode: 0 }),
+  "action-show": async ({ target, packageRoot, options }) => ({ result: await runActionShow({
+    target, packageRoot, taskId: options.taskId, actionId: options.actionId,
+  }), exitCode: 0 }),
   "record-check": async ({ target, packageRoot, options }) => ({
     result: await runRecordCheck({
       target,
