@@ -8,6 +8,7 @@ import {
   loadCapabilityPolicy,
   resolveCapabilityDecision,
   evaluateActionCapability,
+  capabilityPolicyWarnings,
 } from "../src/core/capability-policy.js";
 import { getPackageRoot } from "../src/core/templates.js";
 
@@ -173,4 +174,14 @@ test("missing capability policy is compatible for legacy flows but denies new ac
   });
   assert.equal(result.allowed, false);
   assert.match(result.reasonCode ?? "", /E_ACTION_(CAPABILITY_DENIED|APPROVAL_REQUIRED)/);
+});
+
+test("broad defaultDecision ALLOW produces a least-privilege warning", () => {
+  const warnings = capabilityPolicyWarnings({ schemaVersion: 1, defaultDecision: "ALLOW", rules: [] });
+  assert.equal(warnings.length, 1);
+  assert.equal(warnings[0].code, "W_CAPABILITY_POLICY_BROAD_DEFAULT");
+});
+
+test("explicit least-privilege policies produce no broad-default warning", () => {
+  assert.deepEqual(capabilityPolicyWarnings({ schemaVersion: 1, defaultDecision: "DENY", rules: [] }), []);
 });

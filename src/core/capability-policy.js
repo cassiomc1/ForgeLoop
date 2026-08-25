@@ -207,3 +207,20 @@ export async function evaluateActionCapability({
   }
   return { ...base, allowed: false, reasonCode: "E_ACTION_APPROVAL_REQUIRED" };
 }
+
+/**
+ * Least-privilege diagnostics for project capability policies (policy is
+ * policy, never authority). A broad defaultDecision=ALLOW grants every known
+ * capability without an explicit DENY rule; standard mode surfaces a warning
+ * so operators see the least-privilege tradeoff.
+ */
+export function capabilityPolicyWarnings(policy) {
+  if (!policy || typeof policy !== "object" || policy.defaultDecision !== "ALLOW") {
+    return [];
+  }
+  return [{
+    code: "W_CAPABILITY_POLICY_BROAD_DEFAULT",
+    message:
+      "Capability policy defaultDecision=ALLOW grants every known capability without an explicit DENY rule.",
+  }];
+}
