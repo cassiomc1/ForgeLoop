@@ -379,6 +379,8 @@ The cryptographically compiled verification receipt required for task completion
   - `count` *(integer, required, minimum: 0)*
   - `required` *(integer, required, minimum: 0)*
   - `verified` *(integer, required, minimum: 0)*
+  - `trustedSatisfied` *(integer, optional, minimum: 0)*
+  - `unresolvedRequired` *(integer, optional, minimum: 0)*
   - `failed` *(integer, required, minimum: 0)*
   - `ambiguous` *(integer, required, minimum: 0)*
   - `pending` *(integer, required, minimum: 0)*

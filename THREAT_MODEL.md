@@ -24,6 +24,18 @@ and an arbitrary external system in one transaction. Idempotency, durable
 intent, evidence, and reconciliation reduce duplicate-effect risk but do not
 provide a universal exactly-once guarantee.
 
+### Hardened durable-action threats (T-DURABLE-01 … T-DURABLE-07)
+
+| ID | Threat | Mitigation | Test evidence |
+| --- | --- | --- | --- |
+| T-DURABLE-01 | Caller walks `PROPOSED -> AUTHORIZED -> STARTED -> COMMITTED -> VERIFIED` through the generic record surface | Generic transitions refuse `AUTHORIZED`/`VERIFIED`; dedicated core services own those transitions and require complete policy-bound or canonical-evidence details | `tests/action-security.test.js`, `tests/action-authorization.test.js`, `tests/action-cli.test.js` |
+| T-DURABLE-02 | Actor marks an externally committed action `NOT_COMMITTED` to enable a duplicate retry | Settling `COMMITTED`/`NOT_COMMITTED` requires trusted out-of-band host attestation plus bounded evidence; actor observations may only record `UNKNOWN` | `tests/action-reconciliation.test.js`, `tests/integration-authority-context.test.js` |
+| T-DURABLE-03 | Actor weakens `capabilities.json` immediately before an action launch | Current capability policy must match the persisted policy lock and task policy snapshot before authorization; drift fails closed before `ACTION_STARTED` (`E_ACTION_POLICY_DRIFT`) | `tests/action-authorization.test.js`, `tests/policy-lock.test.js` |
+| T-DURABLE-04 | Model places `authorityContext` inside tool arguments or command input | Authority context is a separate host-provided parameter excluded from command input schemas; MCP tool registries strip it from args and accept it only from an embedding-controlled provider | `tests/integration-authority-context.test.js`, `integrations/mcp/tests/authority-context.test.js` |
+| T-DURABLE-05 | Command validation failures are misclassified as external ambiguity | Deterministic pre-launch preparation runs before authorization; `ACTION_STARTED` is recorded only after argv normalization, resolution, installation authority, policy identity, and approval validation succeed, so pre-launch failure leaves the action `PROPOSED` with no ambiguity | `tests/run-action.test.js`, `tests/durable-action-hardening.test.js` |
+| T-DURABLE-06 | Exit code 0 is mistaken for verified external state | `COMMITTED` and `VERIFIED` remain separate states; verification requires an independent passed ForgeLoop execution artifact and rejects the action's own commit execution as evidence | `tests/action-verification.test.js`, `tests/action-readiness.test.js` |
+| T-DURABLE-07 | Partial ledger forgery: artifact edits or incomplete transition-like events | Deterministic ledger replay validates revision continuity, fingerprint constancy, legal chronology, modern authorization/verification evidence, reconciliation ordering, and artifact/projection equivalence during audit and completion | `tests/action-ledger-replay.test.js`, `tests/action-security.test.js` |
+
 | Threat | Impact | Trust boundary | Mitigation | Residual limitation | Test evidence |
 | --- | --- | --- | --- | --- | --- |
 | Path traversal | Writes or reads outside the selected target | Target path and every managed relative path | `ensureWithin`, safe-path checks, realpath containment, Windows-drive rejection | A separately privileged process can change the filesystem after validation | `tests/core.test.js`, `tests/portability.test.js`, `tests/fixtures/protocol/invalid/path-traversal.json` |

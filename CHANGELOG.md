@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+### Changed
+
+- Durable-action hardening (final 10/10 pass): caller surfaces can no longer
+  mint `AUTHORIZED` or `VERIFIED`; authorization and verification are canonical
+  core services with mandatory policy-bound evidence; `ACTION_STARTED` is
+  recorded only after all deterministic pre-launch checks succeed; trusted
+  host authority travels strictly out-of-band (`executeForgeLoopCommand` /
+  MCP `authorityContextProvider`) and can never be supplied through command
+  input, CLI flags, project files, environment, or tool arguments;
+  `capabilities.json` now participates in the policy lock, task policy
+  snapshot, and authorization evidence with fail-closed drift detection;
+  settling `COMMIT_UNKNOWN` as `COMMITTED`/`NOT_COMMITTED` requires trusted
+  host attestation plus evidence, and trusted `NOT_COMMITTED` returns the
+  action to `PROPOSED` so authorization is re-evaluated; completion and audit
+  consume a canonical action-readiness projection instead of raw `VERIFIED`
+  labels; action ledger replay validates full chronology (revisions,
+  fingerprints, authorization, reconciliation ordering, verification) against
+  artifacts.
+
 ### Added
 
 - Durable external actions with immutable idempotency identity, capability
