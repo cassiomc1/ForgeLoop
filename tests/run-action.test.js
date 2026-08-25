@@ -59,3 +59,43 @@ test("exact argv execution does not interpret shell metacharacters", async () =>
     await assert.rejects(access(injected));
   } finally { await rm(target, { recursive: true, force: true }); }
 });
+
+test("pre-launch authority rejection leaves the action PROPOSED with no ACTION_STARTED", async () => {
+  const { target, taskId } = await targetWithPolicy("ALLOW");
+  try {
+    await assert.rejects(
+      executeDurableAction({ target, packageRoot, taskId,
+        input: input(), argv: ["npm", "install", "left-pad"] }),
+      (error) => error.code === "E_INSTALLATION_AUTHORITY_REQUIRED",
+    );
+    const { readAction } = await import("../src/core/actions.js");
+    const action = await readAction(target, { packageRoot, taskId, actionId: "action-write" });
+    assert.equal(action.state, "PROPOSED");
+
+    const { readEvents } = await import("../src/core/events.js");
+    const events = await readEvents(target, packageRoot, { taskId });
+    assert.equal(events.some((event) => event.event === "ACTION_STARTED"), false);
+  } finally { await rm(target, { recursive: true, force: true }); }
+});
+
+test("argv normalization failure leaves the action PROPOSED with no ACTION_STARTED", async () => {
+  const { target, taskId } = await targetWithPolicy("ALLOW");
+  try {
+    await assert.rejects(
+      executeDurableAction({ target, packageRoot, taskId,
+        input: input(), argv: [process.execPath, ""] }),
+      (error) => error.code === "E_EXECUTION_INVALID",
+    );
+    const { readAction } = await readActionModule();
+    const action = await readAction(target, { packageRoot, taskId, actionId: "action-write" });
+    assert.equal(action.state, "PROPOSED");
+
+    const { readEvents } = await import("../src/core/events.js");
+    const events = await readEvents(target, packageRoot, { taskId });
+    assert.equal(events.some((event) => event.event === "ACTION_STARTED"), false);
+  } finally { await rm(target, { recursive: true, force: true }); }
+});
+
+function readActionModule() {
+  return import("../src/core/actions.js");
+}
