@@ -37,7 +37,7 @@ export const ACTION_TRANSITIONS = Object.freeze(
     ["COMMITTED", Object.freeze(["VERIFIED", "COMMIT_UNKNOWN"])],
     ["VERIFIED", Object.freeze([])],
     ["FAILED", Object.freeze([])],
-    ["COMMIT_UNKNOWN", Object.freeze(["COMMITTED", "AUTHORIZED", "COMMIT_UNKNOWN"])],
+    ["COMMIT_UNKNOWN", Object.freeze(["COMMITTED", "PROPOSED", "COMMIT_UNKNOWN"])],
     ["CANCELLED", Object.freeze([])],
   ]),
 );
