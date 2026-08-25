@@ -26,6 +26,8 @@ import { getPackageRoot } from "../src/core/templates.js";
 import { createWorkState, writeWorkState, readWorkState } from "../src/core/work-state.js";
 import { buildTaskReflection } from "../src/core/reflection.js";
 import { evaluateProgress } from "../src/core/progress.js";
+import { inspectTarget } from "../src/core/inspect.js";
+import { createTaskDescriptor, writeTaskDescriptor } from "../src/core/task-descriptor.js";
 import { writeFile } from "node:fs/promises";
 
 const packageRoot = getPackageRoot();
@@ -326,7 +328,11 @@ test("progress alignment: legacy informationGain NONE keeps stall semantics", ()
 
 // ---------- public lifecycle fixtures ----------
 
-async function setupToDiagnosing(target, { successCriteria = ["lint"] } = {}) {
+async function setupToDiagnosing(target, { successCriteria = ["lint"], scoped = false } = {}) {
+  const taskOptions = scoped ? { taskId: TASK_ID } : {};
+  if (scoped) {
+    await writeTaskDescriptor(target, createTaskDescriptor({ taskId: TASK_ID, writeClaims: ["src/app.js"] }), packageRoot);
+  }
   const contract = createContract({
     taskId: TASK_ID,
     objective: "Exercise gain/stall alignment",
@@ -340,9 +346,9 @@ async function setupToDiagnosing(target, { successCriteria = ["lint"] } = {}) {
     sourceRefs: [],
   });
   const contractHash = contractFingerprint(contract);
-  await writeContract(target, contract, packageRoot);
+  await writeContract(target, contract, packageRoot, taskOptions);
   const route = evaluateRoute({ workType: "code", surfaces: ["config"], platforms: [] });
-  const persistedRoute = await persistRoute(target, route, packageRoot, { contractFingerprint: contractHash });
+  const persistedRoute = await persistRoute(target, route, packageRoot, { contractFingerprint: contractHash, ...taskOptions });
   const state = createWorkState({
     taskId: TASK_ID,
     contractFingerprint: contractHash,
@@ -360,14 +366,14 @@ async function setupToDiagnosing(target, { successCriteria = ["lint"] } = {}) {
     blockers: [],
     verificationEvidence: [],
   });
-  await writeWorkState(target, state, { packageRoot });
-  await appendProtocolEvent(target, { taskId: TASK_ID, event: "CONTRACT_VALIDATED" }, packageRoot);
-  await appendProtocolEvent(target, { taskId: TASK_ID, event: "ROUTE_VALIDATED" }, packageRoot);
-  const preflight = await runPreflight({ target, packageRoot });
+  await writeWorkState(target, state, { packageRoot, ...taskOptions });
+  await appendProtocolEvent(target, { taskId: TASK_ID, event: "CONTRACT_VALIDATED" }, packageRoot, taskOptions);
+  await appendProtocolEvent(target, { taskId: TASK_ID, event: "ROUTE_VALIDATED" }, packageRoot, taskOptions);
+  const preflight = await runPreflight({ target, packageRoot, ...taskOptions });
   assert.equal(preflight.status, "READY");
-  await advanceWorkState(target, "EXECUTING", { packageRoot });
-  await advanceWorkState(target, "VERIFYING", { packageRoot });
-  await prepareCompletion({ target, packageRoot });
+  await advanceWorkState(target, "EXECUTING", { packageRoot, ...taskOptions });
+  await advanceWorkState(target, "VERIFYING", { packageRoot, ...taskOptions });
+  await prepareCompletion({ target, packageRoot, ...taskOptions });
   await recordCheck({
     target,
     packageRoot,
@@ -378,8 +384,9 @@ async function setupToDiagnosing(target, { successCriteria = ["lint"] } = {}) {
     command: "npm run lint",
     result: "no-unused-vars in app.js",
     exitCode: 1,
+    ...taskOptions,
   });
-  await advanceWorkState(target, "DIAGNOSING", { packageRoot });
+  await advanceWorkState(target, "DIAGNOSING", { packageRoot, ...taskOptions });
 }
 
 function caseFileContent({ cycle, statement = "Unused import triggers lint rule.", observations } = {}) {
@@ -407,9 +414,9 @@ function caseFileContent({ cycle, statement = "Unused import triggers lint rule.
   return content;
 }
 
-async function recordCase(target, fileName, content) {
+async function recordCase(target, fileName, content, scoped = false) {
   await writeFile(path.join(target, fileName), JSON.stringify(content));
-  return recordStructuredDiagnosticCase({ target, packageRoot, caseFile: fileName });
+  return recordStructuredDiagnosticCase({ target, packageRoot, caseFile: fileName, ...(scoped ? { taskId: TASK_ID } : {}) });
 }
 
 test("public lifecycle: no-gain stall agrees across phase, progress, reflect and next", async () => {
@@ -530,5 +537,115 @@ test("public lifecycle: meaningful new information clears the stall", async () =
     // DIAGNOSING -> CORRECTING becomes allowed again
     const correcting = await advanceWorkState(target, "CORRECTING", { packageRoot });
     assert.equal(correcting.phase, "CORRECTING");
+  });
+});
+
+async function driveRepeatedFailureCycle(target, cycle, scoped = false) {
+  const taskOptions = scoped ? { taskId: TASK_ID } : {};
+  await advanceWorkState(target, "CORRECTING", { packageRoot, ...taskOptions });
+  await recordIntervention({
+    target,
+    packageRoot,
+    interventionInput: { id: `i-${cycle}`, kind: "CODE_CHANGE", reversible: true, hypothesisRefs: ["h-unused-import"], statement: "Remove unused import." },
+    ...taskOptions,
+  });
+  await advanceWorkState(target, "VERIFYING", { packageRoot, ...taskOptions });
+  await prepareCompletion({ target, packageRoot, ...taskOptions });
+  await recordCheck({
+    target,
+    packageRoot,
+    id: "check-lint",
+    requirement: "lint",
+    status: "failed",
+    evidenceKind: "OBSERVED",
+    command: "npm run lint",
+    result: "no-unused-vars in app.js",
+    exitCode: 1,
+    ...taskOptions,
+  });
+  await advanceWorkState(target, "DIAGNOSING", { packageRoot, ...taskOptions });
+}
+
+const withNewObservation = (id, statement) => caseFileContent({
+  observations: [
+    { id: "obs-lint", kind: "CHECK_RESULT", evidenceRef: "check-lint", statement: "Lint reported no-unused-vars." },
+    { id, kind: "MANUAL_OBSERVATION", provenance: "MANUAL_OBSERVATION", statement },
+  ],
+});
+
+test("same snapshot negative fixture: true no-gain stalls every consumer identically", async () => {
+  await withTarget(async (target) => {
+    await setupToDiagnosing(target, { scoped: true });
+    await recordCase(target, "case-1.json", caseFileContent({}), true);
+    await driveRepeatedFailureCycle(target, 2, true);
+    await recordCase(target, "case-2.json", withNewObservation("obs-token", "failure occurs only with expired refresh token"), true);
+    await driveRepeatedFailureCycle(target, 3, true);
+    // Latest diagnostic state is semantically identical to the previous one.
+    await recordCase(target, "case-3.json", withNewObservation("obs-token", "failure occurs only with expired refresh token"), true);
+
+    const state = await readWorkState(target, { packageRoot, taskId: TASK_ID });
+    const events = await readEvents(target, packageRoot, { taskId: TASK_ID });
+    assert.ok(state.verificationCycle >= 3);
+
+    const projection = buildInformationGainProjection(events, TASK_ID);
+    const stall = evaluateStructuredDiagnosticStall(projection, {
+      verificationCycle: state.verificationCycle ?? null,
+    });
+    assert.equal(stall.stalled, true);
+
+    const progress = evaluateProgress({ state, events });
+    assert.equal(progress.status, "STALLED");
+
+    const reflection = await buildTaskReflection({ target, packageRoot, taskId: TASK_ID });
+    assert.equal(reflection.status, "STALLED");
+
+    await assert.rejects(
+      () => advanceWorkState(target, "CORRECTING", { packageRoot, taskId: TASK_ID }),
+      (error) => error.code === "E_DIAGNOSIS_NO_NEW_INFORMATION",
+    );
+
+    const next = await getNextAction({ target, packageRoot, taskId: TASK_ID });
+    assert.equal(next.nextAction, NEXT_ACTIONS.CHANGE_STRATEGY);
+    assert.equal(next.diagnosticGuidance?.action, NEXT_ACTIONS.REQUIRE_NEW_DIAGNOSTIC_INFORMATION);
+
+    const inspection = await inspectTarget({ target, packageRoot, taskId: TASK_ID });
+    assert.equal(inspection.taskInspection.progress.status, "STALLED");
+    assert.ok(inspection.taskInspection.explanation.reasons.includes("DIAGNOSTIC_PROGRESS_STALLED"));
+  });
+});
+
+test("same snapshot positive fixture: real gain keeps every consumer advisory", async () => {
+  await withTarget(async (target) => {
+    await setupToDiagnosing(target, { scoped: true });
+    await recordCase(target, "case-1.json", caseFileContent({}), true);
+    await driveRepeatedFailureCycle(target, 2, true);
+    await recordCase(target, "case-2.json", withNewObservation("obs-token", "failure occurs only with expired refresh token"), true);
+    await driveRepeatedFailureCycle(target, 3, true);
+    // Latest diagnostic state adds another genuinely new observation.
+    await recordCase(target, "case-4.json", withNewObservation("obs-drift", "token endpoint rejects valid signatures after clock drift"), true);
+
+    const state = await readWorkState(target, { packageRoot, taskId: TASK_ID });
+    const events = await readEvents(target, packageRoot, { taskId: TASK_ID });
+    assert.ok(state.verificationCycle >= 3);
+
+    const projection = buildInformationGainProjection(events, TASK_ID);
+    const stall = evaluateStructuredDiagnosticStall(projection, {
+      verificationCycle: state.verificationCycle ?? null,
+    });
+    assert.equal(stall.stalled, false);
+
+    const progress = evaluateProgress({ state, events });
+    assert.equal(progress.status, "WATCH");
+    assert.ok(progress.signals.some((signal) => signal.code === "REPEATED_FAILED_REQUIREMENT"));
+
+    const reflection = await buildTaskReflection({ target, packageRoot, taskId: TASK_ID });
+    assert.notEqual(reflection.status, "STALLED");
+
+    const next = await getNextAction({ target, packageRoot, taskId: TASK_ID });
+    assert.notEqual(next.diagnosticGuidance?.action, NEXT_ACTIONS.REQUIRE_NEW_DIAGNOSTIC_INFORMATION);
+
+    const inspection = await inspectTarget({ target, packageRoot, taskId: TASK_ID });
+    assert.equal(inspection.taskInspection.progress.status, "WATCH");
+    assert.ok(!inspection.taskInspection.explanation.reasons.includes("DIAGNOSTIC_PROGRESS_STALLED"));
   });
 });
