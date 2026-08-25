@@ -323,7 +323,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
       "--required-for-completion": Object.freeze({ targetKey: "actionRequiredForCompletion", parseType: "boolean", takesValue: false, description: "mark required for completion" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
     }), writes: [".forgeloop/task-state/<taskKey>/actions/action-<id>.json", ".forgeloop/task-state/<taskKey>/events.ndjson"], removes: [], mayExecuteExternalProcess: false,
-    description: "Proposes a host-reported durable action without executing it.",
+    description: "Proposes a caller-reported durable action without executing it.",
   }),
   "action-record": Object.freeze({
     name: "action-record", category: "actions", mutation: "MUTATING",
