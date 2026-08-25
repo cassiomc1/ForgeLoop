@@ -7,10 +7,10 @@ Do not treat ForgeLoop as vendor-specific, optional, or to follow only "in spiri
 
 Use these instructions across the repository while preserving local rules.
 
-- Read [`LOOP_ENGINEERING.md`](../LOOP_ENGINEERING.md) and [`PROTOCOL_INTEGRATION.md`](../PROTOCOL_INTEGRATION.md).
+- Read [`LOOP_ENGINEERING.md`](../.forgeloop/kit/LOOP_ENGINEERING.md) and [`PROTOCOL_INTEGRATION.md`](../.forgeloop/kit/PROTOCOL_INTEGRATION.md).
 - If an official ForgeLoop structured integration is available in your host, prefer it for protocol operations; otherwise use the project-local ForgeLoop CLI. Never simulate ForgeLoop-managed lifecycle, claim, recovery, ledger, or completion state directly.
-- Confirm [`PROJECT_PROFILE.md`](../PROJECT_PROFILE.md) from evidence; initialize if in `template` mode.
-- Select context with [`GUIDE_ROUTER.md`](../GUIDE_ROUTER.md) and report activated guide IDs.
+- Confirm [`PROJECT_PROFILE.md`](../.forgeloop/kit/PROJECT_PROFILE.md) from evidence; initialize if in `template` mode.
+- Select context with [`GUIDE_ROUTER.md`](../.forgeloop/kit/GUIDE_ROUTER.md) and report activated guide IDs.
 - Respect the latest request, scope, and higher-level instructions.
 - Make the smallest coherent change; validate with specific and regression checks.
 - Diagnose causes before fixing failures; do not make unverified attempts.

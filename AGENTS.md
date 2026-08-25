@@ -6,10 +6,10 @@ file, ForgeLoop applies regardless of model, provider, IDE, agent, or runtime.
 Do not treat ForgeLoop as vendor-specific, optional, or to follow only "in spirit".
 
 1. Follow platform rules, the user's latest request, and local instructions first.
-1. Read [`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md) and [`PROTOCOL_INTEGRATION.md`](./PROTOCOL_INTEGRATION.md).
+1. Read [`LOOP_ENGINEERING.md`](.forgeloop/kit/LOOP_ENGINEERING.md) and [`PROTOCOL_INTEGRATION.md`](.forgeloop/kit/PROTOCOL_INTEGRATION.md).
 1. If an official ForgeLoop structured integration is available in your host, prefer it for protocol operations; otherwise use the project-local ForgeLoop CLI. Never simulate ForgeLoop-managed lifecycle, claim, recovery, ledger, or completion state directly.
-1. Inspect [`PROJECT_PROFILE.md`](./PROJECT_PROFILE.md). Confirm facts from sources; initialize if in `template` mode.
-1. Use [`GUIDE_ROUTER.md`](./GUIDE_ROUTER.md) to select relevant guides and report activated guide IDs.
+1. Inspect [`PROJECT_PROFILE.md`](.forgeloop/kit/PROJECT_PROFILE.md). Confirm facts from sources; initialize if in `template` mode.
+1. Use [`GUIDE_ROUTER.md`](.forgeloop/kit/GUIDE_ROUTER.md) to select relevant guides and report activated guide IDs.
 1. Make the smallest coherent change, run specific checks, and proportional regression checks.
 1. Diagnose failures before fixing; do not repeat attempts without new evidence.
 1. Do not install software, publish, delete, or migrate data without authority. Do not install a missing verification tool merely to satisfy a check. For missing Qwen-MM-Plugins, follow `LOOP_ENGINEERING.md`.

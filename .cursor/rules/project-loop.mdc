@@ -10,9 +10,9 @@ This project is ForgeLoop-enabled. If your execution environment loaded this
 file, ForgeLoop applies regardless of model, provider, IDE, agent, or runtime.
 Do not treat ForgeLoop as vendor-specific, optional, or to follow only "in spirit".
 
-1. Read [`LOOP_ENGINEERING.md`](../../LOOP_ENGINEERING.md) and [`PROTOCOL_INTEGRATION.md`](../../PROTOCOL_INTEGRATION.md).
-2. Confirm [`PROJECT_PROFILE.md`](../../PROJECT_PROFILE.md) from real sources; initialize if in `template` mode.
-3. Use [`GUIDE_ROUTER.md`](../../GUIDE_ROUTER.md) to activate relevant guides and report IDs.
+1. Read [`LOOP_ENGINEERING.md`](../../.forgeloop/kit/LOOP_ENGINEERING.md) and [`PROTOCOL_INTEGRATION.md`](../../.forgeloop/kit/PROTOCOL_INTEGRATION.md).
+2. Confirm [`PROJECT_PROFILE.md`](../../.forgeloop/kit/PROJECT_PROFILE.md) from real sources; initialize if in `template` mode.
+3. Use [`GUIDE_ROUTER.md`](../../.forgeloop/kit/GUIDE_ROUTER.md) to activate relevant guides and report IDs.
 4. Respect higher-level and local instructions and the latest request.
 5. Make the minimum change, run specific checks, and run proportional regression checks.
 6. Diagnose failures before fixing them; do not repeat attempts without new evidence.
