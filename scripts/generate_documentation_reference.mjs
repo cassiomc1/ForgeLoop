@@ -236,6 +236,7 @@ export function generateCliCommandIndexTable() {
     continuity: "Cross-Harness Continuity",
     verification: "Verification & Completion",
     diagnostics: "Inspection & Diagnostics",
+    actions: "Durable Actions & Approvals",
     "policy-audit": "Policy & Auditing",
   };
 

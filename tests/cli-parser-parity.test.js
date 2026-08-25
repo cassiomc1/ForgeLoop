@@ -160,7 +160,10 @@ test("CLI parser parity: every declared option is recognized for each command", 
 
       let testArgv;
       if (optName === "--") {
-        testArgv = [cmdName, "--id", "chk-1", "--requirement", "req-1", "--", "node", "--version"];
+        // Most argv commands use the verification-style --id sample; durable
+        // actions intentionally use --action because they are not checks.
+        const identityOption = def.options["--id"] ? "--id" : def.options["--action"] ? "--action" : "--id";
+        testArgv = [cmdName, identityOption, "sample-id", "--requirement", "req-1", "--", "node", "--version"];
       } else if (optDef.takesValue) {
         let val = "sample-value";
         if (optDef.parseType === "json-object") val = "{}";
