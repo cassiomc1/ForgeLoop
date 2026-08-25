@@ -45,6 +45,7 @@ export async function createForgeLoopHttpHandler({
   projectPath,
   mode = SERVER_MODES.SAFE,
   allowExternalExecution = false,
+  allowApprovalResolution = false,
   allowMaintenance = false,
   allowRecovery = false,
   allowLegacyRepair = false,
@@ -61,6 +62,7 @@ export async function createForgeLoopHttpHandler({
   const policy = resolveLaunchPolicy({
     mode,
     allowExternalExecution,
+    allowApprovalResolution,
     allowMaintenance,
     allowRecovery,
     allowLegacyRepair,
