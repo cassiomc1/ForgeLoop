@@ -12,6 +12,7 @@ import {
   SIDE_EFFECTING_EFFECT_CLASSES,
 } from "./action-constants.js";
 import {
+  E_ACTION_EVIDENCE_INVALID,
   E_ACTION_INVALID,
   E_ACTION_IDEMPOTENCY_CONFLICT,
   E_ACTION_IDEMPOTENCY_REQUIRED,
@@ -362,6 +363,107 @@ export function assertEvaluationIdFormat(evaluationId) {
     throw actionError(E_TRAJECTORY_SCENARIO_INVALID, "evaluationId must match eval-[A-Za-z0-9_-]+");
   }
   return evaluationId;
+}
+
+const ACTION_EVENT_NAMES = new Set([
+  "ACTION_PROPOSED",
+  "ACTION_AUTHORIZED",
+  "ACTION_STARTED",
+  "ACTION_COMMIT_RECORDED",
+  "ACTION_VERIFIED",
+  "ACTION_FAILED",
+  "ACTION_COMMIT_UNKNOWN",
+  "ACTION_RECONCILED",
+  "ACTION_CANCELLED",
+]);
+
+const APPROVAL_EVENT_NAMES = new Set(["APPROVAL_REQUESTED", "APPROVAL_RESOLVED"]);
+
+function assertBoundedEventText(details, key, maxLength, { required = true } = {}) {
+  const value = details[key];
+  if (value === undefined || value === null) {
+    if (required) throw actionError(E_ACTION_EVIDENCE_INVALID, `event details.${key} is required`);
+    return;
+  }
+  if (typeof value !== "string" || value.length === 0 || value.length > maxLength) {
+    throw actionError(
+      E_ACTION_EVIDENCE_INVALID,
+      `event details.${key} must be a non-empty string of at most ${maxLength} characters`,
+    );
+  }
+}
+
+export function assertActionEventDetails(event) {
+  const details = event.details;
+  if (!details || typeof details !== "object" || Array.isArray(details)) {
+    throw actionError(E_ACTION_EVIDENCE_INVALID, `${event.event} requires structured details`);
+  }
+  assertBoundedEventText(details, "actionId", 256);
+  if (
+    typeof details.actionFingerprint !== "string" ||
+    !SHA256_HEX_REGEX.test(details.actionFingerprint)
+  ) {
+    throw actionError(
+      E_ACTION_EVIDENCE_INVALID,
+      `${event.event} details.actionFingerprint must be a lowercase sha256 hex digest`,
+    );
+  }
+  if (event.fingerprint && event.fingerprint !== details.actionFingerprint) {
+    throw actionError(
+      E_ACTION_EVIDENCE_INVALID,
+      `${event.event} fingerprint does not match details.actionFingerprint`,
+    );
+  }
+  if (event.event === "ACTION_RECONCILED") {
+    if (!["COMMITTED", "NOT_COMMITTED", "UNKNOWN"].includes(details.outcome)) {
+      throw actionError(
+        E_ACTION_EVIDENCE_INVALID,
+        "ACTION_RECONCILED details.outcome must be COMMITTED, NOT_COMMITTED, or UNKNOWN",
+      );
+    }
+  }
+  return true;
+}
+
+export function assertApprovalEventDetails(event) {
+  const details = event.details;
+  if (!details || typeof details !== "object" || Array.isArray(details)) {
+    throw actionError(E_APPROVAL_INVALID, `${event.event} requires structured details`);
+  }
+  assertBoundedEventText(details, "approvalId", 256);
+  assertBoundedEventText(details, "actionId", 256);
+  if (
+    typeof details.actionFingerprint !== "string" ||
+    !SHA256_HEX_REGEX.test(details.actionFingerprint)
+  ) {
+    throw actionError(
+      E_APPROVAL_INVALID,
+      `${event.event} details.actionFingerprint must be a lowercase sha256 hex digest`,
+    );
+  }
+  if (event.event === "APPROVAL_RESOLVED") {
+    if (!["APPROVED", "REJECTED"].includes(details.decision)) {
+      throw actionError(E_APPROVAL_INVALID, "APPROVAL_RESOLVED details.decision must be APPROVED or REJECTED");
+    }
+    if (!APPROVAL_AUTHORITY_KINDS.includes(details.authorityKind)) {
+      throw actionError(E_APPROVAL_INVALID, "APPROVAL_RESOLVED details.authorityKind is invalid");
+    }
+    if (details.authorityKind === "HOST_ATTESTED" && !details.hostGrantRef) {
+      throw actionError(
+        E_APPROVAL_INVALID,
+        "HOST_ATTESTED approval resolution requires details.hostGrantRef",
+      );
+    }
+  }
+  return true;
+}
+
+export function isActionEventName(eventName) {
+  return ACTION_EVENT_NAMES.has(eventName);
+}
+
+export function isApprovalEventName(eventName) {
+  return APPROVAL_EVENT_NAMES.has(eventName);
 }
 
 export { E_ACTION_IDEMPOTENCY_CONFLICT, E_ACTION_IDEMPOTENCY_REQUIRED };

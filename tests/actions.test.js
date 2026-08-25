@@ -11,7 +11,6 @@ import {
   listActions,
   findActionByIdempotencyKey,
 } from "../src/core/actions.js";
-import { canonicalActionFingerprint } from "../src/core/action-model.js";
 import { readEvents } from "../src/core/events.js";
 import { taskActionPath } from "../src/core/task-paths.js";
 import { getPackageRoot } from "../src/core/templates.js";

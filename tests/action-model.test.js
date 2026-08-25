@@ -9,9 +9,6 @@ import {
   ACTION_PROVENANCE,
   ACTION_CAPABILITIES,
   CAPABILITY_DECISIONS,
-  APPROVAL_DECISIONS,
-  APPROVAL_AUTHORITY_KINDS,
-  RECONCILIATION_OUTCOMES,
 } from "../src/core/action-constants.js";
 import {
   canonicalActionFingerprint,
