@@ -85,6 +85,7 @@ export async function evaluateActionCapability({
   packageRoot,
   action,
   authorityContext = { trustMode: "NONE" },
+  approval,
 }) {
   if (!action || typeof action !== "object") {
     throw policyError(E_ACTION_INVALID, "action is required for capability evaluation");
@@ -139,7 +140,19 @@ export async function evaluateActionCapability({
     }
     return { ...base, allowed: false, reasonCode: "E_ACTION_AUTHORITY_REQUIRED" };
   }
-  // REQUIRE_APPROVAL: approval binding validation is integrated by the
-  // durable approvals module; without a validated approval this blocks.
+  if (approval?.approvalId) {
+    const { validateApprovalForAction } = await import("./approvals.js");
+    try {
+      await validateApprovalForAction(target, {
+        packageRoot,
+        taskId: action.taskId,
+        action,
+        approvalId: approval.approvalId,
+      });
+      return { ...base, allowed: true, reasonCode: null, approvalId: approval.approvalId };
+    } catch (error) {
+      return { ...base, allowed: false, reasonCode: error.code ?? "E_APPROVAL_INVALID" };
+    }
+  }
   return { ...base, allowed: false, reasonCode: "E_ACTION_APPROVAL_REQUIRED" };
 }
