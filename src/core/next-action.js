@@ -212,6 +212,17 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
         reason: "This approval must be resolved by a trusted host/operator boundary.",
       }, });
   }
+  // A PROPOSED required action ready for authorization should use the
+  // canonical authorization surface; host/approval blockers remain structured.
+  const authorizableAction = actionsForApproval.find((action) => action.requiredForCompletion
+    && action.state === "PROPOSED");
+  if (authorizableAction) {
+    return result({ ...context, nextAction: NEXT_ACTIONS.AUTHORIZE_ACTION,
+      commands: [`forgeloop action-authorize --task ${state.taskId} --action ${authorizableAction.actionId}`],
+      reasons: [artifactError("E_ACTION_AUTHORIZATION_REQUIRED",
+        `Required action ${authorizableAction.actionId} is PROPOSED and must be authorized through the canonical service before execution.`)],
+      requiredArtifacts: [taskArtifactPath(state.taskId, "actions"), eventsRel] });
+  }
   // Committed-but-unverified required action needs canonical postcondition
   // evidence before it can satisfy completion.
   const committedActions = await listActions(target, { packageRoot, taskId: state.taskId });

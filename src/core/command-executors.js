@@ -29,6 +29,7 @@ import { runAction } from "../commands/run-action.js";
 import { runActionPropose } from "../commands/action-propose.js";
 import { runActionRecord } from "../commands/action-record.js";
 import { runActionShow } from "../commands/action-show.js";
+import { runActionAuthorize } from "../commands/action-authorize.js";
 import { runActionVerify } from "../commands/action-verify.js";
 import { runActionReconcile } from "../commands/action-reconcile.js";
 import { runMetrics } from "../commands/metrics.js";
@@ -194,14 +195,29 @@ export const COMMAND_EXECUTORS = {
   "action-show": async ({ target, packageRoot, options }) => ({ result: await runActionShow({
     target, packageRoot, taskId: options.taskId, actionId: options.actionId,
   }), exitCode: 0 }),
+  "action-authorize": async ({ target, packageRoot, options, authorityContext }) => ({
+    result: await runActionAuthorize({
+      target,
+      packageRoot,
+      taskId: options.taskId,
+      actionId: options.actionId,
+      approvalId: options.approvalId,
+      // Trusted authority arrives out-of-band only; never from actor input.
+      authorityContext,
+    }),
+    exitCode: 0,
+  }),
   "action-verify": async ({ target, packageRoot, options }) => ({ result: await runActionVerify({
     target, packageRoot, taskId: options.taskId, actionId: options.actionId,
     evidenceRef: options.actionEvidenceRef,
   }), exitCode: 0 }),
-  "action-reconcile": async ({ target, packageRoot, options }) => ({ result: await runActionReconcile({
+  "action-reconcile": async ({ target, packageRoot, options, authorityContext }) => ({ result: await runActionReconcile({
     target, packageRoot, taskId: options.taskId, actionId: options.actionId,
     outcome: options.reconciliationOutcome, evidenceRefs: options.evidenceRefs ?? [],
     observedAt: options.observedAt,
+    // Trusted settlement authority travels only through the out-of-band
+    // executor parameter; actor input can never supply it.
+    authorityContext,
   }), exitCode: 0 }),
   metrics: async ({ target, packageRoot, options }) => ({ result: await runMetrics({ target, packageRoot, taskId: options.taskId }), exitCode: 0 }),
   eval: async ({ target, packageRoot, options }) => {

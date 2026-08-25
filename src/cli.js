@@ -30,6 +30,7 @@ import { formatRunCheckResult } from "./commands/run-check.js";
 import { formatRunActionResult } from "./commands/run-action.js";
 import { formatActionProposeResult } from "./commands/action-propose.js";
 import { formatActionRecordResult } from "./commands/action-record.js";
+import { formatActionAuthorizeResult } from "./commands/action-authorize.js";
 import { formatActionVerifyResult } from "./commands/action-verify.js";
 import { formatActionShowResult } from "./commands/action-show.js";
 import { formatActionReconcileResult } from "./commands/action-reconcile.js";
@@ -403,6 +404,10 @@ export const COMMAND_HANDLERS = Object.freeze({
   "action-propose": async ({ target, packageRoot, options }) => {
     const { result } = await COMMAND_EXECUTORS["action-propose"]({ target, packageRoot, options });
     renderJsonOr(options, result, formatActionProposeResult); return 0;
+  },
+  "action-authorize": async ({ target, packageRoot, options }) => {
+    const { result } = await COMMAND_EXECUTORS["action-authorize"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatActionAuthorizeResult); return 0;
   },
   "action-record": async ({ target, packageRoot, options }) => {
     const { result } = await COMMAND_EXECUTORS["action-record"]({ target, packageRoot, options });
