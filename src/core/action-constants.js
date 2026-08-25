@@ -19,8 +19,18 @@ export const ACTION_STATES = Object.freeze([
 
 export const ACTION_PROVENANCE = Object.freeze([
   "FORGELOOP_EXECUTED",
+  "HOST_ATTESTED",
+  "CALLER_REPORTED",
+  // Retained for backward compatibility with v1.6.0 artifacts. Public CLI
+  // surfaces no longer mint this provenance because caller input is not host
+  // authority.
   "HOST_REPORTED",
   "EXTERNAL_OBSERVED",
+]);
+
+export const TRUSTED_ACTION_PROVENANCE = Object.freeze([
+  "FORGELOOP_EXECUTED",
+  "HOST_ATTESTED",
 ]);
 
 export const ACTION_CAPABILITIES = Object.freeze([
