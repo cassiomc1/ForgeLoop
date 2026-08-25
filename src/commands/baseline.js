@@ -1,5 +1,5 @@
 import {
-  computePolicyLockData,
+  computePersistedPolicyLockData,
   evaluateTargetPolicy,
   loadEffectiveRules,
   writePolicyLock,
@@ -56,7 +56,7 @@ export async function runBaseline({
     await writeBaseline(target, baseline, packageRoot);
 
     const rules = await loadEffectiveRules(target, packageRoot);
-    const lock = computePolicyLockData(rules, baseline);
+    const lock = await computePersistedPolicyLockData(target, packageRoot, rules, baseline);
     await writePolicyLock(target, lock, packageRoot);
 
     return {
@@ -85,7 +85,7 @@ export async function runBaseline({
     await writeBaseline(target, baseline, packageRoot);
 
     const rules = await loadEffectiveRules(target, packageRoot);
-    const lock = computePolicyLockData(rules, baseline);
+    const lock = await computePersistedPolicyLockData(target, packageRoot, rules, baseline);
     await writePolicyLock(target, lock, packageRoot);
 
     return {

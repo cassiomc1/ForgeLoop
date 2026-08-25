@@ -136,13 +136,15 @@ export async function detectPolicyCapability(target, packageRoot) {
   const baselineRel = PROJECT_ARTIFACT_PATHS.policyBaseline;
   const discoveryRel = PROJECT_ARTIFACT_PATHS.policyDiscovery;
   const lockRel = PROJECT_ARTIFACT_PATHS.policyLock;
+  const capabilityRel = PROJECT_ARTIFACT_PATHS.capabilityPolicy;
 
   const hasRules = await fileExists(path.join(target, rulesRel));
   const hasBaseline = await fileExists(path.join(target, baselineRel));
   const hasDiscovery = await fileExists(path.join(target, discoveryRel));
   const hasLock = await fileExists(path.join(target, lockRel));
+  const hasCapabilityPolicy = await fileExists(path.join(target, capabilityRel));
 
-  if (!hasRules && !hasBaseline && !hasDiscovery && !hasLock) {
+  if (!hasRules && !hasBaseline && !hasDiscovery && !hasLock && !hasCapabilityPolicy) {
     return "NOT_PRESENT";
   }
 
@@ -151,6 +153,13 @@ export async function detectPolicyCapability(target, packageRoot) {
     if (hasBaseline) await readBaseline(target, packageRoot);
     if (hasDiscovery) await readDiscoveryReport(target, packageRoot);
     if (hasLock) await readPolicyLock(target, packageRoot);
+    // A capability policy is policy configuration: its presence makes the
+    // executable-policy subsystem applicable and it must fail closed when
+    // malformed.
+    if (hasCapabilityPolicy) {
+      const { loadCapabilityPolicy } = await import("./capability-policy.js");
+      await loadCapabilityPolicy(target, packageRoot);
+    }
     return "AVAILABLE";
   } catch {
     return "INVALID";
@@ -218,6 +227,71 @@ export function computePolicyLockData(rules, baseline, capabilityPolicy = null) 
       : { capabilityPolicyDigest: `sha256:${capabilityPolicyDigest}` }),
     capturedAt: new Date().toISOString(),
   };
+}
+
+export async function readCapabilityPolicyIdentityForLock(target, packageRoot) {
+  const { readCapabilityPolicyIdentity } = await import("./capability-policy.js");
+  return readCapabilityPolicyIdentity(target, packageRoot);
+}
+
+/**
+ * Canonical policy identity for durable-action authorization. Fails closed
+ * with deterministic codes whenever the capability policy, the persisted
+ * lock, or the task snapshot do not agree.
+ */
+export async function loadPolicyIdentity(target, packageRoot, taskId) {
+  const { E_ACTION_POLICY_DRIFT, E_ACTION_POLICY_LOCK_REQUIRED } = await import("./error-codes.js");
+  const capability = await readCapabilityPolicyIdentityForLock(target, packageRoot);
+  const lock = await verifyPolicyLock(target, packageRoot);
+  const snapshot = taskId ? await readTaskPolicySnapshot(target, taskId, packageRoot) : null;
+
+  if (capability.policy && lock.status !== "VALID") {
+    return {
+      status: lock.status === "MISMATCH" ? "DRIFT" : "INVALID",
+      code: lock.status === "MISMATCH" ? E_ACTION_POLICY_DRIFT : E_ACTION_POLICY_LOCK_REQUIRED,
+      ...(lock.status === "MISMATCH" ? { mismatches: lock.mismatches } : {}),
+    };
+  }
+
+  // A modern task snapshot must bind the current capability policy before any
+  // side-effecting action may be authorized.
+  if (
+    capability.digest
+    && snapshot
+    && snapshot.capabilityPolicyDigest !== capability.digest
+  ) {
+    return {
+      status: "DRIFT",
+      code: E_ACTION_POLICY_DRIFT,
+    };
+  }
+
+  // A modern capability policy without a task snapshot has no epoch to bind:
+  // authorization cannot proceed for a task-scoped action.
+  if (capability.digest && taskId && !snapshot) {
+    return {
+      status: "INVALID",
+      code: E_ACTION_POLICY_LOCK_REQUIRED,
+    };
+  }
+
+  return {
+    status: "VALID",
+    lockDigest: lock.digest ?? null,
+    taskPolicyDigest: snapshot?.policyDigest ?? null,
+    capabilityPolicyFingerprint: capability.fingerprint,
+    capabilityPolicyDigest: capability.digest,
+  };
+}
+
+/**
+ * Compute policy-lock data for persistence, binding the current capability
+ * policy whenever it exists so locks, snapshots, and authorization evidence
+ * share one policy identity.
+ */
+export async function computePersistedPolicyLockData(target, packageRoot, rules, baseline) {
+  const identity = await readCapabilityPolicyIdentityForLock(target, packageRoot);
+  return computePolicyLockData(rules, baseline, identity.policy);
 }
 
 export async function verifyPolicyLock(target, packageRoot) {
@@ -509,7 +583,7 @@ export async function evaluateTargetPolicy({
   if (taskId) {
     const taskSnapshot = await readTaskPolicySnapshot(target, taskId, packageRoot);
     if (taskSnapshot) {
-      const currentLock = computePolicyLockData(rules, baseline);
+      const currentLock = await computePersistedPolicyLockData(target, packageRoot, rules, baseline);
       if (taskSnapshot.policyDigest !== currentLock.digest) {
         const policyDiff = diffPolicies(
           { rules: taskSnapshot.rules, baseline: taskSnapshot.baseline, baselineDigest: taskSnapshot.baselineDigest },
@@ -546,7 +620,7 @@ export async function evaluateTargetPolicy({
     }
   }
 
-  const currentLock = computePolicyLockData(rules, baseline);
+  const currentLock = await computePersistedPolicyLockData(target, packageRoot, rules, baseline);
 
   return {
     status: errors.length === 0 ? "VALID" : "INVALID",

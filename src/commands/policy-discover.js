@@ -1,6 +1,6 @@
 import { discoverPolicy } from "../core/policy-discovery.js";
 import {
-  computePolicyLockData,
+  computePersistedPolicyLockData,
   loadEffectiveRules,
   readBaseline,
   writeDiscoveryReport,
@@ -15,7 +15,7 @@ export async function runPolicyDiscover({ target = process.cwd(), packageRoot, w
     await writeDiscoveryReport(target, discovery, packageRoot);
     const baseline = await readBaseline(target, packageRoot);
     const rules = await loadEffectiveRules(target, packageRoot);
-    lock = computePolicyLockData(rules, baseline);
+    lock = await computePersistedPolicyLockData(target, packageRoot, rules, baseline);
     await writePolicyLock(target, lock, packageRoot);
   }
 

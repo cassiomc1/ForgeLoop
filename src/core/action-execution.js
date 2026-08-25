@@ -1,6 +1,6 @@
 import { proposeAction, transitionAction } from "./actions.js";
 import { actionRequiresIdempotency } from "./action-model.js";
-import { evaluateActionCapability } from "./capability-policy.js";
+import { authorizeAction } from "./action-authorization.js";
 import { runCommandExecution } from "./execution.js";
 
 function actionExecutionError(code, message) {
@@ -33,26 +33,9 @@ export async function executeDurableAction({
   if (action.state !== "PROPOSED") {
     throw actionExecutionError("E_ACTION_STATE_MISMATCH", `action ${action.actionId} is already ${action.state}`);
   }
-  const capability = await evaluateActionCapability({
-    target, packageRoot, action, authorityContext, approval: approvalId ? { approvalId } : undefined,
-  });
-  if (!capability.allowed) {
-    throw actionExecutionError(capability.reasonCode, `capability ${action.capability} is not authorized: ${capability.decision}`);
-  }
-  const authorized = await transitionAction(target, {
-    packageRoot, taskId, actionId: action.actionId, to: "AUTHORIZED",
-    expectedRevision: action.revision, expectedFingerprint: action.actionFingerprint,
-    details: {
-      capabilityDecision: capability.decision,
-      capabilityPolicyFingerprint: capability.policyFingerprint,
-      ...(capability.approvalId ? { approvalId: capability.approvalId } : {}),
-      ...(authorityContext?.trustMode === "HOST_ATTESTED"
-        ? {
-            authorityKind: "HOST_ATTESTED",
-            ...(typeof authorityContext.grantRef === "string" ? { authorityRef: authorityContext.grantRef } : {}),
-          }
-        : {}),
-    },
+  const { action: authorized, capability } = await authorizeAction({
+    target, packageRoot, taskId, actionId: action.actionId,
+    approvalId, authorityContext,
   });
   const started = await transitionAction(target, {
     packageRoot, taskId, actionId: action.actionId, to: "STARTED",

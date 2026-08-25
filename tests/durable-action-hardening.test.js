@@ -5,6 +5,7 @@ import path from "node:path";
 import test from "node:test";
 
 import { executeDurableAction } from "../src/core/action-execution.js";
+import { seedPolicyEpoch } from "./helpers/durable-policy.js";
 import { proposeAction } from "../src/core/actions.js";
 import { requestApproval, resolveApproval } from "../src/core/approvals.js";
 import { resolveCapabilityDecision } from "../src/core/capability-policy.js";
@@ -19,7 +20,7 @@ import { getPackageRoot } from "../src/core/templates.js";
 const packageRoot = getPackageRoot();
 const fingerprint = "a".repeat(64);
 
-async function makeTarget(policy = {
+async function makeTarget(taskId = null, policy = {
   schemaVersion: 1,
   defaultDecision: "DENY",
   rules: [{ capability: "filesystem.write", decision: "ALLOW" }],
@@ -27,6 +28,7 @@ async function makeTarget(policy = {
   const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-durable-hardening-"));
   await mkdir(path.join(target, ".forgeloop", "policy"), { recursive: true });
   await writeFile(path.join(target, ".forgeloop", "policy", "capabilities.json"), JSON.stringify(policy), "utf8");
+  if (taskId) await seedPolicyEpoch(target, packageRoot, taskId, policy);
   return target;
 }
 
@@ -45,7 +47,7 @@ function writeActionInput(overrides = {}) {
 }
 
 test("started side effect that times out becomes COMMIT_UNKNOWN", async () => {
-  const target = await makeTarget();
+  const target = await makeTarget("task-timeout");
   const sentinel = path.join(target, "sentinel.txt");
   try {
     const result = await executeDurableAction({
@@ -65,7 +67,7 @@ test("started side effect that times out becomes COMMIT_UNKNOWN", async () => {
 });
 
 test("started side effect with non-zero exit becomes COMMIT_UNKNOWN", async () => {
-  const target = await makeTarget();
+  const target = await makeTarget("task-nonzero");
   const sentinel = path.join(target, "sentinel.txt");
   try {
     const result = await executeDurableAction({
@@ -84,7 +86,7 @@ test("started side effect with non-zero exit becomes COMMIT_UNKNOWN", async () =
 });
 
 test("ACTION_AUTHORIZED records the exact capability-policy decision", async () => {
-  const target = await makeTarget();
+  const target = await makeTarget("task-policy-binding");
   try {
     const result = await executeDurableAction({
       target,

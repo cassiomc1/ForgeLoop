@@ -1,4 +1,5 @@
 import { canonicalFingerprint } from "./artifacts.js";
+import { sha256 } from "./manifest.js";
 import { ACTION_CAPABILITIES } from "./action-constants.js";
 import { validateCapabilityPolicy } from "./action-model.js";
 import { PROJECT_ARTIFACT_PATHS } from "./task-paths.js";
@@ -43,6 +44,28 @@ export async function loadCapabilityPolicy(target, packageRoot) {
     policy: parsed,
     fingerprint: canonicalFingerprint(parsed),
     path: relativePath,
+  };
+}
+
+/**
+ * Canonical current capability-policy identity. The fingerprint matches the
+ * authorization-time binding; the digest is the same sha256 representation
+ * used by the policy lock so a single identity participates in locks, task
+ * snapshots, and action authorization evidence.
+ */
+export async function readCapabilityPolicyIdentity(target, packageRoot) {
+  const loaded = await loadCapabilityPolicy(target, packageRoot);
+  if (!loaded) {
+    return {
+      policy: null,
+      fingerprint: null,
+      digest: null,
+    };
+  }
+  return {
+    policy: loaded.policy,
+    fingerprint: loaded.fingerprint,
+    digest: `sha256:${sha256(canonicalFingerprint(loaded.policy))}`,
   };
 }
 
@@ -137,8 +160,21 @@ export async function evaluateActionCapability({
     return { ...base, allowed: false, reasonCode: resolved.reasonCode ?? "E_ACTION_CAPABILITY_DENIED" };
   }
   if (resolved.decision === "REQUIRE_AUTHORITY") {
-    if (isTrustedHostAuthorityContext(authorityContext)) {
-      return { ...base, allowed: true, reasonCode: null };
+    if (
+      isTrustedHostAuthorityContext(authorityContext)
+      && typeof authorityContext.grantRef === "string"
+      && authorityContext.grantRef.length > 0
+      && authorityContext.grantRef.length <= 256
+    ) {
+      return {
+        ...base,
+        allowed: true,
+        reasonCode: null,
+        authority: {
+          authorityKind: "HOST_ATTESTED",
+          authorityRef: authorityContext.grantRef,
+        },
+      };
     }
     return { ...base, allowed: false, reasonCode: "E_ACTION_AUTHORITY_REQUIRED" };
   }
@@ -154,10 +190,37 @@ export async function evaluateActionCapability({
       if (resolvedApproval.authorityKind !== "HOST_ATTESTED" || !resolvedApproval.hostGrantRef) {
         return { ...base, allowed: false, reasonCode: "E_ACTION_AUTHORITY_REQUIRED" };
       }
-      return { ...base, allowed: true, reasonCode: null, approvalId: approval.approvalId };
+      return {
+        ...base,
+        allowed: true,
+        reasonCode: null,
+        approval: {
+          approvalId: resolvedApproval.approvalId,
+          approvalFingerprint: canonicalFingerprint(approvalBindingFields(resolvedApproval)),
+          authorityKind: "HOST_ATTESTED",
+          authorityRef: resolvedApproval.hostGrantRef,
+        },
+      };
     } catch (error) {
       return { ...base, allowed: false, reasonCode: error.code ?? "E_APPROVAL_INVALID" };
     }
   }
   return { ...base, allowed: false, reasonCode: "E_ACTION_APPROVAL_REQUIRED" };
+}
+
+function approvalBindingFields(approval) {
+  return {
+    taskId: approval.taskId,
+    approvalId: approval.approvalId,
+    actionId: approval.actionId,
+    actionFingerprint: approval.actionFingerprint,
+    contractFingerprint: approval.contractFingerprint,
+    taskRevision: approval.taskRevision,
+    capability: approval.capability,
+    status: approval.status,
+    decision: approval.decision ?? null,
+    resolvedAt: approval.resolvedAt ?? null,
+    authorityKind: approval.authorityKind ?? null,
+    hostGrantRef: approval.hostGrantRef ?? null,
+  };
 }

@@ -7,16 +7,20 @@ import {
   canonicalActionFingerprint,
   actionRequiresIdempotency,
   assertActionTransition,
+  assertActionAuthorizationDetails,
+  assertActionVerificationDetails,
   validateActionArtifact,
 } from "./action-model.js";
 import { ACTION_STATES } from "./action-constants.js";
 import {
+  E_ACTION_AUTHORIZATION_INVALID,
   E_ACTION_EVIDENCE_INVALID,
   E_ACTION_IDEMPOTENCY_CONFLICT,
   E_ACTION_IDEMPOTENCY_REQUIRED,
   E_ACTION_INVALID,
   E_ACTION_NOT_FOUND,
   E_ACTION_STATE_MISMATCH,
+  E_ACTION_VERIFICATION_REQUIRED,
 } from "./error-codes.js";
 import { assertSafePath, ensureWithin } from "./filesystem.js";
 import { taskActionPath, taskDirectory, TASK_ARTIFACT_FILES } from "./task-paths.js";
@@ -213,18 +217,11 @@ export async function findActionByIdempotencyKey(target, { packageRoot, taskId, 
   return found ? validateActionArtifact(found) : null;
 }
 
-function assertAuthorizationDetails(details) {
-  if (details.capabilityDecision !== undefined) {
-    if (!["ALLOW", "REQUIRE_AUTHORITY", "REQUIRE_APPROVAL"].includes(details.capabilityDecision)) {
-      throw actionError(E_ACTION_EVIDENCE_INVALID, "capabilityDecision must be an allowed authorization decision");
-    }
-    if (typeof details.capabilityPolicyFingerprint !== "string" || !/^[a-f0-9]{64}$/.test(details.capabilityPolicyFingerprint)) {
-      throw actionError(E_ACTION_EVIDENCE_INVALID, "capabilityPolicyFingerprint must bind ACTION_AUTHORIZED to the exact project policy");
-    }
-  }
-}
+// Security-sensitive states can never be minted through the generic
+// caller-reachable transition primitive; dedicated services below own them.
+const GENERIC_TRANSITION_FORBIDDEN_STATES = Object.freeze(["AUTHORIZED", "VERIFIED"]);
 
-export async function transitionAction(target, {
+async function applyTransition(target, {
   packageRoot,
   taskId,
   actionId,
@@ -244,7 +241,6 @@ export async function transitionAction(target, {
       throw actionError(E_ACTION_EVIDENCE_INVALID, "evidenceRefs must be bounded non-empty strings");
     }
   }
-  if (to === "AUTHORIZED") assertAuthorizationDetails(details);
 
   return withTaskTransaction(
     { target, taskId, operation: "transition-action" },
@@ -293,6 +289,7 @@ export async function transitionAction(target, {
       const boundedDetails = { ...baseDetails };
       for (const key of [
         "evidenceRef",
+        "evidenceKind",
         "evidenceRefs",
         "reason",
         "reconciliationOutcome",
@@ -300,13 +297,17 @@ export async function transitionAction(target, {
         "commitResultCode",
         "capabilityDecision",
         "capabilityPolicyFingerprint",
+        "policyLockDigest",
+        "taskPolicyDigest",
         "approvalId",
+        "approvalFingerprint",
         "authorityKind",
         "authorityRef",
         "reportedProvenance",
       ]) {
         if (details[key] !== undefined && details[key] !== null) boundedDetails[key] = details[key];
       }
+      if (to === "VERIFIED") boundedDetails.verifiedAt = next.updatedAt;
 
       const reconciliationDriven = current.state === "COMMIT_UNKNOWN";
       if (reconciliationDriven) {
@@ -336,6 +337,67 @@ export async function transitionAction(target, {
       return next;
     },
   );
+}
+
+/**
+ * Generic observation transition. Refuses security-sensitive states: callers
+ * can observe execution outcomes but can never authorize or verify.
+ */
+export async function transitionAction(target, {
+  packageRoot,
+  taskId,
+  actionId,
+  to,
+  details = {},
+  expectedRevision,
+  expectedFingerprint,
+}) {
+  if (GENERIC_TRANSITION_FORBIDDEN_STATES.includes(to)) {
+    throw actionError(
+      to === "AUTHORIZED" ? E_ACTION_AUTHORIZATION_INVALID : E_ACTION_VERIFICATION_REQUIRED,
+      `state ${to} is owned by a canonical ForgeLoop service and cannot be recorded by a generic caller surface`,
+    );
+  }
+  return applyTransition(target, {
+    packageRoot, taskId, actionId, to, details, expectedRevision, expectedFingerprint,
+  });
+}
+
+/**
+ * Canonical authorization transition. Only the authorization service may call
+ * it and only with complete policy-bound evidence (INV-AUTH-02).
+ */
+export async function transitionAuthorizedAction(target, {
+  packageRoot,
+  taskId,
+  actionId,
+  details = {},
+  expectedRevision,
+  expectedFingerprint,
+}) {
+  assertActionAuthorizationDetails(details, { legacyAllowed: false });
+  const next = await applyTransition(target, {
+    packageRoot, taskId, actionId, to: "AUTHORIZED", details, expectedRevision, expectedFingerprint,
+  });
+  return next;
+}
+
+/**
+ * Canonical verification transition. Only the verification service may call
+ * it and only with canonical independent postcondition evidence.
+ */
+export async function transitionVerifiedAction(target, {
+  packageRoot,
+  taskId,
+  actionId,
+  details = {},
+  expectedRevision,
+  expectedFingerprint,
+}) {
+  assertActionVerificationDetails(details);
+  return applyTransition(target, {
+    packageRoot, taskId, actionId, to: "VERIFIED", details, expectedRevision, expectedFingerprint,
+  });
 }
 
 export async function detectOrphanActions(target, { packageRoot, taskId }) {

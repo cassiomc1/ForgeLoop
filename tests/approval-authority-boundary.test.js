@@ -98,7 +98,10 @@ test("HOST_ATTESTED approval from a trusted host boundary satisfies REQUIRE_APPR
       approval: { approvalId: "approval-push" },
     });
     assert.equal(result.allowed, true);
-    assert.equal(result.approvalId, "approval-push");
+    assert.equal(result.approval.approvalId, "approval-push");
+    assert.equal(result.approval.authorityKind, "HOST_ATTESTED");
+    assert.equal(result.approval.authorityRef, "approval-grant-1");
+    assert.match(result.approval.approvalFingerprint, /^[a-f0-9]{64}$/);
   } finally {
     await rm(fixture.target, { recursive: true, force: true });
   }

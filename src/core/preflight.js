@@ -200,7 +200,7 @@ export async function runPreflight({
       detectPolicyCapability,
       loadEffectiveRules,
       readBaseline,
-      computePolicyLockData,
+      computePersistedPolicyLockData,
       readTaskPolicySnapshot,
       writeTaskPolicySnapshot,
     } = await import("./policy-engine.js");
@@ -225,13 +225,30 @@ export async function runPreflight({
         if (!existingSnapshot) {
           const rules = await loadEffectiveRules(target, packageRoot);
           const baseline = await readBaseline(target, packageRoot);
-          const lock = computePolicyLockData(rules, baseline);
+          const lock = await computePersistedPolicyLockData(target, packageRoot, rules, baseline);
+          // Bind the current capability policy into the snapshot so policy
+          // drift is detectable before any side-effecting action launch.
+          const { readCapabilityPolicyIdentity } = await import("./capability-policy.js");
+          const capabilityIdentity = await readCapabilityPolicyIdentity(target, packageRoot);
+          if (capabilityIdentity.policy && !lock.capabilityPolicyDigest) {
+            throw preflightError(
+              "E_POLICY_SNAPSHOT_WRITE_FAILED",
+              "Capability policy identity could not be bound to the task policy snapshot",
+              [taskArtifactPath(result.taskId, "policySnapshot")],
+            );
+          }
           const snapshot = {
             schemaVersion: 1,
             policyDigest: lock.digest,
             rules,
             baseline: baseline ?? { schemaVersion: 1, entries: [] },
             baselineDigest: lock.baselineDigest,
+            ...(capabilityIdentity.digest
+              ? {
+                  capabilityPolicyDigest: capabilityIdentity.digest,
+                  capabilityPolicyFingerprint: capabilityIdentity.fingerprint,
+                }
+              : {}),
             capturedAt: new Date().toISOString(),
           };
           await writeTaskPolicySnapshot(target, result.taskId, snapshot, packageRoot);
