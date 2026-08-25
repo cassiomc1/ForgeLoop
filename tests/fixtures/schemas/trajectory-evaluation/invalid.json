@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "evaluationId": "eval-standard",
+  "scenarioId": "bug-fix-standard",
+  "taskId": "task-1",
+  "result": "GREAT",
+  "completionValid": true,
+  "safetyValid": true,
+  "limits": {
+    "verificationCycles": {
+      "actual": 3,
+      "max": 4,
+      "pass": true
+    }
+  },
+  "efficiency": null,
+  "computedAt": "2026-08-25T00:00:00.000Z",
+  "source": "PROJECT_LOCAL_REFERENCE",
+  "evaluationFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+}

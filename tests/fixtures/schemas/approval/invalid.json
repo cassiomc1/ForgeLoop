@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "taskId": "task-1",
+  "approvalId": "approval-push-1",
+  "actionId": "action-push",
+  "actionFingerprint": "c8a189e9b0e33eea50d0a74669bc94f00669fd0f57e33154a3cdc66ee3b1c2a9",
+  "contractFingerprint": "not-a-hash",
+  "taskRevision": 4,
+  "capability": "repository.push",
+  "status": "PENDING",
+  "requestedAt": "2026-08-25T00:00:00.000Z",
+  "reason": "release publication requires operator approval"
+}

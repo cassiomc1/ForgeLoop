@@ -31,6 +31,10 @@ All artifact schemas are defined in `schemas/*.schema.json`. Persisted artifact 
 | `policy/policy.lock` | `policy-lock` | Protocol Generated | Atomic Digest Compilation | Policy Integrity Lock |
 | `task-state/<task-key>/policy-snapshot.json` | `policy-snapshot` | Protocol Generated | Mutable Before Execution | Task Policy Attestation |
 | `task-state/<task-key>/recovery.json` | `task-recovery` | Protocol Generated | Recovery State Transitions | Task Recovery State |
+| `task-state/<task-key>/actions/action-<id>.json` | `action` | Protocol Managed | State Machine Transitions | External Action Provenance |
+| `task-state/<task-key>/approvals/approval-<id>.json` | `approval` | Protocol Managed | Append Decision Once | Action Approval Attestation |
+| `policy/capabilities.json` | `capability-policy` | Operator Or Agent | Mutable Configuration | Capability Policy Specification |
+| `task-state/<task-key>/evaluations/eval-<id>.json` | `trajectory-evaluation` | Protocol Compiled | Immutable Once Written | Trajectory Evaluation |
 
 <!-- END FORGELOOP GENERATED: artifact-registry -->
 
@@ -644,3 +648,126 @@ host-owned `grantRef`; the standalone CLI does not self-issue that authority.
   - `grantRef` *(string, optional, minLength: 1)*
 
 <!-- END FORGELOOP GENERATED: schema:task-recovery -->
+
+---
+
+### 2.20 `task-state/<taskKey>/actions/action-<id>.json`
+
+<!-- forgeloop-doc: schema=action artifact=.forgeloop/task-state/<task-key>/actions/action-<id>.json -->
+
+Durable external action artifact recording intent, capability policy binding,
+authority, execution provenance, ambiguity, and reconciliation state for a
+side-effecting operation. The `actionFingerprint` covers immutable identity
+fields only; mutable state lives in `state` and `revision`.
+
+#### Canonical Fields
+
+<!-- BEGIN FORGELOOP GENERATED: schema:action -->
+
+- `schemaVersion` *(number, required, const: 1)*
+- `taskId` *(string, required, minLength: 1, maxLength: 256)*
+- `actionId` *(string, required, pattern: `^action-[A-Za-z0-9_-]+$`)*
+- `actionFingerprint` *(string, required, pattern: `^[a-f0-9]{64}$`)*
+- `effectClass` *(string, required, enum: `READ_ONLY`, `REVERSIBLE_WRITE`, `IRREVERSIBLE_WRITE`, `EXTERNAL_PUBLICATION`, `DESTRUCTIVE`)*
+- `capability` *(string, required, enum: `filesystem.read`, `filesystem.write`, `process.execute`, `dependency.install`, `network.read`, `network.write`, `repository.commit`, `repository.push`, `repository.pull_request`, `external.publish`, `external.delete`, `deployment.execute`)*
+- `operation` *(string, required, minLength: 1, maxLength: 512)*
+- `target` *(string, required, minLength: 1, maxLength: 512)*
+- `idempotencyKey` *(string or null, required)*
+- `requiredForCompletion` *(boolean, required)*
+- `requirement` *(string or null, required)*
+- `provenance` *(string, required, enum: `FORGELOOP_EXECUTED`, `HOST_REPORTED`, `EXTERNAL_OBSERVED`)*
+- `state` *(string, required, enum: `PROPOSED`, `AUTHORIZED`, `STARTED`, `COMMITTED`, `VERIFIED`, `FAILED`, `COMMIT_UNKNOWN`, `CANCELLED`)*
+- `revision` *(integer, required, minimum: 0)*
+- `createdAt` *(string, required, minLength: 1)*
+- `updatedAt` *(string, required, minLength: 1)*
+- `lastEvidenceRef` *(string or null, optional)*
+- `lastReconciliationAt` *(string or null, optional)*
+- `commitResultCode` *(object or null, optional)*
+
+<!-- END FORGELOOP GENERATED: schema:action -->
+
+---
+
+### 2.21 `task-state/<taskKey>/approvals/approval-<id>.json`
+
+<!-- forgeloop-doc: schema=approval artifact=.forgeloop/task-state/<task-key>/approvals/approval-<id>.json -->
+
+Crash-safe durable approval request cryptographically bound to the exact action
+fingerprint, contract fingerprint, task revision, and capability. Any drift
+makes the approval stale. Resolution is one-time; approvals persist across
+process and harness boundaries.
+
+#### Canonical Fields
+
+<!-- BEGIN FORGELOOP GENERATED: schema:approval -->
+
+- `schemaVersion` *(number, required, const: 1)*
+- `taskId` *(string, required, minLength: 1, maxLength: 256)*
+- `approvalId` *(string, required, pattern: `^approval-[A-Za-z0-9_-]+$`)*
+- `actionId` *(string, required, pattern: `^action-[A-Za-z0-9_-]+$`)*
+- `actionFingerprint` *(string, required, pattern: `^[a-f0-9]{64}$`)*
+- `contractFingerprint` *(string, required, pattern: `^[a-f0-9]{64}$`)*
+- `taskRevision` *(integer, required, minimum: 0)*
+- `capability` *(string, required, enum: `filesystem.read`, `filesystem.write`, `process.execute`, `dependency.install`, `network.read`, `network.write`, `repository.commit`, `repository.push`, `repository.pull_request`, `external.publish`, `external.delete`, `deployment.execute`)*
+- `status` *(string, required, enum: `PENDING`, `APPROVED`, `REJECTED`)*
+- `requestedAt` *(string, required, minLength: 1)*
+- `reason` *(string or null, optional)*
+- `decision` *(string, optional, enum: `APPROVED`, `REJECTED`)*
+- `resolvedAt` *(string or null, optional)*
+- `authorityKind` *(string, optional, enum: `CALLER_ACKNOWLEDGED`, `HOST_ATTESTED`)*
+- `hostGrantRef` *(string or null, optional)*
+
+<!-- END FORGELOOP GENERATED: schema:approval -->
+
+---
+
+### 2.22 `policy/capabilities.json`
+
+<!-- forgeloop-doc: schema=capability-policy artifact=.forgeloop/policy/capabilities.json -->
+
+Project-local machine-readable capability policy mapping canonical capability
+values to ALLOW, DENY, REQUIRE_AUTHORITY, or REQUIRE_APPROVAL decisions. This
+artifact is policy specification only; it can never mint host authority.
+
+#### Canonical Fields
+
+<!-- BEGIN FORGELOOP GENERATED: schema:capability-policy -->
+
+- `schemaVersion` *(number, required, const: 1)*
+- `defaultDecision` *(string, required, enum: `ALLOW`, `DENY`)*
+- `rules` *(array<object>, required)*
+  - `capability` *(string, required, enum: `filesystem.read`, `filesystem.write`, `process.execute`, `dependency.install`, `network.read`, `network.write`, `repository.commit`, `repository.push`, `repository.pull_request`, `external.publish`, `external.delete`, `deployment.execute`)*
+  - `decision` *(string, required, enum: `ALLOW`, `DENY`, `REQUIRE_AUTHORITY`, `REQUIRE_APPROVAL`)*
+
+<!-- END FORGELOOP GENERATED: schema:capability-policy -->
+
+---
+
+### 2.23 `task-state/<taskKey>/evaluations/eval-<id>.json`
+
+<!-- forgeloop-doc: schema=trajectory-evaluation artifact=.forgeloop/task-state/<task-key>/evaluations/eval-<id>.json -->
+
+Immutable trajectory evaluation result compiled from the canonical trace against
+a project-local reference scenario. Evaluations are projections over canonical
+evidence and never override lifecycle validation.
+
+#### Canonical Fields
+
+<!-- BEGIN FORGELOOP GENERATED: schema:trajectory-evaluation -->
+
+- `schemaVersion` *(number, required, const: 1)*
+- `evaluationId` *(string, required, pattern: `^eval-[A-Za-z0-9_-]+$`)*
+- `scenarioId` *(string, required, minLength: 1, maxLength: 128)*
+- `scenarioFingerprint` *(string, optional, pattern: `^[a-f0-9]{64}$`)*
+- `taskId` *(string, required, minLength: 1, maxLength: 256)*
+- `result` *(string, required, enum: `PASS`, `FAIL`)*
+- `completionValid` *(boolean, required)*
+- `safetyValid` *(boolean, required)*
+- `missingMilestones` *(array<string>, optional)*
+- `limits` *(object, optional)*
+- `efficiency` *(object or null, optional)*
+- `computedAt` *(string, optional, minLength: 1)*
+- `source` *(string, optional, enum: `PROJECT_LOCAL_REFERENCE`)*
+- `evaluationFingerprint` *(string, required, pattern: `^[a-f0-9]{64}$`)*
+
+<!-- END FORGELOOP GENERATED: schema:trajectory-evaluation -->

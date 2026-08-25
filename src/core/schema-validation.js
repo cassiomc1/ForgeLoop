@@ -37,6 +37,11 @@ export const SHIPPED_SCHEMA_NAMES = Object.freeze([
   "diagnostic-case",
   "intervention",
   "hypothesis-disposition",
+  "action",
+  "approval",
+  "capability-policy",
+  "trajectory-evaluation",
+  "trajectory-scenario",
 ]);
 
 export class SchemaValidationError extends Error {

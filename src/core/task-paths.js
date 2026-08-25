@@ -15,6 +15,9 @@ export const TASK_ARTIFACT_FILES = Object.freeze({
   events: "events.ndjson",
   gates: "gates",
   executions: "executions",
+  actions: "actions",
+  approvals: "approvals",
+  evaluations: "evaluations",
   policySnapshot: "policy-snapshot.json",
   recovery: "recovery.json",
 });
@@ -32,6 +35,7 @@ export const PROJECT_ARTIFACT_PATHS = Object.freeze({
   policyBaseline: ".forgeloop/policy/baseline.json",
   policyLock: ".forgeloop/policy/policy.lock",
   policyDiscovery: ".forgeloop/policy/discovery.json",
+  capabilityPolicy: ".forgeloop/policy/capabilities.json",
 });
 
 export const LEGACY_TASK_ARTIFACT_PATHS = Object.freeze({
@@ -74,6 +78,27 @@ export function taskExecutionPath(taskId, executionId) {
   return `${taskDirectory(taskId)}/${TASK_ARTIFACT_FILES.executions}/${executionId}.json`;
 }
 
+export function taskActionPath(taskId, actionId) {
+  if (typeof actionId !== "string" || !/^action-[A-Za-z0-9_-]+$/.test(actionId)) {
+    throw new Error(`Invalid action ID: ${actionId}`);
+  }
+  return `${taskDirectory(taskId)}/${TASK_ARTIFACT_FILES.actions}/${actionId}.json`;
+}
+
+export function taskApprovalPath(taskId, approvalId) {
+  if (typeof approvalId !== "string" || !/^approval-[A-Za-z0-9_-]+$/.test(approvalId)) {
+    throw new Error(`Invalid approval ID: ${approvalId}`);
+  }
+  return `${taskDirectory(taskId)}/${TASK_ARTIFACT_FILES.approvals}/${approvalId}.json`;
+}
+
+export function taskEvaluationPath(taskId, evaluationId) {
+  if (typeof evaluationId !== "string" || !/^eval-[A-Za-z0-9_-]+$/.test(evaluationId)) {
+    throw new Error(`Invalid evaluation ID: ${evaluationId}`);
+  }
+  return `${taskDirectory(taskId)}/${TASK_ARTIFACT_FILES.evaluations}/${evaluationId}.json`;
+}
+
 export function taskLockPath(taskId) {
   assertTaskId(taskId);
   return `${TASK_LOCK_ROOT}/${taskStorageKey(taskId)}.lock`;
@@ -101,6 +126,9 @@ export function buildTaskArtifactPaths(taskId) {
     events: `${dir}/${TASK_ARTIFACT_FILES.events}`,
     gates: `${dir}/${TASK_ARTIFACT_FILES.gates}`,
     executions: `${dir}/${TASK_ARTIFACT_FILES.executions}`,
+    actions: `${dir}/${TASK_ARTIFACT_FILES.actions}`,
+    approvals: `${dir}/${TASK_ARTIFACT_FILES.approvals}`,
+    evaluations: `${dir}/${TASK_ARTIFACT_FILES.evaluations}`,
     lock: taskLockPath(taskId),
     policySnapshot: `${dir}/${TASK_ARTIFACT_FILES.policySnapshot}`,
     recovery: `${dir}/${TASK_ARTIFACT_FILES.recovery}`,
