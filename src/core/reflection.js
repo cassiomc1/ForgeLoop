@@ -1,5 +1,6 @@
 import { buildTaskTrace } from "./trace.js";
 import { readEvents } from "./events.js";
+import { findTaskById } from "./task-discovery.js";
 import { projectHypothesisStates } from "./hypothesis-projection.js";
 import {
   buildInformationGainProjection,
@@ -180,9 +181,10 @@ export function deriveDiagnosticContext(events = [], state = null) {
 
 export async function buildTaskReflection({ target, packageRoot, taskId = null } = {}) {
   const trace = await buildTaskTrace({ target, packageRoot, taskId });
-  // Read the canonical ledger without a scoped-path redirect; the gain
-  // projection filters by taskId itself.
-  const rawEvents = await readEvents(target, packageRoot);
+  // Modern tasks own a scoped ledger; legacy singleton callers still pass a
+  // taskId that must be used only as a filter over the canonical ledger.
+  const task = taskId ? await findTaskById(target, taskId, packageRoot) : null;
+  const rawEvents = await readEvents(target, packageRoot, task ? { taskId } : {});
 
   // Authoritative surfaces come from the canonical trace projection.
   const surfaceEntries = {};
