@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -12,6 +12,8 @@ import {
   validateActionLedgerConsistency,
 } from "../src/core/actions.js";
 import { projectActionLedger } from "../src/core/action-ledger-projection.js";
+import { reconcileAction } from "../src/core/action-reconciliation.js";
+import { seedPolicyEpoch } from "./helpers/durable-policy.js";
 import { taskActionPath } from "../src/core/task-paths.js";
 import { getPackageRoot } from "../src/core/templates.js";
 
@@ -128,4 +130,173 @@ test("direct artifact edits remain audit-visible via replay divergence", async (
     assert.equal(projection.valid, false);
     assert.ok(projection.errors.some((e) => e.message.includes("artifact state")));
   } finally { await rm(target, { recursive: true, force: true }); }
+});
+
+test("trusted COMMITTED reconciliation replays as one transition", async () => {
+  const { mkdtemp, rm } = await import("node:fs/promises");
+  const os = await import("node:os");
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-replay-reconciled-commit-"));
+  const taskId = "replay-reconciled-commit";
+  try {
+    await seedPolicyEpoch(target, packageRoot, taskId, {
+      schemaVersion: 1, defaultDecision: "ALLOW", rules: [],
+    });
+    const { action } = await proposeAction(target, { packageRoot, taskId, input: {
+      actionId: "action-publish", effectClass: "EXTERNAL_PUBLICATION", capability: "external.publish",
+      target: "registry/release", operation: "publish", idempotencyKey: "replay:commit:v1",
+      requiredForCompletion: true, requirement: "publication", provenance: "FORGELOOP_EXECUTED",
+    } });
+    await transitionAuthorizedAction(target, { packageRoot, taskId, actionId: action.actionId,
+      expectedRevision: 0, expectedFingerprint: action.actionFingerprint,
+      details: { ...AUTHORIZATION_EVIDENCE(action.actionFingerprint) } });
+    await transitionAction(target, { packageRoot, taskId, actionId: action.actionId, to: "STARTED" });
+    await transitionAction(target, { packageRoot, taskId, actionId: action.actionId, to: "COMMIT_UNKNOWN",
+      details: { commitResultCode: "AMBIGUOUS", reason: "external outcome lost" } });
+
+    const settled = await reconcileAction({
+      target, packageRoot, taskId, actionId: action.actionId,
+      outcome: "COMMITTED",
+      evidenceRefs: ["external:release-visible"],
+      authorityContext: {
+        trustMode: "HOST_ATTESTED", hostSupplied: true, source: "host-boundary",
+        grantRef: "grant-replay-commit",
+      },
+    });
+    assert.equal(settled.action.state, "COMMITTED");
+
+    const projection = await projectActionLedger({
+      target, packageRoot, taskId,
+      actionId: action.actionId,
+      artifact: settled.action,
+    });
+    assert.equal(projection.valid, true);
+    assert.equal(projection.state, "COMMITTED");
+    assert.equal(projection.revision, settled.action.revision);
+    assert.equal(projection.reconciliation.latestOutcome, "COMMITTED");
+
+    const issues = await validateActionLedgerConsistency(target, { packageRoot, taskId });
+    assert.equal(issues.length, 0);
+  } finally { await rm(target, { recursive: true, force: true }); }
+});
+
+async function reconciledCommitFixture(suffix) {
+  const { mkdtemp } = await import("node:fs/promises");
+  const os = await import("node:os");
+  const target = await mkdtemp(path.join(os.tmpdir(), `forgeloop-mirror-${suffix}-`));
+  const taskId = `mirror-${suffix}`;
+  await seedPolicyEpoch(target, packageRoot, taskId, {
+    schemaVersion: 1, defaultDecision: "ALLOW", rules: [],
+  });
+  const { action } = await proposeAction(target, { packageRoot, taskId, input: {
+    actionId: "action-publish", effectClass: "EXTERNAL_PUBLICATION", capability: "external.publish",
+    target: "registry/release", operation: "publish", idempotencyKey: `mirror:${suffix}:v1`,
+    requiredForCompletion: true, requirement: "publication", provenance: "FORGELOOP_EXECUTED",
+  } });
+  return { target, taskId, action };
+}
+
+test("forged reconciled commit mirrors invalidate replay", async () => {
+  const { appendProtocolEvent } = await import("../src/core/events.js");
+
+  const baseReconciled = async (suffix) => {
+    const fixture = await reconciledCommitFixture(suffix);
+    await transitionAuthorizedAction(fixture.target, { packageRoot, taskId: fixture.taskId,
+      actionId: fixture.action.actionId, expectedRevision: 0, expectedFingerprint: fixture.action.actionFingerprint,
+      details: AUTHORIZATION_EVIDENCE(fixture.action.actionFingerprint) });
+    await transitionAction(fixture.target, { packageRoot, taskId: fixture.taskId, actionId: fixture.action.actionId, to: "STARTED" });
+    await transitionAction(fixture.target, { packageRoot, taskId: fixture.taskId, actionId: fixture.action.actionId, to: "COMMIT_UNKNOWN" });
+    await reconcileAction({ target: fixture.target, packageRoot, taskId: fixture.taskId,
+      actionId: fixture.action.actionId, outcome: "COMMITTED", evidenceRefs: ["ext:ok"],
+      authorityContext: { trustMode: "HOST_ATTESTED", hostSupplied: true, source: "host-boundary", grantRef: "g" } });
+    return fixture;
+  };
+
+  // Case 1: duplicate mirror with a wrong revision.
+  {
+    const f = await baseReconciled("wrong-rev");
+    try {
+      // A second mirror with a wrong revision binds correctly at the event
+      // layer but must be flagged by replay as a mismatched/orphaned mirror.
+      const { settled } = { settled: await readAction(f.target, { packageRoot, taskId: f.taskId, actionId: f.action.actionId }) };
+      await appendProtocolEvent(f.target, {
+        taskId: f.taskId,
+        event: "ACTION_COMMIT_RECORDED",
+        fingerprint: f.action.actionFingerprint,
+        details: {
+          actionId: f.action.actionId,
+          actionFingerprint: f.action.actionFingerprint,
+          fromState: "COMMIT_UNKNOWN",
+          toState: "COMMITTED",
+          revision: 99,
+          reconciled: true,
+        },
+      }, packageRoot, { taskId: f.taskId });
+
+      const projection = await projectActionLedger({
+        target: f.target, packageRoot, taskId: f.taskId,
+        actionId: f.action.actionId, artifact: settled,
+      });
+      assert.equal(projection.valid, false, "wrong revision");
+      assert.ok(projection.errors.some((e) => e.message.includes("reconciled commit mirror")), "wrong revision");
+    } finally { await rm(f.target, { recursive: true, force: true }); }
+  }
+
+  // Case 2+3: forged mirror shapes appended directly (bypassing writers).
+  for (const [label, details] of [
+    ["orphan mirror", {
+      actionId: "action-publish",
+      actionFingerprint: null,
+      fromState: "COMMIT_UNKNOWN",
+      toState: "COMMITTED",
+      revision: 3,
+      reconciled: true,
+    }],
+  ]) {
+    const f = await reconciledCommitFixture(label.replaceAll(" ", "-"));
+    try {
+      await transitionAuthorizedAction(f.target, { packageRoot, taskId: f.taskId,
+        actionId: f.action.actionId, expectedRevision: 0, expectedFingerprint: f.action.actionFingerprint,
+        details: AUTHORIZATION_EVIDENCE(f.action.actionFingerprint) });
+      await transitionAction(f.target, { packageRoot, taskId: f.taskId, actionId: f.action.actionId, to: "STARTED" });
+      const current = await readAction(f.target, { packageRoot, taskId: f.taskId, actionId: f.action.actionId });
+      const forgedDetails = {
+        ...details,
+        actionFingerprint: current.actionFingerprint,
+        revision: current.revision + 1,
+      };
+      await appendProtocolEvent(f.target, {
+        taskId: f.taskId,
+        event: "ACTION_COMMIT_RECORDED",
+        fingerprint: current.actionFingerprint,
+        details: forgedDetails,
+      }, packageRoot, { taskId: f.taskId });
+
+      const projection = await projectActionLedger({ target: f.target, packageRoot, taskId: f.taskId, actionId: f.action.actionId });
+      assert.equal(projection.valid, false, label);
+      assert.ok(projection.errors.some((e) => e.message.includes("reconciled commit mirror")), label);
+    } finally { await rm(f.target, { recursive: true, force: true }); }
+  }
+});
+
+test("NOT_COMMITTED and UNKNOWN reconciliation emit no commit mirror and remain valid", async () => {
+  const { readEvents } = await import("../src/core/events.js");
+  for (const outcome of ["NOT_COMMITTED", "UNKNOWN"]) {
+    const f = await reconciledCommitFixture(outcome.toLowerCase());
+    try {
+      await transitionAuthorizedAction(f.target, { packageRoot, taskId: f.taskId,
+        actionId: f.action.actionId, expectedRevision: 0, expectedFingerprint: f.action.actionFingerprint,
+        details: AUTHORIZATION_EVIDENCE(f.action.actionFingerprint) });
+      await transitionAction(f.target, { packageRoot, taskId: f.taskId, actionId: f.action.actionId, to: "STARTED" });
+      await transitionAction(f.target, { packageRoot, taskId: f.taskId, actionId: f.action.actionId, to: "COMMIT_UNKNOWN" });
+      const settled = await reconcileAction({ target: f.target, packageRoot, taskId: f.taskId,
+        actionId: f.action.actionId, outcome, evidenceRefs: ["ext:obs"],
+        authorityContext: { trustMode: "HOST_ATTESTED", hostSupplied: true, source: "host-boundary", grantRef: "g" } });
+      const events = await readEvents(f.target, packageRoot, { taskId: f.taskId });
+      assert.equal(events.some((e) => e.event === "ACTION_COMMIT_RECORDED"), false, outcome);
+      const projection = await projectActionLedger({ target: f.target, packageRoot, taskId: f.taskId,
+        actionId: f.action.actionId, artifact: settled.action });
+      assert.equal(projection.valid, true, outcome);
+      assert.equal(projection.state, outcome === "NOT_COMMITTED" ? "PROPOSED" : "COMMIT_UNKNOWN", outcome);
+    } finally { await rm(f.target, { recursive: true, force: true }); }
+  }
 });
