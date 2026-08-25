@@ -184,9 +184,13 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
     .find((action) => action.state === "COMMIT_UNKNOWN");
   if (ambiguousAction) {
     return result({ ...context, nextAction: NEXT_ACTIONS.RECONCILE_ACTION,
-      commands: [`forgeloop action-reconcile --task ${state.taskId} --action ${ambiguousAction.actionId}`],
+      commands: [`forgeloop action-reconcile --task ${state.taskId} --action ${ambiguousAction.actionId} --outcome UNKNOWN`],
       reasons: [artifactError("E_ACTION_RECONCILIATION_REQUIRED",
         `Action ${ambiguousAction.actionId} has an unknown external commit outcome; retry is forbidden until reconciliation.`)],
+      reconciliationAuthorityRequired: {
+        outcomesRequiringTrust: ["COMMITTED", "NOT_COMMITTED"],
+        reason: "Recording an UNKNOWN observation is safe from any surface; settling COMMITTED or NOT_COMMITTED requires a trusted host boundary and evidence.",
+      },
       requiredArtifacts: [taskArtifactPath(state.taskId, "actions"), eventsRel] });
   }
   const actionsForApproval = await listActions(target, { packageRoot, taskId: state.taskId });
@@ -194,10 +198,34 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
   const pendingApproval = approvals.find((approval) => approval.status === "PENDING"
     && actionsForApproval.some((action) => action.actionId === approval.actionId && action.requiredForCompletion));
   if (pendingApproval) {
+    // A host-required approval can never be satisfied through a caller CLI
+    // command: CALLER_ACKNOWLEDGED is audit information, not authority.
+    // Surface a structured integration requirement instead of a command that
+    // cannot resolve the blocker.
     return result({ ...context, nextAction: NEXT_ACTIONS.RESOLVE_ACTION_APPROVAL,
-      commands: [`forgeloop approval-resolve --task ${state.taskId} --approval ${pendingApproval.approvalId} --decision APPROVED --authority CALLER_ACKNOWLEDGED`],
+      commands: [],
       reasons: [artifactError("E_ACTION_APPROVAL_REQUIRED", `Required action ${pendingApproval.actionId} is waiting for approval.`)],
-      requiredArtifacts: [taskArtifactPath(state.taskId, "approvals"), eventsRel] });
+      requiredArtifacts: [taskArtifactPath(state.taskId, "approvals"), eventsRel],
+      authorityRequired: {
+        kind: "HOST_ATTESTED",
+        approvalId: pendingApproval.approvalId,
+        reason: "This approval must be resolved by a trusted host/operator boundary.",
+      }, });
+  }
+  // Committed-but-unverified required action needs canonical postcondition
+  // evidence before it can satisfy completion.
+  const committedActions = await listActions(target, { packageRoot, taskId: state.taskId });
+  const unverifiedRequired = committedActions.find((action) => action.requiredForCompletion
+    && action.state === "COMMITTED");
+  if (unverifiedRequired) {
+    return result({ ...context, nextAction: NEXT_ACTIONS.VERIFY_EXTERNAL_ACTION,
+      commands: [
+        `forgeloop run-check --task ${state.taskId} --id check-postcondition --requirement <requirement> -- <independent verification argv>`,
+        `forgeloop action-verify --task ${state.taskId} --action ${unverifiedRequired.actionId} --evidence <execution-ref>`,
+      ],
+      reasons: [artifactError("E_ACTION_VERIFICATION_REQUIRED",
+        `Committed action ${unverifiedRequired.actionId} requires independent canonical postcondition evidence; exit code 0 alone is not verification.`)],
+      requiredArtifacts: [taskArtifactPath(state.taskId, "actions"), eventsRel] });
   }
   if (state.phase === "RECEIVED") {
     return decision(
