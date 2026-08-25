@@ -19,6 +19,10 @@
   is derived from the validated ledger milestones instead of always restarting
   at `ROUTED`, so restored tasks never append duplicate non-repeatable lifecycle
   milestones such as `EXECUTION_STARTED`.
+- Mid-lifecycle preflight refresh: a `PREFLIGHT_READY` re-recorded after later
+  execution/verification milestones no longer invalidates the ledger as
+  out-of-lifecycle-order; re-readiness keeps its prerequisite and compatibility
+  guards while allowing legitimate policy/contract refresh cycles.
 - Preflight re-readiness after a blocked cycle: an append-only lifecycle may
   contain a `PREFLIGHT_READY` that was superseded by a later `PREFLIGHT_BLOCKED`
   outcome (contract evolution, added gate requirement). The compatibility check
