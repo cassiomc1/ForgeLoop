@@ -97,7 +97,7 @@ test("trajectory evaluation persists a reproducible PASS and emits a bound event
     assert.equal(event.details.evaluationId, "eval-pass");
     assert.equal(event.fingerprint, evaluation.evaluationFingerprint);
     const evaluationPath = path.join(target, taskEvaluationPath("task-evaluation", "eval-pass"));
-    assert.ok(evaluationPath.endsWith("evaluations/eval-pass.json"));
+    assert.ok(evaluationPath.endsWith(path.join("evaluations", "eval-pass.json")));
   });
 });
 
