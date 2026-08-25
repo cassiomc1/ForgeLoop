@@ -1,6 +1,11 @@
 import { buildTaskTrace } from "./trace.js";
 import { buildTaskReflection } from "./reflection.js";
 
+export const COMPARABLE_WORK_EVENTS = new Set([
+  "EXECUTION_STARTED", "VERIFICATION_RECORDED", "DIAGNOSTIC_CASE_RECORDED",
+  "INTERVENTION_RECORDED", "ACTION_STARTED", "ACTION_RECONCILED", "REVIEW_STARTED",
+]);
+
 const WORK_EVENTS = new Set([
   "EXECUTION_STARTED", "VERIFICATION_RECORDED", "DIAGNOSTIC_CASE_RECORDED",
   "INTERVENTION_RECORDED", "ACTION_STARTED", "ACTION_RECONCILED", "REVIEW_STARTED",
@@ -41,6 +46,26 @@ export async function buildTrajectoryMetrics({ target, packageRoot, taskId }) {
     actions: {
       total: trace.actions?.total ?? 0,
       verified: trace.actions?.verified ?? 0,
+      // Canonical trust counts come from the action-readiness projection;
+      // raw VERIFIED labels are observability only.
+      trustedSatisfied: await (async () => {
+        try {
+          const { evaluateRequiredActionReadiness } = await import("./action-readiness.js");
+          const readiness = await evaluateRequiredActionReadiness({ target, packageRoot, taskId });
+          return readiness.satisfied;
+        } catch {
+          return null;
+        }
+      })(),
+      unresolvedRequired: await (async () => {
+        try {
+          const { evaluateRequiredActionReadiness } = await import("./action-readiness.js");
+          const readiness = await evaluateRequiredActionReadiness({ target, packageRoot, taskId });
+          return readiness.unresolved;
+        } catch {
+          return null;
+        }
+      })(),
       failed: trace.actions?.failed ?? 0,
       ambiguous: trace.actions?.ambiguous ?? 0,
       reconciliations: trace.actions?.reconciliationCount ?? 0,
@@ -55,6 +80,6 @@ export async function buildTrajectoryMetrics({ target, packageRoot, taskId }) {
       wallClockMs: Number.isFinite(firstMs) && Number.isFinite(lastMs) ? Math.max(0, lastMs - firstMs) : null,
     },
     usage: { tokens: null, costUsd: null, source: "UNKNOWN" },
-    comparableSteps: events.filter((event) => WORK_EVENTS.has(event.type)).length,
+    comparableSteps: events.filter((event) => COMPARABLE_WORK_EVENTS.has(event.type)).length,
   };
 }

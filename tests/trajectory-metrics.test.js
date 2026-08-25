@@ -9,7 +9,7 @@ import { getPackageRoot } from "../src/core/templates.js";
 import { appendProtocolEvent } from "../src/core/events.js";
 import { createWorkState, writeWorkState } from "../src/core/work-state.js";
 import { createEvidence } from "../src/core/evidence.js";
-import { proposeAction, transitionAction } from "../src/core/actions.js";
+import { proposeAction, transitionAction, transitionAuthorizedAction, readAction } from "../src/core/actions.js";
 import { buildTrajectoryMetrics } from "../src/core/trajectory-metrics.js";
 
 const packageRoot = getPackageRoot();
@@ -75,11 +75,24 @@ test("trajectory metrics are deterministic canonical projections and preserve un
         provenance: "HOST_REPORTED",
       },
     });
-    await transitionAction(target, {
+    const action = await readAction(target, {
       packageRoot,
       taskId: "task-metrics",
       actionId: "action-metrics",
-      to: "AUTHORIZED",
+    });
+    await transitionAuthorizedAction(target, {
+      packageRoot,
+      taskId: "task-metrics",
+      actionId: "action-metrics",
+      expectedRevision: 0,
+      expectedFingerprint: action.actionFingerprint,
+      details: {
+        actionFingerprint: action.actionFingerprint,
+        capabilityDecision: "ALLOW",
+        capabilityPolicyFingerprint: "a".repeat(64),
+        policyLockDigest: `sha256:${"b".repeat(64)}`,
+        taskPolicyDigest: `sha256:${"c".repeat(64)}`,
+      },
     });
     await transitionAction(target, {
       packageRoot,
