@@ -245,6 +245,17 @@ export async function projectActionLedger({
     if (artifact.actionFingerprint !== actionFingerprint) {
       errors.push(issue(E_ACTION_EVIDENCE_INVALID, `action ${actionId}: artifact fingerprint differs from the immutable proposal fingerprint`));
     }
+    // The artifact's evidence pointer must match the canonical verification
+    // event when both claim a verified postcondition.
+    if (
+      artifact.lastEvidenceRef !== undefined
+      && artifact.lastEvidenceRef !== null
+      && verification.valid
+      && state === "VERIFIED"
+      && artifact.lastEvidenceRef !== verification.evidenceRef
+    ) {
+      errors.push(issue(E_ACTION_EVIDENCE_INVALID, `action ${actionId}: artifact lastEvidenceRef does not match the ACTION_VERIFIED evidence reference`));
+    }
   }
 
   return {

@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { proposeAction, transitionAction, readAction } from "../src/core/actions.js";
+import { proposeAction, transitionAction, transitionAuthorizedAction, transitionVerifiedAction, readAction } from "../src/core/actions.js";
 import { validateEventLedger } from "../src/core/events.js";
 import { getPackageRoot } from "../src/core/templates.js";
 
@@ -28,16 +28,27 @@ function actionInput(overrides = {}) {
 test("action lifecycle events keep a valid hash-chained ledger", async () => {
   const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-action-ledger-"));
   try {
-    await proposeAction(target, { packageRoot, taskId: "chain-task", input: actionInput() });
-    await transitionAction(target, { packageRoot, taskId: "chain-task", actionId: "action-publish", to: "AUTHORIZED", details: {} });
+    const { action } = await proposeAction(target, { packageRoot, taskId: "chain-task", input: actionInput() });
+    await transitionAuthorizedAction(target, {
+      packageRoot, taskId: "chain-task", actionId: "action-publish",
+      expectedRevision: 0, expectedFingerprint: action.actionFingerprint,
+      details: {
+        actionFingerprint: action.actionFingerprint,
+        capabilityDecision: "ALLOW",
+        capabilityPolicyFingerprint: "a".repeat(64),
+        policyLockDigest: `sha256:${"b".repeat(64)}`,
+        taskPolicyDigest: `sha256:${"c".repeat(64)}`,
+      },
+    });
     await transitionAction(target, { packageRoot, taskId: "chain-task", actionId: "action-publish", to: "STARTED", details: {} });
     await transitionAction(target, { packageRoot, taskId: "chain-task", actionId: "action-publish", to: "COMMITTED", details: {} });
-    await transitionAction(target, {
+    await transitionVerifiedAction(target, {
       packageRoot,
       taskId: "chain-task",
       actionId: "action-publish",
-      to: "VERIFIED",
-      details: { evidenceRef: "check-remote-ref" },
+      expectedRevision: 3,
+      expectedFingerprint: action.actionFingerprint,
+      details: { evidenceRef: "check-remote-ref", evidenceKind: "FORGELOOP_EXECUTION", verifiedAt: new Date().toISOString() },
     });
 
     const result = await validateEventLedger(target, packageRoot, { taskId: "chain-task" });
@@ -73,23 +84,33 @@ test("transition persists fingerprint binding and refuses foreign fingerprints",
     const { action } = await proposeAction(target, { packageRoot, taskId: "fp-task", input: actionInput() });
 
     await assert.rejects(
-      transitionAction(target, {
+      transitionAuthorizedAction(target, {
         packageRoot,
         taskId: "fp-task",
         actionId: action.actionId,
-        to: "AUTHORIZED",
-        details: {},
+        details: {
+          actionFingerprint: action.actionFingerprint,
+          capabilityDecision: "ALLOW",
+          capabilityPolicyFingerprint: "a".repeat(64),
+          policyLockDigest: `sha256:${"b".repeat(64)}`,
+          taskPolicyDigest: `sha256:${"c".repeat(64)}`,
+        },
         expectedFingerprint: "f".repeat(64),
       }),
       (error) => error.code === "E_ACTION_INVALID",
     );
 
-    await transitionAction(target, {
+    await transitionAuthorizedAction(target, {
       packageRoot,
       taskId: "fp-task",
       actionId: action.actionId,
-      to: "AUTHORIZED",
-      details: {},
+      details: {
+        actionFingerprint: action.actionFingerprint,
+        capabilityDecision: "ALLOW",
+        capabilityPolicyFingerprint: "a".repeat(64),
+        policyLockDigest: `sha256:${"b".repeat(64)}`,
+        taskPolicyDigest: `sha256:${"c".repeat(64)}`,
+      },
       expectedFingerprint: action.actionFingerprint,
     });
 

@@ -413,18 +413,37 @@ export async function detectOrphanActions(target, { packageRoot, taskId }) {
     .map((action) => action.actionId);
 }
 
+/**
+ * Compatibility wrapper over the canonical deterministic ledger replay. Every
+ * action's full chronology is validated (transitions, revisions, fingerprints,
+ * authorization, reconciliation, verification) and compared to its artifact.
+ */
 export async function validateActionLedgerConsistency(target, { packageRoot, taskId }) {
   const actions = await listActionFiles(target, packageRoot, taskId);
-  const events = await readEvents(target, packageRoot, { taskId });
+  const { projectActionLedger } = await import("./action-ledger-projection.js");
   const issues = [];
   for (const action of actions) {
-    const related = events.filter((event) => event.details?.actionId === action.actionId);
-    if (!related.some((event) => event.event === "ACTION_PROPOSED" && event.details?.actionFingerprint === action.actionFingerprint)) {
-      issues.push({ actionId: action.actionId, code: "E_ACTION_EVIDENCE_INVALID", message: `action ${action.actionId} has no matching ACTION_PROPOSED ledger event` });
+    const projection = await projectActionLedger({
+      target,
+      packageRoot,
+      taskId,
+      actionId: action.actionId,
+      artifact: action,
+    });
+    if (!projection.valid) {
+      for (const error of projection.errors) {
+        issues.push({
+          actionId: action.actionId,
+          code: error.code ?? "E_ACTION_EVIDENCE_INVALID",
+          message: error.message,
+        });
+      }
       continue;
     }
-    if (action.state !== "PROPOSED" && !related.some((event) => event.details?.toState === action.state || event.event === `ACTION_${action.state}` || (action.state === "COMMITTED" && event.event === "ACTION_COMMIT_RECORDED"))) {
-      issues.push({ actionId: action.actionId, code: "E_ACTION_EVIDENCE_INVALID", message: `action ${action.actionId} state ${action.state} has no matching transition event` });
+    // Artifact must correspond to a proposed identity in the ledger even when
+    // the chronology itself is internally consistent.
+    if (projection.state === null) {
+      issues.push({ actionId: action.actionId, code: "E_ACTION_EVIDENCE_INVALID", message: `action ${action.actionId} has no matching ACTION_PROPOSED ledger event` });
     }
   }
   return issues;
