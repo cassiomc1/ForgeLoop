@@ -116,6 +116,18 @@ forgeloop action-reconcile --task release --action action-publish --outcome COMM
 ```
 
 `COMMIT_UNKNOWN` is an explicit reconciliation boundary, not a failed retry.
+
+After the external postcondition is verified, inspect the observed trajectory
+without inventing usage data:
+
+```bash
+forgeloop metrics --task release --json
+forgeloop eval --task release --scenario scenarios/release.json --json
+```
+
+The efficiency comparison is present only when the scenario declares a
+positive `reference.comparableSteps`; absent host token/cost/model data stays
+unknown.
 # Output: status = failed
 
 # 2. Advance to DIAGNOSING

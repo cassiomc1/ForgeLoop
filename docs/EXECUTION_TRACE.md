@@ -53,3 +53,24 @@ stall decision): verification cycles, failure surfaces, hypothesis summary, inte
 ## Read-only invariant
 
 `history`, `trace`, `reflect`, `inspect`, `progress` never mutate protocol state, acquire ownership, or append events. Test suites enforce this by hashing the complete `.forgeloop` tree before/after invocation.
+
+## Durable actions in the trace
+
+`trace --json` adds an `actions` projection with totals, state and capability
+counts, required/verified/failed/ambiguous counts, repeated idempotency-key
+attempts, reconciliation count, and action-event count. The projection reads
+the task action artifacts and the same ledger already used by history; it is
+not a second source of lifecycle truth.
+
+An action recorded as `COMMIT_UNKNOWN` is an external-state uncertainty, not a
+diagnostic failure. Reflection surfaces `EXTERNAL_ACTION_RECONCILIATION_REQUIRED`
+and recommends `RECONCILE_EXTERNAL_ACTION` before ordinary retry guidance.
+`FORGELOOP_EXECUTED`, `HOST_REPORTED`, and `EXTERNAL_OBSERVED` remain distinct
+provenance values.
+
+`forgeloop metrics --task <id> --json` projects trajectory counts, action
+outcomes, observed executions, and first/last authoritative ledger timestamps.
+Usage fields remain `null` with `source: "UNKNOWN"` when the host did not
+report them. `forgeloop eval --task <id> --scenario <path> --json` evaluates a
+validated current trace against a project-local reference scenario; an
+efficiency ratio is omitted when no positive comparable-step reference exists.

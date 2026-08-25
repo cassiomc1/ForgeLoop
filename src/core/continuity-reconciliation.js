@@ -202,7 +202,7 @@ export async function reconcileContinuity({ target, packageRoot, taskId = null }
 
   let contractFingerprint = null;
   try {
-    const contract = await readContract(target, packageRoot);
+    const contract = await readContract(target, packageRoot, { taskId });
     contractFingerprint = contract.fingerprint;
   } catch {
     contractFingerprint = null;

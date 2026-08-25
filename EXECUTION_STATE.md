@@ -179,3 +179,23 @@ repository context and is always operational context rather than evidence.
 | Stale | Any | Changed | Run `forgeloop route` and `forgeloop preflight` to revalidate |
 | Invalid / Corrupted | Any | Any | Fail closed; inspect errors via `forgeloop doctor --json` |
 | Different Task ID | Present | Any | Do not merge contexts; clear or finish previous task first |
+
+## Durable actions are a separate external-state checkpoint
+
+Action artifacts under `actions/` describe side-effect intent and its canonical
+state; they do not replace `work-state.json`. Approval artifacts bind a single
+decision to the exact action fingerprint, contract fingerprint, task revision,
+and capability. Capability policy is configuration, not host authority.
+
+`FORGELOOP_EXECUTED` means ForgeLoop launched exact argv through `run-action`;
+`HOST_REPORTED` means an external host performed the operation; and
+`EXTERNAL_OBSERVED` means a later observation supplied reconciliation evidence.
+If the external outcome is uncertain, the action is `COMMIT_UNKNOWN`. It must
+not be retried or used to satisfy required completion until
+`forgeloop action-reconcile` records `COMMITTED`, `NOT_COMMITTED`, or
+`UNKNOWN`. ForgeLoop does not claim universal exactly-once execution.
+
+`metrics` and `eval` read the canonical trace, reflection, action artifacts, and
+ledger events. They never mutate lifecycle truth, invent usage/cost data, or
+create a second execution history; reference efficiency is emitted only when a
+project-local scenario provides comparable steps.

@@ -27,6 +27,7 @@
 - [Precedence & Stop Conditions](#precedence)
 - [Final Delivery](#final-delivery)
 - [Cross-Harness Continuity](#cross-harness-execution-continuity)
+- [Durable Actions and Trajectory Evidence](#durable-actions-and-trajectory-evidence)
 - [Multi-Task Concurrent Project State](#multi-task-concurrent-project-state)
 
 ## Protocol applicability
@@ -1277,6 +1278,34 @@ never satisfy verification coverage, publication, production readiness, or
 completion. `CONTINUITY_CANNOT_GRANT_AUTHORITY`: continuity cannot authorize an
 installation or external action. <a id="FL-CONT-001"></a> **FL-CONT-001 — A receiving harness MUST reconcile**
 continuity against the current work state and checkout before acting on it.
+
+## Durable Actions and Trajectory Evidence
+
+Durable actions extend the existing task protocol; they do not turn ForgeLoop
+into an agent runtime, scheduler, queue, or workflow engine. Action intent,
+approval, execution provenance, reconciliation, and evaluation are task-local
+artifacts whose chronology remains in the same hash-chained `events.ndjson`.
+
+Every side-effecting action declares an explicit capability, effect class,
+bounded target, immutable idempotency key, and provenance. Project capability
+policy is a decision input (`ALLOW`, `DENY`, `REQUIRE_AUTHORITY`, or
+`REQUIRE_APPROVAL`); it is never host authority. `HOST_ATTESTED` authority can
+only cross the existing host trust boundary, and `run-action` accepts exact
+argv with no shell mode.
+
+`COMMIT_UNKNOWN` is an explicit external-state boundary. It forbids automatic
+retry and blocks required completion until `action-reconcile` records bounded
+evidence as `COMMITTED`, `NOT_COMMITTED`, or `UNKNOWN`. ForgeLoop reports
+idempotency protection and reconciliation outcomes, but never claims universal
+exactly-once execution. `FORGELOOP_EXECUTED`, `HOST_REPORTED`, and
+`EXTERNAL_OBSERVED` remain distinct provenance values.
+
+Trajectory metrics and reference evaluations are read-only projections over the
+canonical trace, reflection, actions, and events. Missing tokens, costs,
+provider, model, or optimal-path data remain `null`/`UNKNOWN`; a comparative
+efficiency ratio exists only when a project-local reference scenario supplies
+`reference.comparableSteps`. Existing information-gain, intervention, failure
+signature, and oscillation diagnostics remain canonical.
 
 ## Multi-task concurrent project state
 
