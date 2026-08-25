@@ -38,6 +38,7 @@ function capabilitiesResult({ policy, projectRoot }) {
       transportCapabilities: {
         allowExternalExecution: policy.allowExternalExecution,
         allowApprovalResolution: policy.allowApprovalResolution,
+        allowActionReconciliationSettlement: policy.allowActionReconciliationSettlement,
         allowMaintenance: policy.allowMaintenance,
         allowRecovery: policy.allowRecovery,
         allowLegacyRepair: policy.allowLegacyRepair,
@@ -126,7 +127,7 @@ export function buildForgeLoopMcpServer({ projectContext, policy, packageRoot, a
   return server;
 }
 
-function validateLaunchContext({ mode, allowExternalExecution, allowApprovalResolution, allowMaintenance, allowRecovery, allowLegacyRepair, allowForceRecovery, maxExecutionTimeMs }) {
+function validateLaunchContext({ mode, allowExternalExecution, allowApprovalResolution, allowActionReconciliationSettlement, allowMaintenance, allowRecovery, allowLegacyRepair, allowForceRecovery, maxExecutionTimeMs }) {
   if (FORGELOOP_INTEGRATION_API_VERSION !== 1) {
     throw new Error(`E_MCP_FORGELOOP_INTEGRATION_UNSUPPORTED: ForgeLoop integration API ${FORGELOOP_INTEGRATION_API_VERSION} is not supported (required: 1)`);
   }
@@ -134,6 +135,7 @@ function validateLaunchContext({ mode, allowExternalExecution, allowApprovalReso
     mode,
     allowExternalExecution,
     allowApprovalResolution,
+    allowActionReconciliationSettlement,
     allowMaintenance,
     allowRecovery,
     allowLegacyRepair,
@@ -152,6 +154,7 @@ export async function createForgeLoopMcpServer({
   mode = SERVER_MODES.SAFE,
   allowExternalExecution = false,
   allowApprovalResolution = false,
+  allowActionReconciliationSettlement = false,
   allowMaintenance = false,
   allowRecovery = false,
   allowLegacyRepair = false,
@@ -165,6 +168,7 @@ export async function createForgeLoopMcpServer({
     mode,
     allowExternalExecution,
     allowApprovalResolution,
+    allowActionReconciliationSettlement,
     allowMaintenance,
     allowRecovery,
     allowLegacyRepair,

@@ -583,6 +583,7 @@ silently ignored.
 - `digest` *(string, required, minLength: 1)*
 - `rulesDigest` *(string, required)*
 - `baselineDigest` *(string, required)*
+- `capabilityPolicyDigest` *(string, optional, pattern: `^sha256:[a-f0-9]{64}$`)*
 - `capturedAt` *(string, optional)*
 
 <!-- END FORGELOOP GENERATED: schema:policy-lock -->
@@ -611,6 +612,8 @@ comparison explicitly `UNKNOWN` rather than assuming an empty baseline.
 - `rules` *(array<string,object>, required)*
 - `baseline` *(object, optional)*
 - `baselineDigest` *(string, optional)*
+- `capabilityPolicyDigest` *(string, optional, pattern: `^sha256:[a-f0-9]{64}$`)*
+- `capabilityPolicyFingerprint` *(string, optional, pattern: `^[a-f0-9]{64}$`)*
 - `capturedAt` *(string, optional)*
 
 <!-- END FORGELOOP GENERATED: schema:policy-snapshot -->
