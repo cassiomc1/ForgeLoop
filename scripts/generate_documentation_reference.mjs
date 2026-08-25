@@ -299,7 +299,7 @@ export function generatePublicErrorCodesTable() {
   ];
 
   for (const err of Object.values(PUBLIC_ERROR_REGISTRY)) {
-    rows.push(`| \`${err.code}\` | ${err.meaning} | ${err.safeResolution} |`);
+    rows.push(`| \`${escapeMarkdownTableCell(err.code)}\` | ${escapeMarkdownTableCell(err.meaning)} | ${escapeMarkdownTableCell(err.safeResolution)} |`);
   }
 
   return rows.join("\n");

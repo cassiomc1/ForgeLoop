@@ -715,7 +715,7 @@ forgeloop next --task <id> --json
 | `E_ACTION_IDEMPOTENCY_REQUIRED` | Side-effecting action class requires an idempotency key. | Supply a stable --idempotency-key that identifies the logical external action. |
 | `E_ACTION_INVALID` | Durable action artifact or parameters are malformed or schema-invalid. | Correct the action fields reported by the structured error, then retry through forgeloop action-propose or run-action. |
 | `E_ACTION_NOT_FOUND` | Referenced durable action ID does not exist for the task. | List actions with forgeloop action-show or propose the action first. |
-| `E_ACTION_RECONCILIATION_REQUIRED` | An action is COMMIT_UNKNOWN and blocks progress until explicitly reconciled. | Observe the external system and run forgeloop action-reconcile --outcome COMMITTED|NOT_COMMITTED|UNKNOWN with evidence references. |
+| `E_ACTION_RECONCILIATION_REQUIRED` | An action is COMMIT_UNKNOWN and blocks progress until explicitly reconciled. | Observe the external system and run forgeloop action-reconcile --outcome COMMITTED\|NOT_COMMITTED\|UNKNOWN with evidence references. |
 | `E_ACTION_STATE_MISMATCH` | Requested durable action transition is not part of the canonical state machine. | Inspect current action state with forgeloop action-show and use a legal transition; never edit action artifacts by hand. |
 | `E_APPROVAL_ALREADY_RESOLVED` | Approval is one-time resolvable and has already been approved or rejected. | Request a new approval if another decision is required. |
 | `E_APPROVAL_INVALID` | Approval artifact is malformed or does not bind the required fingerprint tuple. | Request a new approval with forgeloop approval-request; never hand-edit approval artifacts. |
