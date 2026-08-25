@@ -27,6 +27,8 @@
         "count": { "type": "integer", "minimum": 0 },
         "required": { "type": "integer", "minimum": 0 },
         "verified": { "type": "integer", "minimum": 0 },
+        "trustedSatisfied": { "type": "integer", "minimum": 0 },
+        "unresolvedRequired": { "type": "integer", "minimum": 0 },
         "failed": { "type": "integer", "minimum": 0 },
         "ambiguous": { "type": "integer", "minimum": 0 },
         "pending": { "type": "integer", "minimum": 0 },
