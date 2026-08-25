@@ -15,6 +15,12 @@ import { getActiveTaskTransaction, withTaskTransaction } from "./transaction.js"
 
 import { assertDiagnosisDetails } from "./diagnosis-model.js";
 import {
+  assertActionEventDetails,
+  assertApprovalEventDetails,
+  isActionEventName,
+  isApprovalEventName,
+} from "./action-model.js";
+import {
   assertDiagnosticCaseDetails,
   assertInterventionDetails,
   assertHypothesisDispositionDetails,
@@ -136,6 +142,14 @@ export function validateKnownEventDetails(event) {
       assertRecoveryResumedDetails(event.details);
       return;
     default:
+      if (isActionEventName(event.event)) {
+        assertActionEventDetails(event);
+        return;
+      }
+      if (isApprovalEventName(event.event)) {
+        assertApprovalEventDetails(event);
+        return;
+      }
       return;
   }
 }
