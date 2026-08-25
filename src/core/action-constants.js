@@ -71,6 +71,13 @@ export const SIDE_EFFECTING_EFFECT_CLASSES = Object.freeze(
   ACTION_EFFECT_CLASSES.filter((effectClass) => effectClass !== "READ_ONLY"),
 );
 
+// States whose semantics are security-relevant: entering them must be owned
+// by a canonical core service, never by a generic caller-controlled surface.
+export const ACTION_SECURITY_SENSITIVE_STATES = Object.freeze([
+  "AUTHORIZED",
+  "VERIFIED",
+]);
+
 export const COMMIT_UNKNOWN_RESULT_CODES = Object.freeze([
   "IDEMPOTENCY_PROTECTED",
   "RECONCILED_COMMITTED",

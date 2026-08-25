@@ -251,3 +251,53 @@ test("capability policy rejects unknown decision values and capabilities", async
     }),
   );
 });
+
+function makeValidAction(overrides = {}) {
+  const now = "2026-08-25T00:00:00.000Z";
+  const base = {
+    schemaVersion: 1,
+    taskId: "task-1",
+    actionId: "action-push",
+    actionFingerprint: canonicalActionFingerprint(validActionInput()),
+    effectClass: "EXTERNAL_PUBLICATION",
+    capability: "repository.push",
+    target: "origin/main",
+    operation: "push branch",
+    idempotencyKey: "task-1:push:origin-main:v1",
+    requiredForCompletion: true,
+    requirement: "publication",
+    provenance: "FORGELOOP_EXECUTED",
+    state: "PROPOSED",
+    revision: 0,
+    createdAt: now,
+    updatedAt: now,
+  };
+  return { ...base, ...overrides };
+}
+
+test("VERIFIED action artifacts require a canonical lastEvidenceRef", () => {
+  const verified = makeValidAction({
+    state: "VERIFIED",
+    revision: 4,
+    lastEvidenceRef: undefined,
+  });
+  assert.throws(
+    () => validateActionArtifact(verified),
+    (error) => error.code === "E_ACTION_VERIFICATION_REQUIRED",
+  );
+});
+
+test("optional action fields are validated when present", () => {
+  assert.throws(
+    () => validateActionArtifact(makeValidAction({ lastReconciliationAt: "not-a-date" })),
+    (error) => error.code === "E_ACTION_INVALID",
+  );
+  assert.throws(
+    () => validateActionArtifact(makeValidAction({ commitResultCode: "MADE_UP" })),
+    (error) => error.code === "E_ACTION_INVALID",
+  );
+  assert.throws(
+    () => validateActionArtifact(makeValidAction({ lastEvidenceRef: "" })),
+    (error) => error.code === "E_ACTION_INVALID",
+  );
+});
