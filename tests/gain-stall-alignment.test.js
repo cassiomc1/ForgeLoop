@@ -187,6 +187,143 @@ test("progress alignment: 3+ repeated failures with real Information Gain v2 sta
   ));
 });
 
+test("progress alignment: new contributor gain survives repeated failures", () => {
+  const events = [
+    failTests(1, 1),
+    caseEvent(2, 1),
+    failTests(3, 2),
+    caseEvent(4, 2),
+    failTests(5, 3),
+    caseEvent(6, 3, {
+      contributors: [
+        { id: "c-2", type: "CONFIGURATION", statement: "timeout configuration is fixed at 2 seconds", basis: ["obs-1"], status: "SUSPECTED" },
+      ],
+    }),
+  ];
+
+  const projection = buildInformationGainProjection(events, "t");
+  const latest = projection.at(-1);
+  assert.equal(latest.classification, "NONE");
+  assert.equal(latest.dimensions.newContributor, true);
+  assert.equal(latest.effectiveGain, true);
+
+  const progress = evaluateProgress({
+    state: { taskId: "t", verificationCycle: 3, checks: [] },
+    events,
+  });
+  assert.equal(progress.status, "WATCH");
+  assert.ok(!progress.signals.some(
+    (signal) => signal.code === "NO_DIAGNOSTIC_INFORMATION_GAIN",
+  ));
+  assert.ok(!progress.signals.some(
+    (signal) => signal.code === "REPEATED_FAILURE_WITH_SAME_DIAGNOSIS",
+  ));
+});
+
+test("progress alignment: hypothesis elimination gain survives repeated failures", () => {
+  // h-1 and h-2 open in cycle 1; cycle 3 keeps only an unrelated h-3,
+  // eliminating both prior hypotheses semantically (not ID churn).
+  const events = [
+    failTests(1, 1),
+    caseEvent(2, 1, {
+      hypotheses: [
+        { id: "h-1", statement: "Hypothesis one.", evidenceRefs: ["check-tests"] },
+        { id: "h-2", statement: "Hypothesis two.", evidenceRefs: ["check-tests"] },
+      ],
+    }),
+    failTests(3, 2),
+    caseEvent(4, 2, {
+      hypotheses: [
+        { id: "h-1", statement: "Hypothesis one.", evidenceRefs: ["check-tests"] },
+        { id: "h-2", statement: "Hypothesis two.", evidenceRefs: ["check-tests"] },
+      ],
+    }),
+    failTests(5, 3),
+    caseEvent(6, 3, {
+      hypotheses: [{ id: "h-3", statement: "Unrelated third hypothesis.", evidenceRefs: ["check-tests"] }],
+    }),
+  ];
+
+  const projection = buildInformationGainProjection(events, "t");
+  const latest = projection.at(-1);
+  assert.equal(latest.dimensions.hypothesisEliminated, true);
+  assert.equal(latest.effectiveGain, true);
+
+  const stall = evaluateStructuredDiagnosticStall(projection, {
+    verificationCycle: 3,
+  });
+  assert.equal(stall.stalled, false);
+
+  const progress = evaluateProgress({
+    state: { taskId: "t", verificationCycle: 3, checks: [] },
+    events,
+  });
+  assert.equal(progress.status, "WATCH");
+});
+
+test("progress alignment: repeated semantically identical diagnoses stay stalled", () => {
+  const events = [
+    failTests(1, 1),
+    caseEvent(2, 1),
+    failTests(3, 2),
+    caseEvent(4, 2),
+    failTests(5, 3),
+    caseEvent(6, 3),
+  ];
+
+  const projection = buildInformationGainProjection(events, "t");
+  const latest = projection.at(-1);
+  assert.equal(latest.classification, "NONE");
+  assert.equal(latest.effectiveGain, false);
+
+  const stall = evaluateStructuredDiagnosticStall(projection, {
+    verificationCycle: 3,
+  });
+  assert.equal(stall.stalled, true);
+
+  const progress = evaluateProgress({
+    state: { taskId: "t", verificationCycle: 3, checks: [] },
+    events,
+  });
+  assert.equal(progress.status, "STALLED");
+  assert.ok(progress.signals.some(
+    (signal) => signal.code === "NO_DIAGNOSTIC_INFORMATION_GAIN",
+  ));
+  assert.ok(progress.signals.some(
+    (signal) => signal.code === "REPEATED_FAILURE_WITH_SAME_DIAGNOSIS",
+  ));
+});
+
+test("progress alignment: legacy informationGain NONE keeps stall semantics", () => {
+  const legacyDiag = (seq, cycle, informationGain) => ev(seq, "DIAGNOSIS_RECORDED", {
+    verificationCycle: cycle,
+    hypothesis: "Hypothesis one.",
+    informationGain,
+    evidenceRefs: ["check-tests"],
+  });
+
+  const events = [
+    failTests(1, 1),
+    legacyDiag(2, 1, "FIRST_DIAGNOSIS"),
+    failTests(3, 2),
+    legacyDiag(4, 2, "NONE"),
+    failTests(5, 3),
+    legacyDiag(6, 3, "NONE"),
+  ];
+
+  const progress = evaluateProgress({
+    state: { taskId: "t", verificationCycle: 3, checks: [] },
+    events,
+  });
+  assert.equal(progress.status, "STALLED");
+  assert.ok(progress.signals.some(
+    (signal) => signal.code === "NO_DIAGNOSTIC_INFORMATION_GAIN",
+  ));
+  assert.ok(progress.signals.some(
+    (signal) => signal.code === "REPEATED_FAILURE_WITH_SAME_DIAGNOSIS",
+  ));
+});
+
 // ---------- public lifecycle fixtures ----------
 
 async function setupToDiagnosing(target, { successCriteria = ["lint"] } = {}) {
