@@ -2,8 +2,8 @@ import { transitionAction } from "../core/actions.js";
 import { withTaskMutation } from "../core/task-command.js";
 
 export async function runActionRecord({ target, packageRoot, taskId, actionId, state, provenance, evidenceRef }) {
-  if (!["HOST_REPORTED", "EXTERNAL_OBSERVED"].includes(provenance)) {
-    const error = new Error("action-record provenance must be HOST_REPORTED or EXTERNAL_OBSERVED");
+  if (!["CALLER_REPORTED", "EXTERNAL_OBSERVED"].includes(provenance)) {
+    const error = new Error("action-record provenance must be CALLER_REPORTED or EXTERNAL_OBSERVED");
     error.code = "E_ACTION_INVALID";
     throw error;
   }

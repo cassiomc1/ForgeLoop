@@ -1,4 +1,5 @@
 import { proposeAction, transitionAction } from "./actions.js";
+import { actionRequiresIdempotency } from "./action-model.js";
 import { evaluateActionCapability } from "./capability-policy.js";
 import { runCommandExecution } from "./execution.js";
 
@@ -6,6 +7,13 @@ function actionExecutionError(code, message) {
   const error = new Error(message);
   error.code = code;
   return error;
+}
+
+function startedExecutionOutcome(action, execution) {
+  if (execution.status === "passed") return "COMMITTED";
+  if (!actionRequiresIdempotency(action.effectClass)) return "FAILED";
+  if (execution.termination === "spawn-error") return "FAILED";
+  return "COMMIT_UNKNOWN";
 }
 
 export async function executeDurableAction({
@@ -34,6 +42,17 @@ export async function executeDurableAction({
   const authorized = await transitionAction(target, {
     packageRoot, taskId, actionId: action.actionId, to: "AUTHORIZED",
     expectedRevision: action.revision, expectedFingerprint: action.actionFingerprint,
+    details: {
+      capabilityDecision: capability.decision,
+      capabilityPolicyFingerprint: capability.policyFingerprint,
+      ...(capability.approvalId ? { approvalId: capability.approvalId } : {}),
+      ...(authorityContext?.trustMode === "HOST_ATTESTED"
+        ? {
+            authorityKind: "HOST_ATTESTED",
+            ...(typeof authorityContext.grantRef === "string" ? { authorityRef: authorityContext.grantRef } : {}),
+          }
+        : {}),
+    },
   });
   const started = await transitionAction(target, {
     packageRoot, taskId, actionId: action.actionId, to: "STARTED",
@@ -47,17 +66,30 @@ export async function executeDurableAction({
       argv, timeoutMs, authorityContext,
     });
   } catch (error) {
+    const to = actionRequiresIdempotency(action.effectClass) ? "COMMIT_UNKNOWN" : "FAILED";
     await transitionAction(target, {
-      packageRoot, taskId, actionId: action.actionId, to: "FAILED",
-      expectedRevision: started.revision, details: { reason: "process did not launch" },
+      packageRoot, taskId, actionId: action.actionId, to,
+      expectedRevision: started.revision,
+      details: {
+        reason: to === "COMMIT_UNKNOWN"
+          ? "execution outcome could not be proven after action start"
+          : "process did not launch",
+        ...(to === "COMMIT_UNKNOWN" ? { commitResultCode: "AMBIGUOUS" } : {}),
+      },
     });
     throw error;
   }
-  const to = execution.execution.status === "passed" ? "COMMITTED" : "FAILED";
+  const to = startedExecutionOutcome(action, execution.execution);
   const result = await transitionAction(target, {
     packageRoot, taskId, actionId: action.actionId, to,
     expectedRevision: started.revision,
-    details: { evidenceRef: execution.execution.executionId, commitResultCode: execution.execution.exitCode },
+    details: {
+      evidenceRef: execution.execution.executionId,
+      ...(to === "COMMIT_UNKNOWN" ? {
+        commitResultCode: "AMBIGUOUS",
+        reason: `started execution ended via ${execution.execution.termination} without proving external commit state`,
+      } : {}),
+    },
   });
   return { action: result, execution: execution.execution, executionPath: execution.path, capability };
 }

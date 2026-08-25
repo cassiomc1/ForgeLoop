@@ -9,11 +9,14 @@ import {
   validateApprovalArtifact,
 } from "./action-model.js";
 import {
+  E_ACTION_AUTHORITY_REQUIRED,
   E_ACTION_NOT_FOUND,
   E_APPROVAL_ALREADY_RESOLVED,
   E_APPROVAL_INVALID,
   E_APPROVAL_STALE,
 } from "./error-codes.js";
+import { assertSafePath, ensureWithin } from "./filesystem.js";
+import { isTrustedHostAuthorityContext } from "./capability-policy.js";
 import { taskApprovalPath, taskDirectory, TASK_ARTIFACT_FILES } from "./task-paths.js";
 import { readAction } from "./actions.js";
 import { readWorkState } from "./work-state.js";
@@ -26,11 +29,13 @@ function approvalError(code, message) {
 
 async function readApprovalFile(target, taskId, approvalId) {
   const relPath = taskApprovalPath(taskId, approvalId);
+  await assertSafePath(target, relPath);
   let text;
   try {
-    text = await readFile(path.join(target, relPath), "utf8");
-  } catch {
-    return null;
+    text = await readFile(ensureWithin(target, relPath), "utf8");
+  } catch (error) {
+    if (error?.code === "ENOENT") return null;
+    throw error;
   }
   try {
     return JSON.parse(text);
@@ -41,24 +46,28 @@ async function readApprovalFile(target, taskId, approvalId) {
 
 async function writeApprovalFile(target, taskId, approval) {
   const relPath = taskApprovalPath(taskId, approval.approvalId);
+  await assertSafePath(target, relPath);
   const serialized = `${JSON.stringify(approval, null, 2)}\n`;
   const activeTransaction = getActiveTaskTransaction();
   if (activeTransaction) {
     await activeTransaction.stageText(relPath, serialized);
   } else {
-    const absolute = path.join(target, relPath);
+    const absolute = ensureWithin(target, relPath);
     await mkdir(path.dirname(absolute), { recursive: true });
     await writeFile(absolute, serialized, "utf8");
   }
 }
 
 async function listApprovalFiles(target, taskId) {
-  const absoluteDir = path.join(target, taskDirectory(taskId), TASK_ARTIFACT_FILES.approvals);
+  const relDir = `${taskDirectory(taskId)}/${TASK_ARTIFACT_FILES.approvals}`;
+  await assertSafePath(target, relDir);
+  const absoluteDir = ensureWithin(target, relDir);
   let entries;
   try {
     entries = await readdir(absoluteDir);
-  } catch {
-    return [];
+  } catch (error) {
+    if (error?.code === "ENOENT") return [];
+    throw error;
   }
   const approvals = [];
   for (const entry of entries) {
@@ -193,6 +202,7 @@ export async function resolveApproval(target, {
   decision,
   authorityKind,
   hostGrantRef,
+  authorityContext,
   reason,
 }) {
   assertApprovalIdFormat(approvalId);
@@ -203,11 +213,20 @@ export async function resolveApproval(target, {
     throw approvalError(E_APPROVAL_INVALID, "authorityKind must be CALLER_ACKNOWLEDGED or HOST_ATTESTED");
   }
   if (authorityKind === "HOST_ATTESTED") {
+    if (!isTrustedHostAuthorityContext(authorityContext)) {
+      throw approvalError(
+        E_ACTION_AUTHORITY_REQUIRED,
+        "HOST_ATTESTED approval resolution requires a trusted host-boundary authority context",
+      );
+    }
     if (typeof hostGrantRef !== "string" || !hostGrantRef || hostGrantRef.length > 256) {
       throw approvalError(
         E_APPROVAL_INVALID,
         "HOST_ATTESTED resolution requires a bounded non-empty hostGrantRef supplied by the host boundary",
       );
+    }
+    if (typeof authorityContext?.grantRef === "string" && authorityContext.grantRef !== hostGrantRef) {
+      throw approvalError(E_ACTION_AUTHORITY_REQUIRED, "hostGrantRef does not match the trusted host authority context");
     }
   } else if (hostGrantRef !== undefined && hostGrantRef !== null) {
     throw approvalError(

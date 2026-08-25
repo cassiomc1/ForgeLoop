@@ -18,6 +18,7 @@ import {
   E_ACTION_NOT_FOUND,
   E_ACTION_STATE_MISMATCH,
 } from "./error-codes.js";
+import { assertSafePath, ensureWithin } from "./filesystem.js";
 import { taskActionPath, taskDirectory, TASK_ARTIFACT_FILES } from "./task-paths.js";
 
 const STATE_EVENT_NAMES = Object.freeze({
@@ -38,12 +39,14 @@ function actionError(code, message) {
 
 async function readActionFile(target, packageRoot, taskId, actionId) {
   const relPath = taskActionPath(taskId, actionId);
-  const absolute = path.join(target, relPath);
+  await assertSafePath(target, relPath);
+  const absolute = ensureWithin(target, relPath);
   let text;
   try {
     text = await readFile(absolute, "utf8");
-  } catch {
-    return null;
+  } catch (error) {
+    if (error?.code === "ENOENT") return null;
+    throw error;
   }
   try {
     return JSON.parse(text);
@@ -54,12 +57,13 @@ async function readActionFile(target, packageRoot, taskId, actionId) {
 
 async function writeActionFile(target, packageRoot, taskId, action) {
   const relPath = taskActionPath(taskId, action.actionId);
+  await assertSafePath(target, relPath);
   const serialized = `${JSON.stringify(action, null, 2)}\n`;
   const activeTransaction = getActiveTaskTransaction();
   if (activeTransaction) {
     await activeTransaction.stageText(relPath, serialized);
   } else {
-    const absolute = path.join(target, relPath);
+    const absolute = ensureWithin(target, relPath);
     await mkdir(path.dirname(absolute), { recursive: true });
     await writeFile(absolute, serialized, "utf8");
   }
@@ -70,12 +74,15 @@ function taskActionsDirectory(taskId) {
 }
 
 async function listActionFiles(target, packageRoot, taskId) {
-  const absoluteDir = path.join(target, taskActionsDirectory(taskId));
+  const relDir = taskActionsDirectory(taskId);
+  await assertSafePath(target, relDir);
+  const absoluteDir = ensureWithin(target, relDir);
   let entries;
   try {
     entries = await readdir(absoluteDir);
-  } catch {
-    return [];
+  } catch (error) {
+    if (error?.code === "ENOENT") return [];
+    throw error;
   }
   const actions = [];
   for (const entry of entries) {
@@ -206,6 +213,17 @@ export async function findActionByIdempotencyKey(target, { packageRoot, taskId, 
   return found ? validateActionArtifact(found) : null;
 }
 
+function assertAuthorizationDetails(details) {
+  if (details.capabilityDecision !== undefined) {
+    if (!["ALLOW", "REQUIRE_AUTHORITY", "REQUIRE_APPROVAL"].includes(details.capabilityDecision)) {
+      throw actionError(E_ACTION_EVIDENCE_INVALID, "capabilityDecision must be an allowed authorization decision");
+    }
+    if (typeof details.capabilityPolicyFingerprint !== "string" || !/^[a-f0-9]{64}$/.test(details.capabilityPolicyFingerprint)) {
+      throw actionError(E_ACTION_EVIDENCE_INVALID, "capabilityPolicyFingerprint must bind ACTION_AUTHORIZED to the exact project policy");
+    }
+  }
+}
+
 export async function transitionAction(target, {
   packageRoot,
   taskId,
@@ -226,6 +244,7 @@ export async function transitionAction(target, {
       throw actionError(E_ACTION_EVIDENCE_INVALID, "evidenceRefs must be bounded non-empty strings");
     }
   }
+  if (to === "AUTHORIZED") assertAuthorizationDetails(details);
 
   return withTaskTransaction(
     { target, taskId, operation: "transition-action" },
@@ -272,8 +291,21 @@ export async function transitionAction(target, {
         revision: next.revision,
       };
       const boundedDetails = { ...baseDetails };
-      for (const key of ["evidenceRef", "evidenceRefs", "reason", "reconciliationOutcome", "observedAt"]) {
-        if (details[key] !== undefined) boundedDetails[key] = details[key];
+      for (const key of [
+        "evidenceRef",
+        "evidenceRefs",
+        "reason",
+        "reconciliationOutcome",
+        "observedAt",
+        "commitResultCode",
+        "capabilityDecision",
+        "capabilityPolicyFingerprint",
+        "approvalId",
+        "authorityKind",
+        "authorityRef",
+        "reportedProvenance",
+      ]) {
+        if (details[key] !== undefined && details[key] !== null) boundedDetails[key] = details[key];
       }
 
       const reconciliationDriven = current.state === "COMMIT_UNKNOWN";

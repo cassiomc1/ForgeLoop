@@ -45,6 +45,8 @@ test("action vocabularies match the frozen protocol contract", () => {
   ]);
   assert.deepEqual([...ACTION_PROVENANCE], [
     "FORGELOOP_EXECUTED",
+    "HOST_ATTESTED",
+    "CALLER_REPORTED",
     "HOST_REPORTED",
     "EXTERNAL_OBSERVED",
   ]);

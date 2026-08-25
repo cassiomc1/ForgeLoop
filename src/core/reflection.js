@@ -250,7 +250,7 @@ export async function buildTaskReflection({ target, packageRoot, taskId = null }
   }
   if ((trace.actions?.ambiguous ?? 0) > 0) {
     signals.push("EXTERNAL_ACTION_RECONCILIATION_REQUIRED");
-    status = REFLECTION_STATUS.WATCH;
+    status = status === REFLECTION_STATUS.ADVANCING ? REFLECTION_STATUS.WATCH : status;
   }
 
   const recommendedProtocolAction = (trace.actions?.ambiguous ?? 0) > 0

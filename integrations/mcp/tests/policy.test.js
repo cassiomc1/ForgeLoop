@@ -11,6 +11,7 @@ test("launch policy is immutable and validates flags", () => {
   assert.equal(Object.isFrozen(policy), true);
   assert.throws(() => resolveLaunchPolicy({ mode: "bogus" }));
   assert.throws(() => resolveLaunchPolicy({ mode: SERVER_MODES.SAFE, allowRecovery: true }), /--mode full/);
+  assert.throws(() => resolveLaunchPolicy({ mode: SERVER_MODES.SAFE, allowApprovalResolution: true }), /--mode full/);
 });
 
 test("readonly mode exposes only read-only tools", () => {
@@ -28,7 +29,7 @@ test("safe mode enables loop mutations and task-resume but not gated capabilitie
   for (const command of ["route", "advance", "complete", "task-create", "task-resume"]) {
     assert.equal(toolEnabled(command, classifyForgeLoopInvocation(command), policy), true, command);
   }
-  for (const command of ["run-check", "reconcile-closure", "init", "update", "task-recover", "task-repair-legacy-recovery"]) {
+  for (const command of ["run-check", "reconcile-closure", "approval-resolve", "init", "update", "task-recover", "task-repair-legacy-recovery"]) {
     assert.equal(toolEnabled(command, classifyForgeLoopInvocation(command), policy), false, command);
   }
 });
@@ -37,10 +38,15 @@ test("full mode requires explicit opt-in flags per capability", () => {
   const base = resolveLaunchPolicy({ mode: SERVER_MODES.FULL });
   assert.equal(toolEnabled("task-recover", classifyForgeLoopInvocation("task-recover"), base), false);
   assert.equal(toolEnabled("task-repair-legacy-recovery", classifyForgeLoopInvocation("task-repair-legacy-recovery"), base), false);
+  assert.equal(toolEnabled("approval-resolve", classifyForgeLoopInvocation("approval-resolve"), base), false);
 
   const withRecovery = resolveLaunchPolicy({ mode: SERVER_MODES.FULL, allowRecovery: true });
   assert.equal(toolEnabled("task-recover", classifyForgeLoopInvocation("task-recover"), withRecovery), true);
   assert.equal(toolEnabled("run-check", classifyForgeLoopInvocation("run-check"), withRecovery), false);
+
+  const withApprovalResolution = resolveLaunchPolicy({ mode: SERVER_MODES.FULL, allowApprovalResolution: true });
+  assert.equal(toolEnabled("approval-resolve", classifyForgeLoopInvocation("approval-resolve"), withApprovalResolution), true);
+  assert.equal(toolEnabled("run-check", classifyForgeLoopInvocation("run-check"), withApprovalResolution), false);
 
   // Legacy repair stays hidden even when other full-mode flags are enabled.
   const mixed = resolveLaunchPolicy({
