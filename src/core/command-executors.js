@@ -29,6 +29,7 @@ import { runAction } from "../commands/run-action.js";
 import { runActionPropose } from "../commands/action-propose.js";
 import { runActionRecord } from "../commands/action-record.js";
 import { runActionShow } from "../commands/action-show.js";
+import { runActionVerify } from "../commands/action-verify.js";
 import { runActionReconcile } from "../commands/action-reconcile.js";
 import { runMetrics } from "../commands/metrics.js";
 import { runEval } from "../commands/eval.js";
@@ -192,6 +193,10 @@ export const COMMAND_EXECUTORS = {
   }), exitCode: 0 }),
   "action-show": async ({ target, packageRoot, options }) => ({ result: await runActionShow({
     target, packageRoot, taskId: options.taskId, actionId: options.actionId,
+  }), exitCode: 0 }),
+  "action-verify": async ({ target, packageRoot, options }) => ({ result: await runActionVerify({
+    target, packageRoot, taskId: options.taskId, actionId: options.actionId,
+    evidenceRef: options.actionEvidenceRef,
   }), exitCode: 0 }),
   "action-reconcile": async ({ target, packageRoot, options }) => ({ result: await runActionReconcile({
     target, packageRoot, taskId: options.taskId, actionId: options.actionId,

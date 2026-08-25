@@ -355,6 +355,15 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     }), writes: [".forgeloop/task-state/<taskKey>/actions/action-<id>.json", ".forgeloop/task-state/<taskKey>/events.ndjson"], removes: [], mayExecuteExternalProcess: false,
     description: "Reconciles a COMMIT_UNKNOWN action from externally observed evidence without retrying it.",
   }),
+  "action-verify": Object.freeze({
+    name: "action-verify", category: "actions", mutation: "MUTATING",
+    options: Object.freeze({ ...CLI_COMMON_OPTIONS, ...CLI_TASK_OPTION,
+      "--action": Object.freeze({ targetKey: "actionId", parseType: "string", takesValue: true, valueName: "id", missingValueMessage: "--action requires an action ID", description: "durable action ID" }),
+      "--evidence": Object.freeze({ targetKey: "actionEvidenceRef", parseType: "string", takesValue: true, valueName: "ref", missingValueMessage: "--evidence requires a canonical execution reference", description: "canonical execution or check reference proving the postcondition" }),
+      "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
+    }), writes: [".forgeloop/task-state/<taskKey>/actions/action-<id>.json", ".forgeloop/task-state/<taskKey>/events.ndjson"], removes: [], mayExecuteExternalProcess: false,
+    description: "Verifies a COMMITTED action against independent canonical evidence; caller claims can never verify.",
+  }),
   metrics: Object.freeze({
     name: "metrics", category: "diagnostics", mutation: "READ_ONLY",
     options: Object.freeze({ ...CLI_COMMON_OPTIONS, ...CLI_TASK_OPTION,
