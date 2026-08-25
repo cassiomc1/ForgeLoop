@@ -67,7 +67,7 @@ test("CALLER_ACKNOWLEDGED approval does not satisfy REQUIRE_APPROVAL", async () 
       approval: { approvalId: "approval-push" },
     });
     assert.equal(result.allowed, false);
-    assert.equal(result.reasonCode, "E_ACTION_APPROVAL_AUTHORITY_REQUIRED");
+    assert.equal(result.reasonCode, "E_ACTION_AUTHORITY_REQUIRED");
   } finally {
     await rm(fixture.target, { recursive: true, force: true });
   }
