@@ -1,9 +1,17 @@
+import path from "node:path";
 import { runProtocolInfo } from "../commands/protocol-info.js";
 import { readContract } from "./contract.js";
 import { discoverTasks } from "./task-discovery.js";
 import { resolveTaskClaimState } from "./task-claim-state.js";
 import { runStatus } from "../commands/status.js";
 import { runContinuity } from "../commands/continuity.js";
+import { listActions, readAction } from "./actions.js";
+import { listApprovals, readApproval } from "./approvals.js";
+import { buildTrajectoryMetrics } from "./trajectory-metrics.js";
+import { loadCapabilityPolicy } from "./capability-policy.js";
+import { readdir } from "node:fs/promises";
+import { readJsonArtifact } from "./artifacts.js";
+import { taskEvaluationPath, taskDirectory } from "./task-paths.js";
 
 /**
  * Canonical integration resource allowlist.
@@ -43,6 +51,12 @@ export const INTEGRATION_RESOURCE_DEFINITIONS = Object.freeze({
     scope: "TASK",
     description: "Cross-harness continuity state for one task.",
   }),
+  "task/actions": Object.freeze({ scope: "TASK", description: "Canonical durable action summaries for one task." }),
+  "task/action": Object.freeze({ scope: "TASK", description: "One canonical durable action artifact." }),
+  "task/approvals": Object.freeze({ scope: "TASK", description: "Durable approval artifacts for one task." }),
+  "task/metrics": Object.freeze({ scope: "TASK", description: "Read-only trajectory metrics for one task." }),
+  "task/evaluations": Object.freeze({ scope: "TASK", description: "Persisted trajectory evaluations for one task." }),
+  "project/capability-policy": Object.freeze({ scope: "PROJECT", description: "Project capability policy, never host authority." }),
 });
 
 function ownershipProjection(projection) {
@@ -64,6 +78,7 @@ export async function readForgeLoopIntegrationResource(uri, {
   packageRoot = undefined,
   packageVersion = null,
   taskId = null,
+  actionId = null,
 } = {}) {
   const resource = INTEGRATION_RESOURCE_DEFINITIONS[uri];
   if (!resource) {
@@ -102,11 +117,47 @@ export async function readForgeLoopIntegrationResource(uri, {
       }
       break;
     }
+    case "task/actions":
+    case "task/action":
+    case "task/approvals":
+    case "task/metrics":
+    case "task/evaluations": {
+      if (typeof taskId !== "string" || !taskId) {
+        const error = new Error(`Resource ${uri} requires a taskId`); error.code = "E_TASK_REQUIRED"; throw error;
+      }
+      break;
+    }
   }
 
   if (uri === "task/ownership") {
     const projection = await resolveTaskClaimState(projectPath, { taskId, packageRoot });
     return { uri, taskId, data: ownershipProjection(projection) };
+  }
+  if (uri === "task/actions") {
+    const actions = await listActions(projectPath, { packageRoot, taskId });
+    return { uri, taskId, data: { actions } };
+  }
+  if (uri === "task/action") {
+    if (!actionId) { const error = new Error("Resource task/action requires actionId"); error.code = "E_ACTION_INVALID"; throw error; }
+    return { uri, taskId, data: await readAction(projectPath, { packageRoot, taskId, actionId }) };
+  }
+  if (uri === "task/approvals") {
+    return { uri, taskId, data: { approvals: await listApprovals(projectPath, { packageRoot, taskId }) } };
+  }
+  if (uri === "task/metrics") {
+    return { uri, taskId, data: await buildTrajectoryMetrics({ target: projectPath, packageRoot, taskId }) };
+  }
+  if (uri === "task/evaluations") {
+    const dir = path.join(projectPath, taskDirectory(taskId), "evaluations");
+    let names = []; try { names = await readdir(dir); } catch { /* absent is an empty projection */ }
+    const evaluations = [];
+    for (const name of names.filter((entry) => /^eval-[A-Za-z0-9_-]+\.json$/.test(entry)).sort()) {
+      evaluations.push((await readJsonArtifact(projectPath, `${taskDirectory(taskId)}/evaluations/${name}`, "trajectory-evaluation", packageRoot)).value);
+    }
+    return { uri, taskId, data: { evaluations } };
+  }
+  if (uri === "project/capability-policy") {
+    return { uri, data: await loadCapabilityPolicy(projectPath, packageRoot) };
   }
   if (uri === "task/status") {
     const result = await runStatus({ target: projectPath, packageRoot, taskId });

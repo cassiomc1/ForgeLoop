@@ -8,7 +8,7 @@ import { stringifyBoundedMcpJson } from "./output-policy.js";
 
 import { logResourceRead } from "./logging.js";
 
-const TASK_RESOURCE_KINDS = ["status", "ownership", "contract", "continuity"];
+const TASK_RESOURCE_KINDS = ["status", "ownership", "contract", "continuity", "actions", "approvals", "metrics", "evaluations"];
 
 /**
  * Deterministic resource catalog from the canonical allowlist. Task-scoped
@@ -64,6 +64,7 @@ export function registerIntegrationResources(server, { projectRoot, packageRoot 
   );
 
   for (const kind of TASK_RESOURCE_KINDS) {
+    if (!INTEGRATION_RESOURCE_DEFINITIONS[`task/${kind}`]) continue;
     server.registerResource(
       `forgeloop-task-${kind.replaceAll("/", "-")}`,
       new ResourceTemplate(`forgeloop://task/{taskId}/${kind}`, {
@@ -73,4 +74,22 @@ export function registerIntegrationResources(server, { projectRoot, packageRoot 
       readTaskResource(kind),
     );
   }
+  if (INTEGRATION_RESOURCE_DEFINITIONS["task/action"]) server.registerResource(
+    "forgeloop-task-action",
+    new ResourceTemplate("forgeloop://task/{taskId}/action/{actionId}", { list: undefined }),
+    { description: INTEGRATION_RESOURCE_DEFINITIONS["task/action"].description },
+    async (uri, { taskId, actionId }) => {
+      const resource = await readForgeLoopIntegrationResource("task/action", { projectPath: projectRoot, packageRoot, taskId, actionId });
+      return { contents: [{ uri: uri.href, mimeType: "application/json", text: stringifyBoundedMcpJson(resource.data) }] };
+    },
+  );
+  if (INTEGRATION_RESOURCE_DEFINITIONS["project/capability-policy"]) server.registerResource(
+    "forgeloop-capability-policy",
+    "forgeloop://project/capability-policy",
+    { description: INTEGRATION_RESOURCE_DEFINITIONS["project/capability-policy"].description },
+    async (uri) => {
+      const resource = await readForgeLoopIntegrationResource("project/capability-policy", { projectPath: projectRoot, packageRoot });
+      return { contents: [{ uri: uri.href, mimeType: "application/json", text: stringifyBoundedMcpJson(resource.data) }] };
+    },
+  );
 }
