@@ -375,6 +375,14 @@ The cryptographically compiled verification receipt required for task completion
 - `selectedGuides` *(array<string>, required)*
 - `changedPaths` *(array<string>, required)*
 - `checks` *(array<object>, required)*
+- `actions` *(object, optional)*
+  - `count` *(integer, required, minimum: 0)*
+  - `required` *(integer, required, minimum: 0)*
+  - `verified` *(integer, required, minimum: 0)*
+  - `failed` *(integer, required, minimum: 0)*
+  - `ambiguous` *(integer, required, minimum: 0)*
+  - `pending` *(integer, required, minimum: 0)*
+  - `actionRefs` *(array<string>, required)*
 - `evidence` *(array<object>, optional)*
   - `schemaVersion` *(number, optional, const: 1)*
   - `kind` *(string, required, enum: `OBSERVED`, `INFERRED`, `NOT_VERIFIED`, `BLOCKED`)*

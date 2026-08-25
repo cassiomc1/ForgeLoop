@@ -34,7 +34,7 @@ This guide provides symptom-first recovery procedures for common ForgeLoop proto
 Confirm the local CLI's public metadata before diagnosing a harness/version
 mismatch. This check does not create or mutate task state.
 
-<!-- FORGELOOP EXAMPLE: troubleshooting:protocol-info | exit=0 | json.errors.0.code=E_AUTHORITY_INVALID -->
+<!-- FORGELOOP EXAMPLE: troubleshooting:protocol-info | exit=0 | json.errors.0.code=E_ACTION_APPROVAL_REQUIRED -->
 ```bash
 forgeloop protocol-info --json
 ```

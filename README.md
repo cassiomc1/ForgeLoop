@@ -75,6 +75,15 @@ forgeloop next --task demo --json
 O último comando informa a ação segura seguinte; ele não executa código nem
 agenda agentes.
 
+### Ações externas duráveis
+
+Para efeitos externos, registre a intenção com `action-propose`, aplique a
+política de capacidade e a aprovação vinculada ao fingerprint, e execute apenas
+com `run-action` usando argv exato. Um resultado `COMMIT_UNKNOWN` nunca é
+repetido automaticamente: observe o sistema externo e use `action-reconcile`.
+As métricas mantêm tokens/custos como desconhecidos quando o host não os
+fornece, e eficiência só existe quando um cenário de referência foi declarado.
+
 Antes de um harness criar ou retomar uma tarefa, ele pode confirmar a
 compatibilidade pública sem depender de detalhes internos:
 

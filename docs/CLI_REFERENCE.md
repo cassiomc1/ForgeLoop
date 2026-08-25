@@ -39,11 +39,12 @@ ForgeLoop uses a definition-driven command-line parser:
 
 | Category | Commands |
 | --- | --- |
-| **Inspection & Diagnostics** | [`protocol-info`](#protocol-info), [`doctor`](#doctor), [`history`](#history), [`trace`](#trace), [`reflect`](#reflect), [`progress`](#progress), [`profile-interview`](#profile-interview), [`inspect`](#inspect), [`status`](#status), [`validate-state`](#validate-state), [`validate-protocol`](#validate-protocol) |
+| **Inspection & Diagnostics** | [`protocol-info`](#protocol-info), [`doctor`](#doctor), [`metrics`](#metrics), [`eval`](#eval), [`history`](#history), [`trace`](#trace), [`reflect`](#reflect), [`progress`](#progress), [`profile-interview`](#profile-interview), [`inspect`](#inspect), [`status`](#status), [`validate-state`](#validate-state), [`validate-protocol`](#validate-protocol) |
 | **Setup & Maintenance** | [`init`](#init), [`update`](#update), [`task-migrate`](#task-migrate), [`migrate-protocol`](#migrate-protocol), [`task-unlock`](#task-unlock), [`task-recover`](#task-recover), [`task-repair-legacy-recovery`](#task-repair-legacy-recovery), [`task-resume`](#task-resume) |
 | **Lifecycle & State** | [`activate`](#activate), [`route`](#route), [`preflight`](#preflight), [`advance`](#advance), [`next`](#next), [`record-diagnosis`](#record-diagnosis), [`record-intervention`](#record-intervention), [`record-hypothesis-disposition`](#record-hypothesis-disposition), [`record-decision-criterion`](#record-decision-criterion), [`complete`](#complete), [`clear-state`](#clear-state), [`reconcile-closure`](#reconcile-closure), [`task-create`](#task-create), [`task-list`](#task-list), [`task-show`](#task-show), [`task-lock-status`](#task-lock-status), [`task-scope`](#task-scope) |
 | **Cross-Harness Continuity** | [`continuity`](#continuity), [`record-continuity`](#record-continuity), [`reconcile-continuity`](#reconcile-continuity), [`clear-continuity`](#clear-continuity) |
 | **Verification & Completion** | [`prepare-completion`](#prepare-completion), [`run-check`](#run-check), [`record-check`](#record-check), [`record-terminal-result`](#record-terminal-result), [`audit`](#audit), [`report`](#report), [`validate-receipt`](#validate-receipt) |
+| **actions** | [`run-action`](#run-action), [`action-propose`](#action-propose), [`action-record`](#action-record), [`action-show`](#action-show), [`action-reconcile`](#action-reconcile), [`approval-request`](#approval-request), [`approval-resolve`](#approval-resolve) |
 | **Policy & Auditing** | [`policy`](#policy), [`policy-discover`](#policy-discover), [`policy-status`](#policy-status), [`policy-diff`](#policy-diff), [`rule-verify`](#rule-verify), [`baseline`](#baseline), [`bundle`](#bundle) |
 
 <!-- END FORGELOOP GENERATED: cli-command-index -->
@@ -51,6 +52,140 @@ ForgeLoop uses a definition-driven command-line parser:
 ---
 
 ## 1. Setup & Maintenance
+
+## Durable Actions, Approvals, and Trajectory
+
+ForgeLoop is still a protocol/evidence layer, not an agent runtime. Use
+`COMMIT_UNKNOWN` as a hard stop: do not retry until an external observation is
+recorded with `action-reconcile`. `run-action` has no shell mode and executes
+only exact argv. `HOST_REPORTED` is not `FORGELOOP_EXECUTED`, and a project
+capability policy cannot mint host authority.
+
+### `run-action`
+
+<!-- BEGIN FORGELOOP GENERATED: cli:run-action:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--action <id>`: stable durable action ID
+- `--capability <capability>`: canonical action capability
+- `--effect-class <class>`: durable action effect class
+- `--target <target>`: bounded external action target
+- `--idempotency-key <key>`: immutable logical action idempotency key
+- `--requirement <id>`: bound completion requirement
+- `--required-for-completion`: mark the action as required for completion
+- `--approval <id>`: current fingerprint-bound approval
+- `--timeout-ms <number>`: maximum command duration before termination
+- `-- <argv...>`: exact command argv; shell mode is never used
+- `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:run-action:options -->
+
+### `action-propose`
+
+<!-- BEGIN FORGELOOP GENERATED: cli:action-propose:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--id <id>`: stable action ID
+- `--capability <capability>`: canonical capability
+- `--effect-class <class>`: effect class
+- `--target <target>`: bounded action target
+- `--operation <text>`: bounded operation description
+- `--idempotency-key <key>`: logical action idempotency key
+- `--requirement <id>`: bound requirement
+- `--required-for-completion`: mark required for completion
+- `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:action-propose:options -->
+
+### `action-record`
+
+<!-- BEGIN FORGELOOP GENERATED: cli:action-record:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--action <id>`: durable action ID
+- `--state <state>`: next canonical action state
+- `--provenance <value>`: HOST_REPORTED or EXTERNAL_OBSERVED
+- `--evidence-ref <ref>`: bounded external evidence reference
+- `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:action-record:options -->
+
+### `action-show`
+
+<!-- BEGIN FORGELOOP GENERATED: cli:action-show:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--action <id>`: durable action ID
+- `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:action-show:options -->
+
+### `action-reconcile`
+
+<!-- BEGIN FORGELOOP GENERATED: cli:action-reconcile:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--action <id>`: ambiguous durable action ID
+- `--outcome <outcome>`: externally observed reconciliation outcome
+- `--evidence-ref <ref>`: bounded external evidence reference (repeatable)
+- `--observed-at <timestamp>`: external observation timestamp
+- `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:action-reconcile:options -->
+
+### `metrics`
+
+<!-- BEGIN FORGELOOP GENERATED: cli:metrics:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--json`: emit trajectory metrics as JSON
+
+<!-- END FORGELOOP GENERATED: cli:metrics:options -->
+
+### `eval`
+
+<!-- BEGIN FORGELOOP GENERATED: cli:eval:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--scenario <path>`: project-local trajectory scenario JSON
+- `--json`: emit evaluation as JSON
+
+<!-- END FORGELOOP GENERATED: cli:eval:options -->
+
+### `approval-request`
+
+<!-- BEGIN FORGELOOP GENERATED: cli:approval-request:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--approval <id>`: approval artifact ID
+- `--action <id>`: bound action ID
+- `--reason <text>`: bounded approval reason
+- `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:approval-request:options -->
+
+### `approval-resolve`
+
+<!-- BEGIN FORGELOOP GENERATED: cli:approval-resolve:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--approval <id>`: approval artifact ID
+- `--decision <decision>`: approval decision
+- `--authority <kind>`: CALLER_ACKNOWLEDGED or HOST_ATTESTED
+- `--host-grant-ref <ref>`: host boundary grant reference
+- `--reason <text>`: bounded resolution reason
+- `--json`: emit structured output as JSON
+
+<!-- END FORGELOOP GENERATED: cli:approval-resolve:options -->
 
 ### `protocol-info`
 

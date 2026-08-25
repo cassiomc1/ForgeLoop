@@ -103,6 +103,19 @@ export FORGELOOP_TASK="task-001"
 
 # 1. Test failed in run-check
 forgeloop run-check --id unit-tests --requirement "All tests pass" -- npm test
+
+## Ação externa segura
+
+```bash
+forgeloop action-propose --task release --id action-publish --capability external.publish --effect-class EXTERNAL_PUBLICATION --target registry/release --operation "publish release" --idempotency-key release:publish:v1 --required-for-completion
+forgeloop approval-request --task release --approval approval-publish --action action-publish --reason "reviewed release"
+forgeloop approval-resolve --task release --approval approval-publish --decision APPROVED --authority CALLER_ACKNOWLEDGED
+forgeloop run-action --task release --action action-publish --capability external.publish --effect-class EXTERNAL_PUBLICATION --target registry/release --idempotency-key release:publish:v1 --required-for-completion --approval approval-publish -- npm run publish
+# If the external outcome cannot be proven after start, do not retry:
+forgeloop action-reconcile --task release --action action-publish --outcome COMMITTED --evidence-ref provider:release-123
+```
+
+`COMMIT_UNKNOWN` is an explicit reconciliation boundary, not a failed retry.
 # Output: status = failed
 
 # 2. Advance to DIAGNOSING
