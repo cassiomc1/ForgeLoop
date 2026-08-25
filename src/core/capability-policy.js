@@ -1,7 +1,8 @@
 import { canonicalFingerprint } from "./artifacts.js";
+import { ACTION_CAPABILITIES } from "./action-constants.js";
 import { validateCapabilityPolicy } from "./action-model.js";
 import { PROJECT_ARTIFACT_PATHS } from "./task-paths.js";
-import { fileExists } from "./filesystem.js";
+import { assertSafePath, ensureWithin, fileExists } from "./filesystem.js";
 import {
   E_ACTION_INVALID,
   E_POLICY_INVALID,
@@ -17,7 +18,8 @@ function policyError(code, message) {
 
 export async function loadCapabilityPolicy(target, packageRoot) {
   const relativePath = PROJECT_ARTIFACT_PATHS.capabilityPolicy;
-  const absolutePath = `${target}/${relativePath}`;
+  await assertSafePath(target, relativePath);
+  const absolutePath = ensureWithin(target, relativePath);
   if (!(await fileExists(absolutePath))) {
     return null;
   }
@@ -48,13 +50,13 @@ export function resolveCapabilityDecision(policy, capability) {
   if (typeof capability !== "string" || !capability) {
     throw policyError(E_ACTION_INVALID, "capability must be a non-empty string");
   }
-  const knownCapabilities = new Set((policy?.rules ?? []).map((rule) => rule.capability));
-  // Unknown capabilities fail closed regardless of the configured default.
-  if (!knownCapabilities.has(capability)) {
+  // Capabilities outside the canonical protocol vocabulary always fail closed.
+  if (!ACTION_CAPABILITIES.includes(capability)) {
     return { decision: "DENY", reasonCode: "E_ACTION_CAPABILITY_UNKNOWN" };
   }
   const rule = policy.rules.find((candidate) => candidate.capability === capability);
-  switch (rule.decision) {
+  const decision = rule?.decision ?? policy.defaultDecision;
+  switch (decision) {
     case "ALLOW":
       return { decision: "ALLOW", reasonCode: null };
     case "DENY":
@@ -68,7 +70,7 @@ export function resolveCapabilityDecision(policy, capability) {
   }
 }
 
-function isTrustedHostAuthorityContext(authorityContext) {
+export function isTrustedHostAuthorityContext(authorityContext) {
   // Only a genuine host-controlled trust boundary may satisfy
   // REQUIRE_AUTHORITY. A project-local file, environment-selected source,
   // CLI flag, or transport session can never promote itself to HOST_ATTESTED.
@@ -132,7 +134,7 @@ export async function evaluateActionCapability({
     return { ...base, allowed: true, reasonCode: null };
   }
   if (resolved.decision === "DENY") {
-    return { ...base, allowed: false, reasonCode: "E_ACTION_CAPABILITY_DENIED" };
+    return { ...base, allowed: false, reasonCode: resolved.reasonCode ?? "E_ACTION_CAPABILITY_DENIED" };
   }
   if (resolved.decision === "REQUIRE_AUTHORITY") {
     if (isTrustedHostAuthorityContext(authorityContext)) {
