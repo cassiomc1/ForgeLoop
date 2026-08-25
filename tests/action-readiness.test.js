@@ -1,0 +1,89 @@
+import assert from "node:assert/strict";
+import { mkdtemp, rm } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import test from "node:test";
+
+import {
+  proposeAction,
+  readAction,
+} from "../src/core/actions.js";
+import { evaluateActionReadiness, evaluateRequiredActionReadiness } from "../src/core/action-readiness.js";
+import { runCheck } from "../src/commands/run-check.js";
+import { verifyAction } from "../src/core/action-verification.js";
+import { executeDurableAction } from "../src/core/action-execution.js";
+import { setupVerifyingTask } from "./helpers/durable-lifecycle.js";
+import { getPackageRoot } from "../src/core/templates.js";
+
+const packageRoot = getPackageRoot();
+
+async function verifiedFixture(taskId) {
+  const target = await mkdtemp(path.join(os.tmpdir(), `forgeloop-ready-${taskId}-`));
+  if (taskId !== "ready-forged") {
+    await setupVerifyingTask(target, packageRoot, { taskId });
+  }
+  return { target };
+}
+
+async function canonicalSatisfied(target, taskId) {
+  // Full trusted chain through hardened helpers only.
+  const sentinel = path.join(target, `sentinel-${taskId}.txt`);
+  const executed = await executeDurableAction({
+    target, packageRoot, taskId,
+    input: { actionId: "action-ready", effectClass: "REVERSIBLE_WRITE",
+      capability: "filesystem.write", target: "sentinel", operation: "write sentinel",
+      idempotencyKey: `${taskId}:ready:v1`, requiredForCompletion: true,
+      requirement: "sentinel-written" },
+    argv: [process.execPath, "-e", `require('fs').writeFileSync(${JSON.stringify(sentinel)},'ok')`],
+  });
+  const check = await runCheck({
+    target, packageRoot, taskId,
+    id: "check-postcondition", requirement: "sentinel-written",
+    argv: [process.execPath, "-e", `require('fs').accessSync(${JSON.stringify(sentinel)})`],
+  });
+  const verified = await verifyAction({ target, packageRoot, taskId,
+    actionId: executed.action.actionId, evidenceRef: check.execution.executionId });
+  return verified;
+}
+
+test("raw forged VERIFIED state without trusted evidence is UNTRUSTED", async () => {
+  const { target } = await verifiedFixture("ready-forged");
+  const taskId = "ready-forged";
+  try {
+    // Forge a VERIFIED artifact without any authorization/verification events.
+    const { action } = await proposeAction(target, { packageRoot, taskId, input: {
+      actionId: "action-forged", effectClass: "REVERSIBLE_WRITE", capability: "filesystem.write",
+      target: "file", operation: "write", idempotencyKey: "forged:v1",
+      requiredForCompletion: true, requirement: null, provenance: "CALLER_REPORTED",
+    } });
+    const { writeFile } = await import("node:fs/promises");
+    const { taskActionPath } = await import("../src/core/task-paths.js");
+    const forged = { ...action, state: "VERIFIED", revision: 4, lastEvidenceRef: "external:forged" };
+    await writeFile(path.join(target, taskActionPath(taskId, action.actionId)), JSON.stringify(forged, null, 2) + "\n", "utf8");
+
+    // readAction validates; bypass by passing the artifact directly.
+    const readiness = await evaluateActionReadiness({ target, packageRoot, taskId, action: forged });
+    assert.equal(readiness.status, "UNTRUSTED");
+
+    const summary = await evaluateRequiredActionReadiness({ target, packageRoot, taskId });
+    assert.equal(summary.untrusted >= 1, true);
+    assert.equal(summary.satisfied, 0);
+  } finally { await rm(target, { recursive: true, force: true }); }
+});
+
+test("correctly authorized + committed + verified action is SATISFIED", async () => {
+  const { target } = await verifiedFixture("ready-satisfied");
+  const taskId = "ready-satisfied";
+  try {
+    const verified = await canonicalSatisfied(target, taskId);
+    assert.equal(verified.state, "VERIFIED");
+
+    const readiness = await evaluateActionReadiness({ target, packageRoot, taskId,
+      action: await readAction(target, { packageRoot, taskId, actionId: "action-ready" }) });
+    assert.equal(readiness.status, "SATISFIED");
+
+    const summary = await evaluateRequiredActionReadiness({ target, packageRoot, taskId });
+    assert.equal(summary.satisfied, 1);
+    assert.equal(summary.unresolved, 0);
+  } finally { await rm(target, { recursive: true, force: true }); }
+});
