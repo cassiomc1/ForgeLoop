@@ -1300,17 +1300,28 @@ The following invariants are enforced in core code and are regression-tested:
 - **Authorization is canonical.** No caller-controlled surface (`action-record`,
   CLI flags, MCP tool arguments, project files, environment) can mint
   `AUTHORIZED`. Only the core authorization service may transition
-  `PROPOSED -> AUTHORIZED`, and only after the current capability policy, the
-  persisted policy lock, and the task policy snapshot agree. Every modern
+  `PROPOSED -> AUTHORIZED` — through `run-action`, or explicitly through
+  `forgeloop action-authorize`, which is a pure adapter over the same service —
+  and only after the current capability policy, the persisted policy lock, and
+  the task policy snapshot agree. Every modern
   `ACTION_AUTHORIZED` event binds the capability decision, capability-policy
   fingerprint, policy-lock digest, task-policy digest, and — for
   `REQUIRE_AUTHORITY`/`REQUIRE_APPROVAL` — the exact host authority or
-  fingerprint-bound approval.
-- **Verification is canonical and independent.** `COMMITTED != VERIFIED`.
-  A command exiting 0 proves only local completion. `VERIFIED` is produced
-  exclusively by `forgeloop action-verify` (or the equivalent core service)
-  against a passed ForgeLoop execution artifact that is independent of the
-  action's own commit execution.
+  fingerprint-bound approval. Post-authorization mutation of a bound approval
+  artifact is readiness/audit-visible.
+- **Verification is canonical, independent, and requirement-bound.**
+  `COMMITTED != VERIFIED`. A command exiting 0 proves only local completion.
+  `VERIFIED` is produced exclusively by `forgeloop action-verify` (or the
+  equivalent core service) against a passed ForgeLoop execution artifact that
+  is independent of the action's own commit execution and whose immutable
+  `requirement` exactly equals the action's requirement. New required actions
+  must declare a non-empty requirement at proposal time; historical required
+  artifacts without one remain readable but can never become trusted-satisfied.
+- **Reconciliation has exactly one replay truth.** A trusted `COMMITTED`
+  settlement emits `ACTION_RECONCILED(outcome=COMMITTED)` (the transition) plus
+  a same-revision informational mirror `ACTION_COMMIT_RECORDED(reconciled=true)`
+  (corroboration only). Ledger replay applies the transition exactly once and
+  validates mirror identity; forged or orphaned mirrors invalidate the ledger.
 - **Completion consumes readiness.** Required-action completion truth comes
   from the canonical action-readiness projection, never from raw state labels.
   A forged or legacy `VERIFIED` label without trusted authorization and

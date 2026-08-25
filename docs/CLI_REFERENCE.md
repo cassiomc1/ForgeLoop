@@ -58,8 +58,7 @@ ForgeLoop uses a definition-driven command-line parser:
 ForgeLoop is still a protocol/evidence layer, not an agent runtime. Use
 `COMMIT_UNKNOWN` as a hard stop: do not retry until an external observation is
 recorded with `action-reconcile`. `run-action` has no shell mode and executes
-only exact argv. `HOST_REPORTED` is not `FORGELOOP_EXECUTED`, and a project
-capability policy cannot mint host authority.
+only exact argv. Caller-reported and externally observed provenance are not host authority, and a project capability policy cannot mint host authority.
 
 ### `run-action`
 
