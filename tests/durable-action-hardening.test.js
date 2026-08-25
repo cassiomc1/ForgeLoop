@@ -136,7 +136,7 @@ test("HOST_ATTESTED approval cannot be minted without a trusted host boundary", 
         authorityKind: "HOST_ATTESTED",
         hostGrantRef: "self-asserted-grant",
       }),
-      (error) => error.code === "E_APPROVAL_AUTHORITY_REQUIRED",
+      (error) => error.code === "E_ACTION_AUTHORITY_REQUIRED",
     );
   } finally {
     await rm(target, { recursive: true, force: true });
