@@ -111,21 +111,29 @@ export async function runValidateProtocol({
   await validateLoaded(loaded.find((item) => item.label === "receipt"), "execution-receipt", async (value) => validateReceipt(value, packageRoot));
   await validateLoaded(loaded.find((item) => item.label === "continuity"), "continuity", async (value) => assertContinuitySemantics(value));
   for (const [value, artifactPath] of [
-    [state, stateFile],
-    [receipt, receiptFile],
+    [state, effectiveStateFile],
+    [receipt, effectiveReceiptFile],
   ]) {
     if (!value) continue;
-    const provenanceErrors = await validateChecksExecutionProvenance(value.checks, {
-      target,
-      packageRoot,
-      taskId: value.taskId,
-      artifactPath,
-    });
-    schemaErrors.push(...provenanceErrors.map((error) => ({
-      ...error,
-      message: `Command provenance validation failed: ${error.message}`,
-      artifacts: [artifactPath, ...(error.artifacts ?? [])],
-    })));
+    try {
+      // The shared validator returns the resolved execution records when all
+      // command checks are valid and throws a canonical artifact error when a
+      // binding is invalid. Do not mistake those successful records for
+      // validation errors (which previously made task-scoped validation fail
+      // with an undefined localeCompare value).
+      await validateChecksExecutionProvenance(value.checks, {
+        target,
+        packageRoot,
+        taskId: value.taskId,
+        artifactPath,
+      });
+    } catch (error) {
+      schemaErrors.push({
+        code: error.code ?? "E_EXECUTION_REF_INVALID",
+        message: `Command provenance validation failed: ${error.message}`,
+        artifacts: [artifactPath, ...(error.artifacts ?? [])].filter(Boolean),
+      });
+    }
   }
   for (const item of loaded.filter((candidate) => candidate.label.startsWith("task brief:"))) {
     await validateLoaded(item, "task-brief", async (value) => validateTaskBrief(value, packageRoot));

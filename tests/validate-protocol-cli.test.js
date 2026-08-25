@@ -7,6 +7,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { evaluateRoute } from "../src/core/router.js";
+import { runCommandExecution } from "../src/core/execution.js";
 import { sha256 } from "../src/core/manifest.js";
 import { contractFingerprint, createWorkState } from "../src/core/work-state.js";
 
@@ -147,6 +148,82 @@ test("validate-protocol validates a single-actor run without delegation inputs",
     assert.equal(report.status, "VALID");
     assert.equal(report.delegation.status, "NOT_APPLICABLE");
     assert.equal(report.delegation.required, false);
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
+test("validate-protocol accepts task-scoped observed command provenance", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-conformance-cli-"));
+  try {
+    const route = evaluateRoute({ workType: "api", surfaces: ["api"], platforms: [] });
+    const contract = { objective: "command provenance" };
+    const state = createWorkState({
+      taskId: "single-task",
+      contractFingerprint: contractFingerprint(contract),
+      repositoryFingerprint: { branch: null, head: null },
+      phase: "ROUTED",
+      selectedGuides: route.guides,
+      completedSteps: [],
+      pendingSteps: ["implementation"],
+      checks: [],
+      failures: [],
+      blockers: [],
+      verificationEvidence: [],
+    });
+    const execution = await runCommandExecution({
+      target,
+      packageRoot: repositoryRoot,
+      taskId: state.taskId,
+      checkId: "provenance-check",
+      requirement: "tests",
+      argv: [process.execPath, "-e", "process.exit(0)"],
+    });
+    const check = {
+      schemaVersion: 1,
+      protocolVersion: 1,
+      id: "provenance-check",
+      kind: "command",
+      requirement: "tests",
+      status: "passed",
+      evidenceKind: "OBSERVED",
+      source: `${process.execPath} -e process.exit(0)`,
+      exitCode: 0,
+      executionRef: execution.execution.executionId,
+      provenance: "FORGELOOP_EXECUTED",
+      details: { verificationCycle: 1 },
+    };
+    state.checks = [check];
+    const receipt = {
+      schemaVersion: 1,
+      protocolVersion: 1,
+      taskId: state.taskId,
+      contractFingerprint: state.contractFingerprint,
+      selectedGuides: route.guides,
+      changedPaths: [],
+      checks: [check],
+      review: { status: "not-run", independent: false },
+      limitations: [],
+      publication: { committed: false, pushed: false, pullRequest: null, deployed: false },
+    };
+    await writeFile(path.join(target, "route.json"), `${JSON.stringify(route)}\n`);
+    await writeFile(path.join(target, "state.json"), `${JSON.stringify(state)}\n`);
+    await writeFile(path.join(target, "receipt.json"), `${JSON.stringify(receipt)}\n`);
+    await writeFile(path.join(target, "contract.json"), `${JSON.stringify(contract)}\n`);
+
+    const result = runCli(
+      target,
+      "validate-protocol",
+      "--route-file", "route.json",
+      "--state-file", "state.json",
+      "--receipt-file", "receipt.json",
+      "--contract-file", "contract.json",
+      "--json",
+    );
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.status, "VALID");
+    assert.deepEqual(report.errors, []);
   } finally {
     await rm(target, { recursive: true, force: true });
   }
