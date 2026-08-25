@@ -6,12 +6,12 @@ import { resolveTaskClaimState } from "./task-claim-state.js";
 import { runStatus } from "../commands/status.js";
 import { runContinuity } from "../commands/continuity.js";
 import { listActions, readAction } from "./actions.js";
-import { listApprovals, readApproval } from "./approvals.js";
+import { listApprovals } from "./approvals.js";
 import { buildTrajectoryMetrics } from "./trajectory-metrics.js";
 import { loadCapabilityPolicy } from "./capability-policy.js";
 import { readdir } from "node:fs/promises";
 import { readJsonArtifact } from "./artifacts.js";
-import { taskEvaluationPath, taskDirectory } from "./task-paths.js";
+import { taskDirectory } from "./task-paths.js";
 
 /**
  * Canonical integration resource allowlist.

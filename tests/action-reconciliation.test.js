@@ -15,8 +15,8 @@ async function ambiguous(suffix) {
     actionId: `action-${suffix}`, effectClass: "EXTERNAL_PUBLICATION", capability: "external.publish",
     target: "registry/release", operation: "publish", idempotencyKey: `publish:${suffix}`,
     requiredForCompletion: true, requirement: "publication", provenance: "HOST_REPORTED" } });
-  const authorized = await transitionAction(target, { packageRoot, taskId, actionId: action.actionId, to: "AUTHORIZED" });
-  const started = await transitionAction(target, { packageRoot, taskId, actionId: action.actionId, to: "STARTED" });
+  await transitionAction(target, { packageRoot, taskId, actionId: action.actionId, to: "AUTHORIZED" });
+  await transitionAction(target, { packageRoot, taskId, actionId: action.actionId, to: "STARTED" });
   const unknown = await transitionAction(target, { packageRoot, taskId, actionId: action.actionId, to: "COMMIT_UNKNOWN" });
   return { target, taskId, action: unknown };
 }
