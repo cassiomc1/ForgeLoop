@@ -425,7 +425,11 @@ export async function validateEventLedger(target, packageRoot, options = {}) {
           code: "E_PHASE_CHRONOLOGY_INVALID",
           message: `${event.event} is missing prerequisite milestone: ${LIFECYCLE_MILESTONES[lastMilestone + 1]}`,
         });
-      } else if (milestoneIndex < lastMilestone && event.event !== "VERIFICATION_STARTED") {
+      } else if (milestoneIndex < lastMilestone && event.event !== "VERIFICATION_STARTED"
+        && event.event !== "PREFLIGHT_READY") {
+        // VERIFICATION_STARTED re-enters per verification cycle; PREFLIGHT_READY
+        // may be refreshed mid-lifecycle (policy/contract evolution) after its
+        // prerequisites were already satisfied by the earlier occurrence.
         errors.push({ code: "E_PHASE_CHRONOLOGY_INVALID", message: `${event.event} is out of lifecycle order` });
       } else if (milestoneIndex === lastMilestone && !REPEATABLE_MILESTONES.has(event.event)) {
         errors.push({ code: "E_PHASE_CHRONOLOGY_INVALID", message: `lifecycle milestone must not repeat: ${event.event}` });

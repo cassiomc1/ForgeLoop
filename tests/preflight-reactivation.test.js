@@ -211,3 +211,45 @@ test("preflight still refuses a READY refresh whose details differ without an in
     );
   });
 });
+
+test("a PREFLIGHT_READY refresh after execution milestones keeps the ledger valid", async () => {
+  await withTarget(async (target) => {
+    const { taskId } = await setupTaskThroughReady(target);
+    await appendProtocolEvent(target, { taskId, event: "PLAN_RECORDED" }, packageRoot, { taskId });
+    await appendProtocolEvent(target, { taskId, event: "EXECUTION_STARTED" }, packageRoot, { taskId });
+    await appendProtocolEvent(target, {
+      taskId,
+      event: "VERIFICATION_STARTED",
+      details: { verificationCycle: 1 },
+    }, packageRoot, { taskId });
+
+    // Contract evolution records a BLOCKED preflight cycle; once resolved the
+    // lifecycle may return to READY even though execution already started.
+    const contract = buildContract(taskId, "Revised objective after mid-lifecycle policy refresh.");
+    const revisedHash = contractFingerprint(contract);
+    await writeContract(target, contract, packageRoot, { taskId });
+    const route = evaluateRoute({ workType: "documentation", surfaces: ["documentation"], platforms: [] });
+    const revisedRoute = await persistRoute(target, route, packageRoot, { contractFingerprint: revisedHash, taskId });
+    await appendProtocolEvent(target, {
+      taskId,
+      event: "PREFLIGHT_BLOCKED",
+      fingerprint: revisedHash,
+      details: {
+        requiredGates: ["threat-boundary"],
+        satisfiedGates: [],
+        routingFingerprint: revisedRoute.fingerprint,
+      },
+    }, packageRoot, { taskId });
+    const { unlink } = await import("node:fs/promises");
+    const { taskDirectory } = await import("../src/core/task-paths.js");
+    await unlink(path.join(target, taskDirectory(taskId), "work-state.json"));
+
+    const preflight = await runPreflight({ target, packageRoot, taskId });
+    assert.equal(preflight.status, "READY");
+
+    const ledger = await validateEventLedger(target, packageRoot, { taskId });
+    assert.equal(ledger.valid, true, JSON.stringify(ledger.errors ?? []));
+    const readyEvents = ledger.events.filter((event) => event.event === "PREFLIGHT_READY" && event.taskId === taskId);
+    assert.equal(readyEvents.length, 2);
+  });
+});
