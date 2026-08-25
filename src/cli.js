@@ -34,6 +34,8 @@ import { formatActionShowResult } from "./commands/action-show.js";
 import { formatActionReconcileResult } from "./commands/action-reconcile.js";
 import { formatMetricsResult } from "./commands/metrics.js";
 import { formatEvalResult } from "./commands/eval.js";
+import { formatApprovalRequestResult } from "./commands/approval-request.js";
+import { formatApprovalResolveResult } from "./commands/approval-resolve.js";
 import { formatReconcileClosureResult } from "./commands/reconcile-closure.js";
 import { formatRecordTerminalResult } from "./commands/record-terminal-result.js";
 import { formatRecordDiagnosisResult } from "./commands/record-diagnosis.js";
@@ -421,6 +423,8 @@ export const COMMAND_HANDLERS = Object.freeze({
     const { result, exitCode } = await COMMAND_EXECUTORS.eval({ target, packageRoot, options });
     renderJsonOr(options, result, formatEvalResult); return exitCode;
   },
+  "approval-request": async ({ target, packageRoot, options }) => { const { result } = await COMMAND_EXECUTORS["approval-request"]({ target, packageRoot, options }); renderJsonOr(options, result, formatApprovalRequestResult); return 0; },
+  "approval-resolve": async ({ target, packageRoot, options }) => { const { result } = await COMMAND_EXECUTORS["approval-resolve"]({ target, packageRoot, options }); renderJsonOr(options, result, formatApprovalResolveResult); return 0; },
   "record-check": async ({ target, packageRoot, options }) => {
     const { result } = await COMMAND_EXECUTORS["record-check"]({ target, packageRoot, options });
     renderJsonOr(options, result, formatRecordCheckResult);
