@@ -323,7 +323,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
       "--required-for-completion": Object.freeze({ targetKey: "actionRequiredForCompletion", parseType: "boolean", takesValue: false, description: "mark required for completion" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
     }), writes: [".forgeloop/task-state/<taskKey>/actions/action-<id>.json", ".forgeloop/task-state/<taskKey>/events.ndjson"], removes: [], mayExecuteExternalProcess: false,
-    description: "Proposes a host-reported durable action without executing it.",
+    description: "Proposes a caller-reported durable action without executing it.",
   }),
   "action-record": Object.freeze({
     name: "action-record", category: "actions", mutation: "MUTATING",
@@ -334,7 +334,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
       "--evidence-ref": Object.freeze({ targetKey: "actionEvidenceRef", parseType: "string", takesValue: true, valueName: "ref", missingValueMessage: "--evidence-ref requires a reference", description: "bounded external evidence reference" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
     }), writes: [".forgeloop/task-state/<taskKey>/actions/action-<id>.json", ".forgeloop/task-state/<taskKey>/events.ndjson"], removes: [], mayExecuteExternalProcess: false,
-    description: "Records a host-reported or externally observed action transition.",
+    description: "Records a caller-reported or externally observed non-authority action transition.",
   }),
   "action-show": Object.freeze({
     name: "action-show", category: "actions", mutation: "READ_ONLY",
@@ -363,6 +363,15 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
     }), writes: [".forgeloop/task-state/<taskKey>/actions/action-<id>.json", ".forgeloop/task-state/<taskKey>/events.ndjson"], removes: [], mayExecuteExternalProcess: false,
     description: "Verifies a COMMITTED action against independent canonical evidence; caller claims can never verify.",
+  }),
+  "action-authorize": Object.freeze({
+    name: "action-authorize", category: "actions", mutation: "MUTATING",
+    options: Object.freeze({ ...CLI_COMMON_OPTIONS, ...CLI_TASK_OPTION,
+      "--action": Object.freeze({ targetKey: "actionId", parseType: "string", takesValue: true, valueName: "id", missingValueMessage: "--action requires an action ID", description: "durable action ID" }),
+      "--approval": Object.freeze({ targetKey: "approvalId", parseType: "string", takesValue: true, valueName: "id", missingValueMessage: "--approval requires an approval ID", description: "current fingerprint-bound approval" }),
+      "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
+    }), writes: [".forgeloop/task-state/<taskKey>/actions/action-<id>.json", ".forgeloop/task-state/<taskKey>/events.ndjson"], removes: [], mayExecuteExternalProcess: false,
+    description: "Authorizes one PROPOSED durable action through the canonical capability-policy and approval service.",
   }),
   metrics: Object.freeze({
     name: "metrics", category: "diagnostics", mutation: "READ_ONLY",

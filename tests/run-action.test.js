@@ -99,3 +99,14 @@ test("argv normalization failure leaves the action PROPOSED with no ACTION_START
 function readActionModule() {
   return import("../src/core/actions.js");
 }
+
+test("executeDurableAction returns canonical authorization evidence", async () => {
+  const { target, taskId } = await targetWithPolicy();
+  try {
+    const result = await executeDurableAction({ target, packageRoot, taskId,
+      input: input(), argv: [process.execPath, "-e", "process.exit(0)"] });
+    assert.equal(result.authorization.capabilityDecision, "ALLOW");
+    assert.match(result.authorization.capabilityPolicyFingerprint, /^[a-f0-9]{64}$/);
+    assert.equal(result.capability, undefined);
+  } finally { await rm(target, { recursive: true, force: true }); }
+});

@@ -58,7 +58,7 @@ export async function executeDurableAction({
     runtimeContext,
   });
 
-  const { action: authorized, capability } = await authorizeAction({
+  const { action: authorized, authorization } = await authorizeAction({
     target, packageRoot, taskId, actionId: action.actionId,
     approvalId, authorityContext,
   });
@@ -101,5 +101,5 @@ export async function executeDurableAction({
       } : {}),
     },
   });
-  return { action: result, execution: execution.execution, executionPath: execution.path, capability };
+  return { action: result, execution: execution.execution, executionPath: execution.path, authorization };
 }

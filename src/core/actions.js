@@ -118,6 +118,18 @@ function assertProposeInput(input) {
       );
     }
   }
+  // Completion-critical actions must declare what postcondition they satisfy;
+  // without a requirement, strong verification binding is impossible
+  // (INV-FINAL-VERIFY-02). Legacy artifacts remain readable but untrusted.
+  if (
+    input.requiredForCompletion === true
+    && (typeof input.requirement !== "string" || input.requirement.trim() === "")
+  ) {
+    throw actionError(
+      E_ACTION_INVALID,
+      "required-for-completion actions require a non-empty requirement",
+    );
+  }
 }
 
 export async function proposeAction(target, { packageRoot, taskId, input }) {

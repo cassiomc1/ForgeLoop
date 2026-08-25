@@ -2,38 +2,21 @@
 
 ## Unreleased
 
-### Changed
-
-- Durable-action hardening (final 10/10 pass): caller surfaces can no longer
-  mint `AUTHORIZED` or `VERIFIED`; authorization and verification are canonical
-  core services with mandatory policy-bound evidence; `ACTION_STARTED` is
-  recorded only after all deterministic pre-launch checks succeed; trusted
-  host authority travels strictly out-of-band (`executeForgeLoopCommand` /
-  MCP `authorityContextProvider`) and can never be supplied through command
-  input, CLI flags, project files, environment, or tool arguments;
-  `capabilities.json` now participates in the policy lock, task policy
-  snapshot, and authorization evidence with fail-closed drift detection;
-  settling `COMMIT_UNKNOWN` as `COMMITTED`/`NOT_COMMITTED` requires trusted
-  host attestation plus evidence, and trusted `NOT_COMMITTED` returns the
-  action to `PROPOSED` so authorization is re-evaluated; completion and audit
-  consume a canonical action-readiness projection instead of raw `VERIFIED`
-  labels; action ledger replay validates full chronology (revisions,
-  fingerprints, authorization, reconciliation ordering, verification) against
-  artifacts.
-
-### Added
-
-- Durable external actions with immutable idempotency identity, capability
-  policy decisions, fingerprint-bound approvals, exact-argv execution,
-  host-reported provenance, explicit `COMMIT_UNKNOWN` reconciliation, and
-  completion/audit/bundle safeguards.
-- Read-only action and trajectory projections (`trace`, `metrics`, and
-  project-local `eval`) with unknown usage preservation and optional reference
-  efficiency.
-- Read-only integration/MCP resources for actions, approvals, metrics,
-  evaluations, and capability policy.
-
 ### Fixed
+
+- Post-#101 durable-action corrections: trusted `COMMITTED` reconciliation now
+  replays exactly once (the reconciled `ACTION_COMMIT_RECORDED` mirror is a
+  validated same-revision corroboration, never a second transition, and forged
+  mirrors invalidate the ledger); action verification requires an independent
+  passed execution covering the action's exact immutable requirement; new
+  required-for-completion actions must declare a non-empty requirement (legacy
+  artifacts remain readable but classify UNTRUSTED); trusted reconciliation
+  authority now propagates through the programmatic command executor and MCP
+  provider boundaries; readiness and audit validate bound approval
+  fingerprints for `REQUIRE_APPROVAL` authorizations; public provenance
+  metadata now matches actual behavior (`CALLER_REPORTED` /
+  `EXTERNAL_OBSERVED`); `executeDurableAction()` returns canonical
+  `authorization` evidence.
 
 - Completion-recovery fingerprint deadlock: a `REVIEWING` task whose persisted
   evidence-only rejection snapshot no longer matches the live checkpoint (after

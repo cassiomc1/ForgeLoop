@@ -74,6 +74,11 @@ export async function projectActionLedger({
   let authorization = { valid: false, details: null };
   let verification = { valid: false, evidenceRef: null };
   const reconciliation = { count: 0, latestOutcome: null };
+  // A trusted COMMITTED reconciliation emits two events for one logical
+  // transition: ACTION_RECONCILED(outcome=COMMITTED) owns the transition and
+  // ACTION_COMMIT_RECORDED(reconciled=true) is a same-revision informational
+  // mirror. Replay must apply exactly one transition (INV-FINAL-REPLAY-01).
+  let pendingReconciledCommitMirror = null;
 
   for (const event of chronology) {
     const details = event.details ?? {};
@@ -82,7 +87,13 @@ export async function projectActionLedger({
       errors.push(issue(E_ACTION_EVIDENCE_INVALID, `action ${actionId}: event ${event.event} carries a different action fingerprint`));
       continue;
     }
-    if (Number.isInteger(details.revision) && details.revision !== revision + 1 && event.event !== "ACTION_RECONCILED") {
+    const isReconciledMirror = event.event === "ACTION_COMMIT_RECORDED" && details.reconciled === true;
+    if (
+      Number.isInteger(details.revision)
+      && details.revision !== revision + 1
+      && event.event !== "ACTION_RECONCILED"
+      && !isReconciledMirror
+    ) {
       errors.push(issue(E_ACTION_EVIDENCE_INVALID, `action ${actionId}: ${event.event} skipped revision (expected ${revision + 1}, got ${details.revision})`));
     }
 
@@ -125,6 +136,26 @@ export async function projectActionLedger({
         break;
       }
       case "ACTION_COMMIT_RECORDED": {
+        // Reconciled commit mirrors corroborate a preceding trusted COMMITTED
+        // reconciliation; they never transition state again.
+        if (details.reconciled === true) {
+          const mirror = pendingReconciledCommitMirror;
+          if (
+            !mirror
+            || details.revision !== mirror.revision
+            || details.actionFingerprint !== mirror.actionFingerprint
+            || details.fromState !== mirror.fromState
+            || details.toState !== mirror.toState
+          ) {
+            errors.push(issue(
+              E_ACTION_EVIDENCE_INVALID,
+              `action ${actionId}: reconciled commit mirror does not match the preceding COMMITTED reconciliation`,
+            ));
+            break;
+          }
+          pendingReconciledCommitMirror = null;
+          break;
+        }
         try {
           assertActionTransition(state, "COMMITTED");
         } catch {
@@ -219,6 +250,14 @@ export async function projectActionLedger({
         }
         state = nextState;
         revision += 1;
+        if (outcome === "COMMITTED") {
+          pendingReconciledCommitMirror = {
+            revision: details.revision,
+            actionFingerprint,
+            fromState: "COMMIT_UNKNOWN",
+            toState: "COMMITTED",
+          };
+        }
         break;
       }
       default:

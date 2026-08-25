@@ -6,6 +6,7 @@ import test from "node:test";
 
 import { executeDurableAction } from "../src/core/action-execution.js";
 import { readAction } from "../src/core/actions.js";
+void readAction;
 import { verifyAction } from "../src/core/action-verification.js";
 import { runActivate } from "../src/commands/activate.js";
 import { runPrepareCompletion } from "../src/commands/prepare-completion.js";
@@ -103,4 +104,45 @@ test("a canonical independent passed check verifies the action", async () => {
     assert.equal(result.state, "VERIFIED");
     assert.equal(result.lastEvidenceRef, evidenceRef);
   } finally { await rm(fixture.target, { recursive: true, force: true }); }
+});
+
+test("a passed check for a different requirement cannot verify the action", async () => {
+  const fixture = await committedActionFixture("verify-mismatch");
+  try {
+    // Independent passing execution that proves a DIFFERENT requirement.
+    const other = await runCheck({
+      target: fixture.target, packageRoot, taskId: fixture.taskId,
+      id: "check-unrelated", requirement: "unit-tests-pass",
+      argv: [process.execPath, "-e", "process.exit(0)"],
+    });
+    await assert.rejects(
+      verifyAction({ target: fixture.target, packageRoot, taskId: fixture.taskId,
+        actionId: fixture.action.actionId, evidenceRef: other.execution.executionId }),
+      (error) => error.code === "E_ACTION_VERIFICATION_INVALID",
+    );
+    const current = await readAction(fixture.target, { packageRoot, taskId: fixture.taskId, actionId: fixture.action.actionId });
+    assert.equal(current.state, "COMMITTED");
+  } finally { await rm(fixture.target, { recursive: true, force: true }); }
+});
+
+test("new required proposals cannot omit a requirement", async () => {
+  const { proposeAction } = await import("../src/core/actions.js");
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-verify-noreq-"));
+  try {
+    await assert.rejects(
+      proposeAction(target, { packageRoot, taskId: "verify-noreq", input: {
+        actionId: "action-required", effectClass: "REVERSIBLE_WRITE", capability: "filesystem.write",
+        target: "f", operation: "op", idempotencyKey: "noreq:v1",
+        requiredForCompletion: true, requirement: null, provenance: "CALLER_REPORTED",
+      } }),
+      (error) => error.code === "E_ACTION_INVALID",
+    );
+    // Non-required actions without a requirement remain allowed.
+    const { action } = await proposeAction(target, { packageRoot, taskId: "verify-noreq", input: {
+      actionId: "action-optional", effectClass: "REVERSIBLE_WRITE", capability: "filesystem.write",
+      target: "f", operation: "op", idempotencyKey: "noreq:v2",
+      requiredForCompletion: false, requirement: null, provenance: "CALLER_REPORTED",
+    } });
+    assert.equal(action.requiredForCompletion, false);
+  } finally { await rm(target, { recursive: true, force: true }); }
 });

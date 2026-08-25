@@ -46,6 +46,26 @@ export async function evaluateActionReadiness({
     ], { authorization: ledger.authorization, verification: ledger.verification });
   }
 
+  // REQUIRE_APPROVAL authorizations bind the exact resolved approval content;
+  // any post-authorization mutation of the approval artifact must be
+  // readiness/audit-visible (INV-FINAL-APPROVAL-01).
+  const authorizationDetails = ledger.authorization.details;
+  if (authorizationDetails?.capabilityDecision === "REQUIRE_APPROVAL") {
+    try {
+      const { validateBoundApprovalFingerprint } = await import("./approvals.js");
+      await validateBoundApprovalFingerprint(target, {
+        packageRoot,
+        taskId,
+        approvalId: authorizationDetails.approvalId,
+        expectedFingerprint: authorizationDetails.approvalFingerprint,
+      });
+    } catch (error) {
+      return result(resolved.actionId, "UNTRUSTED", [
+        `bound approval integrity failed: ${error.message}`,
+      ], { authorization: ledger.authorization, verification: ledger.verification });
+    }
+  }
+
   if (resolved.state === "COMMIT_UNKNOWN") {
     return result(resolved.actionId, "AMBIGUOUS", [
       "external commit state is unknown; reconcile through a trusted boundary",
@@ -61,6 +81,18 @@ export async function evaluateActionReadiness({
   if (resolved.state !== "VERIFIED") {
     return result(resolved.actionId, "PENDING", [
       `action is ${resolved.state}; verification requires canonical independent evidence`,
+    ], { authorization: ledger.authorization, verification: ledger.verification });
+  }
+
+  // A required action without a requirement can never be strongly verified:
+  // legacy artifacts stay readable but cannot become trusted-satisfied
+  // (INV-FINAL-VERIFY-02).
+  if (
+    resolved.requiredForCompletion
+    && (typeof resolved.requirement !== "string" || resolved.requirement.length === 0)
+  ) {
+    return result(resolved.actionId, "UNTRUSTED", [
+      "required action has no canonical requirement binding",
     ], { authorization: ledger.authorization, verification: ledger.verification });
   }
 

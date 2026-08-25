@@ -1187,7 +1187,7 @@ test("next never recommends CALLER_ACKNOWLEDGED for a required host approval", a
     const { action } = await proposeAction(target, { packageRoot, taskId, input: {
       actionId: "action-next", effectClass: "EXTERNAL_PUBLICATION", capability: "repository.push",
       target: "origin/main", operation: "push", idempotencyKey: "next:push:v1",
-      requiredForCompletion: true, requirement: null, provenance: "FORGELOOP_EXECUTED",
+      requiredForCompletion: true, requirement: "publication", provenance: "FORGELOOP_EXECUTED",
     } });
     await requestApproval(target, { packageRoot, taskId, input: {
       approvalId: "approval-next", actionId: action.actionId,

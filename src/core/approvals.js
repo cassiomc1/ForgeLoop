@@ -346,3 +346,45 @@ export async function validateApprovalForAction(target, {
   });
   return approval;
 }
+
+/**
+ * Validate that a resolved approval still hashes to the fingerprint bound at
+ * action authorization. Any post-authorization mutation of the approval
+ * artifact fails closed (INV-FINAL-APPROVAL-01).
+ */
+export async function validateBoundApprovalFingerprint(target, {
+  packageRoot,
+  taskId,
+  approvalId,
+  expectedFingerprint,
+}) {
+  if (
+    typeof expectedFingerprint !== "string"
+    || !/^[a-f0-9]{64}$/.test(expectedFingerprint)
+  ) {
+    throw approvalError(
+      E_APPROVAL_INVALID,
+      "expected approval fingerprint must be a lowercase sha256 hex digest",
+    );
+  }
+
+  const approval = await readApproval(target, {
+    packageRoot,
+    taskId,
+    approvalId,
+  });
+
+  const actualFingerprint = approvalFingerprint(approval);
+
+  if (actualFingerprint !== expectedFingerprint) {
+    throw approvalError(
+      E_APPROVAL_INVALID,
+      `approval ${approvalId} no longer matches the fingerprint bound at action authorization`,
+    );
+  }
+
+  return {
+    approval,
+    fingerprint: actualFingerprint,
+  };
+}
