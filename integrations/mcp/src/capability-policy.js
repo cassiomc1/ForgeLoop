@@ -15,6 +15,7 @@ export const SERVER_MODES = Object.freeze({
 export function resolveLaunchPolicy({
   mode = SERVER_MODES.SAFE,
   allowExternalExecution = false,
+  allowApprovalResolution = false,
   allowMaintenance = false,
   allowRecovery = false,
   allowLegacyRepair = false,
@@ -26,6 +27,7 @@ export function resolveLaunchPolicy({
   }
   for (const [flag, value] of [
     ["--allow-external-execution", allowExternalExecution],
+    ["--allow-approval-resolution", allowApprovalResolution],
     ["--allow-maintenance", allowMaintenance],
     ["--allow-recovery", allowRecovery],
     ["--allow-legacy-repair", allowLegacyRepair],
@@ -41,6 +43,7 @@ export function resolveLaunchPolicy({
   return Object.freeze({
     mode,
     allowExternalExecution: allowExternalExecution === true,
+    allowApprovalResolution: allowApprovalResolution === true,
     allowMaintenance: allowMaintenance === true,
     allowRecovery: allowRecovery === true,
     allowLegacyRepair: allowLegacyRepair === true,
@@ -53,6 +56,8 @@ function capabilityFor(riskClass) {
   switch (riskClass) {
     case INTEGRATION_RISK_CLASSES.EXTERNAL_EXECUTION:
       return "allowExternalExecution";
+    case INTEGRATION_RISK_CLASSES.AUTHORITY_MUTATION:
+      return "allowApprovalResolution";
     case INTEGRATION_RISK_CLASSES.MAINTENANCE:
       return "allowMaintenance";
     case INTEGRATION_RISK_CLASSES.CLAIM_RELEASE_RECOVERY:
