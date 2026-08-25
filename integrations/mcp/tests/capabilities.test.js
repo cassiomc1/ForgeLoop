@@ -44,6 +44,7 @@ test("forgeloop_capabilities exists and reports versions, features, policy, and 
     assert.equal(data.server.mode, "full");
     // Policy is reported safely: capability booleans only.
     assert.equal(typeof data.server.transportCapabilities.allowRecovery, "boolean");
+    assert.equal(typeof data.server.transportCapabilities.allowApprovalResolution, "boolean");
     assert.deepEqual(
       data.resources,
       [
