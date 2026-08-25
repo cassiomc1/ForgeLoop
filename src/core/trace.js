@@ -7,6 +7,7 @@ import {
 } from "./diagnostic-model.js";
 import { projectFailureSignatures } from "./failure-signature.js";
 import { projectFailureSurfaces } from "./failure-surface.js";
+import { listActions } from "./actions.js";
 
 export const EVENT_CATEGORIES = Object.freeze([
   "task",
@@ -55,6 +56,18 @@ const EVENT_CATEGORY_MAP = Object.freeze({
   COMPLETION_VALIDATED: "completion",
   COMPLETION_REJECTED: "completion",
   TRANSACTION_COMMITTED: "integrity",
+  ACTION_PROPOSED: "execution",
+  ACTION_AUTHORIZED: "execution",
+  ACTION_STARTED: "execution",
+  ACTION_COMMIT_RECORDED: "execution",
+  ACTION_VERIFIED: "execution",
+  ACTION_FAILED: "execution",
+  ACTION_COMMIT_UNKNOWN: "execution",
+  ACTION_RECONCILED: "execution",
+  ACTION_CANCELLED: "execution",
+  APPROVAL_REQUESTED: "execution",
+  APPROVAL_RESOLVED: "execution",
+  TRAJECTORY_EVALUATED: "audit",
 });
 
 const LIFECYCLE_TRANSITIONS = Object.freeze([
@@ -130,6 +143,24 @@ function eventSummary(event) {
       return "Completion rejected";
     case "TRANSACTION_COMMITTED":
       return "Transaction committed";
+    case "ACTION_PROPOSED":
+      return `Action proposed (${d.actionId ?? "unknown"})`;
+    case "ACTION_AUTHORIZED":
+      return `Action authorized (${d.actionId ?? "unknown"})`;
+    case "ACTION_STARTED":
+      return `Action started (${d.actionId ?? "unknown"})`;
+    case "ACTION_COMMIT_RECORDED":
+      return `Action commit recorded (${d.actionId ?? "unknown"})`;
+    case "ACTION_VERIFIED":
+      return `Action verified (${d.actionId ?? "unknown"})`;
+    case "ACTION_FAILED":
+      return `Action failed (${d.actionId ?? "unknown"})`;
+    case "ACTION_COMMIT_UNKNOWN":
+      return `Action commit unknown (${d.actionId ?? "unknown"})`;
+    case "ACTION_RECONCILED":
+      return `Action reconciled (${d.actionId ?? "unknown"})`;
+    case "ACTION_CANCELLED":
+      return `Action cancelled (${d.actionId ?? "unknown"})`;
     default:
       return event.event;
   }
@@ -429,6 +460,29 @@ export async function buildTaskTrace({ target, packageRoot, taskId = null, event
     attempts: completionEvents.map((event) => ({ sequence: event.seq, at: event.at, type: event.event })),
   };
 
+  const actions = snapshot.taskId
+    ? await listActions(target, { packageRoot, taskId: snapshot.taskId })
+    : [];
+  const actionEvents = taskEvents.filter((event) => event.event.startsWith("ACTION_") || event.event.startsWith("APPROVAL_"));
+  const byState = Object.fromEntries([...new Set(actions.map((action) => action.state))].sort()
+    .map((state) => [state, actions.filter((action) => action.state === state).length]));
+  const byCapability = Object.fromEntries([...new Set(actions.map((action) => action.capability))].sort()
+    .map((capability) => [capability, actions.filter((action) => action.capability === capability).length]));
+  const idempotencyAttempts = actions.map((action) => action.idempotencyKey).filter(Boolean);
+  const repeatedIdempotencyAttempts = idempotencyAttempts.length - new Set(idempotencyAttempts).size;
+  const actionProjection = {
+    total: actions.length,
+    byState,
+    byCapability,
+    required: actions.filter((action) => action.requiredForCompletion).length,
+    ambiguous: actions.filter((action) => action.state === "COMMIT_UNKNOWN").length,
+    failed: actions.filter((action) => action.state === "FAILED").length,
+    verified: actions.filter((action) => action.state === "VERIFIED").length,
+    repeatedIdempotencyAttempts,
+    reconciliationCount: taskEvents.filter((event) => event.event === "ACTION_RECONCILED").length,
+    eventCount: actionEvents.length,
+  };
+
   return {
     schemaVersion: 1,
     protocolVersion: 1,
@@ -468,5 +522,6 @@ export async function buildTaskTrace({ target, packageRoot, taskId = null, event
     policy: {},
     audit: {},
     completion,
+    actions: actionProjection,
   };
 }
