@@ -80,3 +80,55 @@ test("a malformed capabilities.json fails closed as INVALID in lock verification
     await rm(target, { recursive: true, force: true });
   }
 });
+
+test("verifyPolicyLock detects capabilities.json drift against a capability-bound lock", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-caplock-drift-"));
+  try {
+    await mkdir(path.join(target, ".forgeloop/policy"), { recursive: true });
+    const writeCapabilityPolicy = async (policy) => {
+      await writeFile(
+        path.join(target, ".forgeloop/policy/capabilities.json"),
+        JSON.stringify(policy),
+        "utf8",
+      );
+    };
+
+    await writeCapabilityPolicy(CAPABILITY_POLICY);
+    const { readCapabilityPolicyIdentity } = await import("../src/core/capability-policy.js");
+    const identity = await readCapabilityPolicyIdentity(target, packageRoot);
+    assert.ok(identity.policy);
+    assert.match(identity.digest, /^sha256:[a-f0-9]{64}$/);
+
+    // Persist a lock that includes the capability policy.
+    const { writePolicyLock } = await import("../src/core/policy-engine.js");
+    const lock = computePolicyLockData([], null, CAPABILITY_POLICY);
+    await writePolicyLock(target, lock, packageRoot);
+
+    // Tamper with capabilities.json after the lock epoch.
+    await writeCapabilityPolicy({ ...CAPABILITY_POLICY, defaultDecision: "ALLOW" });
+
+    const result = await verifyPolicyLock(target, packageRoot);
+    assert.equal(result.status, "MISMATCH");
+    if (Array.isArray(result.mismatches)) {
+      assert.ok(result.mismatches.includes("capabilityPolicyDigest"));
+    }
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
+test("capabilities.json alone is recognized as policy configuration", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-cappol-presence-"));
+  try {
+    await mkdir(path.join(target, ".forgeloop/policy"), { recursive: true });
+    await writeFile(
+      path.join(target, ".forgeloop/policy/capabilities.json"),
+      JSON.stringify(CAPABILITY_POLICY),
+      "utf8",
+    );
+    const { detectPolicyCapability } = await import("../src/core/policy-engine.js");
+    assert.equal(await detectPolicyCapability(target, packageRoot), "AVAILABLE");
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});

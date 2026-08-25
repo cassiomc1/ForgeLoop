@@ -2,15 +2,6 @@ import { readEvents } from "./events.js";
 import { assertActionTransition, assertActionAuthorizationDetails } from "./action-model.js";
 import { E_ACTION_EVIDENCE_INVALID } from "./error-codes.js";
 
-const STATE_EVENT_TO_STATE = Object.freeze({
-  ACTION_AUTHORIZED: "AUTHORIZED",
-  ACTION_STARTED: "STARTED",
-  ACTION_COMMIT_RECORDED: "COMMITTED",
-  ACTION_VERIFIED: "VERIFIED",
-  ACTION_FAILED: "FAILED",
-  ACTION_CANCELLED: "CANCELLED",
-});
-
 function hasModernAuthorizationEvidence(details) {
   if (!details || typeof details !== "object") return false;
   if (!["ALLOW", "REQUIRE_AUTHORITY", "REQUIRE_APPROVAL"].includes(details.capabilityDecision)) return false;

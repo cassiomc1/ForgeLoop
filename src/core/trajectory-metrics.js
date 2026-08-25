@@ -6,11 +6,6 @@ export const COMPARABLE_WORK_EVENTS = new Set([
   "INTERVENTION_RECORDED", "ACTION_STARTED", "ACTION_RECONCILED", "REVIEW_STARTED",
 ]);
 
-const WORK_EVENTS = new Set([
-  "EXECUTION_STARTED", "VERIFICATION_RECORDED", "DIAGNOSTIC_CASE_RECORDED",
-  "INTERVENTION_RECORDED", "ACTION_STARTED", "ACTION_RECONCILED", "REVIEW_STARTED",
-]);
-
 export async function buildTrajectoryMetrics({ target, packageRoot, taskId }) {
   const trace = await buildTaskTrace({ target, packageRoot, taskId });
   const reflection = await buildTaskReflection({ target, packageRoot, taskId });

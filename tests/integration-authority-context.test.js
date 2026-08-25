@@ -9,7 +9,6 @@ import { requestApproval } from "../src/core/approvals.js";
 import { proposeAction } from "../src/core/actions.js";
 import { createWorkState, writeWorkState } from "../src/core/work-state.js";
 import { createTaskDescriptor, writeTaskDescriptor } from "../src/core/task-descriptor.js";
-import { seedPolicyEpoch } from "./helpers/durable-policy.js";
 import { getPackageRoot } from "../src/core/templates.js";
 
 const packageRoot = getPackageRoot();

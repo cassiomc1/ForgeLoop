@@ -1,6 +1,3 @@
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
-
 import { runActivate } from "../../src/commands/activate.js";
 import { runAdvance } from "../../src/commands/advance.js";
 import { runPrepareCompletion } from "../../src/commands/prepare-completion.js";
@@ -48,13 +45,4 @@ export async function setupVerifyingTask(target, packageRoot, {
   }
   await runPrepareCompletion({ target, packageRoot, taskId });
   return { fingerprint };
-}
-
-export async function writeSentinelScript(target, sentinelPath, contents = "ok") {
-  void target;
-  return [
-    process.execPath,
-    "-e",
-    `require('fs').mkdirSync(require('path').dirname(${JSON.stringify(sentinelPath)}),{recursive:true});require('fs').writeFileSync(${JSON.stringify(sentinelPath)},${JSON.stringify(contents)})`,
-  ];
 }
