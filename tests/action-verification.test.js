@@ -14,7 +14,6 @@ import { runCheck } from "../src/commands/run-check.js";
 import { runRoute } from "../src/commands/route.js";
 import { runPreflight } from "../src/commands/preflight.js";
 import { runTaskCreate } from "../src/commands/task-create.js";
-import { writeTaskDescriptor } from "../src/core/task-descriptor.js";
 import { createContract, writeContract, contractFingerprint } from "../src/core/contract.js";
 import { seedPolicyEpoch } from "./helpers/durable-policy.js";
 import { getPackageRoot } from "../src/core/templates.js";

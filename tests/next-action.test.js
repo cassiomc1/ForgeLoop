@@ -1177,7 +1177,6 @@ test("next never recommends CALLER_ACKNOWLEDGED for a required host approval", a
   const path = await import("node:path");
   const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-next-approval-"));
   try {
-    const { runTaskCreate } = await import("../src/commands/task-create.js");
     const { createWorkState, writeWorkState } = await import("../src/core/work-state.js");
     const { proposeAction } = await import("../src/core/actions.js");
     const { requestApproval } = await import("../src/core/approvals.js");

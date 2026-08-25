@@ -127,8 +127,7 @@ test("trusted NOT_COMMITTED returns the action to PROPOSED for reauthorization",
 test("retry after trusted NOT_COMMITTED re-evaluates changed policy before launch", async () => {
   const f = await ambiguous("notcommitted-redeny");
   const { executeDurableAction } = await import("../src/core/action-execution.js");
-  const { writeFile, mkdir } = await import("node:fs/promises");
-  try {
+    try {
     const result = await reconcileAction({ target: f.target, packageRoot, taskId: f.taskId,
       actionId: f.action.actionId, outcome: "NOT_COMMITTED",
       evidenceRefs: ["external:registry-missing-entry"], authorityContext: trustedAuthority });
