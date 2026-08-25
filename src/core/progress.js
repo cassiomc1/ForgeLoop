@@ -73,7 +73,14 @@ export function evaluateProgress({ state, events = [] } = {}) {
   // 1. Check if latest diagnosis has NO information gain (global stall)
   const legacyStalled = resolvedDiagnostic?.sourceModel !== "STRUCTURED_DIAGNOSTIC_CASE_V1"
     && Boolean(latestDiag) && latestGainClassification === "NONE";
-  if (structuredStall?.stalled || legacyStalled) {
+  // Single normalized diagnostic-stall truth: structured diagnostics defer to
+  // the canonical structured stall evaluator; legacy diagnoses keep their
+  // compatibility rule (informationGain NONE).
+  const diagnosticStalled =
+    resolvedDiagnostic?.sourceModel === "STRUCTURED_DIAGNOSTIC_CASE_V1"
+      ? Boolean(structuredStall?.stalled)
+      : Boolean(legacyStalled);
+  if (diagnosticStalled) {
     status = PROGRESS_STATUS.STALLED;
     signals.push({
       code: PROGRESS_SIGNAL.NO_DIAGNOSTIC_INFORMATION_GAIN,
@@ -118,7 +125,7 @@ export function evaluateProgress({ state, events = [] } = {}) {
   for (const [req, cyclesSet] of [...reqCycles.entries()].sort(([a], [b]) => a.localeCompare(b))) {
     if (cyclesSet.size >= 3) {
       const sortedCycles = [...cyclesSet].sort((a, b) => a - b);
-      const isLatestStalledForThisReq = latestDiag && latestGainClassification === "NONE" && latestDiagReqs.includes(req);
+      const isLatestStalledForThisReq = diagnosticStalled && latestDiagReqs.includes(req);
       if (isLatestStalledForThisReq) {
         if (!signals.some((s) => s.code === PROGRESS_SIGNAL.REPEATED_FAILURE_WITH_SAME_DIAGNOSIS && s.requirement === req)) {
           signals.push({
