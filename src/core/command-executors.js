@@ -30,6 +30,8 @@ import { runActionPropose } from "../commands/action-propose.js";
 import { runActionRecord } from "../commands/action-record.js";
 import { runActionShow } from "../commands/action-show.js";
 import { runActionReconcile } from "../commands/action-reconcile.js";
+import { runMetrics } from "../commands/metrics.js";
+import { runEval } from "../commands/eval.js";
 import { reconcileClosure } from "../commands/reconcile-closure.js";
 import { runRecordTerminalResult } from "../commands/record-terminal-result.js";
 import { runRecordDiagnosis } from "../commands/record-diagnosis.js";
@@ -191,6 +193,11 @@ export const COMMAND_EXECUTORS = {
     outcome: options.reconciliationOutcome, evidenceRefs: options.evidenceRefs ?? [],
     observedAt: options.observedAt,
   }), exitCode: 0 }),
+  metrics: async ({ target, packageRoot, options }) => ({ result: await runMetrics({ target, packageRoot, taskId: options.taskId }), exitCode: 0 }),
+  eval: async ({ target, packageRoot, options }) => {
+    const result = await runEval({ target, packageRoot, taskId: options.taskId, scenarioPath: options.scenarioPath });
+    return { result, exitCode: result.result === "PASS" ? 0 : 1 };
+  },
   "record-check": async ({ target, packageRoot, options }) => ({
     result: await runRecordCheck({
       target,

@@ -355,6 +355,21 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     }), writes: [".forgeloop/task-state/<taskKey>/actions/action-<id>.json", ".forgeloop/task-state/<taskKey>/events.ndjson"], removes: [], mayExecuteExternalProcess: false,
     description: "Reconciles a COMMIT_UNKNOWN action from externally observed evidence without retrying it.",
   }),
+  metrics: Object.freeze({
+    name: "metrics", category: "diagnostics", mutation: "READ_ONLY",
+    options: Object.freeze({ ...CLI_COMMON_OPTIONS, ...CLI_TASK_OPTION,
+      "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit trajectory metrics as JSON" }),
+    }), writes: [], removes: [], mayExecuteExternalProcess: false,
+    description: "Projects trajectory, action, execution, timing, and known usage metrics without mutating state.",
+  }),
+  eval: Object.freeze({
+    name: "eval", category: "diagnostics", mutation: "MUTATING",
+    options: Object.freeze({ ...CLI_COMMON_OPTIONS, ...CLI_TASK_OPTION,
+      "--scenario": Object.freeze({ targetKey: "scenarioPath", parseType: "string", takesValue: true, valueName: "path", missingValueMessage: "--scenario requires a path", description: "project-local trajectory scenario JSON" }),
+      "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit evaluation as JSON" }),
+    }), writes: [".forgeloop/task-state/<taskKey>/evaluations/eval-<id>.json", ".forgeloop/task-state/<taskKey>/events.ndjson"], removes: [], mayExecuteExternalProcess: false,
+    description: "Evaluates the current trajectory against a validated project-local reference scenario.",
+  }),
   "record-check": Object.freeze({
     name: "record-check",
     category: "verification",
