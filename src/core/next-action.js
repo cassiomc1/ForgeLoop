@@ -41,6 +41,7 @@ import { evaluateProgress, PROGRESS_STATUS } from "./progress.js";
 import { criterionForDecision } from "./settlement-model.js";
 import { readEvents } from "./events.js";
 import { inspectTaskConflictState } from "./task-conflict-inspection.js";
+import { listActions } from "./actions.js";
 
 export { NEXT_ACTIONS } from "./next-action-model.js";
 
@@ -177,6 +178,15 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
         requiredArtifacts: [stateRel, eventsRel],
       });
     }
+  }
+  const ambiguousAction = (await listActions(target, { packageRoot, taskId: state.taskId }))
+    .find((action) => action.state === "COMMIT_UNKNOWN");
+  if (ambiguousAction) {
+    return result({ ...context, nextAction: NEXT_ACTIONS.RECONCILE_ACTION,
+      commands: [`forgeloop action-reconcile --task ${state.taskId} --action ${ambiguousAction.actionId}`],
+      reasons: [artifactError("E_ACTION_RECONCILIATION_REQUIRED",
+        `Action ${ambiguousAction.actionId} has an unknown external commit outcome; retry is forbidden until reconciliation.`)],
+      requiredArtifacts: [taskArtifactPath(state.taskId, "actions"), eventsRel] });
   }
   if (state.phase === "RECEIVED") {
     return decision(

@@ -29,6 +29,7 @@ import { runAction } from "../commands/run-action.js";
 import { runActionPropose } from "../commands/action-propose.js";
 import { runActionRecord } from "../commands/action-record.js";
 import { runActionShow } from "../commands/action-show.js";
+import { runActionReconcile } from "../commands/action-reconcile.js";
 import { reconcileClosure } from "../commands/reconcile-closure.js";
 import { runRecordTerminalResult } from "../commands/record-terminal-result.js";
 import { runRecordDiagnosis } from "../commands/record-diagnosis.js";
@@ -184,6 +185,11 @@ export const COMMAND_EXECUTORS = {
   }), exitCode: 0 }),
   "action-show": async ({ target, packageRoot, options }) => ({ result: await runActionShow({
     target, packageRoot, taskId: options.taskId, actionId: options.actionId,
+  }), exitCode: 0 }),
+  "action-reconcile": async ({ target, packageRoot, options }) => ({ result: await runActionReconcile({
+    target, packageRoot, taskId: options.taskId, actionId: options.actionId,
+    outcome: options.reconciliationOutcome, evidenceRefs: options.evidenceRefs ?? [],
+    observedAt: options.observedAt,
   }), exitCode: 0 }),
   "record-check": async ({ target, packageRoot, options }) => ({
     result: await runRecordCheck({

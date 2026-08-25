@@ -344,6 +344,17 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     }), writes: [], removes: [], mayExecuteExternalProcess: false,
     description: "Reads one canonical durable action artifact.",
   }),
+  "action-reconcile": Object.freeze({
+    name: "action-reconcile", category: "actions", mutation: "MUTATING",
+    options: Object.freeze({ ...CLI_COMMON_OPTIONS, ...CLI_TASK_OPTION,
+      "--action": Object.freeze({ targetKey: "actionId", parseType: "string", takesValue: true, valueName: "id", missingValueMessage: "--action requires an action ID", description: "ambiguous durable action ID" }),
+      "--outcome": Object.freeze({ targetKey: "reconciliationOutcome", parseType: "string", takesValue: true, valueName: "outcome", missingValueMessage: "--outcome requires COMMITTED, NOT_COMMITTED, or UNKNOWN", description: "externally observed reconciliation outcome" }),
+      "--evidence-ref": Object.freeze({ targetKey: "evidenceRefs", parseType: "string", takesValue: true, repeatable: true, valueName: "ref", missingValueMessage: "--evidence-ref requires a reference", description: "bounded external evidence reference" }),
+      "--observed-at": Object.freeze({ targetKey: "observedAt", parseType: "string", takesValue: true, valueName: "timestamp", missingValueMessage: "--observed-at requires a timestamp", description: "external observation timestamp" }),
+      "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
+    }), writes: [".forgeloop/task-state/<taskKey>/actions/action-<id>.json", ".forgeloop/task-state/<taskKey>/events.ndjson"], removes: [], mayExecuteExternalProcess: false,
+    description: "Reconciles a COMMIT_UNKNOWN action from externally observed evidence without retrying it.",
+  }),
   "record-check": Object.freeze({
     name: "record-check",
     category: "verification",
