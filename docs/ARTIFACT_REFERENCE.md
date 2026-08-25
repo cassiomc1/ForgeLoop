@@ -683,7 +683,7 @@ fields only; mutable state lives in `state` and `revision`.
 - `idempotencyKey` *(string or null, required)*
 - `requiredForCompletion` *(boolean, required)*
 - `requirement` *(string or null, required)*
-- `provenance` *(string, required, enum: `FORGELOOP_EXECUTED`, `HOST_REPORTED`, `EXTERNAL_OBSERVED`)*
+- `provenance` *(string, required, enum: `FORGELOOP_EXECUTED`, `HOST_ATTESTED`, `CALLER_REPORTED`, `HOST_REPORTED`, `EXTERNAL_OBSERVED`)*
 - `state` *(string, required, enum: `PROPOSED`, `AUTHORIZED`, `STARTED`, `COMMITTED`, `VERIFIED`, `FAILED`, `COMMIT_UNKNOWN`, `CANCELLED`)*
 - `revision` *(integer, required, minimum: 0)*
 - `createdAt` *(string, required, minLength: 1)*

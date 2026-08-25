@@ -11,6 +11,8 @@ import { resolveCapabilityDecision } from "../src/core/capability-policy.js";
 import { readEvents } from "../src/core/events.js";
 import { classifyForgeLoopInvocation, INTEGRATION_RISK_CLASSES } from "../src/core/integration-invocation-policy.js";
 import { runActionPropose } from "../src/commands/action-propose.js";
+import { createTaskDescriptor, writeTaskDescriptor } from "../src/core/task-descriptor.js";
+import { taskDirectory } from "../src/core/task-paths.js";
 import { createWorkState, writeWorkState } from "../src/core/work-state.js";
 import { getPackageRoot } from "../src/core/templates.js";
 
@@ -51,7 +53,7 @@ test("started side effect that times out becomes COMMIT_UNKNOWN", async () => {
       packageRoot,
       taskId: "task-timeout",
       input: writeActionInput(),
-      timeoutMs: 30,
+      timeoutMs: 1000,
       argv: [process.execPath, "-e", `require('fs').writeFileSync(${JSON.stringify(sentinel)},'committed'); setTimeout(() => {}, 10000)`],
     });
     assert.equal(await readFile(sentinel, "utf8"), "committed");
@@ -145,11 +147,13 @@ test("HOST_ATTESTED approval cannot be minted without a trusted host boundary", 
 
 test("public action-propose records caller provenance, never HOST_REPORTED", async () => {
   const target = await makeTarget();
+  const taskId = "task-caller-provenance";
   try {
+    await writeTaskDescriptor(target, createTaskDescriptor({ taskId }), packageRoot);
     const result = await runActionPropose({
       target,
       packageRoot,
-      taskId: "task-caller-provenance",
+      taskId,
       input: writeActionInput({ actionId: "action-caller", idempotencyKey: "caller:v1" }),
     });
     assert.equal(result.action.provenance, "CALLER_REPORTED");
@@ -177,7 +181,7 @@ test("durable action writes reject a symlinked actions directory", { skip: proce
   const outside = await mkdtemp(path.join(os.tmpdir(), "forgeloop-actions-outside-"));
   const taskId = "task-symlink-actions";
   try {
-    const taskDir = path.join(target, ".forgeloop", "task-state", taskId);
+    const taskDir = path.join(target, taskDirectory(taskId));
     await mkdir(taskDir, { recursive: true });
     await symlink(outside, path.join(taskDir, "actions"));
     await assert.rejects(

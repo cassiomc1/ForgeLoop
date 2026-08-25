@@ -103,6 +103,13 @@ export async function withTaskTransaction({
   recordCommitEvent = false,
 } = {}, callback) {
   if (!target || !taskId) throw new Error("target and taskId are required for a task transaction");
+  const activeTransaction = getActiveTaskTransaction();
+  if (activeTransaction) {
+    if (activeTransaction.taskId !== taskId) {
+      throw new Error(`cannot nest task transaction for ${taskId} inside ${activeTransaction.taskId}`);
+    }
+    return callback(activeTransaction);
+  }
   const started = Date.now();
   const runWithLock = async () => withTaskLock(target, lockTaskId, operation, async (lock) => {
     const transactionId = `txn-${randomUUID()}`;
@@ -115,6 +122,7 @@ export async function withTaskTransaction({
     await writeManifest(target, manifestPath, manifest);
     const tx = {
       transactionId,
+      taskId,
       lock,
       async readText(relativePath) {
         await assertSafePath(target, relativePath);

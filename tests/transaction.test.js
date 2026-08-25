@@ -9,6 +9,35 @@ import { appendProtocolEvent, readEvents } from "../src/core/events.js";
 import { getPackageRoot } from "../src/core/templates.js";
 import { readJsonArtifact, writeJsonArtifact } from "../src/core/artifacts.js";
 
+test("nested transaction for the same task reuses the active transaction", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-transaction-"));
+  try {
+    await withTaskTransaction({ target, taskId: "nested-task", operation: "outer" }, async (outer) => {
+      await withTaskTransaction({ target, taskId: "nested-task", operation: "inner" }, async (inner) => {
+        assert.equal(inner, outer);
+        await inner.stageText(".forgeloop/task-state/nested.txt", "committed\n");
+      });
+    });
+    assert.equal(await readFile(path.join(target, ".forgeloop/task-state/nested.txt"), "utf8"), "committed\n");
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
+test("nested transaction cannot cross task boundaries", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-transaction-"));
+  try {
+    await withTaskTransaction({ target, taskId: "outer-task", operation: "outer" }, async () => {
+      await assert.rejects(
+        withTaskTransaction({ target, taskId: "inner-task", operation: "inner" }, async () => {}),
+        /cannot nest task transaction for inner-task inside outer-task/,
+      );
+    });
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
 test("withTaskTransaction publishes staged files only after callback completes", async () => {
   const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-transaction-"));
   try {
