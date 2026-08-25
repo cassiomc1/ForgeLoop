@@ -37,6 +37,7 @@ function capabilitiesResult({ policy, projectRoot }) {
       mode: policy.mode,
       transportCapabilities: {
         allowExternalExecution: policy.allowExternalExecution,
+        allowApprovalResolution: policy.allowApprovalResolution,
         allowMaintenance: policy.allowMaintenance,
         allowRecovery: policy.allowRecovery,
         allowLegacyRepair: policy.allowLegacyRepair,
@@ -121,13 +122,14 @@ export function buildForgeLoopMcpServer({ projectContext, policy, packageRoot })
   return server;
 }
 
-function validateLaunchContext({ mode, allowExternalExecution, allowMaintenance, allowRecovery, allowLegacyRepair, allowForceRecovery, maxExecutionTimeMs }) {
+function validateLaunchContext({ mode, allowExternalExecution, allowApprovalResolution, allowMaintenance, allowRecovery, allowLegacyRepair, allowForceRecovery, maxExecutionTimeMs }) {
   if (FORGELOOP_INTEGRATION_API_VERSION !== 1) {
     throw new Error(`E_MCP_FORGELOOP_INTEGRATION_UNSUPPORTED: ForgeLoop integration API ${FORGELOOP_INTEGRATION_API_VERSION} is not supported (required: 1)`);
   }
   return resolveLaunchPolicy({
     mode,
     allowExternalExecution,
+    allowApprovalResolution,
     allowMaintenance,
     allowRecovery,
     allowLegacyRepair,
@@ -145,6 +147,7 @@ export async function createForgeLoopMcpServer({
   projectPath,
   mode = SERVER_MODES.SAFE,
   allowExternalExecution = false,
+  allowApprovalResolution = false,
   allowMaintenance = false,
   allowRecovery = false,
   allowLegacyRepair = false,
@@ -156,6 +159,7 @@ export async function createForgeLoopMcpServer({
   const policy = validateLaunchContext({
     mode,
     allowExternalExecution,
+    allowApprovalResolution,
     allowMaintenance,
     allowRecovery,
     allowLegacyRepair,
