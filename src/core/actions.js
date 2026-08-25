@@ -276,7 +276,7 @@ export async function transitionAction(target, {
         if (details[key] !== undefined) boundedDetails[key] = details[key];
       }
 
-      const reconciliationDriven = current.state === "COMMIT_UNKNOWN" && (to === "COMMITTED" || to === "AUTHORIZED");
+      const reconciliationDriven = current.state === "COMMIT_UNKNOWN";
       if (reconciliationDriven) {
         await appendProtocolEvent(target, {
           taskId,
@@ -317,4 +317,21 @@ export async function detectOrphanActions(target, { packageRoot, taskId }) {
   return actions
     .filter((action) => !proposedFingerprints.has(action.actionFingerprint))
     .map((action) => action.actionId);
+}
+
+export async function validateActionLedgerConsistency(target, { packageRoot, taskId }) {
+  const actions = await listActionFiles(target, packageRoot, taskId);
+  const events = await readEvents(target, packageRoot, { taskId });
+  const issues = [];
+  for (const action of actions) {
+    const related = events.filter((event) => event.details?.actionId === action.actionId);
+    if (!related.some((event) => event.event === "ACTION_PROPOSED" && event.details?.actionFingerprint === action.actionFingerprint)) {
+      issues.push({ actionId: action.actionId, code: "E_ACTION_EVIDENCE_INVALID", message: `action ${action.actionId} has no matching ACTION_PROPOSED ledger event` });
+      continue;
+    }
+    if (action.state !== "PROPOSED" && !related.some((event) => event.details?.toState === action.state || event.event === `ACTION_${action.state}` || (action.state === "COMMITTED" && event.event === "ACTION_COMMIT_RECORDED"))) {
+      issues.push({ actionId: action.actionId, code: "E_ACTION_EVIDENCE_INVALID", message: `action ${action.actionId} state ${action.state} has no matching transition event` });
+    }
+  }
+  return issues;
 }
