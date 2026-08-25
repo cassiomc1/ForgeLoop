@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { getActiveTaskTransaction, withTaskTransaction } from "./transaction.js";
 import { appendProtocolEvent } from "./events.js";
+import { canonicalFingerprint } from "./artifacts.js";
 import {
   assertApprovalIdFormat,
   assertApprovalEventDetails,
@@ -88,6 +89,26 @@ function approvalBindingFields(approval) {
     taskRevision: approval.taskRevision,
     capability: approval.capability,
   };
+}
+
+function approvalFingerprintPayload(approval) {
+  return {
+    ...approvalBindingFields(approval),
+    status: approval.status,
+    decision: approval.decision ?? null,
+    resolvedAt: approval.resolvedAt ?? null,
+    authorityKind: approval.authorityKind ?? null,
+    hostGrantRef: approval.hostGrantRef ?? null,
+  };
+}
+
+/**
+ * Canonical approval fingerprint. Binds the full resolved approval content —
+ * including its resolution authority — so any post-authorization mutation of
+ * the approval artifact is detectable during ledger replay/audit.
+ */
+export function approvalFingerprint(approval) {
+  return canonicalFingerprint(approvalFingerprintPayload(approval));
 }
 
 export function assertApprovalFresh(approval, expectedBinding) {

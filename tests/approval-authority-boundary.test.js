@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
 import { proposeAction } from "../src/core/actions.js";
 import { requestApproval, resolveApproval } from "../src/core/approvals.js";
+import { taskApprovalPath } from "../src/core/task-paths.js";
 import { evaluateActionCapability } from "../src/core/capability-policy.js";
 import { createWorkState, writeWorkState } from "../src/core/work-state.js";
 import { getPackageRoot } from "../src/core/templates.js";
@@ -102,6 +103,37 @@ test("HOST_ATTESTED approval from a trusted host boundary satisfies REQUIRE_APPR
     assert.equal(result.approval.authorityKind, "HOST_ATTESTED");
     assert.equal(result.approval.authorityRef, "approval-grant-1");
     assert.match(result.approval.approvalFingerprint, /^[a-f0-9]{64}$/);
+  } finally {
+    await rm(fixture.target, { recursive: true, force: true });
+  }
+});
+
+test("replaced approval content after authorization is detectable via the bound fingerprint", async () => {
+  const fixture = await setup();
+  try {
+    const authorityContext = { trustMode: "HOST_ATTESTED", hostSupplied: true, source: "host-boundary", grantRef: "grant-1" };
+    await resolveApproval(fixture.target, {
+      packageRoot, taskId: fixture.taskId, approvalId: "approval-push",
+      decision: "APPROVED", authorityKind: "HOST_ATTESTED", hostGrantRef: "grant-1",
+      authorityContext,
+    });
+    const result = await evaluateActionCapability({
+      target: fixture.target, packageRoot, action: fixture.action,
+      approval: { approvalId: "approval-push" },
+    });
+    assert.equal(result.allowed, true);
+    const boundFingerprint = result.approval.approvalFingerprint;
+
+    // Mutate the resolved approval artifact behind the protocol's back.
+    const approvalPath = taskApprovalPath(fixture.taskId, "approval-push");
+    const absolute = path.join(fixture.target, approvalPath);
+    const approval = JSON.parse(await readFile(absolute, "utf8"));
+    approval.hostGrantRef = "tampered-grant";
+    await writeFile(absolute, JSON.stringify(approval, null, 2) + "\n", "utf8");
+
+    const { readApproval, approvalFingerprint } = await import("../src/core/approvals.js");
+    const current = await readApproval(fixture.target, { packageRoot, taskId: fixture.taskId, approvalId: "approval-push" });
+    assert.notEqual(approvalFingerprint(current), boundFingerprint);
   } finally {
     await rm(fixture.target, { recursive: true, force: true });
   }

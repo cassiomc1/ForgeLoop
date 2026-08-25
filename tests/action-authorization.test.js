@@ -86,3 +86,32 @@ test("canonical authorization binds full policy evidence to the event", async ()
     assert.match(authorizedEvent.details.capabilityPolicyFingerprint, /^[a-f0-9]{64}$/);
   } finally { await rm(target, { recursive: true, force: true }); }
 });
+
+test("REQUIRE_APPROVAL authorization events must bind approval and authority evidence", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-authz-approval-"));
+  const taskId = "task-approval-binding";
+  const { transitionAuthorizedAction } = await import("../src/core/actions.js");
+  try {
+    await seedPolicyEpoch(target, packageRoot, taskId, {
+      schemaVersion: 1, defaultDecision: "DENY",
+      rules: [{ capability: "repository.push", decision: "REQUIRE_APPROVAL" }],
+    });
+    const { action } = await proposeAction(target, { packageRoot, taskId,
+      input: { ...input({ actionId: "action-pushy", idempotencyKey: "push:v2", capability: "repository.push" }), provenance: "CALLER_REPORTED" } });
+
+    // Incomplete modern authorization details fail closed.
+    await assert.rejects(
+      transitionAuthorizedAction(target, { packageRoot, taskId, actionId: action.actionId,
+        expectedRevision: action.revision, expectedFingerprint: action.actionFingerprint,
+        details: {
+          actionFingerprint: action.actionFingerprint,
+          capabilityDecision: "REQUIRE_APPROVAL",
+          capabilityPolicyFingerprint: "a".repeat(64),
+          policyLockDigest: `sha256:${"b".repeat(64)}`,
+          taskPolicyDigest: `sha256:${"c".repeat(64)}`,
+          approvalId: "approval-x",
+        } }),
+      (error) => error.code === "E_ACTION_EVIDENCE_INVALID",
+    );
+  } finally { await rm(target, { recursive: true, force: true }); }
+});

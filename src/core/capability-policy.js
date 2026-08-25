@@ -179,7 +179,7 @@ export async function evaluateActionCapability({
     return { ...base, allowed: false, reasonCode: "E_ACTION_AUTHORITY_REQUIRED" };
   }
   if (approval?.approvalId) {
-    const { validateApprovalForAction } = await import("./approvals.js");
+    const { validateApprovalForAction, approvalFingerprint } = await import("./approvals.js");
     try {
       const resolvedApproval = await validateApprovalForAction(target, {
         packageRoot,
@@ -196,7 +196,7 @@ export async function evaluateActionCapability({
         reasonCode: null,
         approval: {
           approvalId: resolvedApproval.approvalId,
-          approvalFingerprint: canonicalFingerprint(approvalBindingFields(resolvedApproval)),
+          approvalFingerprint: approvalFingerprint(resolvedApproval),
           authorityKind: "HOST_ATTESTED",
           authorityRef: resolvedApproval.hostGrantRef,
         },
@@ -206,21 +206,4 @@ export async function evaluateActionCapability({
     }
   }
   return { ...base, allowed: false, reasonCode: "E_ACTION_APPROVAL_REQUIRED" };
-}
-
-function approvalBindingFields(approval) {
-  return {
-    taskId: approval.taskId,
-    approvalId: approval.approvalId,
-    actionId: approval.actionId,
-    actionFingerprint: approval.actionFingerprint,
-    contractFingerprint: approval.contractFingerprint,
-    taskRevision: approval.taskRevision,
-    capability: approval.capability,
-    status: approval.status,
-    decision: approval.decision ?? null,
-    resolvedAt: approval.resolvedAt ?? null,
-    authorityKind: approval.authorityKind ?? null,
-    hostGrantRef: approval.hostGrantRef ?? null,
-  };
 }
