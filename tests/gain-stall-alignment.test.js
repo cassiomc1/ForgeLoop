@@ -146,6 +146,47 @@ test("stall evaluator: first diagnosis never stalls; later no-gain stalls", () =
   assert.equal(stall.reason, "NO_DIAGNOSTIC_INFORMATION_GAIN");
 });
 
+test("progress alignment: 3+ repeated failures with real Information Gain v2 stay advisory", () => {
+  const events = [
+    failTests(1, 1),
+    caseEvent(2, 1),
+    failTests(3, 2),
+    caseEvent(4, 2),
+    failTests(5, 3),
+    caseEvent(6, 3, {
+      observations: [
+        { id: "obs-2", kind: "CHECK_RESULT", evidenceRef: "check-tests", statement: "failure occurs only with expired refresh token" },
+      ],
+    }),
+  ];
+
+  const projection = buildInformationGainProjection(events, "t");
+  const latest = projection.at(-1);
+  assert.equal(latest.classification, "NONE");
+  assert.equal(latest.dimensions.newObservation, true);
+  assert.equal(latest.effectiveGain, true);
+
+  const stall = evaluateStructuredDiagnosticStall(projection, {
+    verificationCycle: 3,
+  });
+  assert.equal(stall.stalled, false);
+
+  const progress = evaluateProgress({
+    state: { taskId: "t", verificationCycle: 3, checks: [] },
+    events,
+  });
+  assert.equal(progress.status, "WATCH");
+  assert.ok(progress.signals.some(
+    (signal) => signal.code === "REPEATED_FAILED_REQUIREMENT",
+  ));
+  assert.ok(!progress.signals.some(
+    (signal) => signal.code === "NO_DIAGNOSTIC_INFORMATION_GAIN",
+  ));
+  assert.ok(!progress.signals.some(
+    (signal) => signal.code === "REPEATED_FAILURE_WITH_SAME_DIAGNOSIS",
+  ));
+});
+
 // ---------- public lifecycle fixtures ----------
 
 async function setupToDiagnosing(target, { successCriteria = ["lint"] } = {}) {
