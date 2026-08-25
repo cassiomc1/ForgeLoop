@@ -145,12 +145,15 @@ export async function evaluateActionCapability({
   if (approval?.approvalId) {
     const { validateApprovalForAction } = await import("./approvals.js");
     try {
-      await validateApprovalForAction(target, {
+      const resolvedApproval = await validateApprovalForAction(target, {
         packageRoot,
         taskId: action.taskId,
         action,
         approvalId: approval.approvalId,
       });
+      if (resolvedApproval.authorityKind !== "HOST_ATTESTED" || !resolvedApproval.hostGrantRef) {
+        return { ...base, allowed: false, reasonCode: "E_ACTION_AUTHORITY_REQUIRED" };
+      }
       return { ...base, allowed: true, reasonCode: null, approvalId: approval.approvalId };
     } catch (error) {
       return { ...base, allowed: false, reasonCode: error.code ?? "E_APPROVAL_INVALID" };
