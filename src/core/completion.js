@@ -13,6 +13,7 @@ import { isRecoverableCompletionEvidenceCode } from "./completion-recovery.js";
 import { evaluateTerminalRequirements } from "./evidence-readiness.js";
 import { PROJECT_ARTIFACT_PATHS, taskArtifactPath } from "./task-paths.js";
 import { detectPolicyCapability, evaluateTargetPolicy } from "./policy-engine.js";
+import { listActions } from "./actions.js";
 
 /**
  * Canonical completion return statuses shared by the runtime, tests, and
@@ -424,6 +425,26 @@ export async function evaluateCompletion({
     }
   }
 
+  const actionTaskId = contract?.value?.taskId ?? taskId;
+  const durableActions = actionTaskId
+    ? await listActions(target, { packageRoot, taskId: actionTaskId })
+    : [];
+  const contractRequirements = new Set([
+    ...(contract?.value?.verification ?? []), ...(contract?.value?.successCriteria ?? []),
+  ]);
+  for (const action of durableActions.filter((candidate) => candidate.requiredForCompletion)) {
+    if (action.state === "VERIFIED") continue;
+    if (action.state === "CANCELLED" && action.requirement && !contractRequirements.has(action.requirement)) continue;
+    const ambiguous = action.state === "COMMIT_UNKNOWN";
+    errors.push(issue(
+      ambiguous ? "E_ACTION_RECONCILIATION_REQUIRED" : "E_ACTION_STATE_MISMATCH",
+      ambiguous
+        ? `Required action ${action.actionId} has an unknown external commit outcome and must be reconciled.`
+        : `Required action ${action.actionId} must be VERIFIED before completion; current state is ${action.state}.`,
+      [taskArtifactPath(action.taskId, "actions")], { actionId: action.actionId, actionState: action.state },
+    ));
+  }
+
   const sortedErrors = sortIssues(errors);
   const valid = sortedErrors.length === 0;
   return {
@@ -439,6 +460,15 @@ export async function evaluateCompletion({
     ledger: {
       status: ledger.valid ? "valid" : "invalid",
       events: ledger.events.length,
+    },
+    actions: {
+      count: durableActions.length,
+      required: durableActions.filter((action) => action.requiredForCompletion).length,
+      verified: durableActions.filter((action) => action.state === "VERIFIED").length,
+      failed: durableActions.filter((action) => action.state === "FAILED").length,
+      ambiguous: durableActions.filter((action) => action.state === "COMMIT_UNKNOWN").length,
+      pending: durableActions.filter((action) => !["VERIFIED", "FAILED", "CANCELLED"].includes(action.state)).length,
+      actionRefs: durableActions.map((action) => action.actionId),
     },
   };
 }
