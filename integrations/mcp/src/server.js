@@ -53,7 +53,7 @@ function capabilitiesResult({ policy, projectRoot }) {
  * context. Used directly by the stateless HTTP transport (one product per
  * request) and once by the stdio entrypoint.
  */
-export function buildForgeLoopMcpServer({ projectContext, policy, packageRoot }) {
+export function buildForgeLoopMcpServer({ projectContext, policy, packageRoot, authorityContextProvider }) {
   const server = new McpServer({
     name: "forgeloop-mcp",
     version: mcpServerVersion(),
@@ -87,7 +87,11 @@ export function buildForgeLoopMcpServer({ projectContext, policy, packageRoot })
     },
   );
 
-  for (const registration of buildToolRegistrations({ projectRoot: projectContext.projectRoot, policy })) {
+  for (const registration of buildToolRegistrations({
+    projectRoot: projectContext.projectRoot,
+    policy,
+    authorityContextProvider,
+  })) {
     server.registerTool(
       registration.name,
       {
@@ -154,6 +158,7 @@ export async function createForgeLoopMcpServer({
   allowForceRecovery = false,
   maxExecutionTimeMs = 600000,
   packageRoot = undefined,
+  authorityContextProvider = undefined,
 } = {}) {
   const projectContext = await resolveProjectContext(projectPath);
   const policy = validateLaunchContext({
@@ -166,7 +171,13 @@ export async function createForgeLoopMcpServer({
     allowForceRecovery,
     maxExecutionTimeMs,
   });
-  const server = buildForgeLoopMcpServer({ projectContext, policy, packageRoot });
+  // Launch flags are transport permissions only; they never mint host
+  // authority. A trusted context can arrive exclusively through this
+  // embedding-controlled provider.
+  if (authorityContextProvider !== undefined && typeof authorityContextProvider !== "function") {
+    throw new Error("authorityContextProvider must be a function supplied by the embedding host");
+  }
+  const server = buildForgeLoopMcpServer({ projectContext, policy, packageRoot, authorityContextProvider });
   return Object.freeze({ server, policy, projectContext });
 }
 

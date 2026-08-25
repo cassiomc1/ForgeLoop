@@ -31,6 +31,8 @@ export async function executeForgeLoopCommand({
   command,
   projectPath = ".",
   input = {},
+  authorityContext,
+  runtimeContext,
 } = {}) {
   const metadata = Object.freeze({
     protocolVersion: PROTOCOL_VERSION,
@@ -81,7 +83,16 @@ export async function executeForgeLoopCommand({
     const packageRoot = getPackageRoot();
     const packageVersion = await readPackageVersion(packageRoot);
 
-    const { result, exitCode } = await executor({ target, packageRoot, packageVersion, options });
+    // Trusted host authority and runtime context travel out-of-band, never
+    // inside actor-controlled command input (INV-AUTH-03).
+    const { result, exitCode } = await executor({
+      target,
+      packageRoot,
+      packageVersion,
+      options,
+      authorityContext,
+      runtimeContext,
+    });
     return {
       ok: true,
       command,

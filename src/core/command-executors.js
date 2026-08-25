@@ -153,7 +153,7 @@ export const COMMAND_EXECUTORS = {
     result: await runPrepareCompletion({ target, packageRoot, taskId: options.taskId }),
     exitCode: 0,
   }),
-  "run-check": async ({ target, packageRoot, options }) => {
+  "run-check": async ({ target, packageRoot, options, authorityContext, runtimeContext }) => {
     const result = await runCheck({
       target,
       packageRoot,
@@ -163,16 +163,19 @@ export const COMMAND_EXECUTORS = {
       details: options.checkDetails ?? undefined,
       timeoutMs: options.timeoutMs ?? undefined,
       taskId: options.taskId,
+      authorityContext,
+      runtimeContext,
     });
     return { result, exitCode: result.check.status === "passed" ? 0 : 1 };
   },
-  "run-action": async ({ target, packageRoot, options }) => {
+  "run-action": async ({ target, packageRoot, options, authorityContext, runtimeContext }) => {
     const result = await runAction({ target, packageRoot, taskId: options.taskId,
       actionId: options.actionId, capability: options.actionCapability,
       effectClass: options.actionEffectClass, actionTarget: options.actionTarget,
       idempotencyKey: options.actionIdempotencyKey, requirement: options.actionRequirement,
       requiredForCompletion: options.actionRequiredForCompletion, argv: options.commandArgv,
-      approvalId: options.approvalId, timeoutMs: options.timeoutMs });
+      approvalId: options.approvalId, timeoutMs: options.timeoutMs,
+      authorityContext, runtimeContext });
     return { result, exitCode: result.action.state === "COMMITTED" ? 0 : 1 };
   },
   "action-propose": async ({ target, packageRoot, options }) => ({ result: await runActionPropose({
@@ -201,7 +204,7 @@ export const COMMAND_EXECUTORS = {
     return { result, exitCode: result.result === "PASS" ? 0 : 1 };
   },
   "approval-request": async ({ target, packageRoot, options }) => ({ result: await runApprovalRequest({ target, packageRoot, taskId: options.taskId, approvalId: options.approvalId, actionId: options.actionId, reason: options.reason }), exitCode: 0 }),
-  "approval-resolve": async ({ target, packageRoot, options }) => ({ result: await runApprovalResolve({ target, packageRoot, taskId: options.taskId, approvalId: options.approvalId, decision: options.approvalDecision, authorityKind: options.approvalAuthorityKind, hostGrantRef: options.hostGrantRef, reason: options.reason }), exitCode: 0 }),
+  "approval-resolve": async ({ target, packageRoot, options, authorityContext }) => ({ result: await runApprovalResolve({ target, packageRoot, taskId: options.taskId, approvalId: options.approvalId, decision: options.approvalDecision, authorityKind: options.approvalAuthorityKind, hostGrantRef: options.hostGrantRef, reason: options.reason, authorityContext }), exitCode: 0 }),
   "record-check": async ({ target, packageRoot, options }) => ({
     result: await runRecordCheck({
       target,
