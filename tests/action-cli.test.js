@@ -7,8 +7,16 @@ import test from "node:test";
 import { proposeAction, transitionAction, transitionAuthorizedAction } from "../src/core/actions.js";
 import { runActionRecord } from "../src/commands/action-record.js";
 import { getPackageRoot } from "../src/core/templates.js";
+import { CLI_COMMAND_DEFINITIONS } from "../src/core/cli-command-definitions.js";
 
 const packageRoot = getPackageRoot();
+
+test("public action-record metadata advertises only caller or external provenance", () => {
+  const description = CLI_COMMAND_DEFINITIONS["action-record"].options["--provenance"].description;
+  assert.match(description, /CALLER_REPORTED/);
+  assert.match(description, /EXTERNAL_OBSERVED/);
+  assert.doesNotMatch(description, /HOST_REPORTED/);
+});
 
 test("host-reported transitions cannot skip states or claim ForgeLoop execution", async () => {
   const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-action-cli-"));

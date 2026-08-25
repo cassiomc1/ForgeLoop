@@ -1,9 +1,15 @@
 import { getNextAction } from "../core/next-action.js";
 import { withResolvedTask } from "../core/task-command.js";
 
-export async function runNext({ target, packageRoot, taskId, task }) {
+export async function runNext({ target, packageRoot, taskId, task, authorityContext, runtimeContext }) {
   return withResolvedTask(target, { taskId: taskId ?? task, packageRoot }, async (ctx) => {
-    return getNextAction({ target, packageRoot, taskId: ctx?.taskId ?? null });
+    return getNextAction({
+      target,
+      packageRoot,
+      taskId: ctx?.taskId ?? null,
+      authorityContext,
+      runtimeContext,
+    });
   });
 }
 

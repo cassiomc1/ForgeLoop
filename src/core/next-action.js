@@ -16,6 +16,7 @@ import { validateEventLedger, validateCompletionRecoveryAuthorization } from "./
 import {
   NEXT_ACTIONS,
   commandFor,
+  directCommandSpec,
   decision,
   recordCheckCommandSpec,
   recordDiagnosisCommandSpec,
@@ -43,8 +44,115 @@ import { readEvents } from "./events.js";
 import { inspectTaskConflictState } from "./task-conflict-inspection.js";
 import { listActions } from "./actions.js";
 import { listApprovals } from "./approvals.js";
+import { evaluateActionCapability } from "./capability-policy.js";
 
 export { NEXT_ACTIONS } from "./next-action-model.js";
+
+function capabilityDecisionMetadata(action, capability, approvalId = null) {
+  return {
+    capability: action.capability,
+    decision: capability.decision,
+    reasonCode: capability.reasonCode ?? null,
+    policyFingerprint: capability.policyFingerprint ?? null,
+    ...(capability.authority?.authorityRef ? { authorityRef: capability.authority.authorityRef } : {}),
+    ...(capability.approval?.approvalId
+      ? { approvalId: capability.approval.approvalId }
+      : approvalId ? { approvalId } : {}),
+  };
+}
+
+function authorizeActionGuidance({ context, state, action, capability, eventsRel }) {
+  const approvalId = capability.approval?.approvalId ?? null;
+  const approvalSuffix = approvalId ? ` --approval ${approvalId}` : "";
+  return result({
+    ...context,
+    nextAction: NEXT_ACTIONS.AUTHORIZE_ACTION,
+    commands: [`forgeloop action-authorize --task ${state.taskId} --action ${action.actionId}${approvalSuffix}`],
+    reasons: [artifactError(
+      "E_ACTION_AUTHORIZATION_REQUIRED",
+      `Required action ${action.actionId} is PROPOSED and is authorizable under the canonical capability policy.`,
+    )],
+    capabilityDecision: capabilityDecisionMetadata(action, capability),
+    requiredArtifacts: [taskArtifactPath(state.taskId, "actions"), eventsRel],
+  });
+}
+
+function actionApprovalGuidance({ context, state, action, capability, eventsRel }) {
+  return result({
+    ...context,
+    nextAction: NEXT_ACTIONS.REQUEST_ACTION_APPROVAL,
+    commands: [
+      `forgeloop approval-request --task ${state.taskId} --action ${action.actionId} --approval <approval-id> --reason <reason>`,
+    ],
+    commandSpecs: [{
+      ...directCommandSpec("approval-request", state.taskId, [
+        { name: "approvalId", option: "--approval=<approval-id>" },
+        { name: "actionId", option: "--action=<action-id>" },
+        { name: "reason", option: "--reason=<text>" },
+      ]),
+    }],
+    reasons: [artifactError(
+      "E_ACTION_APPROVAL_REQUIRED",
+      `Capability policy requires a current approval before required action ${action.actionId} can be authorized.`,
+    )],
+    approvalRequired: {
+      actionId: action.actionId,
+      capability: action.capability,
+      reason: "Capability policy requires approval before authorization.",
+    },
+    capabilityDecision: capabilityDecisionMetadata(action, capability),
+    requiredArtifacts: [taskArtifactPath(state.taskId, "actions"), eventsRel],
+  });
+}
+
+function actionAuthorityGuidance({ context, state, action, capability, eventsRel }) {
+  return result({
+    ...context,
+    nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
+    commands: [],
+    reasons: [artifactError(
+      capability.reasonCode ?? "E_ACTION_AUTHORITY_REQUIRED",
+      `Required action ${action.actionId} needs trusted host authority before it can be authorized.`,
+    )],
+    authorityRequired: {
+      kind: "HOST_ATTESTED",
+      actionId: action.actionId,
+      capability: action.capability,
+      reason: "Capability policy requires trusted host authority; no standalone CLI command can create it.",
+    },
+    capabilityDecision: capabilityDecisionMetadata(action, capability),
+    requiredArtifacts: [taskArtifactPath(state.taskId, "actions"), eventsRel],
+  });
+}
+
+function actionDeniedGuidance({ context, state, action, capability, eventsRel }) {
+  return result({
+    ...context,
+    nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
+    commands: [],
+    reasons: [artifactError(
+      capability.reasonCode ?? "E_ACTION_CAPABILITY_DENIED",
+      `Capability policy does not authorize required action ${action.actionId}: ${capability.decision}.`,
+    )],
+    capabilityDecision: capabilityDecisionMetadata(action, capability),
+    requiredArtifacts: [taskArtifactPath(state.taskId, "actions"), eventsRel],
+  });
+}
+
+async function evaluateProposedActionCapability({ target, packageRoot, action, approvals, authorityContext }) {
+  const approved = approvals.filter((approval) => approval.actionId === action.actionId && approval.status === "APPROVED");
+  for (const approval of approved) {
+    const evaluated = await evaluateActionCapability({
+      target,
+      packageRoot,
+      action,
+      authorityContext,
+      approval: { approvalId: approval.approvalId },
+    });
+    if (evaluated.allowed) return evaluated;
+  }
+  return evaluateActionCapability({ target, packageRoot, action, authorityContext });
+}
 
 export function policyRecoveryAction(errors = []) {
   if (errors.some((e) => e.code === "E_POLICY_WEAKENING" || e.code === "E_POLICY_LOCK_MISMATCH")) {
@@ -180,8 +288,26 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
       });
     }
   }
-  const ambiguousAction = (await listActions(target, { packageRoot, taskId: state.taskId }))
-    .find((action) => action.state === "COMMIT_UNKNOWN");
+  let actionsForApproval;
+  try {
+    actionsForApproval = await listActions(target, { packageRoot, taskId: state.taskId });
+  } catch (error) {
+    if (error.code === "E_ACTION_INVALID") {
+      return result({
+        ...context,
+        nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
+        commands: [],
+        reasons: [artifactError(
+          error.code,
+          `A durable action artifact is invalid and cannot be offered for authorization: ${error.message}`,
+          [taskArtifactPath(state.taskId, "actions"), eventsRel],
+        )],
+        requiredArtifacts: [taskArtifactPath(state.taskId, "actions"), eventsRel],
+      });
+    }
+    throw error;
+  }
+  const ambiguousAction = actionsForApproval.find((action) => action.state === "COMMIT_UNKNOWN");
   if (ambiguousAction) {
     return result({ ...context, nextAction: NEXT_ACTIONS.RECONCILE_ACTION,
       commands: [`forgeloop action-reconcile --task ${state.taskId} --action ${ambiguousAction.actionId} --outcome UNKNOWN`],
@@ -193,7 +319,6 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
       },
       requiredArtifacts: [taskArtifactPath(state.taskId, "actions"), eventsRel] });
   }
-  const actionsForApproval = await listActions(target, { packageRoot, taskId: state.taskId });
   const approvals = await listApprovals(target, { packageRoot, taskId: state.taskId });
   const pendingApproval = approvals.find((approval) => approval.status === "PENDING"
     && actionsForApproval.some((action) => action.actionId === approval.actionId && action.requiredForCompletion));
@@ -217,15 +342,72 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
   const authorizableAction = actionsForApproval.find((action) => action.requiredForCompletion
     && action.state === "PROPOSED");
   if (authorizableAction) {
-    return result({ ...context, nextAction: NEXT_ACTIONS.AUTHORIZE_ACTION,
-      commands: [`forgeloop action-authorize --task ${state.taskId} --action ${authorizableAction.actionId}`],
-      reasons: [artifactError("E_ACTION_AUTHORIZATION_REQUIRED",
-        `Required action ${authorizableAction.actionId} is PROPOSED and must be authorized through the canonical service before execution.`)],
-      requiredArtifacts: [taskArtifactPath(state.taskId, "actions"), eventsRel] });
+    let capability;
+    try {
+      capability = await evaluateProposedActionCapability({
+        target,
+        packageRoot,
+        action: authorizableAction,
+        approvals,
+        authorityContext,
+      });
+    } catch (error) {
+      return result({
+        ...context,
+        nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
+        commands: [],
+        reasons: [artifactError(
+          error.code ?? "E_ACTION_CAPABILITY_INVALID",
+          `Capability policy evaluation failed for required action ${authorizableAction.actionId}: ${error.message}`,
+          [taskArtifactPath(state.taskId, "actions"), eventsRel],
+        )],
+        capabilityDecision: {
+          capability: authorizableAction.capability,
+          decision: "DENY",
+          reasonCode: error.code ?? "E_ACTION_CAPABILITY_INVALID",
+          policyFingerprint: null,
+        },
+        requiredArtifacts: [taskArtifactPath(state.taskId, "actions"), eventsRel],
+      });
+    }
+    if (capability.allowed) {
+      return authorizeActionGuidance({
+        context,
+        state,
+        action: authorizableAction,
+        capability,
+        eventsRel,
+      });
+    }
+    if (capability.decision === "REQUIRE_APPROVAL") {
+      return actionApprovalGuidance({
+        context,
+        state,
+        action: authorizableAction,
+        capability,
+        eventsRel,
+      });
+    }
+    if (capability.decision === "REQUIRE_AUTHORITY") {
+      return actionAuthorityGuidance({
+        context,
+        state,
+        action: authorizableAction,
+        capability,
+        eventsRel,
+      });
+    }
+    return actionDeniedGuidance({
+      context,
+      state,
+      action: authorizableAction,
+      capability,
+      eventsRel,
+    });
   }
   // Committed-but-unverified required action needs canonical postcondition
   // evidence before it can satisfy completion.
-  const committedActions = await listActions(target, { packageRoot, taskId: state.taskId });
+  const committedActions = actionsForApproval;
   const unverifiedRequired = committedActions.find((action) => action.requiredForCompletion
     && action.state === "COMMITTED");
   if (unverifiedRequired) {

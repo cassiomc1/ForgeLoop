@@ -37,6 +37,7 @@ export const NEXT_ACTIONS = Object.freeze({
   RECONCILE_CLOSURE: "RECONCILE_CLOSURE",
   RECONCILE_ACTION: "RECONCILE_ACTION",
   AUTHORIZE_ACTION: "AUTHORIZE_ACTION",
+  REQUEST_ACTION_APPROVAL: "REQUEST_ACTION_APPROVAL",
   RESOLVE_ACTION_APPROVAL: "RESOLVE_ACTION_APPROVAL",
   VERIFY_EXTERNAL_ACTION: "VERIFY_EXTERNAL_ACTION",
   RECOVER_TASK: "RECOVER_TASK",
@@ -45,7 +46,7 @@ export const NEXT_ACTIONS = Object.freeze({
   NONE: "NONE",
 });
 
-function directCommandSpec(commandId, taskId, requiredInputs = []) {
+export function directCommandSpec(commandId, taskId, requiredInputs = []) {
   return {
     commandId,
     executable: "forgeloop",
@@ -113,6 +114,8 @@ export function result({
   progress = undefined,
   diagnosticGuidance = undefined,
   authorityRequired = undefined,
+  approvalRequired = undefined,
+  capabilityDecision = undefined,
   reconciliationAuthorityRequired = undefined,
 }) {
   const normalizedReasons = reasons
@@ -148,6 +151,8 @@ export function result({
     ...(progress ? { progress: structuredClone(progress) } : {}),
     ...(diagnosticGuidance ? { diagnosticGuidance: structuredClone(diagnosticGuidance) } : {}),
     ...(authorityRequired ? { authorityRequired: structuredClone(authorityRequired) } : {}),
+    ...(approvalRequired ? { approvalRequired: structuredClone(approvalRequired) } : {}),
+    ...(capabilityDecision ? { capabilityDecision: structuredClone(capabilityDecision) } : {}),
     ...(reconciliationAuthorityRequired
       ? { reconciliationAuthorityRequired: structuredClone(reconciliationAuthorityRequired) }
       : {}),

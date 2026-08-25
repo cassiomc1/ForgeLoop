@@ -116,12 +116,19 @@ export const COMMAND_EXECUTORS = {
     const result = await runPreflight({ target, packageRoot, strict: options.strict, taskId: options.taskId });
     return { result, exitCode: result.status === "READY" ? 0 : 1 };
   },
-  advance: async ({ target, packageRoot, options }) => ({
-    result: await runAdvance({ target, packageRoot, to: options.to, taskId: options.taskId }),
+  advance: async ({ target, packageRoot, options, authorityContext, runtimeContext }) => ({
+    result: await runAdvance({
+      target,
+      packageRoot,
+      to: options.to,
+      taskId: options.taskId,
+      authorityContext,
+      runtimeContext,
+    }),
     exitCode: 0,
   }),
-  next: async ({ target, packageRoot, options }) => ({
-    result: await runNext({ target, packageRoot, taskId: options.taskId }),
+  next: async ({ target, packageRoot, options, authorityContext, runtimeContext }) => ({
+    result: await runNext({ target, packageRoot, taskId: options.taskId, authorityContext, runtimeContext }),
     exitCode: 0,
   }),
   continuity: async ({ target, packageRoot, options }) => ({
@@ -151,8 +158,8 @@ export const COMMAND_EXECUTORS = {
     result: await runClearContinuity({ target, taskId: options.taskId }),
     exitCode: 0,
   }),
-  "prepare-completion": async ({ target, packageRoot, options }) => ({
-    result: await runPrepareCompletion({ target, packageRoot, taskId: options.taskId }),
+  "prepare-completion": async ({ target, packageRoot, options, authorityContext, runtimeContext }) => ({
+    result: await runPrepareCompletion({ target, packageRoot, taskId: options.taskId, authorityContext, runtimeContext }),
     exitCode: 0,
   }),
   "run-check": async ({ target, packageRoot, options, authorityContext, runtimeContext }) => {
@@ -333,16 +340,37 @@ export const COMMAND_EXECUTORS = {
     }),
     exitCode: 0,
   }),
-  complete: async ({ target, packageRoot, options }) => {
-    const result = await runComplete({ target, packageRoot, strict: options.strict, taskId: options.taskId });
+  complete: async ({ target, packageRoot, options, authorityContext, runtimeContext }) => {
+    const result = await runComplete({
+      target,
+      packageRoot,
+      strict: options.strict,
+      taskId: options.taskId,
+      authorityContext,
+      runtimeContext,
+    });
     return { result, exitCode: result.status === "VALID" ? 0 : 1 };
   },
-  audit: async ({ target, packageRoot, options }) => {
-    const result = await runAudit({ target, packageRoot, strict: options.strict, taskId: options.taskId });
+  audit: async ({ target, packageRoot, options, authorityContext, runtimeContext }) => {
+    const result = await runAudit({
+      target,
+      packageRoot,
+      strict: options.strict,
+      taskId: options.taskId,
+      authorityContext,
+      runtimeContext,
+    });
     return { result, exitCode: result.status === "VALID" ? 0 : 1 };
   },
-  report: async ({ target, packageRoot, options }) => {
-    const result = await runReport({ target, packageRoot, strict: options.strict, taskId: options.taskId });
+  report: async ({ target, packageRoot, options, authorityContext, runtimeContext }) => {
+    const result = await runReport({
+      target,
+      packageRoot,
+      strict: options.strict,
+      taskId: options.taskId,
+      authorityContext,
+      runtimeContext,
+    });
     return { result, exitCode: result.verdict === "VALID" ? 0 : 1 };
   },
   policy: async ({ target, packageRoot, options }) => ({
@@ -383,8 +411,15 @@ export const COMMAND_EXECUTORS = {
     result: await runBundle({ target, packageRoot, taskId: options.taskId }),
     exitCode: 0,
   }),
-  inspect: async ({ target, packageRoot, options }) => {
-    const result = await inspectTarget({ target, packageRoot, contractFile: options.contractFile, taskId: options.taskId });
+  inspect: async ({ target, packageRoot, options, authorityContext, runtimeContext }) => {
+    const result = await inspectTarget({
+      target,
+      packageRoot,
+      contractFile: options.contractFile,
+      taskId: options.taskId,
+      authorityContext,
+      runtimeContext,
+    });
     return { result, exitCode: result.ok ? 0 : 1 };
   },
   "validate-receipt": async ({ target, packageRoot, options }) => ({

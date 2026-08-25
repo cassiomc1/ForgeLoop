@@ -330,7 +330,7 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
     options: Object.freeze({ ...CLI_COMMON_OPTIONS, ...CLI_TASK_OPTION,
       "--action": Object.freeze({ targetKey: "actionId", parseType: "string", takesValue: true, valueName: "id", missingValueMessage: "--action requires an action ID", description: "durable action ID" }),
       "--state": Object.freeze({ targetKey: "actionState", parseType: "string", takesValue: true, valueName: "state", missingValueMessage: "--state requires a state", description: "next canonical action state" }),
-      "--provenance": Object.freeze({ targetKey: "actionProvenance", parseType: "string", takesValue: true, valueName: "value", missingValueMessage: "--provenance requires a value", description: "HOST_REPORTED or EXTERNAL_OBSERVED" }),
+      "--provenance": Object.freeze({ targetKey: "actionProvenance", parseType: "string", takesValue: true, valueName: "value", missingValueMessage: "--provenance requires a value", description: "CALLER_REPORTED or EXTERNAL_OBSERVED" }),
       "--evidence-ref": Object.freeze({ targetKey: "actionEvidenceRef", parseType: "string", takesValue: true, valueName: "ref", missingValueMessage: "--evidence-ref requires a reference", description: "bounded external evidence reference" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit structured output as JSON" }),
     }), writes: [".forgeloop/task-state/<taskKey>/actions/action-<id>.json", ".forgeloop/task-state/<taskKey>/events.ndjson"], removes: [], mayExecuteExternalProcess: false,
