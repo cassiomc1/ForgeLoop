@@ -135,7 +135,7 @@ test("transition map allows exactly the planned edges and nothing else", () => {
     ["COMMITTED", "VERIFIED"],
     ["COMMITTED", "COMMIT_UNKNOWN"],
     ["COMMIT_UNKNOWN", "COMMITTED"],
-    ["COMMIT_UNKNOWN", "AUTHORIZED"],
+    ["COMMIT_UNKNOWN", "PROPOSED"],
     ["COMMIT_UNKNOWN", "COMMIT_UNKNOWN"],
   ];
   for (const [from, to] of allowed) {
