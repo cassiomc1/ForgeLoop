@@ -1,4 +1,5 @@
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
 
 import { getActiveTaskTransaction, withTaskTransaction } from "./transaction.js";
 import { appendProtocolEvent, readEvents } from "./events.js";
@@ -63,8 +64,7 @@ async function writeActionFile(target, packageRoot, taskId, action) {
     await activeTransaction.stageText(relPath, serialized);
   } else {
     const absolute = ensureWithin(target, relPath);
-    const parent = absolute.slice(0, absolute.lastIndexOf("/"));
-    await mkdir(parent, { recursive: true });
+    await mkdir(path.dirname(absolute), { recursive: true });
     await writeFile(absolute, serialized, "utf8");
   }
 }
