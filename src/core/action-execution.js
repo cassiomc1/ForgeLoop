@@ -47,7 +47,10 @@ export async function executeDurableAction({
       capabilityPolicyFingerprint: capability.policyFingerprint,
       ...(capability.approvalId ? { approvalId: capability.approvalId } : {}),
       ...(authorityContext?.trustMode === "HOST_ATTESTED"
-        ? { authorityKind: "HOST_ATTESTED", authorityRef: authorityContext.grantRef ?? null }
+        ? {
+            authorityKind: "HOST_ATTESTED",
+            ...(typeof authorityContext.grantRef === "string" ? { authorityRef: authorityContext.grantRef } : {}),
+          }
         : {}),
     },
   });
@@ -82,10 +85,10 @@ export async function executeDurableAction({
     expectedRevision: started.revision,
     details: {
       evidenceRef: execution.execution.executionId,
-      commitResultCode: to === "COMMIT_UNKNOWN" ? "AMBIGUOUS" : execution.execution.exitCode,
-      ...(to === "COMMIT_UNKNOWN"
-        ? { reason: `started execution ended via ${execution.execution.termination} without proving external commit state` }
-        : {}),
+      ...(to === "COMMIT_UNKNOWN" ? {
+        commitResultCode: "AMBIGUOUS",
+        reason: `started execution ended via ${execution.execution.termination} without proving external commit state`,
+      } : {}),
     },
   });
   return { action: result, execution: execution.execution, executionPath: execution.path, capability };
