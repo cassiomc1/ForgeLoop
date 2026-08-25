@@ -116,7 +116,7 @@ test("HOST_ATTESTED approval cannot be minted without a trusted host boundary", 
         actionId: "action-approve",
         idempotencyKey: "approval:boundary:v1",
       }),
-      provenance: "CALLER_REPORTED",
+      provenance: "FORGELOOP_EXECUTED",
     } });
     await requestApproval(target, { packageRoot, taskId, input: {
       approvalId: "approval-boundary",
@@ -183,7 +183,7 @@ test("durable action writes reject a symlinked actions directory", { skip: proce
     await assert.rejects(
       proposeAction(target, { packageRoot, taskId, input: {
         ...writeActionInput({ actionId: "action-escape", idempotencyKey: "escape:v1" }),
-        provenance: "CALLER_REPORTED",
+        provenance: "HOST_REPORTED",
       }}),
       /symlink|inside target|safe path/i,
     );
