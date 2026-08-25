@@ -8,6 +8,22 @@ not an agent runtime. It does not execute commands found in those files, call
 an LLM, or publish on behalf of a target. The controls below describe the
 remaining trust boundaries and their executable evidence.
 
+## Durable action boundary
+
+Durable actions make external side effects explicit, but they do not make an
+arbitrary remote system transactional. Side-effecting actions require an
+immutable idempotency key; `COMMIT_UNKNOWN` forbids automatic retry and can be
+resolved only by explicit reconciliation. Capability policy is project-local
+configuration and never creates `HOST_ATTESTED` authority. Approvals bind to
+the action fingerprint, contract fingerprint, task revision, and capability;
+drift makes them stale. `run-action` accepts exact argv with `shell: false`,
+and host-reported actions remain distinct from ForgeLoop-executed actions.
+
+Residual limitation: ForgeLoop cannot atomically commit local protocol state
+and an arbitrary external system in one transaction. Idempotency, durable
+intent, evidence, and reconciliation reduce duplicate-effect risk but do not
+provide a universal exactly-once guarantee.
+
 | Threat | Impact | Trust boundary | Mitigation | Residual limitation | Test evidence |
 | --- | --- | --- | --- | --- | --- |
 | Path traversal | Writes or reads outside the selected target | Target path and every managed relative path | `ensureWithin`, safe-path checks, realpath containment, Windows-drive rejection | A separately privileged process can change the filesystem after validation | `tests/core.test.js`, `tests/portability.test.js`, `tests/fixtures/protocol/invalid/path-traversal.json` |
