@@ -15,6 +15,19 @@ import { PROJECT_ARTIFACT_PATHS, taskArtifactPath } from "./task-paths.js";
 import { detectPolicyCapability, evaluateTargetPolicy } from "./policy-engine.js";
 import { listActions } from "./actions.js";
 
+async function actionReceiptSummary(target, packageRoot, taskId) {
+  const actions = await listActions(target, { packageRoot, taskId });
+  return {
+    count: actions.length,
+    required: actions.filter((action) => action.requiredForCompletion).length,
+    verified: actions.filter((action) => action.state === "VERIFIED").length,
+    failed: actions.filter((action) => action.state === "FAILED").length,
+    ambiguous: actions.filter((action) => action.state === "COMMIT_UNKNOWN").length,
+    pending: actions.filter((action) => !["VERIFIED", "FAILED", "CANCELLED"].includes(action.state)).length,
+    actionRefs: actions.map((action) => action.actionId),
+  };
+}
+
 /**
  * Canonical completion return statuses shared by the runtime, tests, and
  * documentation conformance. The CLI reference's return-status prose is
@@ -558,6 +571,7 @@ export async function runComplete({
       if (receipt) {
         nextReceipt = await createReceipt({
           ...receipt.value,
+          actions: await actionReceiptSummary(target, packageRoot, state.taskId),
           stateFingerprint: canonicalFingerprint(next),
           verificationCycle: next.verificationCycle ?? receipt.value.verificationCycle ?? 1,
         }, packageRoot, { target, taskId: state.taskId, authorityContext, runtimeContext });
@@ -604,6 +618,7 @@ export async function runComplete({
       next.revision = (state.revision ?? 0) + 1;
       const nextReceipt = await createReceipt({
         ...receipt.value,
+        actions: await actionReceiptSummary(target, packageRoot, state.taskId),
         stateFingerprint: canonicalFingerprint(next),
         verificationCycle: next.verificationCycle ?? receipt.value.verificationCycle ?? 1,
       }, packageRoot, { target, taskId: state.taskId, authorityContext, runtimeContext });

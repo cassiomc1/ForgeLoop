@@ -20,6 +20,20 @@
     "selectedGuides": { "type": "array", "items": { "type": "string" } },
     "changedPaths": { "type": "array", "items": { "type": "string" } },
     "checks": { "type": "array", "items": { "type": "object" } },
+    "actions": {
+      "type": "object",
+      "required": ["count", "required", "verified", "failed", "ambiguous", "pending", "actionRefs"],
+      "properties": {
+        "count": { "type": "integer", "minimum": 0 },
+        "required": { "type": "integer", "minimum": 0 },
+        "verified": { "type": "integer", "minimum": 0 },
+        "failed": { "type": "integer", "minimum": 0 },
+        "ambiguous": { "type": "integer", "minimum": 0 },
+        "pending": { "type": "integer", "minimum": 0 },
+        "actionRefs": { "type": "array", "items": { "type": "string", "pattern": "^action-[A-Za-z0-9_-]+$" } }
+      },
+      "additionalProperties": false
+    },
     "evidence": {
       "type": "array",
       "items": {

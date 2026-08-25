@@ -10,6 +10,7 @@ import { assertContinuitySemantics } from "./continuity.js";
 import { taskArtifactPath, taskDirectory } from "./task-paths.js";
 import { resolveTaskClaimState } from "./task-claim-state.js";
 import { E_TASK_CLAIM_OWNERSHIP_INCONSISTENT } from "./error-codes.js";
+import { listActions } from "./actions.js";
 
 export const BUNDLE_SCHEMA_VERSION = 1;
 const BUNDLE_ROOT = ".forgeloop/tasks";
@@ -129,6 +130,13 @@ export async function exportTaskBundle(target, taskId, packageRoot) {
     if (copied && !artifacts.includes(destinationName)) artifacts.push(destinationName);
   }
 
+  const actionArtifacts = await listActions(target, { packageRoot, taskId });
+  for (const action of actionArtifacts) {
+    const destination = `${directory}/actions/${action.actionId}.json`;
+    await writeJsonArtifact(target, destination, action, "action", packageRoot);
+    artifacts.push(`actions/${action.actionId}.json`);
+  }
+
   const executionRefs = [...new Set([
     ...(stateSource.value.checks ?? []),
     ...(receiptSource?.value?.checks ?? []),
@@ -195,12 +203,19 @@ export async function readTaskBundle(target, taskId, packageRoot) {
     "continuity.json": ["continuity", "continuity"],
     "task.json": ["descriptor", "task-descriptor"],
     "recovery.json": ["recovery", "task-recovery"],
+    ...Object.fromEntries(manifest.value.artifacts.filter((artifact) => artifact.startsWith("actions/")).map((artifact) => [artifact, ["action", "action"]])),
   };
   const executions = {};
   for (const artifact of manifest.value.artifacts) {
     if (artifact.startsWith("executions/") && artifact.endsWith(".json")) {
       const execution = await readJsonArtifact(target, `${directory}/${artifact}`, "execution", packageRoot);
       executions[execution.value.executionId] = execution.value;
+      continue;
+    }
+    if (artifact.startsWith("actions/") && artifact.endsWith(".json")) {
+      const action = await readJsonArtifact(target, `${directory}/${artifact}`, "action", packageRoot);
+      loaded.actions ??= {};
+      loaded.actions[action.value.actionId] = action.value;
       continue;
     }
     const mapping = mappings[artifact];

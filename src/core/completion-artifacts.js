@@ -24,6 +24,20 @@ import { readExecutionArtifact, validateExecutionBinding } from "./execution.js"
 import { taskArtifactPath, taskExecutionPath } from "./task-paths.js";
 import { assertClaimsCoverChangedPaths } from "./task-scope.js";
 import { discoverTasks } from "./task-discovery.js";
+import { listActions } from "./actions.js";
+
+async function actionReceiptSummary(target, packageRoot, taskId) {
+  const actions = await listActions(target, { packageRoot, taskId });
+  return {
+    count: actions.length,
+    required: actions.filter((action) => action.requiredForCompletion).length,
+    verified: actions.filter((action) => action.state === "VERIFIED").length,
+    failed: actions.filter((action) => action.state === "FAILED").length,
+    ambiguous: actions.filter((action) => action.state === "COMMIT_UNKNOWN").length,
+    pending: actions.filter((action) => !["VERIFIED", "FAILED", "CANCELLED"].includes(action.state)).length,
+    actionRefs: actions.map((action) => action.actionId),
+  };
+}
 
 /**
  * Canonical terminal-result types shared by runtime validation, tests, and
@@ -316,6 +330,7 @@ export async function prepareCompletion({
     selectedGuides: [...route.value.guides],
     changedPaths,
     checks,
+    actions: await actionReceiptSummary(target, packageRoot, contract.value.taskId),
     evidence,
     evidenceCoverage: coverageForRequirements(requiredEvidence, checks, {
       target,
