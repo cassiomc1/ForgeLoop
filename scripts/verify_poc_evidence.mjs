@@ -28,9 +28,17 @@ export function normalizeEvidencePath(value) {
 
 export function isUnsafeEvidencePath(value) {
   if (typeof value !== "string" || value.length === 0) return true;
-  if (path.isAbsolute(value)) return true;
+
   const normalized = normalizeEvidencePath(value);
+
+  const posixAbsolute = path.posix.isAbsolute(normalized);
+  const windowsAbsoluteRaw = path.win32.isAbsolute(value);
+  const windowsAbsoluteNormalized = path.win32.isAbsolute(normalized);
+
   return (
+    posixAbsolute ||
+    windowsAbsoluteRaw ||
+    windowsAbsoluteNormalized ||
     normalized === ".." ||
     normalized.startsWith("../") ||
     normalized.includes("/../") ||
@@ -238,6 +246,9 @@ export async function verifyEvidenceDirectory(evidenceDir = DEFAULT_EVIDENCE_DIR
     if (!manifest.postPublicationAudit?.reasonCodes?.includes("E_RECEIPT_PATH_MISMATCH")) {
       errors.push("Semantic invariant failure: manifest.postPublicationAudit.reasonCodes must include E_RECEIPT_PATH_MISMATCH");
     }
+    if (manifest.productionReadiness?.status !== "NOT_VERIFIED") {
+      errors.push(`Semantic invariant failure: manifest.productionReadiness.status must be NOT_VERIFIED, got ${manifest.productionReadiness?.status}`);
+    }
 
     // 8.2 validate-protocol.json
     const validateProtocolPath = path.join(resolvedDir, "validate-protocol.json");
@@ -312,11 +323,28 @@ export async function verifyEvidenceDirectory(evidenceDir = DEFAULT_EVIDENCE_DIR
       errors.push(`Semantic invariant failure: completion.json taskStatus (${completion.taskStatus}) does not match work-state phase (${workState.phase})`);
     }
 
-    // 8.8 publication.json cross-check
+    // 8.8 publication.json and productionReadiness cross-check
     const publicationPath = path.join(resolvedDir, "publication.json");
     const publication = JSON.parse(await readFile(publicationPath, "utf8"));
+    if (publication.productionReadiness !== "not-verified") {
+      errors.push(`Semantic invariant failure: publication.json productionReadiness must be not-verified, got ${publication.productionReadiness}`);
+    }
     if (publication.productionReadiness !== completion.productionReadiness) {
       errors.push(`Semantic invariant failure: publication.json productionReadiness (${publication.productionReadiness}) does not match completion.json (${completion.productionReadiness})`);
+    }
+
+    const expectedManifestProductionReadiness =
+      completion.productionReadiness === "not-verified"
+        ? "NOT_VERIFIED"
+        : null;
+
+    if (
+      expectedManifestProductionReadiness === null ||
+      manifest.productionReadiness?.status !== expectedManifestProductionReadiness
+    ) {
+      errors.push(
+        "Semantic invariant failure: production readiness disagrees across manifest.json, completion.json, and publication.json"
+      );
     }
   } catch (err) {
     errors.push(`Failed while evaluating semantic invariants: ${err.message}`);

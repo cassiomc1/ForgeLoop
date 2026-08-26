@@ -320,3 +320,114 @@ test("evidence verifier preserves semantic distinction of execution vs post-publ
   assert.ok(manifest.postPublicationAudit.reasonCodes.includes("E_RECEIPT_PATH_MISMATCH"));
   assert.equal(manifest.productionReadiness.status, "NOT_VERIFIED");
 });
+
+// 6. Host-Independent Path Safety Helpers
+test("isUnsafeEvidencePath rejects Windows drive-absolute paths on every host", () => {
+  assert.equal(isUnsafeEvidencePath("C:\\outside.json"), true);
+  assert.equal(isUnsafeEvidencePath("C:/outside.json"), true);
+  assert.equal(isUnsafeEvidencePath("D:\\folder\\file.json"), true);
+  assert.equal(isUnsafeEvidencePath("D:/folder/file.json"), true);
+});
+
+test("isUnsafeEvidencePath rejects Windows UNC paths on every host", () => {
+  assert.equal(isUnsafeEvidencePath("\\\\server\\share\\file.json"), true);
+  assert.equal(isUnsafeEvidencePath("//server/share/file.json"), true);
+});
+
+test("isUnsafeEvidencePath rejects Windows device namespace paths", () => {
+  assert.equal(isUnsafeEvidencePath("\\\\?\\C:\\outside.json"), true);
+  assert.equal(isUnsafeEvidencePath("\\\\.\\C:\\outside.json"), true);
+});
+
+test("isUnsafeEvidencePath does not reject safe relative strings merely for containing a colon", () => {
+  assert.equal(isUnsafeEvidencePath("fixtures/value:example.json"), false);
+});
+
+// 7. End-to-End Manifest & Hashes Traversal Rejection
+test("evidence verifier rejects Windows drive-absolute manifest paths", async () => {
+  const tmpDir = await createEvidenceFixture("poc-verify-win-absolute-");
+  try {
+    await mutateJson(path.join(tmpDir, "manifest.json"), manifest => {
+      manifest.files.push({
+        path: "C:\\outside.json",
+        sha256: "0".repeat(64),
+        sizeBytes: 10,
+        classification: "UNSAFE",
+        description: "Windows drive absolute path fixture"
+      });
+    });
+
+    const result = await verifyEvidenceDirectory(tmpDir);
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => error.includes("Path safety violation in manifest")));
+  } finally {
+    await fs.rm(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test("evidence verifier rejects Windows UNC manifest paths", async () => {
+  const tmpDir = await createEvidenceFixture("poc-verify-win-unc-");
+  try {
+    await mutateJson(path.join(tmpDir, "manifest.json"), manifest => {
+      manifest.files.push({
+        path: "\\\\server\\share\\outside.json",
+        sha256: "0".repeat(64),
+        sizeBytes: 10,
+        classification: "UNSAFE",
+        description: "Windows UNC path fixture"
+      });
+    });
+
+    const result = await verifyEvidenceDirectory(tmpDir);
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => error.includes("Path safety violation in manifest")));
+  } finally {
+    await fs.rm(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test("evidence verifier rejects Windows absolute paths in hashes.txt", async () => {
+  const tmpDir = await createEvidenceFixture("poc-verify-win-hash-absolute-");
+  try {
+    const hashesPath = path.join(tmpDir, "hashes.txt");
+    await fs.appendFile(hashesPath, `${"0".repeat(64)}  C:\\outside.json\n`);
+
+    const result = await verifyEvidenceDirectory(tmpDir);
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => error.includes("Path safety violation in hashes.txt")));
+  } finally {
+    await fs.rm(tmpDir, { recursive: true, force: true });
+  }
+});
+
+// 8. Cross-File Production Readiness Consistency
+test("evidence verifier rejects manifest production readiness that overclaims verification", async () => {
+  const tmpDir = await createEvidenceFixture("poc-verify-manifest-prod-");
+  try {
+    await mutateJson(path.join(tmpDir, "manifest.json"), manifest => {
+      manifest.productionReadiness.status = "VERIFIED";
+    });
+
+    const result = await verifyEvidenceDirectory(tmpDir);
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => error.includes("manifest.productionReadiness.status must be NOT_VERIFIED")));
+  } finally {
+    await fs.rm(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test("evidence verifier rejects publication production readiness mismatch", async () => {
+  const tmpDir = await createEvidenceFixture("poc-verify-publication-prod-");
+  try {
+    await mutateJson(path.join(tmpDir, "publication.json"), publication => {
+      publication.productionReadiness = "verified";
+    });
+
+    const result = await verifyEvidenceDirectory(tmpDir);
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => error.includes("productionReadiness")));
+  } finally {
+    await fs.rm(tmpDir, { recursive: true, force: true });
+  }
+});
+
