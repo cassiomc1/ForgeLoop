@@ -38,6 +38,12 @@ The exact source commit and cryptographic vendor-tree hash are recorded in
 `vendor/archify/v2.15.0/PIN.json`; generated-file hashes are recorded in the
 receipt and the visual approval binds the current source and SVG fingerprints.
 
+`PIN.json` uses ForgeLoop Archify PIN `schemaVersion: 2`. This version describes
+the metadata and integrity-declaration format and is independent of Archify's
+upstream release version. A future PIN format change must increment the schema
+version and update the validator before new files are accepted; it does not
+change the vendored tree digest.
+
 The ForgeLoop Archify wrapper is intentionally documentation-scoped. It reads
 canonical inputs only from `docs/diagrams/` and permits deliver outputs only
 under `docs/assets/diagrams/`.

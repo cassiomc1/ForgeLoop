@@ -6,9 +6,12 @@ import { test } from "node:test";
 
 import {
   ARCHIFY_COMMIT,
+  ARCHIFY_PIN_SCHEMA_VERSION,
+  ARCHIFY_SOURCE,
   ARCHIFY_VERSION,
   inspectArchifyToolchain,
   requireArchify,
+  validateArchifyPin,
   validateArchifyInvocation,
 } from "../scripts/archify-toolchain.mjs";
 import {
@@ -37,15 +40,87 @@ async function expectIntegrityError(action, code) {
   });
 }
 
+function validArchifyPin(overrides = {}) {
+  return {
+    schemaVersion: ARCHIFY_PIN_SCHEMA_VERSION,
+    name: "archify",
+    version: ARCHIFY_VERSION,
+    sourceCommit: ARCHIFY_COMMIT,
+    source: ARCHIFY_SOURCE,
+    license: "MIT",
+    directory: "archify",
+    integrity: {
+      algorithm: "sha256",
+      treeSha256: "a".repeat(64),
+      fileCount: 1,
+      files: {
+        "entry.txt": "b".repeat(64),
+      },
+    },
+    ...overrides,
+  };
+}
+
+test("Archify PIN requires schemaVersion 2", () => {
+  const pin = validArchifyPin();
+  delete pin.schemaVersion;
+
+  assert.throws(
+    () => validateArchifyPin(pin),
+    (error) => {
+      assert.equal(error.code, "E_VENDOR_INTEGRITY_PIN_INVALID");
+      assert.match(error.message, /schemaVersion/);
+      return true;
+    },
+  );
+});
+
+test("Archify PIN rejects unsupported schema versions without coercion", () => {
+  for (const schemaVersion of [1, 3, 0, -1, "2", null]) {
+    const pin = validArchifyPin({ schemaVersion });
+    assert.throws(
+      () => validateArchifyPin(pin),
+      (error) => error.code === "E_VENDOR_INTEGRITY_PIN_INVALID",
+    );
+  }
+});
+
 test("Archify toolchain is locally pinned to the reviewed release", async () => {
   const report = await inspectArchifyToolchain();
   assert.equal(report.name, "archify");
   assert.equal(report.version, ARCHIFY_VERSION);
   assert.equal(report.commit, ARCHIFY_COMMIT);
+  assert.equal(report.pinSchemaVersion, 2);
   assert.equal(report.license, "MIT");
   assert.equal(report.integrityVerified, true);
   assert.match(report.treeSha256, /^[a-f0-9]{64}$/);
   assert.match(report.root.split(path.sep).join("/"), /vendor\/archify\/v2\.15\.0\/archify$/);
+});
+
+test("schema version metadata does not affect vendor tree integrity", async () => {
+  const root = await createFixture(["zeta.mjs", "nested/alpha.json", "nested/beta.txt"]);
+  try {
+    const integrity = await computeVendorTreeIntegrity(root);
+    const pin = validArchifyPin({ integrity });
+    assert.doesNotThrow(() => validateArchifyPin(pin));
+    assert.deepEqual(await verifyVendorTreeIntegrity(root, pin.integrity), integrity);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("malformed integrity still fails closed after schema validation", async () => {
+  const root = await createFixture(["zeta.mjs", "nested/alpha.json", "nested/beta.txt"]);
+  try {
+    const pin = validArchifyPin({ integrity: await computeVendorTreeIntegrity(root) });
+    pin.integrity.treeSha256 = "not-a-hash";
+    await expectIntegrityError(
+      () => verifyVendorTreeIntegrity(root, pin.integrity),
+      "E_VENDOR_INTEGRITY_PIN_INVALID",
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test("pinned Archify doctor command passes without installing dependencies", async () => {

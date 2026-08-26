@@ -13,6 +13,7 @@ import {
 export const ARCHIFY_VERSION = "2.15.0";
 export const ARCHIFY_COMMIT = "e1ac748f19cf805e44bf74fb93c796662152e273";
 export const ARCHIFY_SOURCE = "https://github.com/tt-a1i/archify/tree/v2.15.0";
+export const ARCHIFY_PIN_SCHEMA_VERSION = 2;
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const ARCHIFY_ROOT = path.join(repositoryRoot, "vendor", "archify", `v${ARCHIFY_VERSION}`, "archify");
@@ -175,6 +176,41 @@ export async function validateArchifyInvocation(command, args, { rootDir = repos
   return [...args];
 }
 
+export function validateArchifyPin(pin) {
+  if (!pin || typeof pin !== "object" || Array.isArray(pin)) {
+    throw new VendorIntegrityError(
+      "E_VENDOR_INTEGRITY_PIN_INVALID",
+      "Archify PIN must be an object",
+    );
+  }
+  if (!Number.isInteger(pin.schemaVersion) || pin.schemaVersion !== ARCHIFY_PIN_SCHEMA_VERSION) {
+    throw new VendorIntegrityError(
+      "E_VENDOR_INTEGRITY_PIN_INVALID",
+      `Unsupported Archify PIN schemaVersion: ${String(pin.schemaVersion)}`,
+    );
+  }
+  if (
+    pin.name !== "archify"
+    || pin.version !== ARCHIFY_VERSION
+    || pin.sourceCommit !== ARCHIFY_COMMIT
+    || pin.source !== ARCHIFY_SOURCE
+    || pin.license !== "MIT"
+    || pin.directory !== "archify"
+  ) {
+    throw new VendorIntegrityError(
+      "E_VENDOR_INTEGRITY_PIN_INVALID",
+      `Archify pin mismatch: expected ${ARCHIFY_VERSION} at ${ARCHIFY_COMMIT}`,
+    );
+  }
+  if (!pin.integrity || typeof pin.integrity !== "object" || Array.isArray(pin.integrity)) {
+    throw new VendorIntegrityError(
+      "E_VENDOR_INTEGRITY_PIN_INVALID",
+      "Archify PIN integrity block is required",
+    );
+  }
+  return pin;
+}
+
 async function readPin(paths) {
   let pin;
   try {
@@ -185,13 +221,7 @@ async function readPin(paths) {
     }
     throw error;
   }
-  if (pin.name !== "archify" || pin.version !== ARCHIFY_VERSION || pin.sourceCommit !== ARCHIFY_COMMIT || pin.source !== ARCHIFY_SOURCE || pin.license !== "MIT") {
-    throw new VendorIntegrityError(
-      "E_VENDOR_INTEGRITY_PIN_INVALID",
-      `Archify pin mismatch: expected ${ARCHIFY_VERSION} at ${ARCHIFY_COMMIT}`,
-    );
-  }
-  return pin;
+  return validateArchifyPin(pin);
 }
 
 export async function inspectArchifyToolchain({ rootDir = repositoryRoot } = {}) {
@@ -211,6 +241,7 @@ export async function inspectArchifyToolchain({ rootDir = repositoryRoot } = {})
     commit: ARCHIFY_COMMIT,
     source: ARCHIFY_SOURCE,
     license: pin.license,
+    pinSchemaVersion: pin.schemaVersion,
     root: paths.archifyRoot,
     bin: paths.bin,
     integrityVerified: true,
