@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -15,6 +15,7 @@ import { readWorkState } from "../src/core/work-state.js";
 import { getPackageRoot } from "../src/core/templates.js";
 import { taskActionPath, taskApprovalPath } from "../src/core/task-paths.js";
 import { setupVerifyingTask } from "./helpers/durable-lifecycle.js";
+import { removeTempTree } from "./helpers/rm-safe.js";
 
 const packageRoot = getPackageRoot();
 
@@ -57,7 +58,7 @@ async function withProposedAction(run, {
     });
     await run({ target, taskId, action });
   } finally {
-    await rm(target, { recursive: true, force: true });
+    await removeTempTree(target);
   }
 }
 

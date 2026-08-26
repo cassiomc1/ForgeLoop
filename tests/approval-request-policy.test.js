@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { access, mkdtemp, rm } from "node:fs/promises";
+import { access, mkdtemp } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -9,6 +9,7 @@ import { proposeAction } from "../src/core/actions.js";
 import { getPackageRoot } from "../src/core/templates.js";
 import { taskApprovalPath } from "../src/core/task-paths.js";
 import { setupVerifyingTask } from "./helpers/durable-lifecycle.js";
+import { removeTempTree } from "./helpers/rm-safe.js";
 
 const packageRoot = getPackageRoot();
 
@@ -41,7 +42,7 @@ async function withApprovalRequestPolicy(decision, run) {
     });
     await run({ target, taskId, action });
   } finally {
-    await rm(target, { recursive: true, force: true });
+    await removeTempTree(target);
   }
 }
 
