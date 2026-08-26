@@ -39,7 +39,7 @@ integration and guide context. Use this map before editing documentation.
 | Guide content | [`ENG/`](./ENG/) | Context-specific, English-only operational guides |
 | Diagram governance | [`docs/diagrams/manifest.json`](./docs/diagrams/manifest.json) | Authoritative taxonomy, renderer mapping, canonical purposes, artifact ownership, and references |
 | Diagram maintainer entrypoint | [`docs/diagrams/README.md`](./docs/diagrams/README.md) | Typed Archify source, animated HTML explorer, animated SVG fallback, review, and regeneration workflow |
-| Real Execution Proof of Concept (PoC) | [`poc/README.md`](./poc/README.md) | Reproducible engineering workload, audit evidence, and technical audit report |
+| Real Execution Proof of Concept (PoC) | [`poc/README.md`](./poc/README.md) | Non-normative, reproducible public engineering workload, audit evidence, and technical audit. Normative behavior remains owned by [`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md). |
 
 ## Audience map
 
@@ -47,7 +47,7 @@ integration and guide context. Use this map before editing documentation.
 | --- | --- |
 | **First-time user or developer** | [`docs/GETTING_STARTED.md`](./docs/GETTING_STARTED.md) |
 | **AI coding agent / harness** | [`AGENTS.md`](./AGENTS.md) → [`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md) |
-| **Technical auditor / Evaluator** | [`poc/README.md`](./poc/README.md) → [`poc/reports/poc-20260826-real-execution-technical-audit.md`](./poc/reports/poc-20260826-real-execution-technical-audit.md) |
+| **Technical auditor / Evaluator** | [`poc/README.md`](./poc/README.md) → [`poc/reports/poc-20260826-real-execution-technical-audit-v2.md`](./poc/reports/poc-20260826-real-execution-technical-audit-v2.md) |
 | **Harness integrator** | [`PROTOCOL_INTEGRATION.md`](./PROTOCOL_INTEGRATION.md) |
 | **External runtime / orchestrator integrator** | [`ORCHESTRATOR_INTEGRATION.md`](./ORCHESTRATOR_INTEGRATION.md) |
 | **Resuming another tool / session** | [`docs/CROSS_HARNESS_CONTINUITY.md`](./docs/CROSS_HARNESS_CONTINUITY.md) |

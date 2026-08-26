@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "runId": "poc-20260826-real-execution",
+  "taskId": "poc-real-protocol-execution-20260826",
+  "executionBaselineCommit": "1eb8088716e279faa746b11e3077de1fef570b69",
+  "executionPublicationStatusAtCompletion": "local-only",
+  "githubPublication": {
+    "status": "merged",
+    "pullRequest": 110,
+    "commit": "098f3c1629abd820088464f9491ffad18c39deeb",
+    "url": "https://github.com/cassiomc1/forgeloop/pull/110"
+  },
+  "productionReadiness": "not-verified",
+  "note": "GitHub publication occurred after the original ForgeLoop task reached completion and does not retroactively change the execution-time publication dimension stored by that task."
+}
