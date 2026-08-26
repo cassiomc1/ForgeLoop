@@ -34,7 +34,7 @@ This guide provides symptom-first recovery procedures for common ForgeLoop proto
 Confirm the local CLI's public metadata before diagnosing a harness/version
 mismatch. This check does not create or mutate task state.
 
-<!-- FORGELOOP EXAMPLE: troubleshooting:protocol-info | exit=0 | json.errors.0.code=E_ACTION_APPROVAL_REQUIRED -->
+<!-- FORGELOOP EXAMPLE: troubleshooting:protocol-info | exit=0 | json.errors.0.code=E_ACTION_APPROVAL_NOT_REQUIRED -->
 ```bash
 forgeloop protocol-info --json
 ```
@@ -705,6 +705,7 @@ forgeloop next --task <id> --json
 
 | Code | Meaning | Safe Resolution |
 | --- | --- | --- |
+| `E_ACTION_APPROVAL_NOT_REQUIRED` | The current capability policy allows the action without an approval artifact. | Do not create an approval; authorize the action through the current policy path. |
 | `E_ACTION_APPROVAL_REQUIRED` | Policy requires a current fingerprint-bound approval before this action may proceed. | Request approval with forgeloop approval-request and resolve it via forgeloop approval-resolve, then rerun the action. |
 | `E_ACTION_AUTHORITY_REQUIRED` | Policy requires host-attested authority that was not supplied through a host trust boundary. | Perform the action through a host integration that supplies trusted authority context; standalone CLI cannot mint it. |
 | `E_ACTION_AUTHORIZATION_INVALID` | Action authorization evidence is missing, incomplete, or was not produced by the canonical authorization service. | Authorize the action through forgeloop run-action or a trusted embedding host; caller surfaces can never mint AUTHORIZED. |

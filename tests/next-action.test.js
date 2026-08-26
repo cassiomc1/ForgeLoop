@@ -1192,7 +1192,7 @@ test("next never recommends CALLER_ACKNOWLEDGED for a required host approval", a
     await requestApproval(target, { packageRoot, taskId, input: {
       approvalId: "approval-next", actionId: action.actionId,
       actionFingerprint: action.actionFingerprint, contractFingerprint: fingerprint,
-      taskRevision: 0, capability: action.capability,
+      taskRevision: 4, capability: action.capability,
     } });
     await writeWorkState(target, createWorkState({
       taskId, contractFingerprint: fingerprint, phase: "EXECUTING", revision: 4,
