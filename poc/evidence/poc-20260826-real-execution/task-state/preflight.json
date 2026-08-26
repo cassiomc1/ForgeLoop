@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "taskId": "poc-real-protocol-execution-20260826",
+  "status": "READY",
+  "profile": {
+    "status": "verified",
+    "mode": "project",
+    "profileStatus": "verified",
+    "fingerprint": "f2c1b76d86b5c0613efbb37988999fddd4eed76a57088f4aa50c4f26b4348901",
+    "provenance": "not-referenced"
+  },
+  "contract": {
+    "status": "valid",
+    "fingerprint": "bd4d60b1642afcdaf3b628506ac98e63d14d929c3461aab4aa3f41d60aa297d9"
+  },
+  "routing": {
+    "status": "valid",
+    "fingerprint": "1fa871924061bee6c638f713bbca375d73936ebcade13e2c7ad413a79fd78663",
+    "guides": [
+      "clean",
+      "test",
+      "documentation",
+      "security"
+    ]
+  },
+  "requiredGates": [
+    "threat-boundary"
+  ],
+  "satisfiedGates": [
+    "threat-boundary"
+  ],
+  "errors": [],
+  "fingerprints": {
+    "contract": "bd4d60b1642afcdaf3b628506ac98e63d14d929c3461aab4aa3f41d60aa297d9",
+    "routing": "1fa871924061bee6c638f713bbca375d73936ebcade13e2c7ad413a79fd78663",
+    "profile": "f2c1b76d86b5c0613efbb37988999fddd4eed76a57088f4aa50c4f26b4348901"
+  },
+  "sources": {
+    "status": "valid",
+    "fingerprint": null
+  }
+}

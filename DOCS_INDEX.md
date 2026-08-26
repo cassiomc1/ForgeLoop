@@ -39,6 +39,7 @@ integration and guide context. Use this map before editing documentation.
 | Guide content | [`ENG/`](./ENG/) | Context-specific, English-only operational guides |
 | Diagram governance | [`docs/diagrams/manifest.json`](./docs/diagrams/manifest.json) | Authoritative taxonomy, renderer mapping, canonical purposes, artifact ownership, and references |
 | Diagram maintainer entrypoint | [`docs/diagrams/README.md`](./docs/diagrams/README.md) | Typed Archify source, animated HTML explorer, animated SVG fallback, review, and regeneration workflow |
+| Real Execution Proof of Concept (PoC) | [`poc/README.md`](./poc/README.md) | Reproducible engineering workload, audit evidence, and technical audit report |
 
 ## Audience map
 
@@ -46,6 +47,7 @@ integration and guide context. Use this map before editing documentation.
 | --- | --- |
 | **First-time user or developer** | [`docs/GETTING_STARTED.md`](./docs/GETTING_STARTED.md) |
 | **AI coding agent / harness** | [`AGENTS.md`](./AGENTS.md) → [`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md) |
+| **Technical auditor / Evaluator** | [`poc/README.md`](./poc/README.md) → [`poc/reports/poc-20260826-real-execution-technical-audit.md`](./poc/reports/poc-20260826-real-execution-technical-audit.md) |
 | **Harness integrator** | [`PROTOCOL_INTEGRATION.md`](./PROTOCOL_INTEGRATION.md) |
 | **External runtime / orchestrator integrator** | [`ORCHESTRATOR_INTEGRATION.md`](./ORCHESTRATOR_INTEGRATION.md) |
 | **Resuming another tool / session** | [`docs/CROSS_HARNESS_CONTINUITY.md`](./docs/CROSS_HARNESS_CONTINUITY.md) |
@@ -63,6 +65,7 @@ integration and guide context. Use this map before editing documentation.
 ## Task map
 
 - **Start my first task**: [`docs/GETTING_STARTED.md`](./docs/GETTING_STARTED.md)
+- **Inspect real execution PoC and audit evidence**: [`poc/README.md`](./poc/README.md)
 - **Resume after switching tools**: [`docs/CROSS_HARNESS_CONTINUITY.md`](./docs/CROSS_HARNESS_CONTINUITY.md)
 - **Check CLI options and syntax**: [`docs/CLI_REFERENCE.md`](./docs/CLI_REFERENCE.md)
 - **Understand what `.forgeloop/` stores**: [`docs/ARTIFACT_REFERENCE.md`](./docs/ARTIFACT_REFERENCE.md)

@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "taskId": "poc-real-protocol-execution-20260826",
+  "objective": "Implement a deterministic risk evaluation CLI workload and execute a complete, verifiable Proof of Concept under the ForgeLoop protocol from preflight through validator-backed completion.",
+  "assumptions": [
+    {
+      "value": "The engineering workload is a zero-runtime-dependency deterministic risk evaluation CLI implemented in pure Node.js and verified via node --test.",
+      "reason": "Dependency-free Node.js modules ensure reproducibility, security, and portability without external network or package installation requirements.",
+      "scope": "workload",
+      "reversible": true,
+      "source": "agent-default"
+    },
+    {
+      "value": "Task write claims are scoped to poc and DOCS_INDEX.md, preserving write claim isolation against non-complete concurrent tasks.",
+      "reason": "README.md is currently claimed by active task durable-actions-final-integration-guidance; claiming poc and DOCS_INDEX.md prevents claim collision and adheres to protocol ownership rules.",
+      "scope": "claims",
+      "reversible": true,
+      "source": "agent-default"
+    },
+    {
+      "value": "Protocol evidence is published to poc/evidence/poc-20260826-real-execution/ as an immutable publication snapshot with SHA-256 integrity verification.",
+      "reason": "A publication snapshot enables independent third-party auditability and offline verification without depending on active .forgeloop/ state.",
+      "scope": "evidence",
+      "reversible": true,
+      "source": "agent-default"
+    }
+  ],
+  "deliverables": [
+    "Deterministic risk evaluation engine in poc/workload/src/evaluator.js with validation, rule matching, risk tier classification, and structured output.",
+    "Command-line interface in poc/workload/src/cli.js supporting file arguments, inline JSON, and stdin input with deterministic exit codes.",
+    "Rule definitions and schema validation in poc/workload/src/rules.js and poc/workload/src/schemas.js.",
+    "Automated unit and CLI test suite in poc/workload/test/ exercising positive cases, edge cases, malformed input, and exit code contracts.",
+    "Workload and Proof of Concept documentation in poc/workload/README.md and poc/README.md.",
+    "Publication snapshot of protocol evidence in poc/evidence/poc-20260826-real-execution/ with manifest.json and hashes.txt.",
+    "Comprehensive technical audit report in poc/reports/poc-20260826-real-execution-technical-audit.md.",
+    "Documentation index integration in DOCS_INDEX.md."
+  ],
+  "constraints": [
+    "Workload must have zero runtime dependencies and rely solely on Node.js built-ins.",
+    "All verification checks must be executed through forgeloop run-check to produce trusted command execution provenance.",
+    "Do not fabricate or simulate ForgeLoop lifecycle state, events, receipts, or preflight artifacts.",
+    "Execution phase must only start after preflight returns status READY.",
+    "Completion must be validator-backed and validated by forgeloop complete returning status VALID."
+  ],
+  "risks": [
+    "Floating-point imprecision or unstable rule evaluation ordering could cause non-deterministic risk scores.",
+    "Missing or incomplete command provenance would prevent validator-backed execution receipt generation.",
+    "Scope boundary violations could trigger E_TASK_CHANGE_OUTSIDE_SCOPE."
+  ],
+  "verification": [
+    {
+      "id": "workload-unit-tests",
+      "text": "Automated unit and integration test suite for the deterministic risk evaluation CLI passes with 0 failures via node --test.",
+      "type": "VERIFICATION"
+    },
+    {
+      "id": "workload-cli-smoke-valid",
+      "text": "Risk evaluation CLI smoke test executes successfully with valid JSON input and produces score, tier, and decision output.",
+      "type": "VERIFICATION"
+    },
+    {
+      "id": "workload-cli-smoke-invalid",
+      "text": "Risk evaluation CLI validates invalid input, emits structured error diagnostics, and exits with non-zero exit code.",
+      "type": "VERIFICATION"
+    },
+    {
+      "id": "repository-lint",
+      "text": "npm run lint exits 0 with zero lint errors.",
+      "type": "VERIFICATION"
+    },
+    {
+      "id": "documentation-conformance",
+      "text": "npm run docs:generated:check and documentation validation exit 0.",
+      "type": "VERIFICATION"
+    }
+  ],
+  "successCriteria": [
+    {
+      "id": "sc-workload-functional",
+      "text": "Workload implementation is functional, deterministic, and fully covered by automated tests.",
+      "type": "PRODUCT"
+    },
+    {
+      "id": "sc-protocol-governed",
+      "text": "ForgeLoop protocol governed the entire execution lifecycle from contract and preflight through validator-backed completion.",
+      "type": "LIFECYCLE"
+    },
+    {
+      "id": "sc-audit-report",
+      "text": "Technical audit report provides complete, reproducible, and verifiable evidence trail.",
+      "type": "VERIFICATION"
+    }
+  ],
+  "stopConditions": [
+    "Preflight returns status BLOCKED.",
+    "Verification checks fail or exit with unexpected exit codes.",
+    "Task write claims conflict with active checkout state or uncommitted changes.",
+    "Protocol state validation or completion validator returns INVALID."
+  ],
+  "unresolvedDecisions": [],
+  "sourceRefs": [
+    "user-brief:poc-real-execution-technical-audit"
+  ]
+}

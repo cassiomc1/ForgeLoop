@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "taskId": "poc-real-protocol-execution-20260826",
+  "taskKey": "747b59b95851208eff7819dec9b4a8233332d0479b17403831539edf859cce61",
+  "createdAt": "2026-08-26T17:56:21.916Z",
+  "updatedAt": "2026-08-26T17:56:21.916Z",
+  "writeClaims": [
+    "DOCS_INDEX.md",
+    "poc"
+  ]
+}

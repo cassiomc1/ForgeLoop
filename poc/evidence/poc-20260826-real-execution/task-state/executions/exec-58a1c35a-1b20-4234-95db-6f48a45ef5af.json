@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "executionId": "exec-58a1c35a-1b20-4234-95db-6f48a45ef5af",
+  "taskId": "poc-real-protocol-execution-20260826",
+  "checkId": "security-checks",
+  "requirement": "security-validation",
+  "verificationCycle": 1,
+  "kind": "COMMAND_EXECUTION",
+  "argv": [
+    "node",
+    "--test",
+    "poc/workload/test/evaluator.test.js"
+  ],
+  "cwd": "/Users/cassio/Documents/github/forgeloop",
+  "resolution": {
+    "resolutionMode": "LOCAL_EXECUTABLE",
+    "mayInstall": false,
+    "installer": null,
+    "tool": null
+  },
+  "startedAt": "2026-08-26T18:01:18.443Z",
+  "finishedAt": "2026-08-26T18:01:18.536Z",
+  "status": "passed",
+  "exitCode": 0,
+  "durationMs": 93,
+  "termination": "exit",
+  "signal": null,
+  "stdoutSha256": "f19957b6546bcb53247da5b448de776352dd45e5fa1deb124772d6d55626f00d",
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdoutBytes": 1250,
+  "stderrBytes": 0,
+  "outputTruncated": false
+}

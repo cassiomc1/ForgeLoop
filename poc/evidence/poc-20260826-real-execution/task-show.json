@@ -1,0 +1,62 @@
+{
+  "taskId": "poc-real-protocol-execution-20260826",
+  "taskKey": "747b59b95851208eff7819dec9b4a8233332d0479b17403831539edf859cce61",
+  "directory": ".forgeloop/task-state/747b59b95851208eff7819dec9b4a8233332d0479b17403831539edf859cce61",
+  "phase": "COMPLETE",
+  "historicalWriteClaims": [
+    "DOCS_INDEX.md",
+    "poc"
+  ],
+  "effectiveWriteClaims": [],
+  "writeClaims": [],
+  "claimState": "RELEASED_BY_COMPLETION",
+  "mutationAllowed": false,
+  "recovery": null,
+  "recoveryStatus": "NOT_APPLICABLE",
+  "valid": true,
+  "ownershipValid": true,
+  "reasonCodes": [],
+  "errors": [],
+  "ownershipErrors": [],
+  "lock": null,
+  "contract": {
+    "title": null,
+    "taskType": null
+  },
+  "artifacts": {
+    "contract": {
+      "path": ".forgeloop/task-state/747b59b95851208eff7819dec9b4a8233332d0479b17403831539edf859cce61/contract.json",
+      "exists": true
+    },
+    "route": {
+      "path": ".forgeloop/task-state/747b59b95851208eff7819dec9b4a8233332d0479b17403831539edf859cce61/routing-result.json",
+      "exists": true
+    },
+    "state": {
+      "path": ".forgeloop/task-state/747b59b95851208eff7819dec9b4a8233332d0479b17403831539edf859cce61/work-state.json",
+      "exists": true
+    },
+    "preflight": {
+      "path": ".forgeloop/task-state/747b59b95851208eff7819dec9b4a8233332d0479b17403831539edf859cce61/preflight.json",
+      "exists": true
+    },
+    "receipt": {
+      "path": ".forgeloop/task-state/747b59b95851208eff7819dec9b4a8233332d0479b17403831539edf859cce61/execution-receipt.json",
+      "exists": true
+    },
+    "continuity": {
+      "path": ".forgeloop/task-state/747b59b95851208eff7819dec9b4a8233332d0479b17403831539edf859cce61/continuity.json",
+      "exists": true
+    },
+    "events": {
+      "path": ".forgeloop/task-state/747b59b95851208eff7819dec9b4a8233332d0479b17403831539edf859cce61/events.ndjson",
+      "exists": true
+    },
+    "recovery": {
+      "path": ".forgeloop/task-state/747b59b95851208eff7819dec9b4a8233332d0479b17403831539edf859cce61/recovery.json",
+      "exists": false
+    }
+  },
+  "createdAt": "2026-08-26T17:56:21.916Z",
+  "updatedAt": "2026-08-26T17:56:21.916Z"
+}

@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "executionId": "exec-f2ffe2b0-8c2a-475f-bf73-c612e502b4fd",
+  "taskId": "poc-real-protocol-execution-20260826",
+  "checkId": "workload-unit-tests",
+  "requirement": "Automated unit and integration test suite for the deterministic risk evaluation CLI passes with 0 failures via node --test.",
+  "verificationCycle": 1,
+  "kind": "COMMAND_EXECUTION",
+  "argv": [
+    "node",
+    "--test",
+    "poc/workload/test/evaluator.test.js",
+    "poc/workload/test/cli.test.js",
+    "--json"
+  ],
+  "cwd": "/Users/cassio/Documents/github/forgeloop",
+  "resolution": {
+    "resolutionMode": "LOCAL_EXECUTABLE",
+    "mayInstall": false,
+    "installer": null,
+    "tool": null
+  },
+  "startedAt": "2026-08-26T18:00:42.751Z",
+  "finishedAt": "2026-08-26T18:00:43.273Z",
+  "status": "passed",
+  "exitCode": 0,
+  "durationMs": 522,
+  "termination": "exit",
+  "signal": null,
+  "stdoutSha256": "acde8546b2aac1957689f31a5cb1f5e04a5d94baf0e69bb6d049cad698da01b3",
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdoutBytes": 1853,
+  "stderrBytes": 0,
+  "outputTruncated": false
+}

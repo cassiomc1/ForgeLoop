@@ -1,0 +1,1312 @@
+{
+  "schemaVersion": 1,
+  "command": "history",
+  "task": {
+    "id": "poc-real-protocol-execution-20260826",
+    "phase": "COMPLETE",
+    "status": null,
+    "revision": 15,
+    "verificationCycle": 1,
+    "present": true
+  },
+  "snapshot": {
+    "consistent": true,
+    "stateRevision": 15,
+    "ledgerTailSequence": 46,
+    "capturedAt": "2026-08-26T18:03:11.213Z"
+  },
+  "summary": {
+    "eventCount": 46,
+    "totalEventCount": 46,
+    "checkAttemptCount": 9,
+    "failedAttemptCount": 0,
+    "diagnosticCaseCount": 0,
+    "interventionCount": 0
+  },
+  "historyQuality": {
+    "level": "COMPLETE",
+    "reasons": []
+  },
+  "integrity": {
+    "valid": true,
+    "errors": []
+  },
+  "events": [
+    {
+      "sequence": 1,
+      "timestamp": "2026-08-26T17:56:21.936Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "TASK_RECEIVED",
+      "category": "task",
+      "phase": "RECEIVED",
+      "phaseQuality": "authoritative",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Task received",
+      "data": {
+        "createdAt": "2026-08-26T17:56:21.916Z"
+      },
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "a5be3cbf7865015781c5ed192901676c33c020d5298c35a073630dd30548ebdf"
+    },
+    {
+      "sequence": 2,
+      "timestamp": "2026-08-26T17:56:21.968Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "TRANSACTION_COMMITTED",
+      "category": "integrity",
+      "phase": "RECEIVED",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Transaction committed",
+      "data": {
+        "transactionId": "txn-e9d1e43b-40c0-4dec-9334-987095871a95",
+        "operation": "task-create"
+      },
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "06237b1ade3267f122379e5fc2e8c13285eb5a58cbc4612ea183141f5586b571"
+    },
+    {
+      "sequence": 3,
+      "timestamp": "2026-08-26T17:56:38.640Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "TRANSACTION_COMMITTED",
+      "category": "integrity",
+      "phase": "RECEIVED",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Transaction committed",
+      "data": {
+        "transactionId": "txn-88a9b14d-f22b-4e3a-b6f2-d0b35aab5e3c",
+        "operation": "route"
+      },
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "40a097cec813660d2b48be8fcbf09e541b96acbe9df5b311407bd35009f7894f"
+    },
+    {
+      "sequence": 4,
+      "timestamp": "2026-08-26T17:56:42.176Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "CONTRACT_VALIDATED",
+      "category": "contract",
+      "phase": "CONTRACT_READY",
+      "phaseQuality": "authoritative",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Contract validated",
+      "data": {},
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "bad6c1317d56fd423e616070baa48dfc5b040cd7cd83a5a4ce1ad6e0240d92ec"
+    },
+    {
+      "sequence": 5,
+      "timestamp": "2026-08-26T17:56:42.200Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "ROUTE_VALIDATED",
+      "category": "routing",
+      "phase": "ROUTED",
+      "phaseQuality": "authoritative",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Route selected",
+      "data": {},
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "02cc0447609e753ecce44dfb9bb532c8ffe1150cede2796cae8fc71388e90068"
+    },
+    {
+      "sequence": 6,
+      "timestamp": "2026-08-26T17:56:42.223Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "PREFLIGHT_BLOCKED",
+      "category": "lifecycle",
+      "phase": "ROUTED",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Preflight BLOCKED",
+      "data": {
+        "requiredGates": [
+          "threat-boundary"
+        ],
+        "satisfiedGates": [],
+        "routingFingerprint": "f0013f683728c29029d31714a9b5c25478dbe60c23cf51779dca8076073c0421"
+      },
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "1819cd003aceadc545d55c428e7c2999026e6283725a0bbe2c8de2e9d1ca95e3"
+    },
+    {
+      "sequence": 7,
+      "timestamp": "2026-08-26T17:56:42.260Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "TRANSACTION_COMMITTED",
+      "category": "integrity",
+      "phase": "ROUTED",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Transaction committed",
+      "data": {
+        "transactionId": "txn-7b60c8b2-d342-4d60-a0a0-e8e896ec9d92",
+        "operation": "preflight"
+      },
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "13694012614c7d67385c3d2c1d2b07e0091fa3bebd5692b0540013df86ce9587"
+    },
+    {
+      "sequence": 8,
+      "timestamp": "2026-08-26T17:57:25.017Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "TRANSACTION_COMMITTED",
+      "category": "integrity",
+      "phase": "ROUTED",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Transaction committed",
+      "data": {
+        "transactionId": "txn-2ef22eb7-917d-437e-a3f1-53f62c12ead1",
+        "operation": "route"
+      },
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "138e70ce32a4dc531b2e18dbed627a360b07981e22e39a5823fea89fe0f7623a"
+    },
+    {
+      "sequence": 9,
+      "timestamp": "2026-08-26T17:58:16.643Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "TRANSACTION_COMMITTED",
+      "category": "integrity",
+      "phase": "ROUTED",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Transaction committed",
+      "data": {
+        "transactionId": "txn-0aeb9bf0-dc7f-4213-b1dc-ffe48f211a59",
+        "operation": "clear-state"
+      },
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "8eae4915ca7efd1ebd3bae3daebd6e1e8e639b4fae87a30b247ca1a57086971d"
+    },
+    {
+      "sequence": 10,
+      "timestamp": "2026-08-26T17:58:20.125Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "TRANSACTION_COMMITTED",
+      "category": "integrity",
+      "phase": "ROUTED",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Transaction committed",
+      "data": {
+        "transactionId": "txn-71bcfad9-4df9-403f-b338-0f2ec67dec57",
+        "operation": "route"
+      },
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "2c22bb92c8012862e253c71a3b62fc84fd7ea62035458e63d2e5b0e04ead87a4"
+    },
+    {
+      "sequence": 11,
+      "timestamp": "2026-08-26T17:58:23.665Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "GATE_SATISFIED",
+      "category": "policy",
+      "phase": "ROUTED",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Gate satisfied: threat-boundary",
+      "data": {
+        "gate": "threat-boundary"
+      },
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "2bf37fea8d1cb32ac2efec47aa5a84ad6a4e7ce889f39222d033184a49dbbf7e"
+    },
+    {
+      "sequence": 12,
+      "timestamp": "2026-08-26T17:58:23.688Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "PREFLIGHT_READY",
+      "category": "lifecycle",
+      "phase": "ROUTED",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Preflight READY",
+      "data": {
+        "requiredGates": [
+          "threat-boundary"
+        ],
+        "satisfiedGates": [
+          "threat-boundary"
+        ],
+        "routingFingerprint": "1fa871924061bee6c638f713bbca375d73936ebcade13e2c7ad413a79fd78663"
+      },
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "aaa01ba7f82f2969c99c733803a6d20d63bfd0b3d75cb8bc59d392309ef2948a"
+    },
+    {
+      "sequence": 13,
+      "timestamp": "2026-08-26T17:58:23.731Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "TRANSACTION_COMMITTED",
+      "category": "integrity",
+      "phase": "ROUTED",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Transaction committed",
+      "data": {
+        "transactionId": "txn-7666299e-a7ce-4d72-bdb7-bbeab7e5c9e6",
+        "operation": "preflight"
+      },
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "8e0e69ddd0862261636c918a20199413004d4a095c9937d06f7338e2e9fa7c15"
+    },
+    {
+      "sequence": 14,
+      "timestamp": "2026-08-26T17:58:33.362Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "PLAN_RECORDED",
+      "category": "contract",
+      "phase": "PLANNED",
+      "phaseQuality": "authoritative",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "PLAN_RECORDED",
+      "data": {},
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "7c3cfb1d722028328f556d31be30bbccdc5a98d2587021106b5bbf570b2b26d2"
+    },
+    {
+      "sequence": 15,
+      "timestamp": "2026-08-26T17:58:33.407Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "TRANSACTION_COMMITTED",
+      "category": "integrity",
+      "phase": "PLANNED",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Transaction committed",
+      "data": {
+        "transactionId": "txn-072ab0a4-a103-4e9b-8b63-c233e4550661",
+        "operation": "advance"
+      },
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "7844100eaae258a221c6ea6e1a78e3005d9c696bb409bdadb633d6d676324b21"
+    },
+    {
+      "sequence": 16,
+      "timestamp": "2026-08-26T17:58:48.777Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "EXECUTION_STARTED",
+      "category": "execution",
+      "phase": "EXECUTING",
+      "phaseQuality": "authoritative",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Execution started",
+      "data": {},
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "caf98bc2c2f75e59426ac1d2543d44c311b2ca6feb750262b95be2a525b47933"
+    },
+    {
+      "sequence": 17,
+      "timestamp": "2026-08-26T17:58:49.033Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "TRANSACTION_COMMITTED",
+      "category": "integrity",
+      "phase": "EXECUTING",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Transaction committed",
+      "data": {
+        "transactionId": "txn-dec5af4e-e3cd-4ef1-ae51-7df0bdda87a7",
+        "operation": "advance"
+      },
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "e6151e7a816c3fd98369d9e78a77821bbd9b6ce778c562bcab13715b059cd8eb"
+    },
+    {
+      "sequence": 18,
+      "timestamp": "2026-08-26T18:00:30.267Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "VERIFICATION_STARTED",
+      "category": "lifecycle",
+      "phase": "VERIFYING",
+      "phaseQuality": "authoritative",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "VERIFICATION_STARTED",
+      "data": {
+        "verificationCycle": 1
+      },
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "226795120690406c387e67054f6456a73975da41dbe6b0dbcd18a894d5341b07"
+    },
+    {
+      "sequence": 19,
+      "timestamp": "2026-08-26T18:00:30.372Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "TRANSACTION_COMMITTED",
+      "category": "integrity",
+      "phase": "VERIFYING",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Transaction committed",
+      "data": {
+        "transactionId": "txn-1676c317-ab90-4bf1-bc7d-1bb8c98e4a13",
+        "operation": "advance"
+      },
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "d0cc7f95cf4c4ef2fa23d29eb326b3d44898b17276a8e05143e2832a2a8aba2a"
+    },
+    {
+      "sequence": 20,
+      "timestamp": "2026-08-26T18:00:38.128Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "TRANSACTION_COMMITTED",
+      "category": "integrity",
+      "phase": "VERIFYING",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Transaction committed",
+      "data": {
+        "transactionId": "txn-17ee78dc-c224-4ba9-8dc3-4af6bf96a43f",
+        "operation": "prepare-completion"
+      },
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "06057c24ed3f1348ea82aba31685b07416a2aab124fdec1e2e0e6d2a302d1b93"
+    },
+    {
+      "sequence": 21,
+      "timestamp": "2026-08-26T18:00:43.370Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "VERIFICATION_RECORDED",
+      "category": "verification",
+      "phase": "VERIFYING",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "workload-unit-tests PASSED",
+      "data": {
+        "checkId": "workload-unit-tests",
+        "requirement": "Automated unit and integration test suite for the deterministic risk evaluation CLI passes with 0 failures via node --test.",
+        "status": "passed",
+        "evidenceKind": "OBSERVED",
+        "verificationCycle": 1
+      },
+      "references": {
+        "checkIds": [
+          "workload-unit-tests"
+        ],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "7d6a94a9c80349f767f4507a969e727b16362d93efd4ec33a1e6536a43cf4b6f"
+    },
+    {
+      "sequence": 22,
+      "timestamp": "2026-08-26T18:00:43.397Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "TRANSACTION_COMMITTED",
+      "category": "integrity",
+      "phase": "VERIFYING",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Transaction committed",
+      "data": {
+        "transactionId": "txn-3c4d5eb7-dac8-4034-8ba1-6c0f2ee4da9f",
+        "operation": "run-check"
+      },
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "cff7fa3636b92113c4689344bab8446d231c7eaf1ab4ff53ecbf46b14effd307"
+    },
+    {
+      "sequence": 23,
+      "timestamp": "2026-08-26T18:00:49.485Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "VERIFICATION_RECORDED",
+      "category": "verification",
+      "phase": "VERIFYING",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "workload-cli-smoke-valid PASSED",
+      "data": {
+        "checkId": "workload-cli-smoke-valid",
+        "requirement": "Risk evaluation CLI smoke test executes successfully with valid JSON input and produces score, tier, and decision output.",
+        "status": "passed",
+        "evidenceKind": "OBSERVED",
+        "verificationCycle": 1
+      },
+      "references": {
+        "checkIds": [
+          "workload-cli-smoke-valid"
+        ],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "c49754c9606fee39895abc0ea8ec594f862918e4e459af51cd0c7d19cac5985c"
+    },
+    {
+      "sequence": 24,
+      "timestamp": "2026-08-26T18:00:49.514Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "TRANSACTION_COMMITTED",
+      "category": "integrity",
+      "phase": "VERIFYING",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Transaction committed",
+      "data": {
+        "transactionId": "txn-d387dd07-2a41-4ae9-8908-c5a5b28872e1",
+        "operation": "run-check"
+      },
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "400c565ed70d6543d8c7df3ad262549513e6acc3416c5ff116e6a434fa771a4b"
+    },
+    {
+      "sequence": 25,
+      "timestamp": "2026-08-26T18:00:55.106Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "VERIFICATION_RECORDED",
+      "category": "verification",
+      "phase": "VERIFYING",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "workload-cli-smoke-invalid PASSED",
+      "data": {
+        "checkId": "workload-cli-smoke-invalid",
+        "requirement": "Risk evaluation CLI validates invalid input, emits structured error diagnostics, and exits with non-zero exit code.",
+        "status": "passed",
+        "evidenceKind": "OBSERVED",
+        "verificationCycle": 1
+      },
+      "references": {
+        "checkIds": [
+          "workload-cli-smoke-invalid"
+        ],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "a798a4b85579aea252d2812c2a578283894c39dccaf952a061d73db7a340a3f5"
+    },
+    {
+      "sequence": 26,
+      "timestamp": "2026-08-26T18:00:55.132Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "TRANSACTION_COMMITTED",
+      "category": "integrity",
+      "phase": "VERIFYING",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Transaction committed",
+      "data": {
+        "transactionId": "txn-75ba5de2-d235-4472-8f69-7a5947ab6eec",
+        "operation": "run-check"
+      },
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "be709e385d51a0ea81de8470edc93468382e7245ebf7443dc3c61a6acfa06613"
+    },
+    {
+      "sequence": 27,
+      "timestamp": "2026-08-26T18:01:03.151Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "VERIFICATION_RECORDED",
+      "category": "verification",
+      "phase": "VERIFYING",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "repository-lint PASSED",
+      "data": {
+        "checkId": "repository-lint",
+        "requirement": "npm run lint exits 0 with zero lint errors.",
+        "status": "passed",
+        "evidenceKind": "OBSERVED",
+        "verificationCycle": 1
+      },
+      "references": {
+        "checkIds": [
+          "repository-lint"
+        ],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "9f1ba3ea92585d5975d4d97ab7687b2b16334395a417c37caee29cc4a1a96e62"
+    },
+    {
+      "sequence": 28,
+      "timestamp": "2026-08-26T18:01:03.175Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "TRANSACTION_COMMITTED",
+      "category": "integrity",
+      "phase": "VERIFYING",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Transaction committed",
+      "data": {
+        "transactionId": "txn-f5a4ca15-56a7-40d6-a73b-2ba12232d32a",
+        "operation": "run-check"
+      },
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "c4e3633278ef62275e3c6b4d1659a4279d03203c877b000eafb40458de891fda"
+    },
+    {
+      "sequence": 29,
+      "timestamp": "2026-08-26T18:01:07.308Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "VERIFICATION_RECORDED",
+      "category": "verification",
+      "phase": "VERIFYING",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "documentation-conformance PASSED",
+      "data": {
+        "checkId": "documentation-conformance",
+        "requirement": "npm run docs:generated:check and documentation validation exit 0.",
+        "status": "passed",
+        "evidenceKind": "OBSERVED",
+        "verificationCycle": 1
+      },
+      "references": {
+        "checkIds": [
+          "documentation-conformance"
+        ],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "c7a2c5589a4ef177a93e3ef6f9a73a91a3960ba6244248d838a2ec286376057f"
+    },
+    {
+      "sequence": 30,
+      "timestamp": "2026-08-26T18:01:07.333Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "TRANSACTION_COMMITTED",
+      "category": "integrity",
+      "phase": "VERIFYING",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Transaction committed",
+      "data": {
+        "transactionId": "txn-26b495b6-4076-4cce-997a-364c3eece59f",
+        "operation": "run-check"
+      },
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "39db4c309963a55358ab9b65b599f5c6338e6af4fe2ed4e482c8db8a8e9bab70"
+    },
+    {
+      "sequence": 31,
+      "timestamp": "2026-08-26T18:01:12.188Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "TRANSACTION_COMMITTED",
+      "category": "integrity",
+      "phase": "VERIFYING",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Transaction committed",
+      "data": {
+        "transactionId": "txn-05d195d1-f9a1-4ecd-8b5c-e6ddc20e4414",
+        "operation": "prepare-completion"
+      },
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "74d7e6d137dd1f8f7e5918a520afc45798e8c052bff6316da8164c3f3ed45a4a"
+    },
+    {
+      "sequence": 32,
+      "timestamp": "2026-08-26T18:01:18.131Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "VERIFICATION_RECORDED",
+      "category": "verification",
+      "phase": "VERIFYING",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "test-suite PASSED",
+      "data": {
+        "checkId": "test-suite",
+        "requirement": "tests",
+        "status": "passed",
+        "evidenceKind": "OBSERVED",
+        "verificationCycle": 1
+      },
+      "references": {
+        "checkIds": [
+          "test-suite"
+        ],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "756a1618634722ea07aadf4e71e89e4b7b843e71adb7a9f39bdf8fc242b0701a"
+    },
+    {
+      "sequence": 33,
+      "timestamp": "2026-08-26T18:01:18.156Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "TRANSACTION_COMMITTED",
+      "category": "integrity",
+      "phase": "VERIFYING",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Transaction committed",
+      "data": {
+        "transactionId": "txn-b57b1630-4e82-48f8-92aa-26eb1ab20764",
+        "operation": "run-check"
+      },
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "f11314b63d6de4492680358300e74593f2669181f68c318c870afb472f9fd459"
+    },
+    {
+      "sequence": 34,
+      "timestamp": "2026-08-26T18:01:18.622Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "VERIFICATION_RECORDED",
+      "category": "verification",
+      "phase": "VERIFYING",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "security-checks PASSED",
+      "data": {
+        "checkId": "security-checks",
+        "requirement": "security-validation",
+        "status": "passed",
+        "evidenceKind": "OBSERVED",
+        "verificationCycle": 1
+      },
+      "references": {
+        "checkIds": [
+          "security-checks"
+        ],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "cdaf245d45ca41aaf7977633f78e51609d3f8b41de954f0429d57e79d9927e4d"
+    },
+    {
+      "sequence": 35,
+      "timestamp": "2026-08-26T18:01:18.645Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "TRANSACTION_COMMITTED",
+      "category": "integrity",
+      "phase": "VERIFYING",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Transaction committed",
+      "data": {
+        "transactionId": "txn-0b126eba-25cd-46ac-8c00-06b83cfd4f77",
+        "operation": "run-check"
+      },
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "d6417c555ff003e9fe8b0ec0d681d0d44b1e7151392393cd945fd7ed800978e5"
+    },
+    {
+      "sequence": 36,
+      "timestamp": "2026-08-26T18:01:19.436Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "VERIFICATION_RECORDED",
+      "category": "verification",
+      "phase": "VERIFYING",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "workload-functional PASSED",
+      "data": {
+        "checkId": "workload-functional",
+        "requirement": "Workload implementation is functional, deterministic, and fully covered by automated tests.",
+        "status": "passed",
+        "evidenceKind": "OBSERVED",
+        "verificationCycle": 1
+      },
+      "references": {
+        "checkIds": [
+          "workload-functional"
+        ],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "93257454fea6f4e0311d32768c12d237d2bb02a5bc023ed92623e84d0d1dc93b"
+    },
+    {
+      "sequence": 37,
+      "timestamp": "2026-08-26T18:01:19.459Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "TRANSACTION_COMMITTED",
+      "category": "integrity",
+      "phase": "VERIFYING",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Transaction committed",
+      "data": {
+        "transactionId": "txn-3c3153c2-647d-4d02-b671-5978f1f881a7",
+        "operation": "run-check"
+      },
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "c932c65d803b79ca560986e63b757de8dd1a973a48d2686b1cb1eb9e9750f8d4"
+    },
+    {
+      "sequence": 38,
+      "timestamp": "2026-08-26T18:01:42.178Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "VERIFICATION_RECORDED",
+      "category": "verification",
+      "phase": "VERIFYING",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "audit-report-verification PASSED",
+      "data": {
+        "checkId": "audit-report-verification",
+        "requirement": "Technical audit report provides complete, reproducible, and verifiable evidence trail.",
+        "status": "passed",
+        "evidenceKind": "OBSERVED",
+        "verificationCycle": 1
+      },
+      "references": {
+        "checkIds": [
+          "audit-report-verification"
+        ],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "9b273fefa70843e94fdbf56daaf98fcb899e6e0aa157d7e4af9b1a56e06c1aeb"
+    },
+    {
+      "sequence": 39,
+      "timestamp": "2026-08-26T18:01:42.200Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "TRANSACTION_COMMITTED",
+      "category": "integrity",
+      "phase": "VERIFYING",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Transaction committed",
+      "data": {
+        "transactionId": "txn-446e396a-fad0-4a4a-9ccb-5a6c10ea9046",
+        "operation": "run-check"
+      },
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "6f800db7419c51837df1e97b7753920f0e768de1213aa8cef9454a314d1677a2"
+    },
+    {
+      "sequence": 40,
+      "timestamp": "2026-08-26T18:01:46.499Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "TRANSACTION_COMMITTED",
+      "category": "integrity",
+      "phase": "VERIFYING",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Transaction committed",
+      "data": {
+        "transactionId": "txn-f84529fa-43e7-4256-81a5-357b7a02cf55",
+        "operation": "prepare-completion"
+      },
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "18b4235a23a83814b48d59e736214066ccd68fa11de549830734be9472658512"
+    },
+    {
+      "sequence": 41,
+      "timestamp": "2026-08-26T18:02:05.322Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "TRANSACTION_COMMITTED",
+      "category": "integrity",
+      "phase": "VERIFYING",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Transaction committed",
+      "data": {
+        "transactionId": "txn-7c41fe65-c53c-4f25-8d04-4c5e8487a2e0",
+        "operation": "record-continuity"
+      },
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "3f63d2e7d29ac711eca3a4e87fb40d9196ae69b54b6bc7eaeb70dddd4e312e58"
+    },
+    {
+      "sequence": 42,
+      "timestamp": "2026-08-26T18:02:18.110Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "TRANSACTION_COMMITTED",
+      "category": "integrity",
+      "phase": "VERIFYING",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Transaction committed",
+      "data": {
+        "transactionId": "txn-29f5ca89-574f-4ee3-a764-bd2ff246c8b8",
+        "operation": "record-continuity"
+      },
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "7fea79d792b808cd4f6d850f772b74dbc385099e3aa6adf8e1557deda2582ee6"
+    },
+    {
+      "sequence": 43,
+      "timestamp": "2026-08-26T18:02:35.693Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "REVIEW_STARTED",
+      "category": "review",
+      "phase": "REVIEWING",
+      "phaseQuality": "authoritative",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Review started for cycle 1",
+      "data": {
+        "verificationCycle": 1
+      },
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "2c0287cb10d9bf553cb321f8a157f95d003a6033a48f874c07c3d39926ace4d7"
+    },
+    {
+      "sequence": 44,
+      "timestamp": "2026-08-26T18:02:35.794Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "TRANSACTION_COMMITTED",
+      "category": "integrity",
+      "phase": "REVIEWING",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Transaction committed",
+      "data": {
+        "transactionId": "txn-3f92584a-40bd-4c96-aacb-85b6fb42f857",
+        "operation": "advance"
+      },
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "ad9bdc5dd440fc83daf4db2a2d99b087fac2a313b79168fb5c48da39f9ca542b"
+    },
+    {
+      "sequence": 45,
+      "timestamp": "2026-08-26T18:02:52.080Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "COMPLETION_VALIDATED",
+      "category": "completion",
+      "phase": "COMPLETE",
+      "phaseQuality": "authoritative",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Completion validated",
+      "data": {},
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "99cb7e2831fe0b7cbc086c88b9239758fc729242641a99acef08c6e940afd881"
+    },
+    {
+      "sequence": 46,
+      "timestamp": "2026-08-26T18:02:52.105Z",
+      "timestampSource": "ledger",
+      "timestampQuality": "authoritative",
+      "type": "TRANSACTION_COMMITTED",
+      "category": "integrity",
+      "phase": "COMPLETE",
+      "phaseQuality": "derived",
+      "source": {
+        "kind": "ledger",
+        "artifact": ".forgeloop/task-state/<task-key>/events.ndjson"
+      },
+      "summary": "Transaction committed",
+      "data": {
+        "transactionId": "txn-566d6c21-8066-40c4-84aa-8a28a3ee25af",
+        "operation": "complete"
+      },
+      "references": {
+        "checkIds": [],
+        "evidenceRefs": [],
+        "hypothesisRefs": [],
+        "interventionRefs": [],
+        "relatedSequences": []
+      },
+      "hash": "0b5a0a04a3e9b7841d5f2c1333432d57cce50198898b0c0100f7873a8c307aa9"
+    }
+  ]
+}
