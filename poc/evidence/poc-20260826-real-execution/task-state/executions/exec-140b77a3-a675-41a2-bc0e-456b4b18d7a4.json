@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "executionId": "exec-140b77a3-a675-41a2-bc0e-456b4b18d7a4",
+  "taskId": "poc-real-protocol-execution-20260826",
+  "checkId": "documentation-conformance",
+  "requirement": "npm run docs:generated:check and documentation validation exit 0.",
+  "verificationCycle": 1,
+  "kind": "COMMAND_EXECUTION",
+  "argv": [
+    "npm",
+    "run",
+    "docs:generated:check"
+  ],
+  "cwd": "/Users/cassio/Documents/github/forgeloop",
+  "resolution": {
+    "resolutionMode": "LOCAL_PACKAGE_BINARY",
+    "mayInstall": false,
+    "installer": null,
+    "tool": null
+  },
+  "dispatch": {
+    "kind": "npm-script-command"
+  },
+  "startedAt": "2026-08-26T18:01:07.028Z",
+  "finishedAt": "2026-08-26T18:01:07.229Z",
+  "status": "passed",
+  "exitCode": 0,
+  "durationMs": 201,
+  "termination": "exit",
+  "signal": null,
+  "stdoutSha256": "5787f0f2ad32c5bf7dc714470315a6042fe501a535bc33f60f3fa226961ac651",
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdoutBytes": 195,
+  "stderrBytes": 0,
+  "outputTruncated": false
+}

@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "executionId": "exec-7cf31511-e088-4dfe-963d-4a163ddebdec",
+  "taskId": "poc-real-protocol-execution-20260826",
+  "checkId": "workload-functional",
+  "requirement": "Workload implementation is functional, deterministic, and fully covered by automated tests.",
+  "verificationCycle": 1,
+  "kind": "COMMAND_EXECUTION",
+  "argv": [
+    "node",
+    "--test",
+    "poc/workload/test/evaluator.test.js",
+    "poc/workload/test/cli.test.js"
+  ],
+  "cwd": "/Users/cassio/Documents/github/forgeloop",
+  "resolution": {
+    "resolutionMode": "LOCAL_EXECUTABLE",
+    "mayInstall": false,
+    "installer": null,
+    "tool": null
+  },
+  "startedAt": "2026-08-26T18:01:18.923Z",
+  "finishedAt": "2026-08-26T18:01:19.352Z",
+  "status": "passed",
+  "exitCode": 0,
+  "durationMs": 429,
+  "termination": "exit",
+  "signal": null,
+  "stdoutSha256": "298ffcbe9bd867bec64526e0427c07fcb2f86eb92f85fd0912b45a4f78762b03",
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdoutBytes": 1849,
+  "stderrBytes": 0,
+  "outputTruncated": false
+}

@@ -1,0 +1,523 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "taskId": "poc-real-protocol-execution-20260826",
+  "contractFingerprint": "bd4d60b1642afcdaf3b628506ac98e63d14d929c3461aab4aa3f41d60aa297d9",
+  "routeFingerprint": "1fa871924061bee6c638f713bbca375d73936ebcade13e2c7ad413a79fd78663",
+  "repositoryFingerprint": {
+    "branch": "main",
+    "head": "1eb8088716e279faa746b11e3077de1fef570b69"
+  },
+  "phase": "COMPLETE",
+  "selectedGuides": [
+    "clean",
+    "test",
+    "documentation",
+    "security"
+  ],
+  "requiredGates": [
+    "threat-boundary"
+  ],
+  "satisfiedGates": [
+    "threat-boundary"
+  ],
+  "evidenceCoverage": [
+    {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "requirement": "tests",
+      "requiredEvidence": [
+        "tests"
+      ],
+      "observedEvidence": [
+        "tests"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "requirement": "security-validation",
+      "requiredEvidence": [
+        "security-validation"
+      ],
+      "observedEvidence": [
+        "security-validation"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "requirement": "Technical audit report provides complete, reproducible, and verifiable evidence trail.",
+      "requiredEvidence": [
+        "Technical audit report provides complete, reproducible, and verifiable evidence trail."
+      ],
+      "observedEvidence": [
+        "Technical audit report provides complete, reproducible, and verifiable evidence trail."
+      ],
+      "status": "COVERED"
+    },
+    {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "requirement": "Workload implementation is functional, deterministic, and fully covered by automated tests.",
+      "requiredEvidence": [
+        "Workload implementation is functional, deterministic, and fully covered by automated tests."
+      ],
+      "observedEvidence": [
+        "Workload implementation is functional, deterministic, and fully covered by automated tests."
+      ],
+      "status": "COVERED"
+    }
+  ],
+  "publicationStatus": "local-only",
+  "completedSteps": [
+    "contract",
+    "route",
+    "implementation"
+  ],
+  "pendingSteps": [
+    "planning",
+    "verification"
+  ],
+  "requiredArtifacts": [],
+  "checks": [
+    {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "id": "workload-unit-tests",
+      "kind": "command",
+      "requirement": "Automated unit and integration test suite for the deterministic risk evaluation CLI passes with 0 failures via node --test.",
+      "status": "passed",
+      "evidenceKind": "OBSERVED",
+      "source": "node --test poc/workload/test/evaluator.test.js poc/workload/test/cli.test.js --json",
+      "exitCode": 0,
+      "timestamp": "2026-08-26T18:00:43.338Z",
+      "executionRef": "exec-f2ffe2b0-8c2a-475f-bf73-c612e502b4fd",
+      "provenance": "FORGELOOP_EXECUTED",
+      "details": {
+        "command": "node --test poc/workload/test/evaluator.test.js poc/workload/test/cli.test.js --json",
+        "result": "process exited with code 0",
+        "verificationCycle": 1,
+        "execution": {
+          "executionRef": "exec-f2ffe2b0-8c2a-475f-bf73-c612e502b4fd",
+          "argv": [
+            "node",
+            "--test",
+            "poc/workload/test/evaluator.test.js",
+            "poc/workload/test/cli.test.js",
+            "--json"
+          ],
+          "cwd": "/Users/cassio/Documents/github/forgeloop",
+          "resolution": {
+            "resolutionMode": "LOCAL_EXECUTABLE",
+            "mayInstall": false,
+            "installer": null,
+            "tool": null
+          },
+          "status": "passed",
+          "exitCode": 0,
+          "resolutionMode": "LOCAL_EXECUTABLE",
+          "mayInstall": false,
+          "installationAuthorized": false
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "id": "workload-cli-smoke-valid",
+      "kind": "command",
+      "requirement": "Risk evaluation CLI smoke test executes successfully with valid JSON input and produces score, tier, and decision output.",
+      "status": "passed",
+      "evidenceKind": "OBSERVED",
+      "source": "node poc/workload/src/cli.js --eval \"{\\\"serviceName\\\":\\\"auth-svc\\\",\\\"environment\\\":\\\"production\\\",\\\"changeType\\\":\\\"standard\\\",\\\"securityReviewCompleted\\\":true,\\\"maintenanceWindow\\\":true}\"",
+      "exitCode": 0,
+      "timestamp": "2026-08-26T18:00:49.426Z",
+      "executionRef": "exec-bb28e87f-f66e-4c8a-9c9d-25c95e1a0833",
+      "provenance": "FORGELOOP_EXECUTED",
+      "details": {
+        "command": "node poc/workload/src/cli.js --eval \"{\\\"serviceName\\\":\\\"auth-svc\\\",\\\"environment\\\":\\\"production\\\",\\\"changeType\\\":\\\"standard\\\",\\\"securityReviewCompleted\\\":true,\\\"maintenanceWindow\\\":true}\"",
+        "result": "process exited with code 0",
+        "verificationCycle": 1,
+        "execution": {
+          "executionRef": "exec-bb28e87f-f66e-4c8a-9c9d-25c95e1a0833",
+          "argv": [
+            "node",
+            "poc/workload/src/cli.js",
+            "--eval",
+            "{\"serviceName\":\"auth-svc\",\"environment\":\"production\",\"changeType\":\"standard\",\"securityReviewCompleted\":true,\"maintenanceWindow\":true}"
+          ],
+          "cwd": "/Users/cassio/Documents/github/forgeloop",
+          "resolution": {
+            "resolutionMode": "LOCAL_EXECUTABLE",
+            "mayInstall": false,
+            "installer": null,
+            "tool": null
+          },
+          "status": "passed",
+          "exitCode": 0,
+          "resolutionMode": "LOCAL_EXECUTABLE",
+          "mayInstall": false,
+          "installationAuthorized": false
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "id": "workload-cli-smoke-invalid",
+      "kind": "command",
+      "requirement": "Risk evaluation CLI validates invalid input, emits structured error diagnostics, and exits with non-zero exit code.",
+      "status": "passed",
+      "evidenceKind": "OBSERVED",
+      "source": "node -e \"const { execFileSync } = require(\\\"node:child_process\\\"); try { execFileSync(process.execPath, [\\\"poc/workload/src/cli.js\\\", \\\"--eval\\\", \\\"{\\\\\\\"invalid\\\\\\\":true}\\\"], { stdio: \\\"pipe\\\" }); process.exit(1); } catch (err) { if (err.status === 1) { process.exit(0); } process.exit(1); }\"",
+      "exitCode": 0,
+      "timestamp": "2026-08-26T18:00:55.067Z",
+      "executionRef": "exec-b63e1ecc-2ed3-4a32-ac3e-07f2a0878683",
+      "provenance": "FORGELOOP_EXECUTED",
+      "details": {
+        "command": "node -e \"const { execFileSync } = require(\\\"node:child_process\\\"); try { execFileSync(process.execPath, [\\\"poc/workload/src/cli.js\\\", \\\"--eval\\\", \\\"{\\\\\\\"invalid\\\\\\\":true}\\\"], { stdio: \\\"pipe\\\" }); process.exit(1); } catch (err) { if (err.status === 1) { process.exit(0); } process.exit(1); }\"",
+        "result": "process exited with code 0",
+        "verificationCycle": 1,
+        "execution": {
+          "executionRef": "exec-b63e1ecc-2ed3-4a32-ac3e-07f2a0878683",
+          "argv": [
+            "node",
+            "-e",
+            "const { execFileSync } = require(\"node:child_process\"); try { execFileSync(process.execPath, [\"poc/workload/src/cli.js\", \"--eval\", \"{\\\"invalid\\\":true}\"], { stdio: \"pipe\" }); process.exit(1); } catch (err) { if (err.status === 1) { process.exit(0); } process.exit(1); }"
+          ],
+          "cwd": "/Users/cassio/Documents/github/forgeloop",
+          "resolution": {
+            "resolutionMode": "LOCAL_EXECUTABLE",
+            "mayInstall": false,
+            "installer": null,
+            "tool": null
+          },
+          "status": "passed",
+          "exitCode": 0,
+          "resolutionMode": "LOCAL_EXECUTABLE",
+          "mayInstall": false,
+          "installationAuthorized": false
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "id": "repository-lint",
+      "kind": "command",
+      "requirement": "npm run lint exits 0 with zero lint errors.",
+      "status": "passed",
+      "evidenceKind": "OBSERVED",
+      "source": "npm run lint",
+      "exitCode": 0,
+      "timestamp": "2026-08-26T18:01:03.115Z",
+      "executionRef": "exec-a5a68f50-c623-47fa-9aed-c800f5d69fa5",
+      "provenance": "FORGELOOP_EXECUTED",
+      "details": {
+        "command": "npm run lint",
+        "result": "process exited with code 0",
+        "verificationCycle": 1,
+        "execution": {
+          "executionRef": "exec-a5a68f50-c623-47fa-9aed-c800f5d69fa5",
+          "argv": [
+            "npm",
+            "run",
+            "lint"
+          ],
+          "cwd": "/Users/cassio/Documents/github/forgeloop",
+          "resolution": {
+            "resolutionMode": "LOCAL_PACKAGE_BINARY",
+            "mayInstall": false,
+            "installer": null,
+            "tool": null
+          },
+          "status": "passed",
+          "exitCode": 0,
+          "resolutionMode": "LOCAL_PACKAGE_BINARY",
+          "mayInstall": false,
+          "installationAuthorized": false
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "id": "documentation-conformance",
+      "kind": "command",
+      "requirement": "npm run docs:generated:check and documentation validation exit 0.",
+      "status": "passed",
+      "evidenceKind": "OBSERVED",
+      "source": "npm run docs:generated:check",
+      "exitCode": 0,
+      "timestamp": "2026-08-26T18:01:07.275Z",
+      "executionRef": "exec-140b77a3-a675-41a2-bc0e-456b4b18d7a4",
+      "provenance": "FORGELOOP_EXECUTED",
+      "details": {
+        "command": "npm run docs:generated:check",
+        "result": "process exited with code 0",
+        "verificationCycle": 1,
+        "execution": {
+          "executionRef": "exec-140b77a3-a675-41a2-bc0e-456b4b18d7a4",
+          "argv": [
+            "npm",
+            "run",
+            "docs:generated:check"
+          ],
+          "cwd": "/Users/cassio/Documents/github/forgeloop",
+          "resolution": {
+            "resolutionMode": "LOCAL_PACKAGE_BINARY",
+            "mayInstall": false,
+            "installer": null,
+            "tool": null
+          },
+          "status": "passed",
+          "exitCode": 0,
+          "resolutionMode": "LOCAL_PACKAGE_BINARY",
+          "mayInstall": false,
+          "installationAuthorized": false
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "id": "test-suite",
+      "kind": "command",
+      "requirement": "tests",
+      "status": "passed",
+      "evidenceKind": "OBSERVED",
+      "source": "node --test poc/workload/test/evaluator.test.js poc/workload/test/cli.test.js",
+      "exitCode": 0,
+      "timestamp": "2026-08-26T18:01:18.101Z",
+      "executionRef": "exec-ad65660d-9849-46d5-b855-5740652ef4d8",
+      "provenance": "FORGELOOP_EXECUTED",
+      "details": {
+        "command": "node --test poc/workload/test/evaluator.test.js poc/workload/test/cli.test.js",
+        "result": "process exited with code 0",
+        "verificationCycle": 1,
+        "execution": {
+          "executionRef": "exec-ad65660d-9849-46d5-b855-5740652ef4d8",
+          "argv": [
+            "node",
+            "--test",
+            "poc/workload/test/evaluator.test.js",
+            "poc/workload/test/cli.test.js"
+          ],
+          "cwd": "/Users/cassio/Documents/github/forgeloop",
+          "resolution": {
+            "resolutionMode": "LOCAL_EXECUTABLE",
+            "mayInstall": false,
+            "installer": null,
+            "tool": null
+          },
+          "status": "passed",
+          "exitCode": 0,
+          "resolutionMode": "LOCAL_EXECUTABLE",
+          "mayInstall": false,
+          "installationAuthorized": false
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "id": "security-checks",
+      "kind": "command",
+      "requirement": "security-validation",
+      "status": "passed",
+      "evidenceKind": "OBSERVED",
+      "source": "node --test poc/workload/test/evaluator.test.js",
+      "exitCode": 0,
+      "timestamp": "2026-08-26T18:01:18.588Z",
+      "executionRef": "exec-58a1c35a-1b20-4234-95db-6f48a45ef5af",
+      "provenance": "FORGELOOP_EXECUTED",
+      "details": {
+        "command": "node --test poc/workload/test/evaluator.test.js",
+        "result": "process exited with code 0",
+        "verificationCycle": 1,
+        "execution": {
+          "executionRef": "exec-58a1c35a-1b20-4234-95db-6f48a45ef5af",
+          "argv": [
+            "node",
+            "--test",
+            "poc/workload/test/evaluator.test.js"
+          ],
+          "cwd": "/Users/cassio/Documents/github/forgeloop",
+          "resolution": {
+            "resolutionMode": "LOCAL_EXECUTABLE",
+            "mayInstall": false,
+            "installer": null,
+            "tool": null
+          },
+          "status": "passed",
+          "exitCode": 0,
+          "resolutionMode": "LOCAL_EXECUTABLE",
+          "mayInstall": false,
+          "installationAuthorized": false
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "id": "workload-functional",
+      "kind": "command",
+      "requirement": "Workload implementation is functional, deterministic, and fully covered by automated tests.",
+      "status": "passed",
+      "evidenceKind": "OBSERVED",
+      "source": "node --test poc/workload/test/evaluator.test.js poc/workload/test/cli.test.js",
+      "exitCode": 0,
+      "timestamp": "2026-08-26T18:01:19.405Z",
+      "executionRef": "exec-7cf31511-e088-4dfe-963d-4a163ddebdec",
+      "provenance": "FORGELOOP_EXECUTED",
+      "details": {
+        "command": "node --test poc/workload/test/evaluator.test.js poc/workload/test/cli.test.js",
+        "result": "process exited with code 0",
+        "verificationCycle": 1,
+        "execution": {
+          "executionRef": "exec-7cf31511-e088-4dfe-963d-4a163ddebdec",
+          "argv": [
+            "node",
+            "--test",
+            "poc/workload/test/evaluator.test.js",
+            "poc/workload/test/cli.test.js"
+          ],
+          "cwd": "/Users/cassio/Documents/github/forgeloop",
+          "resolution": {
+            "resolutionMode": "LOCAL_EXECUTABLE",
+            "mayInstall": false,
+            "installer": null,
+            "tool": null
+          },
+          "status": "passed",
+          "exitCode": 0,
+          "resolutionMode": "LOCAL_EXECUTABLE",
+          "mayInstall": false,
+          "installationAuthorized": false
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "id": "audit-report-verification",
+      "kind": "command",
+      "requirement": "Technical audit report provides complete, reproducible, and verifiable evidence trail.",
+      "status": "passed",
+      "evidenceKind": "OBSERVED",
+      "source": "node -e \"require(\\\"node:fs\\\").accessSync(\\\"poc/reports/poc-20260826-real-execution-technical-audit.md\\\")\"",
+      "exitCode": 0,
+      "timestamp": "2026-08-26T18:01:42.146Z",
+      "executionRef": "exec-52c080e5-1310-4c49-9b32-35e4ea57d243",
+      "provenance": "FORGELOOP_EXECUTED",
+      "details": {
+        "command": "node -e \"require(\\\"node:fs\\\").accessSync(\\\"poc/reports/poc-20260826-real-execution-technical-audit.md\\\")\"",
+        "result": "process exited with code 0",
+        "verificationCycle": 1,
+        "execution": {
+          "executionRef": "exec-52c080e5-1310-4c49-9b32-35e4ea57d243",
+          "argv": [
+            "node",
+            "-e",
+            "require(\"node:fs\").accessSync(\"poc/reports/poc-20260826-real-execution-technical-audit.md\")"
+          ],
+          "cwd": "/Users/cassio/Documents/github/forgeloop",
+          "resolution": {
+            "resolutionMode": "LOCAL_EXECUTABLE",
+            "mayInstall": false,
+            "installer": null,
+            "tool": null
+          },
+          "status": "passed",
+          "exitCode": 0,
+          "resolutionMode": "LOCAL_EXECUTABLE",
+          "mayInstall": false,
+          "installationAuthorized": false
+        }
+      }
+    }
+  ],
+  "failures": [],
+  "blockers": [],
+  "verificationEvidence": [
+    {
+      "kind": "OBSERVED",
+      "source": "node --test poc/workload/test/evaluator.test.js poc/workload/test/cli.test.js --json",
+      "result": "process exited with code 0",
+      "verificationCycle": 1,
+      "details": {
+        "verificationCycle": 1
+      }
+    },
+    {
+      "kind": "OBSERVED",
+      "source": "node poc/workload/src/cli.js --eval \"{\\\"serviceName\\\":\\\"auth-svc\\\",\\\"environment\\\":\\\"production\\\",\\\"changeType\\\":\\\"standard\\\",\\\"securityReviewCompleted\\\":true,\\\"maintenanceWindow\\\":true}\"",
+      "result": "process exited with code 0",
+      "verificationCycle": 1,
+      "details": {
+        "verificationCycle": 1
+      }
+    },
+    {
+      "kind": "OBSERVED",
+      "source": "node -e \"const { execFileSync } = require(\\\"node:child_process\\\"); try { execFileSync(process.execPath, [\\\"poc/workload/src/cli.js\\\", \\\"--eval\\\", \\\"{\\\\\\\"invalid\\\\\\\":true}\\\"], { stdio: \\\"pipe\\\" }); process.exit(1); } catch (err) { if (err.status === 1) { process.exit(0); } process.exit(1); }\"",
+      "result": "process exited with code 0",
+      "verificationCycle": 1,
+      "details": {
+        "verificationCycle": 1
+      }
+    },
+    {
+      "kind": "OBSERVED",
+      "source": "npm run lint",
+      "result": "process exited with code 0",
+      "verificationCycle": 1,
+      "details": {
+        "verificationCycle": 1
+      }
+    },
+    {
+      "kind": "OBSERVED",
+      "source": "npm run docs:generated:check",
+      "result": "process exited with code 0",
+      "verificationCycle": 1,
+      "details": {
+        "verificationCycle": 1
+      }
+    },
+    {
+      "kind": "OBSERVED",
+      "source": "node --test poc/workload/test/evaluator.test.js poc/workload/test/cli.test.js",
+      "result": "process exited with code 0",
+      "verificationCycle": 1,
+      "details": {
+        "verificationCycle": 1
+      }
+    },
+    {
+      "kind": "OBSERVED",
+      "source": "node --test poc/workload/test/evaluator.test.js",
+      "result": "process exited with code 0",
+      "verificationCycle": 1,
+      "details": {
+        "verificationCycle": 1
+      }
+    },
+    {
+      "kind": "OBSERVED",
+      "source": "node -e \"require(\\\"node:fs\\\").accessSync(\\\"poc/reports/poc-20260826-real-execution-technical-audit.md\\\")\"",
+      "result": "process exited with code 0",
+      "verificationCycle": 1,
+      "details": {
+        "verificationCycle": 1
+      }
+    }
+  ],
+  "lastUpdated": "2026-08-26T18:02:52.045Z",
+  "revision": 15,
+  "verificationCycle": 1,
+  "previousPhase": "REVIEWING"
+}

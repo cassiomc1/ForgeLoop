@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "status": "INVALID",
+  "verdict": "INCOMPLETE",
+  "sections": [
+    {
+      "id": "installation",
+      "label": "Installation",
+      "status": "PASS"
+    },
+    {
+      "id": "profile",
+      "label": "Profile",
+      "status": "PASS"
+    },
+    {
+      "id": "contract",
+      "label": "Contract",
+      "status": "PASS"
+    },
+    {
+      "id": "routing",
+      "label": "Routing",
+      "status": "PASS"
+    },
+    {
+      "id": "required-gates",
+      "label": "Required gates",
+      "status": "PASS"
+    },
+    {
+      "id": "phase-chronology",
+      "label": "Phase chronology",
+      "status": "PASS"
+    },
+    {
+      "id": "evidence-coverage",
+      "label": "Evidence coverage",
+      "status": "PASS"
+    },
+    {
+      "id": "receipt",
+      "label": "Receipt",
+      "status": "PASS"
+    },
+    {
+      "id": "publication",
+      "label": "Publication state",
+      "status": "LOCAL_ONLY"
+    },
+    {
+      "id": "production-readiness",
+      "label": "Production readiness",
+      "status": "NOT_VERIFIED"
+    }
+  ],
+  "publicationStatus": "local-only",
+  "productionReadiness": "not-verified",
+  "errors": [
+    {
+      "code": "E_RECEIPT_PATH_MISMATCH",
+      "message": "Receipt changedPaths do not match observed repository paths",
+      "artifacts": [
+        ".forgeloop/task-state/747b59b95851208eff7819dec9b4a8233332d0479b17403831539edf859cce61/execution-receipt.json"
+      ],
+      "missing": [],
+      "unexpected": [
+        "poc/evidence/poc-20260826-real-execution/history.json",
+        "poc/evidence/poc-20260826-real-execution/inspect.json",
+        "poc/evidence/poc-20260826-real-execution/progress.json",
+        "poc/evidence/poc-20260826-real-execution/protocol-info.json",
+        "poc/evidence/poc-20260826-real-execution/status-final.json",
+        "poc/evidence/poc-20260826-real-execution/task-show.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/continuity.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/contract.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/events.ndjson",
+        "poc/evidence/poc-20260826-real-execution/task-state/events.ndjson.index.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/execution-receipt.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-140b77a3-a675-41a2-bc0e-456b4b18d7a4.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-52c080e5-1310-4c49-9b32-35e4ea57d243.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-58a1c35a-1b20-4234-95db-6f48a45ef5af.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-7cf31511-e088-4dfe-963d-4a163ddebdec.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-a5a68f50-c623-47fa-9aed-c800f5d69fa5.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-ad65660d-9849-46d5-b855-5740652ef4d8.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-b63e1ecc-2ed3-4a32-ac3e-07f2a0878683.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-bb28e87f-f66e-4c8a-9c9d-25c95e1a0833.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-f2ffe2b0-8c2a-475f-bf73-c612e502b4fd.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/gates/threat-boundary.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/policy-snapshot.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/preflight.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/routing-result.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/task.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/work-state.json",
+        "poc/evidence/poc-20260826-real-execution/trace.json",
+        "poc/evidence/poc-20260826-real-execution/validate-protocol.json",
+        "poc/evidence/poc-20260826-real-execution/validate-receipt.json",
+        "poc/evidence/poc-20260826-real-execution/validate-state.json"
+      ],
+      "next": "Run forgeloop prepare-completion to refresh changed paths, then rerun audit."
+    }
+  ],
+  "warnings": []
+}

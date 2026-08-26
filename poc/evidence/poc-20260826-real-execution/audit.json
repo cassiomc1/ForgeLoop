@@ -1,0 +1,292 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "status": "INVALID",
+  "strict": true,
+  "errors": [
+    {
+      "code": "E_RECEIPT_PATH_MISMATCH",
+      "message": "Receipt changedPaths do not match observed repository paths",
+      "artifacts": [
+        ".forgeloop/task-state/747b59b95851208eff7819dec9b4a8233332d0479b17403831539edf859cce61/execution-receipt.json"
+      ],
+      "missing": [],
+      "unexpected": [
+        "poc/evidence/poc-20260826-real-execution/history.json",
+        "poc/evidence/poc-20260826-real-execution/inspect.json",
+        "poc/evidence/poc-20260826-real-execution/progress.json",
+        "poc/evidence/poc-20260826-real-execution/protocol-info.json",
+        "poc/evidence/poc-20260826-real-execution/report.json",
+        "poc/evidence/poc-20260826-real-execution/status-final.json",
+        "poc/evidence/poc-20260826-real-execution/task-show.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/continuity.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/contract.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/events.ndjson",
+        "poc/evidence/poc-20260826-real-execution/task-state/events.ndjson.index.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/execution-receipt.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-140b77a3-a675-41a2-bc0e-456b4b18d7a4.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-52c080e5-1310-4c49-9b32-35e4ea57d243.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-58a1c35a-1b20-4234-95db-6f48a45ef5af.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-7cf31511-e088-4dfe-963d-4a163ddebdec.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-a5a68f50-c623-47fa-9aed-c800f5d69fa5.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-ad65660d-9849-46d5-b855-5740652ef4d8.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-b63e1ecc-2ed3-4a32-ac3e-07f2a0878683.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-bb28e87f-f66e-4c8a-9c9d-25c95e1a0833.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-f2ffe2b0-8c2a-475f-bf73-c612e502b4fd.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/gates/threat-boundary.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/policy-snapshot.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/preflight.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/routing-result.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/task.json",
+        "poc/evidence/poc-20260826-real-execution/task-state/work-state.json",
+        "poc/evidence/poc-20260826-real-execution/trace.json",
+        "poc/evidence/poc-20260826-real-execution/validate-protocol.json",
+        "poc/evidence/poc-20260826-real-execution/validate-receipt.json",
+        "poc/evidence/poc-20260826-real-execution/validate-state.json"
+      ],
+      "next": "Run forgeloop prepare-completion to refresh changed paths, then rerun audit."
+    }
+  ],
+  "warnings": [],
+  "installation": {
+    "status": "ready",
+    "manifest": true
+  },
+  "policy": {
+    "status": "VALID",
+    "provenRules": 1,
+    "inertRules": 0,
+    "unsupportedRules": 0,
+    "baselineViolations": 0,
+    "drift": false
+  },
+  "completion": {
+    "status": "VALID",
+    "taskStatus": "COMPLETE",
+    "verificationStatus": "VALID",
+    "publicationStatus": "local-only",
+    "productionReadiness": "not-verified",
+    "errors": [],
+    "warnings": [],
+    "preflight": {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "taskId": "poc-real-protocol-execution-20260826",
+      "status": "READY",
+      "profile": {
+        "status": "verified",
+        "mode": "project",
+        "profileStatus": "verified",
+        "fingerprint": "f2c1b76d86b5c0613efbb37988999fddd4eed76a57088f4aa50c4f26b4348901",
+        "provenance": "not-referenced"
+      },
+      "contract": {
+        "status": "valid",
+        "fingerprint": "bd4d60b1642afcdaf3b628506ac98e63d14d929c3461aab4aa3f41d60aa297d9"
+      },
+      "routing": {
+        "status": "valid",
+        "fingerprint": "1fa871924061bee6c638f713bbca375d73936ebcade13e2c7ad413a79fd78663",
+        "guides": [
+          "clean",
+          "test",
+          "documentation",
+          "security"
+        ]
+      },
+      "requiredGates": [
+        "threat-boundary"
+      ],
+      "satisfiedGates": [
+        "threat-boundary"
+      ],
+      "errors": [],
+      "fingerprints": {
+        "contract": "bd4d60b1642afcdaf3b628506ac98e63d14d929c3461aab4aa3f41d60aa297d9",
+        "routing": "1fa871924061bee6c638f713bbca375d73936ebcade13e2c7ad413a79fd78663",
+        "profile": "f2c1b76d86b5c0613efbb37988999fddd4eed76a57088f4aa50c4f26b4348901"
+      },
+      "sources": {
+        "status": "valid",
+        "fingerprint": null
+      }
+    },
+    "coverage": [
+      {
+        "schemaVersion": 1,
+        "protocolVersion": 1,
+        "requirement": "tests",
+        "requiredEvidence": [
+          "tests"
+        ],
+        "observedEvidence": [
+          "tests"
+        ],
+        "status": "COVERED"
+      },
+      {
+        "schemaVersion": 1,
+        "protocolVersion": 1,
+        "requirement": "security-validation",
+        "requiredEvidence": [
+          "security-validation"
+        ],
+        "observedEvidence": [
+          "security-validation"
+        ],
+        "status": "COVERED"
+      },
+      {
+        "schemaVersion": 1,
+        "protocolVersion": 1,
+        "requirement": "Technical audit report provides complete, reproducible, and verifiable evidence trail.",
+        "requiredEvidence": [
+          "Technical audit report provides complete, reproducible, and verifiable evidence trail."
+        ],
+        "observedEvidence": [
+          "Technical audit report provides complete, reproducible, and verifiable evidence trail."
+        ],
+        "status": "COVERED"
+      },
+      {
+        "schemaVersion": 1,
+        "protocolVersion": 1,
+        "requirement": "Workload implementation is functional, deterministic, and fully covered by automated tests.",
+        "requiredEvidence": [
+          "Workload implementation is functional, deterministic, and fully covered by automated tests."
+        ],
+        "observedEvidence": [
+          "Workload implementation is functional, deterministic, and fully covered by automated tests."
+        ],
+        "status": "COVERED"
+      }
+    ],
+    "ledger": {
+      "status": "valid",
+      "events": 46
+    },
+    "actions": {
+      "count": 0,
+      "required": 0,
+      "verified": 0,
+      "trustedSatisfied": 0,
+      "unresolvedRequired": 0,
+      "failed": 0,
+      "ambiguous": 0,
+      "pending": 0,
+      "actionRefs": []
+    }
+  },
+  "recovery": null,
+  "claims": {
+    "state": "RELEASED_BY_COMPLETION",
+    "historical": [
+      "DOCS_INDEX.md",
+      "poc"
+    ],
+    "effective": [],
+    "mutationAllowed": false,
+    "ownershipValid": true,
+    "ownershipErrors": []
+  },
+  "changedPaths": {
+    "status": "MISMATCH",
+    "expected": [
+      "DOCS_INDEX.md",
+      "poc/README.md",
+      "poc/reports/poc-20260826-real-execution-technical-audit.md",
+      "poc/workload/README.md",
+      "poc/workload/src/cli.js",
+      "poc/workload/src/evaluator.js",
+      "poc/workload/src/rules.js",
+      "poc/workload/src/schemas.js",
+      "poc/workload/test/cli.test.js",
+      "poc/workload/test/evaluator.test.js"
+    ],
+    "observed": [
+      "DOCS_INDEX.md",
+      "poc/evidence/poc-20260826-real-execution/history.json",
+      "poc/evidence/poc-20260826-real-execution/inspect.json",
+      "poc/evidence/poc-20260826-real-execution/progress.json",
+      "poc/evidence/poc-20260826-real-execution/protocol-info.json",
+      "poc/evidence/poc-20260826-real-execution/report.json",
+      "poc/evidence/poc-20260826-real-execution/status-final.json",
+      "poc/evidence/poc-20260826-real-execution/task-show.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/continuity.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/contract.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/events.ndjson",
+      "poc/evidence/poc-20260826-real-execution/task-state/events.ndjson.index.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/execution-receipt.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-140b77a3-a675-41a2-bc0e-456b4b18d7a4.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-52c080e5-1310-4c49-9b32-35e4ea57d243.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-58a1c35a-1b20-4234-95db-6f48a45ef5af.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-7cf31511-e088-4dfe-963d-4a163ddebdec.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-a5a68f50-c623-47fa-9aed-c800f5d69fa5.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-ad65660d-9849-46d5-b855-5740652ef4d8.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-b63e1ecc-2ed3-4a32-ac3e-07f2a0878683.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-bb28e87f-f66e-4c8a-9c9d-25c95e1a0833.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-f2ffe2b0-8c2a-475f-bf73-c612e502b4fd.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/gates/threat-boundary.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/policy-snapshot.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/preflight.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/routing-result.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/task.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/work-state.json",
+      "poc/evidence/poc-20260826-real-execution/trace.json",
+      "poc/evidence/poc-20260826-real-execution/validate-protocol.json",
+      "poc/evidence/poc-20260826-real-execution/validate-receipt.json",
+      "poc/evidence/poc-20260826-real-execution/validate-state.json",
+      "poc/README.md",
+      "poc/reports/poc-20260826-real-execution-technical-audit.md",
+      "poc/workload/README.md",
+      "poc/workload/src/cli.js",
+      "poc/workload/src/evaluator.js",
+      "poc/workload/src/rules.js",
+      "poc/workload/src/schemas.js",
+      "poc/workload/test/cli.test.js",
+      "poc/workload/test/evaluator.test.js"
+    ],
+    "missing": [],
+    "unexpected": [
+      "poc/evidence/poc-20260826-real-execution/history.json",
+      "poc/evidence/poc-20260826-real-execution/inspect.json",
+      "poc/evidence/poc-20260826-real-execution/progress.json",
+      "poc/evidence/poc-20260826-real-execution/protocol-info.json",
+      "poc/evidence/poc-20260826-real-execution/report.json",
+      "poc/evidence/poc-20260826-real-execution/status-final.json",
+      "poc/evidence/poc-20260826-real-execution/task-show.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/continuity.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/contract.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/events.ndjson",
+      "poc/evidence/poc-20260826-real-execution/task-state/events.ndjson.index.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/execution-receipt.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-140b77a3-a675-41a2-bc0e-456b4b18d7a4.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-52c080e5-1310-4c49-9b32-35e4ea57d243.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-58a1c35a-1b20-4234-95db-6f48a45ef5af.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-7cf31511-e088-4dfe-963d-4a163ddebdec.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-a5a68f50-c623-47fa-9aed-c800f5d69fa5.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-ad65660d-9849-46d5-b855-5740652ef4d8.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-b63e1ecc-2ed3-4a32-ac3e-07f2a0878683.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-bb28e87f-f66e-4c8a-9c9d-25c95e1a0833.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/executions/exec-f2ffe2b0-8c2a-475f-bf73-c612e502b4fd.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/gates/threat-boundary.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/policy-snapshot.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/preflight.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/routing-result.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/task.json",
+      "poc/evidence/poc-20260826-real-execution/task-state/work-state.json",
+      "poc/evidence/poc-20260826-real-execution/trace.json",
+      "poc/evidence/poc-20260826-real-execution/validate-protocol.json",
+      "poc/evidence/poc-20260826-real-execution/validate-receipt.json",
+      "poc/evidence/poc-20260826-real-execution/validate-state.json"
+    ]
+  },
+  "publicationStatus": "local-only",
+  "productionReadiness": "not-verified",
+  "artifacts": {
+    "contract": ".forgeloop/task-state/747b59b95851208eff7819dec9b4a8233332d0479b17403831539edf859cce61/contract.json",
+    "route": ".forgeloop/task-state/747b59b95851208eff7819dec9b4a8233332d0479b17403831539edf859cce61/routing-result.json",
+    "state": ".forgeloop/task-state/747b59b95851208eff7819dec9b4a8233332d0479b17403831539edf859cce61/work-state.json",
+    "receipt": ".forgeloop/task-state/747b59b95851208eff7819dec9b4a8233332d0479b17403831539edf859cce61/execution-receipt.json"
+  }
+}

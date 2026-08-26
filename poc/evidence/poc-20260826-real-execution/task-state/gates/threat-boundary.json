@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "taskId": "poc-real-protocol-execution-20260826",
+  "gate": "threat-boundary",
+  "status": "satisfied",
+  "requiredBy": [
+    "security"
+  ],
+  "artifacts": [
+    {
+      "path": "THREAT_MODEL.md",
+      "sha256": "d0a782f18bce859de43de7863cbd994353760674dbcaa1900a96249477a8164e"
+    },
+    {
+      "path": "package.json",
+      "sha256": "026bda0e889e77bb222739f6af1da081a26b4bc271f2f9c871de5821c2c23aa2"
+    }
+  ],
+  "decisions": [
+    "Workload implementation under poc/workload is strictly isolated, zero-dependency, accepts untrusted JSON input through validated schemas, and never interacts with sensitive environment variables, network, or filesystem outside its explicit arguments."
+  ],
+  "unknowns": [],
+  "approvedAssumptions": [
+    "No external credentials, tokens, network requests, or privileged capabilities are accessed by the PoC workload."
+  ],
+  "evidence": [
+    {
+      "kind": "OBSERVED",
+      "source": "threat-boundary analysis for deterministic risk evaluation CLI workload",
+      "timestamp": "2026-08-26T17:57:00.000Z"
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "policyDigest": "sha256:4a4550cb08a1c044a130877a9165818d86a7c5e69879d219dfa3295d2a189e27",
+  "rules": [
+    {
+      "id": "SECURITY.NO_HARDCODED_SECRET",
+      "severity": "HIGH",
+      "source": "builtin",
+      "blocking": true,
+      "why": "Credentials committed to source control can expose systems and users.",
+      "fix": "Move the credential to an approved secret source and remove it from tracked files.",
+      "confidence": "HIGH",
+      "check": {
+        "type": "adapter",
+        "adapter": "secret-detection"
+      }
+    },
+    {
+      "id": "TEST.REQUIRED",
+      "severity": "MEDIUM",
+      "source": "discovered",
+      "blocking": false,
+      "why": "Automated test suite was detected in repository manifests.",
+      "fix": "Run test suite to verify changes.",
+      "confidence": "HIGH",
+      "check": {
+        "type": "adapter",
+        "adapter": "test-runner",
+        "command": [
+          "npm",
+          "test"
+        ]
+      }
+    }
+  ],
+  "baseline": {
+    "schemaVersion": 1,
+    "createdAt": "2026-08-25T07:22:19.002Z",
+    "entries": []
+  },
+  "baselineDigest": "sha256:f88f59903e6d83ba9c8d94ce5694dc99b41ed3653d26e487b7989b77eaabaa88",
+  "capturedAt": "2026-08-26T17:56:42.159Z"
+}

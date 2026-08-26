@@ -1,0 +1,30 @@
+{
+  "status": "VALID",
+  "errors": [],
+  "incomplete": [],
+  "stale": null,
+  "delegation": {
+    "status": "NOT_APPLICABLE",
+    "required": false,
+    "errors": []
+  },
+  "continuity": {
+    "required": false,
+    "status": "NOT_APPLICABLE",
+    "classification": "NOT_APPLICABLE",
+    "errors": [],
+    "reasonCodes": [],
+    "reasons": [
+      "CONTINUITY_NOT_APPLICABLE_AFTER_COMPLETE"
+    ],
+    "authority": "OPERATIONAL_CONTEXT_ONLY",
+    "evidenceAuthority": "NONE"
+  },
+  "evidence": [
+    {
+      "kind": "OBSERVED",
+      "source": "ForgeLoop protocol conformance",
+      "result": "VALID"
+    }
+  ]
+}

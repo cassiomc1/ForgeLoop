@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "input": {
+    "schemaVersion": 1,
+    "workType": "code",
+    "surfaces": [
+      "ci",
+      "config",
+      "documentation"
+    ],
+    "risks": [
+      "untrusted-input"
+    ],
+    "platforms": [
+      "server"
+    ],
+    "behaviorChange": true,
+    "executableChange": true
+  },
+  "primary": "clean",
+  "guides": [
+    "clean",
+    "test",
+    "documentation",
+    "security"
+  ],
+  "reasons": {
+    "clean": [
+      "WORK_CODE",
+      "CHANGE_BEHAVIOR",
+      "CHANGE_EXECUTABLE_CONFIG"
+    ],
+    "test": [
+      "WORK_CODE",
+      "CHANGE_BEHAVIOR",
+      "CHANGE_EXECUTABLE_CONFIG"
+    ],
+    "documentation": [
+      "SURFACE_DOCUMENTATION"
+    ],
+    "security": [
+      "RISK_UNTRUSTED_INPUT"
+    ]
+  },
+  "excluded": {
+    "premium": [
+      "NO_PRIMARY_WORK_TYPE"
+    ],
+    "design": [
+      "NO_UI_SURFACE"
+    ],
+    "taste": [
+      "NO_TASTE_FRONTEND_CONTEXT"
+    ],
+    "performance": [
+      "NO_MEASURABLE_PERFORMANCE_RISK"
+    ],
+    "accessibility": [
+      "NO_UI_SURFACE"
+    ],
+    "games": [
+      "NO_PRIMARY_WORK_TYPE"
+    ]
+  },
+  "contractFingerprint": "bd4d60b1642afcdaf3b628506ac98e63d14d929c3461aab4aa3f41d60aa297d9"
+}

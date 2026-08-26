@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "executionId": "exec-a5a68f50-c623-47fa-9aed-c800f5d69fa5",
+  "taskId": "poc-real-protocol-execution-20260826",
+  "checkId": "repository-lint",
+  "requirement": "npm run lint exits 0 with zero lint errors.",
+  "verificationCycle": 1,
+  "kind": "COMMAND_EXECUTION",
+  "argv": [
+    "npm",
+    "run",
+    "lint"
+  ],
+  "cwd": "/Users/cassio/Documents/github/forgeloop",
+  "resolution": {
+    "resolutionMode": "LOCAL_PACKAGE_BINARY",
+    "mayInstall": false,
+    "installer": null,
+    "tool": null
+  },
+  "dispatch": {
+    "kind": "npm-script-command"
+  },
+  "startedAt": "2026-08-26T18:00:59.495Z",
+  "finishedAt": "2026-08-26T18:01:03.046Z",
+  "status": "passed",
+  "exitCode": 0,
+  "durationMs": 3551,
+  "termination": "exit",
+  "signal": null,
+  "stdoutSha256": "9d221aeca6f150cf047fe8470cc60a94af5a2fb73b833f656a00e828fc478cbd",
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdoutBytes": 47,
+  "stderrBytes": 0,
+  "outputTruncated": false
+}

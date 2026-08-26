@@ -1,0 +1,2599 @@
+{
+  "target": {
+    "path": "/Users/cassio/Documents/github/forgeloop"
+  },
+  "authority": {
+    "sourceConfigured": false,
+    "sourceType": null,
+    "trustMode": "NONE",
+    "trusted": false
+  },
+  "manifest": {
+    "present": true,
+    "status": "ready",
+    "packageVersion": "1.6.0",
+    "layoutVersion": 2,
+    "error": null
+  },
+  "profile": {
+    "mode": "project",
+    "status": "verified",
+    "path": ".forgeloop/kit/PROJECT_PROFILE.md"
+  },
+  "integration": {
+    "protocolActivated": true,
+    "protocolMarker": "FORGELOOP_PROJECT_PROTOCOL=REQUIRED",
+    "discovery": {
+      "status": "INSTRUCTION_DISCOVERED",
+      "surfaces": [
+        {
+          "id": "agents-md",
+          "path": "AGENTS.md",
+          "kind": "project-instructions",
+          "available": true
+        },
+        {
+          "id": "claude-md",
+          "path": "CLAUDE.md",
+          "kind": "project-instructions",
+          "available": true
+        },
+        {
+          "id": "cursor-rule",
+          "path": ".cursor/rules/project-loop.mdc",
+          "kind": "project-instructions",
+          "available": true
+        },
+        {
+          "id": "github-repository-instructions",
+          "path": ".github/copilot-instructions.md",
+          "kind": "project-instructions",
+          "available": true
+        }
+      ]
+    },
+    "capability": {
+      "status": "NOT_VERIFIED"
+    }
+  },
+  "adapters": {
+    "detected": [
+      "AGENTS.md",
+      "CLAUDE.md",
+      ".cursor/rules/project-loop.mdc",
+      ".github/copilot-instructions.md"
+    ],
+    "surfaces": [
+      {
+        "id": "agents-md",
+        "path": "AGENTS.md",
+        "kind": "project-instructions",
+        "available": true
+      },
+      {
+        "id": "claude-md",
+        "path": "CLAUDE.md",
+        "kind": "project-instructions",
+        "available": true
+      },
+      {
+        "id": "cursor-rule",
+        "path": ".cursor/rules/project-loop.mdc",
+        "kind": "project-instructions",
+        "available": true
+      },
+      {
+        "id": "github-repository-instructions",
+        "path": ".github/copilot-instructions.md",
+        "kind": "project-instructions",
+        "available": true
+      }
+    ]
+  },
+  "protocol": {
+    "version": 1,
+    "schemaStatus": "missing",
+    "schemas": [
+      {
+        "name": "routing-input",
+        "version": 1,
+        "status": "valid",
+        "error": null
+      },
+      {
+        "name": "routing-result",
+        "version": 1,
+        "status": "valid",
+        "error": null
+      },
+      {
+        "name": "work-state",
+        "version": 1,
+        "status": "valid",
+        "error": null
+      },
+      {
+        "name": "continuity",
+        "version": 1,
+        "status": "valid",
+        "error": null
+      },
+      {
+        "name": "execution-receipt",
+        "version": 1,
+        "status": "valid",
+        "error": null
+      },
+      {
+        "name": "task-brief",
+        "version": 1,
+        "status": "valid",
+        "error": null
+      },
+      {
+        "name": "delegated-result",
+        "version": 1,
+        "status": "valid",
+        "error": null
+      },
+      {
+        "name": "evidence",
+        "version": 1,
+        "status": "valid",
+        "error": null
+      },
+      {
+        "name": "current-contract",
+        "version": 1,
+        "status": "valid",
+        "error": null
+      },
+      {
+        "name": "gate",
+        "version": 1,
+        "status": "valid",
+        "error": null
+      },
+      {
+        "name": "source-registry",
+        "version": 1,
+        "status": "valid",
+        "error": null
+      },
+      {
+        "name": "config",
+        "version": 1,
+        "status": "valid",
+        "error": null
+      },
+      {
+        "name": "preflight",
+        "version": 1,
+        "status": "valid",
+        "error": null
+      },
+      {
+        "name": "check",
+        "version": 1,
+        "status": "valid",
+        "error": null
+      },
+      {
+        "name": "evidence-coverage",
+        "version": 1,
+        "status": "valid",
+        "error": null
+      },
+      {
+        "name": "event",
+        "version": 1,
+        "status": "valid",
+        "error": null
+      },
+      {
+        "name": "activation",
+        "version": 1,
+        "status": "valid",
+        "error": null
+      },
+      {
+        "name": "policy",
+        "version": 1,
+        "status": "valid",
+        "error": null
+      },
+      {
+        "name": "policy-rules",
+        "version": 1,
+        "status": "valid",
+        "error": null
+      },
+      {
+        "name": "policy-discovery",
+        "version": 1,
+        "status": "valid",
+        "error": null
+      },
+      {
+        "name": "policy-baseline",
+        "version": 1,
+        "status": "valid",
+        "error": null
+      },
+      {
+        "name": "policy-lock",
+        "version": 1,
+        "status": "valid",
+        "error": null
+      },
+      {
+        "name": "policy-snapshot",
+        "version": 1,
+        "status": "valid",
+        "error": null
+      },
+      {
+        "name": "task-bundle",
+        "version": 1,
+        "status": "valid",
+        "error": null
+      },
+      {
+        "name": "execution",
+        "version": 1,
+        "status": "valid",
+        "error": null
+      },
+      {
+        "name": "authority",
+        "version": 1,
+        "status": "valid",
+        "error": null
+      },
+      {
+        "name": "task-descriptor",
+        "version": 1,
+        "status": "valid",
+        "error": null
+      },
+      {
+        "name": "task-recovery",
+        "version": 1,
+        "status": "valid",
+        "error": null
+      },
+      {
+        "name": "diagnostic-case",
+        "version": 1,
+        "status": "valid",
+        "error": null
+      },
+      {
+        "name": "intervention",
+        "version": 1,
+        "status": "valid",
+        "error": null
+      },
+      {
+        "name": "hypothesis-disposition",
+        "version": 1,
+        "status": "valid",
+        "error": null
+      },
+      {
+        "name": "action",
+        "version": null,
+        "status": "missing",
+        "error": "ENOENT: no such file or directory, open '/Users/cassio/Documents/github/forgeloop/.forgeloop/kit/schemas/action.schema.json'"
+      },
+      {
+        "name": "approval",
+        "version": null,
+        "status": "missing",
+        "error": "ENOENT: no such file or directory, open '/Users/cassio/Documents/github/forgeloop/.forgeloop/kit/schemas/approval.schema.json'"
+      },
+      {
+        "name": "capability-policy",
+        "version": null,
+        "status": "missing",
+        "error": "ENOENT: no such file or directory, open '/Users/cassio/Documents/github/forgeloop/.forgeloop/kit/schemas/capability-policy.schema.json'"
+      },
+      {
+        "name": "trajectory-evaluation",
+        "version": null,
+        "status": "missing",
+        "error": "ENOENT: no such file or directory, open '/Users/cassio/Documents/github/forgeloop/.forgeloop/kit/schemas/trajectory-evaluation.schema.json'"
+      },
+      {
+        "name": "trajectory-scenario",
+        "version": null,
+        "status": "missing",
+        "error": "ENOENT: no such file or directory, open '/Users/cassio/Documents/github/forgeloop/.forgeloop/kit/schemas/trajectory-scenario.schema.json'"
+      }
+    ],
+    "evidence": [
+      {
+        "kind": "NOT_VERIFIED",
+        "source": "shipped target schemas",
+        "result": "missing"
+      }
+    ]
+  },
+  "state": {
+    "path": ".forgeloop/task-state/747b59b95851208eff7819dec9b4a8233332d0479b17403831539edf859cce61/work-state.json",
+    "present": true,
+    "status": "REVALIDATION_REQUIRED",
+    "reasons": [
+      "CONTRACT_NOT_VERIFIED"
+    ],
+    "warnings": [],
+    "repositoryComparison": "MATCH",
+    "contractComparison": "NOT_VERIFIED",
+    "artifactComparison": "NOT_APPLICABLE",
+    "stateAgeMs": 35396,
+    "state": {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "taskId": "poc-real-protocol-execution-20260826",
+      "contractFingerprint": "bd4d60b1642afcdaf3b628506ac98e63d14d929c3461aab4aa3f41d60aa297d9",
+      "routeFingerprint": "1fa871924061bee6c638f713bbca375d73936ebcade13e2c7ad413a79fd78663",
+      "repositoryFingerprint": {
+        "branch": "main",
+        "head": "1eb8088716e279faa746b11e3077de1fef570b69"
+      },
+      "phase": "COMPLETE",
+      "selectedGuides": [
+        "clean",
+        "test",
+        "documentation",
+        "security"
+      ],
+      "requiredGates": [
+        "threat-boundary"
+      ],
+      "satisfiedGates": [
+        "threat-boundary"
+      ],
+      "evidenceCoverage": [
+        {
+          "schemaVersion": 1,
+          "protocolVersion": 1,
+          "requirement": "tests",
+          "requiredEvidence": [
+            "tests"
+          ],
+          "observedEvidence": [
+            "tests"
+          ],
+          "status": "COVERED"
+        },
+        {
+          "schemaVersion": 1,
+          "protocolVersion": 1,
+          "requirement": "security-validation",
+          "requiredEvidence": [
+            "security-validation"
+          ],
+          "observedEvidence": [
+            "security-validation"
+          ],
+          "status": "COVERED"
+        },
+        {
+          "schemaVersion": 1,
+          "protocolVersion": 1,
+          "requirement": "Technical audit report provides complete, reproducible, and verifiable evidence trail.",
+          "requiredEvidence": [
+            "Technical audit report provides complete, reproducible, and verifiable evidence trail."
+          ],
+          "observedEvidence": [
+            "Technical audit report provides complete, reproducible, and verifiable evidence trail."
+          ],
+          "status": "COVERED"
+        },
+        {
+          "schemaVersion": 1,
+          "protocolVersion": 1,
+          "requirement": "Workload implementation is functional, deterministic, and fully covered by automated tests.",
+          "requiredEvidence": [
+            "Workload implementation is functional, deterministic, and fully covered by automated tests."
+          ],
+          "observedEvidence": [
+            "Workload implementation is functional, deterministic, and fully covered by automated tests."
+          ],
+          "status": "COVERED"
+        }
+      ],
+      "publicationStatus": "local-only",
+      "completedSteps": [
+        "contract",
+        "route",
+        "implementation"
+      ],
+      "pendingSteps": [
+        "planning",
+        "verification"
+      ],
+      "requiredArtifacts": [],
+      "checks": [
+        {
+          "schemaVersion": 1,
+          "protocolVersion": 1,
+          "id": "workload-unit-tests",
+          "kind": "command",
+          "requirement": "Automated unit and integration test suite for the deterministic risk evaluation CLI passes with 0 failures via node --test.",
+          "status": "passed",
+          "evidenceKind": "OBSERVED",
+          "source": "node --test poc/workload/test/evaluator.test.js poc/workload/test/cli.test.js --json",
+          "exitCode": 0,
+          "timestamp": "2026-08-26T18:00:43.338Z",
+          "executionRef": "exec-f2ffe2b0-8c2a-475f-bf73-c612e502b4fd",
+          "provenance": "FORGELOOP_EXECUTED",
+          "details": {
+            "command": "node --test poc/workload/test/evaluator.test.js poc/workload/test/cli.test.js --json",
+            "result": "process exited with code 0",
+            "verificationCycle": 1,
+            "execution": {
+              "executionRef": "exec-f2ffe2b0-8c2a-475f-bf73-c612e502b4fd",
+              "argv": [
+                "node",
+                "--test",
+                "poc/workload/test/evaluator.test.js",
+                "poc/workload/test/cli.test.js",
+                "--json"
+              ],
+              "cwd": "/Users/cassio/Documents/github/forgeloop",
+              "resolution": {
+                "resolutionMode": "LOCAL_EXECUTABLE",
+                "mayInstall": false,
+                "installer": null,
+                "tool": null
+              },
+              "status": "passed",
+              "exitCode": 0,
+              "resolutionMode": "LOCAL_EXECUTABLE",
+              "mayInstall": false,
+              "installationAuthorized": false
+            }
+          }
+        },
+        {
+          "schemaVersion": 1,
+          "protocolVersion": 1,
+          "id": "workload-cli-smoke-valid",
+          "kind": "command",
+          "requirement": "Risk evaluation CLI smoke test executes successfully with valid JSON input and produces score, tier, and decision output.",
+          "status": "passed",
+          "evidenceKind": "OBSERVED",
+          "source": "node poc/workload/src/cli.js --eval \"{\\\"serviceName\\\":\\\"auth-svc\\\",\\\"environment\\\":\\\"production\\\",\\\"changeType\\\":\\\"standard\\\",\\\"securityReviewCompleted\\\":true,\\\"maintenanceWindow\\\":true}\"",
+          "exitCode": 0,
+          "timestamp": "2026-08-26T18:00:49.426Z",
+          "executionRef": "exec-bb28e87f-f66e-4c8a-9c9d-25c95e1a0833",
+          "provenance": "FORGELOOP_EXECUTED",
+          "details": {
+            "command": "node poc/workload/src/cli.js --eval \"{\\\"serviceName\\\":\\\"auth-svc\\\",\\\"environment\\\":\\\"production\\\",\\\"changeType\\\":\\\"standard\\\",\\\"securityReviewCompleted\\\":true,\\\"maintenanceWindow\\\":true}\"",
+            "result": "process exited with code 0",
+            "verificationCycle": 1,
+            "execution": {
+              "executionRef": "exec-bb28e87f-f66e-4c8a-9c9d-25c95e1a0833",
+              "argv": [
+                "node",
+                "poc/workload/src/cli.js",
+                "--eval",
+                "{\"serviceName\":\"auth-svc\",\"environment\":\"production\",\"changeType\":\"standard\",\"securityReviewCompleted\":true,\"maintenanceWindow\":true}"
+              ],
+              "cwd": "/Users/cassio/Documents/github/forgeloop",
+              "resolution": {
+                "resolutionMode": "LOCAL_EXECUTABLE",
+                "mayInstall": false,
+                "installer": null,
+                "tool": null
+              },
+              "status": "passed",
+              "exitCode": 0,
+              "resolutionMode": "LOCAL_EXECUTABLE",
+              "mayInstall": false,
+              "installationAuthorized": false
+            }
+          }
+        },
+        {
+          "schemaVersion": 1,
+          "protocolVersion": 1,
+          "id": "workload-cli-smoke-invalid",
+          "kind": "command",
+          "requirement": "Risk evaluation CLI validates invalid input, emits structured error diagnostics, and exits with non-zero exit code.",
+          "status": "passed",
+          "evidenceKind": "OBSERVED",
+          "source": "node -e \"const { execFileSync } = require(\\\"node:child_process\\\"); try { execFileSync(process.execPath, [\\\"poc/workload/src/cli.js\\\", \\\"--eval\\\", \\\"{\\\\\\\"invalid\\\\\\\":true}\\\"], { stdio: \\\"pipe\\\" }); process.exit(1); } catch (err) { if (err.status === 1) { process.exit(0); } process.exit(1); }\"",
+          "exitCode": 0,
+          "timestamp": "2026-08-26T18:00:55.067Z",
+          "executionRef": "exec-b63e1ecc-2ed3-4a32-ac3e-07f2a0878683",
+          "provenance": "FORGELOOP_EXECUTED",
+          "details": {
+            "command": "node -e \"const { execFileSync } = require(\\\"node:child_process\\\"); try { execFileSync(process.execPath, [\\\"poc/workload/src/cli.js\\\", \\\"--eval\\\", \\\"{\\\\\\\"invalid\\\\\\\":true}\\\"], { stdio: \\\"pipe\\\" }); process.exit(1); } catch (err) { if (err.status === 1) { process.exit(0); } process.exit(1); }\"",
+            "result": "process exited with code 0",
+            "verificationCycle": 1,
+            "execution": {
+              "executionRef": "exec-b63e1ecc-2ed3-4a32-ac3e-07f2a0878683",
+              "argv": [
+                "node",
+                "-e",
+                "const { execFileSync } = require(\"node:child_process\"); try { execFileSync(process.execPath, [\"poc/workload/src/cli.js\", \"--eval\", \"{\\\"invalid\\\":true}\"], { stdio: \"pipe\" }); process.exit(1); } catch (err) { if (err.status === 1) { process.exit(0); } process.exit(1); }"
+              ],
+              "cwd": "/Users/cassio/Documents/github/forgeloop",
+              "resolution": {
+                "resolutionMode": "LOCAL_EXECUTABLE",
+                "mayInstall": false,
+                "installer": null,
+                "tool": null
+              },
+              "status": "passed",
+              "exitCode": 0,
+              "resolutionMode": "LOCAL_EXECUTABLE",
+              "mayInstall": false,
+              "installationAuthorized": false
+            }
+          }
+        },
+        {
+          "schemaVersion": 1,
+          "protocolVersion": 1,
+          "id": "repository-lint",
+          "kind": "command",
+          "requirement": "npm run lint exits 0 with zero lint errors.",
+          "status": "passed",
+          "evidenceKind": "OBSERVED",
+          "source": "npm run lint",
+          "exitCode": 0,
+          "timestamp": "2026-08-26T18:01:03.115Z",
+          "executionRef": "exec-a5a68f50-c623-47fa-9aed-c800f5d69fa5",
+          "provenance": "FORGELOOP_EXECUTED",
+          "details": {
+            "command": "npm run lint",
+            "result": "process exited with code 0",
+            "verificationCycle": 1,
+            "execution": {
+              "executionRef": "exec-a5a68f50-c623-47fa-9aed-c800f5d69fa5",
+              "argv": [
+                "npm",
+                "run",
+                "lint"
+              ],
+              "cwd": "/Users/cassio/Documents/github/forgeloop",
+              "resolution": {
+                "resolutionMode": "LOCAL_PACKAGE_BINARY",
+                "mayInstall": false,
+                "installer": null,
+                "tool": null
+              },
+              "status": "passed",
+              "exitCode": 0,
+              "resolutionMode": "LOCAL_PACKAGE_BINARY",
+              "mayInstall": false,
+              "installationAuthorized": false
+            }
+          }
+        },
+        {
+          "schemaVersion": 1,
+          "protocolVersion": 1,
+          "id": "documentation-conformance",
+          "kind": "command",
+          "requirement": "npm run docs:generated:check and documentation validation exit 0.",
+          "status": "passed",
+          "evidenceKind": "OBSERVED",
+          "source": "npm run docs:generated:check",
+          "exitCode": 0,
+          "timestamp": "2026-08-26T18:01:07.275Z",
+          "executionRef": "exec-140b77a3-a675-41a2-bc0e-456b4b18d7a4",
+          "provenance": "FORGELOOP_EXECUTED",
+          "details": {
+            "command": "npm run docs:generated:check",
+            "result": "process exited with code 0",
+            "verificationCycle": 1,
+            "execution": {
+              "executionRef": "exec-140b77a3-a675-41a2-bc0e-456b4b18d7a4",
+              "argv": [
+                "npm",
+                "run",
+                "docs:generated:check"
+              ],
+              "cwd": "/Users/cassio/Documents/github/forgeloop",
+              "resolution": {
+                "resolutionMode": "LOCAL_PACKAGE_BINARY",
+                "mayInstall": false,
+                "installer": null,
+                "tool": null
+              },
+              "status": "passed",
+              "exitCode": 0,
+              "resolutionMode": "LOCAL_PACKAGE_BINARY",
+              "mayInstall": false,
+              "installationAuthorized": false
+            }
+          }
+        },
+        {
+          "schemaVersion": 1,
+          "protocolVersion": 1,
+          "id": "test-suite",
+          "kind": "command",
+          "requirement": "tests",
+          "status": "passed",
+          "evidenceKind": "OBSERVED",
+          "source": "node --test poc/workload/test/evaluator.test.js poc/workload/test/cli.test.js",
+          "exitCode": 0,
+          "timestamp": "2026-08-26T18:01:18.101Z",
+          "executionRef": "exec-ad65660d-9849-46d5-b855-5740652ef4d8",
+          "provenance": "FORGELOOP_EXECUTED",
+          "details": {
+            "command": "node --test poc/workload/test/evaluator.test.js poc/workload/test/cli.test.js",
+            "result": "process exited with code 0",
+            "verificationCycle": 1,
+            "execution": {
+              "executionRef": "exec-ad65660d-9849-46d5-b855-5740652ef4d8",
+              "argv": [
+                "node",
+                "--test",
+                "poc/workload/test/evaluator.test.js",
+                "poc/workload/test/cli.test.js"
+              ],
+              "cwd": "/Users/cassio/Documents/github/forgeloop",
+              "resolution": {
+                "resolutionMode": "LOCAL_EXECUTABLE",
+                "mayInstall": false,
+                "installer": null,
+                "tool": null
+              },
+              "status": "passed",
+              "exitCode": 0,
+              "resolutionMode": "LOCAL_EXECUTABLE",
+              "mayInstall": false,
+              "installationAuthorized": false
+            }
+          }
+        },
+        {
+          "schemaVersion": 1,
+          "protocolVersion": 1,
+          "id": "security-checks",
+          "kind": "command",
+          "requirement": "security-validation",
+          "status": "passed",
+          "evidenceKind": "OBSERVED",
+          "source": "node --test poc/workload/test/evaluator.test.js",
+          "exitCode": 0,
+          "timestamp": "2026-08-26T18:01:18.588Z",
+          "executionRef": "exec-58a1c35a-1b20-4234-95db-6f48a45ef5af",
+          "provenance": "FORGELOOP_EXECUTED",
+          "details": {
+            "command": "node --test poc/workload/test/evaluator.test.js",
+            "result": "process exited with code 0",
+            "verificationCycle": 1,
+            "execution": {
+              "executionRef": "exec-58a1c35a-1b20-4234-95db-6f48a45ef5af",
+              "argv": [
+                "node",
+                "--test",
+                "poc/workload/test/evaluator.test.js"
+              ],
+              "cwd": "/Users/cassio/Documents/github/forgeloop",
+              "resolution": {
+                "resolutionMode": "LOCAL_EXECUTABLE",
+                "mayInstall": false,
+                "installer": null,
+                "tool": null
+              },
+              "status": "passed",
+              "exitCode": 0,
+              "resolutionMode": "LOCAL_EXECUTABLE",
+              "mayInstall": false,
+              "installationAuthorized": false
+            }
+          }
+        },
+        {
+          "schemaVersion": 1,
+          "protocolVersion": 1,
+          "id": "workload-functional",
+          "kind": "command",
+          "requirement": "Workload implementation is functional, deterministic, and fully covered by automated tests.",
+          "status": "passed",
+          "evidenceKind": "OBSERVED",
+          "source": "node --test poc/workload/test/evaluator.test.js poc/workload/test/cli.test.js",
+          "exitCode": 0,
+          "timestamp": "2026-08-26T18:01:19.405Z",
+          "executionRef": "exec-7cf31511-e088-4dfe-963d-4a163ddebdec",
+          "provenance": "FORGELOOP_EXECUTED",
+          "details": {
+            "command": "node --test poc/workload/test/evaluator.test.js poc/workload/test/cli.test.js",
+            "result": "process exited with code 0",
+            "verificationCycle": 1,
+            "execution": {
+              "executionRef": "exec-7cf31511-e088-4dfe-963d-4a163ddebdec",
+              "argv": [
+                "node",
+                "--test",
+                "poc/workload/test/evaluator.test.js",
+                "poc/workload/test/cli.test.js"
+              ],
+              "cwd": "/Users/cassio/Documents/github/forgeloop",
+              "resolution": {
+                "resolutionMode": "LOCAL_EXECUTABLE",
+                "mayInstall": false,
+                "installer": null,
+                "tool": null
+              },
+              "status": "passed",
+              "exitCode": 0,
+              "resolutionMode": "LOCAL_EXECUTABLE",
+              "mayInstall": false,
+              "installationAuthorized": false
+            }
+          }
+        },
+        {
+          "schemaVersion": 1,
+          "protocolVersion": 1,
+          "id": "audit-report-verification",
+          "kind": "command",
+          "requirement": "Technical audit report provides complete, reproducible, and verifiable evidence trail.",
+          "status": "passed",
+          "evidenceKind": "OBSERVED",
+          "source": "node -e \"require(\\\"node:fs\\\").accessSync(\\\"poc/reports/poc-20260826-real-execution-technical-audit.md\\\")\"",
+          "exitCode": 0,
+          "timestamp": "2026-08-26T18:01:42.146Z",
+          "executionRef": "exec-52c080e5-1310-4c49-9b32-35e4ea57d243",
+          "provenance": "FORGELOOP_EXECUTED",
+          "details": {
+            "command": "node -e \"require(\\\"node:fs\\\").accessSync(\\\"poc/reports/poc-20260826-real-execution-technical-audit.md\\\")\"",
+            "result": "process exited with code 0",
+            "verificationCycle": 1,
+            "execution": {
+              "executionRef": "exec-52c080e5-1310-4c49-9b32-35e4ea57d243",
+              "argv": [
+                "node",
+                "-e",
+                "require(\"node:fs\").accessSync(\"poc/reports/poc-20260826-real-execution-technical-audit.md\")"
+              ],
+              "cwd": "/Users/cassio/Documents/github/forgeloop",
+              "resolution": {
+                "resolutionMode": "LOCAL_EXECUTABLE",
+                "mayInstall": false,
+                "installer": null,
+                "tool": null
+              },
+              "status": "passed",
+              "exitCode": 0,
+              "resolutionMode": "LOCAL_EXECUTABLE",
+              "mayInstall": false,
+              "installationAuthorized": false
+            }
+          }
+        }
+      ],
+      "failures": [],
+      "blockers": [],
+      "verificationEvidence": [
+        {
+          "kind": "OBSERVED",
+          "source": "node --test poc/workload/test/evaluator.test.js poc/workload/test/cli.test.js --json",
+          "result": "process exited with code 0",
+          "verificationCycle": 1,
+          "details": {
+            "verificationCycle": 1
+          }
+        },
+        {
+          "kind": "OBSERVED",
+          "source": "node poc/workload/src/cli.js --eval \"{\\\"serviceName\\\":\\\"auth-svc\\\",\\\"environment\\\":\\\"production\\\",\\\"changeType\\\":\\\"standard\\\",\\\"securityReviewCompleted\\\":true,\\\"maintenanceWindow\\\":true}\"",
+          "result": "process exited with code 0",
+          "verificationCycle": 1,
+          "details": {
+            "verificationCycle": 1
+          }
+        },
+        {
+          "kind": "OBSERVED",
+          "source": "node -e \"const { execFileSync } = require(\\\"node:child_process\\\"); try { execFileSync(process.execPath, [\\\"poc/workload/src/cli.js\\\", \\\"--eval\\\", \\\"{\\\\\\\"invalid\\\\\\\":true}\\\"], { stdio: \\\"pipe\\\" }); process.exit(1); } catch (err) { if (err.status === 1) { process.exit(0); } process.exit(1); }\"",
+          "result": "process exited with code 0",
+          "verificationCycle": 1,
+          "details": {
+            "verificationCycle": 1
+          }
+        },
+        {
+          "kind": "OBSERVED",
+          "source": "npm run lint",
+          "result": "process exited with code 0",
+          "verificationCycle": 1,
+          "details": {
+            "verificationCycle": 1
+          }
+        },
+        {
+          "kind": "OBSERVED",
+          "source": "npm run docs:generated:check",
+          "result": "process exited with code 0",
+          "verificationCycle": 1,
+          "details": {
+            "verificationCycle": 1
+          }
+        },
+        {
+          "kind": "OBSERVED",
+          "source": "node --test poc/workload/test/evaluator.test.js poc/workload/test/cli.test.js",
+          "result": "process exited with code 0",
+          "verificationCycle": 1,
+          "details": {
+            "verificationCycle": 1
+          }
+        },
+        {
+          "kind": "OBSERVED",
+          "source": "node --test poc/workload/test/evaluator.test.js",
+          "result": "process exited with code 0",
+          "verificationCycle": 1,
+          "details": {
+            "verificationCycle": 1
+          }
+        },
+        {
+          "kind": "OBSERVED",
+          "source": "node -e \"require(\\\"node:fs\\\").accessSync(\\\"poc/reports/poc-20260826-real-execution-technical-audit.md\\\")\"",
+          "result": "process exited with code 0",
+          "verificationCycle": 1,
+          "details": {
+            "verificationCycle": 1
+          }
+        }
+      ],
+      "lastUpdated": "2026-08-26T18:02:52.045Z",
+      "revision": 15,
+      "verificationCycle": 1,
+      "previousPhase": "REVIEWING"
+    },
+    "repository": {
+      "branch": "main",
+      "head": "1eb8088716e279faa746b11e3077de1fef570b69"
+    },
+    "error": null,
+    "contract": {
+      "path": null,
+      "status": "NOT_VERIFIED"
+    },
+    "evidence": [
+      {
+        "kind": "OBSERVED",
+        "source": "repository fingerprint",
+        "result": "MATCH"
+      },
+      {
+        "kind": "NOT_VERIFIED",
+        "source": "current contract",
+        "result": "NOT_VERIFIED"
+      }
+    ],
+    "phase": "COMPLETE",
+    "completed": [
+      "contract",
+      "route",
+      "implementation"
+    ],
+    "pending": [
+      "planning",
+      "verification"
+    ]
+  },
+  "recovery": null,
+  "claims": {
+    "state": "RELEASED_BY_COMPLETION",
+    "historical": [
+      "DOCS_INDEX.md",
+      "poc"
+    ],
+    "effective": [],
+    "mutationAllowed": false,
+    "ownershipValid": true,
+    "ownershipErrors": []
+  },
+  "continuity": {
+    "classification": "NOT_APPLICABLE",
+    "taskMatches": true,
+    "workStateMatches": null,
+    "contractMatches": null,
+    "phaseMatches": false,
+    "repositoryComparison": "NOT_VERIFIED",
+    "changedPathComparison": "NOT_VERIFIED",
+    "reasonCodes": [],
+    "reasons": [
+      "CONTINUITY_NOT_APPLICABLE_AFTER_COMPLETE"
+    ],
+    "authority": "OPERATIONAL_CONTEXT_ONLY",
+    "evidenceAuthority": "NONE",
+    "path": ".forgeloop/task-state/747b59b95851208eff7819dec9b4a8233332d0479b17403831539edf859cce61/continuity.json",
+    "present": true,
+    "fingerprint": "391204b042519307f2614750554f6253b0766dcd640bcf1be70dff050ded43d4",
+    "continuity": {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "taskId": "poc-real-protocol-execution-20260826",
+      "workStateFingerprint": "72b6be57af70d6f02e996ebccd4da4d8e86fe8b225d6ba5afb717af2f73a43bf",
+      "contractFingerprint": "bd4d60b1642afcdaf3b628506ac98e63d14d929c3461aab4aa3f41d60aa297d9",
+      "phase": "VERIFYING",
+      "verificationCycle": 1,
+      "repositoryFingerprint": {
+        "branch": "main",
+        "head": "1eb8088716e279faa746b11e3077de1fef570b69"
+      },
+      "updatedAt": "2026-08-26T18:02:18.096Z",
+      "currentFocus": {
+        "id": "poc-verification",
+        "summary": "Verify PoC workload implementation and technical audit evidence"
+      },
+      "remainingWork": [],
+      "knownIssues": [],
+      "changedAreas": [
+        "poc",
+        "DOCS_INDEX.md"
+      ],
+      "inspectFirst": [],
+      "resumeNote": "All verification checks passed with 100% evidence coverage; proceeding to validator-backed completion."
+    },
+    "diagnosticContext": {
+      "present": true,
+      "activeFailureSignatures": [],
+      "activeFailedRequirements": [],
+      "openHypotheses": [],
+      "latestIntervention": null,
+      "nextExperiment": null,
+      "doNotRepeat": []
+    }
+  },
+  "compatibility": {
+    "deprecated": true,
+    "agents": []
+  },
+  "findings": [
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-00aa5c15-edac-41a2-8083-1d6c16df1ddd",
+      "message": "Transaction txn-00aa5c15-edac-41a2-8083-1d6c16df1ddd is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-00aa5c15-edac-41a2-8083-1d6c16df1ddd",
+        "result": "Transaction txn-00aa5c15-edac-41a2-8083-1d6c16df1ddd is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-01ab36e2-1c18-4486-9641-5659385cf141",
+      "message": "Transaction txn-01ab36e2-1c18-4486-9641-5659385cf141 is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-01ab36e2-1c18-4486-9641-5659385cf141",
+        "result": "Transaction txn-01ab36e2-1c18-4486-9641-5659385cf141 is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-06ca98a3-2912-4e3c-98b6-3266b49b212f",
+      "message": "Transaction txn-06ca98a3-2912-4e3c-98b6-3266b49b212f is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-06ca98a3-2912-4e3c-98b6-3266b49b212f",
+        "result": "Transaction txn-06ca98a3-2912-4e3c-98b6-3266b49b212f is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-094e037e-a23b-4092-b8a3-ad88031c875e",
+      "message": "Transaction txn-094e037e-a23b-4092-b8a3-ad88031c875e is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-094e037e-a23b-4092-b8a3-ad88031c875e",
+        "result": "Transaction txn-094e037e-a23b-4092-b8a3-ad88031c875e is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-0de45ad3-8fb0-4bed-a52b-7f6b5415766b",
+      "message": "Transaction txn-0de45ad3-8fb0-4bed-a52b-7f6b5415766b is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-0de45ad3-8fb0-4bed-a52b-7f6b5415766b",
+        "result": "Transaction txn-0de45ad3-8fb0-4bed-a52b-7f6b5415766b is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-0e6dc8a6-4d2c-460e-a67c-accb4ff6d129",
+      "message": "Transaction txn-0e6dc8a6-4d2c-460e-a67c-accb4ff6d129 is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-0e6dc8a6-4d2c-460e-a67c-accb4ff6d129",
+        "result": "Transaction txn-0e6dc8a6-4d2c-460e-a67c-accb4ff6d129 is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-0ee06cda-85af-409d-80da-a4151d7a4237",
+      "message": "Transaction txn-0ee06cda-85af-409d-80da-a4151d7a4237 is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-0ee06cda-85af-409d-80da-a4151d7a4237",
+        "result": "Transaction txn-0ee06cda-85af-409d-80da-a4151d7a4237 is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-1aeff669-52b8-4680-9f76-e503a36148b9",
+      "message": "Transaction txn-1aeff669-52b8-4680-9f76-e503a36148b9 is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-1aeff669-52b8-4680-9f76-e503a36148b9",
+        "result": "Transaction txn-1aeff669-52b8-4680-9f76-e503a36148b9 is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-23108d1c-6595-4d4b-89ce-5588c4d3d2c7",
+      "message": "Transaction txn-23108d1c-6595-4d4b-89ce-5588c4d3d2c7 is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-23108d1c-6595-4d4b-89ce-5588c4d3d2c7",
+        "result": "Transaction txn-23108d1c-6595-4d4b-89ce-5588c4d3d2c7 is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-29c57112-0130-486c-8290-f08b12e02b66",
+      "message": "Transaction txn-29c57112-0130-486c-8290-f08b12e02b66 is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-29c57112-0130-486c-8290-f08b12e02b66",
+        "result": "Transaction txn-29c57112-0130-486c-8290-f08b12e02b66 is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-2d656111-789e-43f0-a13c-8bdc0e947ec4",
+      "message": "Transaction txn-2d656111-789e-43f0-a13c-8bdc0e947ec4 is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-2d656111-789e-43f0-a13c-8bdc0e947ec4",
+        "result": "Transaction txn-2d656111-789e-43f0-a13c-8bdc0e947ec4 is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-2f114eef-7426-488a-815a-397fc21da8ba",
+      "message": "Transaction txn-2f114eef-7426-488a-815a-397fc21da8ba is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-2f114eef-7426-488a-815a-397fc21da8ba",
+        "result": "Transaction txn-2f114eef-7426-488a-815a-397fc21da8ba is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-339a81c8-b6c4-49ca-8e80-5b9ada624844",
+      "message": "Transaction txn-339a81c8-b6c4-49ca-8e80-5b9ada624844 is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-339a81c8-b6c4-49ca-8e80-5b9ada624844",
+        "result": "Transaction txn-339a81c8-b6c4-49ca-8e80-5b9ada624844 is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-3d5051ec-2432-4e30-aeed-b59d82acac6d",
+      "message": "Transaction txn-3d5051ec-2432-4e30-aeed-b59d82acac6d is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-3d5051ec-2432-4e30-aeed-b59d82acac6d",
+        "result": "Transaction txn-3d5051ec-2432-4e30-aeed-b59d82acac6d is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-42871b36-6e4c-4858-8796-52920342c7a8",
+      "message": "Transaction txn-42871b36-6e4c-4858-8796-52920342c7a8 is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-42871b36-6e4c-4858-8796-52920342c7a8",
+        "result": "Transaction txn-42871b36-6e4c-4858-8796-52920342c7a8 is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-4644e203-3a6a-4c6b-9e56-4941941b9191",
+      "message": "Transaction txn-4644e203-3a6a-4c6b-9e56-4941941b9191 is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-4644e203-3a6a-4c6b-9e56-4941941b9191",
+        "result": "Transaction txn-4644e203-3a6a-4c6b-9e56-4941941b9191 is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-4ac25ade-2bd6-4391-ab49-b5da39e085f8",
+      "message": "Transaction txn-4ac25ade-2bd6-4391-ab49-b5da39e085f8 is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-4ac25ade-2bd6-4391-ab49-b5da39e085f8",
+        "result": "Transaction txn-4ac25ade-2bd6-4391-ab49-b5da39e085f8 is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-4c5cd727-73e8-4ef4-b5ae-e20938422f1e",
+      "message": "Transaction txn-4c5cd727-73e8-4ef4-b5ae-e20938422f1e is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-4c5cd727-73e8-4ef4-b5ae-e20938422f1e",
+        "result": "Transaction txn-4c5cd727-73e8-4ef4-b5ae-e20938422f1e is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-570c9923-8e3c-424a-b30e-c7732dbf4e48",
+      "message": "Transaction txn-570c9923-8e3c-424a-b30e-c7732dbf4e48 is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-570c9923-8e3c-424a-b30e-c7732dbf4e48",
+        "result": "Transaction txn-570c9923-8e3c-424a-b30e-c7732dbf4e48 is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-588d7ed5-21e3-4033-94ea-105b2503f26f",
+      "message": "Transaction txn-588d7ed5-21e3-4033-94ea-105b2503f26f is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-588d7ed5-21e3-4033-94ea-105b2503f26f",
+        "result": "Transaction txn-588d7ed5-21e3-4033-94ea-105b2503f26f is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-597c272e-55ef-42da-83dd-c71f2de5c46f",
+      "message": "Transaction txn-597c272e-55ef-42da-83dd-c71f2de5c46f is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-597c272e-55ef-42da-83dd-c71f2de5c46f",
+        "result": "Transaction txn-597c272e-55ef-42da-83dd-c71f2de5c46f is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-5fd11af0-64f1-418c-ade9-de95c1213da8",
+      "message": "Transaction txn-5fd11af0-64f1-418c-ade9-de95c1213da8 is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-5fd11af0-64f1-418c-ade9-de95c1213da8",
+        "result": "Transaction txn-5fd11af0-64f1-418c-ade9-de95c1213da8 is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-61310c73-79a2-4255-b08c-87f263db73ac",
+      "message": "Transaction txn-61310c73-79a2-4255-b08c-87f263db73ac is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-61310c73-79a2-4255-b08c-87f263db73ac",
+        "result": "Transaction txn-61310c73-79a2-4255-b08c-87f263db73ac is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-633a5f25-3004-4293-885e-132d368c645f",
+      "message": "Transaction txn-633a5f25-3004-4293-885e-132d368c645f is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-633a5f25-3004-4293-885e-132d368c645f",
+        "result": "Transaction txn-633a5f25-3004-4293-885e-132d368c645f is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-74a173c6-7c0e-4b54-bc33-fdb37f17aa1d",
+      "message": "Transaction txn-74a173c6-7c0e-4b54-bc33-fdb37f17aa1d is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-74a173c6-7c0e-4b54-bc33-fdb37f17aa1d",
+        "result": "Transaction txn-74a173c6-7c0e-4b54-bc33-fdb37f17aa1d is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-77325797-25ef-46f2-a4c9-09c7cac5a113",
+      "message": "Transaction txn-77325797-25ef-46f2-a4c9-09c7cac5a113 is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-77325797-25ef-46f2-a4c9-09c7cac5a113",
+        "result": "Transaction txn-77325797-25ef-46f2-a4c9-09c7cac5a113 is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-7f9fccc6-9c4d-4bf3-8a67-6fe3e00c3eb6",
+      "message": "Transaction txn-7f9fccc6-9c4d-4bf3-8a67-6fe3e00c3eb6 is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-7f9fccc6-9c4d-4bf3-8a67-6fe3e00c3eb6",
+        "result": "Transaction txn-7f9fccc6-9c4d-4bf3-8a67-6fe3e00c3eb6 is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-80183d37-2614-49da-9b12-702d5842ea6a",
+      "message": "Transaction txn-80183d37-2614-49da-9b12-702d5842ea6a is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-80183d37-2614-49da-9b12-702d5842ea6a",
+        "result": "Transaction txn-80183d37-2614-49da-9b12-702d5842ea6a is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-80b0b138-3f38-4158-a139-58654d2e1d82",
+      "message": "Transaction txn-80b0b138-3f38-4158-a139-58654d2e1d82 is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-80b0b138-3f38-4158-a139-58654d2e1d82",
+        "result": "Transaction txn-80b0b138-3f38-4158-a139-58654d2e1d82 is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-8881147b-45ab-4542-9346-bbbc47dda5db",
+      "message": "Transaction txn-8881147b-45ab-4542-9346-bbbc47dda5db is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-8881147b-45ab-4542-9346-bbbc47dda5db",
+        "result": "Transaction txn-8881147b-45ab-4542-9346-bbbc47dda5db is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-89b00206-241c-4654-be04-3aa29825b66d",
+      "message": "Transaction txn-89b00206-241c-4654-be04-3aa29825b66d is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-89b00206-241c-4654-be04-3aa29825b66d",
+        "result": "Transaction txn-89b00206-241c-4654-be04-3aa29825b66d is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-92939d98-edff-48a8-a77d-074b42455943",
+      "message": "Transaction txn-92939d98-edff-48a8-a77d-074b42455943 is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-92939d98-edff-48a8-a77d-074b42455943",
+        "result": "Transaction txn-92939d98-edff-48a8-a77d-074b42455943 is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-94dad75c-1883-4b63-91e7-51938656b9d6",
+      "message": "Transaction txn-94dad75c-1883-4b63-91e7-51938656b9d6 is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-94dad75c-1883-4b63-91e7-51938656b9d6",
+        "result": "Transaction txn-94dad75c-1883-4b63-91e7-51938656b9d6 is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-9cc83534-374f-4fcf-a048-a07ab19daaa7",
+      "message": "Transaction txn-9cc83534-374f-4fcf-a048-a07ab19daaa7 is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-9cc83534-374f-4fcf-a048-a07ab19daaa7",
+        "result": "Transaction txn-9cc83534-374f-4fcf-a048-a07ab19daaa7 is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-9d7aa56f-27e2-4238-bd23-8c7ff9cd563d",
+      "message": "Transaction txn-9d7aa56f-27e2-4238-bd23-8c7ff9cd563d is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-9d7aa56f-27e2-4238-bd23-8c7ff9cd563d",
+        "result": "Transaction txn-9d7aa56f-27e2-4238-bd23-8c7ff9cd563d is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-adc578a0-454f-4a95-8414-2d7fc2b69c0c",
+      "message": "Transaction txn-adc578a0-454f-4a95-8414-2d7fc2b69c0c is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-adc578a0-454f-4a95-8414-2d7fc2b69c0c",
+        "result": "Transaction txn-adc578a0-454f-4a95-8414-2d7fc2b69c0c is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-b3bce897-3004-4e66-85a8-af389a6ebb0b",
+      "message": "Transaction txn-b3bce897-3004-4e66-85a8-af389a6ebb0b is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-b3bce897-3004-4e66-85a8-af389a6ebb0b",
+        "result": "Transaction txn-b3bce897-3004-4e66-85a8-af389a6ebb0b is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-b82f9973-14aa-45fa-a676-03b954981ea7",
+      "message": "Transaction txn-b82f9973-14aa-45fa-a676-03b954981ea7 is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-b82f9973-14aa-45fa-a676-03b954981ea7",
+        "result": "Transaction txn-b82f9973-14aa-45fa-a676-03b954981ea7 is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-be12cdd5-18fb-4ea9-aefe-8fa3743b6e21",
+      "message": "Transaction txn-be12cdd5-18fb-4ea9-aefe-8fa3743b6e21 is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-be12cdd5-18fb-4ea9-aefe-8fa3743b6e21",
+        "result": "Transaction txn-be12cdd5-18fb-4ea9-aefe-8fa3743b6e21 is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-cc5c335c-6429-40ad-87ba-9ce5838954c5",
+      "message": "Transaction txn-cc5c335c-6429-40ad-87ba-9ce5838954c5 is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-cc5c335c-6429-40ad-87ba-9ce5838954c5",
+        "result": "Transaction txn-cc5c335c-6429-40ad-87ba-9ce5838954c5 is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-d304011a-9028-49f2-862a-fb117b53d621",
+      "message": "Transaction txn-d304011a-9028-49f2-862a-fb117b53d621 is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-d304011a-9028-49f2-862a-fb117b53d621",
+        "result": "Transaction txn-d304011a-9028-49f2-862a-fb117b53d621 is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-d8ed201f-caf2-48a2-8bef-28f21661eae5",
+      "message": "Transaction txn-d8ed201f-caf2-48a2-8bef-28f21661eae5 is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-d8ed201f-caf2-48a2-8bef-28f21661eae5",
+        "result": "Transaction txn-d8ed201f-caf2-48a2-8bef-28f21661eae5 is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-d8ee472a-53a6-4fcd-a63a-535e938cf03c",
+      "message": "Transaction txn-d8ee472a-53a6-4fcd-a63a-535e938cf03c is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-d8ee472a-53a6-4fcd-a63a-535e938cf03c",
+        "result": "Transaction txn-d8ee472a-53a6-4fcd-a63a-535e938cf03c is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-e1e02dc0-bc17-4f03-a2ba-09897baa6a37",
+      "message": "Transaction txn-e1e02dc0-bc17-4f03-a2ba-09897baa6a37 is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-e1e02dc0-bc17-4f03-a2ba-09897baa6a37",
+        "result": "Transaction txn-e1e02dc0-bc17-4f03-a2ba-09897baa6a37 is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-e25bc66e-9248-4a12-a2f8-3f1d66f66c33",
+      "message": "Transaction txn-e25bc66e-9248-4a12-a2f8-3f1d66f66c33 is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-e25bc66e-9248-4a12-a2f8-3f1d66f66c33",
+        "result": "Transaction txn-e25bc66e-9248-4a12-a2f8-3f1d66f66c33 is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-e37240ec-5373-4951-bfe2-2ff8bdd2709c",
+      "message": "Transaction txn-e37240ec-5373-4951-bfe2-2ff8bdd2709c is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-e37240ec-5373-4951-bfe2-2ff8bdd2709c",
+        "result": "Transaction txn-e37240ec-5373-4951-bfe2-2ff8bdd2709c is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_TRANSACTION_INCOMPLETE",
+      "severity": "error",
+      "path": ".forgeloop/.txn/txn-f91f9537-de6b-4ca0-b027-3de739989c52",
+      "message": "Transaction txn-f91f9537-de6b-4ca0-b027-3de739989c52 is ABANDONED and requires inspection or deterministic recovery.",
+      "remediation": "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.forgeloop/.txn/txn-f91f9537-de6b-4ca0-b027-3de739989c52",
+        "result": "Transaction txn-f91f9537-de6b-4ca0-b027-3de739989c52 is ABANDONED and requires inspection or deterministic recovery."
+      }
+    },
+    {
+      "code": "E_NATIVE_ADAPTER_STALE",
+      "severity": "error",
+      "path": "AGENTS.md",
+      "message": "Managed native adapter does not resolve its ForgeLoop references to the hidden kit.",
+      "remediation": "Run forgeloop update or merge the hidden-kit references into this adapter.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:AGENTS.md",
+        "result": "Managed native adapter does not resolve its ForgeLoop references to the hidden kit."
+      }
+    },
+    {
+      "code": "E_NATIVE_ADAPTER_STALE",
+      "severity": "error",
+      "path": "CLAUDE.md",
+      "message": "Managed native adapter does not resolve its ForgeLoop references to the hidden kit.",
+      "remediation": "Run forgeloop update or merge the hidden-kit references into this adapter.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:CLAUDE.md",
+        "result": "Managed native adapter does not resolve its ForgeLoop references to the hidden kit."
+      }
+    },
+    {
+      "code": "E_NATIVE_ADAPTER_STALE",
+      "severity": "error",
+      "path": ".cursor/rules/project-loop.mdc",
+      "message": "Managed native adapter does not resolve its ForgeLoop references to the hidden kit.",
+      "remediation": "Run forgeloop update or merge the hidden-kit references into this adapter.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.cursor/rules/project-loop.mdc",
+        "result": "Managed native adapter does not resolve its ForgeLoop references to the hidden kit."
+      }
+    },
+    {
+      "code": "E_NATIVE_ADAPTER_STALE",
+      "severity": "error",
+      "path": ".github/copilot-instructions.md",
+      "message": "Managed native adapter does not resolve its ForgeLoop references to the hidden kit.",
+      "remediation": "Run forgeloop update or merge the hidden-kit references into this adapter.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:.github/copilot-instructions.md",
+        "result": "Managed native adapter does not resolve its ForgeLoop references to the hidden kit."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "LOOP_ENGINEERING.md",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:LOOP_ENGINEERING.md",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "GUIDE_ROUTER.md",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:GUIDE_ROUTER.md",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_DUPLICATE_PROFILE_SOURCE",
+      "severity": "error",
+      "path": "PROJECT_PROFILE.md",
+      "message": "Both legacy root and hidden-kit project profiles exist; keep only the hidden profile as canonical.",
+      "remediation": "Remove the legacy root profile after verifying its bytes are represented in .forgeloop/kit/PROJECT_PROFILE.md.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:PROJECT_PROFILE.md",
+        "result": "Both legacy root and hidden-kit project profiles exist; keep only the hidden profile as canonical."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "PROJECT_PROFILE.md",
+      "message": "A legacy project profile remains alongside the hidden canonical profile.",
+      "remediation": "Run forgeloop update, then remove the root profile only after verifying ownership and preserved bytes.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:PROJECT_PROFILE.md",
+        "result": "A legacy project profile remains alongside the hidden canonical profile."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "LOOP_SYSTEM_DESIGN.md",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:LOOP_SYSTEM_DESIGN.md",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "QUALITY_SCORECARD.md",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:QUALITY_SCORECARD.md",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "TERMINOLOGY.md",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:TERMINOLOGY.md",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "EXECUTION_STATE.md",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:EXECUTION_STATE.md",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "DELEGATION_PROTOCOL.md",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:DELEGATION_PROTOCOL.md",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "ORCHESTRATOR_INTEGRATION.md",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:ORCHESTRATOR_INTEGRATION.md",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "THREAT_MODEL.md",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:THREAT_MODEL.md",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "CONTRACT_COVERAGE.md",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:CONTRACT_COVERAGE.md",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "PROTOCOL_INTEGRATION.md",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:PROTOCOL_INTEGRATION.md",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "AGENT_COMPATIBILITY.md",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:AGENT_COMPATIBILITY.md",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "THIRD_PARTY_NOTICES.md",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:THIRD_PARTY_NOTICES.md",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "LICENSE",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:LICENSE",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "LICENSE-DOCS.md",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:LICENSE-DOCS.md",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "ENG/premium-sites-studio-eng.md",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:ENG/premium-sites-studio-eng.md",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "ENG/clean-code-eng.md",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:ENG/clean-code-eng.md",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "ENG/test-code-eng.md",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:ENG/test-code-eng.md",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "ENG/sec-code-eng.md",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:ENG/sec-code-eng.md",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "ENG/design-code-eng.md",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:ENG/design-code-eng.md",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "ENG/taste-frontend-eng.md",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:ENG/taste-frontend-eng.md",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "ENG/perf-code-eng.md",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:ENG/perf-code-eng.md",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "ENG/accessibility-eng.md",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:ENG/accessibility-eng.md",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "ENG/games-code-design-web-eng.md",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:ENG/games-code-design-web-eng.md",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "ENG/documentation-quality-eng.md",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:ENG/documentation-quality-eng.md",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/routing-input.schema.json",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/routing-input.schema.json",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/routing-result.schema.json",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/routing-result.schema.json",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/work-state.schema.json",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/work-state.schema.json",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/continuity.schema.json",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/continuity.schema.json",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/execution-receipt.schema.json",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/execution-receipt.schema.json",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/task-brief.schema.json",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/task-brief.schema.json",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/delegated-result.schema.json",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/delegated-result.schema.json",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/evidence.schema.json",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/evidence.schema.json",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/current-contract.schema.json",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/current-contract.schema.json",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/gate.schema.json",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/gate.schema.json",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/source-registry.schema.json",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/source-registry.schema.json",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/config.schema.json",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/config.schema.json",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/preflight.schema.json",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/preflight.schema.json",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/check.schema.json",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/check.schema.json",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/execution.schema.json",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/execution.schema.json",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/evidence-coverage.schema.json",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/evidence-coverage.schema.json",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/event.schema.json",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/event.schema.json",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/activation.schema.json",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/activation.schema.json",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/policy.schema.json",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/policy.schema.json",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/policy-rules.schema.json",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/policy-rules.schema.json",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/policy-discovery.schema.json",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/policy-discovery.schema.json",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/policy-baseline.schema.json",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/policy-baseline.schema.json",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/policy-lock.schema.json",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/policy-lock.schema.json",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/policy-snapshot.schema.json",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/policy-snapshot.schema.json",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/task-bundle.schema.json",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/task-bundle.schema.json",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/authority.schema.json",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/authority.schema.json",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/task-descriptor.schema.json",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/task-descriptor.schema.json",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/task-recovery.schema.json",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/task-recovery.schema.json",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/diagnostic-case.schema.json",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/diagnostic-case.schema.json",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/intervention.schema.json",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/intervention.schema.json",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/hypothesis-disposition.schema.json",
+      "message": "A legacy root copy remains without an ownership proof; it was preserved.",
+      "remediation": "Run forgeloop update; modified or unowned legacy files require manual review and are never deleted silently.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/hypothesis-disposition.schema.json",
+        "result": "A legacy root copy remains without an ownership proof; it was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/action.schema.json",
+      "message": "Canonical file remains in the legacy root layout; migration is incomplete and the legacy copy was preserved.",
+      "remediation": "Run forgeloop update; it removes the root copy only when the recorded ownership hash still matches.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/action.schema.json",
+        "result": "Canonical file remains in the legacy root layout; migration is incomplete and the legacy copy was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/approval.schema.json",
+      "message": "Canonical file remains in the legacy root layout; migration is incomplete and the legacy copy was preserved.",
+      "remediation": "Run forgeloop update; it removes the root copy only when the recorded ownership hash still matches.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/approval.schema.json",
+        "result": "Canonical file remains in the legacy root layout; migration is incomplete and the legacy copy was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/capability-policy.schema.json",
+      "message": "Canonical file remains in the legacy root layout; migration is incomplete and the legacy copy was preserved.",
+      "remediation": "Run forgeloop update; it removes the root copy only when the recorded ownership hash still matches.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/capability-policy.schema.json",
+        "result": "Canonical file remains in the legacy root layout; migration is incomplete and the legacy copy was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/trajectory-evaluation.schema.json",
+      "message": "Canonical file remains in the legacy root layout; migration is incomplete and the legacy copy was preserved.",
+      "remediation": "Run forgeloop update; it removes the root copy only when the recorded ownership hash still matches.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/trajectory-evaluation.schema.json",
+        "result": "Canonical file remains in the legacy root layout; migration is incomplete and the legacy copy was preserved."
+      }
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "severity": "error",
+      "path": "schemas/trajectory-scenario.schema.json",
+      "message": "Canonical file remains in the legacy root layout; migration is incomplete and the legacy copy was preserved.",
+      "remediation": "Run forgeloop update; it removes the root copy only when the recorded ownership hash still matches.",
+      "evidence": {
+        "kind": "OBSERVED",
+        "source": "ForgeLoop doctor:schemas/trajectory-scenario.schema.json",
+        "result": "Canonical file remains in the legacy root layout; migration is incomplete and the legacy copy was preserved."
+      }
+    },
+    {
+      "code": "schema-missing",
+      "severity": "error",
+      "path": ".forgeloop/kit/schemas/action.schema.json",
+      "message": "ENOENT: no such file or directory, open '/Users/cassio/Documents/github/forgeloop/.forgeloop/kit/schemas/action.schema.json'",
+      "remediation": "Restore the shipped schema and rerun inspect.",
+      "evidence": {
+        "kind": "NOT_VERIFIED",
+        "source": ".forgeloop/kit/schemas/action.schema.json",
+        "result": "missing"
+      }
+    },
+    {
+      "code": "schema-missing",
+      "severity": "error",
+      "path": ".forgeloop/kit/schemas/approval.schema.json",
+      "message": "ENOENT: no such file or directory, open '/Users/cassio/Documents/github/forgeloop/.forgeloop/kit/schemas/approval.schema.json'",
+      "remediation": "Restore the shipped schema and rerun inspect.",
+      "evidence": {
+        "kind": "NOT_VERIFIED",
+        "source": ".forgeloop/kit/schemas/approval.schema.json",
+        "result": "missing"
+      }
+    },
+    {
+      "code": "schema-missing",
+      "severity": "error",
+      "path": ".forgeloop/kit/schemas/capability-policy.schema.json",
+      "message": "ENOENT: no such file or directory, open '/Users/cassio/Documents/github/forgeloop/.forgeloop/kit/schemas/capability-policy.schema.json'",
+      "remediation": "Restore the shipped schema and rerun inspect.",
+      "evidence": {
+        "kind": "NOT_VERIFIED",
+        "source": ".forgeloop/kit/schemas/capability-policy.schema.json",
+        "result": "missing"
+      }
+    },
+    {
+      "code": "schema-missing",
+      "severity": "error",
+      "path": ".forgeloop/kit/schemas/trajectory-evaluation.schema.json",
+      "message": "ENOENT: no such file or directory, open '/Users/cassio/Documents/github/forgeloop/.forgeloop/kit/schemas/trajectory-evaluation.schema.json'",
+      "remediation": "Restore the shipped schema and rerun inspect.",
+      "evidence": {
+        "kind": "NOT_VERIFIED",
+        "source": ".forgeloop/kit/schemas/trajectory-evaluation.schema.json",
+        "result": "missing"
+      }
+    },
+    {
+      "code": "schema-missing",
+      "severity": "error",
+      "path": ".forgeloop/kit/schemas/trajectory-scenario.schema.json",
+      "message": "ENOENT: no such file or directory, open '/Users/cassio/Documents/github/forgeloop/.forgeloop/kit/schemas/trajectory-scenario.schema.json'",
+      "remediation": "Restore the shipped schema and rerun inspect.",
+      "evidence": {
+        "kind": "NOT_VERIFIED",
+        "source": ".forgeloop/kit/schemas/trajectory-scenario.schema.json",
+        "result": "missing"
+      }
+    }
+  ],
+  "evidence": [
+    {
+      "kind": "OBSERVED",
+      "source": "ForgeLoop doctor",
+      "result": "114 findings; needs attention"
+    },
+    {
+      "kind": "OBSERVED",
+      "source": "repository fingerprint",
+      "result": "MATCH"
+    },
+    {
+      "kind": "NOT_VERIFIED",
+      "source": "current contract",
+      "result": "NOT_VERIFIED"
+    },
+    {
+      "kind": "NOT_VERIFIED",
+      "source": "shipped target schemas",
+      "result": "missing"
+    }
+  ],
+  "taskInspection": {
+    "task": "poc-real-protocol-execution-20260826",
+    "snapshot": {
+      "consistent": true,
+      "stateRevision": 15,
+      "ledgerTailSequence": 46
+    },
+    "lifecycle": {
+      "phase": "COMPLETE",
+      "verificationCycle": 1,
+      "transitions": [
+        {
+          "sequence": 4,
+          "at": "2026-08-26T17:56:42.176Z",
+          "type": "CONTRACT_VALIDATED",
+          "details": {},
+          "previous": null
+        },
+        {
+          "sequence": 5,
+          "at": "2026-08-26T17:56:42.200Z",
+          "type": "ROUTE_VALIDATED",
+          "details": {},
+          "previous": null
+        },
+        {
+          "sequence": 12,
+          "at": "2026-08-26T17:58:23.688Z",
+          "type": "PREFLIGHT_READY",
+          "details": {
+            "requiredGates": [
+              "threat-boundary"
+            ],
+            "satisfiedGates": [
+              "threat-boundary"
+            ],
+            "routingFingerprint": "1fa871924061bee6c638f713bbca375d73936ebcade13e2c7ad413a79fd78663"
+          },
+          "previous": null
+        },
+        {
+          "sequence": 16,
+          "at": "2026-08-26T17:58:48.777Z",
+          "type": "EXECUTION_STARTED",
+          "details": {},
+          "previous": null
+        },
+        {
+          "sequence": 18,
+          "at": "2026-08-26T18:00:30.267Z",
+          "type": "VERIFICATION_STARTED",
+          "details": {
+            "verificationCycle": 1
+          },
+          "previous": null
+        },
+        {
+          "sequence": 43,
+          "at": "2026-08-26T18:02:35.693Z",
+          "type": "REVIEW_STARTED",
+          "details": {
+            "verificationCycle": 1
+          },
+          "previous": null
+        },
+        {
+          "sequence": 45,
+          "at": "2026-08-26T18:02:52.080Z",
+          "type": "COMPLETION_VALIDATED",
+          "details": {},
+          "previous": null
+        }
+      ]
+    },
+    "history": {
+      "eventCount": 46,
+      "quality": {
+        "level": "COMPLETE",
+        "reasons": []
+      }
+    },
+    "verification": {
+      "checks": [
+        {
+          "id": "audit-report-verification",
+          "requirement": "Technical audit report provides complete, reproducible, and verifiable evidence trail.",
+          "currentResult": "passed",
+          "attemptCount": 1,
+          "failedAttempts": 0
+        },
+        {
+          "id": "documentation-conformance",
+          "requirement": "npm run docs:generated:check and documentation validation exit 0.",
+          "currentResult": "passed",
+          "attemptCount": 1,
+          "failedAttempts": 0
+        },
+        {
+          "id": "repository-lint",
+          "requirement": "npm run lint exits 0 with zero lint errors.",
+          "currentResult": "passed",
+          "attemptCount": 1,
+          "failedAttempts": 0
+        },
+        {
+          "id": "security-checks",
+          "requirement": "security-validation",
+          "currentResult": "passed",
+          "attemptCount": 1,
+          "failedAttempts": 0
+        },
+        {
+          "id": "test-suite",
+          "requirement": "tests",
+          "currentResult": "passed",
+          "attemptCount": 1,
+          "failedAttempts": 0
+        },
+        {
+          "id": "workload-cli-smoke-invalid",
+          "requirement": "Risk evaluation CLI validates invalid input, emits structured error diagnostics, and exits with non-zero exit code.",
+          "currentResult": "passed",
+          "attemptCount": 1,
+          "failedAttempts": 0
+        },
+        {
+          "id": "workload-cli-smoke-valid",
+          "requirement": "Risk evaluation CLI smoke test executes successfully with valid JSON input and produces score, tier, and decision output.",
+          "currentResult": "passed",
+          "attemptCount": 1,
+          "failedAttempts": 0
+        },
+        {
+          "id": "workload-functional",
+          "requirement": "Workload implementation is functional, deterministic, and fully covered by automated tests.",
+          "currentResult": "passed",
+          "attemptCount": 1,
+          "failedAttempts": 0
+        },
+        {
+          "id": "workload-unit-tests",
+          "requirement": "Automated unit and integration test suite for the deterministic risk evaluation CLI passes with 0 failures via node --test.",
+          "currentResult": "passed",
+          "attemptCount": 1,
+          "failedAttempts": 0
+        }
+      ],
+      "failedRequirements": []
+    },
+    "diagnostics": {
+      "legacyDiagnosisCount": 0,
+      "diagnosticCaseCount": 0,
+      "interventionCount": 0,
+      "dispositionCount": 0,
+      "latestCase": null
+    },
+    "progress": {
+      "status": "ADVANCING",
+      "signals": []
+    },
+    "failureSurfaces": [
+      {
+        "verificationCycle": 1,
+        "surface": [],
+        "size": 0
+      }
+    ],
+    "failureSignatures": [],
+    "integrity": {
+      "valid": true,
+      "errors": []
+    },
+    "audit": {},
+    "completion": {},
+    "issues": [],
+    "explanation": {
+      "result": "COMPLETE",
+      "reasons": [
+        "LEDGER_VALID",
+        "REPOSITORY_STALE",
+        "COMPLETION_VALID",
+        "DIAGNOSTIC_PROGRESS_ADVANCING"
+      ]
+    },
+    "next": {
+      "command": "forgeloop next --task poc-real-protocol-execution-20260826 --json"
+    }
+  },
+  "ok": false
+}

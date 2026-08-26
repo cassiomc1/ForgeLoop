@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "executionId": "exec-b63e1ecc-2ed3-4a32-ac3e-07f2a0878683",
+  "taskId": "poc-real-protocol-execution-20260826",
+  "checkId": "workload-cli-smoke-invalid",
+  "requirement": "Risk evaluation CLI validates invalid input, emits structured error diagnostics, and exits with non-zero exit code.",
+  "verificationCycle": 1,
+  "kind": "COMMAND_EXECUTION",
+  "argv": [
+    "node",
+    "-e",
+    "const { execFileSync } = require(\"node:child_process\"); try { execFileSync(process.execPath, [\"poc/workload/src/cli.js\", \"--eval\", \"{\\\"invalid\\\":true}\"], { stdio: \"pipe\" }); process.exit(1); } catch (err) { if (err.status === 1) { process.exit(0); } process.exit(1); }"
+  ],
+  "cwd": "/Users/cassio/Documents/github/forgeloop",
+  "resolution": {
+    "resolutionMode": "LOCAL_EXECUTABLE",
+    "mayInstall": false,
+    "installer": null,
+    "tool": null
+  },
+  "startedAt": "2026-08-26T18:00:54.915Z",
+  "finishedAt": "2026-08-26T18:00:55.003Z",
+  "status": "passed",
+  "exitCode": 0,
+  "durationMs": 88,
+  "termination": "exit",
+  "signal": null,
+  "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdoutBytes": 0,
+  "stderrBytes": 0,
+  "outputTruncated": false
+}
