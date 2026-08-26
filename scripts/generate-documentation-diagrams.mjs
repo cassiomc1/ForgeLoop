@@ -248,7 +248,6 @@ export async function generateDocumentationDiagrams({ rootDir = repositoryRoot, 
   const manifest = await readDiagramManifest(rootDir);
   const results = [];
   for (const diagram of manifest.diagrams) {
-    if (diagram.type !== "workflow") throw new Error(`Unsupported documentation diagram type: ${diagram.type}`);
     const rendered = await renderDocumentationDiagram({ rootDir, diagram });
     const paths = outputPaths(rootDir, diagram);
     if (check) {
