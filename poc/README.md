@@ -96,10 +96,10 @@ Run the deterministic, zero-dependency evidence verifier:
 npm run poc:evidence:verify
 ```
 
-Or run the automated regression tests:
+Run the verifier regression suite:
 
 ```bash
-node --test poc/test/poc-evidence-publication.test.js
+npm run poc:evidence:test
 ```
 
 ### 3.2 Run the Workload Test Suite

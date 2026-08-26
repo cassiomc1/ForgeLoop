@@ -36,6 +36,12 @@ jobs:
       - name: Test npm CLI
         run: npm test
 
+      - name: Verify ForgeLoop PoC evidence package
+        run: npm run poc:evidence:verify
+
+      - name: Test ForgeLoop PoC evidence verifier
+        run: npm run poc:evidence:test
+
       - name: Enforce dependency policy
         run: npm run dependency:policy
 
