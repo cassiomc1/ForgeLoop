@@ -1,0 +1,65 @@
+{
+  "taskId": "poc-final-verifier-ci-hardening-20260826",
+  "taskKey": "e80ec0fe2c7166be2873291844c6ba619c751535b1c08f3e62b46c0f282ad21c",
+  "directory": ".forgeloop/task-state/e80ec0fe2c7166be2873291844c6ba619c751535b1c08f3e62b46c0f282ad21c",
+  "phase": "COMPLETE",
+  "historicalWriteClaims": [
+    ".github",
+    "package-lock.json",
+    "package.json",
+    "poc",
+    "scripts"
+  ],
+  "effectiveWriteClaims": [],
+  "writeClaims": [],
+  "claimState": "RELEASED_BY_COMPLETION",
+  "mutationAllowed": false,
+  "recovery": null,
+  "recoveryStatus": "NOT_APPLICABLE",
+  "valid": true,
+  "ownershipValid": true,
+  "reasonCodes": [],
+  "errors": [],
+  "ownershipErrors": [],
+  "lock": null,
+  "contract": {
+    "title": null,
+    "taskType": null
+  },
+  "artifacts": {
+    "contract": {
+      "path": ".forgeloop/task-state/e80ec0fe2c7166be2873291844c6ba619c751535b1c08f3e62b46c0f282ad21c/contract.json",
+      "exists": true
+    },
+    "route": {
+      "path": ".forgeloop/task-state/e80ec0fe2c7166be2873291844c6ba619c751535b1c08f3e62b46c0f282ad21c/routing-result.json",
+      "exists": true
+    },
+    "state": {
+      "path": ".forgeloop/task-state/e80ec0fe2c7166be2873291844c6ba619c751535b1c08f3e62b46c0f282ad21c/work-state.json",
+      "exists": true
+    },
+    "preflight": {
+      "path": ".forgeloop/task-state/e80ec0fe2c7166be2873291844c6ba619c751535b1c08f3e62b46c0f282ad21c/preflight.json",
+      "exists": true
+    },
+    "receipt": {
+      "path": ".forgeloop/task-state/e80ec0fe2c7166be2873291844c6ba619c751535b1c08f3e62b46c0f282ad21c/execution-receipt.json",
+      "exists": true
+    },
+    "continuity": {
+      "path": ".forgeloop/task-state/e80ec0fe2c7166be2873291844c6ba619c751535b1c08f3e62b46c0f282ad21c/continuity.json",
+      "exists": true
+    },
+    "events": {
+      "path": ".forgeloop/task-state/e80ec0fe2c7166be2873291844c6ba619c751535b1c08f3e62b46c0f282ad21c/events.ndjson",
+      "exists": true
+    },
+    "recovery": {
+      "path": ".forgeloop/task-state/e80ec0fe2c7166be2873291844c6ba619c751535b1c08f3e62b46c0f282ad21c/recovery.json",
+      "exists": false
+    }
+  },
+  "createdAt": "2026-08-26T19:37:24.597Z",
+  "updatedAt": "2026-08-26T19:38:24.999Z"
+}

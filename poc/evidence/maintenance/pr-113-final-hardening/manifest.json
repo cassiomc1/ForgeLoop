@@ -1,0 +1,317 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "runId": "poc-pr-113-final-hardening",
+  "taskId": "poc-final-verifier-ci-hardening-20260826",
+  "taskKey": "e80ec0fe2c7166be2873291844c6ba619c751535b1c08f3e62b46c0f282ad21c",
+  "scope": "maintenance-execution-evidence",
+  "generatedAt": "2026-08-26T21:52:10.001Z",
+  "executionCompletion": {
+    "status": "VALID",
+    "taskStatus": "COMPLETE",
+    "verificationStatus": "VALID"
+  },
+  "postPublicationAudit": {
+    "status": "STALE",
+    "reasonCodes": [
+      "E_PHASE_ARTIFACT_STALE",
+      "E_RECEIPT_PATH_MISMATCH",
+      "E_STATE_REVALIDATION_REQUIRED",
+      "REPOSITORY_CHANGED"
+    ]
+  },
+  "productionReadiness": {
+    "status": "NOT_VERIFIED",
+    "reason": "Maintenance task evidence validates the tested protocol lifecycle only; production readiness is not verified."
+  },
+  "fileCount": 31,
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "2bd291275536d9f494aaa6e0c98f74ec11a89e8f62287a4a55c4d08792dece05",
+      "sizeBytes": 5805,
+      "classification": "DOCUMENTATION"
+    },
+    {
+      "path": "audit-summary.json",
+      "sha256": "68a454b5f6a87b9bfb6aab15d17c05df0c7c888b6865a3caee276f3e420c2b12",
+      "sizeBytes": 2557,
+      "classification": "PUBLICATION_METADATA"
+    },
+    {
+      "path": "inspection/audit-strict.json",
+      "sha256": "06ea658ee8906b574f62230a90e5896abde711b99cb030d43175662d35d037cc",
+      "sizeBytes": 15412,
+      "classification": "VALIDATION_OUTPUT"
+    },
+    {
+      "path": "inspection/history.json",
+      "sha256": "a03e9d2733b8fa871c6896d6026384dae5fc75fe581a9b9b2a4fb6da0f73f264",
+      "sizeBytes": 30400,
+      "classification": "PUBLICATION_OBSERVATION"
+    },
+    {
+      "path": "inspection/inspect.json",
+      "sha256": "451bcbf330331dd8af944595670a67120eddda9684fe69229cc8e2e2c816081c",
+      "sizeBytes": 104021,
+      "classification": "REDACTED_DERIVATIVE"
+    },
+    {
+      "path": "inspection/progress.json",
+      "sha256": "e2a287a3e0d865a74b9b26d4da17c32ddf3c5d6dccf9e3f1e075d8479291e6bd",
+      "sizeBytes": 150,
+      "classification": "PUBLICATION_OBSERVATION"
+    },
+    {
+      "path": "inspection/protocol-info.json",
+      "sha256": "c13c616d49c8e337e1c10201ff4db7227e7cfa98b4553e9f0ca5c858a9760181",
+      "sizeBytes": 87291,
+      "classification": "PUBLICATION_OBSERVATION"
+    },
+    {
+      "path": "inspection/status.json",
+      "sha256": "9e4a71dd5181dcf89e51222069d44361df94ecfe8745bae6d65fdb4ed97c7566",
+      "sizeBytes": 21298,
+      "classification": "REDACTED_DERIVATIVE"
+    },
+    {
+      "path": "inspection/task-show.json",
+      "sha256": "a3feba8d4e0ce73cab7df13b53c0f914633de0ceb0fd9808da829f1eba9583bc",
+      "sizeBytes": 2182,
+      "classification": "PUBLICATION_OBSERVATION"
+    },
+    {
+      "path": "inspection/trace.json",
+      "sha256": "524823cc54cdaf301e8d4e3ff22fbef0c9e7ffeece55184a7da34e38c695552b",
+      "sizeBytes": 36438,
+      "classification": "PUBLICATION_OBSERVATION"
+    },
+    {
+      "path": "inspection/validate-protocol.json",
+      "sha256": "70d6c695188172616872336bdf189ef5470696db46f2695ae7631cd53b079fa4",
+      "sizeBytes": 804,
+      "classification": "VALIDATION_OUTPUT"
+    },
+    {
+      "path": "inspection/validate-receipt.json",
+      "sha256": "a38b8dc66a193792ed866a9aa0f04d035792414256168e4b0ad04275d14e71ef",
+      "sizeBytes": 12927,
+      "classification": "REDACTED_DERIVATIVE"
+    },
+    {
+      "path": "inspection/validate-state.json",
+      "sha256": "5b527476779577720fe97db9aec7f877c4f14ded477c0409ebb0651199c8c0a5",
+      "sizeBytes": 13601,
+      "classification": "REDACTED_DERIVATIVE"
+    },
+    {
+      "path": "privacy-review.json",
+      "sha256": "e79e3c9f2ea878e10670d10591b2abe67d710067bb5d46db22f13b180c9e5b07",
+      "sizeBytes": 1922,
+      "classification": "PUBLICATION_METADATA"
+    },
+    {
+      "path": "publication.json",
+      "sha256": "1eacb1884e116ed64d3f49df1f1b4a58421e8c569ce316d0c3e94be543d1a2be",
+      "sizeBytes": 915,
+      "classification": "PUBLICATION_METADATA"
+    },
+    {
+      "path": "source/contract.json",
+      "sha256": "75ecfa53138393c877861e4d8f7605ea9df74d2234bd44aec7205716f118fa3e",
+      "sizeBytes": 4241,
+      "classification": "AUTHORITATIVE_PUBLIC_ARTIFACT"
+    },
+    {
+      "path": "source/events.ndjson",
+      "sha256": "64657791c4006d2990538a455425771ce661fd0196c902278dd9149a68a364ac",
+      "sizeBytes": 14620,
+      "classification": "AUTHORITATIVE_PUBLIC_ARTIFACT"
+    },
+    {
+      "path": "source/events.ndjson.index.json",
+      "sha256": "0cf39c0f29d064d6756c79fed5e213cf2062871280334f4d40443ace0153beff",
+      "sizeBytes": 107,
+      "classification": "AUTHORITATIVE_PUBLIC_ARTIFACT"
+    },
+    {
+      "path": "source/execution-receipt.json",
+      "sha256": "d0de203fca968b3bb48855ea65df78be83cfb3c9b45d3e0e4b2106c1aefbf676",
+      "sizeBytes": 13647,
+      "classification": "REDACTED_DERIVATIVE"
+    },
+    {
+      "path": "source/executions/exec-360e38f6-5df2-4d3a-b555-4b290e30313a.json",
+      "sha256": "b104ab7d1d7cc211535cec5a2e5819875ef28e40cd9b230c77afd869d795e9bf",
+      "sizeBytes": 1708,
+      "classification": "REDACTED_DERIVATIVE"
+    },
+    {
+      "path": "source/executions/exec-5b554942-fe12-465e-8201-228be99ac9a0.json",
+      "sha256": "66a888b58c071a116d8d61e633e944671e807b989bd00ea27ddbe4fbfff09f00",
+      "sizeBytes": 1690,
+      "classification": "REDACTED_DERIVATIVE"
+    },
+    {
+      "path": "source/executions/exec-80e1a881-8623-4b24-bd6a-4e5d5892d414.json",
+      "sha256": "c8a68ba0420ba0c5d019e2030948284925610d3d442d17ea6ab94876d4c68e62",
+      "sizeBytes": 1681,
+      "classification": "REDACTED_DERIVATIVE"
+    },
+    {
+      "path": "source/executions/exec-86a53a9c-5fbc-4ce6-a4b3-c129a8951ae1.json",
+      "sha256": "09cf09ae955b048d9ca99d73a1d6fccf3e8688d4e259ddb9c18048aa72d99489",
+      "sizeBytes": 1598,
+      "classification": "REDACTED_DERIVATIVE"
+    },
+    {
+      "path": "source/executions/exec-9801a699-cb67-4a8e-acbd-92a136d04b37.json",
+      "sha256": "4027b608d374e7c657e7a0edbb9e48796955599c56b682f86efe8978b69a5002",
+      "sizeBytes": 1646,
+      "classification": "REDACTED_DERIVATIVE"
+    },
+    {
+      "path": "source/executions/exec-c652b3e3-8026-4300-a036-1e83d6059e16.json",
+      "sha256": "9386b3c16bdfaabe0b22bc8ef05c7ae826c72cb69f1a8fe88043846fab1435ef",
+      "sizeBytes": 1596,
+      "classification": "REDACTED_DERIVATIVE"
+    },
+    {
+      "path": "source/gates/threat-boundary.json",
+      "sha256": "aa3666b0bbd1d6107e93d978645def9fd16cbb5bbc8aa1b40f2a02d2032ab9c6",
+      "sizeBytes": 1226,
+      "classification": "GATE_ATTESTATION"
+    },
+    {
+      "path": "source/policy-snapshot.json",
+      "sha256": "64a90405d3072eb4e9b1d60ecf3e7cb65d1483c27635647bd72f434d8ec7318e",
+      "sizeBytes": 1248,
+      "classification": "AUTHORITATIVE_PUBLIC_ARTIFACT"
+    },
+    {
+      "path": "source/preflight.json",
+      "sha256": "f9097651ac38d10cc52b19706c74ed171b1277cda9afeed6cb536d6b873a73b3",
+      "sizeBytes": 1155,
+      "classification": "AUTHORITATIVE_PUBLIC_ARTIFACT"
+    },
+    {
+      "path": "source/routing-result.json",
+      "sha256": "22c1a976250deb246dfec9dfa2e0631820df19814a208b062d3dbe3cce10e0d4",
+      "sizeBytes": 1087,
+      "classification": "AUTHORITATIVE_PUBLIC_ARTIFACT"
+    },
+    {
+      "path": "source/task.json",
+      "sha256": "d6fe67bf806663fda368209865550f783d9166362b260f3b84b97de5688c987d",
+      "sizeBytes": 381,
+      "classification": "AUTHORITATIVE_PUBLIC_ARTIFACT"
+    },
+    {
+      "path": "source/work-state.json",
+      "sha256": "1ba591e479436442a17d85853a394a28673206d8227a2763ada9fb8f5ee7f7d2",
+      "sizeBytes": 12669,
+      "classification": "REDACTED_DERIVATIVE"
+    }
+  ],
+  "privateOriginalCommitments": [
+    {
+      "publicPath": "inspection/inspect.json",
+      "algorithm": "sha256",
+      "originalSha256": "380d3bff8e548721bfd1247a1b598589722d3c4e3a0a6e96c7e08c9342662b71",
+      "redactedFields": [
+        "target.path",
+        "protocol.schemas[].error (machine-local path substrings)",
+        "state.state.checks[].details.execution.cwd",
+        "findings[].message (machine-local path substrings)"
+      ]
+    },
+    {
+      "publicPath": "inspection/status.json",
+      "algorithm": "sha256",
+      "originalSha256": "221d2ab80764cfe78f58c1443ee38379596f6d1f856f99876e23c2fda1acf285",
+      "redactedFields": [
+        "cwd (nested in execution check details)"
+      ]
+    },
+    {
+      "publicPath": "inspection/validate-receipt.json",
+      "algorithm": "sha256",
+      "originalSha256": "54e5d9361357caadde16a932eb556f34f66dc125b0c16d297b4658520f703936",
+      "redactedFields": [
+        "cwd (nested in checks[].details.execution)"
+      ]
+    },
+    {
+      "publicPath": "inspection/validate-state.json",
+      "algorithm": "sha256",
+      "originalSha256": "9467db90e85a0ba61bf39e0a610424a2774667439aeb1b039946607d7df4821a",
+      "redactedFields": [
+        "cwd (nested in execution check details)"
+      ]
+    },
+    {
+      "publicPath": "source/execution-receipt.json",
+      "algorithm": "sha256",
+      "originalSha256": "54e5d9361357caadde16a932eb556f34f66dc125b0c16d297b4658520f703936",
+      "redactedFields": [
+        "cwd (nested in checks[].details.execution)"
+      ]
+    },
+    {
+      "publicPath": "source/executions/exec-360e38f6-5df2-4d3a-b555-4b290e30313a.json",
+      "algorithm": "sha256",
+      "originalSha256": "35e6ce1362e9abe2cc9e77b9e20c25ed31fa45cdb68cf3eaa2c98c37b27cd902",
+      "redactedFields": [
+        "cwd"
+      ]
+    },
+    {
+      "publicPath": "source/executions/exec-5b554942-fe12-465e-8201-228be99ac9a0.json",
+      "algorithm": "sha256",
+      "originalSha256": "5607caf5333de19fea5dabc05d8602adde7cebd847f9fcef67097ce69c189cd8",
+      "redactedFields": [
+        "cwd"
+      ]
+    },
+    {
+      "publicPath": "source/executions/exec-80e1a881-8623-4b24-bd6a-4e5d5892d414.json",
+      "algorithm": "sha256",
+      "originalSha256": "4102345cac78bb0683b9361411bba4a96dc53dd25c738e2a441389d7787ceea8",
+      "redactedFields": [
+        "cwd"
+      ]
+    },
+    {
+      "publicPath": "source/executions/exec-86a53a9c-5fbc-4ce6-a4b3-c129a8951ae1.json",
+      "algorithm": "sha256",
+      "originalSha256": "adff4fb3f3f9ab380de05426974b625dc3275a5e9d470c5be376fa22bc1e8b2f",
+      "redactedFields": [
+        "cwd"
+      ]
+    },
+    {
+      "publicPath": "source/executions/exec-9801a699-cb67-4a8e-acbd-92a136d04b37.json",
+      "algorithm": "sha256",
+      "originalSha256": "191ab2a426d685c7a9bfed5f1cc50e63edb4783e59a34b688548d9f7d4a0d504",
+      "redactedFields": [
+        "cwd"
+      ]
+    },
+    {
+      "publicPath": "source/executions/exec-c652b3e3-8026-4300-a036-1e83d6059e16.json",
+      "algorithm": "sha256",
+      "originalSha256": "b87a6658311eedfa258d55bb2f16b191be5a0848673f545c59abd5cfe8dc07be",
+      "redactedFields": [
+        "cwd"
+      ]
+    },
+    {
+      "publicPath": "source/work-state.json",
+      "algorithm": "sha256",
+      "originalSha256": "06bc854c3aabe4004e554dfaa4eb729de16a3539b4bcae130e02c1cf9d4867c6",
+      "redactedFields": [
+        "cwd (nested in checks[].details.execution)"
+      ]
+    }
+  ]
+}

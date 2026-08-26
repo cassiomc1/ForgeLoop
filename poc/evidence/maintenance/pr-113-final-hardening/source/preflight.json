@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "taskId": "poc-final-verifier-ci-hardening-20260826",
+  "status": "READY",
+  "profile": {
+    "status": "verified",
+    "mode": "project",
+    "profileStatus": "verified",
+    "fingerprint": "f2c1b76d86b5c0613efbb37988999fddd4eed76a57088f4aa50c4f26b4348901",
+    "provenance": "not-referenced"
+  },
+  "contract": {
+    "status": "valid",
+    "fingerprint": "ad379a18599706173eebe98047c051de4b0012364f9b7f89e711a4d50ea16f74"
+  },
+  "routing": {
+    "status": "valid",
+    "fingerprint": "2cde5e3bd93ee1c6f63c6045e6e81395c8bb1f2f70e0bbd38aa9ddc19db39391",
+    "guides": [
+      "clean",
+      "test",
+      "documentation",
+      "security"
+    ]
+  },
+  "requiredGates": [
+    "threat-boundary"
+  ],
+  "satisfiedGates": [
+    "threat-boundary"
+  ],
+  "errors": [],
+  "fingerprints": {
+    "contract": "ad379a18599706173eebe98047c051de4b0012364f9b7f89e711a4d50ea16f74",
+    "routing": "2cde5e3bd93ee1c6f63c6045e6e81395c8bb1f2f70e0bbd38aa9ddc19db39391",
+    "profile": "f2c1b76d86b5c0613efbb37988999fddd4eed76a57088f4aa50c4f26b4348901"
+  },
+  "sources": {
+    "status": "valid",
+    "fingerprint": null
+  }
+}

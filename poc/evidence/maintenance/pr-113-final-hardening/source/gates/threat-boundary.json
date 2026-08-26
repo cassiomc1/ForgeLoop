@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "taskId": "poc-final-verifier-ci-hardening-20260826",
+  "gate": "threat-boundary",
+  "status": "satisfied",
+  "requiredBy": [
+    "security"
+  ],
+  "artifacts": [
+    {
+      "path": "THREAT_MODEL.md",
+      "sha256": "d0a782f18bce859de43de7863cbd994353760674dbcaa1900a96249477a8164e"
+    },
+    {
+      "path": "package.json",
+      "sha256": "f00fa71b4b9dd436d80a4c2deaaf12d3b50f9bb94744ca36000e0e6de384b0c0"
+    }
+  ],
+  "decisions": [
+    "Evidence verification scripts under scripts/ and tests/ strictly validate relative file paths, reject Unix and Windows directory traversal (.. and ..\\), reject Windows drive-absolute and UNC paths on every host OS, reject non-canonical path separators, use zero-dependency standard Node libraries, and never execute untrusted shell commands."
+  ],
+  "unknowns": [],
+  "approvedAssumptions": [
+    "No external credentials, tokens, network requests, or privileged capabilities are accessed by the evidence verifier or publication metadata."
+  ],
+  "evidence": [
+    {
+      "kind": "OBSERVED",
+      "source": "threat-boundary analysis for final verifier and CI hardening",
+      "timestamp": "2026-08-26T19:40:44.392Z"
+    }
+  ]
+}

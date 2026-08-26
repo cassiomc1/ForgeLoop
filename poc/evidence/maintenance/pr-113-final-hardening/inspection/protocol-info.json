@@ -1,0 +1,2080 @@
+{
+  "packageVersion": "1.6.0",
+  "protocolVersion": 1,
+  "readsProtocol": [
+    1
+  ],
+  "writesProtocol": [
+    1
+  ],
+  "readsSchemaVersions": {
+    "action": [
+      1
+    ],
+    "activation": [
+      1
+    ],
+    "approval": [
+      1
+    ],
+    "capability-policy": [
+      1
+    ],
+    "config": [
+      1
+    ],
+    "continuity": [
+      1
+    ],
+    "current-contract": [
+      1
+    ],
+    "event": [
+      1
+    ],
+    "execution": [
+      1
+    ],
+    "execution-receipt": [
+      1
+    ],
+    "gate": [
+      1
+    ],
+    "policy-baseline": [
+      1
+    ],
+    "policy-discovery": [
+      1
+    ],
+    "policy-lock": [
+      1
+    ],
+    "policy-rules": [
+      1
+    ],
+    "policy-snapshot": [
+      1
+    ],
+    "preflight": [
+      1
+    ],
+    "routing-result": [
+      1
+    ],
+    "source-registry": [
+      1
+    ],
+    "task-descriptor": [
+      1
+    ],
+    "task-recovery": [
+      1
+    ],
+    "trajectory-evaluation": [
+      1
+    ],
+    "work-state": [
+      1
+    ]
+  },
+  "writesSchemaVersions": {
+    "action": [
+      1
+    ],
+    "activation": [
+      1
+    ],
+    "approval": [
+      1
+    ],
+    "capability-policy": [
+      1
+    ],
+    "config": [
+      1
+    ],
+    "continuity": [
+      1
+    ],
+    "current-contract": [
+      1
+    ],
+    "event": [
+      1
+    ],
+    "execution": [
+      1
+    ],
+    "execution-receipt": [
+      1
+    ],
+    "gate": [
+      1
+    ],
+    "policy-baseline": [
+      1
+    ],
+    "policy-discovery": [
+      1
+    ],
+    "policy-lock": [
+      1
+    ],
+    "policy-rules": [
+      1
+    ],
+    "policy-snapshot": [
+      1
+    ],
+    "preflight": [
+      1
+    ],
+    "routing-result": [
+      1
+    ],
+    "source-registry": [
+      1
+    ],
+    "task-descriptor": [
+      1
+    ],
+    "task-recovery": [
+      1
+    ],
+    "trajectory-evaluation": [
+      1
+    ],
+    "work-state": [
+      1
+    ]
+  },
+  "compatibility": {
+    "protocolVersion": 1,
+    "schemaVersion": 1,
+    "read": "Readers reject unknown protocol or schema versions; compatibility changes require a new published version.",
+    "write": "Writers emit only the current schema and protocol versions.",
+    "migration": "Use migrate-protocol --to <version> --dry-run to plan an explicit supported migration. Legacy singleton artifacts are migrated with a receipt-backed task-migrate action."
+  },
+  "features": {
+    "taskClaimRecovery": {
+      "version": 1,
+      "durableRecoveryState": true,
+      "explicitResume": true,
+      "validatedClaimProjection": true
+    },
+    "integrationApi": {
+      "version": 1,
+      "structuredCommandRuntime": true,
+      "canonicalResources": true
+    },
+    "executionHistory": {
+      "version": 1,
+      "supported": true,
+      "schemaVersion": 1
+    },
+    "structuredTrace": {
+      "version": 1,
+      "supported": true,
+      "schemaVersion": 1
+    },
+    "taskInspection": {
+      "version": 1,
+      "supported": true,
+      "schemaVersion": 1
+    },
+    "reflection": {
+      "version": 1,
+      "supported": true,
+      "schemaVersion": 1
+    },
+    "diagnostics": {
+      "legacyDiagnosis": true,
+      "structuredDiagnosticCase": true,
+      "multifactorContributors": true,
+      "hypothesisDisposition": true,
+      "interventionLedger": true,
+      "informationGainV2": true,
+      "strategyOscillationDetection": true
+    },
+    "durableActions": {
+      "version": 1,
+      "supported": true,
+      "states": [
+        "PROPOSED",
+        "AUTHORIZED",
+        "STARTED",
+        "COMMITTED",
+        "VERIFIED",
+        "FAILED",
+        "COMMIT_UNKNOWN",
+        "CANCELLED"
+      ],
+      "reconciliation": true,
+      "exactlyOnce": false
+    },
+    "capabilityPolicy": {
+      "version": 1,
+      "supported": true,
+      "decisions": [
+        "ALLOW",
+        "DENY",
+        "REQUIRE_AUTHORITY",
+        "REQUIRE_APPROVAL"
+      ]
+    },
+    "durableApprovals": {
+      "version": 1,
+      "supported": true,
+      "fingerprintBound": true,
+      "hostAttestationMinting": false
+    },
+    "trajectoryMetrics": {
+      "version": 1,
+      "supported": true,
+      "usageUnknownWhenUnreported": true,
+      "overallScore": false
+    },
+    "trajectoryEvaluation": {
+      "version": 1,
+      "supported": true,
+      "requiresReferenceScenario": true,
+      "source": "PROJECT_LOCAL_REFERENCE"
+    },
+    "observabilityStability": {
+      "executionHistory": "stable",
+      "structuredTrace": "stable",
+      "taskInspection": "stable",
+      "reflection": "stable",
+      "informationGainV2": "stable",
+      "strategyOscillationDetection": "stable"
+    }
+  },
+  "lifecycle": {
+    "phases": [
+      "RECEIVED",
+      "DISCOVERING",
+      "CONTRACT_READY",
+      "ROUTED",
+      "DESIGNING",
+      "PLANNED",
+      "EXECUTING",
+      "VERIFYING",
+      "DIAGNOSING",
+      "CORRECTING",
+      "REVIEWING",
+      "COMPLETE",
+      "BLOCKED"
+    ],
+    "transitions": {
+      "RECEIVED": [
+        "DISCOVERING"
+      ],
+      "DISCOVERING": [
+        "CONTRACT_READY"
+      ],
+      "CONTRACT_READY": [
+        "ROUTED"
+      ],
+      "ROUTED": [
+        "DESIGNING",
+        "PLANNED"
+      ],
+      "DESIGNING": [
+        "PLANNED"
+      ],
+      "PLANNED": [
+        "EXECUTING"
+      ],
+      "EXECUTING": [
+        "VERIFYING"
+      ],
+      "VERIFYING": [
+        "DIAGNOSING",
+        "REVIEWING"
+      ],
+      "DIAGNOSING": [
+        "CORRECTING"
+      ],
+      "CORRECTING": [
+        "VERIFYING"
+      ],
+      "REVIEWING": [
+        "COMPLETE",
+        "CORRECTING",
+        "VERIFYING"
+      ],
+      "COMPLETE": [],
+      "BLOCKED": []
+    }
+  },
+  "guides": [
+    {
+      "id": "premium",
+      "path": "ENG/premium-sites-studio-eng.md",
+      "install": true
+    },
+    {
+      "id": "clean",
+      "path": "ENG/clean-code-eng.md",
+      "install": true
+    },
+    {
+      "id": "test",
+      "path": "ENG/test-code-eng.md",
+      "install": true
+    },
+    {
+      "id": "security",
+      "path": "ENG/sec-code-eng.md",
+      "install": true
+    },
+    {
+      "id": "design",
+      "path": "ENG/design-code-eng.md",
+      "install": true
+    },
+    {
+      "id": "taste",
+      "path": "ENG/taste-frontend-eng.md",
+      "install": true
+    },
+    {
+      "id": "performance",
+      "path": "ENG/perf-code-eng.md",
+      "install": true
+    },
+    {
+      "id": "accessibility",
+      "path": "ENG/accessibility-eng.md",
+      "install": true
+    },
+    {
+      "id": "games",
+      "path": "ENG/games-code-design-web-eng.md",
+      "install": true
+    },
+    {
+      "id": "documentation",
+      "path": "ENG/documentation-quality-eng.md",
+      "install": true
+    }
+  ],
+  "commands": [
+    {
+      "name": "protocol-info",
+      "category": "diagnostics",
+      "mutation": "READ_ONLY",
+      "description": "Reports versioning, lifecycle, command, guide, and public error compatibility metadata for external harnesses."
+    },
+    {
+      "name": "init",
+      "category": "project-maintenance",
+      "mutation": "MUTATING",
+      "description": "Initializes a target project directory with ForgeLoop discovery adapters, schemas, and templates."
+    },
+    {
+      "name": "doctor",
+      "category": "diagnostics",
+      "mutation": "MUTATING",
+      "description": "Diagnoses project health, discovers adapters, and optionally repairs missing template files."
+    },
+    {
+      "name": "update",
+      "category": "project-maintenance",
+      "mutation": "MUTATING",
+      "description": "Updates installed templates, discovery adapters, and canonical engineering guides to the latest version."
+    },
+    {
+      "name": "activate",
+      "category": "lifecycle",
+      "mutation": "MUTATING",
+      "description": "Emits an active session marker recording sessionId and activationMarker."
+    },
+    {
+      "name": "route",
+      "category": "lifecycle",
+      "mutation": "MUTATING",
+      "description": "Evaluates task characteristics and deterministically routes required engineering guides."
+    },
+    {
+      "name": "preflight",
+      "category": "lifecycle",
+      "mutation": "MUTATING",
+      "description": "Evaluates pre-implementation contract, routing, and gates; synchronizes work state when READY."
+    },
+    {
+      "name": "advance",
+      "category": "lifecycle",
+      "mutation": "MUTATING",
+      "description": "Transitions the canonical lifecycle work state to an allowed target phase."
+    },
+    {
+      "name": "next",
+      "category": "lifecycle",
+      "mutation": "READ_ONLY",
+      "description": "Returns deterministic next-action guidance and command recommendations based on active state."
+    },
+    {
+      "name": "continuity",
+      "category": "continuity",
+      "mutation": "READ_ONLY",
+      "description": "Reads and displays current cross-harness continuity handoff notes."
+    },
+    {
+      "name": "record-continuity",
+      "category": "continuity",
+      "mutation": "MUTATING",
+      "description": "Persists cross-harness operational continuity handoff notes bound to current state fingerprints."
+    },
+    {
+      "name": "reconcile-continuity",
+      "category": "continuity",
+      "mutation": "READ_ONLY",
+      "description": "Reconciles continuity handoff notes with active work state and checkout state."
+    },
+    {
+      "name": "clear-continuity",
+      "category": "continuity",
+      "mutation": "MUTATING",
+      "description": "Removes continuity.json for the active task without affecting lifecycle work state."
+    },
+    {
+      "name": "prepare-completion",
+      "category": "verification",
+      "mutation": "MUTATING",
+      "description": "Initializes execution-receipt.json with empty requirement evidence slots for the active cycle."
+    },
+    {
+      "name": "run-check",
+      "category": "verification",
+      "mutation": "EXTERNAL_EXECUTION",
+      "description": "Runs an exact command, records the execution provenance artifact, and binds observed check evidence."
+    },
+    {
+      "name": "run-action",
+      "category": "actions",
+      "mutation": "EXTERNAL_EXECUTION",
+      "description": "Executes one policy-authorized durable action using exact argv and shell:false semantics."
+    },
+    {
+      "name": "action-propose",
+      "category": "actions",
+      "mutation": "MUTATING",
+      "description": "Proposes a caller-reported durable action without executing it."
+    },
+    {
+      "name": "action-record",
+      "category": "actions",
+      "mutation": "MUTATING",
+      "description": "Records a caller-reported or externally observed non-authority action transition."
+    },
+    {
+      "name": "action-show",
+      "category": "actions",
+      "mutation": "READ_ONLY",
+      "description": "Reads one canonical durable action artifact."
+    },
+    {
+      "name": "action-reconcile",
+      "category": "actions",
+      "mutation": "MUTATING",
+      "description": "Reconciles a COMMIT_UNKNOWN action from externally observed evidence without retrying it."
+    },
+    {
+      "name": "action-verify",
+      "category": "actions",
+      "mutation": "MUTATING",
+      "description": "Verifies a COMMITTED action against independent canonical evidence; caller claims can never verify."
+    },
+    {
+      "name": "action-authorize",
+      "category": "actions",
+      "mutation": "MUTATING",
+      "description": "Authorizes one PROPOSED durable action through the canonical capability-policy and approval service."
+    },
+    {
+      "name": "metrics",
+      "category": "diagnostics",
+      "mutation": "READ_ONLY",
+      "description": "Projects trajectory, action, execution, timing, and known usage metrics without mutating state."
+    },
+    {
+      "name": "eval",
+      "category": "diagnostics",
+      "mutation": "MUTATING",
+      "description": "Evaluates the current trajectory against a validated project-local reference scenario."
+    },
+    {
+      "name": "approval-request",
+      "category": "actions",
+      "mutation": "MUTATING",
+      "description": "Creates a durable fingerprint-bound approval request."
+    },
+    {
+      "name": "approval-resolve",
+      "category": "actions",
+      "mutation": "MUTATING",
+      "description": "Resolves one durable approval exactly once."
+    },
+    {
+      "name": "record-check",
+      "category": "verification",
+      "mutation": "MUTATING",
+      "description": "Records structured verification evidence (command, manual review, or test output) against a requirement."
+    },
+    {
+      "name": "record-terminal-result",
+      "category": "verification",
+      "mutation": "MUTATING",
+      "description": "Records external terminal result evidence (PUBLICATION or PRODUCTION_READINESS) into receipt."
+    },
+    {
+      "name": "record-diagnosis",
+      "category": "lifecycle",
+      "mutation": "MUTATING",
+      "description": "Records an append-only diagnosis event or structured diagnostic case in the lifecycle event ledger."
+    },
+    {
+      "name": "record-intervention",
+      "category": "lifecycle",
+      "mutation": "MUTATING",
+      "description": "Records an append-only intervention bound to hypotheses; the described change is never executed by ForgeLoop."
+    },
+    {
+      "name": "record-hypothesis-disposition",
+      "category": "lifecycle",
+      "mutation": "MUTATING",
+      "description": "Records an evidence-bound hypothesis disposition update in the lifecycle event ledger."
+    },
+    {
+      "name": "history",
+      "category": "diagnostics",
+      "mutation": "READ_ONLY",
+      "description": "Shows chronological protocol history reconstructed from canonical ForgeLoop state."
+    },
+    {
+      "name": "trace",
+      "category": "diagnostics",
+      "mutation": "READ_ONLY",
+      "description": "Emits detailed structured task trace with provenance and artifact relationships."
+    },
+    {
+      "name": "reflect",
+      "category": "diagnostics",
+      "mutation": "READ_ONLY",
+      "description": "Analyzes diagnostic and correction history deterministically for information gain, repeated failures, ineffective interventions, and oscillation."
+    },
+    {
+      "name": "progress",
+      "category": "diagnostics",
+      "mutation": "READ_ONLY",
+      "description": "Evaluates task progress across verification cycles and detects stalls deterministically."
+    },
+    {
+      "name": "record-decision-criterion",
+      "category": "lifecycle",
+      "mutation": "MUTATING",
+      "description": "Records an append-only decision settlement criterion bound to the active contract fingerprint."
+    },
+    {
+      "name": "complete",
+      "category": "lifecycle",
+      "mutation": "MUTATING",
+      "description": "Evaluates verification receipt coverage, gates, and ledger integrity to authorize task completion."
+    },
+    {
+      "name": "audit",
+      "category": "verification",
+      "mutation": "READ_ONLY",
+      "description": "Performs read-only evaluation of verification receipt coverage and gate satisfaction."
+    },
+    {
+      "name": "report",
+      "category": "verification",
+      "mutation": "READ_ONLY",
+      "description": "Emits a human-readable or structured JSON summary report of protocol state."
+    },
+    {
+      "name": "policy",
+      "category": "policy-audit",
+      "mutation": "READ_ONLY",
+      "description": "Evaluates active task state against named enterprise policy packs."
+    },
+    {
+      "name": "policy-discover",
+      "category": "policy-audit",
+      "mutation": "MUTATING",
+      "description": "Discovers repository policy facts and candidate rules deterministically."
+    },
+    {
+      "name": "policy-status",
+      "category": "policy-audit",
+      "mutation": "READ_ONLY",
+      "description": "Evaluates repository and task state against effective policy rules and baseline."
+    },
+    {
+      "name": "policy-diff",
+      "category": "policy-audit",
+      "mutation": "READ_ONLY",
+      "description": "Performs semantic diffing between policy versions to detect tightening or weakening."
+    },
+    {
+      "name": "rule-verify",
+      "category": "policy-audit",
+      "mutation": "READ_ONLY",
+      "description": "Verifies policy rules against mutation fixtures to prove detector efficacy."
+    },
+    {
+      "name": "baseline",
+      "category": "policy-audit",
+      "mutation": "MUTATING",
+      "description": "Manages brownfield policy baseline violations with monotonic downward ratcheting."
+    },
+    {
+      "name": "profile-interview",
+      "category": "diagnostics",
+      "mutation": "READ_ONLY",
+      "description": "Optional interactive or dry-run interview to refine project profile facts."
+    },
+    {
+      "name": "bundle",
+      "category": "policy-audit",
+      "mutation": "MUTATING",
+      "description": "Exports current task artifacts into a portable task bundle archive."
+    },
+    {
+      "name": "inspect",
+      "category": "diagnostics",
+      "mutation": "READ_ONLY",
+      "description": "Inspects target repository health, dirty files, active branch, and artifact freshness."
+    },
+    {
+      "name": "status",
+      "category": "diagnostics",
+      "mutation": "READ_ONLY",
+      "description": "Displays current lifecycle phase, active checks, blockers, and artifact freshness bindings."
+    },
+    {
+      "name": "validate-state",
+      "category": "diagnostics",
+      "mutation": "READ_ONLY",
+      "description": "Validates schema adherence and internal consistency of work-state.json."
+    },
+    {
+      "name": "clear-state",
+      "category": "lifecycle",
+      "mutation": "MUTATING",
+      "description": "Removes work-state.json for the active task only, preserving sibling contract, routing, and ledger files."
+    },
+    {
+      "name": "reconcile-closure",
+      "category": "lifecycle",
+      "mutation": "MUTATING",
+      "description": "Refreshes the work-state checkpoint of an EXECUTING task whose objective is already satisfied in the current repository, after contract-bound executed evidence, so canonical completion can proceed."
+    },
+    {
+      "name": "validate-receipt",
+      "category": "verification",
+      "mutation": "READ_ONLY",
+      "description": "Validates schema conformance and cryptographic bounds of an execution receipt file."
+    },
+    {
+      "name": "validate-protocol",
+      "category": "diagnostics",
+      "mutation": "READ_ONLY",
+      "description": "Validates end-to-end cryptographic freshness, fingerprint bindings, and ledger integrity."
+    },
+    {
+      "name": "task-create",
+      "category": "lifecycle",
+      "mutation": "MUTATING",
+      "description": "Creates a new task descriptor and initializes its isolated task state namespace."
+    },
+    {
+      "name": "task-list",
+      "category": "lifecycle",
+      "mutation": "READ_ONLY",
+      "description": "Lists all discovered task descriptors and their current lifecycle phases."
+    },
+    {
+      "name": "task-show",
+      "category": "lifecycle",
+      "mutation": "READ_ONLY",
+      "description": "Shows details of a specific task descriptor and its scoped artifacts."
+    },
+    {
+      "name": "task-lock-status",
+      "category": "lifecycle",
+      "mutation": "READ_ONLY",
+      "description": "Reports a task lock record and its lease-based stale-lock classification."
+    },
+    {
+      "name": "task-scope",
+      "category": "lifecycle",
+      "mutation": "MUTATING",
+      "description": "Updates or inspects write claims for a task before execution."
+    },
+    {
+      "name": "task-migrate",
+      "category": "project-maintenance",
+      "mutation": "MUTATING",
+      "description": "Migrates a legacy 1.0 singleton task state layout into a task-namespaced layout."
+    },
+    {
+      "name": "migrate-protocol",
+      "category": "project-maintenance",
+      "mutation": "MUTATING",
+      "description": "Safely migrates explicitly supported protocol state; unknown target versions fail without rewriting artifacts."
+    },
+    {
+      "name": "task-unlock",
+      "category": "project-maintenance",
+      "mutation": "MUTATING",
+      "description": "Removes an orphaned task lock file to recover an interrupted task."
+    },
+    {
+      "name": "task-recover",
+      "category": "project-maintenance",
+      "mutation": "MUTATING",
+      "description": "Caller-acknowledged recovery of a STALE or ABANDONED task; records durable state and releases effective write claims."
+    },
+    {
+      "name": "task-repair-legacy-recovery",
+      "category": "project-maintenance",
+      "mutation": "MUTATING",
+      "description": "Migrates one recognized legacy OPERATOR_RECOVERY_RECORDED boundary event into the modern durable recovery representation (append-only; original event unchanged)."
+    },
+    {
+      "name": "task-resume",
+      "category": "project-maintenance",
+      "mutation": "MUTATING",
+      "description": "Reacquires a recovered task's write claims under project serialization and restores ordinary mutation authority."
+    }
+  ],
+  "errors": [
+    {
+      "code": "E_ACTION_APPROVAL_NOT_REQUIRED",
+      "category": "durable-approval",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "The current capability policy allows the action without an approval artifact.",
+      "safeResolution": "Do not create an approval; authorize the action through the current policy path."
+    },
+    {
+      "code": "E_ACTION_APPROVAL_REQUIRED",
+      "category": "durable-approval",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Policy requires a current fingerprint-bound approval before this action may proceed.",
+      "safeResolution": "Request approval with forgeloop approval-request and resolve it via forgeloop approval-resolve, then rerun the action."
+    },
+    {
+      "code": "E_ACTION_AUTHORITY_REQUIRED",
+      "category": "authority",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Policy requires host-attested authority that was not supplied through a host trust boundary.",
+      "safeResolution": "Perform the action through a host integration that supplies trusted authority context; standalone CLI cannot mint it."
+    },
+    {
+      "code": "E_ACTION_AUTHORIZATION_INVALID",
+      "category": "durable-action",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Action authorization evidence is missing, incomplete, or was not produced by the canonical authorization service.",
+      "safeResolution": "Authorize the action through forgeloop run-action or a trusted embedding host; caller surfaces can never mint AUTHORIZED."
+    },
+    {
+      "code": "E_ACTION_CAPABILITY_DENIED",
+      "category": "capability-policy",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Capability policy denies this capability.",
+      "safeResolution": "Obtain an operator policy change outside the task, or do not perform the action."
+    },
+    {
+      "code": "E_ACTION_CAPABILITY_UNKNOWN",
+      "category": "capability-policy",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Action capability is not part of the canonical capability vocabulary.",
+      "safeResolution": "Use a documented capability from forgeloop protocol-info; unknown capabilities fail closed."
+    },
+    {
+      "code": "E_ACTION_COMMIT_UNKNOWN",
+      "category": "durable-action",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "External commit state of a started action cannot be proven.",
+      "safeResolution": "Do not retry; reconcile the observed external state with forgeloop action-reconcile."
+    },
+    {
+      "code": "E_ACTION_EVIDENCE_INVALID",
+      "category": "durable-action",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Evidence supplied for verification or reconciliation is missing, malformed, or unbounded.",
+      "safeResolution": "Supply bounded evidence references appropriate to the action type; do not paste raw external output into the ledger."
+    },
+    {
+      "code": "E_ACTION_IDEMPOTENCY_CONFLICT",
+      "category": "durable-action",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "The idempotency key already binds to a different canonical action fingerprint in this task.",
+      "safeResolution": "Use a new idempotency key with a new actionId, or reuse the existing logical action unchanged; never relabel an executed effect."
+    },
+    {
+      "code": "E_ACTION_IDEMPOTENCY_REQUIRED",
+      "category": "durable-action",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Side-effecting action class requires an idempotency key.",
+      "safeResolution": "Supply a stable --idempotency-key that identifies the logical external action."
+    },
+    {
+      "code": "E_ACTION_INVALID",
+      "category": "durable-action",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Durable action artifact or parameters are malformed or schema-invalid.",
+      "safeResolution": "Correct the action fields reported by the structured error, then retry through forgeloop action-propose or run-action."
+    },
+    {
+      "code": "E_ACTION_NOT_FOUND",
+      "category": "durable-action",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Referenced durable action ID does not exist for the task.",
+      "safeResolution": "List actions with forgeloop action-show or propose the action first."
+    },
+    {
+      "code": "E_ACTION_POLICY_DRIFT",
+      "category": "capability-policy",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "The current capability policy does not match the policy lock or task policy snapshot binding this task.",
+      "safeResolution": "Restore the policy epoch recorded at task activation or create a new valid lock and snapshot before side effects."
+    },
+    {
+      "code": "E_ACTION_POLICY_LOCK_REQUIRED",
+      "category": "capability-policy",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A capability policy is present but no valid policy lock exists to bind authorization identity.",
+      "safeResolution": "Record a valid policy lock (forgeloop baseline or policy-discover --write) before authorizing durable actions."
+    },
+    {
+      "code": "E_ACTION_RECONCILIATION_AUTHORITY_REQUIRED",
+      "category": "durable-action",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Settling COMMIT_UNKNOWN external state requires trusted host attestation that was not supplied out-of-band.",
+      "safeResolution": "Reconcile through a trusted embedding host boundary; actor-supplied observations may only record UNKNOWN."
+    },
+    {
+      "code": "E_ACTION_RECONCILIATION_EVIDENCE_INVALID",
+      "category": "durable-action",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Settling reconciliation requires at least one bounded evidence reference binding the observation to the action.",
+      "safeResolution": "Supply bounded external-state evidence references alongside trusted authority before settling ambiguity."
+    },
+    {
+      "code": "E_ACTION_RECONCILIATION_REQUIRED",
+      "category": "durable-action",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "An action is COMMIT_UNKNOWN and blocks progress until explicitly reconciled.",
+      "safeResolution": "Observe the external system and run forgeloop action-reconcile --outcome COMMITTED|NOT_COMMITTED|UNKNOWN with evidence references."
+    },
+    {
+      "code": "E_ACTION_STATE_MISMATCH",
+      "category": "durable-action",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Requested durable action transition is not part of the canonical state machine.",
+      "safeResolution": "Inspect current action state with forgeloop action-show and use a legal transition; never edit action artifacts by hand."
+    },
+    {
+      "code": "E_ACTION_VERIFICATION_INVALID",
+      "category": "durable-action",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Verification evidence does not resolve to a canonical passed ForgeLoop artifact bound to this task and action.",
+      "safeResolution": "Supply a canonical execution or check reference produced by run-check for this task; arbitrary strings fail closed."
+    },
+    {
+      "code": "E_ACTION_VERIFICATION_REQUIRED",
+      "category": "durable-action",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "The action cannot reach VERIFIED through this surface; canonical independent postcondition evidence is required.",
+      "safeResolution": "Run an independent verification check, then record it with forgeloop action-verify; exit code 0 alone is not verification."
+    },
+    {
+      "code": "E_APPROVAL_ALREADY_RESOLVED",
+      "category": "durable-approval",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Approval is one-time resolvable and has already been approved or rejected.",
+      "safeResolution": "Request a new approval if another decision is required."
+    },
+    {
+      "code": "E_APPROVAL_INVALID",
+      "category": "durable-approval",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Approval artifact is malformed or does not bind the required fingerprint tuple.",
+      "safeResolution": "Request a new approval with forgeloop approval-request; never hand-edit approval artifacts."
+    },
+    {
+      "code": "E_APPROVAL_STALE",
+      "category": "durable-approval",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Approval no longer matches the current action fingerprint, contract fingerprint, task revision, or capability.",
+      "safeResolution": "Request and resolve a fresh approval against the current action revision."
+    },
+    {
+      "code": "E_AUTHORITY_INVALID",
+      "category": "authority",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Authority grant file is malformed or expired.",
+      "safeResolution": "Obtain a valid authority grant from host operator."
+    },
+    {
+      "code": "E_AUTHORITY_SCOPE_MISMATCH",
+      "category": "authority",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Authority grant does not cover the requested package.",
+      "safeResolution": "Request updated authority scope."
+    },
+    {
+      "code": "E_AUTHORITY_UNTRUSTED_SOURCE",
+      "category": "authority",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Authority file placed inside untrusted project tree.",
+      "safeResolution": "Place authority file in host-managed trusted location."
+    },
+    {
+      "code": "E_BASELINE_EXPANSION",
+      "category": "policy",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Attempted unauthorized addition of new violations to brownfield baseline.",
+      "safeResolution": "Resolve new violations rather than expanding the baseline."
+    },
+    {
+      "code": "E_BASELINE_RECORD_DURING_ACTIVE_TASK",
+      "category": "policy",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Cannot re-record baseline during an active task with policy snapshot.",
+      "safeResolution": "Resolve new violations or use monotonic baseline --update."
+    },
+    {
+      "code": "E_CHECK_INERT",
+      "category": "policy",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "An enabled check has no effective scope or target files.",
+      "safeResolution": "Provide an applicable target scope, configure matching files, or mark the rule unsupported."
+    },
+    {
+      "code": "E_CHECK_INVALID",
+      "category": "verification",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Check structure or required parameters are invalid.",
+      "safeResolution": "Provide valid check ID, requirement, and parameters."
+    },
+    {
+      "code": "E_CHECK_MUTATION_EXECUTION_ERROR",
+      "category": "policy",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A policy checker threw an unhandled exception while evaluating its mutation fixture.",
+      "safeResolution": "Repair the checker execution path and rerun rule verification."
+    },
+    {
+      "code": "E_CHECK_MUTATION_NOT_DETECTED",
+      "category": "policy",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A blocking rule checker failed to detect an intentional mutation fixture.",
+      "safeResolution": "Fix checker logic to properly identify target violations."
+    },
+    {
+      "code": "E_CHECK_STATUS_CONTRADICTION",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_CIRCULAR_COMPLETION_REQUIREMENT",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_COMMAND_RESOLUTION_AMBIGUOUS",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_COMPLETION_OWNERSHIP_UNPROVEN",
+      "category": "recovery",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Work-state claims COMPLETE but the canonical lifecycle/ledger completion proof is missing or invalid, so historical claims stay reserved.",
+      "safeResolution": "Restore the canonical completion event and a valid ledger, or re-run the official completion pipeline; phase=COMPLETE alone never releases claims."
+    },
+    {
+      "code": "E_COMPLETION_RECOVERY_UNAUTHORIZED",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_COMPLETION_REJECTED",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_COMPLETION_REJECTION_LEDGER_MISMATCH",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_COMPLETION_REJECTION_RECEIPT_FINGERPRINT_MISMATCH",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_COMPLETION_REJECTION_STATE_FINGERPRINT_MISMATCH",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_CONTINUITY_CONTRACT_MISMATCH",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_CONTINUITY_INVALID",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_CONTINUITY_PHASE_MISMATCH",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_CONTINUITY_RECONCILIATION_REQUIRED",
+      "category": "continuity",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Continuity context has drifted from work state.",
+      "safeResolution": "Run forgeloop reconcile-continuity --json."
+    },
+    {
+      "code": "E_CONTINUITY_SCHEMA_UNSUPPORTED",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_CONTINUITY_STATE_MISSING",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_CONTINUITY_TASK_MISMATCH",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_CONTRACT_INVALID",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_CONTRACT_MISSING",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_CONTRACT_STALE",
+      "category": "freshness",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Contract modified after downstream artifacts were generated.",
+      "safeResolution": "Re-run forgeloop route and forgeloop preflight."
+    },
+    {
+      "code": "E_CONTRACT_UNRESOLVED_DECISION",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_CONTRIBUTOR_INVALID",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_CONTRIBUTOR_REFERENCE_INVALID",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_DECISION_CRITERION_INVALID",
+      "category": "contract",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Decision settlement criterion details or parameters are malformed.",
+      "safeResolution": "Provide non-empty decision text and settledBy criterion."
+    },
+    {
+      "code": "E_DECISION_NOT_UNRESOLVED",
+      "category": "contract",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A settlement criterion referenced a decision not present in current unresolvedDecisions.",
+      "safeResolution": "Use the exact current unresolved decision text or update the contract first."
+    },
+    {
+      "code": "E_DIAGNOSIS_CYCLE_MISMATCH",
+      "category": "diagnosis",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Diagnosis verification cycle does not match the active work state verification cycle.",
+      "safeResolution": "Record diagnosis for the current active verification cycle."
+    },
+    {
+      "code": "E_DIAGNOSIS_EVIDENCE_INVALID",
+      "category": "diagnosis",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Referenced diagnosis evidence is missing or has no failed checks in the current cycle.",
+      "safeResolution": "Reference at least one failed or blocked check ID from the active verification cycle."
+    },
+    {
+      "code": "E_DIAGNOSIS_INVALID",
+      "category": "diagnosis",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Diagnosis record details or parameters are malformed.",
+      "safeResolution": "Provide valid failureClass, hypothesis, evidenceRefs, settledBy, and nextSafeAction."
+    },
+    {
+      "code": "E_DIAGNOSIS_NO_NEW_INFORMATION",
+      "category": "diagnosis",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "The proposed retry repeats the previous hypothesis with the same evidence.",
+      "safeResolution": "Change the hypothesis, collect independent evidence, or change strategy."
+    },
+    {
+      "code": "E_DIAGNOSIS_REQUIRED",
+      "category": "diagnosis",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Current correction cycle has no append-only diagnosis record.",
+      "safeResolution": "Run forgeloop record-diagnosis with current failed evidence before correcting."
+    },
+    {
+      "code": "E_DIAGNOSTIC_CASE_CYCLE_MISMATCH",
+      "category": "diagnosis",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Diagnostic case verification cycle does not match the active work state verification cycle.",
+      "safeResolution": "Record the diagnostic case for the current active verification cycle."
+    },
+    {
+      "code": "E_DIAGNOSTIC_CASE_EVIDENCE_INVALID",
+      "category": "diagnosis",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A diagnostic case evidence reference does not match any check from the active verification cycle.",
+      "safeResolution": "Reference check IDs recorded during the active verification cycle."
+    },
+    {
+      "code": "E_DIAGNOSTIC_CASE_INVALID",
+      "category": "diagnosis",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Structured diagnostic case details or parameters are malformed.",
+      "safeResolution": "Provide valid observations, contributors, hypotheses with settlement criteria, and nextSafeAction."
+    },
+    {
+      "code": "E_EVIDENCE_COVERAGE_INVALID",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_EVIDENCE_COVERAGE_PARTIAL",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_EVIDENCE_INVALID",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_EVIDENCE_KIND_INVALID",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_EVIDENCE_PARTIAL",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_EVIDENCE_REQUIRED",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_EVIDENCE_STALE",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_EXECUTION_REF_INVALID",
+      "category": "provenance",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Referenced execution ID does not exist.",
+      "safeResolution": "Re-run check via forgeloop run-check."
+    },
+    {
+      "code": "E_FAILURE_SIGNATURE_INVALID",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_FUTURE_LIFECYCLE_EVIDENCE",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_FUTURE_TERMINAL_EVIDENCE",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_GATE_REQUIRED",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_GATE_STALE",
+      "category": "freshness",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Referenced gate artifact changed after approval.",
+      "safeResolution": "Update artifact SHA-256 in gate file."
+    },
+    {
+      "code": "E_GATE_UNVERIFIED",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_HYPOTHESIS_DISPOSITION_EVIDENCE_INVALID",
+      "category": "diagnosis",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Hypothesis disposition evidence references do not resolve to checks of the active cycle.",
+      "safeResolution": "Reference at least one check ID recorded in the active verification cycle."
+    },
+    {
+      "code": "E_HYPOTHESIS_DISPOSITION_INVALID",
+      "category": "diagnosis",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Hypothesis disposition is malformed or references an unknown hypothesis or disallowed transition.",
+      "safeResolution": "Record a disposition for a known hypothesis using an allowed status transition."
+    },
+    {
+      "code": "E_HYPOTHESIS_INVALID",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_HYPOTHESIS_SETTLEMENT_MISSING",
+      "category": "diagnosis",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "An open hypothesis lacks a falsifiable settlement condition.",
+      "safeResolution": "Provide a structured settledBy predicate, check status, or observation binding."
+    },
+    {
+      "code": "E_INIT_KIT_CONFLICT",
+      "category": "project-maintenance",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A canonical ForgeLoop kit destination already exists with content that does not match the shipped canonical template.",
+      "safeResolution": "Inspect the conflicting `.forgeloop/kit/...` file. If it is stale or partial ForgeLoop output, remove or restore it and rerun `forgeloop init`. Do not overwrite unknown content automatically."
+    },
+    {
+      "code": "E_INSTALLATION_AUTHORITY_REQUIRED",
+      "category": "authority",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Attempted software installation without host authority grant.",
+      "safeResolution": "Use local non-installing binaries or request host authority grant."
+    },
+    {
+      "code": "E_INTERVENTION_HYPOTHESIS_MISSING",
+      "category": "diagnosis",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Intervention does not bind to any hypothesis.",
+      "safeResolution": "Bind the intervention to at least one recorded hypothesis."
+    },
+    {
+      "code": "E_INTERVENTION_INVALID",
+      "category": "diagnosis",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Intervention record is malformed.",
+      "safeResolution": "Provide id, kind, statement, and at least one bound hypothesisRef."
+    },
+    {
+      "code": "E_INTERVENTION_REFERENCE_INVALID",
+      "category": "diagnosis",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Intervention references an unknown hypothesis.",
+      "safeResolution": "Record the diagnostic case containing the hypothesis before recording the intervention."
+    },
+    {
+      "code": "E_LEGACY_RECOVERY_MIGRATION_INVALID",
+      "category": "recovery",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "The legacy recovery-event repair was refused because the ledger does not match the exact known legacy defect signature, has incompatible later activity, holds a live lock, or is otherwise ambiguous.",
+      "safeResolution": "Inspect the structured plan/errors; ambiguous or tampered ledgers stay INCONSISTENT and are never migrated."
+    },
+    {
+      "code": "E_MIGRATION_INCOMPLETE",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_MIGRATION_WRITE_VERIFY",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_MIXED_TERMINAL_REQUIREMENT",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_NATIVE_ADAPTER_STALE",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_NATIVE_ADAPTER_TARGET_MISSING",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_NEW_POLICY_VIOLATION",
+      "category": "policy",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "New executable policy violation detected that is not present in brownfield baseline.",
+      "safeResolution": "Fix the violation before completing the task."
+    },
+    {
+      "code": "E_OBSERVATION_INVALID",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_PHASE_CHRONOLOGY_INVALID",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_PHASE_PREREQUISITE_MISSING",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_PHASE_TRANSITION_INVALID",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_POLICY_DRIFT",
+      "category": "policy",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Active policy lock does not match the policy snapshot captured at task activation.",
+      "safeResolution": "Re-verify affected checks or restore original policy."
+    },
+    {
+      "code": "E_POLICY_DRIFT_UNKNOWN",
+      "category": "policy",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Task policy drift was detected but baseline snapshot details are unavailable.",
+      "safeResolution": "Re-verify the task under the current policy state."
+    },
+    {
+      "code": "E_POLICY_EVALUATION_FAILED",
+      "category": "policy",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Policy evaluation threw an unexpected error during execution.",
+      "safeResolution": "Inspect policy configuration and checker adapters for unhandled errors."
+    },
+    {
+      "code": "E_POLICY_INITIALIZATION_FAILED",
+      "category": "policy",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Executable policy bootstrap could not complete during initialization.",
+      "safeResolution": "Repair the reported filesystem/schema error and rerun `forgeloop init`. Initialization is restartable while no committed manifest exists."
+    },
+    {
+      "code": "E_POLICY_INVALID",
+      "category": "policy",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Policy artifact is malformed, corrupt, or schema-invalid.",
+      "safeResolution": "Validate and repair rules.json, baseline.json, or discovery.json against schema."
+    },
+    {
+      "code": "E_POLICY_LOCK_INVALID",
+      "category": "policy",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Policy lockfile is missing, malformed, or corrupt.",
+      "safeResolution": "Run forgeloop policy-status or regenerate policy.lock."
+    },
+    {
+      "code": "E_POLICY_LOCK_MISMATCH",
+      "category": "policy",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Persisted policy lock digest does not match current effective policy state.",
+      "safeResolution": "Re-evaluate effective rules and update policy.lock or restore modified rules."
+    },
+    {
+      "code": "E_POLICY_PROOF_STALE",
+      "category": "policy",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Mutation verification proof is stale due to checker or fixture modifications.",
+      "safeResolution": "Re-run forgeloop rule-verify to refresh mutation proof."
+    },
+    {
+      "code": "E_POLICY_SNAPSHOT_WRITE_FAILED",
+      "category": "policy",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Failed to persist task policy snapshot during preflight.",
+      "safeResolution": "Ensure the target task directory is writable and repair filesystem permissions."
+    },
+    {
+      "code": "E_POLICY_WEAKENING",
+      "category": "policy",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Policy rules were weakened during task execution without explicit authority.",
+      "safeResolution": "Restore the original policy configuration."
+    },
+    {
+      "code": "E_PREFLIGHT_EVENT_MISSING",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_PREFLIGHT_GATES_STALE",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_PREFLIGHT_GATE_EVENT_MISSING",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_PREFLIGHT_NOT_READY",
+      "category": "preflight",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Preflight gates or contract validations are incomplete.",
+      "safeResolution": "Satisfy required gates and check preflight output."
+    },
+    {
+      "code": "E_PREFLIGHT_READY_EVENT_MISMATCH",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_PREFLIGHT_READY_EVENT_MISSING",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_PRODUCTION_READINESS_UNVERIFIED",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_PRODUCTION_REQUIREMENT_PENDING",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_PROFILE_SOURCE_MISCLASSIFIED",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_PROFILE_SOURCE_MISSING",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_PROFILE_SOURCE_UNKNOWN",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_PROFILE_UNVERIFIED",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_PROGRESS_STALLED",
+      "category": "progress",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Persisted correction history shows no new diagnostic information.",
+      "safeResolution": "Use an independent check, revisit assumptions, or record a materially different diagnosis."
+    },
+    {
+      "code": "E_PROJECT_CLAIMS_LOCK_INCONSISTENT",
+      "category": "concurrency",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "The project-wide claim reservation lock has unknown, corrupt, or concurrently changed ownership metadata.",
+      "safeResolution": "Inspect .forgeloop/.claims.lock and retry only after its lease and owner identity can be validated; never force-delete unknown ownership."
+    },
+    {
+      "code": "E_PROTOCOL_MIGRATION_TARGET_UNSUPPORTED",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_PUBLICATION_CLAIM_UNVERIFIED",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_PUBLICATION_REQUIREMENT_PENDING",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_RECEIPT_CONTRACT_MISMATCH",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_RECEIPT_CYCLE_MISMATCH",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_RECEIPT_INVALID",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_RECEIPT_MISSING",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_RECEIPT_PATH_MISMATCH",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_RECEIPT_ROUTE_MISMATCH",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_RECEIPT_STATE_MISMATCH",
+      "category": "verification",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Receipt does not match current state cycle or work state.",
+      "safeResolution": "Run forgeloop prepare-completion --json."
+    },
+    {
+      "code": "E_RECEIPT_TASK_MISMATCH",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_RECONCILE_EVIDENCE_FAILED",
+      "category": "verification",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "The executed objective-satisfaction evidence command did not pass.",
+      "safeResolution": "Inspect the execution artifact; reconciliation is refused until evidence passes in the current repository."
+    },
+    {
+      "code": "E_RECONCILE_LEDGER_INVALID",
+      "category": "integrity",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "The append-only event ledger is not valid, so reconciliation cannot be recorded.",
+      "safeResolution": "Inspect the ledger errors and repair before reconciling."
+    },
+    {
+      "code": "E_RECONCILE_NOT_STALE",
+      "category": "lifecycle",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "reconcile-closure was invoked for a work-state checkpoint that is already fresh.",
+      "safeResolution": "No reconciliation is required; continue the normal lifecycle."
+    },
+    {
+      "code": "E_RECONCILE_PHASE_INVALID",
+      "category": "lifecycle",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "reconcile-closure was invoked for a task that is not EXECUTING or VERIFYING.",
+      "safeResolution": "reconcile-closure supports EXECUTING or VERIFYING tasks whose objective is already satisfied."
+    },
+    {
+      "code": "E_RECONCILE_REQUIREMENT_UNKNOWN",
+      "category": "verification",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "The supplied check id and requirement text do not exactly match a contract verification item of type VERIFICATION.",
+      "safeResolution": "Supply the exact id and requirement text of an existing contract verification item."
+    },
+    {
+      "code": "E_RECONCILE_UNSUPPORTED_DRIFT",
+      "category": "freshness",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Work-state drift includes kinds other than REPOSITORY_CHANGED (contract or required-artifact drift).",
+      "safeResolution": "Resolve contract or artifact drift through their dedicated recovery surfaces; reconcile-closure only refreshes repository fingerprint drift."
+    },
+    {
+      "code": "E_REPOSITORY_CHANGED",
+      "category": "freshness",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "The repository fingerprint (branch or HEAD) moved after the work-state checkpoint was recorded.",
+      "safeResolution": "If the task objective is already satisfied in the current repository, run forgeloop reconcile-closure; otherwise resume from a checkpoint that matches the current repository."
+    },
+    {
+      "code": "E_ROUTE_GUIDE_MISMATCH",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_ROUTE_INVALID",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_ROUTE_MISSING",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_ROUTE_REASON_MISSING",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_ROUTE_STALE",
+      "category": "freshness",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Routing result does not match the active contract fingerprint.",
+      "safeResolution": "Re-run forgeloop route."
+    },
+    {
+      "code": "E_STATE_LEDGER_DIVERGENCE",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_STATE_MISSING",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_STATE_MISSING_AFTER_PREFLIGHT_READY",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_STATE_REVALIDATION_REQUIRED",
+      "category": "freshness",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "The work-state checkpoint must be revalidated before the lifecycle can continue.",
+      "safeResolution": "Run forgeloop reconcile-closure for externally satisfied EXECUTING tasks, or inspect the freshness reasons for other drift."
+    },
+    {
+      "code": "E_STATE_TASK_MISMATCH",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_STRATEGY_OSCILLATION",
+      "category": "progress",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Correction history oscillates between previously exhausted strategies without new information.",
+      "safeResolution": "Gather a genuinely new observation or test a materially different falsifiable hypothesis."
+    },
+    {
+      "code": "E_TASK_ALREADY_EXISTS",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_TASK_ALREADY_RECOVERED",
+      "category": "recovery",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "The task already has active durable recovered state.",
+      "safeResolution": "Inspect the existing recovery metadata; use task-resume to reacquire claims or leave the task recovered."
+    },
+    {
+      "code": "E_TASK_AMBIGUOUS",
+      "category": "task-resolution",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Multiple tasks exist in the project but no task selector was provided.",
+      "safeResolution": "Select a task explicitly using --task <id> or FORGELOOP_TASK=<id>."
+    },
+    {
+      "code": "E_TASK_CHANGE_ATTRIBUTION_UNAVAILABLE",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_TASK_CHANGE_OUTSIDE_SCOPE",
+      "category": "scope",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Modified paths in repository exceed the declared task write claims.",
+      "safeResolution": "Update write claims with forgeloop task-scope or revert out-of-scope modifications."
+    },
+    {
+      "code": "E_TASK_CLAIM_OWNERSHIP_INCONSISTENT",
+      "category": "recovery",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "ForgeLoop cannot prove whether a task still owns its historical write claims.",
+      "safeResolution": "Repair and validate the task descriptor, recovery artifact, and complete event ledger before acquiring overlapping claims or mutating the task."
+    },
+    {
+      "code": "E_TASK_COMPLETE",
+      "category": "task-resolution",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A validator-backed COMPLETE task is terminal and cannot be mutated.",
+      "safeResolution": "Create or select a non-terminal task for further work; do not modify terminal task state."
+    },
+    {
+      "code": "E_TASK_CONTEXT_MISMATCH",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_TASK_DESCRIPTOR_INVALID",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_TASK_KEY_MISMATCH",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_TASK_LAYOUT_LEGACY",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_TASK_LOCKED",
+      "category": "concurrency",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Task mutation is currently locked by another concurrent process or run-check.",
+      "safeResolution": "Wait for the active mutation to complete or inspect the lock with forgeloop task-show."
+    },
+    {
+      "code": "E_TASK_LOCK_INVALID",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_TASK_MIGRATION_IDENTITY_MISMATCH",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_TASK_MIGRATION_INVALID",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_TASK_NOT_FOUND",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_TASK_NOT_RECOVERED",
+      "category": "recovery",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "task-resume was requested for a task without active recovered state.",
+      "safeResolution": "Inspect the task with forgeloop task-show; task-resume is only valid while recovery.json is active."
+    },
+    {
+      "code": "E_TASK_RECOVERED",
+      "category": "recovery",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "The task released its write claims through recovery and ordinary mutation is suspended.",
+      "safeResolution": "Run forgeloop task-resume --task <id> to reacquire the released claims before mutating the task."
+    },
+    {
+      "code": "E_TASK_RECOVERY_AUTHORITY_INVALID",
+      "category": "authority",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Recovery authority metadata is invalid or claims host attestation without a host-owned grant reference.",
+      "safeResolution": "Use caller acknowledgement, or provide a host-attested recovery grant through a trusted host integration."
+    },
+    {
+      "code": "E_TASK_RECOVERY_AUTHORIZATION_REQUIRED",
+      "category": "recovery",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "task-recover requires explicit caller acknowledgement; this is not host-attested authority.",
+      "safeResolution": "Re-run with --acknowledge-recovery only when evidence shows the task is STALE or ABANDONED; --operator-authorized remains a deprecated alias."
+    },
+    {
+      "code": "E_TASK_RECOVERY_INCONSISTENT",
+      "category": "recovery",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Claim-release recovery was refused because the task state, recovery artifact, lock, or event ledger is inconsistent.",
+      "safeResolution": "Repair the underlying artifact through its dedicated recovery surface; do not force-complete an unreadable task."
+    },
+    {
+      "code": "E_TASK_RECOVERY_OFFICIAL_PATH_AVAILABLE",
+      "category": "recovery",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Claim-release recovery was refused because canonical lifecycle reconciliation is available.",
+      "safeResolution": "Use forgeloop reconcile-closure and the normal verification/completion pipeline instead of task-recover."
+    },
+    {
+      "code": "E_TASK_RECOVERY_UNSAFE",
+      "category": "recovery",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Claim-release recovery was refused because the conflicting task is active, inconsistent, already complete, or holds a live lease.",
+      "safeResolution": "Resolve the reported classification first; live leases must expire or be released by their owner before recovery."
+    },
+    {
+      "code": "E_TASK_REQUIRED",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_TASK_SCOPE_CONFLICT",
+      "category": "scope",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Task write claims overlap with another non-complete task in the same checkout.",
+      "safeResolution": "Inspect the conflicting task classification reported in error.conflicts, then reconcile or recover it through its reported official recovery commands before retrying task creation."
+    },
+    {
+      "code": "E_TASK_SCOPE_DIRTY",
+      "category": "scope",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Claimed paths contain pre-existing uncommitted changes.",
+      "safeResolution": "Commit or stash changes in claimed paths before defining or adopting the scope."
+    },
+    {
+      "code": "E_TASK_SCOPE_FROZEN",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_TASK_SCOPE_REQUIRED",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_TASK_SELECTOR_CONFLICT",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_TERMINAL_REQUIREMENT_NOT_TERMINAL",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_TERMINAL_REQUIREMENT_PENDING",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_TERMINAL_REQUIREMENT_TYPE_MISMATCH",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_TERMINAL_REQUIREMENT_UNKNOWN",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_TERMINAL_STATUS_REGRESSION",
+      "category": "protocol",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "A ForgeLoop protocol validation or lifecycle condition was not satisfied.",
+      "safeResolution": "Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json."
+    },
+    {
+      "code": "E_TRACE_SNAPSHOT_INCONSISTENT",
+      "category": "diagnosis",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Task artifacts changed while the execution trace was being read.",
+      "safeResolution": "Rerun the read-only projection to obtain a consistent view."
+    },
+    {
+      "code": "E_TRAJECTORY_REFERENCE_REQUIRED",
+      "category": "trajectory-evaluation",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Comparative efficiency requires a reference scenario with positive comparableSteps.",
+      "safeResolution": "Provide --scenario with reference.comparableSteps, or omit efficiency from the result."
+    },
+    {
+      "code": "E_TRAJECTORY_SCENARIO_INVALID",
+      "category": "trajectory-evaluation",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Trajectory scenario file is missing required fields or schema-invalid.",
+      "safeResolution": "Correct the scenario JSON against schemas/trajectory-scenario.schema.json."
+    },
+    {
+      "code": "E_VERIFICATION_TOOL_UNAVAILABLE",
+      "category": "capability",
+      "classification": "PUBLIC_STABLE",
+      "meaning": "Required verification executable is missing in environment.",
+      "safeResolution": "Use local equivalent, obtain host authority, or record NOT_VERIFIED."
+    }
+  ]
+}

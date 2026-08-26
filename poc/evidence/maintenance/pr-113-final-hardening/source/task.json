@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "taskId": "poc-final-verifier-ci-hardening-20260826",
+  "taskKey": "e80ec0fe2c7166be2873291844c6ba619c751535b1c08f3e62b46c0f282ad21c",
+  "createdAt": "2026-08-26T19:37:24.597Z",
+  "updatedAt": "2026-08-26T19:38:24.999Z",
+  "writeClaims": [
+    ".github",
+    "package-lock.json",
+    "package.json",
+    "poc",
+    "scripts"
+  ]
+}

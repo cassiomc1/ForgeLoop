@@ -1,0 +1,38 @@
+{
+  "status": "STALE",
+  "errors": [],
+  "incomplete": [],
+  "stale": {
+    "reasons": [
+      "REPOSITORY_CHANGED"
+    ],
+    "warnings": [],
+    "repositoryComparison": "MISMATCH",
+    "contractComparison": "MATCH",
+    "artifactComparison": "NOT_APPLICABLE"
+  },
+  "delegation": {
+    "status": "NOT_APPLICABLE",
+    "required": false,
+    "errors": []
+  },
+  "continuity": {
+    "required": false,
+    "status": "NOT_APPLICABLE",
+    "classification": "NOT_APPLICABLE",
+    "errors": [],
+    "reasonCodes": [],
+    "reasons": [
+      "CONTINUITY_NOT_APPLICABLE_AFTER_COMPLETE"
+    ],
+    "authority": "OPERATIONAL_CONTEXT_ONLY",
+    "evidenceAuthority": "NONE"
+  },
+  "evidence": [
+    {
+      "kind": "INFERRED",
+      "source": "ForgeLoop protocol conformance",
+      "result": "STALE"
+    }
+  ]
+}

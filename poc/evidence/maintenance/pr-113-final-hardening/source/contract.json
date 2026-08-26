@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "taskId": "poc-final-verifier-ci-hardening-20260826",
+  "objective": "Close final 3 correctness and continuous-verification gaps in ForgeLoop PoC: host-independent path safety including Windows drive-absolute/UNC, cross-file productionReadiness semantic consistency, and first-class GitHub Actions CI matrix verification.",
+  "assumptions": [
+    {
+      "value": "Original protocol-authoritative task-state files under poc/evidence/poc-20260826-real-execution/task-state/ remain immutable historical evidence.",
+      "reason": "Preserving genuine historical execution evidence is essential to protocol integrity and non-fabrication.",
+      "scope": "evidence",
+      "reversible": true,
+      "source": "agent-default"
+    },
+    {
+      "value": "Post-publication E_RECEIPT_PATH_MISMATCH artifacts remain preserved as intentional fail-closed drift evidence.",
+      "reason": "Retaining negative evidence demonstrates ForgeLoop changed-path detection when unsealed files are added after receipt compilation.",
+      "scope": "audit",
+      "reversible": true,
+      "source": "agent-default"
+    }
+  ],
+  "deliverables": [
+    "Host-independent path safety rejecting Windows drive-absolute, UNC, and device paths on every host in scripts/verify_poc_evidence.mjs.",
+    "Cross-file productionReadiness semantic consistency assertions across manifest.json, completion.json, and publication.json in scripts/verify_poc_evidence.mjs.",
+    "Dedicated npm run poc:evidence:test script in package.json.",
+    "Expanded regression test suite in poc/test/poc-evidence-publication.test.js covering host-independent paths and productionReadiness consistency.",
+    "Continuous execution of poc:evidence:verify and poc:evidence:test across Node 20, 22, 24 in .github/workflows/docs-quality.yml."
+  ],
+  "constraints": [
+    "Do not reopen, overwrite, or fabricate original execution artifacts under task-state/.",
+    "Do not claim production readiness or universal tamper resistance.",
+    "Do not introduce external runtime npm dependencies.",
+    "Preserve all English-only documentation and source code requirements."
+  ],
+  "risks": [
+    "Host-specific path.isAbsolute behavior could allow Windows drive-absolute or UNC paths to bypass validation on non-Windows hosts.",
+    "Inconsistent productionReadiness enum values between files could lead to ambiguous public status."
+  ],
+  "verification": [
+    {
+      "id": "poc-evidence-integrity",
+      "text": "npm run poc:evidence:verify validates the published evidence package and exits 0.",
+      "type": "VERIFICATION"
+    },
+    {
+      "id": "poc-evidence-regression-tests",
+      "text": "npm run poc:evidence:test validates all failure modes with 0 failures.",
+      "type": "VERIFICATION"
+    },
+    {
+      "id": "repository-tests",
+      "text": "npm test and workload tests pass cleanly.",
+      "type": "VERIFICATION"
+    },
+    {
+      "id": "repository-lint",
+      "text": "npm run lint passes with 0 errors.",
+      "type": "VERIFICATION"
+    },
+    {
+      "id": "repository-coverage",
+      "text": "npm run coverage satisfies coverage thresholds.",
+      "type": "VERIFICATION"
+    },
+    {
+      "id": "documentation-check",
+      "text": "npm run docs:check and documentation conformance pass.",
+      "type": "VERIFICATION"
+    },
+    {
+      "id": "package-check",
+      "text": "npm run pack:check passes.",
+      "type": "VERIFICATION"
+    },
+    {
+      "id": "dependency-policy",
+      "text": "npm run dependency:policy passes.",
+      "type": "VERIFICATION"
+    }
+  ],
+  "successCriteria": [
+    "Evidence verifier rejects Windows drive-absolute and UNC paths on every host OS.",
+    "productionReadiness is strictly consistent across manifest, completion, and publication files.",
+    "npm run poc:evidence:test is registered and executed in GitHub Actions Node matrix.",
+    "All local and CI checks pass with exit code 0."
+  ],
+  "stopConditions": [
+    "Unresolvable hash or structural discrepancy discovered in historical task-state evidence.",
+    "ForgeLoop preflight or completion validator fails."
+  ],
+  "unresolvedDecisions": [],
+  "sourceRefs": [
+    "user-brief:poc-final-verifier-ci-hardening"
+  ]
+}
