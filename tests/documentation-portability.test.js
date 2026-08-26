@@ -1,37 +1,12 @@
 import assert from "node:assert/strict";
-import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 
 import { processGeneratedDocumentation } from "../scripts/generate_documentation_reference.mjs";
 import { validateDocumentationConformance } from "../scripts/validate_documentation_conformance.mjs";
-import { assertGitHubSafeSvg, checkGeneratedDiagram, fingerprintText, normalizeTextForFingerprint } from "../scripts/check-generated-diagram.mjs";
-
-test("fingerprint is independent of line-ending representation", () => {
-  const lf = "flowchart TD\nA --> B\n";
-  const crlf = "flowchart TD\r\nA --> B\r\n";
-  const cr = "flowchart TD\rA --> B\r";
-
-  assert.equal(normalizeTextForFingerprint(lf), "flowchart TD\nA --> B\n");
-  assert.equal(normalizeTextForFingerprint(crlf), "flowchart TD\nA --> B\n");
-  assert.equal(normalizeTextForFingerprint(cr), "flowchart TD\nA --> B\n");
-
-  assert.equal(fingerprintText(lf), fingerprintText(crlf));
-  assert.equal(fingerprintText(lf), fingerprintText(cr));
-
-  // Semantic changes must still produce different fingerprints
-  assert.notEqual(
-    fingerprintText("flowchart TD\nA --> B\n"),
-    fingerprintText("flowchart TD\nA --> C\n"),
-  );
-
-  // Newlines vs no newlines must produce different fingerprints
-  assert.notEqual(
-    fingerprintText("A\n"),
-    fingerprintText("A"),
-  );
-});
+import { checkDocumentationDiagrams } from "../scripts/check-documentation-diagrams.mjs";
 
 test("documentation reference generator is deterministic and idempotent", async () => {
   const tempDir = await mkdtemp(path.join(os.tmpdir(), "forgeloop-portability-"));
@@ -125,81 +100,14 @@ test("documentation generation and validation succeed in directory paths contain
   }
 });
 
-test("assertGitHubSafeSvg enforces GitHub-safe diagram constraints", async () => {
-  const validSvg = await readFile("docs/assets/forgeloop-flow.svg", "utf8");
-  assert.doesNotThrow(() => assertGitHubSafeSvg(validSvg));
-
-  // Rejects missing/truncated SVG
-  assert.throws(() => assertGitHubSafeSvg("<div>not svg</div>"), /not an?.*SVG document/i);
-  assert.throws(() => assertGitHubSafeSvg("<svg viewBox=\"0 0 10 10\">incomplete"), /not a complete SVG document/i);
-
-  // Rejects missing viewBox
-  assert.throws(() => assertGitHubSafeSvg("<svg width=\"100\" height=\"100\"></svg>"), /must define a viewBox/i);
-
-  // Rejects @import
-  assert.throws(() => assertGitHubSafeSvg(validSvg.replace("<svg", "<svg><style>@import url('https://fonts.googleapis.com/css');</style>")), /must not import external stylesheets/i);
-
-  // Rejects <script>
-  assert.throws(() => assertGitHubSafeSvg(validSvg.replace("</svg>", "<script>alert(1)</script></svg>")), /must not contain scripts/i);
-
-  // Rejects <foreignObject>
-  assert.throws(() => assertGitHubSafeSvg(validSvg.replace("</svg>", "<foreignObject width=\"10\" height=\"10\"></foreignObject></svg>")), /must not contain foreignObject/i);
-
-  // Rejects external resource links
-  assert.throws(() => assertGitHubSafeSvg(validSvg.replace("</svg>", "<image href=\"https://example.com/img.png\" /></svg>")), /contains external resource/i);
-});
-
-test("Mermaid diagram check validates target SVG explicitly", async () => {
-  const tempDir = await mkdtemp(path.join(os.tmpdir(), "forgeloop-diagram-"));
-
-  try {
-    const validSvgPath = path.join("docs", "assets", "forgeloop-flow.svg");
-    const validSvg = await readFile(validSvgPath, "utf8");
-
-    // Test valid SVG
-    const validTempSvg = path.join(tempDir, "valid-flow.svg");
-    await writeFile(validTempSvg, validSvg, "utf8");
-    await assert.doesNotReject(async () => {
-      await checkGeneratedDiagram(validTempSvg);
-    });
-
-    // Test invalid SVG with corrupted SHA-256 fingerprint
-    const invalidTempSvg = path.join(tempDir, "invalid-flow.svg");
-    const corruptedSvg = validSvg.replace(/data-forgeloop-source-sha256="[^"]+"/, 'data-forgeloop-source-sha256="corrupted-hash"');
-    await writeFile(invalidTempSvg, corruptedSvg, "utf8");
-
-    await assert.rejects(async () => {
-      await checkGeneratedDiagram(invalidTempSvg);
-    }, /fingerprint does not match canonical source/i);
-  } finally {
-    await rm(tempDir, { recursive: true, force: true });
-  }
-});
-
-test("Mermaid diagram check succeeds when source file has CRLF line endings", async () => {
-  const tempDir = await mkdtemp(path.join(os.tmpdir(), "forgeloop-crlf-diagram-"));
-
-  try {
-    const sourcePath = path.join("docs", "forgeloop-flow.mmd");
-    const canonicalSource = await readFile(sourcePath, "utf8");
-    const crlfSource = canonicalSource.replace(/\r\n/g, "\n").replace(/\n/g, "\r\n");
-
-    const tempDocsDir = path.join(tempDir, "docs");
-    const tempAssetsDir = path.join(tempDocsDir, "assets");
-    await mkdir(tempAssetsDir, { recursive: true });
-
-    await writeFile(path.join(tempDocsDir, "forgeloop-flow.mmd"), crlfSource, "utf8");
-
-    const validSvgPath = path.join("docs", "assets", "forgeloop-flow.svg");
-    const validSvg = await readFile(validSvgPath, "utf8");
-    await writeFile(path.join(tempAssetsDir, "forgeloop-flow.svg"), validSvg, "utf8");
-
-    // Should validate without error regardless of CRLF in the source file
-    const result = await checkGeneratedDiagram(null, tempDir);
-    assert.equal(result.valid, true);
-  } finally {
-    await rm(tempDir, { recursive: true, force: true });
-  }
+test("Archify diagram check validates generated outputs and reproducibility", async () => {
+  const report = await checkDocumentationDiagrams({ reproducible: true });
+  assert.equal(report.renderer.version, "2.15.0");
+  assert.equal(report.renderer.commit, "e1ac748f19cf805e44bf74fb93c796662152e273");
+  assert.equal(report.inventory.activeMermaid, false);
+  assert.deepEqual(report.inventory.unreferencedVisualAssets, []);
+  assert.equal(report.diagrams.length, 1);
+  assert.equal(report.diagrams[0].composition, "pass");
 });
 
 test("generated documentation generator fails closed on missing, duplicate, invalid, or unknown regions", async () => {

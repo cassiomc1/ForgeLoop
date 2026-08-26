@@ -17,7 +17,8 @@ test("quality workflows install the lockfile and enforce the local toolchain", a
   assert.match(docs, /npm run dependency:policy/);
   assert.match(docs, /npm run lint/);
   assert.match(docs, /npm run coverage/);
-  assert.match(docs, /npm run docs:flow -- --output/);
+  assert.match(docs, /npm run docs:diagrams:check/);
+  assert.match(docs, /npm run docs:check/);
   assert.match(docs, /npm run docs:check/);
   assert.match(docs, /--exclude-path '\(\^\|\/\)node_modules\(\/\|\$\)'/);
   assert.match(docs, /--exclude-path '\(\^\|\/\)coverage\(\/\|\$\)'/);

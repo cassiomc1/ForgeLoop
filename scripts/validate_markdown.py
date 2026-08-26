@@ -689,7 +689,14 @@ http://apache.org/xml/features/disallow-doctype-decl
     )
 
 def _markdown_files(root: Path) -> list[Path]:
-    excluded_parts = {".git", ".worktrees", ".superpowers", "node_modules", "coverage"}
+    excluded_parts = {
+        ".git",
+        ".worktrees",
+        ".superpowers",
+        ".forgeloop",
+        "node_modules",
+        "coverage",
+    }
     return sorted(
         path for path in root.rglob("*")
         if path.is_file()

@@ -45,6 +45,9 @@ EXCLUDED_PARTS = {
     "node_modules",
     "coverage",
 }
+EXCLUDED_PREFIXES = {
+    ("vendor", "archify"),
+}
 
 TOKEN_PATTERNS = (
     ("private-key", re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----")),
@@ -106,7 +109,9 @@ class Finding:
 def should_scan_path(path: Path) -> bool:
     """Return whether a repository-relative path is maintained text."""
 
-    if EXCLUDED_PARTS.intersection(path.parts):
+    if EXCLUDED_PARTS.intersection(path.parts) or any(
+        path.parts[: len(prefix)] == prefix for prefix in EXCLUDED_PREFIXES
+    ):
         return False
     name = path.name.lower()
     is_environment_file = name == ".env" or name.startswith(".env.")

@@ -1,8 +1,0 @@
-{
-  "theme": "dark",
-  "htmlLabels": false,
-  "flowchart": {
-    "htmlLabels": false,
-    "curve": "linear"
-  }
-}

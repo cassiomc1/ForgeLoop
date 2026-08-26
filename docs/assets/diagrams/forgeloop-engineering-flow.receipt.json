@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "diagramId": "forgeloop-engineering-flow",
+  "diagramType": "workflow",
+  "source": "docs/diagrams/forgeloop-engineering-flow.workflow.json",
+  "outputs": {
+    "html": "docs/assets/diagrams/forgeloop-engineering-flow.html",
+    "svg": "docs/assets/diagrams/forgeloop-engineering-flow.svg"
+  },
+  "renderer": {
+    "name": "archify",
+    "version": "2.15.0",
+    "commit": "e1ac748f19cf805e44bf74fb93c796662152e273",
+    "source": "https://github.com/tt-a1i/archify/tree/v2.15.0",
+    "license": "MIT"
+  },
+  "input": {
+    "sha256": "7f027fed10513607787682007a4b9bd92f15f0a9820a1e36457dde9a67f7aeb9",
+    "bytes": 7328
+  },
+  "artifacts": {
+    "html": {
+      "sha256": "1cf205a792f0278cb66f5d3be3b214084adfee1c88fed8b8a525355b285bf908",
+      "bytes": 646221
+    },
+    "svg": {
+      "sha256": "1794854e851ef91226dbd0271623a680c208f76e36d3c1e7703f1d40f8ed2c01",
+      "bytes": 209781
+    }
+  },
+  "staticSvg": {
+    "theme": "dark-first",
+    "accessible": true,
+    "externalResources": false
+  },
+  "reproducible": true,
+  "visualReview": "pending"
+}

@@ -13,7 +13,7 @@ const PACKAGE_DOCUMENTS = [
   "AGENT_COMPATIBILITY.md", "PROJECT_PROFILE.md", "THIRD_PARTY_NOTICES.md", "LICENSE-DOCS.md",
   ".github/copilot-instructions.md", "README.md", "DOCS_INDEX.md", "docs/GETTING_STARTED.md",
   "docs/CROSS_HARNESS_CONTINUITY.md", "docs/CLI_REFERENCE.md", "docs/ARTIFACT_REFERENCE.md",
-  "docs/TROUBLESHOOTING.md", "docs/RECIPES.md", "docs/DOCUMENTATION_GUIDE.md", "scripts/CI_VALIDATORS.md",
+  "docs/TROUBLESHOOTING.md", "docs/RECIPES.md", "docs/DOCUMENTATION_GUIDE.md", "docs/diagrams/README.md", "scripts/CI_VALIDATORS.md",
 ];
 
 async function readJson(file) {

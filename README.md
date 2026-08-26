@@ -269,12 +269,18 @@ See [`docs/CLI_REFERENCE.md`](./docs/CLI_REFERENCE.md) and [`LOOP_SYSTEM_DESIGN.
 
 ## Architecture flow
 
-The canonical source is [`docs/forgeloop-flow.mmd`](./docs/forgeloop-flow.mmd),
-and the committed render is [`docs/assets/forgeloop-flow.svg`](./docs/assets/forgeloop-flow.svg).
+The canonical source is the typed Archify workflow
+[`docs/diagrams/forgeloop-engineering-flow.workflow.json`](./docs/diagrams/forgeloop-engineering-flow.workflow.json).
+The committed interactive explorer is
+[`docs/assets/diagrams/forgeloop-engineering-flow.html`](./docs/assets/diagrams/forgeloop-engineering-flow.html),
+which opens in the dark presentation stage, the dark-first static render is
+[`docs/assets/diagrams/forgeloop-engineering-flow.svg`](./docs/assets/diagrams/forgeloop-engineering-flow.svg),
+and the deterministic hash receipt is
+[`docs/assets/diagrams/forgeloop-engineering-flow.receipt.json`](./docs/assets/diagrams/forgeloop-engineering-flow.receipt.json).
 The broader architecture and boundaries are in
 [`LOOP_SYSTEM_DESIGN.md`](./LOOP_SYSTEM_DESIGN.md).
 
-![ForgeLoop evidence-first engineering flow](./docs/assets/forgeloop-flow.svg)
+![ForgeLoop evidence-first engineering flow](./docs/assets/diagrams/forgeloop-engineering-flow.svg)
 
 Text-only fallback: discovery creates the contract and route; required gates
 and `PREFLIGHT_READY` authorize execution; verification creates structured
@@ -314,9 +320,10 @@ values are checked; and install-capable verification requires trusted host
 authority. See [`THREAT_MODEL.md`](./THREAT_MODEL.md) for the full inventory.
 
 Development tooling is intentionally separate from runtime dependencies. The
-repository policy allows only ESLint, c8, and Mermaid CLI as development
-dependencies; `npm run dependency:policy` fails if runtime or unapproved
-dependencies appear.
+repository policy allows only ESLint and c8 as development dependencies;
+`npm run dependency:policy` fails if runtime or unapproved dependencies
+appear. The documentation renderer is vendored and pinned under
+`vendor/archify/v2.15.0/` rather than installed as a package dependency.
 
 Para reportar vulnerabilidades ou contribuir com alterações, consulte
 [`SECURITY.md`](./SECURITY.md) e [`CONTRIBUTING.md`](./CONTRIBUTING.md).
@@ -386,7 +393,7 @@ npm run lint
 npm run coverage
 npm run pack:check
 npm run dependency:policy
-npm run docs:flow
+npm run docs:diagrams
 npm run docs:check
 ```
 
@@ -396,8 +403,8 @@ npm run docs:check
 src/                    npm CLI and protocol implementation
 schemas/                versioned artifact schemas
 ENG/                    package-source engineering guides
-docs/forgeloop-flow.mmd canonical Mermaid source
-docs/assets/            committed diagram render
+docs/diagrams/          typed Archify diagram source and inventory
+docs/assets/diagrams/   committed HTML, SVG, and generation receipt
 scripts/                checks, renderer, release identity, CI notes
 tests/                  Node and Python regression coverage
 .forgeloop/             project-scoped ForgeLoop configuration

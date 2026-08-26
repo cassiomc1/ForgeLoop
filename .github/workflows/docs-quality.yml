@@ -124,7 +124,7 @@ jobs:
         run: npm run pack:check
 
   docs-diagram:
-    name: Verify generated Mermaid diagram
+    name: Verify generated Archify diagram
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -136,13 +136,8 @@ jobs:
         with:
           node-version: 24
 
-      - name: Install locked Node toolchain
-        run: npm ci
+      - name: Verify pinned Archify workflow and generated artifacts
+        run: npm run docs:diagrams:check
 
-      - name: Render canonical Mermaid source
-        run: npm run docs:flow -- --output "$RUNNER_TEMP/forgeloop-flow.svg"
-
-      - name: Verify generated and committed diagram fingerprints
-        run: |
-          npm run docs:diagram:check -- "$RUNNER_TEMP/forgeloop-flow.svg"
-          npm run docs:check
+      - name: Verify documentation inventory and conformance
+        run: npm run docs:check

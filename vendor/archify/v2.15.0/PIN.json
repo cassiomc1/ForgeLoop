@@ -1,0 +1,8 @@
+{
+  "name": "archify",
+  "version": "2.15.0",
+  "sourceCommit": "e1ac748f19cf805e44bf74fb93c796662152e273",
+  "source": "https://github.com/tt-a1i/archify/tree/v2.15.0",
+  "license": "MIT",
+  "directory": "archify"
+}

@@ -13,6 +13,7 @@ import { readSchema } from "../src/core/schema-validation.js";
 import { getPackageRoot } from "../src/core/templates.js";
 import { validateDocumentationConformance, validateCliExamples, validateCliMutationClaim } from "../scripts/validate_documentation_conformance.mjs";
 import { validateDocumentationManifest } from "../scripts/validate_documentation_manifest.mjs";
+import { validateDocumentationReviewMatrix } from "../scripts/validate_documentation_review_matrix.mjs";
 
 const packageRoot = getPackageRoot();
 
@@ -128,6 +129,12 @@ test("documentation manifest rejects an unmapped normative requirement", async (
   } finally {
     await rm(tempDir, { recursive: true, force: true });
   }
+});
+
+test("documentation review matrix covers every manifest document", async () => {
+  const result = await validateDocumentationReviewMatrix();
+  assert.equal(result.valid, true, result.errors.join("\n"));
+  assert.equal(result.summary.documents, result.summary.reviewed);
 });
 
 test("ARTIFACT_REGISTRY covers all public schemas and matches ARTIFACT_REFERENCE", async () => {
@@ -292,8 +299,8 @@ test("negative fixtures & mutation tests: validateDocumentationConformance detec
     // Mutation 8: Invalid diagram reference
     const mutReadme8 = mustReplace(
       readmeContent,
-      /!\[.*?\]\(\.\/docs\/assets\/forgeloop-flow\.svg\)/,
-      '<img src="./docs/assets/forgeloop-flow.svg" />',
+      /!\[.*?\]\(\.\/docs\/assets\/diagrams\/forgeloop-engineering-flow\.svg\)/,
+      '<img src="./docs/assets/diagrams/forgeloop-engineering-flow.svg" />',
       "readme diagram reference",
     );
     await writeFile(readmeFile, mutReadme8, "utf8");

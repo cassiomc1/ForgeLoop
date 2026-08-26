@@ -8,7 +8,6 @@ test("dependency policy allows only approved development tooling", () => {
     devDependencies: {
       eslint: "^9.0.0",
       c8: "^12.0.0",
-      "@mermaid-js/mermaid-cli": "^11.0.0",
     },
   });
 
