@@ -88,6 +88,17 @@ test("manifest validation enforces structure, taxonomy, ownership, and dark them
 
 test("renderer governance is broader than the currently implemented Archify mapping", () => {
   assert.deepEqual(GOVERNED_DIAGRAM_TYPES, ["workflow", "architecture", "sequence", "dataflow", "lifecycle"]);
+  assert.doesNotThrow(() => rendererForDiagramType("workflow"));
+  assert.deepEqual(rendererForDiagramType("workflow"), {
+    validateType: "workflow",
+    deliverType: "workflow",
+  });
+  for (const type of ["architecture", "sequence", "dataflow", "lifecycle"]) {
+    assert.throws(
+      () => rendererForDiagramType(type),
+      (error) => error.code === "E_DIAGRAM_RENDERER_NOT_IMPLEMENTED" && error.message.includes(type),
+    );
+  }
   assert.throws(
     () => rendererForDiagramType("architecture"),
     (error) => error.code === "E_DIAGRAM_RENDERER_NOT_IMPLEMENTED" && error.message.includes("architecture"),

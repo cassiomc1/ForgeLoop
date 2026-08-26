@@ -134,3 +134,24 @@ test("SVG drift invalidates the persisted visual approval before freshness check
     await rm(rootDir, { recursive: true, force: true });
   }
 });
+
+test("generation delegates governed but unimplemented types to the canonical renderer error", async () => {
+  const rootDir = await copyDocumentationFixture();
+  try {
+    const manifestPath = path.join(rootDir, "docs/diagrams/manifest.json");
+    const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+    manifest.diagrams[0].type = "architecture";
+    await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+
+    await assert.rejects(
+      () => generateDocumentationDiagrams({ rootDir }),
+      (error) => {
+        assert.equal(error.code, "E_DIAGRAM_RENDERER_NOT_IMPLEMENTED");
+        assert.match(error.message, /architecture/);
+        return true;
+      },
+    );
+  } finally {
+    await rm(rootDir, { recursive: true, force: true });
+  }
+});
