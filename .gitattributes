@@ -6,3 +6,5 @@ tests/fixtures/legacy-0.1.6/** -text
 *.json text eol=lf
 *.mjs text eol=lf
 *.js text eol=lf
+*.html text eol=lf
+*.svg text eol=lf

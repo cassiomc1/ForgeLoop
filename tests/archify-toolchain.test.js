@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import path from "node:path";
 
 import {
   ARCHIFY_COMMIT,
@@ -14,7 +15,7 @@ test("Archify toolchain is locally pinned to the reviewed release", async () => 
   assert.equal(report.version, ARCHIFY_VERSION);
   assert.equal(report.commit, ARCHIFY_COMMIT);
   assert.equal(report.license, "MIT");
-  assert.match(report.root, /vendor\/archify\/v2\.15\.0\/archify$/);
+  assert.match(report.root.split(path.sep).join("/"), /vendor\/archify\/v2\.15\.0\/archify$/);
 });
 
 test("pinned Archify doctor command passes without installing dependencies", async () => {
