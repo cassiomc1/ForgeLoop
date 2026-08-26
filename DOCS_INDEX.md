@@ -37,7 +37,8 @@ integration and guide context. Use this map before editing documentation.
 | Artifact and phase schemas | [`schemas/`](./schemas/) and [`CONTRACT_COVERAGE.md`](./CONTRACT_COVERAGE.md) | Versioned machine-readable contract |
 | CLI/package behavior | [`src/`](./src/) and [`tests/`](./tests/) | Executable implementation and regression evidence |
 | Guide content | [`ENG/`](./ENG/) | Context-specific, English-only operational guides |
-| Diagram | [`docs/diagrams/README.md`](./docs/diagrams/README.md) | Typed Archify source, interactive HTML, dark-first SVG, and deterministic receipt |
+| Diagram governance | [`docs/diagrams/manifest.json`](./docs/diagrams/manifest.json) | Authoritative taxonomy, renderer mapping, canonical purposes, artifact ownership, and references |
+| Diagram maintainer entrypoint | [`docs/diagrams/README.md`](./docs/diagrams/README.md) | Typed Archify source, animated HTML explorer, animated SVG fallback, review, and regeneration workflow |
 
 ## Audience map
 

@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "diagramId": "forgeloop-engineering-flow",
+  "status": "approved",
+  "binding": {
+    "sourceSha256": "e4778296d1b9b2129b1ff6c956acaa1e7faba3dbfe68e0e5a6fb47dae3499308",
+    "svgSha256": "f549d1f998c2c84793783b9b6ce7aabe05d9a91edebecb764403c67dfbb4cc52"
+  },
+  "checks": {
+    "darkThemeLegible": true,
+    "noOverlap": true,
+    "labelsReadable": true,
+    "trustBoundariesClear": true,
+    "mobilePreviewAcceptable": true,
+    "textFallbackEquivalent": true,
+    "accessibleMetadataPresent": true
+  },
+  "reviewedBy": "repository-maintainer",
+  "reviewedAt": "2026-08-26"
+}

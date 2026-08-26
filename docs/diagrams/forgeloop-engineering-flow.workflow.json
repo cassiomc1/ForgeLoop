@@ -4,7 +4,7 @@
   "meta": {
     "title": "ForgeLoop Evidence-First Engineering Flow",
     "subtitle": "Typed intent → gated work → validator-backed closure",
-    "animation": "none",
+    "animation": "trace",
     "visual_preset": "signal-flow",
     "quality_profile": "showcase",
     "views": [

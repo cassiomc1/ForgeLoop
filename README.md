@@ -271,16 +271,22 @@ See [`docs/CLI_REFERENCE.md`](./docs/CLI_REFERENCE.md) and [`LOOP_SYSTEM_DESIGN.
 
 The canonical source is the typed Archify workflow
 [`docs/diagrams/forgeloop-engineering-flow.workflow.json`](./docs/diagrams/forgeloop-engineering-flow.workflow.json).
-The committed interactive explorer is
+The committed animated interactive explorer is
 [`docs/assets/diagrams/forgeloop-engineering-flow.html`](./docs/assets/diagrams/forgeloop-engineering-flow.html),
-which opens in the dark presentation stage, the dark-first static render is
+which opens in the dark presentation stage and traces the workflow. The
+animated, self-contained SVG fallback is
 [`docs/assets/diagrams/forgeloop-engineering-flow.svg`](./docs/assets/diagrams/forgeloop-engineering-flow.svg),
 and the deterministic hash receipt is
 [`docs/assets/diagrams/forgeloop-engineering-flow.receipt.json`](./docs/assets/diagrams/forgeloop-engineering-flow.receipt.json).
+The governance source is [`docs/diagrams/manifest.json`](./docs/diagrams/manifest.json),
+and the source-bound visual approval is kept in
+[`docs/diagrams/reviews/forgeloop-engineering-flow.review.json`](./docs/diagrams/reviews/forgeloop-engineering-flow.review.json).
 The broader architecture and boundaries are in
 [`LOOP_SYSTEM_DESIGN.md`](./LOOP_SYSTEM_DESIGN.md).
 
-![ForgeLoop evidence-first engineering flow](./docs/assets/diagrams/forgeloop-engineering-flow.svg)
+[Open the animated ForgeLoop evidence-first engineering flow](./docs/assets/diagrams/forgeloop-engineering-flow.html)
+
+![ForgeLoop evidence-first engineering flow (animated SVG fallback)](./docs/assets/diagrams/forgeloop-engineering-flow.svg)
 
 Text-only fallback: discovery creates the contract and route; required gates
 and `PREFLIGHT_READY` authorize execution; verification creates structured

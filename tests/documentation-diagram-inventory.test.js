@@ -49,3 +49,60 @@ test("inventory classifies active diagram sources, references, and text while ig
   }
 });
 
+test("inventory detects orphaned and missing manifest-owned diagram artifacts", async () => {
+  const rootDir = await mkdtemp(path.join(os.tmpdir(), "forgeloop-diagram-inventory-"));
+  try {
+    await mkdir(path.join(rootDir, "docs", "diagrams", "reviews"), { recursive: true });
+    await mkdir(path.join(rootDir, "docs", "assets", "diagrams"), { recursive: true });
+    const manifest = {
+      version: 2,
+      renderer: {
+        name: "archify",
+        version: "2.15.0",
+        commit: "e1ac748f19cf805e44bf74fb93c796662152e273",
+        source: "https://github.com/tt-a1i/archify/tree/v2.15.0",
+        license: "MIT",
+      },
+      policy: {
+        supportedTypes: ["workflow", "architecture", "sequence", "dataflow", "lifecycle"],
+        requireVisualReview: true,
+      },
+      diagrams: [{
+        id: "flow",
+        type: "workflow",
+        defaultTheme: "dark",
+        canonicalFor: ["flow-purpose"],
+        source: "docs/diagrams/flow.workflow.json",
+        html: "docs/assets/diagrams/flow.html",
+        svg: "docs/assets/diagrams/flow.svg",
+        receipt: "docs/assets/diagrams/flow.receipt.json",
+        review: "docs/diagrams/reviews/flow.review.json",
+        fallback: "README.md#architecture-flow",
+        referencedBy: ["docs/diagrams/README.md"],
+      }],
+    };
+    await writeFile(path.join(rootDir, "docs", "diagrams", "manifest.json"), JSON.stringify(manifest), "utf8");
+    await writeFile(path.join(rootDir, "docs", "diagrams", "README.md"), "flow.workflow.json and flow.svg\n", "utf8");
+    await writeFile(path.join(rootDir, "docs", "diagrams", "flow.workflow.json"), "{}\n", "utf8");
+    await writeFile(path.join(rootDir, "docs", "assets", "diagrams", "flow.html"), "<!doctype html>\n", "utf8");
+    await writeFile(path.join(rootDir, "docs", "assets", "diagrams", "flow.svg"), "<svg />\n", "utf8");
+    await writeFile(path.join(rootDir, "docs", "assets", "diagrams", "flow.receipt.json"), "{}\n", "utf8");
+    await writeFile(path.join(rootDir, "docs", "diagrams", "reviews", "flow.review.json"), "{}\n", "utf8");
+    await writeFile(path.join(rootDir, "docs", "diagrams", "orphan.workflow.json"), "{}\n", "utf8");
+    await writeFile(path.join(rootDir, "docs", "assets", "diagrams", "orphan.svg"), "<svg />\n", "utf8");
+    await writeFile(path.join(rootDir, "docs", "diagrams", "reviews", "orphan.review.json"), "{}\n", "utf8");
+
+    const inventory = await scanDocumentationDiagrams({ rootDir });
+    assert.deepEqual(inventory.orphanedDiagramArtifacts, [
+      "docs/assets/diagrams/orphan.svg",
+      "docs/diagrams/orphan.workflow.json",
+      "docs/diagrams/reviews/orphan.review.json",
+    ]);
+
+    await rm(path.join(rootDir, "docs", "assets", "diagrams", "flow.html"));
+    const missing = await scanDocumentationDiagrams({ rootDir });
+    assert.ok(missing.orphanedDiagramArtifacts.includes("missing:docs/assets/diagrams/flow.html"));
+  } finally {
+    await rm(rootDir, { recursive: true, force: true });
+  }
+});

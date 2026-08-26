@@ -2,7 +2,6 @@
 
 import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -12,7 +11,12 @@ import {
   ARCHIFY_VERSION,
   inspectArchifyToolchain,
   requireArchify,
+  validateArchifyInvocation,
 } from "./archify-toolchain.mjs";
+import {
+  rendererForDiagramType,
+  validateDiagramManifest,
+} from "./documentation-diagram-manifest.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DIAGRAM_MANIFEST = "docs/diagrams/manifest.json";
@@ -73,39 +77,48 @@ function addAttribute(svg, name, value) {
   return svg.replace(/^<svg\b/, `<svg ${name}="${escaped}"`);
 }
 
+function escapeXmlText(value) {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+}
+
+function normalizeSvgBooleanAttributes(svg) {
+  return svg
+    .replace(/\sdata-detail-anchor(?=\s|\/?>)/g, ' data-detail-anchor="true"')
+    .replace(/\sdata-legend-bridge(?=\s|\/?>)/g, ' data-legend-bridge="true"')
+    .replace(/\sdata-legend(?=\s|\/?>)/g, ' data-legend="true"');
+}
+
 export function createStaticSvg({ html, sourceSha256 }) {
   const originalSvg = extractInlineSvg(html);
   const css = extractInlineStyles(html);
-  let svg = originalSvg;
+  let svg = normalizeSvgBooleanAttributes(originalSvg);
   svg = addAttribute(svg, "xmlns", "http://www.w3.org/2000/svg");
   svg = addAttribute(svg, "data-theme", "dark");
   svg = addAttribute(svg, "data-forgeloop-source-sha256", sourceSha256);
   svg = addAttribute(svg, "data-archify-version", ARCHIFY_VERSION);
   const openingEnd = svg.indexOf(">") + 1;
-  const staticStyle = `<style>\n      .c-bg-rect { fill: var(--bg); }\n${css}\n    </style>`;
+  const staticStyle = `<style>\n      .c-bg-rect { fill: var(--bg); }\n${escapeXmlText(css)}\n    </style>`;
   const background = `<rect width="100%" height="100%" class="c-bg-rect" />`;
   return `${svg.slice(0, openingEnd)}\n    ${staticStyle}\n    ${background}${svg.slice(openingEnd)}`;
 }
 
 function withGeneratorMeta(html, sourceSha256) {
   const metadata = `    <meta name="forgeloop-diagram-source-sha256" content="${sourceSha256}">\n    <meta name="forgeloop-diagram-renderer" content="archify@${ARCHIFY_VERSION} (${ARCHIFY_COMMIT})">\n`;
+  const layoutOverrides = `\n      /* Keep boundary labels clear of the first node in each group. */
+      [data-composition-frame-kind="group"] + text { transform: translateY(-18px); }
+`;
   const presentationHtml = html.replace(/<html\b([^>]*)>/i, (openingTag, attributes) => {
     if (/\bdata-present\s*=/.test(attributes)) return openingTag;
     return `<html${attributes} data-present="true">`;
   });
-  return presentationHtml.replace(/(<head[^>]*>\s*)/i, `$1${metadata}`);
+  const withLayout = presentationHtml.replace(/(<style\b[^>]*>)/i, `$1${layoutOverrides}`);
+  return withLayout.replace(/(<head[^>]*>\s*)/i, `$1${metadata}`);
 }
 
-async function readDiagramManifest(rootDir) {
+export async function readDiagramManifest(rootDir) {
   const manifestPath = path.join(rootDir, DIAGRAM_MANIFEST);
   const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
-  if (manifest.version !== 1 || !manifest.renderer || !Array.isArray(manifest.diagrams) || manifest.diagrams.length === 0) {
-    throw new Error(`${DIAGRAM_MANIFEST} must declare version 1, renderer, and at least one diagram`);
-  }
-  if (manifest.renderer.name !== "archify" || manifest.renderer.version !== ARCHIFY_VERSION || manifest.renderer.commit !== ARCHIFY_COMMIT) {
-    throw new Error("Diagram manifest does not use the pinned Archify renderer");
-  }
-  return manifest;
+  return validateDiagramManifest(manifest);
 }
 
 function outputPaths(rootDir, diagram) {
@@ -154,7 +167,6 @@ function createReceipt({ diagram, sourceBytes, htmlBytes, svgBytes }) {
       externalResources: false,
     },
     reproducible: true,
-    visualReview: "pending",
   }, null, 2) + "\n";
 }
 
@@ -162,28 +174,34 @@ export async function renderDocumentationDiagram({ rootDir = repositoryRoot, dia
   const paths = outputPaths(rootDir, diagram);
   const sourceBytes = await readFile(paths.source);
   const sourceSha256 = sha256(sourceBytes);
-  const tempDir = await mkdtemp(path.join(os.tmpdir(), "forgeloop-archify-render-"));
+  const renderer = rendererForDiagramType(diagram.type);
+  await mkdir(path.dirname(paths.html), { recursive: true });
+  const tempDir = await mkdtemp(path.join(path.dirname(paths.html), ".archify-render-"));
   try {
     const generatedHtmlPath = path.join(tempDir, `${diagram.id}.html`);
-    const validation = requireArchify([
+    const validationArgs = [
       "validate",
-      diagram.type,
+      renderer.validateType,
       paths.source,
       "--quality",
       "showcase",
       "--json",
-    ], { rootDir });
+    ];
+    await validateArchifyInvocation("validate", validationArgs.slice(1), { rootDir });
+    const validation = requireArchify(validationArgs, { rootDir });
     const validationJson = JSON.parse(validation.stdout);
     if (!validationJson.ok) throw new Error(`Archify validation did not pass for ${diagram.id}`);
-    requireArchify([
+    const deliverArgs = [
       "deliver",
-      diagram.type,
+      renderer.deliverType,
       paths.source,
       generatedHtmlPath,
       "--quality",
       "showcase",
       "--json",
-    ], { rootDir });
+    ];
+    await validateArchifyInvocation("deliver", deliverArgs.slice(1), { rootDir });
+    requireArchify(deliverArgs, { rootDir });
     const rawHtml = await readFile(generatedHtmlPath, "utf8");
     const html = withGeneratorMeta(removeRemoteFontLinks(normalizeText(rawHtml)), sourceSha256);
     const svg = createStaticSvg({ html, sourceSha256 });
@@ -201,6 +219,7 @@ export async function renderDocumentationDiagram({ rootDir = repositoryRoot, dia
         html: sha256(htmlBytes),
         svg: sha256(svgBytes),
       },
+      composition: validationJson.composition?.status ?? "unknown",
     };
   } finally {
     await rm(tempDir, { recursive: true, force: true });

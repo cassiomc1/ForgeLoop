@@ -1,16 +1,22 @@
 #!/usr/bin/env node
 
 import { createHash } from "node:crypto";
-import { access, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { ARCHIFY_COMMIT, ARCHIFY_SOURCE, ARCHIFY_VERSION, inspectArchifyToolchain, requireArchify } from "./archify-toolchain.mjs";
+import { ARCHIFY_COMMIT, ARCHIFY_SOURCE, ARCHIFY_VERSION, inspectArchifyToolchain } from "./archify-toolchain.mjs";
+import {
+  rendererForDiagramType,
+  validateDiagramManifestFiles,
+} from "./documentation-diagram-manifest.mjs";
 import { scanDocumentationDiagrams } from "./documentation-diagram-inventory.mjs";
-import { generateDocumentationDiagrams } from "./generate-documentation-diagrams.mjs";
+import { readDiagramManifest, renderDocumentationDiagram } from "./generate-documentation-diagrams.mjs";
+import { validateDiagramReview } from "./documentation-diagram-review.mjs";
+
+export { validateDiagramReview } from "./documentation-diagram-review.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const manifestRelativePath = "docs/diagrams/manifest.json";
 const sourcePrefix = "docs/diagrams";
 const outputPrefix = "docs/assets/diagrams";
 
@@ -38,6 +44,11 @@ function assert(condition, message) {
 
 function checkHtml(html, diagramId) {
   assert((html.match(/<svg\b/g) ?? []).length === 1, `${diagramId}: HTML must contain one inline SVG`);
+  assert(/<html\b[^>]*\bdata-theme="dark"/.test(html), `${diagramId}: HTML must default to the dark theme`);
+  assert(/<html\b[^>]*\bdata-present="true"/.test(html), `${diagramId}: HTML must contain the presentation marker`);
+  assert(/<svg\b[^>]*\bdata-animation="trace"/.test(html), `${diagramId}: HTML must expose trace animation`);
+  assert(/data-animate="edge"/.test(html), `${diagramId}: HTML must contain animated edges`);
+  assert(/@keyframes\s+archify-edge-flow/.test(html), `${diagramId}: HTML trace keyframes are missing`);
   assert(/<svg\b[^>]*\brole="img"/.test(html), `${diagramId}: HTML SVG must expose role=img`);
   assert(/<title\b[^>]*>[^<]+<\/title>/.test(html), `${diagramId}: HTML SVG title is missing`);
   assert(/<desc\b[^>]*>[^<]+<\/desc>/.test(html), `${diagramId}: HTML SVG description is missing`);
@@ -52,11 +63,14 @@ function checkSvg(svg, sourceSha256, diagramId) {
   assert(/<title\b[^>]*>[^<]+<\/title>/.test(svg), `${diagramId}: static SVG title is missing`);
   assert(/<desc\b[^>]*>[^<]+<\/desc>/.test(svg), `${diagramId}: static SVG description is missing`);
   assert(/data-theme="dark"/.test(svg), `${diagramId}: static SVG must be dark-first`);
+  assert(/<svg\b[^>]*\bdata-animation="trace"/.test(svg), `${diagramId}: SVG must expose trace animation`);
+  assert(/data-animate="edge"/.test(svg), `${diagramId}: SVG must contain animated edges`);
   assert(new RegExp(`data-forgeloop-source-sha256="${sourceSha256}"`).test(svg), `${diagramId}: static SVG source fingerprint is stale`);
   assert(/<style\b[\s\S]*--bg:/.test(svg), `${diagramId}: static SVG must embed its theme CSS`);
   assert(/class="c-bg-rect"/.test(svg), `${diagramId}: static SVG background is missing`);
   assert(!/<script\b/i.test(svg), `${diagramId}: static SVG must not contain scripts`);
   assert(!/<foreignObject\b/i.test(svg), `${diagramId}: static SVG must not contain foreignObject`);
+  assert(!/\sdata-(?:detail-anchor|legend(?:-bridge)?)(?=\s|\/?>)/.test(svg), `${diagramId}: static SVG contains unquoted boolean attributes`);
   assert(!/(?:href|src)\s*=\s*["'](?:https?:|\/\/)/i.test(svg), `${diagramId}: static SVG contains an external resource`);
 }
 
@@ -65,7 +79,7 @@ async function checkOneDiagram({ rootDir, diagram }) {
   const htmlPath = resolveManifestPath(rootDir, diagram.html, outputPrefix);
   const svgPath = resolveManifestPath(rootDir, diagram.svg, outputPrefix);
   const receiptPath = resolveManifestPath(rootDir, diagram.receipt, outputPrefix);
-  await Promise.all([access(sourcePath), access(htmlPath), access(svgPath), access(receiptPath)]);
+  const reviewPath = resolveManifestPath(rootDir, diagram.review, "docs/diagrams/reviews");
 
   const sourceBytes = await readFile(sourcePath);
   const htmlBytes = await readFile(htmlPath);
@@ -74,17 +88,36 @@ async function checkOneDiagram({ rootDir, diagram }) {
   const sourceSha256 = sha256(sourceBytes);
   const htmlSha256 = sha256(htmlBytes);
   const svgSha256 = sha256(svgBytes);
-  const validation = requireArchify([
-    "validate",
-    diagram.type,
-    sourcePath,
-    "--quality",
-    "showcase",
-    "--json",
-  ], { rootDir });
-  const validationJson = JSON.parse(validation.stdout);
+  const renderer = rendererForDiagramType(diagram.type);
 
-  assert(validationJson.ok === true, `${diagram.id}: Archify validation failed`);
+  let review;
+  let reviewBytes;
+  try {
+    reviewBytes = await readFile(reviewPath, "utf8");
+  } catch (error) {
+    const reviewError = new Error(`E_DIAGRAM_REVIEW_MISSING: ${diagram.review}`);
+    reviewError.code = "E_DIAGRAM_REVIEW_MISSING";
+    reviewError.cause = error;
+    throw reviewError;
+  }
+  try {
+    review = JSON.parse(reviewBytes);
+  } catch (error) {
+    const reviewError = new Error(`E_DIAGRAM_REVIEW_INVALID: ${diagram.review}`);
+    reviewError.code = "E_DIAGRAM_REVIEW_INVALID";
+    reviewError.cause = error;
+    throw reviewError;
+  }
+  validateDiagramReview(review, {
+    diagramId: diagram.id,
+    sourceSha256,
+    svgSha256,
+  });
+
+  const rendered = await renderDocumentationDiagram({ rootDir, diagram });
+  assert(Buffer.from(rendered.html, "utf8").equals(htmlBytes), `${diagram.id}: generated HTML is stale: ${diagram.html}`);
+  assert(Buffer.from(rendered.svg, "utf8").equals(svgBytes), `${diagram.id}: generated SVG is stale: ${diagram.svg}`);
+  assert(rendered.receipt === (await readFile(receiptPath, "utf8")), `${diagram.id}: generated receipt is stale: ${diagram.receipt}`);
   assert(receipt.version === 1, `${diagram.id}: receipt version must be 1`);
   assert(receipt.diagramId === diagram.id, `${diagram.id}: receipt id mismatch`);
   assert(receipt.renderer?.name === "archify", `${diagram.id}: receipt renderer mismatch`);
@@ -100,6 +133,7 @@ async function checkOneDiagram({ rootDir, diagram }) {
   assert(receipt.staticSvg?.theme === "dark-first", `${diagram.id}: receipt static theme mismatch`);
   assert(receipt.staticSvg?.accessible === true, `${diagram.id}: receipt accessibility flag missing`);
   assert(receipt.staticSvg?.externalResources === false, `${diagram.id}: receipt external-resource flag missing`);
+  assert(!Object.hasOwn(receipt, "visualReview"), `${diagram.id}: review state must be stored separately`);
   checkHtml(htmlBytes.toString("utf8"), diagram.id);
   checkSvg(svgBytes.toString("utf8"), sourceSha256, diagram.id);
 
@@ -111,35 +145,44 @@ async function checkOneDiagram({ rootDir, diagram }) {
     sourceSha256,
     htmlSha256,
     svgSha256,
-    composition: validationJson.composition?.status ?? "unknown",
+    composition: rendered.composition ?? "unknown",
+    renderer: renderer.validateType,
   };
 }
 
 export async function checkDocumentationDiagrams({ rootDir = repositoryRoot, reproducible = true } = {}) {
   const root = path.resolve(rootDir);
   const toolchain = await inspectArchifyToolchain({ rootDir: root });
-  const manifest = await readJson(path.join(root, manifestRelativePath));
-  assert(manifest.version === 1, "Diagram manifest version must be 1");
-  assert(manifest.renderer?.name === "archify", "Diagram manifest renderer must be Archify");
-  assert(manifest.renderer.version === ARCHIFY_VERSION, "Diagram manifest Archify version is not pinned");
-  assert(manifest.renderer.commit === ARCHIFY_COMMIT, "Diagram manifest Archify commit is not pinned");
-  assert(manifest.renderer.source === ARCHIFY_SOURCE, "Diagram manifest Archify source is not pinned");
-  assert(Array.isArray(manifest.diagrams) && manifest.diagrams.length > 0, "Diagram manifest must list at least one diagram");
+  const manifest = await readDiagramManifest(root);
+  try {
+    await validateDiagramManifestFiles(manifest, { rootDir: root });
+  } catch (error) {
+    const missingReview = manifest.diagrams.find((diagram) => error.value === diagram.review);
+    if (missingReview) {
+      const reviewError = new Error(`E_DIAGRAM_REVIEW_MISSING: ${missingReview.review}`);
+      reviewError.code = "E_DIAGRAM_REVIEW_MISSING";
+      reviewError.cause = error;
+      throw reviewError;
+    }
+    throw error;
+  }
 
-  const inventory = await scanDocumentationDiagrams({ rootDir: root });
+  const inventory = await scanDocumentationDiagrams({ rootDir: root, manifest });
   assert(inventory.activeMermaid === false, "Active Mermaid sources or fences remain in the documentation tree");
   assert(inventory.unreferencedVisualAssets.length === 0, `Unreferenced visual assets: ${inventory.unreferencedVisualAssets.join(", ")}`);
+  assert(inventory.orphanedDiagramArtifacts.length === 0, `Orphaned diagram artifacts: ${inventory.orphanedDiagramArtifacts.join(", ")}`);
   const diagrams = [];
   for (const diagram of manifest.diagrams) diagrams.push(await checkOneDiagram({ rootDir: root, diagram }));
-  if (reproducible) await generateDocumentationDiagrams({ rootDir: root, check: true });
   return {
-    version: 1,
+    version: 2,
     renderer: toolchain,
+    policy: manifest.policy,
     inventory: {
       markdownFiles: inventory.markdownFiles.length,
       visualAssets: inventory.visualAssets.length,
       activeMermaid: inventory.activeMermaid,
       unreferencedVisualAssets: inventory.unreferencedVisualAssets,
+      orphanedDiagramArtifacts: inventory.orphanedDiagramArtifacts,
     },
     diagrams,
     reproducible,
@@ -159,4 +202,3 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     process.exitCode = 1;
   }
 }
-
