@@ -10,6 +10,7 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 const IGNORED_DIRECTORIES = new Set([
   ".git",
   ".forgeloop",
+  ".worktrees",
   "coverage",
   "dist",
   "node_modules",

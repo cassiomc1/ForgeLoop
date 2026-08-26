@@ -54,7 +54,10 @@ function assertReviewError(mutator, code) {
 
 async function copyDocumentationFixture() {
   const rootDir = await mkdtemp(path.join(os.tmpdir(), "forgeloop-documentation-diagrams-"));
-  await cp(path.join(repositoryRoot, "docs"), path.join(rootDir, "docs"), { recursive: true });
+  await cp(path.join(repositoryRoot, "docs"), path.join(rootDir, "docs"), {
+    recursive: true,
+    filter: (src) => !path.basename(src).startsWith(".archify-"),
+  });
   await cp(path.join(repositoryRoot, "vendor"), path.join(rootDir, "vendor"), { recursive: true });
   await cp(path.join(repositoryRoot, "README.md"), path.join(rootDir, "README.md"));
   await cp(path.join(repositoryRoot, "DOCS_INDEX.md"), path.join(rootDir, "DOCS_INDEX.md"));
