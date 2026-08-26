@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "kind": "DERIVED_COMPLETION_ATTESTATION",
+  "taskId": "poc-real-protocol-execution-20260826",
+  "taskKey": "747b59b95851208eff7819dec9b4a8233332d0479b17403831539edf859cce61",
+  "sources": [
+    "task-state/work-state.json",
+    "task-state/events.ndjson",
+    "task-state/execution-receipt.json",
+    "completion.json"
+  ],
+  "observedPhase": "COMPLETE",
+  "observedCompletionEvent": "COMPLETION_VALIDATED",
+  "observedCompletionStatus": "VALID",
+  "evidenceCoverageStatus": "100%_COVERED",
+  "claimState": "RELEASED_BY_COMPLETION",
+  "note": "This publication-layer attestation summarizes the validator-backed completion state derived from the preserved protocol-authoritative event ledger and execution receipt."
+}

@@ -1,248 +1,296 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "runId": "poc-20260826-real-execution",
   "taskId": "poc-real-protocol-execution-20260826",
   "taskKey": "747b59b95851208eff7819dec9b4a8233332d0479b17403831539edf859cce61",
   "repository": "cassiomc1/forgeloop",
-  "repositoryCommitBefore": "1eb8088716e279faa746b11e3077de1fef570b69",
-  "packageVersion": "1.6.0",
-  "protocolReadVersions": [
+  "executionBaselineCommit": "1eb8088716e279faa746b11e3077de1fef570b69",
+  "initialPublicationCommit": "098f3c1629abd820088464f9491ffad18c39deeb",
+  "initialPublicationPullRequest": 110,
+  "packageVersionAtExecution": "1.6.0",
+  "protocolReadVersionsAtExecution": [
     1
   ],
-  "protocolWriteVersions": [
+  "protocolWriteVersionsAtExecution": [
     1
   ],
   "cliResolution": "node src/cli.js",
   "startedAt": "2026-08-26T17:56:21.916Z",
   "completedAt": "2026-08-26T18:02:52.080Z",
-  "protocolCompletionStatus": "VALID",
-  "lifecyclePhase": "COMPLETE",
-  "auditStatus": "VALID",
-  "totalEvidenceFiles": 32,
+  "executionCompletion": {
+    "phase": "COMPLETE",
+    "status": "VALID",
+    "claimState": "RELEASED_BY_COMPLETION"
+  },
+  "executionProtocolValidation": {
+    "status": "VALID"
+  },
+  "postPublicationAudit": {
+    "status": "INVALID",
+    "reasonCodes": [
+      "E_RECEIPT_PATH_MISMATCH"
+    ],
+    "note": "Captured after evidence export created new unsealed paths in the repository; preserved as fail-closed drift evidence."
+  },
+  "publicationPackageIntegrity": {
+    "status": "VALID"
+  },
+  "productionReadiness": {
+    "status": "NOT_VERIFIED"
+  },
+  "totalEvidenceFiles": 36,
   "files": [
+    {
+      "path": "README.md",
+      "sha256": "584160c7623eaddc5a1a12d3730f5338efb9865e45ab88641a535a1858d29005",
+      "sizeBytes": 7092,
+      "classification": "PUBLICATION_METADATA",
+      "description": "Evidence package documentation, two-layer model explanation, and classification guide"
+    },
     {
       "path": "audit.json",
       "sha256": "dec306527d8f1510d09dec585489f8c11bd3d4caba3d72f7befe803831147de3",
       "sizeBytes": 14030,
-      "provenance": "protocol-generated",
-      "description": "Strict protocol audit report"
+      "classification": "POST_PUBLICATION_DRIFT_EVIDENCE",
+      "description": "Preserved read-only audit captured after evidence export, showing E_RECEIPT_PATH_MISMATCH drift detection"
+    },
+    {
+      "path": "completion-attestation.json",
+      "sha256": "c0ed5f1471ac4c9d8b0895e2bdbc92e61d71ac86bdb955f26868401cef38d001",
+      "sizeBytes": 743,
+      "classification": "PUBLICATION_METADATA",
+      "description": "Derived completion attestation summarizing validator-backed completion state"
+    },
+    {
+      "path": "completion.json",
+      "sha256": "9c43bd0b32d4e1efc659f90167d38c82a38d0ccb0291467bf9e63cde564056c3",
+      "sizeBytes": 3192,
+      "classification": "PROTOCOL_GENERATED",
+      "description": "Raw forgeloop complete CLI output recovered from authoritative execution transcript"
     },
     {
       "path": "history.json",
       "sha256": "7f2e90b1bfd051511c8ccd9559747fedd351b8679a761d6919f7c6599ae6aa3e",
       "sizeBytes": 40333,
-      "provenance": "read-only-projection",
-      "description": "Complete append-only lifecycle event ledger history"
+      "classification": "READ_ONLY_PROJECTION",
+      "description": "Read-only protocol projection inspecting task state, history, trace, or schema conformance"
     },
     {
       "path": "inspect.json",
       "sha256": "13dbfe45c0f56f3fb12eae723818c1ef9dba0675a7323982df10fccc2bc0e34f",
       "sizeBytes": 110690,
-      "provenance": "read-only-projection",
-      "description": "Comprehensive task state inspection snapshot"
+      "classification": "READ_ONLY_PROJECTION",
+      "description": "Read-only protocol projection inspecting task state, history, trace, or schema conformance"
     },
     {
       "path": "progress.json",
       "sha256": "7d28e18398368164af5c76a5fcd1bc15b0aa545ad9f4bc58f77594e07da9f610",
       "sizeBytes": 146,
-      "provenance": "protocol-generated",
-      "description": "Lifecycle progress and anomaly signal projection"
+      "classification": "READ_ONLY_PROJECTION",
+      "description": "Read-only protocol projection inspecting task state, history, trace, or schema conformance"
     },
     {
       "path": "protocol-info.json",
       "sha256": "c13c616d49c8e337e1c10201ff4db7227e7cfa98b4553e9f0ca5c858a9760181",
       "sizeBytes": 87291,
-      "provenance": "protocol-generated",
-      "description": "Compatibility handshake and supported protocol/schema version metadata"
+      "classification": "PROTOCOL_GENERATED",
+      "description": "Compatibility handshake discovering supported package, protocol, and schema versions"
+    },
+    {
+      "path": "publication.json",
+      "sha256": "cdfcc447d13ea2004ecd7d42e8c0f20d1eca1d0ec9558d60de54d94794323186",
+      "sizeBytes": 678,
+      "classification": "PUBLICATION_METADATA",
+      "description": "Publication record linking PR #110 and distinguishing local-only execution from subsequent GitHub merge"
     },
     {
       "path": "report.json",
       "sha256": "abc8b102a2b2ea0672d2c1aba51292d995160dc6dd5cb28d54c3fe5fecc44144",
       "sizeBytes": 4300,
-      "provenance": "protocol-generated",
-      "description": "Consolidated multi-dimensional report"
+      "classification": "POST_PUBLICATION_DRIFT_EVIDENCE",
+      "description": "Preserved read-only report captured after evidence export, showing E_RECEIPT_PATH_MISMATCH drift detection"
     },
     {
       "path": "status-final.json",
       "sha256": "06929a4b63f88e482928ca3e40934ed4e8a840cf4f37bfc358fcde60dd7dee28",
       "sizeBytes": 27758,
-      "provenance": "protocol-generated",
-      "description": "Multi-dimensional final status projection"
+      "classification": "READ_ONLY_PROJECTION",
+      "description": "Read-only multi-dimensional status projection after completion"
     },
     {
       "path": "task-show.json",
       "sha256": "bbea536737aa4ecdb7ac04d3d6ec2d7ea7048132f1367d9360a41295c2083961",
       "sizeBytes": 2124,
-      "provenance": "protocol-generated",
-      "description": "Task descriptor, write claims, and namespace location"
+      "classification": "READ_ONLY_PROJECTION",
+      "description": "Read-only protocol projection inspecting task state, history, trace, or schema conformance"
     },
     {
       "path": "task-state/continuity.json",
       "sha256": "34e6d6046f290504c29189f140088c4d4e8dfac0e24d2ef4bb9da56ce37e23ea",
       "sizeBytes": 872,
-      "provenance": "protocol-generated",
+      "classification": "PROTOCOL_GENERATED",
       "description": "Operational handoff and continuity checkpoint"
     },
     {
       "path": "task-state/contract.json",
       "sha256": "21e57e1c95ca4d419f3d0842b8f7e8828fc9f6218b362a208253724b034481d6",
       "sizeBytes": 5416,
-      "provenance": "agent-authored",
-      "description": "Authoritative task contract specification"
+      "classification": "AGENT_AUTHORED",
+      "description": "Authoritative task contract specification defining deliverables, constraints, assumptions, and verification requirements"
     },
     {
       "path": "task-state/events.ndjson",
       "sha256": "ca000489fb7ed68f5d4c653d42e70303b14da2ceaeba582c0833b1e8870fefc0",
       "sizeBytes": 19579,
-      "provenance": "protocol-authoritative",
-      "description": "Raw append-only event ledger"
+      "classification": "PROTOCOL_AUTHORITATIVE",
+      "description": "Append-only protocol event ledger recording authoritative lifecycle transitions and check events"
     },
     {
       "path": "task-state/events.ndjson.index.json",
       "sha256": "2e8254c8a608610b6e5693ba793fc7298a4305d19313ece8837cb97c975a1c12",
       "sizeBytes": 107,
-      "provenance": "protocol-authoritative",
-      "description": "Raw append-only event ledger"
+      "classification": "PROTOCOL_AUTHORITATIVE",
+      "description": "Append-only protocol event ledger recording authoritative lifecycle transitions and check events"
     },
     {
       "path": "task-state/execution-receipt.json",
       "sha256": "55518881b781222150f43645af3535e08c98179d7092a359ded85fab6d129674",
       "sizeBytes": 19288,
-      "provenance": "protocol-generated",
-      "description": "Compiled execution receipt mapping requirements to evidence"
+      "classification": "PROTOCOL_GENERATED",
+      "description": "Compiled execution receipt mapping requirements to observed execution evidence and changed paths"
     },
     {
       "path": "task-state/executions/exec-140b77a3-a675-41a2-bc0e-456b4b18d7a4.json",
       "sha256": "5fc73d4286ce28c3829ed4fef18b79e9af6b2441734d2c553b9071072b4436a2",
       "sizeBytes": 1087,
-      "provenance": "protocol-executed",
-      "description": "Trusted command execution provenance record"
+      "classification": "PROTOCOL_EXECUTED",
+      "description": "Immutable command execution provenance record capturing exact process argv, exit code, and resolution"
     },
     {
       "path": "task-state/executions/exec-52c080e5-1310-4c49-9b32-35e4ea57d243.json",
       "sha256": "e644f9983a4b674e08a70776d4f6f6fc4bd35653c1a9ec24691d8fecf2a63adb",
       "sizeBytes": 1122,
-      "provenance": "protocol-executed",
-      "description": "Trusted command execution provenance record"
+      "classification": "PROTOCOL_EXECUTED",
+      "description": "Immutable command execution provenance record capturing exact process argv, exit code, and resolution"
     },
     {
       "path": "task-state/executions/exec-58a1c35a-1b20-4234-95db-6f48a45ef5af.json",
       "sha256": "f51e3c3129601c106fce31e9e628acb54094c76c128c385a555e17a5ab632f76",
       "sizeBytes": 992,
-      "provenance": "protocol-executed",
-      "description": "Trusted command execution provenance record"
+      "classification": "PROTOCOL_EXECUTED",
+      "description": "Immutable command execution provenance record capturing exact process argv, exit code, and resolution"
     },
     {
       "path": "task-state/executions/exec-7cf31511-e088-4dfe-963d-4a163ddebdec.json",
       "sha256": "a434558ec916136ec81eaafb95bc14de4b89019873cd7f65bb6da1c86eca6113",
       "sizeBytes": 1106,
-      "provenance": "protocol-executed",
-      "description": "Trusted command execution provenance record"
+      "classification": "PROTOCOL_EXECUTED",
+      "description": "Immutable command execution provenance record capturing exact process argv, exit code, and resolution"
     },
     {
       "path": "task-state/executions/exec-a5a68f50-c623-47fa-9aed-c800f5d69fa5.json",
       "sha256": "a118a49a058d435d20f6f27e0c4516955ce8102a2cb1ae6de96d1de466be0758",
       "sizeBytes": 1039,
-      "provenance": "protocol-executed",
-      "description": "Trusted command execution provenance record"
+      "classification": "PROTOCOL_EXECUTED",
+      "description": "Immutable command execution provenance record capturing exact process argv, exit code, and resolution"
     },
     {
       "path": "task-state/executions/exec-ad65660d-9849-46d5-b855-5740652ef4d8.json",
       "sha256": "9bdcf400cb233387d778a51ba21880022ee55a7aaade0ebfacb9026a9705dd45",
       "sizeBytes": 1011,
-      "provenance": "protocol-executed",
-      "description": "Trusted command execution provenance record"
+      "classification": "PROTOCOL_EXECUTED",
+      "description": "Immutable command execution provenance record capturing exact process argv, exit code, and resolution"
     },
     {
       "path": "task-state/executions/exec-b63e1ecc-2ed3-4a32-ac3e-07f2a0878683.json",
       "sha256": "f8023c051733ab3073dcf13dfb2aa81cdc211054b809bbb65aad590fbe23d03a",
       "sizeBytes": 1339,
-      "provenance": "protocol-executed",
-      "description": "Trusted command execution provenance record"
+      "classification": "PROTOCOL_EXECUTED",
+      "description": "Immutable command execution provenance record capturing exact process argv, exit code, and resolution"
     },
     {
       "path": "task-state/executions/exec-bb28e87f-f66e-4c8a-9c9d-25c95e1a0833.json",
       "sha256": "ca8242567a6b2a2779afb95d423e5f59da582a553bbe90228f386a0b3b9d2adc",
       "sizeBytes": 1247,
-      "provenance": "protocol-executed",
-      "description": "Trusted command execution provenance record"
+      "classification": "PROTOCOL_EXECUTED",
+      "description": "Immutable command execution provenance record capturing exact process argv, exit code, and resolution"
     },
     {
       "path": "task-state/executions/exec-f2ffe2b0-8c2a-475f-bf73-c612e502b4fd.json",
       "sha256": "76f74de4c85dee7a0a6059923424e0505674c505fc652c785390a62c00e07ee9",
       "sizeBytes": 1152,
-      "provenance": "protocol-executed",
-      "description": "Trusted command execution provenance record"
+      "classification": "PROTOCOL_EXECUTED",
+      "description": "Immutable command execution provenance record capturing exact process argv, exit code, and resolution"
     },
     {
       "path": "task-state/gates/threat-boundary.json",
       "sha256": "7a67512346660088e8a2176258433cd2652dce22485d6aecfe1973c35b945653",
       "sizeBytes": 1112,
-      "provenance": "protocol-generated",
-      "description": "Satisfied threat-boundary security gate attestation"
+      "classification": "AGENT_AUTHORED",
+      "description": "Satisfied threat-boundary security gate attestation required by the security guide"
     },
     {
       "path": "task-state/policy-snapshot.json",
       "sha256": "42ba46ba0623c90a3bd567f27f91b7176b2f9f074fa0268e520f5e31a09744f8",
       "sizeBytes": 1248,
-      "provenance": "protocol-generated",
+      "classification": "PROTOCOL_GENERATED",
       "description": "Task policy snapshot binding capability policy digest"
     },
     {
       "path": "task-state/preflight.json",
       "sha256": "f9402ae7b406254d5e91d37b84b0728be1fdd9db9888e2bd725c402f91e9599e",
       "sizeBytes": 1151,
-      "provenance": "protocol-generated",
-      "description": "Preflight gate readiness attestation (READY)"
+      "classification": "PROTOCOL_GENERATED",
+      "description": "Preflight gate readiness attestation validating contract freshness, routing, and profile"
     },
     {
       "path": "task-state/routing-result.json",
       "sha256": "e1b9bc971e931cf76a88f1e78956e27977b290a89fd8957f1dde8f654fbe26ae",
       "sizeBytes": 1203,
-      "provenance": "protocol-generated",
-      "description": "Deterministic guide routing output"
+      "classification": "PROTOCOL_GENERATED",
+      "description": "Deterministic guide router result evaluating declared signals against GUIDE_ROUTER matrix"
     },
     {
       "path": "task-state/task.json",
       "sha256": "bdbc44db562327ade31478b3857c303b161fcbe2f179ff38fb1cc43f15e2f63c",
       "sizeBytes": 323,
-      "provenance": "protocol-generated",
-      "description": "Task descriptor artifact"
+      "classification": "PROTOCOL_GENERATED",
+      "description": "Task descriptor artifact specifying namespace and write claims"
     },
     {
       "path": "task-state/work-state.json",
       "sha256": "147826766a6c428a50a2508d10f3e6977ecc510cd84985914142385237a88332",
       "sizeBytes": 18807,
-      "provenance": "protocol-generated",
-      "description": "Canonical work-state checkpoint"
+      "classification": "PROTOCOL_GENERATED",
+      "description": "Canonical work-state checkpoint tracking lifecycle phase, cycle, and verification state"
     },
     {
       "path": "trace.json",
       "sha256": "d1fba6d417483f506fbc6b9a9682bf41d92227fc72d7ac8edc57967d661792d0",
       "sizeBytes": 48619,
-      "provenance": "read-only-projection",
-      "description": "Structured execution trace and phase transitions"
+      "classification": "READ_ONLY_PROJECTION",
+      "description": "Read-only protocol projection inspecting task state, history, trace, or schema conformance"
     },
     {
       "path": "validate-protocol.json",
       "sha256": "eca6859fdc8ca59750a9800787cfb22b93c16dabc0b44d4863cad5a4d828d278",
       "sizeBytes": 614,
-      "provenance": "protocol-generated",
-      "description": "Overall ForgeLoop protocol invariant validation"
+      "classification": "READ_ONLY_PROJECTION",
+      "description": "Read-only protocol projection inspecting task state, history, trace, or schema conformance"
     },
     {
       "path": "validate-receipt.json",
       "sha256": "55518881b781222150f43645af3535e08c98179d7092a359ded85fab6d129674",
       "sizeBytes": 19288,
-      "provenance": "protocol-generated",
-      "description": "Execution receipt cryptographic integrity evaluation"
+      "classification": "READ_ONLY_PROJECTION",
+      "description": "Read-only protocol projection inspecting task state, history, trace, or schema conformance"
     },
     {
       "path": "validate-state.json",
       "sha256": "d105abfabab5b8b8df908ee0363ab9564411b00535c9b802b569b32d12f92b4d",
       "sizeBytes": 20030,
-      "provenance": "protocol-generated",
-      "description": "Work-state schema and lifecycle consistency evaluation"
+      "classification": "READ_ONLY_PROJECTION",
+      "description": "Read-only protocol projection inspecting task state, history, trace, or schema conformance"
     }
   ]
 }

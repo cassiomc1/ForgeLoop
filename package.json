@@ -81,7 +81,8 @@
     "dependency:policy": "node scripts/check-dependency-policy.mjs",
     "mcp:test": "node --test integrations/mcp/tests/*.test.js",
     "mcp:setup": "node scripts/mcp-setup.mjs",
-    "mcp:pack:check": "node scripts/mcp-package-smoke.mjs"
+    "mcp:pack:check": "node scripts/mcp-package-smoke.mjs",
+    "poc:evidence:verify": "node scripts/verify_poc_evidence.mjs"
   },
   "devDependencies": {
     "c8": "^12.0.0",

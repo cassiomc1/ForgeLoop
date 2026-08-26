@@ -1,0 +1,117 @@
+{
+  "status": "VALID",
+  "taskStatus": "COMPLETE",
+  "verificationStatus": "VALID",
+  "publicationStatus": "local-only",
+  "productionReadiness": "not-verified",
+  "errors": [],
+  "warnings": [],
+  "preflight": {
+    "schemaVersion": 1,
+    "protocolVersion": 1,
+    "taskId": "poc-real-protocol-execution-20260826",
+    "status": "READY",
+    "profile": {
+      "status": "verified",
+      "mode": "project",
+      "profileStatus": "verified",
+      "fingerprint": "f2c1b76d86b5c0613efbb37988999fddd4eed76a57088f4aa50c4f26b4348901",
+      "provenance": "not-referenced"
+    },
+    "contract": {
+      "status": "valid",
+      "fingerprint": "bd4d60b1642afcdaf3b628506ac98e63d14d929c3461aab4aa3f41d60aa297d9"
+    },
+    "routing": {
+      "status": "valid",
+      "fingerprint": "1fa871924061bee6c638f713bbca375d73936ebcade13e2c7ad413a79fd78663",
+      "guides": [
+        "clean",
+        "test",
+        "documentation",
+        "security"
+      ]
+    },
+    "requiredGates": [
+      "threat-boundary"
+    ],
+    "satisfiedGates": [
+      "threat-boundary"
+    ],
+    "errors": [],
+    "fingerprints": {
+      "contract": "bd4d60b1642afcdaf3b628506ac98e63d14d929c3461aab4aa3f41d60aa297d9",
+      "routing": "1fa871924061bee6c638f713bbca375d73936ebcade13e2c7ad413a79fd78663",
+      "profile": "f2c1b76d86b5c0613efbb37988999fddd4eed76a57088f4aa50c4f26b4348901"
+    },
+    "sources": {
+      "status": "valid",
+      "fingerprint": null
+    }
+  },
+  "coverage": [
+    {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "requirement": "tests",
+      "requiredEvidence": [
+        "tests"
+      ],
+      "observedEvidence": [
+        "tests"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "requirement": "security-validation",
+      "requiredEvidence": [
+        "security-validation"
+      ],
+      "observedEvidence": [
+        "security-validation"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "requirement": "Technical audit report provides complete, reproducible, and verifiable evidence trail.",
+      "requiredEvidence": [
+        "Technical audit report provides complete, reproducible, and verifiable evidence trail."
+      ],
+      "observedEvidence": [
+        "Technical audit report provides complete, reproducible, and verifiable evidence trail."
+      ],
+      "status": "COVERED"
+    },
+    {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "requirement": "Workload implementation is functional, deterministic, and fully covered by automated tests.",
+      "requiredEvidence": [
+        "Workload implementation is functional, deterministic, and fully covered by automated tests."
+      ],
+      "observedEvidence": [
+        "Workload implementation is functional, deterministic, and fully covered by automated tests."
+      ],
+      "status": "COVERED"
+    }
+  ],
+  "ledger": {
+    "status": "valid",
+    "events": 44
+  },
+  "actions": {
+    "count": 0,
+    "required": 0,
+    "verified": 0,
+    "trustedSatisfied": 0,
+    "unresolvedRequired": 0,
+    "failed": 0,
+    "ambiguous": 0,
+    "pending": 0,
+    "actionRefs": []
+  }
+}
