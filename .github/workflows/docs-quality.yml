@@ -57,9 +57,9 @@ jobs:
       - name: Lint Markdown
         uses: DavidAnson/markdownlint-cli2-action@21c1be1b93ad9ed58fa840aacc3f279cde2a72ff # v24.2.0
         with:
+          config: scripts/markdownlint-cli2.jsonc
           globs: |
             **/*.{md,markdown}
-            !**/vendor/archify/**
 
       - name: Check links
         # Link checking is independent of the Node matrix; avoid three
