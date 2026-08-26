@@ -4,6 +4,7 @@
  * ForgeLoop PoC Evidence Package Verifier
  * 
  * Deterministically validates cryptographic integrity, path safety,
+ * cross-platform traversal protection, exact checksum parity,
  * manifest consistency, and semantic protocol invariants for the
  * published Real Execution Proof of Concept evidence package.
  *
@@ -20,6 +21,24 @@ const __dirname = path.dirname(__filename);
 const REPO_ROOT = path.resolve(__dirname, "..");
 const DEFAULT_EVIDENCE_DIR = path.resolve(REPO_ROOT, "poc/evidence/poc-20260826-real-execution");
 
+export function normalizeEvidencePath(value) {
+  if (typeof value !== "string") return "";
+  return value.replaceAll("\\", "/");
+}
+
+export function isUnsafeEvidencePath(value) {
+  if (typeof value !== "string" || value.length === 0) return true;
+  if (path.isAbsolute(value)) return true;
+  const normalized = normalizeEvidencePath(value);
+  return (
+    normalized === ".." ||
+    normalized.startsWith("../") ||
+    normalized.includes("/../") ||
+    normalized.endsWith("/..") ||
+    normalized.startsWith("/")
+  );
+}
+
 export async function computeSha256(filePath) {
   const buffer = await readFile(filePath);
   return createHash("sha256").update(buffer).digest("hex");
@@ -32,7 +51,7 @@ export async function getAllFiles(dir, baseDir = dir, fileList = []) {
     if (entry.isDirectory()) {
       await getAllFiles(fullPath, baseDir, fileList);
     } else {
-      const relPath = path.relative(baseDir, fullPath).replaceAll("\\", "/");
+      const relPath = normalizeEvidencePath(path.relative(baseDir, fullPath));
       fileList.push({ fullPath, relPath });
     }
   }
@@ -76,25 +95,27 @@ export async function verifyEvidenceDirectory(evidenceDir = DEFAULT_EVIDENCE_DIR
     errors.push(`Failed to read manifest.sha256: ${err.message}`);
   }
 
-  // 4. Validate manifest entries for path safety and duplicates
+  // 4. Validate manifest entries for path safety, canonical separators, and duplicates
   const seenPaths = new Set();
   const manifestFilesMap = new Map();
 
   for (const entry of manifest.files ?? []) {
-    const relPath = entry.path;
-    if (!relPath) {
+    const rawPath = entry.path;
+    if (!rawPath) {
       errors.push("Manifest file entry missing 'path'");
       continue;
     }
 
-    if (path.isAbsolute(relPath)) {
-      errors.push(`Path safety violation: absolute path in manifest: ${relPath}`);
+    if (rawPath.includes("\\")) {
+      errors.push(`Non-canonical manifest path separator: ${rawPath}`);
     }
 
-    if (relPath.startsWith("../") || relPath.includes("/../") || relPath === "..") {
-      errors.push(`Path safety violation: directory traversal in manifest: ${relPath}`);
+    if (isUnsafeEvidencePath(rawPath)) {
+      errors.push(`Path safety violation in manifest: ${rawPath}`);
+      continue;
     }
 
+    const relPath = normalizeEvidencePath(rawPath);
     if (seenPaths.has(relPath)) {
       errors.push(`Duplicate path in manifest: ${relPath}`);
     }
@@ -131,8 +152,13 @@ export async function verifyEvidenceDirectory(evidenceDir = DEFAULT_EVIDENCE_DIR
     }
   }
 
-  // 7. Verify hashes.txt consistency
+  // 7. Verify hashes.txt with exact parity, duplicate rejection, and strict set equality
   const hashesTxtPath = path.join(resolvedDir, "hashes.txt");
+  const expectedHashPaths = new Set([
+    ...manifestFilesMap.keys(),
+    "manifest.json"
+  ]);
+
   try {
     const hashesContent = await readFile(hashesTxtPath, "utf8");
     const hashLines = hashesContent.split("\n").map(l => l.trim()).filter(Boolean);
@@ -144,30 +170,57 @@ export async function verifyEvidenceDirectory(evidenceDir = DEFAULT_EVIDENCE_DIR
         errors.push(`Invalid line in hashes.txt: "${line}"`);
         continue;
       }
-      const [, hash, filePath] = match;
+      const [, hash, rawFilePath] = match;
+
+      if (rawFilePath.includes("\\")) {
+        errors.push(`Non-canonical path separator in hashes.txt: ${rawFilePath}`);
+      }
+
+      if (isUnsafeEvidencePath(rawFilePath)) {
+        errors.push(`Path safety violation in hashes.txt: ${rawFilePath}`);
+        continue;
+      }
+
+      const filePath = normalizeEvidencePath(rawFilePath);
+
+      if (hashesMap.has(filePath)) {
+        errors.push(`Duplicate path in hashes.txt: ${filePath}`);
+        continue;
+      }
+
       hashesMap.set(filePath, hash);
     }
 
-    // Verify all manifest files are in hashes.txt
+    // 7.1 Check for self-referential entry in hashes.txt
+    if (hashesMap.has("hashes.txt")) {
+      errors.push("Self-referential hashing violation: hashes.txt contains entry for itself");
+    }
+
+    // 7.2 Check for unexpected extra paths in hashes.txt
+    for (const filePath of hashesMap.keys()) {
+      if (!expectedHashPaths.has(filePath)) {
+        errors.push(`Unexpected path in hashes.txt: ${filePath}`);
+      }
+    }
+
+    // 7.3 Check that all expected hash paths are present in hashes.txt
+    for (const expectedPath of expectedHashPaths) {
+      if (!hashesMap.has(expectedPath)) {
+        errors.push(`Missing path in hashes.txt: ${expectedPath}`);
+      }
+    }
+
+    // 7.4 Verify cryptographic checksum matches between manifest files and hashes.txt
     for (const [relPath, entry] of manifestFilesMap.entries()) {
-      if (!hashesMap.has(relPath)) {
-        errors.push(`File ${relPath} from manifest missing in hashes.txt`);
-      } else if (hashesMap.get(relPath) !== entry.sha256) {
+      if (hashesMap.has(relPath) && hashesMap.get(relPath) !== entry.sha256) {
         errors.push(`Hash mismatch between manifest and hashes.txt for ${relPath}`);
       }
     }
 
-    // Verify manifest.json itself is in hashes.txt
+    // 7.5 Verify manifest.json hash in hashes.txt
     const actualManifestHash = await computeSha256(manifestPath);
-    if (!hashesMap.has("manifest.json")) {
-      errors.push("manifest.json is missing in hashes.txt");
-    } else if (hashesMap.get("manifest.json") !== actualManifestHash) {
+    if (hashesMap.has("manifest.json") && hashesMap.get("manifest.json") !== actualManifestHash) {
       errors.push("hashes.txt manifest.json hash does not match actual manifest.json SHA-256");
-    }
-
-    // Ensure hashes.txt does not hash itself
-    if (hashesMap.has("hashes.txt")) {
-      errors.push("Self-referential hashing violation: hashes.txt contains entry for itself");
     }
   } catch (err) {
     errors.push(`Failed to read/verify hashes.txt: ${err.message}`);
@@ -192,6 +245,9 @@ export async function verifyEvidenceDirectory(evidenceDir = DEFAULT_EVIDENCE_DIR
     if (valProto.status !== "VALID") {
       errors.push(`Semantic invariant failure: validate-protocol.json status must be VALID, got ${valProto.status}`);
     }
+    if (manifest.executionProtocolValidation?.status !== valProto.status) {
+      errors.push(`Semantic invariant failure: manifest.executionProtocolValidation.status (${manifest.executionProtocolValidation?.status}) does not match validate-protocol.json (${valProto.status})`);
+    }
 
     // 8.3 audit.json
     const auditPath = path.join(resolvedDir, "audit.json");
@@ -202,6 +258,9 @@ export async function verifyEvidenceDirectory(evidenceDir = DEFAULT_EVIDENCE_DIR
     const auditErrorCodes = (audit.errors ?? []).map(e => e.code);
     if (!auditErrorCodes.includes("E_RECEIPT_PATH_MISMATCH")) {
       errors.push(`Semantic invariant failure: audit.json must report E_RECEIPT_PATH_MISMATCH, got ${auditErrorCodes.join(", ")}`);
+    }
+    if (manifest.postPublicationAudit?.status !== audit.status) {
+      errors.push(`Semantic invariant failure: manifest.postPublicationAudit.status (${manifest.postPublicationAudit?.status}) does not match audit.json (${audit.status})`);
     }
 
     // 8.4 report.json
@@ -223,6 +282,41 @@ export async function verifyEvidenceDirectory(evidenceDir = DEFAULT_EVIDENCE_DIR
     const eventsContent = await readFile(eventsPath, "utf8");
     if (!eventsContent.includes("COMPLETION_VALIDATED")) {
       errors.push("Semantic invariant failure: events.ndjson must contain COMPLETION_VALIDATED event");
+    }
+
+    // 8.7 completion.json semantic and cross-file assertions
+    const completionPath = path.join(resolvedDir, "completion.json");
+    const completion = JSON.parse(await readFile(completionPath, "utf8"));
+    if (completion.status !== "VALID") {
+      errors.push(`Semantic invariant failure: completion.json status must be VALID, got ${completion.status}`);
+    }
+    if (completion.taskStatus !== "COMPLETE") {
+      errors.push(`Semantic invariant failure: completion.json taskStatus must be COMPLETE, got ${completion.taskStatus}`);
+    }
+    if (completion.verificationStatus !== "VALID") {
+      errors.push(`Semantic invariant failure: completion.json verificationStatus must be VALID, got ${completion.verificationStatus}`);
+    }
+    if (completion.publicationStatus !== "local-only") {
+      errors.push(`Semantic invariant failure: completion.json publicationStatus must be local-only, got ${completion.publicationStatus}`);
+    }
+    if (completion.productionReadiness !== "not-verified") {
+      errors.push(`Semantic invariant failure: completion.json productionReadiness must be not-verified, got ${completion.productionReadiness}`);
+    }
+    if (!Array.isArray(completion.errors) || completion.errors.length !== 0) {
+      errors.push(`Semantic invariant failure: completion.json errors must be empty array, got ${JSON.stringify(completion.errors)}`);
+    }
+    if (completion.status !== manifest.executionCompletion?.status) {
+      errors.push(`Semantic invariant failure: completion.json status (${completion.status}) does not match manifest.executionCompletion.status (${manifest.executionCompletion?.status})`);
+    }
+    if (completion.taskStatus !== workState.phase) {
+      errors.push(`Semantic invariant failure: completion.json taskStatus (${completion.taskStatus}) does not match work-state phase (${workState.phase})`);
+    }
+
+    // 8.8 publication.json cross-check
+    const publicationPath = path.join(resolvedDir, "publication.json");
+    const publication = JSON.parse(await readFile(publicationPath, "utf8"));
+    if (publication.productionReadiness !== completion.productionReadiness) {
+      errors.push(`Semantic invariant failure: publication.json productionReadiness (${publication.productionReadiness}) does not match completion.json (${completion.productionReadiness})`);
     }
   } catch (err) {
     errors.push(`Failed while evaluating semantic invariants: ${err.message}`);

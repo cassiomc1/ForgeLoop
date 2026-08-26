@@ -28,6 +28,7 @@ relevant guides.
 ## Where should I start?
 
 - **New to ForgeLoop** → [`docs/GETTING_STARTED.md`](./docs/GETTING_STARTED.md)
+- **Inspect a real ForgeLoop execution** → [`poc/README.md`](./poc/README.md)
 - **Full protocol specification** → [`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md)
 - **Integrating an AI harness** → [`PROTOCOL_INTEGRATION.md`](./PROTOCOL_INTEGRATION.md)
 - **Continuing another harness's task** → [`docs/CROSS_HARNESS_CONTINUITY.md`](./docs/CROSS_HARNESS_CONTINUITY.md)
@@ -37,6 +38,21 @@ relevant guides.
 - **Troubleshooting & error codes** → [`docs/TROUBLESHOOTING.md`](./docs/TROUBLESHOOTING.md)
 - **System architecture & safety** → [`LOOP_SYSTEM_DESIGN.md`](./LOOP_SYSTEM_DESIGN.md) & [`THREAT_MODEL.md`](./THREAT_MODEL.md)
 - **Documentation index & ownership** → [`DOCS_INDEX.md`](./DOCS_INDEX.md)
+
+## Real execution proof
+
+ForgeLoop includes a public real-execution PoC with the workload,
+protocol artifacts, trusted command provenance, execution receipt,
+event history, cryptographic evidence manifest, and technical audit.
+
+The original task reached validator-backed `COMPLETE / VALID`.
+The evidence package also preserves a later
+`E_RECEIPT_PATH_MISMATCH`, detected after evidence publication itself
+changed the repository.
+
+- [PoC overview](./poc/README.md)
+- [Canonical technical audit](./poc/reports/poc-20260826-real-execution-technical-audit-v2.md)
+- [Evidence package](./poc/evidence/poc-20260826-real-execution/)
 
 ## Catalog
 

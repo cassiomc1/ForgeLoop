@@ -107,6 +107,7 @@ Every verification check was executed via `forgeloop run-check`, recording immut
 The initial technical audit (v1) reported strict audit as valid, while the preserved `audit.json` file reported `INVALID` (`E_RECEIPT_PATH_MISMATCH`).
 
 This audit (v2) resolves that discrepancy by documenting the exact sequence of events:
+
 1. **The original task completion was `VALID`:** The execution receipt covered the 10 changed workload and documentation paths. Completion validation passed with 0 errors.
 2. **Exporting evidence mutated the repository:** Copying 32 JSON projections and task-state files into `poc/evidence/` added 32 unsealed paths to the Git working tree.
 3. **ForgeLoop detected repository drift:** When `audit --strict` was run against the modified checkout, ForgeLoop verified that the working tree changed beyond the receipt and emitted `E_RECEIPT_PATH_MISMATCH`.

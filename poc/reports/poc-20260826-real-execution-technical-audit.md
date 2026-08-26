@@ -126,6 +126,7 @@ The contract `.forgeloop/task-state/747b59b95851208eff7819dec9b4a8233332d0479b17
 ### 6.3 Guide Routing
 
 Deterministic routing via `forgeloop route` evaluated declared signals:
+
 - **Work Type**: `code`
 - **Surfaces**: `["ci", "config", "documentation"]`
 - **Risks**: `["untrusted-input"]`
@@ -205,6 +206,7 @@ Every verification item was executed via `forgeloop run-check`, capturing real p
 ### Trusted Command Provenance Mechanics
 
 Unlike systems where an agent self-reports test passes via markdown, ForgeLoop's `run-check`:
+
 1. Spawns child processes using exact `argv` vectors without intermediate shell expansion (`LOCAL_EXECUTABLE` / `LOCAL_PACKAGE_BINARY`).
 2. Prohibits implicit package installations (`mayInstall: false`).
 3. Captures process start/end timestamps, exit codes, and stdout/stderr streams directly.
@@ -218,6 +220,7 @@ Unlike systems where an agent self-reports test passes via markdown, ForgeLoop's
 No natural verification failures occurred during workload implementation, so no artificial diagnostic cycle was introduced.
 
 During preflight preparation, the protocol correctly caught two expected configuration barriers:
+
 1. `E_GATE_UNVERIFIED`: The `security` guide required a `threat-boundary` gate artifact before proceeding.
 2. `E_PROFILE_SOURCE_UNKNOWN`: Contract `sourceRefs` required valid registration in `.forgeloop/sources.json`.
 
