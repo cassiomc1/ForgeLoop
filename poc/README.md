@@ -27,40 +27,37 @@ poc/
 │   ├── poc-20260826-real-execution-technical-audit-v2.md  # Canonical technical audit report (v2)
 │   └── poc-20260826-real-execution-technical-audit.md     # Historical technical audit report (v1)
 └── evidence/
-    └── poc-20260826-real-execution/       # Preserved evidence package and publication metadata
-        ├── README.md                      # Evidence package taxonomy and drift explanation
-        ├── manifest.json                  # Cryptographic manifest of published evidence artifacts
-        ├── manifest.sha256                # Detached SHA-256 hash of manifest.json
-        ├── hashes.txt                     # Non-recursive SHA-256 integrity checksums
-        ├── publication.json               # GitHub publication metadata (PR #110)
-        ├── protocol-info.json             # Protocol compatibility handshake
-        ├── completion.json                # Recovered CLI complete output (VALID)
-        ├── completion-attestation.json    # Derived completion attestation
-        ├── history.json                   # Full append-only event ledger history projection
-        ├── trace.json                     # Structured lifecycle trace projection
-        ├── inspect.json                   # Task state inspection snapshot
-        ├── progress.json                  # Progress anomaly signal report
-        ├── status-final.json              # Post-publication status projection
-        ├── validate-state.json            # Work state consistency validation
-        ├── validate-receipt.json          # Execution receipt integrity validation
-        ├── validate-protocol.json         # Protocol invariant validation (VALID)
-        ├── audit.json                     # Preserved post-publication drift audit (INVALID / E_RECEIPT_PATH_MISMATCH)
-        ├── report.json                    # Preserved post-publication drift report (INVALID)
-        └── task-state/                    # Preserved original task-state directory
-            ├── task.json                  # Task descriptor and write claims
-            ├── contract.json              # Authoritative task contract specification
-            ├── routing-result.json        # Deterministic guide router output
-            ├── preflight.json             # Preflight readiness evaluation (READY)
-            ├── work-state.json            # Canonical work-state checkpoint (COMPLETE)
-            ├── execution-receipt.json     # Compiled execution receipt with trusted provenance
-            ├── continuity.json            # Operational handoff checkpoint
-            ├── policy-snapshot.json       # Bound capability policy digest
-            ├── events.ndjson              # Raw append-only protocol event ledger
-            ├── events.ndjson.index.json   # Event ledger sequence index
-            ├── gates/
-            │   └── threat-boundary.json   # Satisfied security gate artifact
-            └── executions/                # Detailed execution records from forgeloop run-check
-                └── exec-*.json            # Exact process argv, exit code, and resolution
+    ├── poc-20260826-real-execution/       # Preserved evidence package and publication metadata
+    │   ├── README.md                      # Evidence package taxonomy and drift explanation
+    │   ├── manifest.json                  # Cryptographic manifest of published evidence artifacts
+    │   ├── manifest.sha256                # Detached SHA-256 hash of manifest.json
+    │   ├── hashes.txt                     # Non-recursive SHA-256 integrity checksums
+    │   ├── publication.json               # GitHub publication metadata (PR #110)
+    │   ├── protocol-info.json             # Protocol compatibility handshake
+    │   ├── completion.json                # Recovered CLI complete output (VALID)
+    │   ├── completion-attestation.json    # Derived completion attestation
+    │   ├── history.json                   # Full append-only event ledger history projection
+    │   ├── trace.json                     # Structured lifecycle trace projection
+    │   ├── inspect.json                   # Task state inspection snapshot
+    │   ├── progress.json                  # Progress anomaly signal report
+    │   ├── status-final.json              # Post-publication status projection
+    │   ├── validate-state.json            # Work state consistency validation
+    │   ├── validate-receipt.json          # Execution receipt integrity validation
+    │   ├── validate-protocol.json         # Protocol invariant validation (VALID)
+    │   ├── audit.json                     # Preserved post-publication drift audit (INVALID / E_RECEIPT_PATH_MISMATCH)
+    │   ├── report.json                    # Preserved post-publication drift report (INVALID)
+    │   └── task-state/                    # Preserved original task-state directory
+    └── maintenance/
+        └── pr-113-final-hardening/        # Maintenance task evidence for PR #113
+            ├── README.md                  # Maintenance evidence documentation
+            ├── manifest.json              # Cryptographic manifest
+            ├── manifest.sha256            # Detached manifest SHA-256
+            ├── hashes.txt                 # Integrity checksums
+            ├── publication.json           # PR #113 publication metadata
+            ├── privacy-review.json        # Secret and privacy audit record
+            ├── audit-summary.json         # Machine-readable audit summary
+            ├── source/                    # Authoritative task-state and executions
+            └── inspection/                # Read-only CLI observations
 ```
 
 ---
@@ -131,3 +128,12 @@ node poc/workload/src/cli.js --eval '{
 
 - **Canonical Report (v2):** [`poc/reports/poc-20260826-real-execution-technical-audit-v2.md`](./reports/poc-20260826-real-execution-technical-audit-v2.md)
 - **Historical Report (v1):** [`poc/reports/poc-20260826-real-execution-technical-audit.md`](./reports/poc-20260826-real-execution-technical-audit.md)
+
+---
+
+## 4. Maintenance Execution Evidence
+
+Separate from the initial Real Execution PoC, maintenance tasks that evolve the evidence publication and verifier tooling are also governed under ForgeLoop.
+
+- **PR #113 Final Hardening Task Evidence:** [`poc/evidence/maintenance/pr-113-final-hardening/`](./evidence/maintenance/pr-113-final-hardening/README.md)
+  Contains clean authoritative public artifacts plus explicitly non-authoritative redacted derivatives with SHA-256 commitments to private originals. It also publishes execution-provenance linkage, preflight threat-boundary evidence, and publication-time CLI observations for the task that resolved cross-platform path safety and continuous CI verification.

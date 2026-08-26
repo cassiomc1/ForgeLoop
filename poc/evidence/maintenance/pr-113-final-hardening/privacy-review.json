@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS",
+  "reviewedAt": "2026-08-26T21:43:00.000Z",
+  "scope": "poc/evidence/maintenance/pr-113-final-hardening",
+  "methodology": "Independent public-payload scanning plus field-level review of redacted projections and SHA-256 commitment metadata.",
+  "secretsPublished": false,
+  "localAbsolutePathsPublished": false,
+  "credentialsOrTokensPublished": false,
+  "independentPublicPayloadScan": "REQUIRED_AND_ENFORCED",
+  "redactedArtifacts": [
+    "inspection/inspect.json",
+    "inspection/status.json",
+    "inspection/validate-receipt.json",
+    "inspection/validate-state.json",
+    "source/execution-receipt.json",
+    "source/executions/exec-360e38f6-5df2-4d3a-b555-4b290e30313a.json",
+    "source/executions/exec-5b554942-fe12-465e-8201-228be99ac9a0.json",
+    "source/executions/exec-80e1a881-8623-4b24-bd6a-4e5d5892d414.json",
+    "source/executions/exec-86a53a9c-5fbc-4ce6-a4b3-c129a8951ae1.json",
+    "source/executions/exec-9801a699-cb67-4a8e-acbd-92a136d04b37.json",
+    "source/executions/exec-c652b3e3-8026-4300-a036-1e83d6059e16.json",
+    "source/work-state.json"
+  ],
+  "redactionMethod": "Machine-local cwd values are replaced with [REDACTED:LOCAL_ABSOLUTE_PATH]. Every derivative is labeled NON_AUTHORITATIVE and carries a SHA-256 commitment to its private original; manifest.json repeats the commitment and redacted-field list.",
+  "privateOriginalRetention": {
+    "sourceArtifacts": "Retained outside the public bundle in ForgeLoop private task state.",
+    "publicationInspectionArtifacts": "Preserved outside the public bundle in a local private Git safety reference.",
+    "publicDisclosure": false
+  },
+  "verifierEnforcement": "The verifier scans every public bundle file for macOS, Linux, Windows, and UNC user paths; bearer, token, key, cookie, SSH, credential URL, and machine-local identity patterns. It does not trust this review declaration alone."
+}

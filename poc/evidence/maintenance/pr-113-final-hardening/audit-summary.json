@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "subject": "PR #113 ForgeLoop maintenance execution",
+  "taskId": "poc-final-verifier-ci-hardening-20260826",
+  "taskKey": "e80ec0fe2c7166be2873291844c6ba619c751535b1c08f3e62b46c0f282ad21c",
+  "historicalCompletionState": "COMPLETE",
+  "historicalCompletionValidation": "VALID",
+  "historicalCompletionEvidence": [
+    "source/work-state.json: phase=COMPLETE",
+    "source/events.ndjson: canonical hash chain and COMPLETION_VALIDATED event at seq 34",
+    "source/events.ndjson: complete TRANSACTION_COMMITTED event at seq 35",
+    "inspection/task-show.json: phase=COMPLETE and claimState=RELEASED_BY_COMPLETION"
+  ],
+  "historicalReceiptSnapshot": {
+    "file": "source/execution-receipt.json",
+    "status": "in-progress",
+    "taskStatus": "in-progress",
+    "verificationStatus": "not-verified",
+    "terminalCompletionProof": false,
+    "note": "This rolling receipt snapshot was captured during VERIFYING. Its status fields are not terminal completion proof."
+  },
+  "historicalEventLedger": {
+    "status": "VALID",
+    "eventCount": 35,
+    "completionValidatedSeq": 34,
+    "completionTransactionSeq": 35,
+    "finalOperation": "complete"
+  },
+  "executionProvenanceCoverage": {
+    "status": "COMPLETE",
+    "referenced": 6,
+    "published": 6,
+    "missing": 0
+  },
+  "publicationTimeProtocolValidation": {
+    "status": "STALE",
+    "reasons": [
+      "REPOSITORY_CHANGED"
+    ],
+    "repositoryComparison": "MISMATCH"
+  },
+  "publicationTimeStrictAudit": {
+    "status": "STALE",
+    "reasonCodes": [
+      "E_PHASE_ARTIFACT_STALE",
+      "E_RECEIPT_PATH_MISMATCH",
+      "E_STATE_REVALIDATION_REQUIRED"
+    ]
+  },
+  "publicationPackageIntegrity": "VALID",
+  "privacy": {
+    "status": "PASS",
+    "independentPublicPayloadScan": "PASS"
+  },
+  "productionReadiness": "NOT_VERIFIED",
+  "limitations": [
+    "Redacted artifacts are explicitly non-authoritative publication projections. Their private originals are represented by SHA-256 commitments in manifest.json and projection metadata.",
+    "The public verifier can validate commitment consistency, package integrity, event hashes, provenance closure, and privacy policy; it cannot prove the contents of undisclosed private originals.",
+    "The historical receipt is an intermediate snapshot and is not used as terminal completion proof.",
+    "Publication-time protocol validation and strict audit are STALE because the repository state changed after the historical task completed.",
+    "Production readiness and universal correctness are NOT_VERIFIED."
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "executionId": "exec-c652b3e3-8026-4300-a036-1e83d6059e16",
+  "taskId": "poc-final-verifier-ci-hardening-20260826",
+  "checkId": "security-lint",
+  "requirement": "security-validation",
+  "verificationCycle": 1,
+  "kind": "COMMAND_EXECUTION",
+  "argv": [
+    "npm",
+    "run",
+    "lint"
+  ],
+  "cwd": "[REDACTED:LOCAL_ABSOLUTE_PATH]",
+  "resolution": {
+    "resolutionMode": "LOCAL_PACKAGE_BINARY",
+    "mayInstall": false,
+    "installer": null,
+    "tool": null
+  },
+  "dispatch": {
+    "kind": "npm-script-command"
+  },
+  "startedAt": "2026-08-26T19:41:33.133Z",
+  "finishedAt": "2026-08-26T19:41:35.910Z",
+  "status": "passed",
+  "exitCode": 0,
+  "durationMs": 2777,
+  "termination": "exit",
+  "signal": null,
+  "stdoutSha256": "9d221aeca6f150cf047fe8470cc60a94af5a2fb73b833f656a00e828fc478cbd",
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdoutBytes": 47,
+  "stderrBytes": 0,
+  "outputTruncated": false,
+  "_projection": {
+    "kind": "REDACTED_PUBLICATION_PROJECTION",
+    "authority": "NON_AUTHORITATIVE",
+    "notice": "This is an explicitly labeled redacted projection of the original execution record. The local absolute path (cwd) has been replaced. The original authoritative artifact is retained private in the local .forgeloop/ directory, which is gitignored.",
+    "originalFieldsRedacted": [
+      "cwd"
+    ],
+    "originalSha256": "b87a6658311eedfa258d55bb2f16b191be5a0848673f545c59abd5cfe8dc07be",
+    "redactedFields": {
+      "cwd": "[REDACTED:LOCAL_ABSOLUTE_PATH]"
+    }
+  }
+}

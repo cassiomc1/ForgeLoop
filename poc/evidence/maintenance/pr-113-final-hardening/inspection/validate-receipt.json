@@ -1,0 +1,416 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "taskId": "poc-final-verifier-ci-hardening-20260826",
+  "contractFingerprint": "ad379a18599706173eebe98047c051de4b0012364f9b7f89e711a4d50ea16f74",
+  "routeFingerprint": "2cde5e3bd93ee1c6f63c6045e6e81395c8bb1f2f70e0bbd38aa9ddc19db39391",
+  "stateFingerprint": "715c146355f3fb40b19f51ad9bf58323da0e4f1799382fed2722ebd1ecbb9f4b",
+  "verificationCycle": 1,
+  "status": "in-progress",
+  "taskStatus": "in-progress",
+  "verificationStatus": "not-verified",
+  "publicationStatus": "local-only",
+  "productionReadiness": "not-verified",
+  "selectedGuides": [
+    "clean",
+    "test",
+    "documentation",
+    "security"
+  ],
+  "changedPaths": [
+    ".github/workflows/docs-quality.yml",
+    "package.json",
+    "poc/README.md",
+    "poc/test/poc-evidence-publication.test.js",
+    "scripts/verify_poc_evidence.mjs"
+  ],
+  "checks": [
+    {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "id": "poc-evidence-integrity",
+      "kind": "command",
+      "requirement": "Evidence verifier rejects Windows drive-absolute and UNC paths on every host OS.",
+      "status": "passed",
+      "evidenceKind": "OBSERVED",
+      "source": "npm run poc:evidence:verify",
+      "exitCode": 0,
+      "timestamp": "2026-08-26T19:41:10.446Z",
+      "executionRef": "exec-80e1a881-8623-4b24-bd6a-4e5d5892d414",
+      "provenance": "FORGELOOP_EXECUTED",
+      "details": {
+        "command": "npm run poc:evidence:verify",
+        "result": "process exited with code 0",
+        "verificationCycle": 1,
+        "execution": {
+          "executionRef": "exec-80e1a881-8623-4b24-bd6a-4e5d5892d414",
+          "argv": [
+            "npm",
+            "run",
+            "poc:evidence:verify"
+          ],
+          "cwd": "[REDACTED:LOCAL_ABSOLUTE_PATH]",
+          "resolution": {
+            "resolutionMode": "LOCAL_PACKAGE_BINARY",
+            "mayInstall": false,
+            "installer": null,
+            "tool": null
+          },
+          "status": "passed",
+          "exitCode": 0,
+          "resolutionMode": "LOCAL_PACKAGE_BINARY",
+          "mayInstall": false,
+          "installationAuthorized": false
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "id": "poc-evidence-regression-tests",
+      "kind": "command",
+      "requirement": "npm run poc:evidence:test is registered and executed in GitHub Actions Node matrix.",
+      "status": "passed",
+      "evidenceKind": "OBSERVED",
+      "source": "npm run poc:evidence:test",
+      "exitCode": 0,
+      "timestamp": "2026-08-26T19:41:16.312Z",
+      "executionRef": "exec-5b554942-fe12-465e-8201-228be99ac9a0",
+      "provenance": "FORGELOOP_EXECUTED",
+      "details": {
+        "command": "npm run poc:evidence:test",
+        "result": "process exited with code 0",
+        "verificationCycle": 1,
+        "execution": {
+          "executionRef": "exec-5b554942-fe12-465e-8201-228be99ac9a0",
+          "argv": [
+            "npm",
+            "run",
+            "poc:evidence:test"
+          ],
+          "cwd": "[REDACTED:LOCAL_ABSOLUTE_PATH]",
+          "resolution": {
+            "resolutionMode": "LOCAL_PACKAGE_BINARY",
+            "mayInstall": false,
+            "installer": null,
+            "tool": null
+          },
+          "status": "passed",
+          "exitCode": 0,
+          "resolutionMode": "LOCAL_PACKAGE_BINARY",
+          "mayInstall": false,
+          "installationAuthorized": false
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "id": "poc-production-readiness-consistency",
+      "kind": "command",
+      "requirement": "productionReadiness is strictly consistent across manifest, completion, and publication files.",
+      "status": "passed",
+      "evidenceKind": "OBSERVED",
+      "source": "npm run poc:evidence:test",
+      "exitCode": 0,
+      "timestamp": "2026-08-26T19:41:22.112Z",
+      "executionRef": "exec-360e38f6-5df2-4d3a-b555-4b290e30313a",
+      "provenance": "FORGELOOP_EXECUTED",
+      "details": {
+        "command": "npm run poc:evidence:test",
+        "result": "process exited with code 0",
+        "verificationCycle": 1,
+        "execution": {
+          "executionRef": "exec-360e38f6-5df2-4d3a-b555-4b290e30313a",
+          "argv": [
+            "npm",
+            "run",
+            "poc:evidence:test"
+          ],
+          "cwd": "[REDACTED:LOCAL_ABSOLUTE_PATH]",
+          "resolution": {
+            "resolutionMode": "LOCAL_PACKAGE_BINARY",
+            "mayInstall": false,
+            "installer": null,
+            "tool": null
+          },
+          "status": "passed",
+          "exitCode": 0,
+          "resolutionMode": "LOCAL_PACKAGE_BINARY",
+          "mayInstall": false,
+          "installationAuthorized": false
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "id": "workload-tests",
+      "kind": "command",
+      "requirement": "tests",
+      "status": "passed",
+      "evidenceKind": "OBSERVED",
+      "source": "node --test poc/workload/test/evaluator.test.js poc/workload/test/cli.test.js",
+      "exitCode": 0,
+      "timestamp": "2026-08-26T19:41:27.817Z",
+      "executionRef": "exec-86a53a9c-5fbc-4ce6-a4b3-c129a8951ae1",
+      "provenance": "FORGELOOP_EXECUTED",
+      "details": {
+        "command": "node --test poc/workload/test/evaluator.test.js poc/workload/test/cli.test.js",
+        "result": "process exited with code 0",
+        "verificationCycle": 1,
+        "execution": {
+          "executionRef": "exec-86a53a9c-5fbc-4ce6-a4b3-c129a8951ae1",
+          "argv": [
+            "node",
+            "--test",
+            "poc/workload/test/evaluator.test.js",
+            "poc/workload/test/cli.test.js"
+          ],
+          "cwd": "[REDACTED:LOCAL_ABSOLUTE_PATH]",
+          "resolution": {
+            "resolutionMode": "LOCAL_EXECUTABLE",
+            "mayInstall": false,
+            "installer": null,
+            "tool": null
+          },
+          "status": "passed",
+          "exitCode": 0,
+          "resolutionMode": "LOCAL_EXECUTABLE",
+          "mayInstall": false,
+          "installationAuthorized": false
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "id": "security-lint",
+      "kind": "command",
+      "requirement": "security-validation",
+      "status": "passed",
+      "evidenceKind": "OBSERVED",
+      "source": "npm run lint",
+      "exitCode": 0,
+      "timestamp": "2026-08-26T19:41:35.958Z",
+      "executionRef": "exec-c652b3e3-8026-4300-a036-1e83d6059e16",
+      "provenance": "FORGELOOP_EXECUTED",
+      "details": {
+        "command": "npm run lint",
+        "result": "process exited with code 0",
+        "verificationCycle": 1,
+        "execution": {
+          "executionRef": "exec-c652b3e3-8026-4300-a036-1e83d6059e16",
+          "argv": [
+            "npm",
+            "run",
+            "lint"
+          ],
+          "cwd": "[REDACTED:LOCAL_ABSOLUTE_PATH]",
+          "resolution": {
+            "resolutionMode": "LOCAL_PACKAGE_BINARY",
+            "mayInstall": false,
+            "installer": null,
+            "tool": null
+          },
+          "status": "passed",
+          "exitCode": 0,
+          "resolutionMode": "LOCAL_PACKAGE_BINARY",
+          "mayInstall": false,
+          "installationAuthorized": false
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "id": "docs-generated-check",
+      "kind": "command",
+      "requirement": "All local and CI checks pass with exit code 0.",
+      "status": "passed",
+      "evidenceKind": "OBSERVED",
+      "source": "npm run docs:generated:check",
+      "exitCode": 0,
+      "timestamp": "2026-08-26T19:41:41.751Z",
+      "executionRef": "exec-9801a699-cb67-4a8e-acbd-92a136d04b37",
+      "provenance": "FORGELOOP_EXECUTED",
+      "details": {
+        "command": "npm run docs:generated:check",
+        "result": "process exited with code 0",
+        "verificationCycle": 1,
+        "execution": {
+          "executionRef": "exec-9801a699-cb67-4a8e-acbd-92a136d04b37",
+          "argv": [
+            "npm",
+            "run",
+            "docs:generated:check"
+          ],
+          "cwd": "[REDACTED:LOCAL_ABSOLUTE_PATH]",
+          "resolution": {
+            "resolutionMode": "LOCAL_PACKAGE_BINARY",
+            "mayInstall": false,
+            "installer": null,
+            "tool": null
+          },
+          "status": "passed",
+          "exitCode": 0,
+          "resolutionMode": "LOCAL_PACKAGE_BINARY",
+          "mayInstall": false,
+          "installationAuthorized": false
+        }
+      }
+    }
+  ],
+  "actions": {
+    "count": 0,
+    "required": 0,
+    "verified": 0,
+    "trustedSatisfied": 0,
+    "unresolvedRequired": 0,
+    "failed": 0,
+    "ambiguous": 0,
+    "pending": 0,
+    "actionRefs": []
+  },
+  "evidence": [
+    {
+      "kind": "OBSERVED",
+      "source": "npm run poc:evidence:verify",
+      "result": "process exited with code 0",
+      "verificationCycle": 1,
+      "details": {
+        "verificationCycle": 1
+      }
+    },
+    {
+      "kind": "OBSERVED",
+      "source": "npm run poc:evidence:test",
+      "result": "process exited with code 0",
+      "verificationCycle": 1,
+      "details": {
+        "verificationCycle": 1
+      }
+    },
+    {
+      "kind": "OBSERVED",
+      "source": "node --test poc/workload/test/evaluator.test.js poc/workload/test/cli.test.js",
+      "result": "process exited with code 0",
+      "verificationCycle": 1,
+      "details": {
+        "verificationCycle": 1
+      }
+    },
+    {
+      "kind": "OBSERVED",
+      "source": "npm run lint",
+      "result": "process exited with code 0",
+      "verificationCycle": 1,
+      "details": {
+        "verificationCycle": 1
+      }
+    },
+    {
+      "kind": "OBSERVED",
+      "source": "npm run docs:generated:check",
+      "result": "process exited with code 0",
+      "verificationCycle": 1,
+      "details": {
+        "verificationCycle": 1
+      }
+    }
+  ],
+  "evidenceCoverage": [
+    {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "requirement": "All local and CI checks pass with exit code 0.",
+      "requiredEvidence": [
+        "All local and CI checks pass with exit code 0."
+      ],
+      "observedEvidence": [
+        "All local and CI checks pass with exit code 0."
+      ],
+      "status": "COVERED"
+    },
+    {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "requirement": "tests",
+      "requiredEvidence": [
+        "tests"
+      ],
+      "observedEvidence": [
+        "tests"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "requirement": "security-validation",
+      "requiredEvidence": [
+        "security-validation"
+      ],
+      "observedEvidence": [
+        "security-validation"
+      ],
+      "status": "COVERED"
+    },
+    {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "requirement": "productionReadiness is strictly consistent across manifest, completion, and publication files.",
+      "requiredEvidence": [
+        "productionReadiness is strictly consistent across manifest, completion, and publication files."
+      ],
+      "observedEvidence": [
+        "productionReadiness is strictly consistent across manifest, completion, and publication files."
+      ],
+      "status": "COVERED"
+    },
+    {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "requirement": "Evidence verifier rejects Windows drive-absolute and UNC paths on every host OS.",
+      "requiredEvidence": [
+        "Evidence verifier rejects Windows drive-absolute and UNC paths on every host OS."
+      ],
+      "observedEvidence": [
+        "Evidence verifier rejects Windows drive-absolute and UNC paths on every host OS."
+      ],
+      "status": "COVERED"
+    },
+    {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "requirement": "npm run poc:evidence:test is registered and executed in GitHub Actions Node matrix.",
+      "requiredEvidence": [
+        "npm run poc:evidence:test is registered and executed in GitHub Actions Node matrix."
+      ],
+      "observedEvidence": [
+        "npm run poc:evidence:test is registered and executed in GitHub Actions Node matrix."
+      ],
+      "status": "COVERED"
+    }
+  ],
+  "review": {
+    "status": "not-run",
+    "independent": false
+  },
+  "limitations": [],
+  "publication": {
+    "committed": false,
+    "pushed": false,
+    "pullRequest": null,
+    "deployed": false
+  },
+  "_projection": {
+    "kind": "REDACTED_PUBLICATION_PROJECTION",
+    "authority": "NON_AUTHORITATIVE",
+    "notice": "Local absolute paths have been replaced with [REDACTED:LOCAL_ABSOLUTE_PATH]. This is an inspection observation generated at publication time.",
+    "originalFieldsRedacted": [
+      "cwd (nested in checks[].details.execution)"
+    ],
+    "originalSha256": "54e5d9361357caadde16a932eb556f34f66dc125b0c16d297b4658520f703936"
+  }
+}

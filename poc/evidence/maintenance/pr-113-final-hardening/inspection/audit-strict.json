@@ -1,0 +1,336 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "status": "STALE",
+  "strict": true,
+  "errors": [
+    {
+      "code": "E_PHASE_ARTIFACT_STALE",
+      "message": "State freshness check failed: REPOSITORY_CHANGED",
+      "artifacts": [
+        ".forgeloop/task-state/e80ec0fe2c7166be2873291844c6ba619c751535b1c08f3e62b46c0f282ad21c/work-state.json"
+      ],
+      "next": "Resolve this validator finding in the named artifact before retrying completion."
+    },
+    {
+      "code": "E_STATE_REVALIDATION_REQUIRED",
+      "message": "EXECUTING requires a fresh work-state checkpoint: REPOSITORY_CHANGED",
+      "artifacts": [
+        ".forgeloop/work-state.json",
+        ".forgeloop/current-contract.json"
+      ],
+      "next": "Resolve this validator finding in the named artifact before retrying completion."
+    },
+    {
+      "code": "E_RECEIPT_PATH_MISMATCH",
+      "message": "Receipt changedPaths do not match observed repository paths",
+      "artifacts": [
+        ".forgeloop/task-state/e80ec0fe2c7166be2873291844c6ba619c751535b1c08f3e62b46c0f282ad21c/execution-receipt.json"
+      ],
+      "missing": [
+        ".github/workflows/docs-quality.yml",
+        "package.json",
+        "poc/README.md",
+        "poc/test/poc-evidence-publication.test.js",
+        "scripts/verify_poc_evidence.mjs"
+      ],
+      "unexpected": [
+        "poc/evidence/maintenance/pr-113-final-hardening/inspection/history.json",
+        "poc/evidence/maintenance/pr-113-final-hardening/inspection/inspect.json",
+        "poc/evidence/maintenance/pr-113-final-hardening/inspection/progress.json",
+        "poc/evidence/maintenance/pr-113-final-hardening/inspection/protocol-info.json",
+        "poc/evidence/maintenance/pr-113-final-hardening/inspection/status.json",
+        "poc/evidence/maintenance/pr-113-final-hardening/inspection/task-show.json",
+        "poc/evidence/maintenance/pr-113-final-hardening/inspection/trace.json",
+        "poc/evidence/maintenance/pr-113-final-hardening/inspection/validate-protocol.json",
+        "poc/evidence/maintenance/pr-113-final-hardening/inspection/validate-receipt.json",
+        "poc/evidence/maintenance/pr-113-final-hardening/inspection/validate-state.json",
+        "poc/evidence/maintenance/pr-113-final-hardening/source/contract.json",
+        "poc/evidence/maintenance/pr-113-final-hardening/source/events.ndjson",
+        "poc/evidence/maintenance/pr-113-final-hardening/source/events.ndjson.index.json",
+        "poc/evidence/maintenance/pr-113-final-hardening/source/execution-receipt.json",
+        "poc/evidence/maintenance/pr-113-final-hardening/source/executions/exec-360e38f6-5df2-4d3a-b555-4b290e30313a.json",
+        "poc/evidence/maintenance/pr-113-final-hardening/source/executions/exec-5b554942-fe12-465e-8201-228be99ac9a0.json",
+        "poc/evidence/maintenance/pr-113-final-hardening/source/executions/exec-80e1a881-8623-4b24-bd6a-4e5d5892d414.json",
+        "poc/evidence/maintenance/pr-113-final-hardening/source/executions/exec-86a53a9c-5fbc-4ce6-a4b3-c129a8951ae1.json",
+        "poc/evidence/maintenance/pr-113-final-hardening/source/executions/exec-9801a699-cb67-4a8e-acbd-92a136d04b37.json",
+        "poc/evidence/maintenance/pr-113-final-hardening/source/executions/exec-c652b3e3-8026-4300-a036-1e83d6059e16.json",
+        "poc/evidence/maintenance/pr-113-final-hardening/source/gates/threat-boundary.json",
+        "poc/evidence/maintenance/pr-113-final-hardening/source/policy-snapshot.json",
+        "poc/evidence/maintenance/pr-113-final-hardening/source/preflight.json",
+        "poc/evidence/maintenance/pr-113-final-hardening/source/routing-result.json",
+        "poc/evidence/maintenance/pr-113-final-hardening/source/task.json",
+        "poc/evidence/maintenance/pr-113-final-hardening/source/work-state.json"
+      ],
+      "next": "Run forgeloop prepare-completion to refresh changed paths, then rerun audit."
+    }
+  ],
+  "warnings": [],
+  "installation": {
+    "status": "ready",
+    "manifest": true
+  },
+  "policy": {
+    "status": "VALID",
+    "provenRules": 1,
+    "inertRules": 0,
+    "unsupportedRules": 0,
+    "baselineViolations": 0,
+    "drift": false
+  },
+  "completion": {
+    "status": "REJECTED",
+    "taskStatus": "INCOMPLETE",
+    "verificationStatus": "invalid",
+    "publicationStatus": "local-only",
+    "productionReadiness": "not-verified",
+    "errors": [
+      {
+        "code": "E_PHASE_ARTIFACT_STALE",
+        "message": "State freshness check failed: REPOSITORY_CHANGED",
+        "artifacts": [
+          ".forgeloop/task-state/e80ec0fe2c7166be2873291844c6ba619c751535b1c08f3e62b46c0f282ad21c/work-state.json"
+        ],
+        "next": "Resolve this validator finding in the named artifact before retrying completion."
+      },
+      {
+        "code": "E_STATE_REVALIDATION_REQUIRED",
+        "message": "EXECUTING requires a fresh work-state checkpoint: REPOSITORY_CHANGED",
+        "artifacts": [
+          ".forgeloop/work-state.json",
+          ".forgeloop/current-contract.json"
+        ],
+        "next": "Resolve this validator finding in the named artifact before retrying completion."
+      }
+    ],
+    "warnings": [],
+    "preflight": {
+      "schemaVersion": 1,
+      "protocolVersion": 1,
+      "taskId": "poc-final-verifier-ci-hardening-20260826",
+      "status": "READY",
+      "profile": {
+        "status": "verified",
+        "mode": "project",
+        "profileStatus": "verified",
+        "fingerprint": "f2c1b76d86b5c0613efbb37988999fddd4eed76a57088f4aa50c4f26b4348901",
+        "provenance": "not-referenced"
+      },
+      "contract": {
+        "status": "valid",
+        "fingerprint": "ad379a18599706173eebe98047c051de4b0012364f9b7f89e711a4d50ea16f74"
+      },
+      "routing": {
+        "status": "valid",
+        "fingerprint": "2cde5e3bd93ee1c6f63c6045e6e81395c8bb1f2f70e0bbd38aa9ddc19db39391",
+        "guides": [
+          "clean",
+          "test",
+          "documentation",
+          "security"
+        ]
+      },
+      "requiredGates": [
+        "threat-boundary"
+      ],
+      "satisfiedGates": [
+        "threat-boundary"
+      ],
+      "errors": [],
+      "fingerprints": {
+        "contract": "ad379a18599706173eebe98047c051de4b0012364f9b7f89e711a4d50ea16f74",
+        "routing": "2cde5e3bd93ee1c6f63c6045e6e81395c8bb1f2f70e0bbd38aa9ddc19db39391",
+        "profile": "f2c1b76d86b5c0613efbb37988999fddd4eed76a57088f4aa50c4f26b4348901"
+      },
+      "sources": {
+        "status": "valid",
+        "fingerprint": null
+      }
+    },
+    "coverage": [
+      {
+        "schemaVersion": 1,
+        "protocolVersion": 1,
+        "requirement": "All local and CI checks pass with exit code 0.",
+        "requiredEvidence": [
+          "All local and CI checks pass with exit code 0."
+        ],
+        "observedEvidence": [
+          "All local and CI checks pass with exit code 0."
+        ],
+        "status": "COVERED"
+      },
+      {
+        "schemaVersion": 1,
+        "protocolVersion": 1,
+        "requirement": "tests",
+        "requiredEvidence": [
+          "tests"
+        ],
+        "observedEvidence": [
+          "tests"
+        ],
+        "status": "COVERED"
+      },
+      {
+        "schemaVersion": 1,
+        "protocolVersion": 1,
+        "requirement": "security-validation",
+        "requiredEvidence": [
+          "security-validation"
+        ],
+        "observedEvidence": [
+          "security-validation"
+        ],
+        "status": "COVERED"
+      },
+      {
+        "schemaVersion": 1,
+        "protocolVersion": 1,
+        "requirement": "productionReadiness is strictly consistent across manifest, completion, and publication files.",
+        "requiredEvidence": [
+          "productionReadiness is strictly consistent across manifest, completion, and publication files."
+        ],
+        "observedEvidence": [
+          "productionReadiness is strictly consistent across manifest, completion, and publication files."
+        ],
+        "status": "COVERED"
+      },
+      {
+        "schemaVersion": 1,
+        "protocolVersion": 1,
+        "requirement": "Evidence verifier rejects Windows drive-absolute and UNC paths on every host OS.",
+        "requiredEvidence": [
+          "Evidence verifier rejects Windows drive-absolute and UNC paths on every host OS."
+        ],
+        "observedEvidence": [
+          "Evidence verifier rejects Windows drive-absolute and UNC paths on every host OS."
+        ],
+        "status": "COVERED"
+      },
+      {
+        "schemaVersion": 1,
+        "protocolVersion": 1,
+        "requirement": "npm run poc:evidence:test is registered and executed in GitHub Actions Node matrix.",
+        "requiredEvidence": [
+          "npm run poc:evidence:test is registered and executed in GitHub Actions Node matrix."
+        ],
+        "observedEvidence": [
+          "npm run poc:evidence:test is registered and executed in GitHub Actions Node matrix."
+        ],
+        "status": "COVERED"
+      }
+    ],
+    "ledger": {
+      "status": "valid",
+      "events": 35
+    },
+    "actions": {
+      "count": 0,
+      "required": 0,
+      "verified": 0,
+      "trustedSatisfied": 0,
+      "unresolvedRequired": 0,
+      "failed": 0,
+      "ambiguous": 0,
+      "pending": 0,
+      "actionRefs": []
+    }
+  },
+  "recovery": null,
+  "claims": {
+    "state": "RELEASED_BY_COMPLETION",
+    "historical": [
+      ".github",
+      "package-lock.json",
+      "package.json",
+      "poc",
+      "scripts"
+    ],
+    "effective": [],
+    "mutationAllowed": false,
+    "ownershipValid": true,
+    "ownershipErrors": []
+  },
+  "changedPaths": {
+    "status": "MISMATCH",
+    "expected": [
+      ".github/workflows/docs-quality.yml",
+      "package.json",
+      "poc/README.md",
+      "poc/test/poc-evidence-publication.test.js",
+      "scripts/verify_poc_evidence.mjs"
+    ],
+    "observed": [
+      "poc/evidence/maintenance/pr-113-final-hardening/inspection/history.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/inspection/inspect.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/inspection/progress.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/inspection/protocol-info.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/inspection/status.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/inspection/task-show.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/inspection/trace.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/inspection/validate-protocol.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/inspection/validate-receipt.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/inspection/validate-state.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/source/contract.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/source/events.ndjson",
+      "poc/evidence/maintenance/pr-113-final-hardening/source/events.ndjson.index.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/source/execution-receipt.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/source/executions/exec-360e38f6-5df2-4d3a-b555-4b290e30313a.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/source/executions/exec-5b554942-fe12-465e-8201-228be99ac9a0.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/source/executions/exec-80e1a881-8623-4b24-bd6a-4e5d5892d414.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/source/executions/exec-86a53a9c-5fbc-4ce6-a4b3-c129a8951ae1.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/source/executions/exec-9801a699-cb67-4a8e-acbd-92a136d04b37.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/source/executions/exec-c652b3e3-8026-4300-a036-1e83d6059e16.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/source/gates/threat-boundary.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/source/policy-snapshot.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/source/preflight.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/source/routing-result.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/source/task.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/source/work-state.json"
+    ],
+    "missing": [
+      ".github/workflows/docs-quality.yml",
+      "package.json",
+      "poc/README.md",
+      "poc/test/poc-evidence-publication.test.js",
+      "scripts/verify_poc_evidence.mjs"
+    ],
+    "unexpected": [
+      "poc/evidence/maintenance/pr-113-final-hardening/inspection/history.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/inspection/inspect.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/inspection/progress.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/inspection/protocol-info.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/inspection/status.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/inspection/task-show.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/inspection/trace.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/inspection/validate-protocol.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/inspection/validate-receipt.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/inspection/validate-state.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/source/contract.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/source/events.ndjson",
+      "poc/evidence/maintenance/pr-113-final-hardening/source/events.ndjson.index.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/source/execution-receipt.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/source/executions/exec-360e38f6-5df2-4d3a-b555-4b290e30313a.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/source/executions/exec-5b554942-fe12-465e-8201-228be99ac9a0.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/source/executions/exec-80e1a881-8623-4b24-bd6a-4e5d5892d414.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/source/executions/exec-86a53a9c-5fbc-4ce6-a4b3-c129a8951ae1.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/source/executions/exec-9801a699-cb67-4a8e-acbd-92a136d04b37.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/source/executions/exec-c652b3e3-8026-4300-a036-1e83d6059e16.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/source/gates/threat-boundary.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/source/policy-snapshot.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/source/preflight.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/source/routing-result.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/source/task.json",
+      "poc/evidence/maintenance/pr-113-final-hardening/source/work-state.json"
+    ]
+  },
+  "publicationStatus": "local-only",
+  "productionReadiness": "not-verified",
+  "artifacts": {
+    "contract": ".forgeloop/task-state/e80ec0fe2c7166be2873291844c6ba619c751535b1c08f3e62b46c0f282ad21c/contract.json",
+    "route": ".forgeloop/task-state/e80ec0fe2c7166be2873291844c6ba619c751535b1c08f3e62b46c0f282ad21c/routing-result.json",
+    "state": ".forgeloop/task-state/e80ec0fe2c7166be2873291844c6ba619c751535b1c08f3e62b46c0f282ad21c/work-state.json",
+    "receipt": ".forgeloop/task-state/e80ec0fe2c7166be2873291844c6ba619c751535b1c08f3e62b46c0f282ad21c/execution-receipt.json"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "purpose": "ForgeLoop maintenance execution evidence publication",
+  "subject": {
+    "pullRequest": 113,
+    "pullRequestUrl": "https://github.com/cassiomc1/forgeloop/pull/113",
+    "pullRequestTitle": "fix(poc): finalize cross-platform evidence verification",
+    "mergeCommit": "43a5ee029b750aed01534f753e9523b96d7e0169",
+    "baseBranch": "main"
+  },
+  "forgeloopTask": {
+    "taskId": "poc-final-verifier-ci-hardening-20260826",
+    "taskKey": "e80ec0fe2c7166be2873291844c6ba619c751535b1c08f3e62b46c0f282ad21c",
+    "historicalLifecyclePhase": "COMPLETE",
+    "historicalCompletionValidation": "VALID",
+    "historicalReceiptSnapshot": {
+      "status": "in-progress",
+      "taskStatus": "in-progress",
+      "verificationStatus": "not-verified",
+      "terminalCompletionProof": false
+    }
+  },
+  "scope": "maintenance-task-auditability",
+  "productionReadiness": "not-verified"
+}
