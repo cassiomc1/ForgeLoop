@@ -369,6 +369,17 @@ Provenance and authority truths for this recipe:
   capability policy requires `REQUIRE_APPROVAL`, only a fresh `HOST_ATTESTED`
   approval resolved through a trusted embedding-host boundary authorizes the
   action. The standalone CLI can never mint it.
+- `forgeloop next` evaluates the current capability policy before inspecting
+  approval state. Historical or stale approvals never override `ALLOW`, `DENY`,
+  or `REQUIRE_AUTHORITY`; only a currently applicable `REQUIRE_APPROVAL`
+  decision can make a pending approval the active resolver target.
+- `commands` in next-action guidance are safe standalone CLI commands. A
+  host-only authorization is returned with `commands: []` and structured
+  `hostActionRequired`/`authorityRequired` data so an embedding host can invoke
+  `action-authorize` while preserving its trusted authority context.
+- `approval-request` is policy-aware: it creates a pending approval only for
+  `REQUIRE_APPROVAL`; `ALLOW`, `DENY`, and `REQUIRE_AUTHORITY` reject the request
+  without creating an approval artifact.
 - `COMMIT_UNKNOWN` is an explicit reconciliation boundary, not a failed retry.
   Recording `UNKNOWN` keeps the action ambiguous. Settling `COMMITTED` or
   `NOT_COMMITTED` requires trusted host attestation plus evidence through a

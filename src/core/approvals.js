@@ -112,6 +112,20 @@ export function approvalFingerprint(approval) {
 }
 
 export function assertApprovalFresh(approval, expectedBinding) {
+  assertApprovalBinding(approval, expectedBinding);
+  if (approval.status !== "APPROVED") {
+    throw approvalError(E_APPROVAL_INVALID, `approval ${approval.approvalId} is not APPROVED`);
+  }
+  return true;
+}
+
+/**
+ * Validate only the immutable binding between an approval and the current
+ * action/task revision. Pending approvals use this check before they become
+ * the active guidance target; approval status is intentionally evaluated by
+ * the current capability policy, not by historical approval state.
+ */
+export function assertApprovalBinding(approval, expectedBinding) {
   if (!expectedBinding || typeof expectedBinding !== "object") {
     throw approvalError(E_APPROVAL_INVALID, "expected binding must be an object");
   }
@@ -122,9 +136,6 @@ export function assertApprovalFresh(approval, expectedBinding) {
         `approval ${approval.approvalId} is stale: bound ${key} does not match the current task/action state`,
       );
     }
-  }
-  if (approval.status !== "APPROVED") {
-    throw approvalError(E_APPROVAL_INVALID, `approval ${approval.approvalId} is not APPROVED`);
   }
   return true;
 }
@@ -326,6 +337,7 @@ export async function validateApprovalForAction(target, {
   action,
   actionId,
   approvalId,
+  requireApproved = true,
 }) {
   const currentAction = action ?? await readAction(target, { packageRoot, taskId, actionId });
   if (currentAction.taskId !== taskId) {
@@ -336,7 +348,7 @@ export async function validateApprovalForAction(target, {
     throw approvalError(E_APPROVAL_INVALID, `task ${taskId} has no canonical work state`);
   }
   const approval = await readApproval(target, { packageRoot, taskId, approvalId });
-  assertApprovalFresh(approval, {
+  assertApprovalBinding(approval, {
     taskId,
     actionId: currentAction.actionId,
     actionFingerprint: currentAction.actionFingerprint,
@@ -344,6 +356,9 @@ export async function validateApprovalForAction(target, {
     taskRevision: state.revision ?? 0,
     capability: currentAction.capability,
   });
+  if (requireApproved && approval.status !== "APPROVED") {
+    throw approvalError(E_APPROVAL_INVALID, `approval ${approval.approvalId} is not APPROVED`);
+  }
   return approval;
 }
 

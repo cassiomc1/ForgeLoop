@@ -87,6 +87,7 @@ export const E_ACTION_CAPABILITY_UNKNOWN = "E_ACTION_CAPABILITY_UNKNOWN";
 export const E_ACTION_CAPABILITY_DENIED = "E_ACTION_CAPABILITY_DENIED";
 export const E_ACTION_AUTHORITY_REQUIRED = "E_ACTION_AUTHORITY_REQUIRED";
 export const E_ACTION_APPROVAL_REQUIRED = "E_ACTION_APPROVAL_REQUIRED";
+export const E_ACTION_APPROVAL_NOT_REQUIRED = "E_ACTION_APPROVAL_NOT_REQUIRED";
 export const E_ACTION_COMMIT_UNKNOWN = "E_ACTION_COMMIT_UNKNOWN";
 export const E_ACTION_RECONCILIATION_REQUIRED = "E_ACTION_RECONCILIATION_REQUIRED";
 export const E_ACTION_EVIDENCE_INVALID = "E_ACTION_EVIDENCE_INVALID";
@@ -697,6 +698,13 @@ export const PUBLIC_ERROR_CODES = Object.freeze({
     meaning: "Policy requires a current fingerprint-bound approval before this action may proceed.",
     safeResolution: "Request approval with forgeloop approval-request and resolve it via forgeloop approval-resolve, then rerun the action.",
   }),
+  E_ACTION_APPROVAL_NOT_REQUIRED: Object.freeze({
+    code: "E_ACTION_APPROVAL_NOT_REQUIRED",
+    category: "durable-approval",
+    classification: "PUBLIC_STABLE",
+    meaning: "The current capability policy allows the action without an approval artifact.",
+    safeResolution: "Do not create an approval; authorize the action through the current policy path.",
+  }),
   E_ACTION_COMMIT_UNKNOWN: Object.freeze({
     code: "E_ACTION_COMMIT_UNKNOWN",
     category: "durable-action",
@@ -902,6 +910,7 @@ export const ALL_KNOWN_ERROR_CODES = Object.freeze(new Set([
   E_ACTION_CAPABILITY_DENIED,
   E_ACTION_AUTHORITY_REQUIRED,
   E_ACTION_APPROVAL_REQUIRED,
+  E_ACTION_APPROVAL_NOT_REQUIRED,
   E_ACTION_COMMIT_UNKNOWN,
   E_ACTION_RECONCILIATION_REQUIRED,
   E_ACTION_EVIDENCE_INVALID,

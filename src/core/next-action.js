@@ -43,7 +43,7 @@ import { criterionForDecision } from "./settlement-model.js";
 import { readEvents } from "./events.js";
 import { inspectTaskConflictState } from "./task-conflict-inspection.js";
 import { listActions } from "./actions.js";
-import { listApprovals } from "./approvals.js";
+import { listApprovals, validateApprovalForAction } from "./approvals.js";
 import { evaluateActionCapability } from "./capability-policy.js";
 
 export { NEXT_ACTIONS } from "./next-action-model.js";
@@ -108,7 +108,7 @@ function actionApprovalGuidance({ context, state, action, capability, eventsRel 
 function actionAuthorityGuidance({ context, state, action, capability, eventsRel }) {
   return result({
     ...context,
-    nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
+    nextAction: NEXT_ACTIONS.AUTHORIZE_ACTION,
     commands: [],
     reasons: [artifactError(
       capability.reasonCode ?? "E_ACTION_AUTHORITY_REQUIRED",
@@ -118,10 +118,37 @@ function actionAuthorityGuidance({ context, state, action, capability, eventsRel
       kind: "HOST_ATTESTED",
       actionId: action.actionId,
       capability: action.capability,
-      reason: "Capability policy requires trusted host authority; no standalone CLI command can create it.",
+      reason: capability.allowed
+        ? "Authorization must be performed by a trusted host boundary that preserves authority context."
+        : "Capability policy requires trusted host authority; no standalone CLI command can create it.",
+    },
+    hostActionRequired: {
+      action: "action-authorize",
+      actionId: action.actionId,
+      executionBoundary: "HOST",
+      requiresAuthorityContext: true,
     },
     capabilityDecision: capabilityDecisionMetadata(action, capability),
     requiredArtifacts: [taskArtifactPath(state.taskId, "actions"), eventsRel],
+  });
+}
+
+function actionApprovalResolutionGuidance({ context, state, action, approval, eventsRel }) {
+  return result({
+    ...context,
+    nextAction: NEXT_ACTIONS.RESOLVE_ACTION_APPROVAL,
+    commands: [],
+    reasons: [artifactError(
+      "E_ACTION_APPROVAL_REQUIRED",
+      `Required action ${action.actionId} is waiting for approval.`,
+    )],
+    requiredArtifacts: [taskArtifactPath(state.taskId, "approvals"), eventsRel],
+    authorityRequired: {
+      kind: "HOST_ATTESTED",
+      approvalId: approval.approvalId,
+      actionId: action.actionId,
+      reason: "This approval must be resolved by a trusted host/operator boundary.",
+    },
   });
 }
 
@@ -140,6 +167,8 @@ function actionDeniedGuidance({ context, state, action, capability, eventsRel })
 }
 
 async function evaluateProposedActionCapability({ target, packageRoot, action, approvals, authorityContext }) {
+  const current = await evaluateActionCapability({ target, packageRoot, action, authorityContext });
+  if (current.decision !== "REQUIRE_APPROVAL" || !approvals) return current;
   const approved = approvals.filter((approval) => approval.actionId === action.actionId && approval.status === "APPROVED");
   for (const approval of approved) {
     const evaluated = await evaluateActionCapability({
@@ -151,7 +180,26 @@ async function evaluateProposedActionCapability({ target, packageRoot, action, a
     });
     if (evaluated.allowed) return evaluated;
   }
-  return evaluateActionCapability({ target, packageRoot, action, authorityContext });
+  return current;
+}
+
+async function findApplicablePendingApproval({ target, packageRoot, taskId, action, approvals }) {
+  for (const approval of approvals) {
+    if (approval.status !== "PENDING" || approval.actionId !== action.actionId) continue;
+    try {
+      return await validateApprovalForAction(target, {
+        packageRoot,
+        taskId,
+        action,
+        approvalId: approval.approvalId,
+        requireApproved: false,
+      });
+    } catch (error) {
+      if (["E_APPROVAL_STALE", "E_APPROVAL_INVALID"].includes(error.code)) continue;
+      throw error;
+    }
+  }
+  return null;
 }
 
 export function policyRecoveryAction(errors = []) {
@@ -319,24 +367,6 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
       },
       requiredArtifacts: [taskArtifactPath(state.taskId, "actions"), eventsRel] });
   }
-  const approvals = await listApprovals(target, { packageRoot, taskId: state.taskId });
-  const pendingApproval = approvals.find((approval) => approval.status === "PENDING"
-    && actionsForApproval.some((action) => action.actionId === approval.actionId && action.requiredForCompletion));
-  if (pendingApproval) {
-    // A host-required approval can never be satisfied through a caller CLI
-    // command: CALLER_ACKNOWLEDGED is audit information, not authority.
-    // Surface a structured integration requirement instead of a command that
-    // cannot resolve the blocker.
-    return result({ ...context, nextAction: NEXT_ACTIONS.RESOLVE_ACTION_APPROVAL,
-      commands: [],
-      reasons: [artifactError("E_ACTION_APPROVAL_REQUIRED", `Required action ${pendingApproval.actionId} is waiting for approval.`)],
-      requiredArtifacts: [taskArtifactPath(state.taskId, "approvals"), eventsRel],
-      authorityRequired: {
-        kind: "HOST_ATTESTED",
-        approvalId: pendingApproval.approvalId,
-        reason: "This approval must be resolved by a trusted host/operator boundary.",
-      }, });
-  }
   // A PROPOSED required action ready for authorization should use the
   // canonical authorization surface; host/approval blockers remain structured.
   const authorizableAction = actionsForApproval.find((action) => action.requiredForCompletion
@@ -348,7 +378,6 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
         target,
         packageRoot,
         action: authorizableAction,
-        approvals,
         authorityContext,
       });
     } catch (error) {
@@ -370,6 +399,15 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
         requiredArtifacts: [taskArtifactPath(state.taskId, "actions"), eventsRel],
       });
     }
+    if (capability.decision === "REQUIRE_AUTHORITY") {
+      return actionAuthorityGuidance({
+        context,
+        state,
+        action: authorizableAction,
+        capability,
+        eventsRel,
+      });
+    }
     if (capability.allowed) {
       return authorizeActionGuidance({
         context,
@@ -380,16 +418,103 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
       });
     }
     if (capability.decision === "REQUIRE_APPROVAL") {
-      return actionApprovalGuidance({
-        context,
-        state,
+      let approvals;
+      try {
+        approvals = await listApprovals(target, { packageRoot, taskId: state.taskId });
+      } catch (error) {
+        return result({
+          ...context,
+          nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
+          commands: [],
+          reasons: [artifactError(
+            error.code ?? "E_APPROVAL_INVALID",
+            `Approval artifact inspection failed for required action ${authorizableAction.actionId}: ${error.message}`,
+            [taskArtifactPath(state.taskId, "approvals"), eventsRel],
+          )],
+          capabilityDecision: capabilityDecisionMetadata(authorizableAction, capability),
+          requiredArtifacts: [taskArtifactPath(state.taskId, "approvals"), eventsRel],
+        });
+      }
+      try {
+        capability = await evaluateProposedActionCapability({
+          target,
+          packageRoot,
+          action: authorizableAction,
+          approvals,
+          authorityContext,
+        });
+      } catch (error) {
+        return result({
+          ...context,
+          nextAction: NEXT_ACTIONS.RESOLVE_BLOCKER,
+          commands: [],
+          reasons: [artifactError(
+            error.code ?? "E_ACTION_CAPABILITY_INVALID",
+            `Capability policy evaluation failed for required action ${authorizableAction.actionId}: ${error.message}`,
+            [taskArtifactPath(state.taskId, "actions"), eventsRel],
+          )],
+          capabilityDecision: {
+            capability: authorizableAction.capability,
+            decision: "DENY",
+            reasonCode: error.code ?? "E_ACTION_CAPABILITY_INVALID",
+            policyFingerprint: null,
+          },
+          requiredArtifacts: [taskArtifactPath(state.taskId, "actions"), eventsRel],
+        });
+      }
+      if (capability.allowed) {
+        return authorizeActionGuidance({
+          context,
+          state,
+          action: authorizableAction,
+          capability,
+          eventsRel,
+        });
+      }
+      if (capability.decision !== "REQUIRE_APPROVAL") {
+        if (capability.decision === "REQUIRE_AUTHORITY") {
+          return actionAuthorityGuidance({
+            context,
+            state,
+            action: authorizableAction,
+            capability,
+            eventsRel,
+          });
+        }
+        if (capability.allowed) {
+          return authorizeActionGuidance({
+            context,
+            state,
+            action: authorizableAction,
+            capability,
+            eventsRel,
+          });
+        }
+        return actionDeniedGuidance({
+          context,
+          state,
+          action: authorizableAction,
+          capability,
+          eventsRel,
+        });
+      }
+      const pendingApproval = await findApplicablePendingApproval({
+        target,
+        packageRoot,
+        taskId: state.taskId,
         action: authorizableAction,
-        capability,
-        eventsRel,
+        approvals,
       });
-    }
-    if (capability.decision === "REQUIRE_AUTHORITY") {
-      return actionAuthorityGuidance({
+      if (pendingApproval) {
+        return actionApprovalResolutionGuidance({
+          context,
+          state,
+          action: authorizableAction,
+          approval: pendingApproval,
+          eventsRel,
+        });
+      }
+      return actionApprovalGuidance({
         context,
         state,
         action: authorizableAction,

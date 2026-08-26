@@ -114,6 +114,7 @@ export function result({
   progress = undefined,
   diagnosticGuidance = undefined,
   authorityRequired = undefined,
+  hostActionRequired = undefined,
   approvalRequired = undefined,
   capabilityDecision = undefined,
   reconciliationAuthorityRequired = undefined,
@@ -151,6 +152,7 @@ export function result({
     ...(progress ? { progress: structuredClone(progress) } : {}),
     ...(diagnosticGuidance ? { diagnosticGuidance: structuredClone(diagnosticGuidance) } : {}),
     ...(authorityRequired ? { authorityRequired: structuredClone(authorityRequired) } : {}),
+    ...(hostActionRequired ? { hostActionRequired: structuredClone(hostActionRequired) } : {}),
     ...(approvalRequired ? { approvalRequired: structuredClone(approvalRequired) } : {}),
     ...(capabilityDecision ? { capabilityDecision: structuredClone(capabilityDecision) } : {}),
     ...(reconciliationAuthorityRequired

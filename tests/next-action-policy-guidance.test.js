@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -13,7 +13,7 @@ import {
 import { getNextAction, NEXT_ACTIONS } from "../src/core/next-action.js";
 import { readWorkState } from "../src/core/work-state.js";
 import { getPackageRoot } from "../src/core/templates.js";
-import { taskActionPath } from "../src/core/task-paths.js";
+import { taskActionPath, taskApprovalPath } from "../src/core/task-paths.js";
 import { setupVerifyingTask } from "./helpers/durable-lifecycle.js";
 
 const packageRoot = getPackageRoot();
@@ -61,6 +61,23 @@ async function withProposedAction(run, {
   }
 }
 
+async function createPendingApproval(target, taskId, action, overrides = {}) {
+  const state = await readWorkState(target, { packageRoot, taskId });
+  await requestApproval(target, {
+    packageRoot,
+    taskId,
+    input: {
+      approvalId: "approval-policy",
+      actionId: action.actionId,
+      actionFingerprint: action.actionFingerprint,
+      contractFingerprint: state.contractFingerprint,
+      taskRevision: state.revision,
+      capability: action.capability,
+      ...overrides,
+    },
+  });
+}
+
 test("next keeps ALLOW authorization guidance for a proposed required action", async () => {
   await withProposedAction(async ({ target, taskId }) => {
     const result = await getNextAction({ target, packageRoot, taskId });
@@ -85,19 +102,7 @@ test("next requests approval instead of recommending authorization when policy r
 
 test("next exposes host resolution for a pending approval without an impossible CLI command", async () => {
   await withProposedAction(async ({ target, taskId, action }) => {
-    const state = await readWorkState(target, { packageRoot, taskId });
-    await requestApproval(target, {
-      packageRoot,
-      taskId,
-      input: {
-        approvalId: "approval-policy",
-        actionId: action.actionId,
-        actionFingerprint: action.actionFingerprint,
-        contractFingerprint: state.contractFingerprint,
-        taskRevision: state.revision,
-        capability: action.capability,
-      },
-    });
+    await createPendingApproval(target, taskId, action);
 
     const result = await getNextAction({ target, packageRoot, taskId });
 
@@ -106,6 +111,52 @@ test("next exposes host resolution for a pending approval without an impossible 
     assert.equal(result.authorityRequired.kind, "HOST_ATTESTED");
     assert.equal(result.authorityRequired.approvalId, "approval-policy");
   }, { decision: "REQUIRE_APPROVAL" });
+});
+
+test("current ALLOW policy overrides an old pending approval", async () => {
+  await withProposedAction(async ({ target, taskId, action }) => {
+    await createPendingApproval(target, taskId, action);
+
+    const result = await getNextAction({ target, packageRoot, taskId });
+
+    assert.equal(result.nextAction, NEXT_ACTIONS.AUTHORIZE_ACTION);
+    assert.notEqual(result.nextAction, NEXT_ACTIONS.RESOLVE_ACTION_APPROVAL);
+    assert.equal(result.capabilityDecision.decision, "ALLOW");
+  }, { decision: "ALLOW", taskId: "next-policy-allow-pending" });
+});
+
+test("current DENY policy overrides an old pending approval", async () => {
+  await withProposedAction(async ({ target, taskId, action }) => {
+    await createPendingApproval(target, taskId, action);
+
+    const result = await getNextAction({ target, packageRoot, taskId });
+
+    assert.equal(result.nextAction, NEXT_ACTIONS.RESOLVE_BLOCKER);
+    assert.notEqual(result.nextAction, NEXT_ACTIONS.RESOLVE_ACTION_APPROVAL);
+    assert.deepEqual(result.commands, []);
+    assert.equal(result.capabilityDecision.decision, "DENY");
+  }, { decision: "DENY", taskId: "next-policy-deny-pending" });
+});
+
+test("non-approval policy decisions do not inspect malformed approval artifacts", async () => {
+  for (const decision of ["ALLOW", "DENY", "REQUIRE_AUTHORITY"]) {
+    await withProposedAction(async ({ target, taskId }) => {
+      const approvalPath = path.join(target, taskApprovalPath(taskId, "approval-malformed"));
+      await mkdir(path.dirname(approvalPath), { recursive: true });
+      await writeFile(
+        approvalPath,
+        "{ invalid approval json\n",
+      );
+
+      const result = await getNextAction({ target, packageRoot, taskId });
+
+      assert.notEqual(result.nextAction, NEXT_ACTIONS.RESOLVE_ACTION_APPROVAL, decision);
+      assert.equal(result.capabilityDecision.decision, decision);
+    }, {
+      decision,
+      taskId: `next-policy-no-approval-inspection-${decision.toLowerCase()}`,
+    });
+  }
 });
 
 test("next accepts a valid trusted approval and returns authorization guidance", async () => {
@@ -142,19 +193,109 @@ test("next accepts a valid trusted approval and returns authorization guidance",
   }, { decision: "REQUIRE_APPROVAL" });
 });
 
-test("next blocks REQUIRE_AUTHORITY without trusted authority and recommends authorization with it", async () => {
+test("next keeps REQUIRE_AUTHORITY host-bound even when a pending approval exists", async () => {
+  await withProposedAction(async ({ target, taskId, action }) => {
+    await createPendingApproval(target, taskId, action);
+
+    const result = await getNextAction({ target, packageRoot, taskId });
+
+    assert.equal(result.nextAction, NEXT_ACTIONS.AUTHORIZE_ACTION);
+    assert.deepEqual(result.commands, []);
+    assert.equal(result.authorityRequired.kind, "HOST_ATTESTED");
+    assert.equal(result.hostActionRequired.executionBoundary, "HOST");
+    assert.equal(result.hostActionRequired.requiresAuthorityContext, true);
+    assert.notEqual(result.nextAction, NEXT_ACTIONS.RESOLVE_ACTION_APPROVAL);
+  }, { decision: "REQUIRE_AUTHORITY", taskId: "next-policy-authority-pending" });
+});
+
+test("next keeps REQUIRE_AUTHORITY host-bound with or without trusted authority", async () => {
   await withProposedAction(async ({ target, taskId }) => {
     const blocked = await getNextAction({ target, packageRoot, taskId });
-    assert.equal(blocked.nextAction, NEXT_ACTIONS.RESOLVE_BLOCKER);
+    assert.equal(blocked.nextAction, NEXT_ACTIONS.AUTHORIZE_ACTION);
     assert.deepEqual(blocked.commands, []);
     assert.equal(blocked.authorityRequired.kind, "HOST_ATTESTED");
+    assert.equal(blocked.hostActionRequired.action, "action-authorize");
     assert.equal(blocked.capabilityDecision.decision, "REQUIRE_AUTHORITY");
 
     const trusted = await getNextAction({ target, packageRoot, taskId, authorityContext: trustedAuthority });
     assert.equal(trusted.nextAction, NEXT_ACTIONS.AUTHORIZE_ACTION);
-    assert.ok(trusted.commands.some((command) => command.includes("action-authorize")));
+    assert.deepEqual(trusted.commands, []);
+    assert.equal(trusted.hostActionRequired.action, "action-authorize");
     assert.equal(trusted.capabilityDecision.authorityRef, trustedAuthority.grantRef);
   }, { decision: "REQUIRE_AUTHORITY" });
+});
+
+test("stale pending approvals are ignored when REQUIRE_APPROVAL is current", async () => {
+  const staleBindings = [
+    ["actionFingerprint", "c".repeat(64)],
+    ["contractFingerprint", "d".repeat(64)],
+    ["taskRevision", 999],
+  ];
+
+  for (const [field, value] of staleBindings) {
+    await withProposedAction(async ({ target, taskId, action }) => {
+      await createPendingApproval(target, taskId, action, { [field]: value });
+
+      const result = await getNextAction({ target, packageRoot, taskId });
+
+      assert.equal(result.nextAction, NEXT_ACTIONS.REQUEST_ACTION_APPROVAL, field);
+      assert.notEqual(result.nextAction, NEXT_ACTIONS.RESOLVE_ACTION_APPROVAL, field);
+      assert.equal(result.capabilityDecision.decision, "REQUIRE_APPROVAL", field);
+    }, {
+      decision: "REQUIRE_APPROVAL",
+      taskId: `next-policy-stale-${field}`,
+    });
+  }
+});
+
+test("pending approvals for non-required actions do not block the required action", async () => {
+  await withProposedAction(async ({ target, taskId, action }) => {
+    const { action: unrelated } = await proposeAction(target, {
+      packageRoot,
+      taskId,
+      input: {
+        actionId: "action-unrelated",
+        effectClass: "REVERSIBLE_WRITE",
+        capability: action.capability,
+        target: "workspace/unrelated",
+        operation: "update unrelated item",
+        idempotencyKey: `${taskId}:unrelated:v1`,
+        requiredForCompletion: false,
+        requirement: "unrelated",
+        provenance: "CALLER_REPORTED",
+      },
+    });
+    await createPendingApproval(target, taskId, unrelated, { approvalId: "approval-unrelated" });
+
+    const result = await getNextAction({ target, packageRoot, taskId });
+
+    assert.equal(result.nextAction, NEXT_ACTIONS.REQUEST_ACTION_APPROVAL);
+    assert.notEqual(result.nextAction, NEXT_ACTIONS.RESOLVE_ACTION_APPROVAL);
+  }, { decision: "REQUIRE_APPROVAL", taskId: "next-policy-unrelated-pending" });
+});
+
+test("pending approvals for non-PROPOSED actions do not block next", async () => {
+  await withProposedAction(async ({ target, taskId, action }) => {
+    await transitionAuthorizedAction(target, {
+      packageRoot,
+      taskId,
+      actionId: action.actionId,
+      expectedRevision: action.revision,
+      expectedFingerprint: action.actionFingerprint,
+      details: {
+        actionFingerprint: action.actionFingerprint,
+        capabilityDecision: "ALLOW",
+        capabilityPolicyFingerprint: "a".repeat(64),
+        policyLockDigest: `sha256:${"b".repeat(64)}`,
+        taskPolicyDigest: `sha256:${"c".repeat(64)}`,
+      },
+    });
+    await createPendingApproval(target, taskId, action);
+
+    const result = await getNextAction({ target, packageRoot, taskId });
+
+    assert.notEqual(result.nextAction, NEXT_ACTIONS.RESOLVE_ACTION_APPROVAL);
+  }, { decision: "ALLOW", taskId: "next-policy-authorized-pending" });
 });
 
 test("next blocks denied and unknown capabilities without authorization guidance", async () => {
