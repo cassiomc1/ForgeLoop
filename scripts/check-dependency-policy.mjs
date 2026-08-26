@@ -5,7 +5,6 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const APPROVED_DEV_DEPENDENCIES = Object.freeze([
-  "@mermaid-js/mermaid-cli",
   "c8",
   "eslint",
 ]);

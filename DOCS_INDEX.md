@@ -37,7 +37,7 @@ integration and guide context. Use this map before editing documentation.
 | Artifact and phase schemas | [`schemas/`](./schemas/) and [`CONTRACT_COVERAGE.md`](./CONTRACT_COVERAGE.md) | Versioned machine-readable contract |
 | CLI/package behavior | [`src/`](./src/) and [`tests/`](./tests/) | Executable implementation and regression evidence |
 | Guide content | [`ENG/`](./ENG/) | Context-specific, English-only operational guides |
-| Diagram | [`docs/forgeloop-flow.mmd`](./docs/forgeloop-flow.mmd) | Canonical Mermaid source; SVG is generated output |
+| Diagram | [`docs/diagrams/README.md`](./docs/diagrams/README.md) | Typed Archify source, interactive HTML, dark-first SVG, and deterministic receipt |
 
 ## Audience map
 
@@ -91,25 +91,26 @@ process into adapters or README sections; link to the canonical source.
 ## Verification and release
 
 The Node regression suite, ESLint, c8, dependency policy, package boundary,
-and Mermaid render are the local executable checks. Python validators remain
+and Archify diagram render are the local executable checks. Python validators remain
 frozen CI-only compatibility tools because they cover historical Markdown,
 loop, and secret-scanning contracts that have not been migrated to Node. Their
 scope, exact commands, and migration boundary are recorded in
 [`scripts/CI_VALIDATORS.md`](./scripts/CI_VALIDATORS.md).
 
 The package has no runtime dependencies. Development dependencies are limited
-to ESLint, c8, and Mermaid CLI and are checked by
+to ESLint and c8 and are checked by
 `npm run dependency:policy`. GitHub Actions use `npm ci`, pinned action SHAs,
 CodeQL, dependency review, and generated-release notes; npm publication still
 uses trusted OIDC publishing and is not implied by local verification.
 
 ## Editing rules
 
-- Keep lifecycle prose, the Mermaid source, and the text-only README fallback
-  synchronized.
-- Keep generated `docs/assets/forgeloop-flow.svg` synchronized with the Mermaid
-  source by running `npm run docs:flow` and `npm run docs:check`. CI validates
-  the source fingerprint instead of comparing renderer-specific SVG geometry.
+- Keep lifecycle prose, the typed Archify source, generated outputs, and the
+  text-only README fallback synchronized.
+- Keep the generated HTML, SVG, and receipt synchronized with the Archify
+  source by running `npm run docs:diagrams` and `npm run docs:check`. CI
+  validates the renderer pin, source fingerprint, artifact hashes, and SVG
+  safety constraints.
 - Preserve the distinction between implemented behavior, local evidence, and
   external publication or production state.
 - Run `npm run lint`, `npm run coverage`, `npm run pack:check`, and the Python

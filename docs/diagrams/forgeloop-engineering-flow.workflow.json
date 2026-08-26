@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "ForgeLoop Evidence-First Engineering Flow",
+    "subtitle": "Typed intent → gated work → validator-backed closure",
+    "animation": "none",
+    "visual_preset": "signal-flow",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "contract-to-work",
+        "label": "Contract to work",
+        "focus": ["request", "profile", "contract", "route", "gates", "preflight", "work"],
+        "note": "Follow how a request becomes scoped, routed, and safe to execute."
+      },
+      {
+        "id": "evidence-to-close",
+        "label": "Evidence to close",
+        "focus": ["work", "evidence", "review", "valid"],
+        "note": "See the evidence and review boundary that makes completion trustworthy."
+      },
+      {
+        "id": "recovery-loop",
+        "label": "Recovery loop",
+        "focus": ["evidence", "diagnose", "correct", "preflight", "blocked"],
+        "note": "Failures return to diagnosis and correction before another claim is made."
+      }
+    ],
+    "legend": {
+      "mode": "auto",
+      "entries": {
+        "frontend": { "label": "Human-facing surface" },
+        "backend": { "label": "ForgeLoop state" },
+        "database": { "label": "Durable evidence" },
+        "cloud": { "label": "External boundary" },
+        "security": { "label": "Policy or gate" },
+        "messagebus": { "label": "Recovery signal" },
+        "external": { "label": "Request or result" }
+      }
+    },
+    "viewBox": [720, 900]
+  },
+  "lanes": [
+    { "id": "intent", "label": "Intent + Context" },
+    { "id": "policy", "label": "Policy Boundary" },
+    { "id": "execution", "label": "Resumable Execution" },
+    { "id": "evidence", "label": "Evidence Ledger" },
+    { "id": "recovery", "label": "Recovery + Stops", "variant": "exception" },
+    { "id": "closure", "label": "Review + Closure" }
+  ],
+  "phases": [
+    { "id": "discover", "label": "Discover + scope", "fromCol": 0, "toCol": 2 },
+    { "id": "authorize", "label": "Route + authorize", "fromCol": 3, "toCol": 4, "variant": "emphasis" },
+    { "id": "verify", "label": "Execute + verify", "fromCol": 5, "toCol": 5, "variant": "dashed" }
+  ],
+  "groups": [
+    { "id": "contract_boundary", "label": "Contract boundary", "lane": "policy", "fromCol": 3, "toCol": 5, "variant": "emphasis" },
+    { "id": "evidence_boundary", "label": "Evidence boundary", "lane": "evidence", "fromCol": 4, "toCol": 5, "variant": "dashed" },
+    { "id": "recovery_path", "label": "Reconcile before retry", "lane": "recovery", "fromCol": 0, "toCol": 2, "variant": "security" }
+  ],
+  "mainPath": ["request", "profile", "contract", "route", "gates", "preflight", "work", "evidence", "review", "valid"],
+  "nodes": [
+    { "id": "request", "lane": "intent", "col": 0, "type": "external", "label": "Request", "sublabel": "intent", "width": 50 },
+    { "id": "profile", "lane": "intent", "col": 1, "type": "backend", "label": "Profile", "sublabel": "facts", "width": 50 },
+    { "id": "contract", "lane": "intent", "col": 2, "type": "security", "label": "Contract", "sublabel": "scope", "tag": "saved", "width": 50 },
+    { "id": "route", "lane": "policy", "col": 2, "type": "security", "label": "Route", "sublabel": "guides", "tag": "fail closed", "width": 50 },
+    { "id": "gates", "lane": "policy", "col": 3, "type": "security", "label": "Gates", "sublabel": "policy", "width": 50 },
+    { "id": "preflight", "lane": "policy", "col": 4, "type": "security", "label": "READY", "sublabel": "unlock", "tag": "PREFLIGHT", "width": 50 },
+    { "id": "work", "lane": "execution", "col": 4, "type": "backend", "label": "Work", "sublabel": "checkpoint", "width": 50 },
+    { "id": "evidence", "lane": "evidence", "col": 4, "type": "database", "label": "Evidence", "sublabel": "checks", "tag": "freshness", "width": 50 },
+    { "id": "review", "lane": "closure", "col": 5, "type": "backend", "label": "Review", "sublabel": "drift", "width": 50 },
+    { "id": "valid", "lane": "evidence", "col": 5, "type": "database", "label": "VALID", "sublabel": "validator", "tag": "claim", "width": 50 },
+    { "id": "diagnose", "lane": "recovery", "col": 2, "type": "messagebus", "label": "Diagnose", "sublabel": "failure", "width": 50 },
+    { "id": "correct", "lane": "recovery", "col": 1, "type": "backend", "label": "Correct", "sublabel": "repair", "width": 50 },
+    { "id": "blocked", "lane": "recovery", "col": 0, "type": "security", "label": "Blocked", "sublabel": "stop", "width": 50 }
+  ],
+  "edges": [
+    { "id": "request-profile", "from": "request", "to": "profile", "variant": "emphasis" },
+    { "id": "profile-contract", "from": "profile", "to": "contract", "variant": "default" },
+    { "id": "contract-route", "from": "contract", "to": "route", "variant": "emphasis", "fromSide": "bottom", "toSide": "top", "route": "drop" },
+    { "id": "route-gates", "from": "route", "to": "gates", "variant": "emphasis" },
+    { "id": "gates-preflight", "from": "gates", "to": "preflight", "variant": "security", "fromSide": "bottom", "toSide": "bottom", "route": "bottom-channel", "channelY": 312 },
+    { "id": "preflight-work", "from": "preflight", "to": "work", "variant": "emphasis", "fromSide": "bottom", "toSide": "top", "route": "drop" },
+    { "id": "work-evidence", "from": "work", "to": "evidence", "variant": "dashed", "fromSide": "bottom", "toSide": "top", "route": "drop" },
+    { "id": "evidence-review", "from": "evidence", "to": "review", "variant": "emphasis", "fromSide": "left", "toSide": "left", "route": "return-left", "channelX": 360 },
+    { "id": "review-valid", "from": "review", "to": "valid", "variant": "emphasis", "fromSide": "right", "toSide": "right", "route": "outside-right", "channelX": 760 },
+    { "id": "evidence-diagnose", "from": "evidence", "to": "diagnose", "variant": "security", "role": "error", "fromSide": "left", "toSide": "right", "route": "return-left", "channelX": 360 },
+    { "id": "diagnose-correct", "from": "diagnose", "to": "correct", "variant": "dashed", "role": "branch", "fromSide": "left", "toSide": "right", "route": "return-left" },
+    { "id": "correct-evidence", "from": "correct", "to": "evidence", "variant": "security", "role": "return", "fromSide": "left", "toSide": "left", "route": "return-left", "channelX": 160 },
+    { "id": "correct-blocked", "from": "correct", "to": "blocked", "variant": "dashed", "role": "branch", "fromSide": "left", "toSide": "right", "route": "return-left" }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Safety boundary",
+      "items": [
+        "Execution starts only after PREFLIGHT_READY",
+        "Failures return to diagnosis before another claim",
+        "Completion is validator-backed, not inferred from a screenshot"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Evidence contract",
+      "items": [
+        "run-check binds commands to an execution reference",
+        "record-check covers manual observations",
+        "Drift reopens verification instead of being hidden"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Portable output",
+      "items": [
+        "JSON IR is the source of truth",
+        "HTML stays explorable and SVG stays GitHub-safe",
+        "The text fallback carries the same lifecycle semantics"
+      ]
+    }
+  ]
+}

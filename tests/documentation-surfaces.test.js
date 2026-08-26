@@ -14,7 +14,7 @@ test("README keeps the lifecycle contract, modern multi-task layout, and accessi
   const readme = await readFile("README.md", "utf8");
   for (const marker of [
     "LOOP_SYSTEM_DESIGN.md",
-    "forgeloop-flow.svg",
+    "forgeloop-engineering-flow.svg",
     "PREFLIGHT_READY",
     "append-only event ledger",
     "VALID",
@@ -28,11 +28,11 @@ test("README keeps the lifecycle contract, modern multi-task layout, and accessi
   assert.match(readme, /\.forgeloop\/task-state\/<taskKey>\//);
   assert.match(
     readme,
-    /!\[ForgeLoop evidence-first engineering flow\]\(\.\/docs\/assets\/forgeloop-flow\.svg\)/,
+    /!\[ForgeLoop evidence-first engineering flow\]\(\.\/docs\/assets\/diagrams\/forgeloop-engineering-flow\.svg\)/,
   );
   assert.doesNotMatch(
     readme,
-    /<img[^>]+forgeloop-flow\.svg/i,
+    /<img[^>]+forgeloop-engineering-flow\.svg/i,
   );
   assert.match(readme, /project-scoped configuration/i);
   assert.match(readme, /task-scoped/i);
@@ -63,25 +63,23 @@ test("Cross-Harness continuity mentions task selectors and ambiguity", async () 
   assert.match(crossHarness, /E_TASK_AMBIGUOUS/);
 });
 
-test("the Mermaid source is canonical and the rendered SVG is self-contained", async () => {
-  const source = await readFile("docs/forgeloop-flow.mmd", "utf8");
-  const renderer = await readFile("scripts/generate-readme-flow.mjs", "utf8");
-  const puppeteerConfig = await readFile("scripts/mermaid-puppeteer-ci.json", "utf8");
-  const rendered = await readFile("docs/assets/forgeloop-flow.svg", "utf8");
-  assert.match(source, /flowchart/);
-  assert.match(source, /subgraph/);
-  assert.match(source, /classDef/);
-  assert.match(source, /PREFLIGHT_READY/);
-  assert.match(renderer, /mermaid-cli|mmdc/);
-  assert.match(renderer, /forgeloop-flow\.mmd/);
-  assert.match(renderer, /data-forgeloop-source-sha256/);
-  assert.match(renderer, /mermaid-puppeteer-ci\.json/);
-  assert.match(puppeteerConfig, /no-sandbox/);
+test("the typed Archify source and generated outputs are canonical and self-contained", async () => {
+  const source = JSON.parse(await readFile("docs/diagrams/forgeloop-engineering-flow.workflow.json", "utf8"));
+  const manifest = JSON.parse(await readFile("docs/diagrams/manifest.json", "utf8"));
+  const rendered = await readFile("docs/assets/diagrams/forgeloop-engineering-flow.svg", "utf8");
+  const receipt = JSON.parse(await readFile("docs/assets/diagrams/forgeloop-engineering-flow.receipt.json", "utf8"));
+  assert.equal(source.diagram_type, "workflow");
+  assert.equal(source.meta.visual_preset, "signal-flow");
+  assert.match(JSON.stringify(source), /PREFLIGHT/);
+  assert.equal(manifest.renderer.name, "archify");
+  assert.equal(manifest.renderer.version, "2.15.0");
+  assert.equal(receipt.renderer.commit, manifest.renderer.commit);
   assert.match(rendered, /<svg[\s>]/);
   assert.match(rendered, /data-forgeloop-source-sha256="[a-f0-9]{64}"/);
-  assert.match(rendered, /PREFLIGHT_READY/);
-
-  // Assert GitHub-safe and self-contained SVG
+  assert.match(rendered, /data-theme="dark"/);
+  assert.match(rendered, /role="img"/);
+  assert.match(rendered, /<title/);
+  assert.match(rendered, /<desc/);
   assert.doesNotMatch(rendered, /@import/);
   assert.doesNotMatch(rendered, /fonts\.googleapis\.com/);
   assert.doesNotMatch(rendered, /<script\b/i);

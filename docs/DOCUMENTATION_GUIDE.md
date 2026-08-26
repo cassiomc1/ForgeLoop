@@ -14,7 +14,7 @@ ForgeLoop strictly separates normative protocol definitions from operational doc
 | **Operational & Reference** | `docs/` (`GETTING_STARTED.md`, `CROSS_HARNESS_CONTINUITY.md`, `CLI_REFERENCE.md`, `ARTIFACT_REFERENCE.md`, `TROUBLESHOOTING.md`, `RECIPES.md`) | Tutorials, command reference, handoff workflows, and troubleshooting | Explains how to operate the system. Links to normative sources for formal specifications. |
 | **Domain Engineering** | `ENG/` (`clean-code-eng.md`, `design-code-eng.md`, `test-code-eng.md`, etc.) | Domain-specific implementation and quality standards | Frontmatter must adhere to `validate_loop_system.py` standards. |
 | **Consumer Documentation Quality** | [`ENG/documentation-quality-eng.md`](../ENG/documentation-quality-eng.md) | Quality standards for documentation work in projects using ForgeLoop | Governs client/consumer project documentation tasks via guide routing. |
-| **Visual Architecture** | `docs/forgeloop-flow.mmd` | Canonical architecture diagram source | Rendered SVG committed at `docs/assets/forgeloop-flow.svg`. |
+| **Visual Architecture** | `docs/diagrams/forgeloop-engineering-flow.workflow.json` | Canonical typed Archify workflow source | Interactive HTML, dark-first SVG, and deterministic receipt are committed under `docs/assets/diagrams/`. |
 | **Documentation Index** | `DOCS_INDEX.md` | Single repository index and ownership map | Updated whenever documentation structure changes. |
 
 ---
@@ -84,7 +84,7 @@ cross-platform CI (.github/workflows/docs-quality.yml)
 | **CLI Command Options** | `CLI_COMMAND_DEFINITIONS` (`src/core/cli-command-definitions.js`) | `docs/CLI_REFERENCE.md` | `<!-- BEGIN FORGELOOP GENERATED: cli:<command>:options -->` |
 | **Work-State Transitions** | `WORK_PHASES` / `WORK_TRANSITIONS` (`src/core/protocol.js`) | `ORCHESTRATOR_INTEGRATION.md` | `<!-- BEGIN FORGELOOP GENERATED: work-transitions -->` |
 | **Public Error Codes** | `PUBLIC_ERROR_CODES` (`src/core/error-codes.js`) | `docs/TROUBLESHOOTING.md` | `<!-- BEGIN FORGELOOP GENERATED: public-error-codes -->` |
-| **Architecture Flow** | `docs/forgeloop-flow.mmd` | `docs/assets/forgeloop-flow.svg` | Verified via embedded SHA-256 fingerprint |
+| **Architecture Flow** | `docs/diagrams/forgeloop-engineering-flow.workflow.json` | `docs/assets/diagrams/forgeloop-engineering-flow.{html,svg,receipt.json}` | Verified via pinned Archify renderer, source fingerprint, artifact hashes, and composition checks |
 
 ### Maintenance Workflow
 
@@ -122,7 +122,7 @@ conformance checks detect omissions.
 | **Discovery resume rules** | `DISCOVERY_SURFACES` & `nativeShim` | `scripts/validate_documentation_conformance.mjs` |
 | **Task-layout path freshness** | `TASK_LAYOUT_DOCUMENTS` & `task-paths.js` | `scripts/validate_documentation_conformance.mjs` |
 | **Package-shipped docs** | `package.json` (`files`) | `tests/package.test.js` |
-| **Architecture diagram** | `docs/forgeloop-flow.mmd` | `scripts/check-generated-diagram.mjs` |
+| **Architecture diagram** | `docs/diagrams/forgeloop-engineering-flow.workflow.json` | `scripts/check-documentation-diagrams.mjs` and `scripts/documentation-diagram-inventory.mjs` |
 
 ---
 
@@ -177,21 +177,22 @@ migration, or security-sensitive require `npm run docs:check` before merge.
 
 ---
 
-## 7. Mermaid Diagrams and SVG Generation
+## 7. Archify Diagrams and SVG Generation
 
-1. **Source is Canonical**: Diagram source files live in `.mmd` files (e.g. `docs/forgeloop-flow.mmd`). Never modify SVG files directly.
-2. **Local Committed SVGs**: Generated SVGs are committed locally in `docs/assets/`. Never hotlink externally rendered diagram images.
-3. **Self-Contained & GitHub-Safe**: Generated SVGs must not import external stylesheets (e.g. `@import url(...)`), must not embed `<script>` or `<foreignObject>`, and must be visible via standard Markdown image syntax (`![alt](./path.svg)`).
-4. **Fingerprint Verification**: Generated SVGs embed a `data-forgeloop-source-sha256` attribute verified by `npm run docs:check`.
+1. **Typed source is canonical**: The architecture flow is authored in Archify workflow IR at `docs/diagrams/forgeloop-engineering-flow.workflow.json`. Never modify generated HTML or SVG files directly.
+2. **Pinned local renderer**: Generation uses only the vendored Archify v2.15.0 source at the reviewed commit recorded in `docs/diagrams/manifest.json` and `vendor/archify/v2.15.0/PIN.json`.
+3. **Portable committed outputs**: The interactive HTML, dark-first static SVG, and deterministic receipt are committed under `docs/assets/diagrams/`. The HTML has no external loaded resources; the SVG is self-contained and never hotlinked.
+4. **GitHub-safe SVG**: The SVG must not embed `<script>` or `<foreignObject>`, must expose accessible title/description metadata, and must remain visible through standard Markdown image syntax.
+5. **Fingerprint verification**: The generated SVG embeds a `data-forgeloop-source-sha256` attribute, and the receipt binds the source, HTML, and SVG hashes. Run `npm run docs:diagrams:check` before review.
 
 ---
 
 ## 8. README Hero and Package Boundary
 
 README hero assets are branding/conceptual illustrations. They are not the
-canonical protocol diagram. `docs/forgeloop-flow.mmd` remains the canonical
-architecture flow source and `docs/assets/forgeloop-flow.svg` remains its
-generated render.
+canonical protocol diagram. The typed Archify workflow under `docs/diagrams/`
+remains the canonical architecture flow source, with generated outputs under
+`docs/assets/diagrams/`.
 
 The README hero is intentionally GitHub-repository-only:
 
@@ -206,8 +207,9 @@ The README hero is intentionally GitHub-repository-only:
   packaged Markdown must be present in the package and covered by
   `tests/package.test.js`.
 
-Never delete `docs/assets/forgeloop-flow.svg`; it is generator-owned output of
-the diagram workflow.
+Never edit or delete a generated diagram output independently of its source;
+regenerate `docs/assets/diagrams/` from the typed workflow and keep the receipt
+in sync.
 
 ---
 

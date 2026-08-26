@@ -9,9 +9,14 @@ const forwardedArgs = process.argv.slice(2);
 
 const steps = [
   {
-    name: "Mermaid Diagram Verification",
-    script: "scripts/check-generated-diagram.mjs",
+    name: "Archify Diagram Verification",
+    script: "scripts/check-documentation-diagrams.mjs",
     args: forwardedArgs,
+  },
+  {
+    name: "Documentation Diagram Inventory",
+    script: "scripts/documentation-diagram-inventory.mjs",
+    args: ["--check"],
   },
   {
     name: "Generated Documentation Freshness",
@@ -31,6 +36,11 @@ const steps = [
   {
     name: "Documentation Manifest Validation",
     script: "scripts/validate_documentation_manifest.mjs",
+    args: [],
+  },
+  {
+    name: "Documentation Review Matrix Validation",
+    script: "scripts/validate_documentation_review_matrix.mjs",
     args: [],
   },
 ];
