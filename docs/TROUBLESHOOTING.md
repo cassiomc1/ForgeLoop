@@ -19,6 +19,7 @@ This guide provides symptom-first recovery procedures for common ForgeLoop proto
 - [`forgeloop complete` returns `INCOMPLETE`](#symptom-forgeloop-complete-returns-incomplete)
 - [`forgeloop complete` returns `INVALID`](#symptom-forgeloop-complete-returns-invalid)
 - [Policy lock mismatch (`E_POLICY_LOCK_MISMATCH`)](#symptom-policy-lock-mismatch)
+- [Capability policy epoch drift (`E_ACTION_POLICY_DRIFT`)](#symptom-capability-policy-epoch-drift)
 - [Invalid policy artifacts fail closed (`E_POLICY_INVALID`)](#symptom-invalid-policy-artifacts-fail-closed)
 - [Policy weakening detected (`E_POLICY_WEAKENING`)](#symptom-policy-weakening-detected)
 - [Baseline re-record blocked during active task (`E_BASELINE_RECORD_DURING_ACTIVE_TASK`)](#symptom-baseline-re-record-blocked-during-active-task)
@@ -573,6 +574,32 @@ forgeloop policy-status --json
 2. If modifications were unintentional, restore the previous `.forgeloop/policy/rules.json` or `.forgeloop/policy/baseline.json`.
 
 3. Follow `forgeloop next --json` if returned recovery action is `RESTORE_POLICY`.
+
+---
+
+### Symptom: Capability Policy Epoch Drift
+
+#### Error Code: `E_ACTION_POLICY_DRIFT`
+
+#### What it means
+
+The current capability-policy artifact no longer matches the policy lock or
+the task-scoped policy snapshot. The same guard is enforced by
+`action-authorize`, `next`, and `approval-request`.
+
+#### Safe recovery
+
+ForgeLoop fails closed before authorization guidance or approval creation. Do
+not create an approval manually or retry `action-authorize` against the
+modified file. Restore the policy epoch recorded at task activation, or use
+the supported policy update flow to create a new lock and task snapshot, then
+rerun:
+
+```bash
+forgeloop next --task <id> --json
+```
+
+Changing `capabilities.json` alone is not a valid policy update.
 
 ---
 
