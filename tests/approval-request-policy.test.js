@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { access, mkdtemp } from "node:fs/promises";
+import { access, mkdtemp, readFile, unlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -7,11 +7,23 @@ import test from "node:test";
 import { runApprovalRequest } from "../src/commands/approval-request.js";
 import { proposeAction } from "../src/core/actions.js";
 import { getPackageRoot } from "../src/core/templates.js";
-import { taskApprovalPath } from "../src/core/task-paths.js";
+import { taskApprovalPath, taskArtifactPath } from "../src/core/task-paths.js";
 import { setupVerifyingTask } from "./helpers/durable-lifecycle.js";
 import { removeTempTree } from "./helpers/rm-safe.js";
 
 const packageRoot = getPackageRoot();
+
+async function overwriteCapabilityPolicy(target, decision) {
+  await writeFile(
+    path.join(target, ".forgeloop", "policy", "capabilities.json"),
+    `${JSON.stringify({
+      schemaVersion: 1,
+      defaultDecision: "DENY",
+      rules: [{ capability: "filesystem.write", decision }],
+    })}\n`,
+    "utf8",
+  );
+}
 
 async function withApprovalRequestPolicy(decision, run) {
   const taskId = `approval-request-${decision.toLowerCase().replaceAll("_", "-")}`;
@@ -88,5 +100,57 @@ test("approval-request creates a pending approval only when policy requires it",
 
     assert.equal(result.created, true);
     await access(path.join(target, taskApprovalPath(taskId, "approval-required")));
+  });
+});
+
+test("approval-request rejects a tampered epoch before creating an approval or ledger event", async () => {
+  await withApprovalRequestPolicy("ALLOW", async ({ target, taskId, action }) => {
+    const eventsPath = path.join(target, taskArtifactPath(taskId, "events"));
+    const eventsBefore = await readFile(eventsPath, "utf8");
+    await overwriteCapabilityPolicy(target, "REQUIRE_APPROVAL");
+
+    await assert.rejects(
+      runApprovalRequest({
+        target,
+        packageRoot,
+        taskId,
+        approvalId: "approval-drifted",
+        actionId: action.actionId,
+        reason: "should never persist",
+      }),
+      (error) => error.code === "E_ACTION_POLICY_DRIFT",
+    );
+
+    await assert.rejects(
+      access(path.join(target, taskApprovalPath(taskId, "approval-drifted"))),
+      (error) => error.code === "ENOENT",
+    );
+    assert.equal(await readFile(eventsPath, "utf8"), eventsBefore);
+  });
+});
+
+test("approval-request rejects a missing task policy snapshot before persistence", async () => {
+  await withApprovalRequestPolicy("REQUIRE_APPROVAL", async ({ target, taskId, action }) => {
+    const eventsPath = path.join(target, taskArtifactPath(taskId, "events"));
+    const eventsBefore = await readFile(eventsPath, "utf8");
+    await unlink(path.join(target, taskArtifactPath(taskId, "policySnapshot")));
+
+    await assert.rejects(
+      runApprovalRequest({
+        target,
+        packageRoot,
+        taskId,
+        approvalId: "approval-no-snapshot",
+        actionId: action.actionId,
+        reason: "snapshot is required",
+      }),
+      (error) => error.code === "E_ACTION_POLICY_LOCK_REQUIRED",
+    );
+
+    await assert.rejects(
+      access(path.join(target, taskApprovalPath(taskId, "approval-no-snapshot"))),
+      (error) => error.code === "ENOENT",
+    );
+    assert.equal(await readFile(eventsPath, "utf8"), eventsBefore);
   });
 });

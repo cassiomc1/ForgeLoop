@@ -2,6 +2,7 @@ import { readAction } from "../core/actions.js";
 import { readWorkState } from "../core/work-state.js";
 import { requestApproval } from "../core/approvals.js";
 import { evaluateActionCapability } from "../core/capability-policy.js";
+import { loadPolicyIdentity } from "../core/policy-engine.js";
 import {
   E_ACTION_APPROVAL_NOT_REQUIRED,
   E_ACTION_AUTHORITY_REQUIRED,
@@ -19,6 +20,21 @@ export async function runApprovalRequest({ target, packageRoot, taskId, approval
   return withTaskMutation(target, { taskId, packageRoot }, "approval-request", async (ctx) => {
     const action = await readAction(target, { packageRoot, taskId: ctx.taskId, actionId });
     const state = await readWorkState(target, { packageRoot, taskId: ctx.taskId });
+    let policyIdentity;
+    try {
+      policyIdentity = await loadPolicyIdentity(target, packageRoot, ctx.taskId);
+    } catch (error) {
+      throw approvalPolicyError(
+        error.code ?? "E_POLICY_INVALID",
+        `Capability policy epoch validation failed before requesting approval: ${error.message}`,
+      );
+    }
+    if (policyIdentity.status !== "VALID") {
+      throw approvalPolicyError(
+        policyIdentity.code ?? "E_ACTION_POLICY_LOCK_REQUIRED",
+        "The current capability policy is not bound to a valid task policy epoch; repair or refresh policy state before requesting approval.",
+      );
+    }
     const capability = await evaluateActionCapability({ target, packageRoot, action });
     if (capability.decision === "ALLOW") {
       throw approvalPolicyError(

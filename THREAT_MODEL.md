@@ -15,7 +15,8 @@ arbitrary remote system transactional. Side-effecting actions require an
 immutable idempotency key; `COMMIT_UNKNOWN` forbids automatic retry and can be
 resolved only by explicit reconciliation. Capability policy is project-local
 configuration and never creates `HOST_ATTESTED` authority. Current capability
-policy is the source of truth for guidance: historical approvals are consulted
+policy is the source of truth for guidance only after its identity is bound to
+the active policy epoch: historical approvals are consulted
 only when the current policy returns `REQUIRE_APPROVAL`. Approvals bind to the
 action fingerprint, contract fingerprint, task revision, and capability; drift
 makes them stale. Host-bound authorization is exposed as structured guidance
@@ -28,7 +29,7 @@ and an arbitrary external system in one transaction. Idempotency, durable
 intent, evidence, and reconciliation reduce duplicate-effect risk but do not
 provide a universal exactly-once guarantee.
 
-### Hardened durable-action threats (T-DURABLE-01 … T-DURABLE-12)
+### Hardened durable-action threats (T-DURABLE-01 … T-DURABLE-13)
 
 | ID | Threat | Mitigation | Test evidence |
 | --- | --- | --- | --- |
@@ -44,6 +45,7 @@ provide a universal exactly-once guarantee.
 | T-DURABLE-10 | Authority dropped between host and reconciliation core: trusted host supplies authority but an adapter discards it | Top-level `authorityContext` propagates through every command executor (including `action-reconcile` and `action-authorize`) to the core service; actor-controlled input remains stripped and cannot mint trust | `tests/integration-authority-context.test.js`, `integrations/mcp/tests/authority-context.test.js` |
 | T-DURABLE-11 | Post-authorization approval mutation: the approval artifact changes after its fingerprint was bound into `ACTION_AUTHORIZED` | Readiness and audit recompute the canonical approval fingerprint via `validateBoundApprovalFingerprint()` for `REQUIRE_APPROVAL` authorizations; any mismatch yields UNTRUSTED / invalid audit | `tests/approval-fingerprint-integrity.test.js` |
 | T-DURABLE-12 | Stale approval precedence: a pending approval created under an older policy blocks, resurrects, or obscures the current decision | `next` selects the required `PROPOSED` action and evaluates current capability policy first; only `REQUIRE_APPROVAL` validates the approval binding tuple before resolving it. `ALLOW`, `DENY`, and `REQUIRE_AUTHORITY` ignore historical approval state, while `approval-request` refuses unnecessary or weaker approvals | `tests/next-action-policy-guidance.test.js`, `tests/approval-request-policy.test.js` |
+| T-DURABLE-13 | Guidance or approval creation trusts a modified `capabilities.json` before checking the active task policy epoch | `next`, `approval-request`, and `action-authorize` all validate the canonical `loadPolicyIdentity()` result before capability decisions can produce authorization-related behavior; drift fails closed with `E_ACTION_POLICY_DRIFT` and no approval artifact is persisted | `tests/next-action-policy-guidance.test.js`, `tests/approval-request-policy.test.js`, `tests/action-authorization.test.js` |
 
 | Threat | Impact | Trust boundary | Mitigation | Residual limitation | Test evidence |
 | --- | --- | --- | --- | --- | --- |

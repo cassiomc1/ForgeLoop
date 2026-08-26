@@ -45,6 +45,7 @@ import { inspectTaskConflictState } from "./task-conflict-inspection.js";
 import { listActions } from "./actions.js";
 import { listApprovals, validateApprovalForAction } from "./approvals.js";
 import { evaluateActionCapability } from "./capability-policy.js";
+import { loadPolicyIdentity } from "./policy-engine.js";
 
 export { NEXT_ACTIONS } from "./next-action-model.js";
 
@@ -166,6 +167,23 @@ function actionDeniedGuidance({ context, state, action, capability, eventsRel })
   });
 }
 
+function actionPolicyEpochGuidance({ context, state, action, policyIdentity, eventsRel }) {
+  const code = policyIdentity.code ?? "E_ACTION_POLICY_LOCK_REQUIRED";
+  const recoveryAction = policyRecoveryAction([{ code }]);
+  return result({
+    ...context,
+    nextAction: recoveryAction ?? NEXT_ACTIONS.RESOLVE_BLOCKER,
+    commands: [],
+    reasons: [artifactError(
+      code,
+      policyIdentity.message
+        ?? `Required action ${action.actionId} cannot be evaluated because the capability policy is not bound to the active task policy epoch.`,
+      [taskArtifactPath(state.taskId, "actions"), eventsRel],
+    )],
+    requiredArtifacts: [taskArtifactPath(state.taskId, "actions"), eventsRel],
+  });
+}
+
 async function evaluateProposedActionCapability({ target, packageRoot, action, approvals, authorityContext }) {
   const current = await evaluateActionCapability({ target, packageRoot, action, authorityContext });
   if (current.decision !== "REQUIRE_APPROVAL" || !approvals) return current;
@@ -203,7 +221,11 @@ async function findApplicablePendingApproval({ target, packageRoot, taskId, acti
 }
 
 export function policyRecoveryAction(errors = []) {
-  if (errors.some((e) => e.code === "E_POLICY_WEAKENING" || e.code === "E_POLICY_LOCK_MISMATCH")) {
+  if (errors.some((e) => [
+    "E_POLICY_WEAKENING",
+    "E_POLICY_LOCK_MISMATCH",
+    "E_ACTION_POLICY_DRIFT",
+  ].includes(e.code))) {
     return NEXT_ACTIONS.RESTORE_POLICY;
   }
   if (errors.some((e) => e.code === "E_CHECK_MUTATION_EXECUTION_ERROR" || e.code === "E_CHECK_MUTATION_NOT_DETECTED")) {
@@ -372,6 +394,31 @@ async function computeNextAction(targetOrOptions = {}, packageRootOption) {
   const authorizableAction = actionsForApproval.find((action) => action.requiredForCompletion
     && action.state === "PROPOSED");
   if (authorizableAction) {
+    let policyIdentity;
+    try {
+      policyIdentity = await loadPolicyIdentity(target, packageRoot, state.taskId);
+    } catch (error) {
+      return actionPolicyEpochGuidance({
+        context,
+        state,
+        action: authorizableAction,
+        policyIdentity: {
+          code: error.code ?? "E_POLICY_INVALID",
+          message: `Capability policy epoch validation failed for required action ${authorizableAction.actionId}: ${error.message}`,
+        },
+        eventsRel,
+      });
+    }
+    if (policyIdentity.status !== "VALID") {
+      return actionPolicyEpochGuidance({
+        context,
+        state,
+        action: authorizableAction,
+        policyIdentity,
+        eventsRel,
+      });
+    }
+
     let capability;
     try {
       capability = await evaluateProposedActionCapability({

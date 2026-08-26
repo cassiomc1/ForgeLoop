@@ -13,8 +13,10 @@ import {
 import { getNextAction, NEXT_ACTIONS } from "../src/core/next-action.js";
 import { readWorkState } from "../src/core/work-state.js";
 import { getPackageRoot } from "../src/core/templates.js";
+import { loadPolicyIdentity } from "../src/core/policy-engine.js";
 import { taskActionPath, taskApprovalPath } from "../src/core/task-paths.js";
 import { setupVerifyingTask } from "./helpers/durable-lifecycle.js";
+import { seedPolicyEpoch } from "./helpers/durable-policy.js";
 import { removeTempTree } from "./helpers/rm-safe.js";
 
 const packageRoot = getPackageRoot();
@@ -79,6 +81,18 @@ async function createPendingApproval(target, taskId, action, overrides = {}) {
   });
 }
 
+async function overwriteCapabilityPolicy(target, decision) {
+  await writeFile(
+    path.join(target, ".forgeloop", "policy", "capabilities.json"),
+    `${JSON.stringify({
+      schemaVersion: 1,
+      defaultDecision: "DENY",
+      rules: [{ capability: "filesystem.write", decision }],
+    })}\n`,
+    "utf8",
+  );
+}
+
 test("next keeps ALLOW authorization guidance for a proposed required action", async () => {
   await withProposedAction(async ({ target, taskId }) => {
     const result = await getNextAction({ target, packageRoot, taskId });
@@ -99,6 +113,75 @@ test("next requests approval instead of recommending authorization when policy r
     assert.equal(result.approvalRequired.actionId, "action-policy");
     assert.equal(result.capabilityDecision.decision, "REQUIRE_APPROVAL");
   }, { decision: "REQUIRE_APPROVAL" });
+});
+
+test("next fails closed when REQUIRE_APPROVAL is tampered to ALLOW", async () => {
+  await withProposedAction(async ({ target, taskId }) => {
+    await overwriteCapabilityPolicy(target, "ALLOW");
+
+    const result = await getNextAction({ target, packageRoot, taskId });
+
+    assert.notEqual(result.nextAction, NEXT_ACTIONS.AUTHORIZE_ACTION);
+    assert.notEqual(result.nextAction, NEXT_ACTIONS.REQUEST_ACTION_APPROVAL);
+    assert.notEqual(result.nextAction, NEXT_ACTIONS.RESOLVE_ACTION_APPROVAL);
+    assert.deepEqual(result.commands ?? [], []);
+    assert.ok(result.reasons.some((reason) => reason.code === "E_ACTION_POLICY_DRIFT"));
+    assert.equal(result.capabilityDecision, undefined);
+  }, {
+    decision: "REQUIRE_APPROVAL",
+    taskId: "next-policy-drift-approval-to-allow",
+  });
+});
+
+test("next reports policy drift before interpreting every tampered capability decision", async () => {
+  const cases = [
+    { initial: "ALLOW", tampered: "DENY", taskId: "next-policy-drift-allow-to-deny" },
+    { initial: "REQUIRE_APPROVAL", tampered: "DENY", taskId: "next-policy-drift-approval-to-deny", pending: true },
+    { initial: "REQUIRE_APPROVAL", tampered: "REQUIRE_AUTHORITY", taskId: "next-policy-drift-approval-to-authority", pending: true },
+  ];
+
+  for (const { initial, tampered, taskId, pending } of cases) {
+    await withProposedAction(async ({ target, taskId: activeTaskId, action }) => {
+      if (pending) await createPendingApproval(target, activeTaskId, action);
+      await overwriteCapabilityPolicy(target, tampered);
+
+      const result = await getNextAction({ target, packageRoot, taskId: activeTaskId });
+
+      assert.notEqual(result.nextAction, NEXT_ACTIONS.RESOLVE_ACTION_APPROVAL, `${initial} -> ${tampered}`);
+      assert.deepEqual(result.commands ?? [], [], `${initial} -> ${tampered}`);
+      assert.ok(
+        result.reasons.some((reason) => reason.code === "E_ACTION_POLICY_DRIFT"),
+        `${initial} -> ${tampered}`,
+      );
+      assert.equal(result.capabilityDecision, undefined, `${initial} -> ${tampered}`);
+      if (tampered === "REQUIRE_AUTHORITY") {
+        assert.equal(result.hostActionRequired, undefined);
+        assert.equal(result.authorityRequired, undefined);
+      }
+    }, { decision: initial, taskId });
+  }
+});
+
+test("next resumes normal guidance after a canonical policy epoch update", async () => {
+  await withProposedAction(async ({ target, taskId }) => {
+    await seedPolicyEpoch(target, packageRoot, taskId, {
+      schemaVersion: 1,
+      defaultDecision: "DENY",
+      rules: [{ capability: "filesystem.write", decision: "ALLOW" }],
+    });
+
+    const identity = await loadPolicyIdentity(target, packageRoot, taskId);
+    assert.equal(identity.status, "VALID");
+
+    const result = await getNextAction({ target, packageRoot, taskId });
+
+    assert.equal(result.nextAction, NEXT_ACTIONS.AUTHORIZE_ACTION);
+    assert.ok(result.commands.some((command) => command.includes("action-authorize")));
+    assert.equal(result.capabilityDecision.decision, "ALLOW");
+  }, {
+    decision: "REQUIRE_APPROVAL",
+    taskId: "next-policy-valid-epoch-update",
+  });
 });
 
 test("next exposes host resolution for a pending approval without an impossible CLI command", async () => {
