@@ -61,20 +61,44 @@ The task is complete.
 Those statements can be correct, but they are still claims made by the executing system.
 The ForgeLoop PoC explores a different architecture:
 
-```mermaid
-flowchart TD
-    A[Request] --> B[Task]
-    B --> C[Contract]
-    C --> D[Routing]
-    D --> E[Preflight and gates]
-    E --> F[Scoped execution]
-    F --> G[Trusted checks]
-    G --> H[Verification]
-    H --> I[Review]
-    I --> J[Validator-backed completion]
-    J --> K[Evidence package]
-    K --> L[Independent verification]
-    L --> M[GitHub publication and CI]
+```text
+Request
+  |
+  v
+Task
+  |
+  v
+Contract
+  |
+  v
+Routing
+  |
+  v
+Preflight and gates
+  |
+  v
+Scoped execution
+  |
+  v
+Trusted checks
+  |
+  v
+Verification
+  |
+  v
+Review
+  |
+  v
+Validator-backed completion
+  |
+  v
+Evidence package
+  |
+  v
+Independent verification
+  |
+  v
+GitHub publication and CI
 ```
 
 The model remains responsible for reasoning and implementation. ForgeLoop is responsible
@@ -179,15 +203,23 @@ security validation, and audit-report verification.
 The evidence model links completion requirements to execution references rather than
 relying only on a free-form agent report:
 
-```mermaid
-flowchart LR
-    A[Contract requirement] --> B[Verification check]
-    B --> C[Execution reference]
-    C --> D[Execution JSON]
-    D --> E[argv]
-    D --> F[exit code]
-    D --> G[status]
-    D --> H[timestamps]
+```text
+Contract requirement
+        |
+        v
+Verification check
+        |
+        v
+Execution reference
+        |
+        v
+Execution JSON
+   /      |      \
+  v       v       v
+argv   exit code  status
+           \
+            v
+         timestamps
 ```
 
 This is the foundation for later provenance-closure verification in the maintenance
@@ -464,12 +496,20 @@ At the same time, historical completion remains `COMPLETE / VALID`.
 
 The model is therefore:
 
-```mermaid
-flowchart TD
-    A[Historical task state] --> B[COMPLETE / VALID]
-    B --> C[Repository changes after completion]
-    C --> D[Publication-time observation]
-    D --> E[STALE / REPOSITORY_CHANGED]
+```text
+Historical task state
+        |
+        v
+COMPLETE / VALID
+        |
+        v
+Repository changes after completion
+        |
+        v
+Publication-time observation
+        |
+        v
+STALE / REPOSITORY_CHANGED
 ```
 
 Those states answer different questions:
