@@ -74,8 +74,10 @@ dependencies, version, and distribution conditions before adoption.
   typed workflow diagram under `docs/diagrams/`.
 - Boundary: this is a documentation-only vendored toolchain, not a ForgeLoop
   runtime dependency. It is not installed from a registry, and its exact pin,
-  source, license, and output hashes are recorded in the diagram manifest and
-  receipt.
+  source, license, and raw-byte tree hashes are recorded in
+  `vendor/archify/v2.15.0/PIN.json`; output hashes are recorded in the receipt.
+  The vendor integrity check rejects modified, missing, extra, renamed, or
+  symlinked files before the renderer is trusted.
 
 ### Superpowers
 

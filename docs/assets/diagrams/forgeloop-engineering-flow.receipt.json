@@ -15,17 +15,17 @@
     "license": "MIT"
   },
   "input": {
-    "sha256": "7f027fed10513607787682007a4b9bd92f15f0a9820a1e36457dde9a67f7aeb9",
-    "bytes": 7328
+    "sha256": "e4778296d1b9b2129b1ff6c956acaa1e7faba3dbfe68e0e5a6fb47dae3499308",
+    "bytes": 7329
   },
   "artifacts": {
     "html": {
-      "sha256": "1cf205a792f0278cb66f5d3be3b214084adfee1c88fed8b8a525355b285bf908",
-      "bytes": 646221
+      "sha256": "d121216816942648e0de296093cf104b05b0b94efd0a4a8946add6acbd771504",
+      "bytes": 647371
     },
     "svg": {
-      "sha256": "1794854e851ef91226dbd0271623a680c208f76e36d3c1e7703f1d40f8ed2c01",
-      "bytes": 209781
+      "sha256": "f549d1f998c2c84793783b9b6ce7aabe05d9a91edebecb764403c67dfbb4cc52",
+      "bytes": 211037
     }
   },
   "staticSvg": {
@@ -33,6 +33,5 @@
     "accessible": true,
     "externalResources": false
   },
-  "reproducible": true,
-  "visualReview": "pending"
+  "reproducible": true
 }

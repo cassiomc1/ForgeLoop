@@ -28,7 +28,7 @@ test("README keeps the lifecycle contract, modern multi-task layout, and accessi
   assert.match(readme, /\.forgeloop\/task-state\/<taskKey>\//);
   assert.match(
     readme,
-    /!\[ForgeLoop evidence-first engineering flow\]\(\.\/docs\/assets\/diagrams\/forgeloop-engineering-flow\.svg\)/,
+    /!\[ForgeLoop evidence-first engineering flow \(animated SVG fallback\)\]\(\.\/docs\/assets\/diagrams\/forgeloop-engineering-flow\.svg\)/,
   );
   assert.doesNotMatch(
     readme,
@@ -66,15 +66,22 @@ test("Cross-Harness continuity mentions task selectors and ambiguity", async () 
 test("the typed Archify source and generated outputs are canonical and self-contained", async () => {
   const source = JSON.parse(await readFile("docs/diagrams/forgeloop-engineering-flow.workflow.json", "utf8"));
   const manifest = JSON.parse(await readFile("docs/diagrams/manifest.json", "utf8"));
+  const animatedHtml = await readFile("docs/assets/diagrams/forgeloop-engineering-flow.html", "utf8");
   const rendered = await readFile("docs/assets/diagrams/forgeloop-engineering-flow.svg", "utf8");
   const receipt = JSON.parse(await readFile("docs/assets/diagrams/forgeloop-engineering-flow.receipt.json", "utf8"));
   assert.equal(source.diagram_type, "workflow");
   assert.equal(source.meta.visual_preset, "signal-flow");
+  assert.equal(source.meta.animation, "trace");
   assert.match(JSON.stringify(source), /PREFLIGHT/);
   assert.equal(manifest.renderer.name, "archify");
   assert.equal(manifest.renderer.version, "2.15.0");
   assert.equal(receipt.renderer.commit, manifest.renderer.commit);
+  assert.match(animatedHtml, /<svg\b[^>]*\bdata-animation="trace"/);
+  assert.match(animatedHtml, /data-animate="edge"/);
+  assert.match(animatedHtml, /@keyframes archify-edge-flow/);
   assert.match(rendered, /<svg[\s>]/);
+  assert.match(rendered, /data-animation="trace"/);
+  assert.match(rendered, /data-animate="edge"/);
   assert.match(rendered, /data-forgeloop-source-sha256="[a-f0-9]{64}"/);
   assert.match(rendered, /data-theme="dark"/);
   assert.match(rendered, /role="img"/);

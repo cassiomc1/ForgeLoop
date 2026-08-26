@@ -4,6 +4,8 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { validateDiagramManifest } from "./documentation-diagram-manifest.mjs";
+
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const IGNORED_DIRECTORIES = new Set([
   ".git",
@@ -16,6 +18,13 @@ const IGNORED_DIRECTORIES = new Set([
 const MARKDOWN_EXTENSIONS = new Set([".md", ".markdown", ".mdx"]);
 const VISUAL_EXTENSIONS = new Set([".gif", ".html", ".jpeg", ".jpg", ".png", ".svg", ".webp"]);
 const MERMAID_EXTENSIONS = new Set([".mmd", ".mermaid"]);
+const DIAGRAM_SOURCE_SUFFIXES = Object.freeze([
+  ".workflow.json",
+  ".architecture.json",
+  ".sequence.json",
+  ".dataflow.json",
+  ".lifecycle.json",
+]);
 
 function toPosix(value) {
   return value.split(path.sep).join("/");
@@ -157,9 +166,85 @@ async function collectVisualAssets(rootDir, files) {
   return assets.sort();
 }
 
-export async function scanDocumentationDiagrams({ rootDir = repositoryRoot } = {}) {
+function isDiagramSource(relative) {
+  return relative.startsWith("docs/diagrams/")
+    && !relative.startsWith("docs/diagrams/reviews/")
+    && DIAGRAM_SOURCE_SUFFIXES.some((suffix) => relative.endsWith(suffix));
+}
+
+function classifyDiagramArtifact(relative) {
+  if (isDiagramSource(relative)) return "sources";
+  if (relative.startsWith("docs/assets/diagrams/") && relative.endsWith(".html")) return "html";
+  if (relative.startsWith("docs/assets/diagrams/") && relative.endsWith(".svg")) return "svg";
+  if (relative.startsWith("docs/assets/diagrams/") && relative.endsWith(".receipt.json")) return "receipts";
+  if (relative.startsWith("docs/diagrams/reviews/") && relative.endsWith(".review.json")) return "reviews";
+  return null;
+}
+
+async function loadManifestIfPresent(rootDir) {
+  const manifestPath = path.join(rootDir, "docs/diagrams/manifest.json");
+  try {
+    return validateDiagramManifest(JSON.parse(await readFile(manifestPath, "utf8")));
+  } catch (error) {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+function declaredDiagramArtifacts(manifest) {
+  const declared = new Set();
+  for (const diagram of manifest?.diagrams ?? []) {
+    for (const field of ["source", "html", "svg", "receipt", "review"]) declared.add(diagram[field]);
+  }
+  return declared;
+}
+
+async function inventoryDiagramArtifacts(rootDir, files, manifest) {
+  if (!manifest) {
+    return {
+      sources: [],
+      html: [],
+      svg: [],
+      receipts: [],
+      reviews: [],
+      missingDiagramArtifacts: [],
+      orphanedDiagramArtifacts: [],
+    };
+  }
+  const artifacts = {
+    sources: [],
+    html: [],
+    svg: [],
+    receipts: [],
+    reviews: [],
+  };
+  for (const filePath of files) {
+    const relative = relativePath(rootDir, filePath);
+    const kind = classifyDiagramArtifact(relative);
+    if (kind) artifacts[kind].push(relative);
+  }
+  for (const values of Object.values(artifacts)) values.sort();
+
+  const declared = declaredDiagramArtifacts(manifest);
+  const actual = Object.values(artifacts).flat();
+  const orphanedDiagramArtifacts = actual.filter((relative) => !declared.has(relative));
+  const missingDiagramArtifacts = [...declared]
+    .filter((relative) => !actual.includes(relative))
+    .sort();
+  return {
+    ...artifacts,
+    missingDiagramArtifacts,
+    orphanedDiagramArtifacts: [
+      ...orphanedDiagramArtifacts.sort(),
+      ...missingDiagramArtifacts.map((relative) => `missing:${relative}`),
+    ],
+  };
+}
+
+export async function scanDocumentationDiagrams({ rootDir = repositoryRoot, manifest: suppliedManifest } = {}) {
   const resolvedRoot = path.resolve(rootDir);
   const files = await walkFiles(resolvedRoot);
+  const manifest = suppliedManifest ?? await loadManifestIfPresent(resolvedRoot);
   const markdownFiles = files.filter(isMarkdownFile).sort();
   const mermaidSources = files
     .filter(isMermaidSource)
@@ -198,6 +283,7 @@ export async function scanDocumentationDiagrams({ rootDir = repositoryRoot } = {
     ...htmlDiagramReferences.map((entry) => entry.target),
   ]);
   const unreferencedVisualAssets = visualAssets.filter((asset) => !referencedVisualAssets.has(asset));
+  const diagramArtifacts = await inventoryDiagramArtifacts(resolvedRoot, files, manifest);
 
   mermaidFences.sort((left, right) => left.path.localeCompare(right.path) || left.line - right.line);
   mermaidReferences.sort((left, right) => left.path.localeCompare(right.path) || left.line - right.line);
@@ -216,6 +302,9 @@ export async function scanDocumentationDiagrams({ rootDir = repositoryRoot } = {
     diagramLikeText,
     visualAssets,
     unreferencedVisualAssets,
+    diagramArtifacts,
+    missingDiagramArtifacts: diagramArtifacts.missingDiagramArtifacts,
+    orphanedDiagramArtifacts: diagramArtifacts.orphanedDiagramArtifacts,
     activeMermaid: mermaidSources.length > 0 || mermaidFences.length > 0 || mermaidReferences.length > 0,
   };
 }
@@ -229,12 +318,16 @@ async function main() {
     console.log(`Documentation diagram inventory: ${inventory.markdownFiles.length} Markdown files, ${inventory.visualAssets.length} visual assets`);
     console.log(`Active Mermaid findings: ${inventory.mermaidSources.length + inventory.mermaidFences.length + inventory.mermaidReferences.length}`);
     console.log(`Unreferenced visual assets: ${inventory.unreferencedVisualAssets.length}`);
+    console.log(`Orphaned diagram artifacts: ${inventory.orphanedDiagramArtifacts.length}`);
   }
 
-  if (args.has("--check") && (inventory.activeMermaid || inventory.unreferencedVisualAssets.length > 0)) {
+  if (args.has("--check") && (inventory.activeMermaid || inventory.unreferencedVisualAssets.length > 0 || inventory.orphanedDiagramArtifacts.length > 0)) {
     if (inventory.activeMermaid) console.error("Active Mermaid sources or references remain in the documentation tree.");
     if (inventory.unreferencedVisualAssets.length > 0) {
       console.error(`Unreferenced visual assets: ${inventory.unreferencedVisualAssets.join(", ")}`);
+    }
+    if (inventory.orphanedDiagramArtifacts.length > 0) {
+      console.error(`Orphaned diagram artifacts: ${inventory.orphanedDiagramArtifacts.join(", ")}`);
     }
     process.exitCode = 1;
   }
@@ -243,4 +336,3 @@ async function main() {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   await main();
 }
-
