@@ -920,6 +920,8 @@ forgeloop next --task <id> --json
 | `E_TRACE_SNAPSHOT_INCONSISTENT` | Task artifacts changed while the execution trace was being read. | Rerun the read-only projection to obtain a consistent view. |
 | `E_TRAJECTORY_REFERENCE_REQUIRED` | Comparative efficiency requires a reference scenario with positive comparableSteps. | Provide --scenario with reference.comparableSteps, or omit efficiency from the result. |
 | `E_TRAJECTORY_SCENARIO_INVALID` | Trajectory scenario file is missing required fields or schema-invalid. | Correct the scenario JSON against schemas/trajectory-scenario.schema.json. |
+| `E_VERIFICATION_EXECUTION_INVALID` | The trusted verification execution adapter returned incomplete or invalid execution metadata. | Repair the adapter contract and rerun verification; do not promote incomplete execution evidence. |
+| `E_VERIFICATION_ISOLATION_UNAVAILABLE` | Verification cannot run because the required disposable or system isolation boundary is unavailable. | Use a trusted ForgeLoop execution adapter with the required isolation mode; never run the check in the live project. |
 | `E_VERIFICATION_TOOL_UNAVAILABLE` | Required verification executable is missing in environment. | Use local equivalent, obtain host authority, or record NOT_VERIFIED. |
 
 <!-- END FORGELOOP GENERATED: public-error-codes -->

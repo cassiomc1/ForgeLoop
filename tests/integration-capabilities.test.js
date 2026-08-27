@@ -6,6 +6,7 @@ import {
   FORGELOOP_INTEGRATION_API_VERSION,
   defaultCommandInputValues,
   executeForgeLoopCommand,
+  createForgeLoopContext,
   getForgeLoopCapabilities,
   validateForgeLoopCommandInput,
 } from "../src/integration.js";
@@ -20,6 +21,13 @@ test("capabilities report versions, features, commands, and resources", () => {
   assert.equal(capabilities.packageVersion, "1.5.0");
   assert.equal(capabilities.integrationApiVersion, 1);
   assert.equal(capabilities.features.taskClaimRecovery.validatedClaimProjection, true);
+  assert.deepEqual(capabilities.features.verificationExecutionIsolation, {
+    version: 1,
+    supported: true,
+    adapter: true,
+    modes: ["NATIVE_PROJECT", "PROJECT_ISOLATED", "SYSTEM_ISOLATED"],
+    protocolProjectRootSeparateFromExecutionCwd: true,
+  });
   assert.equal(capabilities.executorParity, true);
 
   const names = capabilities.commands.map((command) => command.name);
@@ -28,6 +36,21 @@ test("capabilities report versions, features, commands, and resources", () => {
 
   const resourceNames = capabilities.resources.map((resource) => resource.name);
   assert.ok(resourceNames.includes("task/ownership"));
+});
+
+test("verification adapter and isolation policy are runtime-only context", () => {
+  const adapter = { execute: async () => ({}) };
+  const context = createForgeLoopContext({
+    verificationExecutionAdapter: adapter,
+    verificationExecutionPolicy: { requiredIsolation: "PROJECT_ISOLATED" },
+  });
+  assert.equal(context.authorityContext.trustMode, "NONE");
+  assert.equal(context.verificationExecutionAdapter, adapter);
+  assert.deepEqual(context.verificationExecutionPolicy, { requiredIsolation: "PROJECT_ISOLATED" });
+  assert.throws(
+    () => createForgeLoopContext({ verificationExecutionAdapter: { execute: "not-a-function" } }),
+    (error) => error.code === "E_VERIFICATION_ISOLATION_UNAVAILABLE",
+  );
 });
 
 test("every canonical command has a base risk class", () => {

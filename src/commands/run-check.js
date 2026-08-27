@@ -48,6 +48,7 @@ export async function runCheck({
       timeoutMs,
       authorityContext,
       runtimeContext,
+      executionKind: "VERIFICATION",
     });
     const status = execution.execution.status === "passed" ? "passed" : "failed";
     const recorded = await recordCheckArtifact({

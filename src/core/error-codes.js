@@ -6,6 +6,10 @@ import {
   E_INSTALLATION_AUTHORITY_REQUIRED,
   E_VERIFICATION_TOOL_UNAVAILABLE,
 } from "./verification-constants.js";
+import {
+  E_VERIFICATION_EXECUTION_INVALID,
+  E_VERIFICATION_ISOLATION_UNAVAILABLE,
+} from "./verification-execution.js";
 
 export const E_TASK_REQUIRED = "E_TASK_REQUIRED";
 export const E_TASK_NOT_FOUND = "E_TASK_NOT_FOUND";
@@ -144,6 +148,20 @@ export const PUBLIC_ERROR_CODES = Object.freeze({
     classification: "PUBLIC_STABLE",
     meaning: "Required verification executable is missing in environment.",
     safeResolution: "Use local equivalent, obtain host authority, or record NOT_VERIFIED.",
+  }),
+  E_VERIFICATION_ISOLATION_UNAVAILABLE: Object.freeze({
+    code: "E_VERIFICATION_ISOLATION_UNAVAILABLE",
+    category: "verification-isolation",
+    classification: "PUBLIC_STABLE",
+    meaning: "Verification cannot run because the required disposable or system isolation boundary is unavailable.",
+    safeResolution: "Use a trusted ForgeLoop execution adapter with the required isolation mode; never run the check in the live project.",
+  }),
+  E_VERIFICATION_EXECUTION_INVALID: Object.freeze({
+    code: "E_VERIFICATION_EXECUTION_INVALID",
+    category: "verification-isolation",
+    classification: "PUBLIC_STABLE",
+    meaning: "The trusted verification execution adapter returned incomplete or invalid execution metadata.",
+    safeResolution: "Repair the adapter contract and rerun verification; do not promote incomplete execution evidence.",
   }),
   E_INSTALLATION_AUTHORITY_REQUIRED: Object.freeze({
     code: "E_INSTALLATION_AUTHORITY_REQUIRED",
@@ -833,6 +851,8 @@ export const E_INIT_KIT_CONFLICT = "E_INIT_KIT_CONFLICT";
 export const ALL_KNOWN_ERROR_CODES = Object.freeze(new Set([
   ...FAILURE_CODES,
   E_VERIFICATION_TOOL_UNAVAILABLE,
+  E_VERIFICATION_ISOLATION_UNAVAILABLE,
+  E_VERIFICATION_EXECUTION_INVALID,
   E_INSTALLATION_AUTHORITY_REQUIRED,
   E_COMMAND_RESOLUTION_AMBIGUOUS,
   E_AUTHORITY_INVALID,

@@ -1,3 +1,9 @@
+import {
+  E_VERIFICATION_ISOLATION_UNAVAILABLE,
+  isVerificationExecutionAdapter,
+  normalizeVerificationExecutionPolicy,
+} from "./verification-execution.js";
+
 export const AUTHORITY_TRUST_MODES = Object.freeze(["NONE", "HOST_ATTESTED"]);
 
 const AUTHORITY_CONTEXT_FIELDS = Object.freeze([
@@ -76,5 +82,17 @@ export function resolveAuthorityContext(options = {}) {
 
 export function createForgeLoopContext(options = {}) {
   const authorityContext = createAuthorityContext(options);
-  return Object.freeze({ authorityContext });
+  const context = { authorityContext };
+  if (options?.verificationExecutionAdapter !== undefined) {
+    if (!isVerificationExecutionAdapter(options.verificationExecutionAdapter)) {
+      const error = new Error("Verification execution adapter is unavailable or invalid");
+      error.code = E_VERIFICATION_ISOLATION_UNAVAILABLE;
+      throw error;
+    }
+    context.verificationExecutionAdapter = options.verificationExecutionAdapter;
+  }
+  if (options?.verificationExecutionPolicy !== undefined) {
+    context.verificationExecutionPolicy = normalizeVerificationExecutionPolicy(options.verificationExecutionPolicy);
+  }
+  return Object.freeze(context);
 }

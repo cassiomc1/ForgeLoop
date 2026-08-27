@@ -4,6 +4,11 @@
 
 ### Fixed
 
+- Verification execution now has an explicit trusted adapter boundary with
+  disposable project/system isolation metadata, separate protocol and
+  execution roots, bounded output provenance, and fail-closed handling when
+  the required isolation capability is unavailable.
+
 - Post-#101 durable-action corrections: trusted `COMMITTED` reconciliation now
   replays exactly once (the reconciled `ACTION_COMMIT_RECORDED` mirror is a
   validated same-revision corroboration, never a second transition, and forged
