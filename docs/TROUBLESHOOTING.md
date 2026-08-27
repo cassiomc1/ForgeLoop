@@ -462,6 +462,31 @@ A verification check requires an executable or tool that is not installed in the
 
 ---
 
+### Symptom: Verification Reports Contradictory Isolation Metadata
+
+#### Error Code: `E_VERIFICATION_EXECUTION_INVALID`
+
+#### What it means
+
+The trusted verification execution adapter returned isolation metadata that contradicts itself, for example `NATIVE_PROJECT` claiming `isolated=true`, an isolated mode claiming `liveProjectWritable=true`, or `SYSTEM_ISOLATED` claiming `networkPolicy=INHERITED`. The execution artifact is rejected before evidence persistence.
+
+#### Likely causes
+
+1. A custom execution adapter hard-coded isolation fields instead of reporting what the host actually enforced.
+2. A disposable-copy workspace reported itself as system isolated, or claimed the live project is not writable when no filesystem boundary enforces it.
+
+#### Safe recovery
+
+1. Repair the adapter so each isolation mode reports its canonical guarantees: `NATIVE_PROJECT` (`isolated=false`, `liveProjectWritable=true`), `PROJECT_ISOLATED` (`isolated=true`, `liveProjectWritable=false`), `SYSTEM_ISOLATED` (`isolated=true`, `liveProjectWritable=false`, `networkPolicy=DENIED`).
+2. `liveProjectWritable` is an enforced host guarantee, not a claim implied by a different working directory; a disposable copy alone is insufficient.
+3. Rerun verification after the adapter reports truthful metadata.
+
+#### Do not
+
+**Do not weaken the required isolation policy to bypass contradictory metadata, and do not persist execution evidence that claims guarantees the host does not enforce.**
+
+---
+
 ### Symptom: Installation Authority Required
 
 #### Error Code: `E_INSTALLATION_AUTHORITY_REQUIRED`

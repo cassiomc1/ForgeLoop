@@ -7,6 +7,7 @@ import { test } from "node:test";
 import {
   E_VERIFICATION_EXECUTION_INVALID,
   E_VERIFICATION_ISOLATION_UNAVAILABLE,
+  normalizeVerificationExecutionResult,
 } from "../src/core/verification-execution.js";
 import { validateCheckExecutionProvenance } from "../src/core/completion-artifacts.js";
 import { readExecutionArtifact, runCommandExecution } from "../src/core/execution.js";
@@ -207,6 +208,149 @@ test("malformed adapter isolation fails closed before artifact persistence", asy
             execute: async () => ({ exitCode: 0, cwd: "/disposable" }),
           },
           verificationExecutionPolicy: { requiredIsolation: "PROJECT_ISOLATED" },
+        },
+      }),
+      (error) => error.code === E_VERIFICATION_EXECUTION_INVALID,
+    );
+  });
+});
+
+test("contradictory isolation metadata is rejected intrinsically", async () => {
+  await withTarget(async (target) => {
+    const base = {
+      cwd: "/disposable/verification-workspace",
+      exitCode: 0,
+      signal: null,
+      timedOut: false,
+      stdout: "verified\n",
+      stderr: "",
+      outputTruncated: false,
+    };
+    const contradictions = [
+      {
+        mode: "NATIVE_PROJECT",
+        isolated: true,
+        liveProjectWritable: true,
+        networkPolicy: "INHERITED",
+        environmentPolicy: "INHERITED",
+      },
+      {
+        mode: "NATIVE_PROJECT",
+        isolated: false,
+        liveProjectWritable: false,
+        networkPolicy: "INHERITED",
+        environmentPolicy: "INHERITED",
+      },
+      {
+        mode: "PROJECT_ISOLATED",
+        isolated: false,
+        liveProjectWritable: false,
+        networkPolicy: "DENIED",
+        environmentPolicy: "ISOLATED",
+      },
+      {
+        mode: "PROJECT_ISOLATED",
+        isolated: true,
+        liveProjectWritable: true,
+        networkPolicy: "DENIED",
+        environmentPolicy: "ISOLATED",
+      },
+      {
+        mode: "SYSTEM_ISOLATED",
+        isolated: true,
+        liveProjectWritable: true,
+        networkPolicy: "DENIED",
+        environmentPolicy: "ISOLATED",
+      },
+      {
+        mode: "SYSTEM_ISOLATED",
+        isolated: true,
+        liveProjectWritable: false,
+        networkPolicy: "INHERITED",
+        environmentPolicy: "ISOLATED",
+      },
+    ];
+    for (const isolation of contradictions) {
+      assert.throws(
+        () => normalizeVerificationExecutionResult({ ...base, isolation }),
+        (error) => error.code === E_VERIFICATION_EXECUTION_INVALID,
+        `isolation ${JSON.stringify(isolation)} must be rejected intrinsically`,
+      );
+    }
+  });
+});
+
+test("canonical isolation metadata combinations remain valid", async () => {
+  await withTarget(async (target) => {
+    const base = {
+      cwd: "/disposable/verification-workspace",
+      exitCode: 0,
+      signal: null,
+      timedOut: false,
+      stdout: "verified\n",
+      stderr: "",
+      outputTruncated: false,
+    };
+    const canonical = [
+      {
+        mode: "NATIVE_PROJECT",
+        isolated: false,
+        liveProjectWritable: true,
+        networkPolicy: "INHERITED",
+        environmentPolicy: "INHERITED",
+      },
+      {
+        mode: "PROJECT_ISOLATED",
+        isolated: true,
+        liveProjectWritable: false,
+        networkPolicy: "INHERITED",
+        environmentPolicy: "ISOLATED",
+      },
+      {
+        mode: "PROJECT_ISOLATED",
+        isolated: true,
+        liveProjectWritable: false,
+        networkPolicy: "DENIED",
+        environmentPolicy: "ISOLATED",
+      },
+      {
+        mode: "SYSTEM_ISOLATED",
+        isolated: true,
+        liveProjectWritable: false,
+        networkPolicy: "DENIED",
+        environmentPolicy: "ISOLATED",
+      },
+    ];
+    for (const isolation of canonical) {
+      const normalized = normalizeVerificationExecutionResult({ ...base, isolation });
+      assert.deepEqual(normalized.isolation, isolation);
+    }
+  });
+});
+
+test("adapter-reported contradictory isolation fails closed before artifact persistence", async () => {
+  await withTarget(async (target) => {
+    await assert.rejects(
+      () => runCommandExecution({
+        target,
+        packageRoot,
+        taskId: "task-contradictory",
+        checkId: "check-contradictory",
+        requirement: "contradictory isolation must never persist",
+        argv: [process.execPath, "-e", "process.exit(0)"],
+        runtimeContext: {
+          verificationExecutionAdapter: {
+            execute: async () => isolatedResult({
+              isolation: {
+                mode: "SYSTEM_ISOLATED",
+                isolated: true,
+                liveProjectWritable: true,
+                networkPolicy: "DENIED",
+                environmentPolicy: "ISOLATED",
+              },
+            }),
+          },
+          verificationExecutionPolicy: { requiredIsolation: "SYSTEM_ISOLATED" },
         },
       }),
       (error) => error.code === E_VERIFICATION_EXECUTION_INVALID,
