@@ -2,6 +2,7 @@ import { CLI_COMMAND_DEFINITIONS } from "./cli-command-definitions.js";
 import { COMMAND_EXECUTORS } from "./command-executors.js";
 import { PROTOCOL_VERSION } from "./protocol.js";
 import { FORGELOOP_INTEGRATION_RUNTIME_VERSION } from "./command-runtime.js";
+import { VERIFICATION_ISOLATION_MODES } from "./verification-execution.js";
 
 /**
  * Integration risk classes. They classify the *invocation*, not only the
@@ -132,6 +133,13 @@ export function getForgeLoopCapabilities({ packageVersion = null } = {}) {
         version: 1,
         readOnlyMetrics: true,
         projectLocalReference: true,
+      },
+      verificationExecutionIsolation: {
+        version: 1,
+        supported: true,
+        adapter: true,
+        modes: [...VERIFICATION_ISOLATION_MODES],
+        protocolProjectRootSeparateFromExecutionCwd: true,
       },
     },
     commands,

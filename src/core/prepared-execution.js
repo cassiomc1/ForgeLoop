@@ -4,6 +4,7 @@ import {
   validateVerificationAuthority,
   E_COMMAND_RESOLUTION_AMBIGUOUS,
 } from "./verification-capability.js";
+import { executeVerificationProcess } from "./verification-execution.js";
 
 export { E_COMMAND_RESOLUTION_AMBIGUOUS };
 
@@ -171,12 +172,36 @@ export async function runPreparedCommandExecution({
   prepared,
   timeoutMs = null,
   executionPath,
+  executionKind = "VERIFICATION",
+  runtimeContext,
 }) {
   const { createHash } = await import("node:crypto");
   const digest = (bytes) => createHash("sha256").update(bytes).digest("hex");
   const executionId = `exec-${randomUUID()}`;
   const startedAt = new Date().toISOString();
-  const processResult = await executePreparedProcess(prepared.argv, target, { timeoutMs });
+  const processResult = executionKind === "VERIFICATION"
+    ? await executeVerificationProcess({
+      argv: prepared.argv,
+      protocolProjectRoot: target,
+      taskId,
+      checkId,
+      requirement,
+      resolution: prepared.resolution,
+      timeoutMs,
+      runtimeContext,
+      nativeExecute: executePreparedProcess,
+    })
+    : {
+      ...(await executePreparedProcess(prepared.argv, target, { timeoutMs })),
+      cwd: target,
+      isolation: {
+        mode: "NATIVE_PROJECT",
+        isolated: false,
+        liveProjectWritable: true,
+        networkPolicy: "INHERITED",
+        environmentPolicy: "INHERITED",
+      },
+    };
   const finishedAt = new Date().toISOString();
   const execution = {
     schemaVersion: 1,
@@ -187,8 +212,10 @@ export async function runPreparedCommandExecution({
     requirement,
     verificationCycle,
     kind: "COMMAND_EXECUTION",
+    executionKind,
     argv: prepared.argv,
-    cwd: target,
+    protocolProjectRoot: target,
+    cwd: processResult.cwd,
     resolution: {
       resolutionMode: prepared.resolution.resolutionMode,
       mayInstall: prepared.resolution.mayInstall,
@@ -203,6 +230,8 @@ export async function runPreparedCommandExecution({
     durationMs: Math.max(0, Date.parse(finishedAt) - Date.parse(startedAt)),
     termination: processResult.spawnError ? "spawn-error" : processResult.timedOut ? "timeout" : processResult.signal ? "signal" : "exit",
     signal: processResult.signal ?? null,
+    executionIsolation: processResult.isolation.mode,
+    isolation: processResult.isolation,
     stdoutSha256: digest(processResult.stdout),
     stderrSha256: digest(processResult.stderr),
     stdoutBytes: processResult.stdoutBytes,

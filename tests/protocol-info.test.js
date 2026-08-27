@@ -24,6 +24,13 @@ test("protocol-info exposes a complete public compatibility handshake", () => {
     explicitResume: true,
     validatedClaimProjection: true,
   });
+  assert.deepEqual(info.features.verificationExecutionIsolation, {
+    version: 1,
+    supported: true,
+    adapter: true,
+    modes: ["NATIVE_PROJECT", "PROJECT_ISOLATED", "SYSTEM_ISOLATED"],
+    protocolProjectRootSeparateFromExecutionCwd: true,
+  });
   assert.equal(info.compatibility.schemaVersion, 1);
   assert.ok(info.commands.some((command) => command.name === "protocol-info"));
   assert.ok(info.commands.some((command) => command.name === "task-resume"));

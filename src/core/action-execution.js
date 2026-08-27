@@ -72,6 +72,7 @@ export async function executeDurableAction({
       target, packageRoot, taskId, checkId: `action:${action.actionId}`,
       requirement: input.requirement ?? `durable action ${action.actionId}`,
       prepared, timeoutMs,
+      executionKind: "DURABLE_ACTION",
     });
   } catch (error) {
     // Persistence uncertainty after the launch boundary can never downgrade a

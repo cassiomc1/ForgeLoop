@@ -152,10 +152,42 @@ export async function validateCheckExecutionProvenance(check, {
     requirement: check.requirement,
     verificationCycle: check.details?.verificationCycle ?? 1,
   });
-  if (!allowForeignCwd && path.resolve(execution.cwd) !== path.resolve(target)) {
+  const protocolProjectRoot = execution.protocolProjectRoot ?? execution.cwd;
+  if (
+    execution.executionKind !== undefined
+    && execution.executionKind !== "VERIFICATION"
+  ) {
     throw artifactError(
       "E_EXECUTION_REF_INVALID",
-      "Execution artifact cwd does not match the current target",
+      "A command check must reference a verification execution artifact",
+      [taskId ? taskExecutionPath(taskId, check.executionRef) : ARTIFACT_PATHS.executionDirectory],
+    );
+  }
+  if (
+    execution.executionIsolation !== undefined
+    && execution.isolation?.mode !== execution.executionIsolation
+  ) {
+    throw artifactError(
+      "E_EXECUTION_REF_INVALID",
+      "Execution artifact isolation mode does not match its isolation metadata",
+      [taskId ? taskExecutionPath(taskId, check.executionRef) : ARTIFACT_PATHS.executionDirectory],
+    );
+  }
+  if (
+    execution.isolation?.mode !== undefined
+    && execution.isolation.mode !== "NATIVE_PROJECT"
+    && path.resolve(execution.cwd) === path.resolve(protocolProjectRoot)
+  ) {
+    throw artifactError(
+      "E_EXECUTION_REF_INVALID",
+      "Isolated execution artifact cwd must be separate from the protocol project root",
+      [taskId ? taskExecutionPath(taskId, check.executionRef) : ARTIFACT_PATHS.executionDirectory],
+    );
+  }
+  if (!allowForeignCwd && path.resolve(protocolProjectRoot) !== path.resolve(target)) {
+    throw artifactError(
+      "E_EXECUTION_REF_INVALID",
+      "Execution artifact protocol project root does not match the current target",
       [taskId ? taskExecutionPath(taskId, check.executionRef) : ARTIFACT_PATHS.executionDirectory],
     );
   }

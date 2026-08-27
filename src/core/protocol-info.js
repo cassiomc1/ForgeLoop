@@ -3,6 +3,7 @@ import { ARTIFACT_REGISTRY } from "./artifact-registry.js";
 import { PUBLIC_ERROR_REGISTRY } from "./error-codes.js";
 import { GUIDE_REGISTRY } from "./guide-registry.js";
 import { PROTOCOL_VERSION, WORK_PHASES, WORK_TRANSITIONS } from "./protocol.js";
+import { VERIFICATION_ISOLATION_MODES } from "./verification-execution.js";
 
 export const SCHEMA_COMPATIBILITY_POLICY = Object.freeze({
   protocolVersion: PROTOCOL_VERSION,
@@ -49,6 +50,13 @@ export function protocolInfo({ packageVersion = null } = {}) {
         version: 1,
         supported: true,
         schemaVersion: 1,
+      },
+      verificationExecutionIsolation: {
+        version: 1,
+        supported: true,
+        adapter: true,
+        modes: [...VERIFICATION_ISOLATION_MODES],
+        protocolProjectRootSeparateFromExecutionCwd: true,
       },
       structuredTrace: {
         version: 1,

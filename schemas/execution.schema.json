@@ -29,12 +29,27 @@
     "requirement": { "type": "string", "minLength": 1 },
     "verificationCycle": { "type": "integer", "minimum": 1 },
     "kind": { "const": "COMMAND_EXECUTION" },
+    "executionKind": { "enum": ["VERIFICATION", "DURABLE_ACTION"] },
     "argv": {
       "type": "array",
       "minItems": 1,
       "items": { "type": "string", "minLength": 1 }
     },
+    "protocolProjectRoot": { "type": "string", "minLength": 1 },
     "cwd": { "type": "string", "minLength": 1 },
+    "executionIsolation": { "enum": ["NATIVE_PROJECT", "PROJECT_ISOLATED", "SYSTEM_ISOLATED"] },
+    "isolation": {
+      "type": "object",
+      "required": ["mode", "isolated", "liveProjectWritable", "networkPolicy", "environmentPolicy"],
+      "properties": {
+        "mode": { "enum": ["NATIVE_PROJECT", "PROJECT_ISOLATED", "SYSTEM_ISOLATED"] },
+        "isolated": { "type": "boolean" },
+        "liveProjectWritable": { "type": "boolean" },
+        "networkPolicy": { "type": "string", "minLength": 1 },
+        "environmentPolicy": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
     "resolution": {
       "type": "object",
       "required": ["resolutionMode", "mayInstall", "installer", "tool"],

@@ -62,6 +62,7 @@ export async function runCommandExecution({
   runtimeContext,
   executionPath,
   timeoutMs = null,
+  executionKind = "VERIFICATION",
 } = {}) {
   const prepared = await prepareCommandExecution({
     target,
@@ -80,6 +81,8 @@ export async function runCommandExecution({
     prepared,
     timeoutMs,
     executionPath,
+    executionKind,
+    runtimeContext,
   });
 }
 
