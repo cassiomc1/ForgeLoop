@@ -82,6 +82,41 @@ function readAdapter(runtimeContext) {
   return value;
 }
 
+function assertIsolationMetadataConsistency(isolation) {
+  if (isolation.mode === "NATIVE_PROJECT") {
+    if (
+      isolation.isolated !== false
+      || isolation.liveProjectWritable !== true
+    ) {
+      throw executionError(
+        E_VERIFICATION_EXECUTION_INVALID,
+        "NATIVE_PROJECT must report isolated=false and liveProjectWritable=true",
+      );
+    }
+    return;
+  }
+
+  if (
+    isolation.isolated !== true
+    || isolation.liveProjectWritable !== false
+  ) {
+    throw executionError(
+      E_VERIFICATION_EXECUTION_INVALID,
+      `${isolation.mode} must report isolated=true and liveProjectWritable=false`,
+    );
+  }
+
+  if (
+    isolation.mode === "SYSTEM_ISOLATED"
+    && isolation.networkPolicy !== "DENIED"
+  ) {
+    throw executionError(
+      E_VERIFICATION_EXECUTION_INVALID,
+      "SYSTEM_ISOLATED must report networkPolicy=DENIED",
+    );
+  }
+}
+
 function normalizeIsolation(value) {
   if (!isRecord(value)) {
     throw executionError(E_VERIFICATION_EXECUTION_INVALID, "Verification execution isolation metadata is missing");
@@ -93,13 +128,15 @@ function normalizeIsolation(value) {
   if (typeof value.isolated !== "boolean" || typeof value.liveProjectWritable !== "boolean") {
     throw executionError(E_VERIFICATION_EXECUTION_INVALID, "Verification execution isolation booleans are invalid");
   }
-  return {
+  const isolation = {
     mode,
     isolated: value.isolated,
     liveProjectWritable: value.liveProjectWritable,
     networkPolicy: requiredString(value.networkPolicy, "networkPolicy"),
     environmentPolicy: requiredString(value.environmentPolicy, "environmentPolicy"),
   };
+  assertIsolationMetadataConsistency(isolation);
+  return isolation;
 }
 
 export function normalizeVerificationExecutionResult(value, { defaultCwd = null } = {}) {

@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Verification execution now rejects contradictory isolation mode,
+  filesystem-write, and network guarantees before evidence persistence.
+
 - Verification execution now has an explicit trusted adapter boundary with
   disposable project/system isolation metadata, separate protocol and
   execution roots, bounded output provenance, and fail-closed handling when
