@@ -394,7 +394,7 @@ After commit ambiguity is settled as `COMMITTED`, verify the independent
 postcondition before completion:
 
 ```bash
-forgeloop run-check --task release --id check-release-live --requirement publication -- node scripts/check-release-live.js
+forgeloop run-check --task release --id check-release-live --requirement publication -- npm view your-package-name@1.0.0 version
 forgeloop action-verify --task release --action action-publish --evidence <execution-ref>
 ```
 

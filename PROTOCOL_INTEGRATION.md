@@ -204,6 +204,50 @@ metadata. Invalid or missing references return `E_EXECUTION_REF_INVALID`; an
 observed command without ForgeLoop provenance returns
 `E_COMMAND_PROVENANCE_UNATTESTED`.
 
+### Verification execution adapter boundary
+
+Verification execution is separated from protocol state through a trusted
+adapter boundary. A host supplies both through the integration runtime
+context, and neither is accepted as CLI flags, input, or project files:
+
+```js
+createForgeLoopContext({
+  verificationExecutionAdapter: { execute: async (request) => { /* ... */ } },
+  verificationExecutionPolicy: { requiredIsolation: "PROJECT_ISOLATED" },
+});
+```
+
+The adapter receives a frozen request (`argv`, `protocolProjectRoot`, `taskId`,
+`checkId`, `requirement`, `timeoutMs`, `resolution`) and returns the execution
+result plus isolation metadata. Isolation modes are:
+
+| Mode | `isolated` | `liveProjectWritable` | Network/environment |
+| --- | --- | --- | --- |
+| `NATIVE_PROJECT` | `false` | `true` | Inherited |
+| `PROJECT_ISOLATED` | `true` | `false` | Adapter-declared policy |
+| `SYSTEM_ISOLATED` | `true` | `false` | `networkPolicy: DENIED` required |
+
+ForgeLoop owns the adapter contract and evidence semantics; the harness owns
+the concrete isolation backend, and no specific backend is normative in
+ForgeLoop core documentation. The boundary is fail-closed:
+
+- isolation metadata must be internally consistent with its declared mode
+  (`NATIVE_PROJECT` is never isolated; isolated modes are never
+  `liveProjectWritable`; `SYSTEM_ISOLATED` never inherits network access).
+  Contradictory metadata is rejected with `E_VERIFICATION_EXECUTION_INVALID`
+  before evidence persistence;
+- isolated execution must use a working directory separate from the protocol
+  project root;
+- verification that cannot satisfy the required isolation boundary fails with
+  `E_VERIFICATION_ISOLATION_UNAVAILABLE` and must never fall back to running
+  in the live project.
+
+`protocol-info --json` advertises this capability as
+`features.verificationExecutionIsolation` (version 1), including the supported
+modes and the `protocolProjectRootSeparateFromExecutionCwd` invariant. The
+modes, public error codes, and `createForgeLoopContext` are exported from
+`@cassiomc1/forgeloop/integration`.
+
 ## Missing tool capability
 
 A missing tool is a capability gap, not installation authority.
