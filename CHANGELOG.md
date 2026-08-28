@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+## 1.6.2 - 2026-08-28
+
+### Fixed
+
+- Docs quality link checks now exclude the intermittently unavailable Cursify
+  reference while keeping the documentation link visible.
+
+- The README and Getting Started guide now document global CLI installation,
+  including the `npm install --global @cassiomc1/forgeloop` command.
+
+- Shipped package documentation remains English-only, with no temporary
+  localized documentation included in the npm package.
+
 ## 1.6.1 - 2026-08-27
 
 ### Fixed

@@ -37,6 +37,16 @@ Core mental model:
 
 ## 3. Installation & Initialization
 
+### Global installation
+
+Install the ForgeLoop CLI globally to make the `forgeloop` command available
+in your terminal:
+
+```bash
+npm install --global @cassiomc1/forgeloop
+forgeloop --version
+```
+
 In your project repository:
 
 Confirm the installed CLI exposes the compatible protocol before creating
