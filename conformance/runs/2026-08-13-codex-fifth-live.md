@@ -104,9 +104,9 @@ fictional concept, including the provisional name `Aureum Legal`, but did not
 serialize those choices as assumptions.
 
 The agent then presented three reversible visual directions and asked for
-approval. The final question was:
+approval. The final question, translated into English for this report, was:
 
-> Aprova esse design para eu escrever a especificação e implementar o site?
+> Do you approve this design so I can write the specification and implement the site?
 
 The requested approval concerned a reversible local design direction. No real
 business fact, sensitive value, external authority, irreversible decision,
