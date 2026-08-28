@@ -149,7 +149,7 @@ Every verification command path is classified by resolution mode:
 
 **Validator-enforced rule**: Any verification command executed via an installation-capable or explicit-installation resolution mode without a valid canonical installation authority grant is rejected by `record-check`, `audit`, and `complete` with error code `E_INSTALLATION_AUTHORITY_REQUIRED`, `E_AUTHORITY_INVALID`, `E_AUTHORITY_SCOPE_MISMATCH`, or `E_AUTHORITY_UNTRUSTED_SOURCE` and cannot contribute to `VALID` completion.
 
-Recognized command dispatchers (such as `npm test`, `npm start`, `npm stop`, `npm restart`, `npm run <script>`, `npm run-script <script>`, `npm rum <script>`, `npm urn <script>`) are classified by their effective package resolution behavior across recognized lifecycle scripts before process launch. npm invocation parsing recognizes options (e.g. `--silent`, `--loglevel=error`) before the subcommand. Recognized npm-script dispatch is resolved recursively before process launch. `npm restart` uses npm's restart-specific lifecycle semantics (`prerestart`, `prestop`, `stop`, `poststop`, `prestart`, `start`, `poststart`, `postrestart` when `restart` is absent; `prerestart`, `restart`, `postrestart` when `restart` is present) rather than generic pre/main/post handling. ForgeLoop fails closed (`mayInstall: true`) when recursive npm-script resolution encounters a cycle or exceeds its maximum resolution depth (16). ForgeLoop does not resolve npm workspace selection in `run-check` for `0.1.15`. npm script executions using `--workspace`, `-w`, `--workspaces`, or `--ws` fail closed (`E_COMMAND_RESOLUTION_AMBIGUOUS`) because the effective `package.json` execution context may differ from the current ForgeLoop target. Run ForgeLoop against the selected workspace directory directly instead. If any nested lifecycle script invokes an installation-capable command (such as `npx`, `npm exec`, or `pnpm dlx`), the execution is elevated to `INSTALL_CAPABLE_RESOLUTION` and blocked before launch without authority.
+Recognized command dispatchers (such as `npm test`, `npm start`, `npm stop`, `npm restart`, `npm run <script>`, `npm run-script <script>`, `npm rum <script>`, `npm urn <script>`) are classified by their effective package resolution behavior across recognized lifecycle scripts before process launch. npm invocation parsing recognizes options (e.g. `--silent`, `--loglevel=error`) before the subcommand. Recognized npm-script dispatch is resolved recursively before process launch. `npm restart` uses npm's restart-specific lifecycle semantics (`prerestart`, `prestop`, `stop`, `poststop`, `prestart`, `start`, `poststart`, `postrestart` when `restart` is absent; `prerestart`, `restart`, `postrestart` when `restart` is present) rather than generic pre/main/post handling. ForgeLoop fails closed (`mayInstall: true`) when recursive npm-script resolution encounters a cycle or exceeds its maximum resolution depth (16). ForgeLoop does not resolve npm workspace selection in `run-check`. npm script executions using `--workspace`, `-w`, `--workspaces`, or `--ws` fail closed (`E_COMMAND_RESOLUTION_AMBIGUOUS`) because the effective `package.json` execution context may differ from the current ForgeLoop target. Run ForgeLoop against the selected workspace directory directly instead. If any nested lifecycle script invokes an installation-capable command (such as `npx`, `npm exec`, or `pnpm dlx`), the execution is elevated to `INSTALL_CAPABLE_RESOLUTION` and blocked before launch without authority.
 
 **npm Classification Model**: npm classification is semantic and fail-closed. Unknown npm commands are not assumed safe. The classifier specifically identifies install-capable families including: `exec`/`x`, `install` aliases, `ci` aliases, `install-test` families, `install-ci-test` families, `update` aliases, `audit fix`, and conditional `init`/`create`/`innit` invocations. Unknown or ambiguous semantics fail closed (`E_COMMAND_RESOLUTION_AMBIGUOUS`).
 
@@ -161,6 +161,27 @@ check. Resolution is classified before process launch; install-capable
 resolution is rejected without a valid host-attested authority, while
 `npx --no-install` remains a non-installing path and may fail honestly when a
 tool is absent. `run-check` launches the supplied argv without a shell.
+
+### Verification execution isolation
+
+Without a trusted adapter, verification executes in the live project and is
+recorded as `NATIVE_PROJECT` (`isolated: false`, `liveProjectWritable: true`,
+inherited network and environment). A host may supply a trusted verification
+execution adapter and an isolation policy through the integration runtime
+context (`verificationExecutionAdapter`, `verificationExecutionPolicy`).
+The policy modes are `NONE`, `NATIVE_PROJECT`, `PROJECT_ISOLATED`
+(`isolated: true`, `liveProjectWritable: false`), and `SYSTEM_ISOLATED`
+(additionally `networkPolicy: DENIED`). `liveProjectWritable` is an enforced
+host guarantee reported by the adapter, not an inference from a different
+working directory, and a disposable copy alone does not satisfy filesystem
+isolation. Isolated execution must use a working directory separate from the
+protocol project root. Contradictory isolation metadata is intrinsically
+rejected before evidence persistence with `E_VERIFICATION_EXECUTION_INVALID`,
+and verification that cannot satisfy the required isolation boundary fails
+closed with `E_VERIFICATION_ISOLATION_UNAVAILABLE` instead of running in the
+live project. ForgeLoop owns the adapter contract and evidence semantics; the
+harness owns the concrete isolation backend and no specific backend is
+normative.
 
 `forgeloop record-check` is serialization-only. Its `--command` value is
 metadata and is never executed. A `kind: command`, `evidenceKind: OBSERVED`

@@ -14,6 +14,7 @@ coverage.
 | Required artifact freshness | `readRequiredArtifactFingerprints`, `classifyLoadedWorkState` | `tests/checkpoint-freshness.test.js`, `tests/validate-protocol-cli.test.js` | matching hash, missing, and changed artifact cases |
 | Schema health | `inspectSchemaHealth` | `tests/schema-health.test.js` | missing, invalid, and unsupported-version schemas |
 | Evidence vocabulary | `src/core/evidence.js` | `tests/evidence.test.js` | unknown kind and incomplete record |
+| Verification execution isolation | `src/core/verification-execution.js`, `src/core/runtime-context.js` | adapter call binding, disposable cwd, timeout/termination/truncation preservation, and canonical isolation combinations in `tests/verification-execution-isolation.test.js` | missing adapter under required policy, malformed/contradictory isolation metadata, and live-root cwd claims in `tests/verification-execution-isolation.test.js` |
 | Receipt semantics | `src/core/receipt.js` | `tests/receipt-semantics.test.js` | unsupported publication, review, check, and completion claims |
 | Cross-artifact conformance | `src/core/conformance.js`, `src/commands/validate-protocol.js` | `tests/conformance.test.js`, `tests/validate-protocol-cli.test.js` | `stateClassification`, derived stale details, precedence, mismatch, incomplete, and incompatible fixtures |
 | Delegation conflicts | `src/core/delegation.js` | `tests/delegation-set.test.js` | WRITE/WRITE, WRITE/READ, unknown dependency, and cycle cases |

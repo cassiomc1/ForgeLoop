@@ -60,7 +60,8 @@
     "docs/UNIVERSAL_INTEGRATION.md",
     "docs/DIAGNOSTIC_MODEL.md",
     "docs/EXECUTION_TRACE.md",
-    "docs/RELEASE_CHECKLIST_1_5_MCP.md"
+    "docs/RELEASE_CHECKLIST_1_5_MCP.md",
+    "docs/RELEASE_CHECKLIST_1_6_1.md"
   ],
   "scripts": {
     "test": "node scripts/run-tests.js",

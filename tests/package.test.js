@@ -57,6 +57,7 @@ test("npm tarball contains the CLI, templates, and license notices only", () => 
     "docs/MCP.md",
     "docs/UNIVERSAL_INTEGRATION.md",
     "docs/RELEASE_CHECKLIST_1_5_MCP.md",
+    "docs/RELEASE_CHECKLIST_1_6_1.md",
     "docs/diagrams/README.md",
     "docs/diagrams/manifest.json",
     "docs/diagrams/forgeloop-engineering-flow.workflow.json",

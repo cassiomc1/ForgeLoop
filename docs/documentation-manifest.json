@@ -410,6 +410,18 @@
       "packaged": true
     },
     {
+      "path": "docs/RELEASE_CHECKLIST_1_6_1.md",
+      "id": "release-checklist-1-6-1",
+      "class": "reference",
+      "audience": [
+        "maintainer"
+      ],
+      "canonicalFor": [
+        "release-checklist-1-6-1"
+      ],
+      "packaged": true
+    },
+    {
       "path": "docs/DIAGNOSTIC_MODEL.md",
       "id": "diagnostic-model",
       "class": "reference",

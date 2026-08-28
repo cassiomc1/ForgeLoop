@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.6.1 - 2026-08-27
+
 ### Fixed
 
 - Verification execution now rejects contradictory isolation mode,
