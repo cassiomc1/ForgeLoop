@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 1.6.3 - 2026-08-28
+
+### Fixed
+
+- Removed the final Portuguese sentence from the shipped README so the npm
+  package documentation is consistently English-only.
+
 ## 1.6.2 - 2026-08-28
 
 ### Fixed

@@ -370,8 +370,8 @@ repository policy allows only ESLint and c8 as development dependencies;
 appear. The documentation renderer is vendored and pinned under
 `vendor/archify/v2.15.0/` rather than installed as a package dependency.
 
-Para reportar vulnerabilidades ou contribuir com alterações, consulte
-[`SECURITY.md`](./SECURITY.md) e [`CONTRIBUTING.md`](./CONTRIBUTING.md).
+To report vulnerabilities or contribute changes, see
+[`SECURITY.md`](./SECURITY.md) and [`CONTRIBUTING.md`](./CONTRIBUTING.md).
 
 ## Autonomous blind-run isolation
 
