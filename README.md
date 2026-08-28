@@ -74,11 +74,34 @@ frontmatter. Repository validators keep the catalog and metadata synchronized.
 
 ## Quickstart
 
-### Demonstração em 60 segundos
+### Installation
 
-Em um diretório descartável, inicialize o kit e crie uma tarefa isolada. O
-resultado é determinístico e pode ser inspecionado por qualquer harness
-compatível:
+Install the ForgeLoop CLI globally to make the `forgeloop` command available
+in your terminal:
+
+```bash
+npm install --global @cassiomc1/forgeloop
+forgeloop --version
+```
+
+Then, inside your project repository:
+
+```bash
+forgeloop init
+forgeloop doctor
+```
+
+If you prefer not to install globally, use `npx`:
+
+```bash
+npx @cassiomc1/forgeloop init
+npx @cassiomc1/forgeloop doctor
+```
+
+### 60-second demonstration
+
+In a disposable directory, initialize the kit and create an isolated task. The
+result is deterministic and can be inspected by any compatible harness:
 
 ```bash
 npx @cassiomc1/forgeloop init
@@ -88,20 +111,20 @@ forgeloop preflight --task demo --json
 forgeloop next --task demo --json
 ```
 
-O último comando informa a ação segura seguinte; ele não executa código nem
-agenda agentes.
+The last command reports the next safe action; it does not execute code or
+schedule agents.
 
-### Ações externas duráveis
+### Durable external actions
 
-Para efeitos externos, registre a intenção com `action-propose`, aplique a
-política de capacidade e a aprovação vinculada ao fingerprint, e execute apenas
-com `run-action` usando argv exato. Um resultado `COMMIT_UNKNOWN` nunca é
-repetido automaticamente: observe o sistema externo e use `action-reconcile`.
-As métricas mantêm tokens/custos como desconhecidos quando o host não os
-fornece, e eficiência só existe quando um cenário de referência foi declarado.
+For external effects, record intent with `action-propose`, apply the capability
+policy and fingerprint-bound approval, and execute only with `run-action` using
+the exact argv. A `COMMIT_UNKNOWN` result is never repeated automatically:
+observe the external system and use `action-reconcile`. Metrics keep
+tokens/costs unknown when the host does not provide them, and efficiency exists
+only when a reference scenario has been declared.
 
-Antes de um harness criar ou retomar uma tarefa, ele pode confirmar a
-compatibilidade pública sem depender de detalhes internos:
+Before a harness creates or resumes a task, it can confirm public compatibility
+without depending on internal details:
 
 <!-- FORGELOOP EXAMPLE: readme:compatibility | exit=0 | json.protocolVersion=1 -->
 ```bash
@@ -109,18 +132,18 @@ forgeloop protocol-info --json
 ```
 <!-- END FORGELOOP EXAMPLE -->
 
-### Responsabilidades
+### Responsibilities
 
-| Responsabilidade | ForgeLoop | Harness ou desenvolvedor |
+| Responsibility | ForgeLoop | Harness or developer |
 | --- | --- | --- |
-| Validar contrato e rotas | Sim | Fornece intenção e sinais |
-| Implementar código | Não | Sim |
-| Registrar proveniência de comando | Sim, com `run-check` | Fornece comando e ambiente |
-| Validar conclusão | Sim | Fornece trabalho e evidência reais |
-| Agendar agentes ou inferência LLM | Não | Externo ao protocolo |
+| Validate contract and routes | Yes | Provides intent and signals |
+| Implement code | No | Yes |
+| Record command provenance | Yes, with `run-check` | Provides command and environment |
+| Validate completion | Yes | Provides real work and evidence |
+| Schedule agents or LLM inference | No | External to the protocol |
 
-Para uma troca concreta entre ferramentas, veja a
-[continuidade entre harnesses](./docs/CROSS_HARNESS_CONTINUITY.md).
+For a concrete exchange between tools, see
+[cross-harness continuity](./docs/CROSS_HARNESS_CONTINUITY.md).
 
 From a published package, initialize a target project with:
 
