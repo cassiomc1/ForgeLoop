@@ -206,13 +206,13 @@ export async function repositoryTreeEntry(target, { revision = "HEAD", path: rep
   const safeRevision = assertRevision(revision);
   const safePath = assertRepositoryPath(repositoryPath);
   const output = await runGit(target, ["ls-tree", "-z", safeRevision, "--", safePath]);
-  const token = text(output).split("\0").find(Boolean);
-  if (!token) {
+  const treeEntry = text(output).split("\0").find(Boolean);
+  if (!treeEntry) {
     const error = repositoryError("E_REVISION_CONTENT_UNAVAILABLE", `Path is absent at revision ${safeRevision}: ${safePath}`);
     error.notFound = true;
     throw error;
   }
-  const match = token.match(/^(\d+)\s+(\w+)\s+([a-f0-9]+)\t(.*)$/u);
+  const match = treeEntry.match(/^(\d+)\s+(\w+)\s+([a-f0-9]+)\t(.*)$/u);
   if (!match) throw repositoryError("E_REVISION_PROVIDER_INVALID", `Cannot parse Git tree entry for ${safePath}`);
   return { mode: match[1], type: match[2], objectId: match[3], path: match[4] };
 }
