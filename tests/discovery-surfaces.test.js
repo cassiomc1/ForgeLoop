@@ -146,7 +146,7 @@ test("npm package contains the discovery surfaces registry and protocol integrat
   const paths = JSON.parse(output)[0].files.map((entry) => entry.path);
   assert.ok(paths.includes("src/core/discovery-surfaces.js"));
   assert.ok(paths.includes("PROTOCOL_INTEGRATION.md"));
-  assert.ok(paths.includes("AGENT_COMPATIBILITY.md"));
+  assert.equal(paths.includes("AGENT_COMPATIBILITY.md"), false);
   assert.equal(paths.includes("src/core/agent-support.js"), false);
 });
 

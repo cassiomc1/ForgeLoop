@@ -1,4 +1,11 @@
 import { continuityOptionDefaults, validateContinuityOptions } from "./continuity-cli-options.js";
+import { E_CLI_INVOCATION_INVALID } from "./error-codes.js";
+
+function inputError(message) {
+  const error = new Error(message);
+  error.code = E_CLI_INVOCATION_INVALID;
+  return error;
+}
 
 /**
  * Transport-neutral option defaults shared by the CLI parser and the
@@ -39,11 +46,35 @@ export function defaultCommandInputValues() {
     checkDetails: null,
     checkExecutionRef: null,
     checkProvenance: null,
+    timeoutMs: null,
+    scopeRef: null,
     commandArgv: [],
     checkType: null,
     checkSource: null,
     policy: null,
     taskId: null,
+    recipientHint: null,
+    handoffNote: null,
+    handoffId: null,
+    responsibilityLabel: null,
+    responsibilityAllowedPaths: [],
+    responsibilityReadOnlyPaths: [],
+    responsibilityRequiredChecks: [],
+    responsibilityFreezeContract: false,
+    responsibilityFreezeRoute: false,
+    responsibilityFreezeClaims: false,
+    verificationScopeMode: null,
+    revisionProvider: null,
+    signingProvider: null,
+    trustedRoot: null,
+    baseRevision: null,
+    headRevision: null,
+    requireCompleteCoverage: false,
+    requireSignature: false,
+    attestationRef: null,
+    attestationBundle: null,
+    attestationIdentity: null,
+    attestationIssuer: null,
     help: false,
     version: false,
     ...continuityOptionDefaults(),
@@ -60,48 +91,68 @@ export function validateForgeLoopCommandInput({ command, input, help = false } =
   if (!command) return;
 
   if (command === "policy" && !options.policy) {
-    throw new Error("policy requires a name");
+    throw inputError("policy requires a name");
   }
   if (command !== "policy" && options.policy) {
-    throw new Error(`Policy name is not valid for ${command}`);
+    throw inputError(`Policy name is not valid for ${command}`);
   }
   if (command === "bundle" && !options.taskId) {
-    throw new Error("bundle requires --task");
+    throw inputError("bundle requires --task");
   }
   if (command === "task-create" && !options.taskId) {
-    throw new Error("task-create requires --task");
+    throw inputError("task-create requires --task");
+  }
+  if (["workspace-bind", "workspace-status", "handoff-create", "handoff-list", "handoff-show", "responsibility-set", "responsibility-status", "verify-scope", "attestation-create", "attestation-status", "attestation-verify"].includes(command)
+    && !options.taskId) {
+    throw inputError(`${command} requires --task`);
+  }
+  if (command === "handoff-show" && !help && !options.handoffId) {
+    throw inputError("handoff-show requires --id");
+  }
+  if (command === "responsibility-set" && !help && !options.responsibilityLabel) {
+    throw inputError("responsibility-set requires --label");
+  }
+  if (command === "verify-scope" && !help) {
+    const mode = String(options.verificationScopeMode ?? "AUTO").toUpperCase();
+    if (!["AUTO", "CHANGED", "CLAIMED", "FULL"].includes(mode)) {
+      throw inputError("verify-scope --mode must be AUTO, CHANGED, CLAIMED, or FULL");
+    }
+  }
+  if (command === "attestation-verify-range" && !help) {
+    if (!options.baseRevision) throw inputError("attestation-verify-range requires --base");
+    if (!options.headRevision) throw inputError("attestation-verify-range requires --head");
   }
 
   validateContinuityOptions(command, options);
 
   if (command === "record-check" && !help) {
-    if (!options.checkId) throw new Error("record-check requires --id");
-    if (!options.checkRequirement) throw new Error("record-check requires --requirement");
-    if (!options.checkStatus) throw new Error("record-check requires --status");
-    if (!options.checkEvidenceKind) throw new Error("record-check requires --evidence-kind");
-    if (!options.checkCommand && !options.checkResult) throw new Error("record-check requires --command or --result");
+    if (!options.checkId) throw inputError("record-check requires --id");
+    if (!options.checkRequirement) throw inputError("record-check requires --requirement");
+    if (!options.checkStatus) throw inputError("record-check requires --status");
+    if (!options.checkEvidenceKind) throw inputError("record-check requires --evidence-kind");
+    if (!options.checkCommand && !options.checkResult) throw inputError("record-check requires --command or --result");
   }
   if (command === "run-check" && !help) {
-    if (!options.checkId) throw new Error("run-check requires --id");
-    if (!options.checkRequirement) throw new Error("run-check requires --requirement");
+    if (!options.checkId) throw inputError("run-check requires --id");
+    if (!options.checkRequirement) throw inputError("run-check requires --requirement");
     if (options.checkKind || options.checkStatus || options.checkEvidenceKind || options.checkCommand
       || options.checkResult || options.checkExitCode !== null || options.checkExecutionRef || options.checkProvenance) {
-      throw new Error("run-check accepts only --id, --requirement, --details, --timeout-ms, and -- <argv>");
+      throw inputError("run-check accepts only --id, --requirement, --details, --timeout-ms, --scope-ref, and -- <argv>");
     }
     if (!Array.isArray(options.commandArgv) || options.commandArgv.length === 0) {
-      throw new Error("run-check requires -- followed by an exact command argv");
+      throw inputError("run-check requires -- followed by an exact command argv");
     }
   }
   if (command === "reconcile-closure" && !help) {
-    if (!options.taskId) throw new Error("reconcile-closure requires --task");
-    if (!options.checkId) throw new Error("reconcile-closure requires --id");
-    if (!options.checkRequirement) throw new Error("reconcile-closure requires --requirement");
+    if (!options.taskId) throw inputError("reconcile-closure requires --task");
+    if (!options.checkId) throw inputError("reconcile-closure requires --id");
+    if (!options.checkRequirement) throw inputError("reconcile-closure requires --requirement");
     if (options.checkKind || options.checkStatus || options.checkEvidenceKind || options.checkCommand
       || options.checkResult || options.checkExitCode !== null || options.checkExecutionRef || options.checkProvenance) {
-      throw new Error("reconcile-closure accepts only --id, --requirement, --details, and -- <argv>");
+      throw inputError("reconcile-closure accepts only --id, --requirement, --details, and -- <argv>");
     }
     if (!Array.isArray(options.commandArgv) || options.commandArgv.length === 0) {
-      throw new Error("reconcile-closure requires -- followed by an exact command argv");
+      throw inputError("reconcile-closure requires -- followed by an exact command argv");
     }
   }
 }

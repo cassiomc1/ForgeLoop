@@ -8,7 +8,10 @@ import { stringifyBoundedMcpJson } from "./output-policy.js";
 
 import { logResourceRead } from "./logging.js";
 
-const TASK_RESOURCE_KINDS = ["status", "ownership", "contract", "continuity", "actions", "approvals", "metrics", "evaluations"];
+const TASK_RESOURCE_KINDS = [
+  "status", "ownership", "contract", "continuity", "workspace-binding", "handoffs",
+  "responsibility", "verification-scope", "attestation", "actions", "approvals", "metrics", "evaluations",
+];
 
 /**
  * Deterministic resource catalog from the canonical allowlist. Task-scoped

@@ -12,6 +12,11 @@ import { loadCapabilityPolicy } from "./capability-policy.js";
 import { readdir } from "node:fs/promises";
 import { readJsonArtifact } from "./artifacts.js";
 import { taskDirectory } from "./task-paths.js";
+import { resolveWorkspaceBindingStatus } from "./workspace-binding.js";
+import { listCanonicalHandoffs } from "./handoff.js";
+import { resolveResponsibilityStatus } from "./responsibility.js";
+import { readVerificationScope } from "./verification-scope.js";
+import { resolveAttestationStatus } from "./attestation.js";
 
 /**
  * Canonical integration resource allowlist.
@@ -50,6 +55,26 @@ export const INTEGRATION_RESOURCE_DEFINITIONS = Object.freeze({
   "task/continuity": Object.freeze({
     scope: "TASK",
     description: "Cross-harness continuity state for one task.",
+  }),
+  "task/workspace-binding": Object.freeze({
+    scope: "TASK",
+    description: "Optional task workspace binding status for the current Git worktree.",
+  }),
+  "task/handoffs": Object.freeze({
+    scope: "TASK",
+    description: "Immutable protocol-derived handoff snapshots for one task.",
+  }),
+  "task/responsibility": Object.freeze({
+    scope: "TASK",
+    description: "Current responsibility constraints and their validation status.",
+  }),
+  "task/verification-scope": Object.freeze({
+    scope: "TASK",
+    description: "The current deterministic verification-scope artifact.",
+  }),
+  "task/attestation": Object.freeze({
+    scope: "TASK",
+    description: "Local code-attestation status and trust level for one task.",
   }),
   "task/actions": Object.freeze({ scope: "TASK", description: "Canonical durable action summaries for one task." }),
   "task/action": Object.freeze({ scope: "TASK", description: "One canonical durable action artifact." }),
@@ -117,6 +142,18 @@ export async function readForgeLoopIntegrationResource(uri, {
       }
       break;
     }
+    case "task/workspace-binding":
+    case "task/handoffs":
+    case "task/responsibility":
+    case "task/verification-scope":
+    case "task/attestation": {
+      if (typeof taskId !== "string" || !taskId) {
+        const error = new Error(`Resource ${uri} requires a taskId`);
+        error.code = "E_TASK_REQUIRED";
+        throw error;
+      }
+      break;
+    }
     case "task/actions":
     case "task/action":
     case "task/approvals":
@@ -132,6 +169,23 @@ export async function readForgeLoopIntegrationResource(uri, {
   if (uri === "task/ownership") {
     const projection = await resolveTaskClaimState(projectPath, { taskId, packageRoot });
     return { uri, taskId, data: ownershipProjection(projection) };
+  }
+  if (uri === "task/workspace-binding") {
+    return { uri, taskId, data: await resolveWorkspaceBindingStatus(projectPath, { packageRoot, taskId }) };
+  }
+  if (uri === "task/handoffs") {
+    const handoffs = await listCanonicalHandoffs(projectPath, { packageRoot, taskId });
+    return { uri, taskId, data: { taskId, count: handoffs.length, handoffs } };
+  }
+  if (uri === "task/responsibility") {
+    return { uri, taskId, data: await resolveResponsibilityStatus(projectPath, { packageRoot, taskId }) };
+  }
+  if (uri === "task/verification-scope") {
+    const scope = await readVerificationScope(projectPath, { packageRoot, taskId });
+    return { uri, taskId, data: { taskId, path: scope.path, fingerprint: scope.fingerprint, scope: scope.value } };
+  }
+  if (uri === "task/attestation") {
+    return { uri, taskId, data: await resolveAttestationStatus({ target: projectPath, packageRoot, taskId }) };
   }
   if (uri === "task/actions") {
     const actions = await listActions(projectPath, { packageRoot, taskId });

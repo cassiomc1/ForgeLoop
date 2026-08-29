@@ -75,6 +75,14 @@ export const TEMPLATE_PATHS = [
   "schemas/capability-policy.schema.json",
   "schemas/trajectory-evaluation.schema.json",
   "schemas/trajectory-scenario.schema.json",
+  "schemas/workspace-binding.schema.json",
+  "schemas/handoff-envelope.schema.json",
+  "schemas/responsibility.schema.json",
+  "schemas/verification-scope.schema.json",
+  "schemas/code-manifest.schema.json",
+  "schemas/code-attestation.schema.json",
+  "schemas/attestation-verification-result.schema.json",
+  "schemas/in-toto-statement.schema.json",
 ];
 
 export function getPackageRoot() {

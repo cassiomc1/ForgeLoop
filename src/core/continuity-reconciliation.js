@@ -177,6 +177,7 @@ export async function reconcileContinuity({ target, packageRoot, taskId = null }
   ]);
 
   const state = await readWorkState(target, { packageRoot, taskId });
+  const latestHandoff = await resolveLatestHandoffSafe(target, { packageRoot, taskId: state?.taskId ?? taskId });
   let continuityArtifact;
   try {
     continuityArtifact = await readContinuity(target, { packageRoot, taskId });
@@ -186,6 +187,7 @@ export async function reconcileContinuity({ target, packageRoot, taskId = null }
         ...classifyContinuity({ continuity: null, state }),
         path: ".forgeloop/continuity.json",
         present: false,
+        latestHandoff,
         diagnosticContext: await deriveDiagnosticContextSafe({ target, packageRoot, state }),
       };
     }
@@ -197,6 +199,7 @@ export async function reconcileContinuity({ target, packageRoot, taskId = null }
       path: ".forgeloop/continuity.json",
       present: true,
       error: error.message,
+      latestHandoff,
     };
   }
 
@@ -225,8 +228,25 @@ export async function reconcileContinuity({ target, packageRoot, taskId = null }
     present: true,
     fingerprint: continuityArtifact.fingerprint,
     continuity: continuityArtifact.value,
+    latestHandoff,
     diagnosticContext: await deriveDiagnosticContextSafe({ target, packageRoot, state }),
   };
+}
+
+async function resolveLatestHandoffSafe(target, { packageRoot, taskId } = {}) {
+  if (!taskId) return null;
+  try {
+    const { resolveLatestHandoff } = await import("./handoff.js");
+    return await resolveLatestHandoff(target, { packageRoot, taskId });
+  } catch (error) {
+    return {
+      status: "INVALID",
+      error: {
+        code: error.code ?? "E_HANDOFF_INVALID",
+        message: error.message,
+      },
+    };
+  }
 }
 
 async function deriveDiagnosticContextSafe({ target, packageRoot, state }) {

@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+### Added
+
+- Added optional task workspace binding, immutable cross-harness handoff
+  envelopes, responsibility constraints, verification-scope planning, and
+  provider-neutral code attestation.
+- Added revision-provider and signing-provider contracts, in-toto statements,
+  complete revision-range coverage checks, generic CI verification, and
+  stable attestation exit-code handling.
+- Added generated shell completions, a concise agent protocol summary,
+  platform-adapter guidance, package smoke checks, and Windows full-suite CI.
+
+### Changed
+
+- Refactored next-action resolution into a compact orchestration layer with a
+  phase-oriented resolver while preserving existing lifecycle behavior.
+- Expanded protocol documentation, schemas, MCP capability metadata, and
+  audit/bundle validation for the new optional artifacts.
+
 ## 1.6.3 - 2026-08-28
 
 ### Fixed

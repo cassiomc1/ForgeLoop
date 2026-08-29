@@ -1,0 +1,22 @@
+const ENVIRONMENT_OR_PROVIDER_CODES = new Set([
+  "E_CLI_INVOCATION_INVALID",
+  "E_REPOSITORY_GIT_COMMAND_FAILED",
+  "E_REVISION_PROVIDER_UNAVAILABLE",
+  "E_REVISION_PROVIDER_AMBIGUOUS",
+  "E_REVISION_PROVIDER_INVALID",
+  "E_REVISION_NOT_FOUND",
+  "E_REVISION_CONTENT_UNAVAILABLE",
+  "E_ATTESTATION_GIT_REQUIRED",
+  "E_ATTESTATION_CONFIGURATION_INVALID",
+  "E_ATTESTATION_SIGNER_UNAVAILABLE",
+  "E_ATTESTATION_TARGET_REF_INVALID",
+]);
+
+export function exitCodeForError(error) {
+  return ENVIRONMENT_OR_PROVIDER_CODES.has(error?.code) ? 2 : 1;
+}
+
+export function exitCodeForAttestationResult(result) {
+  if (result?.status === "VALID") return 0;
+  return result?.errors?.some((error) => ENVIRONMENT_OR_PROVIDER_CODES.has(error?.code)) ? 2 : 1;
+}

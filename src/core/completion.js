@@ -1,6 +1,6 @@
 import { ARTIFACT_PATHS, canonicalFingerprint, readJsonArtifact, writeJsonArtifact } from "./artifacts.js";
 import { requiredEvidenceForTarget, validateChecksExecutionProvenance } from "./completion-artifacts.js";
-import { appendProtocolEvent, LIFECYCLE_MILESTONES, validateEventLedger, validateStateLedgerCoherence } from "./events.js";
+import { appendProtocolEvent, previewProtocolEvent, LIFECYCLE_MILESTONES, validateEventLedger, validateStateLedgerCoherence } from "./events.js";
 import { evaluatePreflight } from "./preflight.js";
 import { readContract } from "./contract.js";
 import { readPersistedRoute } from "./route-artifact.js";
@@ -11,9 +11,29 @@ import { assertSafePath, ensureWithin, fileExists } from "./filesystem.js";
 import { evaluateStartExecutionPrerequisites, hasExecutionStarted } from "./execution-prerequisites.js";
 import { isRecoverableCompletionEvidenceCode } from "./completion-recovery.js";
 import { evaluateTerminalRequirements } from "./evidence-readiness.js";
-import { PROJECT_ARTIFACT_PATHS, taskArtifactPath } from "./task-paths.js";
+import { PROJECT_ARTIFACT_PATHS, taskArtifactPath, taskCodeManifestPath } from "./task-paths.js";
 import { detectPolicyCapability, evaluateTargetPolicy } from "./policy-engine.js";
 import { listActions } from "./actions.js";
+import { readConfig } from "./config.js";
+import { resolveResponsibilityStatus } from "./responsibility.js";
+import { createCodeManifest, readCodeManifest, validateCodeManifestBindings, writeCodeManifest } from "./code-manifest.js";
+import { getActiveTaskTransaction, withTaskTransaction } from "./transaction.js";
+
+async function attestationConfiguration(target, packageRoot, errors) {
+  try {
+    const config = await readConfig(target, packageRoot);
+    return {
+      mode: config.attestation?.mode ?? "off",
+      revisionProvider: config.attestation?.revisionProvider ?? "git",
+      requireCompleteCoverage: config.attestation?.requireCompleteCoverage === true,
+      signing: config.attestation?.signing ?? { provider: "none", required: false, policy: {} },
+    };
+  } catch (error) {
+    if (error.code === "ARTIFACT_MISSING") return { mode: "off", revisionProvider: "git", requireCompleteCoverage: false, signing: { provider: "none", required: false, policy: {} } };
+    errors.push(issue(error.code ?? "E_ATTESTATION_INVALID", `Attestation configuration is invalid: ${error.message}`, [PROJECT_ARTIFACT_PATHS.config]));
+    return { mode: "off", revisionProvider: "git", requireCompleteCoverage: false, signing: { provider: "none", required: false, policy: {} } };
+  }
+}
 
 async function actionReceiptSummary(target, packageRoot, taskId) {
   const actions = await listActions(target, { packageRoot, taskId });
@@ -290,6 +310,59 @@ export async function evaluateCompletion({
     [receiptRel],
     errors,
   );
+  const attestationConfig = await attestationConfiguration(target, packageRoot, errors);
+  let attestation = {
+    mode: attestationConfig.mode,
+    status: attestationConfig.mode === "off" ? "DISABLED" : "MISSING",
+    level: "PROCESSED",
+    manifest: null,
+    revisionProvider: attestationConfig.revisionProvider,
+    requireCompleteCoverage: attestationConfig.requireCompleteCoverage,
+  };
+
+  if (state?.phase === "COMPLETE" && attestationConfig.mode !== "off") {
+    try {
+      const manifest = await readCodeManifest({ target, packageRoot, taskId: contract?.value?.taskId ?? taskId });
+      await validateCodeManifestBindings({
+        target,
+        packageRoot,
+        taskId: contract?.value?.taskId ?? taskId,
+        manifest: manifest.value,
+        revisionProvider: attestationConfig.revisionProvider,
+      });
+      attestation = {
+        ...attestation,
+        status: "CAPTURED",
+        level: "VERIFIED",
+        manifest: { path: manifest.path, fingerprint: manifest.fingerprint, contentDigest: manifest.value.contentDigest },
+      };
+    } catch (error) {
+      if (attestationConfig.mode === "required") {
+        errors.push(issue(error.code === "ARTIFACT_MISSING" ? "E_ATTESTATION_MANIFEST_MISSING" : error.code ?? "E_ATTESTATION_MANIFEST_STALE", error.message, error.artifacts ?? [taskArtifactPath(contract?.value?.taskId ?? taskId, "attestations")]));
+      }
+      attestation = {
+        ...attestation,
+        status: error.code === "ARTIFACT_MISSING" ? "MISSING" : "UNAVAILABLE",
+        error: { code: error.code ?? "E_ATTESTATION_MANIFEST_STALE", message: error.message },
+      };
+    }
+  }
+
+  let responsibility = { status: "NOT_APPLICABLE", taskId: contract?.value?.taskId ?? taskId, errors: [] };
+  if (taskId || contract?.value?.taskId) {
+    try {
+      responsibility = await resolveResponsibilityStatus(target, {
+        packageRoot,
+        taskId: contract?.value?.taskId ?? taskId,
+      });
+      for (const error of responsibility.errors ?? []) {
+        errors.push(issue(error.code, error.message, [responsibility.path ?? taskArtifactPath(taskId, "responsibility")]));
+      }
+    } catch (error) {
+      errors.push(issue(error.code ?? "E_RESPONSIBILITY_INVALID", error.message, [taskArtifactPath(taskId, "responsibility")]));
+      responsibility = { status: "INVALID", taskId: contract?.value?.taskId ?? taskId, errors: [{ code: error.code ?? "E_RESPONSIBILITY_INVALID", message: error.message }] };
+    }
+  }
 
   if (state && hasExecutionStarted(state.phase)) {
     const prerequisites = await evaluateStartExecutionPrerequisites({ target, state, packageRoot, taskId, statePath, contractPath, routePath });
@@ -508,10 +581,15 @@ export async function evaluateCompletion({
       pending: durableActions.filter((action) => !["VERIFIED", "FAILED", "CANCELLED"].includes(action.state)).length,
       actionRefs: durableActions.map((action) => action.actionId),
     },
+    responsibility: {
+      status: responsibility.status,
+      ...(responsibility.fingerprint ? { fingerprint: responsibility.fingerprint } : {}),
+    },
+    attestation,
   };
 }
 
-export async function runComplete({
+async function runCompleteInternal({
   target,
   packageRoot,
   strict = false,
@@ -631,6 +709,7 @@ export async function runComplete({
     const state = await readWorkState(target, { packageRoot, taskId, statePath });
     if (state && state.phase !== "COMPLETE") {
       const receipt = await readJsonArtifact(target, receiptRel, "execution-receipt", packageRoot);
+      const contract = await readContract(target, packageRoot, { taskId, contractPath });
       const next = {
         ...state,
         previousPhase: state.phase,
@@ -647,6 +726,47 @@ export async function runComplete({
         stateFingerprint: canonicalFingerprint(next),
         verificationCycle: next.verificationCycle ?? receipt.value.verificationCycle ?? 1,
       }, packageRoot, { target, taskId: state.taskId, authorityContext, runtimeContext });
+      const ledger = await validateEventLedger(target, packageRoot, { taskId, eventsPath });
+      const existingCompletion = ledger.events.find((event) => event.taskId === contract.value.taskId && event.event === "COMPLETION_VALIDATED");
+      const completionEvent = existingCompletion ?? await previewProtocolEvent(target, {
+        taskId: contract.value.taskId,
+        event: "COMPLETION_VALIDATED",
+      }, packageRoot, { taskId, eventsPath });
+      let manifestCapture = null;
+      const attestationConfig = result.attestation ?? { mode: "off", revisionProvider: "git" };
+      if (attestationConfig.mode !== "off") {
+        try {
+          manifestCapture = await createCodeManifest({
+            target,
+            packageRoot,
+            taskId: contract.value.taskId,
+            revisionProvider: attestationConfig.revisionProvider,
+            baseRevision: state.repositoryFingerprint?.head ?? null,
+            headRevision: "WORKTREE",
+            captureMode: "WORKTREE",
+            candidateState: next,
+            candidateReceipt: nextReceipt,
+            candidateCompletionCheckpoint: { seq: completionEvent.seq, hash: completionEvent.hash },
+          });
+          result.attestation = {
+            ...result.attestation,
+            status: "CAPTURED",
+            level: "VERIFIED",
+            manifest: {
+              path: taskCodeManifestPath(contract.value.taskId),
+              fingerprint: manifestCapture.fingerprint,
+              contentDigest: manifestCapture.manifest.contentDigest,
+            },
+          };
+        } catch (error) {
+          if (attestationConfig.mode === "required") throw error;
+          result.attestation = {
+            ...result.attestation,
+            status: "UNAVAILABLE",
+            error: { code: error.code ?? "E_ATTESTATION_MANIFEST_INVALID", message: error.message },
+          };
+        }
+      }
       await mutateWorkState(target, {
         expectedRevision: state.revision ?? 0,
         packageRoot,
@@ -654,12 +774,54 @@ export async function runComplete({
         statePath,
       }, () => next);
       await writeJsonArtifact(target, receiptRel, nextReceipt, "execution-receipt", packageRoot);
-    }
-    const contract = await readContract(target, packageRoot, { taskId, contractPath });
-    const ledger = await validateEventLedger(target, packageRoot, { taskId, eventsPath });
-    if (!ledger.events.some((event) => event.taskId === contract.value.taskId && event.event === "COMPLETION_VALIDATED")) {
-      await appendProtocolEvent(target, { taskId: contract.value.taskId, event: "COMPLETION_VALIDATED" }, packageRoot, { taskId, eventsPath });
+      if (!existingCompletion) {
+        const persistedCompletion = await appendProtocolEvent(target, {
+          taskId: contract.value.taskId,
+          event: "COMPLETION_VALIDATED",
+          at: completionEvent.at,
+        }, packageRoot, { taskId, eventsPath });
+        if (persistedCompletion.hash !== completionEvent.hash) {
+          throw new Error("Precomputed completion event changed before persistence");
+        }
+      }
+      if (manifestCapture) {
+        const manifestArtifact = await writeCodeManifest({
+          target,
+          packageRoot,
+          taskId: contract.value.taskId,
+          manifest: manifestCapture.manifest,
+        });
+        await appendProtocolEvent(target, {
+          taskId: contract.value.taskId,
+          event: "CODE_MANIFEST_CAPTURED",
+          fingerprint: manifestArtifact.fingerprint,
+          details: {
+            manifestFingerprint: manifestArtifact.fingerprint,
+            contentDigest: manifestCapture.manifest.contentDigest,
+            coveredPaths: new Set(manifestCapture.manifest.entries.flatMap((entry) => [entry.path, entry.sourcePath].filter(Boolean))).size,
+            verificationCycle: manifestCapture.manifest.verificationCycle,
+          },
+        }, packageRoot, { taskId, eventsPath });
+      }
+    } else if (state?.phase === "COMPLETE" && result.attestation?.status === "MISSING" && result.attestation.mode === "required") {
+      const error = new Error("Required code manifest is missing from a COMPLETE task");
+      error.code = "E_ATTESTATION_MANIFEST_MISSING";
+      throw error;
     }
   }
   return result;
+}
+
+export async function runComplete(options = {}) {
+  const taskId = options.taskId ?? null;
+  if (options.persist !== false && taskId && !getActiveTaskTransaction()) {
+    return withTaskTransaction({
+      target: options.target,
+      taskId,
+      packageRoot: options.packageRoot,
+      operation: "complete",
+      recordCommitEvent: true,
+    }, () => runCompleteInternal(options));
+  }
+  return runCompleteInternal(options);
 }

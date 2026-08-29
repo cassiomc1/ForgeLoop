@@ -1300,6 +1300,33 @@ completion. `CONTINUITY_CANNOT_GRANT_AUTHORITY`: continuity cannot authorize an
 installation or external action. <a id="FL-CONT-001"></a> **FL-CONT-001 — A receiving harness MUST reconcile**
 continuity against the current work state and checkout before acting on it.
 
+## Optional task boundaries and code attestation
+
+ForgeLoop keeps the following extensions optional so existing task artifacts
+remain readable without migration. When an extension artifact is present, its
+schema and canonical bindings are validated before the artifact affects a
+mutation, verification, or trust result.
+
+<a id="FL-WS-001"></a> **FL-WS-001 — A bound task MUST validate the current workspace**
+before a task mutation or ForgeLoop-owned verification launch. Workspace
+identity is derived from the repository/worktree and is never accepted from
+actor input; a mismatch fails closed before a child process starts.
+
+<a id="FL-HANDOFF-001"></a> **FL-HANDOFF-001 — A canonical handoff MUST remain an immutable**
+protocol-derived snapshot. It can carry intent and resume context, but it does
+not delegate work, establish identity, grant authority, or prove completion.
+
+<a id="FL-SCOPE-001"></a> **FL-SCOPE-001 — A verification scope MUST narrow execution only from**
+current canonical changed paths, effective claims, or an explicit full-project
+requirement. The resolver never guesses impacted tests, and a stale scope is
+not used as verification evidence.
+
+<a id="FL-ATTEST-001"></a> **FL-ATTEST-001 — A code attestation MUST bind exact source content**
+to a valid completion receipt and event-ledger checkpoint. Protocol metadata is
+excluded from the source subject, verification is read-only, and a plain
+fingerprint is not a signature. Attestation does not claim authorship or
+absolute correctness.
+
 ## Durable Actions and Trajectory Evidence
 
 Durable actions extend the existing task protocol; they do not turn ForgeLoop

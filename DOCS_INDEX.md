@@ -16,6 +16,7 @@ integration and guide context. Use this map before editing documentation.
 | --- | --- | --- |
 | Getting started tutorial | [`docs/GETTING_STARTED.md`](./docs/GETTING_STARTED.md) | First-time walkthrough from init to completion |
 | Cross-harness continuity | [`docs/CROSS_HARNESS_CONTINUITY.md`](./docs/CROSS_HARNESS_CONTINUITY.md) | Operational handoff and multi-tool resumption |
+| Agent bootstrap summary | [`docs/AGENT_PROTOCOL_SUMMARY.md`](./docs/AGENT_PROTOCOL_SUMMARY.md) | Generated concise navigation aid for protocol invariants and commands |
 | CLI command reference | [`docs/CLI_REFERENCE.md`](./docs/CLI_REFERENCE.md) | Full syntax, options, and JSON examples for all commands |
 | Artifact and schema reference | [`docs/ARTIFACT_REFERENCE.md`](./docs/ARTIFACT_REFERENCE.md) | Purpose, mutability, and trust classifications of `.forgeloop/` |
 | Durable actions and trajectory evidence | [`docs/EXECUTION_TRACE.md`](./docs/EXECUTION_TRACE.md) and [`docs/RECIPES.md`](./docs/RECIPES.md) | Action provenance, reconciliation, metrics, and project-local evaluation |
@@ -23,10 +24,15 @@ integration and guide context. Use this map before editing documentation.
 | Operational recipes | [`docs/RECIPES.md`](./docs/RECIPES.md) | Short copy-paste recipes for daily workflows |
 | Diagnostic model | [`docs/DIAGNOSTIC_MODEL.md`](./docs/DIAGNOSTIC_MODEL.md) | Structured diagnostic cases, interventions, hypothesis dispositions, information gain |
 | Execution trace and observability | [`docs/EXECUTION_TRACE.md`](./docs/EXECUTION_TRACE.md) | `history`, `trace`, `reflect`, and task-level `inspect` read-only projections |
+| Workspace, handoff, responsibility, and scope | [`docs/ARTIFACT_REFERENCE.md`](./docs/ARTIFACT_REFERENCE.md) and [`docs/CLI_REFERENCE.md`](./docs/CLI_REFERENCE.md) | Optional task boundaries and deterministic verification planning |
+| Code attestation and revision coverage | [`docs/CODE_ATTESTATION.md`](./docs/CODE_ATTESTATION.md) | Source-content manifests, in-toto statements, signatures, and range verification |
+| Revision and signing providers | [`docs/REVISION_PROVIDERS.md`](./docs/REVISION_PROVIDERS.md) and [`docs/SIGNING_PROVIDERS.md`](./docs/SIGNING_PROVIDERS.md) | Provider-neutral extension contracts |
+| Platform adapters | [`docs/PLATFORM_ADAPTERS.md`](./docs/PLATFORM_ADAPTERS.md) | Generic CI boundary and platform mapping guidance |
 | Universal integration API | [`docs/UNIVERSAL_INTEGRATION.md`](./docs/UNIVERSAL_INTEGRATION.md) | Programmatic integration subpath, envelope semantics, and consumer map |
 | Local-first MCP adapter | [`docs/MCP.md`](./docs/MCP.md) | stdio default, optional strict loopback HTTP; server modes/capabilities and canonical resources |
 | Documentation guide | [`docs/DOCUMENTATION_GUIDE.md`](./docs/DOCUMENTATION_GUIDE.md) | Rules and checklist for modifying documentation |
-| ForgeLoop 1.6.1 release checklist (current) | [`docs/RELEASE_CHECKLIST_1_6_1.md`](./docs/RELEASE_CHECKLIST_1_6_1.md) | Verification adapter boundary, isolation invariants, and publication gates |
+| Current release checklist | [`docs/RELEASE_CHECKLIST.md`](./docs/RELEASE_CHECKLIST.md) | Package, protocol, attestation, integration, and publication gates |
+| ForgeLoop 1.6.1 release checklist (historical) | [`docs/RELEASE_CHECKLIST_1_6_1.md`](./docs/RELEASE_CHECKLIST_1_6_1.md) | Verification adapter boundary, isolation invariants, and publication gates |
 | ForgeLoop 1.5/MCP release checklist (historical) | [`docs/RELEASE_CHECKLIST_1_5_MCP.md`](./docs/RELEASE_CHECKLIST_1_5_MCP.md) | Integration API v1, MCP package, and publication gates |
 | ForgeLoop 1.4 release checklist | [`docs/RELEASE_CHECKLIST_1_4.md`](./docs/RELEASE_CHECKLIST_1_4.md) | Claim-recovery, compatibility, package, and publication gates |
 | Lifecycle, gates, planning, verification, and recovery | [`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md) | Normative process for agents and developer workflows |
@@ -47,7 +53,7 @@ integration and guide context. Use this map before editing documentation.
 | I am a... | Start here |
 | --- | --- |
 | **First-time user or developer** | [`docs/GETTING_STARTED.md`](./docs/GETTING_STARTED.md) |
-| **AI coding agent / harness** | [`AGENTS.md`](./AGENTS.md) → [`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md) |
+| **AI coding agent / harness** | [`docs/AGENT_PROTOCOL_SUMMARY.md`](./docs/AGENT_PROTOCOL_SUMMARY.md) → [`AGENTS.md`](./AGENTS.md) → [`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md) |
 | **Technical auditor / Evaluator** | [`poc/README.md`](./poc/README.md) → [`poc/reports/poc-20260826-real-execution-technical-audit-v2.md`](./poc/reports/poc-20260826-real-execution-technical-audit-v2.md) |
 | **Harness integrator** | [`PROTOCOL_INTEGRATION.md`](./PROTOCOL_INTEGRATION.md) |
 | **External runtime / orchestrator integrator** | [`ORCHESTRATOR_INTEGRATION.md`](./ORCHESTRATOR_INTEGRATION.md) |
@@ -57,7 +63,7 @@ integration and guide context. Use this map before editing documentation.
 | **Fixing a broken or stale state** | [`docs/TROUBLESHOOTING.md`](./docs/TROUBLESHOOTING.md) |
 | **Looking for quick recipes** | [`docs/RECIPES.md`](./docs/RECIPES.md) |
 | **Documentation contributor** | [`docs/DOCUMENTATION_GUIDE.md`](./docs/DOCUMENTATION_GUIDE.md) |
-| **Release maintainer (current)** | [`docs/RELEASE_CHECKLIST_1_6_1.md`](./docs/RELEASE_CHECKLIST_1_6_1.md) |
+| **Release maintainer (current)** | [`docs/RELEASE_CHECKLIST.md`](./docs/RELEASE_CHECKLIST.md) |
 | **Release maintainer (historical 1.5/MCP)** | [`docs/RELEASE_CHECKLIST_1_5_MCP.md`](./docs/RELEASE_CHECKLIST_1_5_MCP.md) |
 | **Release maintainer (historical 1.4)** | [`docs/RELEASE_CHECKLIST_1_4.md`](./docs/RELEASE_CHECKLIST_1_4.md) |
 | **Protocol architect / maintainer** | [`LOOP_SYSTEM_DESIGN.md`](./LOOP_SYSTEM_DESIGN.md) + [`schemas/`](./schemas/) |
@@ -78,6 +84,7 @@ integration and guide context. Use this map before editing documentation.
 - **Integrate a new AI environment**: [`PROTOCOL_INTEGRATION.md`](./PROTOCOL_INTEGRATION.md)
 - **Map ForgeLoop state into an external runtime/orchestrator**: [`ORCHESTRATOR_INTEGRATION.md`](./ORCHESTRATOR_INTEGRATION.md)
 - **Edit documentation safely**: [`docs/DOCUMENTATION_GUIDE.md`](./docs/DOCUMENTATION_GUIDE.md)
+- **Verify source-content attestations**: [`docs/CODE_ATTESTATION.md`](./docs/CODE_ATTESTATION.md)
 
 `README.md` is intentionally a catalog and quickstart. Do not copy the full
 process into adapters or README sections; link to the canonical source.
@@ -97,7 +104,8 @@ process into adapters or README sections; link to the canonical source.
 ## Verification and release
 
 The Node regression suite, ESLint, c8, dependency policy, package boundary,
-and Archify diagram render are the local executable checks. Python validators remain
+attestation coverage, generated summaries/completions, and Archify diagram
+render are the local executable checks. Python validators remain
 frozen CI-only compatibility tools because they cover historical Markdown,
 loop, and secret-scanning contracts that have not been migrated to Node. Their
 scope, exact commands, and migration boundary are recorded in
@@ -121,3 +129,6 @@ uses trusted OIDC publishing and is not implied by local verification.
   external publication or production state.
 - Run `npm run lint`, `npm run coverage`, `npm run pack:check`, and the Python
   CI-only validators proportionally to the change.
+- Run `npm run summary:check`, `npm run completions:check`, and
+  `npm run changelog:check` when changing registries, release metadata, or
+  documentation.

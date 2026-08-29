@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "taskId": "fixture",
+  "requestedMode": "AUTO",
+  "resolvedMode": "FULL",
+  "verificationCycle": 1,
+  "changedPaths": ["src/index.js"],
+  "claimedPaths": ["src"],
+  "selectedPaths": [],
+  "reasons": ["Full verification was explicitly requested."],
+  "fallback": null,
+  "contractFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "repositoryFingerprint": {},
+  "claimsFingerprint": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "createdAt": "2026-08-29T00:00:00.000Z"
+}

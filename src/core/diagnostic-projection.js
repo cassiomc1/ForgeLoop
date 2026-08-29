@@ -30,7 +30,9 @@ export function resolveCurrentCycleDiagnostic(events, taskId, verificationCycle)
   const candidates = diagnosticEventsForTask(events, taskId)
     .filter((event) => {
       const cycle = event.details?.verificationCycle;
-      return verificationCycle == null || cycle == null || cycle === verificationCycle;
+      return (verificationCycle === null || verificationCycle === undefined)
+        || (cycle === null || cycle === undefined)
+        || cycle === verificationCycle;
     })
     .sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0));
 

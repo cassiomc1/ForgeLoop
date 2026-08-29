@@ -17,6 +17,7 @@ test("npm tarball contains the CLI, templates, and license notices only", () => 
   for (const expected of [
     "src/cli.js",
     "src/integration.js",
+    "src/integration.d.ts",
     "src/core/command-runtime.js",
     "src/core/command-executors.js",
     "src/core/command-input.js",
@@ -29,7 +30,7 @@ test("npm tarball contains the CLI, templates, and license notices only", () => 
     "src/core/verification-capability.js",
     "src/core/task-claim-state.js",
     "src/core/recovery-history.js",
-    ...TEMPLATE_PATHS.filter((relativePath) => relativePath !== ".forgeloop/.gitignore"),
+    ...TEMPLATE_PATHS.filter((relativePath) => ![".forgeloop/.gitignore", "AGENT_COMPATIBILITY.md"].includes(relativePath)),
     ".forgeloop/forgeloop.gitignore",
     "QUALITY_SCORECARD.md",
     "TERMINOLOGY.md",
@@ -53,11 +54,14 @@ test("npm tarball contains the CLI, templates, and license notices only", () => 
     "CONTRACT_COVERAGE.md",
     "PROTOCOL_INTEGRATION.md",
     "DOCS_INDEX.md",
-    "docs/RELEASE_CHECKLIST_1_4.md",
+    "docs/RELEASE_CHECKLIST.md",
     "docs/MCP.md",
     "docs/UNIVERSAL_INTEGRATION.md",
-    "docs/RELEASE_CHECKLIST_1_5_MCP.md",
-    "docs/RELEASE_CHECKLIST_1_6_1.md",
+    "docs/CODE_ATTESTATION.md",
+    "docs/REVISION_PROVIDERS.md",
+    "docs/SIGNING_PROVIDERS.md",
+    "docs/PLATFORM_ADAPTERS.md",
+    "docs/AGENT_PROTOCOL_SUMMARY.md",
     "docs/diagrams/README.md",
     "docs/diagrams/manifest.json",
     "docs/diagrams/forgeloop-engineering-flow.workflow.json",
@@ -67,6 +71,10 @@ test("npm tarball contains the CLI, templates, and license notices only", () => 
     "scripts/CI_VALIDATORS.md",
     "LICENSE",
     "LICENSE-DOCS.md",
+    "completions/forgeloop.bash",
+    "completions/_forgeloop",
+    "completions/forgeloop.fish",
+    "integrations/generic-ci/verify.sh",
   ]) {
     assert.ok(listing.includes(expected), `missing ${expected}`);
   }
@@ -77,8 +85,11 @@ test("npm tarball contains the CLI, templates, and license notices only", () => 
     ".forgeloop/work-state.json",
     "docs/assets/eng_readme_forgeloop.png",
     "docs/superpowers/plans/2026-08-11-10-of-10-roadmap-implementation.md",
+    "docs/RELEASE_CHECKLIST_1_4.md",
+    "docs/RELEASE_CHECKLIST_1_5_MCP.md",
+    "docs/RELEASE_CHECKLIST_1_6_1.md",
     // The MCP package ships separately, never inside the core tarball.
-    ...listing.filter((entry) => entry.startsWith("integrations/")),
+    ...listing.filter((entry) => entry.startsWith("integrations/mcp/")),
   ]) {
     assert.equal(listing.includes(excluded), false, `unexpected ${excluded}`);
   }
@@ -116,10 +127,10 @@ test("release workflow uses a compatible OIDC publishing toolchain", async () =>
 
   assert.match(workflow, /setup-node@820762786026740c76f36085b0efc47a31fe5020/);
   assert.match(workflow, /node-version: 24/);
-  assert.match(workflow, /npm publish --access public\n/);
+  assert.match(workflow, /npm publish --provenance --access public\n/);
   assert.match(workflow, /scripts\/validate_markdown.py --self-test/);
   assert.match(workflow, /scripts\/validate_markdown.py\n/);
-  assert.doesNotMatch(workflow, /--provenance/);
+  assert.match(workflow, /--provenance/);
 });
 
 test("supported Node engine versions are exercised in docs CI", async () => {
@@ -136,6 +147,15 @@ test("supported Node engine versions are exercised in docs CI", async () => {
     workflow,
     /actions\/setup-node@820762786026740c76f36085b0efc47a31fe5020/,
   );
+});
+
+test("published package metadata declares the repository license and integration types", async () => {
+  const packageJson = JSON.parse(await readFile("package.json", "utf8"));
+  const mcpPackageJson = JSON.parse(await readFile("integrations/mcp/package.json", "utf8"));
+  assert.equal(packageJson.license, "MIT");
+  assert.equal(mcpPackageJson.license, "MIT");
+  assert.equal(packageJson.exports?.["./integration"]?.types, "./src/integration.d.ts");
+  assert.ok(packageJson.files.includes("src"));
 });
 
 test("documentation manifest packaged:true entries always ship in the core tarball", async () => {

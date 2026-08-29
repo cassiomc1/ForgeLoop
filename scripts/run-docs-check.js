@@ -24,6 +24,11 @@ const steps = [
     args: ["--check"],
   },
   {
+    name: "Generated Agent Summary Freshness",
+    script: "scripts/generate-agent-protocol-summary.mjs",
+    args: ["--check"],
+  },
+  {
     name: "Documentation Conformance Validation",
     script: "scripts/validate_documentation_conformance.mjs",
     args: [],

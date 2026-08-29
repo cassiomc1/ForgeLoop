@@ -148,6 +148,42 @@ export function validateKnownEventDetails(event) {
         throw protocolError("E_EVENT_INVALID", "TRAJECTORY_EVALUATED requires a bound evaluationId, scenarioId, and fingerprint");
       }
       return;
+    case "WORKSPACE_BOUND":
+      assertStructuredArtifactEvent(event, ["workspaceFingerprint"], "WORKSPACE_BOUND");
+      return;
+    case "HANDOFF_CREATED":
+      if (!event.details || typeof event.details !== "object" || Array.isArray(event.details)
+        || typeof event.details.handoffId !== "string" || !/^handoff-[A-Za-z0-9_-]+$/.test(event.details.handoffId)
+        || typeof event.details.artifact !== "string" || !event.details.artifact
+        || typeof event.details.digest !== "string") {
+        throw protocolError("E_EVENT_INVALID", "HANDOFF_CREATED requires a handoff ID, artifact path, and digest");
+      }
+      assertFingerprint(event.details.digest, "HANDOFF_CREATED details.digest");
+      return;
+    case "RESPONSIBILITY_SET":
+      assertStructuredArtifactEvent(event, ["responsibilityFingerprint"], "RESPONSIBILITY_SET");
+      if (typeof event.details.label !== "string" || !event.details.label) {
+        throw protocolError("E_EVENT_INVALID", "RESPONSIBILITY_SET details.label must be a non-empty string");
+      }
+      return;
+    case "VERIFICATION_SCOPE_CAPTURED":
+      assertStructuredArtifactEvent(event, ["scopeFingerprint"], "VERIFICATION_SCOPE_CAPTURED");
+      if (!["AUTO", "CHANGED", "CLAIMED", "FULL"].includes(event.details.resolvedMode)
+        || !Number.isInteger(event.details.verificationCycle) || event.details.verificationCycle < 1) {
+        throw protocolError("E_EVENT_INVALID", "VERIFICATION_SCOPE_CAPTURED requires a valid mode and verification cycle");
+      }
+      return;
+    case "CODE_MANIFEST_CAPTURED":
+      assertStructuredArtifactEvent(event, ["manifestFingerprint"], "CODE_MANIFEST_CAPTURED");
+      assertFingerprint(event.details.contentDigest, "CODE_MANIFEST_CAPTURED details.contentDigest");
+      if (!Number.isInteger(event.details.coveredPaths) || event.details.coveredPaths < 0) {
+        throw protocolError("E_EVENT_INVALID", "CODE_MANIFEST_CAPTURED details.coveredPaths must be a non-negative integer");
+      }
+      return;
+    case "ATTESTATION_STATEMENT_CREATED":
+      assertStructuredArtifactEvent(event, ["statementFingerprint"], "ATTESTATION_STATEMENT_CREATED");
+      assertFingerprint(event.details.manifestFingerprint, "ATTESTATION_STATEMENT_CREATED details.manifestFingerprint");
+      return;
     default:
       if (isActionEventName(event.event)) {
         assertActionEventDetails(event);
@@ -164,6 +200,27 @@ export function validateKnownEventDetails(event) {
 function assertStringList(value, label) {
   if (!Array.isArray(value) || value.some((item) => typeof item !== "string" || !item)) {
     throw protocolError("E_EVENT_INVALID", `${label} must be an array of non-empty strings`);
+  }
+}
+
+function assertFingerprint(value, label) {
+  if (typeof value !== "string" || !/^[a-f0-9]{64}$/.test(value)) {
+    throw protocolError("E_EVENT_INVALID", `${label} must be a lowercase SHA-256 fingerprint`);
+  }
+}
+
+function assertStructuredArtifactEvent(event, requiredDetails, label) {
+  if (!event.details || typeof event.details !== "object" || Array.isArray(event.details)) {
+    throw protocolError("E_EVENT_INVALID", `${label} requires structured details`);
+  }
+  for (const key of requiredDetails) {
+    if (typeof event.details[key] !== "string" || !event.details[key]) {
+      throw protocolError("E_EVENT_INVALID", `${label} details.${key} must be a non-empty string`);
+    }
+    assertFingerprint(event.details[key], `${label} details.${key}`);
+  }
+  if (event.fingerprint !== event.details[requiredDetails[0]]) {
+    throw protocolError("E_EVENT_INVALID", `${label} fingerprint must match details.${requiredDetails[0]}`);
   }
 }
 
@@ -221,6 +278,44 @@ export function eventHash(event) {
   return canonicalFingerprint(body);
 }
 
+export function buildProtocolEvent(input, { checkpoint } = {}) {
+  if (!checkpoint || !Number.isInteger(checkpoint.seq) || checkpoint.seq < 0
+    || (checkpoint.lastHash !== null && !/^[a-f0-9]{64}$/.test(checkpoint.lastHash))) {
+    throw protocolError("E_EVENT_INVALID", "event checkpoint is invalid");
+  }
+  const event = {
+    seq: checkpoint.seq + 1,
+    schemaVersion: EVENT_SCHEMA_VERSION,
+    protocolVersion: PROTOCOL_VERSION,
+    taskId: input.taskId,
+    event: input.event,
+    at: input.at ?? new Date().toISOString(),
+    ...(input.fingerprint ? { fingerprint: input.fingerprint } : {}),
+    previousHash: checkpoint.lastHash,
+    ...(input.details ? { details: structuredClone(input.details) } : {}),
+  };
+  validateKnownEventDetails(event);
+  assertSecretFree(event);
+  event.hash = eventHash(event);
+  return event;
+}
+
+export async function previewProtocolEvent(target, input, packageRoot, options = {}) {
+  const activeTransaction = getActiveTaskTransaction();
+  if (!activeTransaction) {
+    return withTaskTransaction({
+      target,
+      taskId: options.taskId ?? input.taskId,
+      lockTaskId: options.taskId ?? input.taskId,
+      operation: "preview-event",
+      packageRoot,
+    }, async () => previewProtocolEvent(target, input, packageRoot, options));
+  }
+  const relPath = options?.eventsPath ?? options?.relativePath ?? (options?.taskId ? taskArtifactPath(options.taskId, "events") : ARTIFACT_PATHS.events);
+  const checkpoint = await readEventCheckpoint(target, packageRoot, relPath, options, activeTransaction);
+  return buildProtocolEvent(input, { checkpoint });
+}
+
 function protocolError(code, message, artifacts = [ARTIFACT_PATHS.events]) {
   const error = new Error(message);
   error.code = code;
@@ -232,6 +327,11 @@ export async function readEvents(target, packageRoot, options = {}) {
   const relPath = options?.eventsPath ?? options?.relativePath ?? (options?.taskId ? taskArtifactPath(options.taskId, "events") : ARTIFACT_PATHS.events);
   await assertSafePath(target, relPath);
   const eventsPath = ensureWithin(target, relPath);
+  const transaction = getActiveTaskTransaction();
+  if (transaction) {
+    const stagedText = await transaction.readText(relPath);
+    if (stagedText !== null) return parseEventsText(stagedText, relPath, packageRoot);
+  }
   if (!(await fileExists(eventsPath))) return [];
   const text = await readFile(eventsPath, "utf8");
   return parseEventsText(text, relPath, packageRoot);
@@ -245,6 +345,14 @@ export async function readEventTail(target, packageRoot, options = {}) {
   const relPath = options?.eventsPath ?? options?.relativePath ?? (options?.taskId ? taskArtifactPath(options.taskId, "events") : ARTIFACT_PATHS.events);
   await assertSafePath(target, relPath);
   const eventsPath = ensureWithin(target, relPath);
+  const transaction = getActiveTaskTransaction();
+  if (transaction) {
+    const stagedText = await transaction.readText(relPath);
+    if (stagedText !== null) {
+      const lines = stagedText.split(/\r?\n/).filter((line) => line.trim() !== "");
+      return parseEventsText(lines.slice(-limit).join("\n"), relPath, packageRoot);
+    }
+  }
   if (!(await fileExists(eventsPath))) return [];
   const size = (await stat(eventsPath)).size;
   let window = Math.min(size, 64 * 1024);
@@ -306,19 +414,7 @@ export async function appendProtocolEvent(target, input, packageRoot, options = 
     }, async () => appendProtocolEvent(target, input, packageRoot, options));
   }
   const checkpoint = await readEventCheckpoint(target, packageRoot, relPath, options, activeTransaction);
-  const event = {
-    seq: checkpoint.seq + 1,
-    schemaVersion: EVENT_SCHEMA_VERSION,
-    protocolVersion: PROTOCOL_VERSION,
-    taskId: input.taskId,
-    event: input.event,
-    at: input.at ?? new Date().toISOString(),
-    ...(input.fingerprint ? { fingerprint: input.fingerprint } : {}),
-    previousHash: checkpoint.lastHash,
-    ...(input.details ? { details: structuredClone(input.details) } : {}),
-  };
-  validateKnownEventDetails(event);
-  assertSecretFree(event);
+  const event = buildProtocolEvent(input, { checkpoint });
   const schema = await readSchema("event", packageRoot);
   assertSchema(event, schema, relPath);
   event.hash = eventHash(event);

@@ -1,0 +1,50 @@
+# ForgeLoop Release Checklist
+
+This is the current release checklist for `@cassiomc1/forgeloop`. It is a
+preparation and verification checklist; it does not authorize publication.
+
+## Contract and package identity
+
+- [ ] `package.json` and `package-lock.json` contain the same package version.
+- [ ] The package metadata declares the intended SPDX license (`MIT`).
+- [ ] `PROTOCOL_VERSION` and the integration API version remain compatible.
+- [ ] `npm run release:identity` passes for the candidate version.
+- [ ] No release tag or registry version collision exists.
+
+## Protocol and attestation
+
+- [ ] `npm run dependency:policy` passes without adding runtime dependencies.
+- [ ] `npm run lint` passes.
+- [ ] `npm test` passes.
+- [ ] `npm run coverage` passes the configured global and critical-module gates.
+- [ ] `npm run docs:check`, `npm run docs:generated:check`,
+      `npm run docs:conformance`, and `npm run docs:examples:check` pass.
+- [ ] `npm run completions:check` and `npm run summary:check` pass.
+- [ ] Workspace binding, handoff, responsibility, verification scope, revision,
+      manifest, statement, signature, and range-coverage tests pass.
+- [ ] Required attestation mode never leaves a task durably `COMPLETE` without
+      its code manifest.
+- [ ] Read-only attestation verification does not write task state or ledger
+      events.
+
+## Integration and cross-platform evidence
+
+- [ ] `npm run pack:check` and `npm run pack:smoke` pass.
+- [ ] `npm run mcp:test` either runs the configured MCP tests or reports the
+      single actionable setup prerequisite.
+- [ ] `npm run mcp:pack:check` passes when MCP dependencies are available.
+- [ ] Generic CI verification uses explicit provider, base, and head revisions.
+- [ ] Windows full-suite evidence is green on the main branch when scheduled.
+- [ ] Frozen Python 3.9+ validators pass with `python3 -m unittest discover -s tests`.
+- [ ] Secret scanning and Markdown validation pass.
+
+## Publication boundary
+
+- [ ] The exact validated commit is the release source.
+- [ ] GitHub Actions remain immutably pinned and use least-privilege permissions.
+- [ ] The npm workflow retains trusted OIDC publishing and explicit provenance.
+- [ ] Publication is performed only by the authorized release workflow.
+- [ ] Post-publication registry, tag, checksum, and release identity checks pass.
+
+Local package creation, a successful validation run, or a signed ForgeLoop
+attestation does not by itself prove npm publication or production deployment.

@@ -201,9 +201,9 @@ test("completion CLI rejects malformed details and command-specific options", ()
     encoding: "utf8",
   });
 
-  assert.equal(malformed.status, 1);
+  assert.equal(malformed.status, 2);
   assert.match(malformed.stderr, /valid JSON/i);
-  assert.equal(unrelated.status, 1);
+  assert.equal(unrelated.status, 2);
   assert.match(unrelated.stderr, /not valid/i);
 });
 

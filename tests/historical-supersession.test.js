@@ -115,7 +115,7 @@ test("Test A & D: Historical Fail in cycle 1 -> New Pass in cycle 2 with same ID
     await advanceWorkState(target, "CORRECTING", { packageRoot });
     await advanceWorkState(target, "VERIFYING", { packageRoot });
 
-    let state = await readWorkState(target, packageRoot);
+    const state = await readWorkState(target, packageRoot);
     assert.equal(state.verificationCycle, 2);
 
     // Cycle 2: record passing check with same ID
@@ -183,7 +183,7 @@ test("Test E: Historical Fail in cycle 1 -> New Pass in cycle 2 with DIFFERENT c
     });
 
     // Verify historical check is still persisted
-    let state = await readWorkState(target, packageRoot);
+    const state = await readWorkState(target, packageRoot);
     assert.equal(state.checks.length, 2);
     assert.ok(state.checks.some((c) => c.id === "tests-old" && c.status === "failed"));
     assert.ok(state.checks.some((c) => c.id === "tests-new" && c.status === "passed"));

@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "protocol": {
+    "name": "ForgeLoop",
+    "protocolVersion": 1
+  },
+  "task": {
+    "taskId": "fixture",
+    "verificationCycle": 1
+  },
+  "content": {
+    "manifestFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "contentDigest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "coveredPaths": []
+  },
+  "evidence": {
+    "contractFingerprint": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "routeFingerprint": null,
+    "stateFingerprint": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "receiptFingerprint": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "ledgerSeq": 1,
+    "ledgerHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+  },
+  "verification": {
+    "completion": "VALID",
+    "audit": "VALID"
+  }
+}

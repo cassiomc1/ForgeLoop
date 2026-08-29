@@ -20,6 +20,11 @@ export const TASK_ARTIFACT_FILES = Object.freeze({
   evaluations: "evaluations",
   policySnapshot: "policy-snapshot.json",
   recovery: "recovery.json",
+  workspaceBinding: "workspace-binding.json",
+  handoffs: "handoffs",
+  responsibility: "responsibility.json",
+  verificationScope: "verification-scope.json",
+  attestations: "attestations",
 });
 
 export const POLICY_ROOT = ".forgeloop/policy";
@@ -99,6 +104,65 @@ export function taskEvaluationPath(taskId, evaluationId) {
   return `${taskDirectory(taskId)}/${TASK_ARTIFACT_FILES.evaluations}/${evaluationId}.json`;
 }
 
+function assertArtifactId(value, pattern, label) {
+  if (typeof value !== "string" || !pattern.test(value)) {
+    throw new Error(`Invalid ${label}: ${value}`);
+  }
+  return value;
+}
+
+export function taskWorkspaceBindingPath(taskId) {
+  return taskArtifactPath(taskId, "workspaceBinding");
+}
+
+export function taskResponsibilityPath(taskId) {
+  return taskArtifactPath(taskId, "responsibility");
+}
+
+export function taskVerificationScopePath(taskId) {
+  return taskArtifactPath(taskId, "verificationScope");
+}
+
+export function taskHandoffDirectory(taskId) {
+  return taskArtifactPath(taskId, "handoffs");
+}
+
+export function taskHandoffPath(taskId, handoffId) {
+  assertArtifactId(handoffId, /^handoff-[A-Za-z0-9_-]+$/, "handoff ID");
+  return `${taskHandoffDirectory(taskId)}/${handoffId}.json`;
+}
+
+export function taskAttestationDirectory(taskId) {
+  return taskArtifactPath(taskId, "attestations");
+}
+
+export function taskCodeManifestPath(taskId) {
+  return `${taskAttestationDirectory(taskId)}/code-manifest.json`;
+}
+
+export function taskAttestationStatementPath(taskId) {
+  return `${taskAttestationDirectory(taskId)}/statement.json`;
+}
+
+export function taskAttestationBundlePath(taskId) {
+  return `${taskAttestationDirectory(taskId)}/statement.sigstore.json`;
+}
+
+export function taskAttestationHistoryDirectory(taskId, verificationCycle) {
+  if (!Number.isInteger(verificationCycle) || verificationCycle < 1) {
+    throw new Error(`Invalid attestation verification cycle: ${verificationCycle}`);
+  }
+  return `${taskAttestationDirectory(taskId)}/history/cycle-${verificationCycle}`;
+}
+
+export function taskCodeManifestHistoryPath(taskId, verificationCycle) {
+  return `${taskAttestationHistoryDirectory(taskId, verificationCycle)}/code-manifest.json`;
+}
+
+export function taskAttestationStatementHistoryPath(taskId, verificationCycle) {
+  return `${taskAttestationHistoryDirectory(taskId, verificationCycle)}/statement.json`;
+}
+
 export function taskLockPath(taskId) {
   assertTaskId(taskId);
   return `${TASK_LOCK_ROOT}/${taskStorageKey(taskId)}.lock`;
@@ -132,5 +196,13 @@ export function buildTaskArtifactPaths(taskId) {
     lock: taskLockPath(taskId),
     policySnapshot: `${dir}/${TASK_ARTIFACT_FILES.policySnapshot}`,
     recovery: `${dir}/${TASK_ARTIFACT_FILES.recovery}`,
+    workspaceBinding: `${dir}/${TASK_ARTIFACT_FILES.workspaceBinding}`,
+    handoffs: `${dir}/${TASK_ARTIFACT_FILES.handoffs}`,
+    responsibility: `${dir}/${TASK_ARTIFACT_FILES.responsibility}`,
+    verificationScope: `${dir}/${TASK_ARTIFACT_FILES.verificationScope}`,
+    attestations: `${dir}/${TASK_ARTIFACT_FILES.attestations}`,
+    codeManifest: taskCodeManifestPath(taskId),
+    attestationStatement: taskAttestationStatementPath(taskId),
+    attestationBundle: taskAttestationBundlePath(taskId),
   });
 }

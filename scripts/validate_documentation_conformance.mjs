@@ -421,6 +421,8 @@ export async function validateDocumentationConformance({ rootDir = repositoryRoo
   const docTagPattern = /<!--\s*forgeloop-doc:\s*schema=([a-z0-9_-]+)\s+artifact=(.+?)\s*-->/g;
   let match;
   const taggedArtifacts = new Map();
+  const externalDocTagPattern = /<!--\s*forgeloop-doc:\s*external-artifact=(.+?)\s*-->/g;
+  const taggedExternalArtifacts = new Map();
 
   while ((match = docTagPattern.exec(artifactDocContent)) !== null) {
     const [, schemaName, rawArtifactPath] = match;
@@ -434,9 +436,22 @@ export async function validateDocumentationConformance({ rootDir = repositoryRoo
     taggedArtifacts.set(schemaName, { artifactPath, sectionContent });
   }
 
+  while ((match = externalDocTagPattern.exec(artifactDocContent)) !== null) {
+    const artifactPath = match[1].trim();
+    taggedExternalArtifacts.set(artifactPath, { artifactPath, sectionContent: artifactDocContent.slice(match.index) });
+  }
+
   // Ensure all public registered artifacts with a schema are covered
   for (const [key, artifactInfo] of Object.entries(ARTIFACT_REGISTRY)) {
     if (!artifactInfo.isPublic) continue;
+    if (artifactInfo.schema === null) {
+      if (!taggedExternalArtifacts.has(artifactInfo.path)) {
+        errors.push(
+          `DOC_ARTIFACT_SECTION_MISSING: Artifact "${key}" with external format is missing a tagged section in docs/ARTIFACT_REFERENCE.md`,
+        );
+      }
+      continue;
+    }
     if (!taggedArtifacts.has(artifactInfo.schema)) {
       errors.push(
         `DOC_ARTIFACT_SECTION_MISSING: Artifact "${key}" with schema "${artifactInfo.schema}" is missing a tagged section in docs/ARTIFACT_REFERENCE.md`,

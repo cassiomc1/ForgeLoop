@@ -4,6 +4,7 @@ import {
 } from "../core/completion-artifacts.js";
 import { runCommandExecution } from "../core/execution.js";
 import { withTaskMutation } from "../core/task-command.js";
+import { readVerificationScope, validateVerificationScopeFreshness } from "../core/verification-scope.js";
 
 export async function runCheck({
   target,
@@ -13,6 +14,7 @@ export async function runCheck({
   argv,
   details,
   timeoutMs,
+  scopeRef,
   authorityContext,
   runtimeContext,
   taskId,
@@ -25,6 +27,28 @@ export async function runCheck({
   }
   return withTaskMutation(target, { taskId: taskId ?? task, packageRoot }, "run-check", async (ctx) => {
     const effectiveTaskId = ctx?.taskId ?? null;
+    let executionDetails = details;
+    if (scopeRef) {
+      const scope = await readVerificationScope(target, {
+        packageRoot,
+        taskId: effectiveTaskId,
+        scopePath: scopeRef,
+      });
+      await validateVerificationScopeFreshness(target, {
+        packageRoot,
+        taskId: effectiveTaskId,
+        scope: scope.value,
+      });
+      executionDetails = {
+        ...(details ?? {}),
+        verificationScope: {
+          ref: scope.path,
+          fingerprint: scope.fingerprint,
+          mode: scope.value.resolvedMode,
+          selectedPaths: scope.value.selectedPaths,
+        },
+      };
+    }
     const ready = await assertRecordCheckPrerequisites({
       target,
       packageRoot,
@@ -44,7 +68,7 @@ export async function runCheck({
       requirement,
       verificationCycle,
       argv,
-      details,
+      details: executionDetails,
       timeoutMs,
       authorityContext,
       runtimeContext,
@@ -62,7 +86,7 @@ export async function runCheck({
       command: execution.execution.argv.join(" "),
       result: execution.result,
       ...(execution.execution.exitCode === null ? {} : { exitCode: execution.execution.exitCode }),
-      details,
+      details: executionDetails,
       executionRef: execution.execution.executionId,
       provenance: "FORGELOOP_EXECUTED",
       authorityContext,

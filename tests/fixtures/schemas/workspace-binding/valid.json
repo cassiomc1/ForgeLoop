@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "taskId": "fixture",
+  "mode": "GIT_WORKTREE",
+  "repositoryIdentity": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "workspaceIdentity": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "branchAtBind": "fixture",
+  "headAtBind": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "boundAt": "2026-08-29T00:00:00.000Z",
+  "metadata": {}
+}

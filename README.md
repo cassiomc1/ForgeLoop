@@ -31,11 +31,13 @@ relevant guides.
 - **Inspect a real ForgeLoop execution** → [`poc/README.md`](./poc/README.md)
 - **Full protocol specification** → [`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md)
 - **Integrating an AI harness** → [`PROTOCOL_INTEGRATION.md`](./PROTOCOL_INTEGRATION.md)
+- **Agent bootstrap summary** → [`docs/AGENT_PROTOCOL_SUMMARY.md`](./docs/AGENT_PROTOCOL_SUMMARY.md)
 - **Continuing another harness's task** → [`docs/CROSS_HARNESS_CONTINUITY.md`](./docs/CROSS_HARNESS_CONTINUITY.md)
 - **CLI command reference** → [`docs/CLI_REFERENCE.md`](./docs/CLI_REFERENCE.md)
 - **Artifact & schema reference** → [`docs/ARTIFACT_REFERENCE.md`](./docs/ARTIFACT_REFERENCE.md)
 - **Operational recipes** → [`docs/RECIPES.md`](./docs/RECIPES.md)
 - **Troubleshooting & error codes** → [`docs/TROUBLESHOOTING.md`](./docs/TROUBLESHOOTING.md)
+- **Code attestation & revision coverage** → [`docs/CODE_ATTESTATION.md`](./docs/CODE_ATTESTATION.md)
 - **System architecture & safety** → [`LOOP_SYSTEM_DESIGN.md`](./LOOP_SYSTEM_DESIGN.md) & [`THREAT_MODEL.md`](./THREAT_MODEL.md)
 - **Documentation index & ownership** → [`DOCS_INDEX.md`](./DOCS_INDEX.md)
 
@@ -113,6 +115,14 @@ forgeloop next --task demo --json
 
 The last command reports the next safe action; it does not execute code or
 schedule agents.
+
+### Optional code attestation
+
+Projects may opt into source-content attestation after a valid completion. The
+attestation binds an exact source snapshot to the ForgeLoop evidence chain; it
+does not prove authorship or absolute security. See
+[`docs/CODE_ATTESTATION.md`](./docs/CODE_ATTESTATION.md) for configuration,
+read-only verification, signatures, and revision-range coverage.
 
 ### Durable external actions
 
@@ -440,6 +450,9 @@ npm run pack:check
 npm run dependency:policy
 npm run docs:diagrams
 npm run docs:check
+npm run completions:check
+npm run summary:check
+npm run changelog:check
 ```
 
 ## Repository structure

@@ -389,7 +389,57 @@ forgeloop task-migrate --json
 
 ---
 
-## 8. Next Steps
+## 8. Optional workspace and verification boundaries
+
+For a task that must remain in one Git worktree, bind it explicitly and check
+the derived status before mutation:
+
+```bash
+forgeloop workspace-bind --task <taskId> --json
+forgeloop workspace-status --task <taskId> --json
+```
+
+Record a deterministic handoff snapshot or an optional pass constraint when
+the workflow needs those boundaries:
+
+```bash
+forgeloop handoff-create --task <taskId> --note "Continue verification" --json
+forgeloop responsibility-set --task <taskId> --label implementation --allowed-path src --json
+forgeloop verify-scope --task <taskId> --mode auto --json
+```
+
+The workspace binding, handoff, responsibility, and verification-scope
+artifacts are optional. They constrain or describe the task; they do not grant
+identity, delegation, authorship, or completion authority.
+
+## 9. Optional code attestation
+
+When the project enables attestation, completion captures a source-content
+manifest transactionally. After completion, create and inspect the deterministic
+statement:
+
+```bash
+forgeloop attestation-create --task <taskId> --json
+forgeloop attestation-status --task <taskId> --json
+forgeloop attestation-verify --task <taskId> --ref HEAD --json
+```
+
+For a revision range, use the provider-neutral coverage command:
+
+```bash
+forgeloop attestation-verify-range \
+  --revision-provider git \
+  --base origin/main \
+  --head HEAD \
+  --require-complete-coverage \
+  --json
+```
+
+Verification commands are read-only. A valid source manifest proves exact
+content binding to ForgeLoop evidence; only an additional valid external
+signature can raise the trust level to `ATTESTED`.
+
+## 10. Next Steps
 
 - Continue a task across different AI harnesses: [`docs/CROSS_HARNESS_CONTINUITY.md`](./CROSS_HARNESS_CONTINUITY.md)
 - Optional: use ForgeLoop through MCP or the Integration API — [`docs/MCP.md`](./MCP.md) and [`docs/UNIVERSAL_INTEGRATION.md`](./UNIVERSAL_INTEGRATION.md). MCP is not required; CLI and MCP share the same canonical project/task state.
@@ -397,3 +447,4 @@ forgeloop task-migrate --json
 - Artifact and schema reference: [`docs/ARTIFACT_REFERENCE.md`](./ARTIFACT_REFERENCE.md)
 - Common symptoms and recovery: [`docs/TROUBLESHOOTING.md`](./TROUBLESHOOTING.md)
 - Real-world operational recipes: [`docs/RECIPES.md`](./RECIPES.md)
+- Code attestation and revision coverage: [`docs/CODE_ATTESTATION.md`](./CODE_ATTESTATION.md)

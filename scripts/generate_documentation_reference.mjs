@@ -400,7 +400,7 @@ export function getDocumentationGenerationTargets() {
 
   // Schema field regions for artifacts
   for (const artifact of Object.values(ARTIFACT_REGISTRY)) {
-    if (!artifact.isPublic) continue;
+    if (!artifact.isPublic || !artifact.schema) continue;
     targets.push({
       file: "docs/ARTIFACT_REFERENCE.md",
       region: `schema:${artifact.schema}`,
