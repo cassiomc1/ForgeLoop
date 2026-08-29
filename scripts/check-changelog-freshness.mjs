@@ -26,9 +26,28 @@ export function unreleasedSection(changelog) {
   return nextHeading ? rest.slice(0, nextHeading.index) : rest;
 }
 
+export function stripHtmlComments(value) {
+  const chunks = [];
+  let cursor = 0;
+
+  while (cursor < value.length) {
+    const commentStart = value.indexOf("<!--", cursor);
+    if (commentStart === -1) {
+      chunks.push(value.slice(cursor));
+      break;
+    }
+
+    chunks.push(value.slice(cursor, commentStart));
+    const commentEnd = value.indexOf("-->", commentStart + 4);
+    if (commentEnd === -1) break;
+    cursor = commentEnd + 3;
+  }
+
+  return chunks.join("");
+}
+
 export function hasMeaningfulUnreleasedContent(section) {
-  return section
-    .replace(/<!--([\s\S]*?)-->/gu, "")
+  return stripHtmlComments(section)
     .split("\n")
     .map((line) => line.trim())
     .some((line) => line && !/^No changes\.?$/iu.test(line));
