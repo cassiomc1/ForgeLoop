@@ -44,7 +44,8 @@ test("MCP test wrapper reports one actionable prerequisite without installing", 
 test("MCP test wrapper launches the discovered suite with literal argv and preserves exit codes", async () => {
   const root = await makeFixture(true);
   try {
-    assert.deepEqual(await resolveMcpTestFiles(root), ["tests/fixture.test.js"]);
+    const fixturePath = path.join("tests", "fixture.test.js");
+    assert.deepEqual(await resolveMcpTestFiles(root), [fixturePath]);
     let invocation;
     const exitCode = await runMcpTests({
       root,
@@ -59,7 +60,7 @@ test("MCP test wrapper launches the discovered suite with literal argv and prese
       },
     });
     assert.equal(exitCode, 7);
-    assert.deepEqual(invocation.args, ["--test", "tests/fixture.test.js"]);
+    assert.deepEqual(invocation.args, ["--test", fixturePath]);
     assert.equal(invocation.command, process.execPath);
     assert.equal(invocation.options.cwd, root);
     assert.equal(invocation.options.shell, false);

@@ -21,7 +21,7 @@ test("Sigstore provider uses bounded argument-based execution and keeps signing 
     assert.equal((await provider.sign({ target, statementPath: "statement.json", bundlePath: "statement.sigstore.json" })).status, "VALID");
     assert.equal((await provider.verify({ target, statementPath: "statement.json", bundlePath: "statement.sigstore.json", policy: { identity: "https://example.invalid/workflow" } })).status, "VALID");
     assert.ok(calls.every((call) => call.options.shell === false));
-    assert.deepEqual(calls[1].args.slice(0, 3), ["attest-blob", "--statement", `${target}/statement.json`]);
+    assert.deepEqual(calls[1].args.slice(0, 3), ["attest-blob", "--statement", path.join(target, "statement.json")]);
     assert.ok(calls[2].args.includes("--certificate-identity"));
   } finally {
     await rm(target, { recursive: true, force: true });
