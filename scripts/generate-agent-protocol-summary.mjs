@@ -65,7 +65,7 @@ async function render() {
 
 ForgeLoop is a portable protocol and support CLI for verifiable engineering workflows. It records and validates task state, contracts, routing, checks, evidence, continuity, and optional code attestations. It does not become an agent scheduler, delegation service, source-control authority, or secret manager.
 
-Protocol version: ${info.protocolVersion}  
+Protocol version: ${info.protocolVersion}
 Package version: ${packageJson.version}
 
 ## Canonical loop

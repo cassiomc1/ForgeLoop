@@ -89,4 +89,3 @@ export declare function classifyForgeLoopInvocation(command: string, input?: For
 export declare function readForgeLoopIntegrationResource(uri: string, input?: Record<string, unknown>): Promise<Record<string, unknown>>;
 export declare function resolveForgeLoopProjectRoot(projectPath?: string, input?: { cwd?: string }): Promise<string>;
 export declare function createForgeLoopContext(input?: Record<string, unknown>): ForgeLoopContext;
-
