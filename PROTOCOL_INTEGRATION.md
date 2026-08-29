@@ -428,6 +428,25 @@ because the executor changed.
 For the practical handoff and multi-tool takeover sequence, see
 [`docs/CROSS_HARNESS_CONTINUITY.md`](./docs/CROSS_HARNESS_CONTINUITY.md).
 
+### Optional workspace and attestation integrations
+
+The stable integration API exposes optional task workspace binding, immutable
+handoff snapshots, responsibility constraints, verification-scope planning,
+and provider-neutral code attestation. Integrations pass opaque revision IDs
+and optional signing policy to the canonical runtime; they do not reimplement
+content coverage, evidence binding, or signer trust.
+
+<a id="FL-ATTEST-002"></a> **FL-ATTEST-002 — An integration MUST consume the canonical**
+attestation result and preserve its distinction between `VALID`, invalid,
+uncovered, stale, and provider/environment failure. An adapter cannot upgrade
+an invalid result or treat npm provenance, a platform status, or a local
+fingerprint as a ForgeLoop signature.
+
+<a id="FL-ATTEST-003"></a> **FL-ATTEST-003 — A signing integration MUST keep private keys,**
+OIDC tokens, and credentials outside ForgeLoop artifacts. Signing and
+verification may use an external provider, while the persisted statement stays
+deterministic and provider-neutral.
+
 ## Executable Policy Protocol Integration
 
 ForgeLoop integrates executable verification rules directly into the lifecycle:

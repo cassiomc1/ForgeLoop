@@ -171,7 +171,7 @@
         "harness"
       ],
       "canonicalFor": [],
-      "packaged": true,
+      "packaged": false,
       "replacement": "PROTOCOL_INTEGRATION.md",
       "removalPolicy": "Remove in the next compatibility-breaking package release."
     },
@@ -185,7 +185,7 @@
       "canonicalFor": [
         "project-profile"
       ],
-      "packaged": true
+      "packaged": false
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
@@ -197,7 +197,7 @@
       "canonicalFor": [
         "third-party-notices"
       ],
-      "packaged": true
+      "packaged": false
     },
     {
       "path": "LICENSE-DOCS.md",
@@ -209,7 +209,7 @@
       "canonicalFor": [
         "documentation-license"
       ],
-      "packaged": true
+      "packaged": false
     },
     {
       "path": ".github/copilot-instructions.md",
@@ -219,7 +219,7 @@
         "harness"
       ],
       "canonicalFor": [],
-      "packaged": true
+      "packaged": false
     },
     {
       "path": "README.md",
@@ -357,7 +357,7 @@
       "canonicalFor": [
         "release-1-4"
       ],
-      "packaged": true
+      "packaged": false
     },
     {
       "path": "scripts/CI_VALIDATORS.md",
@@ -407,7 +407,7 @@
       "canonicalFor": [
         "release-checklist-1-5-mcp"
       ],
-      "packaged": true
+      "packaged": false
     },
     {
       "path": "docs/RELEASE_CHECKLIST_1_6_1.md",
@@ -419,7 +419,7 @@
       "canonicalFor": [
         "release-checklist-1-6-1"
       ],
-      "packaged": true
+      "packaged": false
     },
     {
       "path": "docs/DIAGNOSTIC_MODEL.md",
@@ -447,6 +447,82 @@
         "observability"
       ],
       "packaged": true
+    },
+    {
+      "path": "docs/RELEASE_CHECKLIST.md",
+      "id": "release-checklist",
+      "class": "reference",
+      "audience": [
+        "maintainer"
+      ],
+      "canonicalFor": [
+        "release-checklist"
+      ],
+      "packaged": true
+    },
+    {
+      "path": "docs/CODE_ATTESTATION.md",
+      "id": "code-attestation",
+      "class": "normative",
+      "audience": [
+        "integrator",
+        "maintainer"
+      ],
+      "canonicalFor": [
+        "code-attestation"
+      ],
+      "packaged": true
+    },
+    {
+      "path": "docs/REVISION_PROVIDERS.md",
+      "id": "revision-providers",
+      "class": "reference",
+      "audience": [
+        "integrator",
+        "maintainer"
+      ],
+      "canonicalFor": [
+        "revision-providers"
+      ],
+      "packaged": true
+    },
+    {
+      "path": "docs/SIGNING_PROVIDERS.md",
+      "id": "signing-providers",
+      "class": "reference",
+      "audience": [
+        "integrator",
+        "maintainer"
+      ],
+      "canonicalFor": [
+        "signing-providers"
+      ],
+      "packaged": true
+    },
+    {
+      "path": "docs/PLATFORM_ADAPTERS.md",
+      "id": "platform-adapters",
+      "class": "reference",
+      "audience": [
+        "integrator"
+      ],
+      "canonicalFor": [
+        "platform-adapters"
+      ],
+      "packaged": true
+    },
+    {
+      "path": "docs/AGENT_PROTOCOL_SUMMARY.md",
+      "id": "agent-protocol-summary",
+      "class": "generated",
+      "audience": [
+        "harness"
+      ],
+      "canonicalFor": [
+        "agent-protocol-summary"
+      ],
+      "packaged": true,
+      "generator": "scripts/generate-agent-protocol-summary.mjs"
     }
   ]
 }

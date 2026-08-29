@@ -1,11 +1,22 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { test } from "node:test";
 
 const pinnedAction = /uses:\s+[^\s]+@[0-9a-f]{40}\s+#/g;
 
 async function readWorkflow(name) {
   return (await readFile(`.github/workflows/${name}`, "utf8")).replace(/\r\n/g, "\n");
+}
+
+function workflowJobBlocks(workflow) {
+  const lines = workflow.split("\n");
+  const jobsLine = lines.findIndex((line) => line === "jobs:");
+  if (jobsLine < 0) return [];
+  const headers = [];
+  for (let index = jobsLine + 1; index < lines.length; index += 1) {
+    if (/^  [A-Za-z0-9_-]+:$/u.test(lines[index])) headers.push(index);
+  }
+  return headers.map((start, index) => lines.slice(start, headers[index + 1] ?? lines.length).join("\n"));
 }
 
 test("quality workflows install the lockfile and enforce the local toolchain", async () => {
@@ -63,5 +74,25 @@ test("security and release workflows are present and use pinned actions", async 
 
   for (const workflow of [codeql, dependencyReview, releaseNotes]) {
     assert.ok((workflow.match(pinnedAction) ?? []).length > 0);
+  }
+});
+
+test("every tracked workflow job has a bounded timeout and read-only checkouts", async () => {
+  const names = (await readdir(".github/workflows")).filter((name) => /\.ya?ml$/u.test(name));
+  assert.ok(names.length > 0, "at least one workflow must be present");
+  for (const name of names) {
+    const workflow = await readWorkflow(name);
+    const jobs = workflowJobBlocks(workflow);
+    assert.ok(jobs.length > 0, `${name} must declare jobs`);
+    for (const job of jobs) {
+      const timeout = Number(job.match(/^    timeout-minutes:\s*(\d+)\s*$/mu)?.[1]);
+      assert.ok(Number.isInteger(timeout) && timeout > 0 && timeout < 360, `${name} has an unbounded job timeout`);
+      if (job.includes("actions/checkout@")) {
+        assert.match(job, /persist-credentials:\s*false/u, `${name} checkout must not persist credentials`);
+      }
+    }
+    for (const match of workflow.matchAll(/^\s+-?\s*uses:\s+[^\s@]+@([^\s#]+)(?:\s+#.*)?$/gmu)) {
+      assert.match(match[1], /^[0-9a-f]{40}$/u, `${name} contains a non-immutable action reference`);
+    }
   }
 });

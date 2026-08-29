@@ -3,6 +3,16 @@
 Local **stdio** Model Context Protocol server exposing the canonical ForgeLoop
 programmatic integration API (`@cassiomc1/forgeloop/integration`).
 
+`@cassiomc1/forgeloop-mcp` is a separately published adapter with its own
+`0.1.x` version line. It supports ForgeLoop core versions `>=1.5.0 <2`; the
+compatibility range is tested by the package smoke flow. The package has no
+committed lockfile by deliberate policy: its dependency ranges follow the
+published MCP SDK and ForgeLoop core compatibility contract, while release
+verification installs from a clean temporary project and checks the packed
+package. Reproducible release inputs are the package manifest, the lockfile of
+the ForgeLoop core repository, immutable workflow action pins, and the exact
+packed tarballs.
+
 ForgeLoop MCP is an **adapter over ForgeLoop, never another implementation of
 ForgeLoop**: every tool call executes a canonical ForgeLoop command through the
 transport-neutral runtime, and every ownership value comes from the canonical
@@ -50,3 +60,19 @@ input is not an authorization grant. There is no generic shell tool.
 - **HTTP** (optional): `forgeloop-mcp-http` serves the strict modern stateless
   MCP 2026 model. Loopback-only — non-loopback binds fail closed with
   `E_MCP_REMOTE_NOT_SUPPORTED` until an authenticated remote design exists.
+
+## Test setup and release
+
+The root `npm run mcp:test` command never installs dependencies. On a clean
+checkout without the MCP package dependencies it prints one actionable
+prerequisite:
+
+```text
+MCP dependencies are not installed.
+Run: npm run mcp:setup
+```
+
+Run `npm run mcp:setup` explicitly when installation is authorized, then use
+`npm run mcp:test`. `npm run mcp:pack:check` performs the clean packed-package
+smoke test used before publishing this adapter. Publication is separate from
+core ForgeLoop publication and requires its own authorized release workflow.

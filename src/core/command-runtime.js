@@ -4,6 +4,7 @@ import { CLI_COMMAND_DEFINITIONS } from "./cli-command-definitions.js";
 import { COMMAND_EXECUTORS } from "./command-executors.js";
 import { defaultCommandInputValues, validateForgeLoopCommandInput } from "./command-input.js";
 import { PROTOCOL_VERSION } from "./protocol.js";
+import { exitCodeForError } from "./exit-codes.js";
 
 export const FORGELOOP_INTEGRATION_RUNTIME_VERSION = 1;
 
@@ -105,7 +106,7 @@ export async function executeForgeLoopCommand({
     return {
       ok: false,
       command,
-      exitCode: 1,
+      exitCode: exitCodeForError(error),
       result: null,
       error: {
         code: error.code ?? "E_COMMAND_EXECUTION_FAILED",

@@ -1,0 +1,46 @@
+name: Windows full suite
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install locked Node toolchain
+        run: npm ci --ignore-scripts
+      - name: Run full Node suite
+        run: npm test
+      - name: Run package and documentation gates
+        run: |
+          npm run lint
+          npm run docs:check
+          npm run completions:check
+          npm run summary:check
+          npm run pack:check
+      - name: Run frozen Python validators
+        shell: pwsh
+        run: |
+          py -3 -c "import sys; assert sys.version_info >= (3, 9), 'Python 3.9+ is required'"
+          py -3 -m unittest discover -s tests -v
+          py -3 scripts/validate_markdown.py --self-test
+          py -3 scripts/validate_markdown.py
+          py -3 scripts/validate_loop_system.py --self-test
+          py -3 scripts/validate_loop_system.py
+          py -3 scripts/scan_secrets.py

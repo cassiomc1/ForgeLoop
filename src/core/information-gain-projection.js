@@ -156,10 +156,10 @@ export function buildInformationGainProjection(events, taskId) {
     const previousCycle = previousDiagnostic?.details?.verificationCycle ?? null;
     const surface = [...(failure.surfaces.get(cycle) ?? new Set())].sort();
     const signatures = [...(failure.signatures.get(cycle) ?? new Set())].sort();
-    const previousSurface = previousCycle != null
+    const previousSurface = previousCycle !== null && previousCycle !== undefined
       ? [...(failure.surfaces.get(previousCycle) ?? new Set())].sort()
       : null;
-    const previousSignatures = previousCycle != null
+    const previousSignatures = previousCycle !== null && previousCycle !== undefined
       ? [...(failure.signatures.get(previousCycle) ?? new Set())].sort()
       : null;
     const hasPreviousFailureState = previousSurface !== null;
@@ -257,7 +257,7 @@ export function buildInformationGainProjection(events, taskId) {
 //   retry. The first diagnosis is never stalled. Legacy diagnosis keeps its
 //   own compatibility rule (informationGain === NONE).
 export function evaluateStructuredDiagnosticStall(gainProjection, { verificationCycle = null } = {}) {
-  const candidates = verificationCycle == null
+  const candidates = verificationCycle === null || verificationCycle === undefined
     ? (gainProjection ?? [])
     : (gainProjection ?? []).filter((entry) => entry.verificationCycle === verificationCycle);
 

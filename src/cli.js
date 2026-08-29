@@ -67,11 +67,25 @@ import {
 } from "./commands/task-repair-legacy-recovery.js";
 import { formatTaskLockStatusResult } from "./commands/task-lock-status.js";
 import { formatProtocolInfoResult } from "./commands/protocol-info.js";
+import { formatWorkspaceBindResult } from "./commands/workspace-bind.js";
+import { formatWorkspaceStatusResult } from "./commands/workspace-status.js";
+import { formatHandoffCreateResult } from "./commands/handoff-create.js";
+import { formatHandoffListResult } from "./commands/handoff-list.js";
+import { formatHandoffShowResult } from "./commands/handoff-show.js";
+import { formatResponsibilitySetResult } from "./commands/responsibility-set.js";
+import { formatResponsibilityStatusResult } from "./commands/responsibility-status.js";
+import { formatVerifyScopeResult } from "./commands/verify-scope.js";
+import { formatAttestationCreateResult } from "./commands/attestation-create.js";
+import { formatAttestationVerifyResult } from "./commands/attestation-verify.js";
+import { formatAttestationStatusResult } from "./commands/attestation-status.js";
+import { formatAttestationVerifyRangeResult } from "./commands/attestation-verify-range.js";
 import { defaultCommandInputValues, validateForgeLoopCommandInput } from "./core/command-input.js";
 import { COMMAND_EXECUTORS } from "./core/command-executors.js";
 import { resolveTarget } from "./core/filesystem.js";
 import { getPackageRoot } from "./core/templates.js";
 import { CLI_COMMAND_DEFINITIONS, buildOptionLookup, getPositionalDefinitions } from "./core/cli-command-definitions.js";
+import { exitCodeForError } from "./core/exit-codes.js";
+import { E_CLI_INVOCATION_INVALID } from "./core/error-codes.js";
 
 export const COMMANDS = Object.freeze(Object.keys(CLI_COMMAND_DEFINITIONS));
 
@@ -295,9 +309,14 @@ export function validateCliSemantics({ command, options } = {}) {
 }
 
 export function parseArgs(argv) {
-  const parsed = parseCliSyntax(argv);
-  validateCliSemantics(parsed);
-  return parsed;
+  try {
+    const parsed = parseCliSyntax(argv);
+    validateCliSemantics(parsed);
+    return parsed;
+  } catch (error) {
+    if (!error.code) error.code = E_CLI_INVOCATION_INVALID;
+    throw error;
+  }
 }
 
 async function packageVersion(packageRoot) {
@@ -337,7 +356,9 @@ export const COMMAND_HANDLERS = Object.freeze({
       for (const item of result.findings) {
         console.log(`${item.severity}: ${item.code}: ${item.path} - ${item.message}`);
       }
-      console.log(result.ok ? "healthy: ForgeLoop target is ready" : "unhealthy: ForgeLoop target needs attention");
+      console.log(result.ok
+        ? "healthy: ForgeLoop target is ready; project profile is available"
+        : "unhealthy: ForgeLoop target needs attention");
     }
     return result.ok ? 0 : 1;
   },
@@ -394,6 +415,66 @@ export const COMMAND_HANDLERS = Object.freeze({
   "run-check": async ({ target, packageRoot, options }) => {
     const { result, exitCode } = await COMMAND_EXECUTORS["run-check"]({ target, packageRoot, options });
     renderJsonOr(options, result, formatRunCheckResult);
+    return exitCode;
+  },
+  "workspace-bind": async ({ target, packageRoot, options }) => {
+    const { result, exitCode } = await COMMAND_EXECUTORS["workspace-bind"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatWorkspaceBindResult);
+    return exitCode;
+  },
+  "workspace-status": async ({ target, packageRoot, options }) => {
+    const { result, exitCode } = await COMMAND_EXECUTORS["workspace-status"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatWorkspaceStatusResult);
+    return exitCode;
+  },
+  "handoff-create": async ({ target, packageRoot, options }) => {
+    const { result, exitCode } = await COMMAND_EXECUTORS["handoff-create"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatHandoffCreateResult);
+    return exitCode;
+  },
+  "handoff-list": async ({ target, packageRoot, options }) => {
+    const { result, exitCode } = await COMMAND_EXECUTORS["handoff-list"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatHandoffListResult);
+    return exitCode;
+  },
+  "handoff-show": async ({ target, packageRoot, options }) => {
+    const { result, exitCode } = await COMMAND_EXECUTORS["handoff-show"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatHandoffShowResult);
+    return exitCode;
+  },
+  "responsibility-set": async ({ target, packageRoot, options }) => {
+    const { result, exitCode } = await COMMAND_EXECUTORS["responsibility-set"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatResponsibilitySetResult);
+    return exitCode;
+  },
+  "responsibility-status": async ({ target, packageRoot, options }) => {
+    const { result, exitCode } = await COMMAND_EXECUTORS["responsibility-status"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatResponsibilityStatusResult);
+    return exitCode;
+  },
+  "verify-scope": async ({ target, packageRoot, options }) => {
+    const { result, exitCode } = await COMMAND_EXECUTORS["verify-scope"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatVerifyScopeResult);
+    return exitCode;
+  },
+  "attestation-create": async ({ target, packageRoot, options }) => {
+    const { result, exitCode } = await COMMAND_EXECUTORS["attestation-create"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatAttestationCreateResult);
+    return exitCode;
+  },
+  "attestation-verify": async ({ target, packageRoot, options }) => {
+    const { result, exitCode } = await COMMAND_EXECUTORS["attestation-verify"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatAttestationVerifyResult);
+    return exitCode;
+  },
+  "attestation-status": async ({ target, packageRoot, options }) => {
+    const { result, exitCode } = await COMMAND_EXECUTORS["attestation-status"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatAttestationStatusResult);
+    return exitCode;
+  },
+  "attestation-verify-range": async ({ target, packageRoot, options }) => {
+    const { result, exitCode } = await COMMAND_EXECUTORS["attestation-verify-range"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatAttestationVerifyRangeResult);
     return exitCode;
   },
   "run-action": async ({ target, packageRoot, options }) => {
@@ -667,7 +748,17 @@ export const COMMAND_TABLE = Object.freeze(
 );
 
 export async function main(argv = process.argv.slice(2)) {
+  const jsonRequested = argv.some((argument) => argument === "--json" || argument.startsWith("--json="));
+  const jsonErrorsAllowed = jsonRequested;
   try {
+    if (argv[0] === "help") {
+      const helpCommand = argv[1] ?? null;
+      if (helpCommand && !CLI_COMMAND_DEFINITIONS[helpCommand]) {
+        throw new Error(`Unknown command for help: ${helpCommand}`);
+      }
+      console.log(usage(helpCommand));
+      return helpCommand ? 0 : 1;
+    }
     const { command, options } = parseArgs(argv);
     if (options.version) {
       console.log(await packageVersion(getPackageRoot()));
@@ -693,8 +784,25 @@ export async function main(argv = process.argv.slice(2)) {
       options,
     });
   } catch (error) {
-    console.error(`error: ${error.code ? `${error.code}: ` : ""}${error.message}`);
-    return 1;
+    if (jsonErrorsAllowed) {
+      const payload = JSON.stringify({
+        status: "ERROR",
+        ok: false,
+        error: {
+          code: error.code ?? "E_CLI_INVOCATION_INVALID",
+          message: error.message,
+          ...(error.next ? { next: error.next } : {}),
+          ...(error.artifacts ? { artifacts: error.artifacts } : {}),
+        },
+      }, null, 2);
+      // Keep stderr as the diagnostic channel while also emitting the same
+      // structured envelope on stdout for machine consumers.
+      console.log(payload);
+      console.error(payload);
+    } else {
+      console.error(`error: ${error.code ? `${error.code}: ` : ""}${error.message}`);
+    }
+    return exitCodeForError(error);
   }
 }
 

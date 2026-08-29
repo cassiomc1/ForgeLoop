@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "_type": "https://in-toto.io/Statement/v1",
+  "subject": [
+    {
+      "name": "forgeloop-task:fixture",
+      "digest": {
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    }
+  ],
+  "predicateType": "https://forgeloop.dev/attestation/v1",
+  "predicate": {}
+}

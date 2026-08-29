@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "taskId": "fixture",
+  "label": "fixture pass",
+  "createdAt": "2026-08-29T00:00:00.000Z",
+  "allowedPaths": ["src"],
+  "readOnlyPaths": ["docs"],
+  "requiredCheckIds": ["tests"],
+  "frozenInputs": {
+    "contract": true,
+    "route": true,
+    "claims": true
+  },
+  "baseline": {
+    "contractFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "routeFingerprint": null,
+    "claimsFingerprint": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  }
+}

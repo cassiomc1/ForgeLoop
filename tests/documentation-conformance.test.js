@@ -141,14 +141,16 @@ test("ARTIFACT_REGISTRY covers all public schemas and matches ARTIFACT_REFERENCE
   for (const [key, artifact] of Object.entries(ARTIFACT_REGISTRY)) {
     assert.ok(artifact.key, `Artifact ${key} must have key`);
     assert.ok(artifact.path, `Artifact ${key} must have path`);
-    assert.ok(artifact.schema, `Artifact ${key} must have schema`);
+    assert.ok(artifact.schema || artifact.owner === "EXTERNAL_SIGNING_PROVIDER", `Artifact ${key} must have schema`);
     assert.ok(artifact.owner, `Artifact ${key} must have owner`);
     assert.ok(artifact.mutability, `Artifact ${key} must have mutability`);
     assert.ok(artifact.trustRole, `Artifact ${key} must have trustRole`);
 
     // Verify schema can be loaded
-    const schema = await readSchema(artifact.schema, packageRoot);
-    assert.ok(schema, `Schema ${artifact.schema} must load successfully`);
+    if (artifact.schema) {
+      const schema = await readSchema(artifact.schema, packageRoot);
+      assert.ok(schema, `Schema ${artifact.schema} must load successfully`);
+    }
   }
 });
 
@@ -161,7 +163,7 @@ test("CLI_COMMAND_DEFINITIONS and CLI_COMMAND_METADATA cover every declared comm
     assert.ok(meta, `Command ${command} must exist in CLI_COMMAND_METADATA`);
     assert.equal(def.name, command);
     assert.equal(meta.name, command);
-    assert.ok(["lifecycle", "continuity", "verification", "policy-audit", "project-maintenance", "diagnostics", "actions", "task"].includes(def.category));
+    assert.ok(["lifecycle", "continuity", "verification", "policy-audit", "project-maintenance", "diagnostics", "actions", "task", "workspace", "scope", "attestation"].includes(def.category));
     assert.ok(["READ_ONLY", "MUTATING", "EXTERNAL_EXECUTION"].includes(def.mutation));
     assert.ok(Array.isArray(meta.options));
     assert.ok(meta.options.includes("--help"));
@@ -211,8 +213,8 @@ test("negative fixtures & mutation tests: validateDocumentationConformance detec
 
     for (const eol of ["\n", "\r\n"]) {
       // Setup files in target EOL mode
-      let docContent = (await readFile(docFile, "utf8")).replace(/\r?\n/g, eol);
-      let cliContent = (await readFile(cliDocFile, "utf8")).replace(/\r?\n/g, eol);
+      const docContent = (await readFile(docFile, "utf8")).replace(/\r?\n/g, eol);
+      const cliContent = (await readFile(cliDocFile, "utf8")).replace(/\r?\n/g, eol);
 
       // Mutation 1: execution.kind corrupted from COMMAND_EXECUTION to command
       const mutDoc1 = mustReplace(docContent, "COMMAND_EXECUTION", "command", `execution.kind (${eol === "\n" ? "LF" : "CRLF"})`);
@@ -255,7 +257,7 @@ test("negative fixtures & mutation tests: validateDocumentationConformance detec
 
     // Mutation 5: Missing adapter task discovery rule
     const agentsFile = path.join(tempDir, "AGENTS.md");
-    let agentsContent = await readFile(agentsFile, "utf8");
+    const agentsContent = await readFile(agentsFile, "utf8");
     const mutAgents5 = mustReplace(agentsContent, /forgeloop task-list/g, "forgeloop tasklist", "agents.md task discovery rule");
     await writeFile(agentsFile, mutAgents5, "utf8");
     const mut5 = await validateDocumentationConformance({ rootDir: tempDir });
@@ -637,7 +639,7 @@ test("DOC-LAYOUT-ARCH / DOC-TRANSITION / DOC-ADVANCE: architecture layout, canon
     assert.ok((await readFile(systemDesignFile, "utf8")).includes(".forgeloop/task-state/"));
 
     // DOC-LAYOUT-ARCH-2 (FAIL): reintroducing a singleton task path as current architecture
-    let systemDesign = await readFile(systemDesignFile, "utf8");
+    const systemDesign = await readFile(systemDesignFile, "utf8");
     const layoutMut = mustReplace(
       systemDesign,
       "and modern mutable task protocol state is isolated under `.forgeloop/task-state/<taskKey>/`.",
@@ -691,7 +693,7 @@ test("DOC-LAYOUT-ARCH / DOC-TRANSITION / DOC-ADVANCE: architecture layout, canon
     assert.equal(restored.valid, true, `Restored fixture must be valid: ${restored.errors.join("\n")}`);
 
     // DOC-ADVANCE-1 (PASS + FAIL mutation): advance Purpose must not publish a manual phase subset
-    let cliReference = await readFile(cliReferenceFile, "utf8");
+    const cliReference = await readFile(cliReferenceFile, "utf8");
     assert.doesNotMatch(cliReference, /Purpose\*\*: Transitions between valid protocol phases/);
     const staleSubset = mustReplace(
       cliReference,

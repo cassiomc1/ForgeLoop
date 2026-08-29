@@ -29,6 +29,8 @@ const READ_ONLY_COMMANDS = Object.freeze(new Set([
   "inspect", "validate-state", "validate-protocol", "validate-receipt",
   "policy-status", "policy-diff", "rule-verify", "policy",
   "history", "trace", "reflect",
+  "workspace-status", "handoff-list", "handoff-show", "responsibility-status",
+  "attestation-verify", "attestation-status", "attestation-verify-range",
 ]));
 
 const LOOP_MUTATION_COMMANDS = Object.freeze(new Set([
@@ -37,6 +39,7 @@ const LOOP_MUTATION_COMMANDS = Object.freeze(new Set([
   "record-check", "record-diagnosis", "record-decision-criterion",
   "record-terminal-result", "complete",
   "record-intervention", "record-hypothesis-disposition",
+  "workspace-bind", "handoff-create", "responsibility-set", "verify-scope", "attestation-create",
 ]));
 
 const STATIC_RISK_CLASSES = Object.freeze({
@@ -134,6 +137,38 @@ export function getForgeLoopCapabilities({ packageVersion = null } = {}) {
         readOnlyMetrics: true,
         projectLocalReference: true,
       },
+      workspaceBinding: {
+        version: 1,
+        supported: true,
+        optional: true,
+        explicitRebinding: false,
+      },
+      canonicalHandoffs: {
+        version: 1,
+        supported: true,
+        immutable: true,
+        lifecycleAuthority: false,
+      },
+      responsibilityConstraints: {
+        version: 1,
+        supported: true,
+        immutableDuringPass: true,
+        completionEnforced: true,
+      },
+      differentialVerificationScope: {
+        version: 1,
+        supported: true,
+        modes: ["AUTO", "CHANGED", "CLAIMED", "FULL"],
+        impactedMode: false,
+      },
+      codeAttestation: {
+        version: 1,
+        supported: true,
+        modes: ["off", "optional", "required"],
+        revisionProviders: ["git"],
+        signingProviders: ["none", "sigstore"],
+        completionLedgerBound: true,
+      },
       verificationExecutionIsolation: {
         version: 1,
         supported: true,
@@ -150,6 +185,11 @@ export function getForgeLoopCapabilities({ packageVersion = null } = {}) {
       { name: "task/ownership", scope: "TASK" },
       { name: "task/contract", scope: "TASK" },
       { name: "task/continuity", scope: "TASK" },
+      { name: "task/workspace-binding", scope: "TASK" },
+      { name: "task/handoffs", scope: "TASK" },
+      { name: "task/responsibility", scope: "TASK" },
+      { name: "task/verification-scope", scope: "TASK" },
+      { name: "task/attestation", scope: "TASK" },
       { name: "task/actions", scope: "TASK" },
       { name: "task/action", scope: "TASK" },
       { name: "task/approvals", scope: "TASK" },

@@ -35,6 +35,13 @@ All artifact schemas are defined in `schemas/*.schema.json`. Persisted artifact 
 | `task-state/<task-key>/approvals/approval-<id>.json` | `approval` | Protocol Managed | Append Decision Once | Action Approval Attestation |
 | `policy/capabilities.json` | `capability-policy` | Operator Or Agent | Mutable Configuration | Capability Policy Specification |
 | `task-state/<task-key>/evaluations/eval-<id>.json` | `trajectory-evaluation` | Protocol Compiled | Immutable Once Written | Trajectory Evaluation |
+| `task-state/<task-key>/workspace-binding.json` | `workspace-binding` | Protocol Generated | Immutable After Bind | Workspace Identity Binding |
+| `task-state/<task-key>/handoffs/handoff-<id>.json` | `handoff-envelope` | Protocol Compiled | Immutable Once Written | Canonical Handoff Snapshot |
+| `task-state/<task-key>/responsibility.json` | `responsibility` | Agent Or Harness Constrained | Immutable During Pass | Responsibility Constraint |
+| `task-state/<task-key>/verification-scope.json` | `verification-scope` | Protocol Compiled | Recomputed On Scope Change | Verification Scope Plan |
+| `task-state/<task-key>/attestations/code-manifest.json` | `code-manifest` | Protocol Generated | Immutable Once Written | Content Integrity Snapshot |
+| `task-state/<task-key>/attestations/statement.json` | `in-toto-statement` | Protocol Compiled | Immutable Once Written | Code Attestation Statement |
+| `task-state/<task-key>/attestations/statement.sigstore.json` | `null` | External Signing Provider | External Immutable | External Signature Bundle |
 
 <!-- END FORGELOOP GENERATED: artifact-registry -->
 
@@ -227,6 +234,19 @@ Local ForgeLoop configuration settings and policy bindings.
 - `policy` *(string, optional, minLength: 1)*
 - `requiredGates` *(array<string>, optional)*
 - `requiredEvidence` *(array<string>, optional)*
+- `attestation` *(object, optional)*
+  - `mode` *(string, required, enum: `off`, `optional`, `required`)*
+  - `revisionProvider` *(string, required, minLength: 1)*
+  - `requireCompleteCoverage` *(boolean, required)*
+  - `coverage` *(object, required)*
+    - `exclude` *(array<string>, required)*
+  - `signing` *(object, required)*
+    - `provider` *(string, required, enum: `none`, `sigstore`)*
+    - `required` *(boolean, required)*
+    - `policy` *(object, required)*
+      - `issuer` *(string, optional)*
+      - `identities` *(array<string>, required)*
+      - `requireTransparencyLog` *(boolean, required)*
 
 <!-- END FORGELOOP GENERATED: schema:config -->
 
@@ -803,3 +823,201 @@ evidence and never override lifecycle validation.
 - `evaluationFingerprint` *(string, required, pattern: `^[a-f0-9]{64}$`)*
 
 <!-- END FORGELOOP GENERATED: schema:trajectory-evaluation -->
+
+### 2.24 `task-state/<taskKey>/workspace-binding.json`
+
+<!-- forgeloop-doc: schema=workspace-binding artifact=.forgeloop/task-state/<task-key>/workspace-binding.json -->
+
+Optional immutable binding between a task and the exact Git repository/worktree
+identity used for protocol mutations. A binding is enforced when present; it
+does not fabricate a binding when absent.
+
+#### Canonical Fields
+
+<!-- BEGIN FORGELOOP GENERATED: schema:workspace-binding -->
+
+- `schemaVersion` *(number, required, const: 1)*
+- `protocolVersion` *(number, required, const: 1)*
+- `taskId` *(string, required, minLength: 1)*
+- `mode` *(string, required, const: `GIT_WORKTREE`)*
+- `repositoryIdentity` *(string, required, pattern: `^[a-f0-9]{64}$`)*
+- `workspaceIdentity` *(string, required, pattern: `^[a-f0-9]{64}$`)*
+- `branchAtBind` *(string or null, required)*
+- `headAtBind` *(string or null, required)*
+- `boundAt` *(string, required, minLength: 1)*
+- `metadata` *(object, optional)*
+
+<!-- END FORGELOOP GENERATED: schema:workspace-binding -->
+
+### 2.25 `task-state/<taskKey>/handoffs/handoff-<id>.json`
+
+<!-- forgeloop-doc: schema=handoff-envelope artifact=.forgeloop/task-state/<task-key>/handoffs/handoff-<id>.json -->
+
+Immutable protocol-derived handoff snapshot. The caller may provide only
+recipient intent; lifecycle state, evidence, continuity, and the artifact
+digest are derived by ForgeLoop. A handoff is not delegation, review,
+completion, or authority evidence.
+
+#### Canonical Fields
+
+<!-- BEGIN FORGELOOP GENERATED: schema:handoff-envelope -->
+
+- `schemaVersion` *(number, required, const: 1)*
+- `protocolVersion` *(number, required, const: 1)*
+- `handoffId` *(string, required, pattern: `^handoff-[A-Za-z0-9_-]+$`)*
+- `taskId` *(string, required, minLength: 1)*
+- `createdAt` *(string, required, minLength: 1)*
+- `intent` *(object, required)*
+  - `recipientHint` *(string, optional, minLength: 1)*
+  - `note` *(string, optional, minLength: 1)*
+- `state` *(object, required)*
+  - `phase` *(string, required, minLength: 1)*
+  - `revision` *(integer, required, minimum: 0)*
+  - `verificationCycle` *(integer, required, minimum: 1)*
+  - `contractFingerprint` *(string, required, pattern: `^[a-f0-9]{64}$`)*
+  - `routeFingerprint` *(string or null, required)*
+  - `repositoryFingerprint` *(object, required)*
+  - `writeClaims` *(array<string>, required)*
+  - `changedPaths` *(array<string>, required)*
+- `evidence` *(object, required)*
+  - `executionRefs` *(array<string>, required)*
+  - `checkIds` *(array<string>, required)*
+- `continuity` *(object, required)*
+  - `ref` *(string, required, minLength: 1)*
+  - `fingerprint` *(string or null, required)*
+- `artifactDigest` *(string, required, pattern: `^[a-f0-9]{64}$`)*
+
+<!-- END FORGELOOP GENERATED: schema:handoff-envelope -->
+
+### 2.26 `task-state/<taskKey>/responsibility.json`
+
+<!-- forgeloop-doc: schema=responsibility artifact=.forgeloop/task-state/<task-key>/responsibility.json -->
+
+Optional immutable pass constraints for allowed paths, read-only paths, frozen
+inputs, and required checks. The constraints are checked at mutation, audit,
+and completion boundaries.
+
+#### Canonical Fields
+
+<!-- BEGIN FORGELOOP GENERATED: schema:responsibility -->
+
+- `schemaVersion` *(number, required, const: 1)*
+- `protocolVersion` *(number, required, const: 1)*
+- `taskId` *(string, required, minLength: 1)*
+- `label` *(string, required, minLength: 1)*
+- `createdAt` *(string, required, minLength: 1)*
+- `allowedPaths` *(array<string>, required)*
+- `readOnlyPaths` *(array<string>, required)*
+- `requiredCheckIds` *(array<string>, required)*
+- `frozenInputs` *(object, required)*
+  - `contract` *(boolean, optional)*
+  - `route` *(boolean, optional)*
+  - `claims` *(boolean, optional)*
+- `baseline` *(object, required)*
+  - `contractFingerprint` *(string, required, pattern: `^[a-f0-9]{64}$`)*
+  - `routeFingerprint` *(string or null, required)*
+  - `claimsFingerprint` *(string, required, pattern: `^[a-f0-9]{64}$`)*
+
+<!-- END FORGELOOP GENERATED: schema:responsibility -->
+
+### 2.27 `task-state/<taskKey>/verification-scope.json`
+
+<!-- forgeloop-doc: schema=verification-scope artifact=.forgeloop/task-state/<task-key>/verification-scope.json -->
+
+Read-only verification planning artifact. `AUTO` resolves only to a provable
+`CHANGED`, `CLAIMED`, or `FULL` boundary; ForgeLoop does not publish a
+heuristic `IMPACTED` mode.
+
+#### Canonical Fields
+
+<!-- BEGIN FORGELOOP GENERATED: schema:verification-scope -->
+
+- `schemaVersion` *(number, required, const: 1)*
+- `protocolVersion` *(number, required, const: 1)*
+- `taskId` *(string, required, minLength: 1)*
+- `requestedMode` *(string, required, enum: `AUTO`, `CHANGED`, `CLAIMED`, `FULL`)*
+- `resolvedMode` *(string, required, enum: `CHANGED`, `CLAIMED`, `FULL`, `UNRESOLVED`)*
+- `verificationCycle` *(integer, required, minimum: 1)*
+- `changedPaths` *(array<string>, required)*
+- `claimedPaths` *(array<string>, required)*
+- `selectedPaths` *(array<string>, required)*
+- `reasons` *(array<string>, required)*
+- `fallback` *(null or object, required)*
+- `contractFingerprint` *(string, required, pattern: `^[a-f0-9]{64}$`)*
+- `repositoryFingerprint` *(object, required)*
+- `claimsFingerprint` *(string, required, pattern: `^[a-f0-9]{64}$`)*
+- `createdAt` *(string, required, minLength: 1)*
+
+<!-- END FORGELOOP GENERATED: schema:verification-scope -->
+
+### 2.28 `task-state/<taskKey>/attestations/code-manifest.json`
+
+<!-- forgeloop-doc: schema=code-manifest artifact=.forgeloop/task-state/<task-key>/attestations/code-manifest.json -->
+
+Deterministic raw-byte source-content manifest. Entries are sorted by safe
+slash-separated paths, symlinks are represented by link bytes, Git links are
+represented by provider identities, and `.forgeloop/**` is excluded.
+
+#### Canonical Fields
+
+<!-- BEGIN FORGELOOP GENERATED: schema:code-manifest -->
+
+- `schemaVersion` *(number, required, const: 1)*
+- `protocolVersion` *(number, required, const: 1)*
+- `taskId` *(string, required, minLength: 1)*
+- `verificationCycle` *(integer, required, minimum: 1)*
+- `capture` *(object, required)*
+  - `mode` *(string, required, enum: `WORKTREE`, `INDEX`, `COMMIT`)*
+  - `revisionProvider` *(string, required, minLength: 1)*
+  - `baseRevision` *(string or null, required)*
+  - `observedRevision` *(string, required, minLength: 1)*
+  - `providerMetadata` *(object, required)*
+- `bindings` *(object, required)*
+  - `contractFingerprint` *(string, required, pattern: `^[a-f0-9]{64}$`)*
+  - `routeFingerprint` *(string or null, required)*
+  - `stateFingerprint` *(string, required, pattern: `^[a-f0-9]{64}$`)*
+  - `receiptFingerprint` *(string, required, pattern: `^[a-f0-9]{64}$`)*
+  - `ledgerSeq` *(integer, required, minimum: 1)*
+  - `ledgerHash` *(string, required, pattern: `^[a-f0-9]{64}$`)*
+- `entries` *(array<object>, required)*
+  - `path` *(string, required, minLength: 1)*
+  - `sourcePath` *(string, optional, minLength: 1)*
+  - `operation` *(string, required, enum: `ADDED`, `MODIFIED`, `DELETED`, `RENAMED`, `COPIED`, `TYPE_CHANGED`)*
+  - `kind` *(string, required, enum: `FILE`, `SYMLINK`, `GITLINK`, `DELETED`)*
+  - `sha256` *(string, optional, pattern: `^[a-f0-9]{64}$`)*
+  - `providerContentId` *(string, optional, minLength: 1)*
+  - `providerMetadata` *(object, optional)*
+- `contentDigest` *(string, required, pattern: `^[a-f0-9]{64}$`)*
+
+<!-- END FORGELOOP GENERATED: schema:code-manifest -->
+
+### 2.29 `task-state/<taskKey>/attestations/statement.json`
+
+<!-- forgeloop-doc: schema=in-toto-statement artifact=.forgeloop/task-state/<task-key>/attestations/statement.json -->
+
+Deterministic in-toto Statement v1 binding a code-manifest digest to the
+completed ForgeLoop evidence tuple. The statement is immutable and does not
+back-reference itself from the execution receipt.
+
+#### Canonical Fields
+
+<!-- BEGIN FORGELOOP GENERATED: schema:in-toto-statement -->
+
+- `schemaVersion` *(number, required, const: 1)*
+- `_type` *(string, required, const: `https://in-toto.io/Statement/v1`)*
+- `subject` *(array<object>, required, minItems: 1)*
+  - `name` *(string, required, minLength: 1)*
+  - `digest` *(object, required)*
+    - `sha256` *(string, required, pattern: `^[a-f0-9]{64}$`)*
+- `predicateType` *(string, required, const: `https://forgeloop.dev/attestation/v1`)*
+- `predicate` *(object, required)*
+
+<!-- END FORGELOOP GENERATED: schema:in-toto-statement -->
+
+### 2.30 `task-state/<taskKey>/attestations/statement.sigstore.json`
+
+<!-- forgeloop-doc: external-artifact=.forgeloop/task-state/<task-key>/attestations/statement.sigstore.json -->
+
+Optional external signing-provider bundle. Its presence is not proof of a
+valid signature; verification must be performed by the configured signing
+provider with the requested identity and issuer policy.

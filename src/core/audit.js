@@ -8,6 +8,9 @@ import { validateReadyProtocolConsistency } from "./preflight.js";
 import { taskArtifactPath } from "./task-paths.js";
 import { findTaskById } from "./task-discovery.js";
 import { validateActionLedgerConsistency } from "./actions.js";
+import { readCodeManifest } from "./code-manifest.js";
+import { readAttestationStatement, validateAttestationStatement } from "./attestation.js";
+import { assertAttestationStatementBindings, verifyCodeManifestContent } from "./attestation-verifier.js";
 
 function sortErrors(errors) {
   return [...errors].sort((left, right) => left.code.localeCompare(right.code)
@@ -55,6 +58,55 @@ async function compareChangedPaths(target, packageRoot, options = {}) {
   };
 }
 
+async function evaluateLocalAttestation({ target, packageRoot, taskId, completion }) {
+  const configured = completion.attestation ?? { mode: "off" };
+  const base = {
+    mode: configured.mode ?? "off",
+    manifest: configured.mode === "off" ? "NOT_CHECKED" : configured.status === "CAPTURED" ? "VALID" : configured.status ?? "MISSING",
+    statement: "NOT_CHECKED",
+    signature: "NOT_CHECKED",
+    coverage: "NOT_CHECKED",
+    errors: [],
+  };
+  if (configured.mode === "off") return { ...base, status: "DISABLED" };
+  if (configured.status !== "CAPTURED") {
+    return { ...base, status: configured.status === "UNAVAILABLE" ? "UNAVAILABLE" : "MISSING" };
+  }
+
+  let manifest;
+  try {
+    manifest = await readCodeManifest({ target, packageRoot, taskId });
+    await verifyCodeManifestContent({
+      target,
+      manifest: manifest.value,
+      revisionProvider: manifest.value.capture.revisionProvider,
+      revision: manifest.value.capture.mode === "WORKTREE" ? "WORKTREE" : manifest.value.capture.observedRevision,
+    });
+    base.coverage = "VALID";
+  } catch (error) {
+    base.manifest = "INVALID";
+    base.status = "INVALID";
+    base.errors.push({ code: error.code ?? "E_ATTESTATION_CONTENT_MISMATCH", message: error.message });
+    return base;
+  }
+
+  try {
+    const statement = await readAttestationStatement({ target, packageRoot, taskId });
+    await validateAttestationStatement(statement.value, packageRoot);
+    assertAttestationStatementBindings(statement.value, manifest.value, taskId, manifest.fingerprint);
+    base.statement = "VALID";
+  } catch (error) {
+    if (error.code === "E_ATTESTATION_STATEMENT_MISSING") {
+      return { ...base, status: "VALID" };
+    }
+    base.statement = "INVALID";
+    base.status = "INVALID";
+    base.errors.push({ code: error.code ?? "E_ATTESTATION_STATEMENT_INVALID", message: error.message });
+    return base;
+  }
+  return { ...base, status: "VALID" };
+}
+
 export async function evaluateAudit({
   target,
   packageRoot,
@@ -83,6 +135,7 @@ export async function evaluateAudit({
     eventsPath,
     preflightPath,
   });
+  const attestation = await evaluateLocalAttestation({ target, packageRoot, taskId, completion });
   const preflightRel = preflightPath ?? (taskId ? taskArtifactPath(taskId, "preflight") : ARTIFACT_PATHS.preflight);
   const receiptRel = receiptPath ?? (taskId ? taskArtifactPath(taskId, "receipt") : ARTIFACT_PATHS.receipt);
   const stateRel = statePath ?? (taskId ? taskArtifactPath(taskId, "state") : ARTIFACT_PATHS.state);
@@ -118,7 +171,12 @@ export async function evaluateAudit({
       artifacts: error.artifacts ?? [taskArtifactPath(taskId, "recovery"), taskArtifactPath(taskId, "events")],
     }))
     : [];
-  const errors = sortErrors([...completion.errors, ...readyConsistencyErrors, ...ownershipErrors]);
+  const errors = sortErrors([
+    ...completion.errors,
+    ...readyConsistencyErrors,
+    ...ownershipErrors,
+    ...attestation.errors,
+  ]);
   if (taskId) {
     for (const actionError of await validateActionLedgerConsistency(target, { packageRoot, taskId })) {
       errors.push({ ...actionError, artifacts: [taskArtifactPath(taskId, "actions"), taskArtifactPath(taskId, "events")] });
@@ -199,6 +257,14 @@ export async function evaluateAudit({
     },
     policy: policyStatus,
     completion,
+    attestation: {
+      mode: attestation.mode,
+      manifest: attestation.manifest,
+      statement: attestation.statement,
+      signature: attestation.signature,
+      coverage: attestation.coverage,
+      status: attestation.status,
+    },
     recovery: taskInfo?.recovery ?? null,
     claims: taskInfo ? {
       state: taskInfo.claimState,

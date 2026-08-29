@@ -42,6 +42,14 @@ export const SHIPPED_SCHEMA_NAMES = Object.freeze([
   "capability-policy",
   "trajectory-evaluation",
   "trajectory-scenario",
+  "workspace-binding",
+  "handoff-envelope",
+  "responsibility",
+  "verification-scope",
+  "code-manifest",
+  "code-attestation",
+  "attestation-verification-result",
+  "in-toto-statement",
 ]);
 
 export class SchemaValidationError extends Error {

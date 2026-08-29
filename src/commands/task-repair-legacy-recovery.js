@@ -195,7 +195,6 @@ export async function runTaskRepairLegacyRecovery({ target, packageRoot, taskId,
 
     const existingRecovery = await readTaskRecovery(target, { taskId: effectiveTaskId, packageRoot });
     const locked = await inspectLegacyRecoveryMigration(target, { taskId: effectiveTaskId, packageRoot });
-    let candidate;
     if (locked.alreadyMigrated) {
       return verifyAlreadyRepaired(target, {
         taskId: effectiveTaskId,
@@ -204,7 +203,7 @@ export async function runTaskRepairLegacyRecovery({ target, packageRoot, taskId,
         existingRecovery,
       });
     }
-    candidate = requireSingleTailCandidate({
+    const candidate = requireSingleTailCandidate({
       taskId: effectiveTaskId,
       events: locked.events,
       candidates: locked.candidates,

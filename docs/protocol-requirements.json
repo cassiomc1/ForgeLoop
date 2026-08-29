@@ -24,6 +24,42 @@
       "statement": "A reader without validated claim projection MUST fail closed.",
       "tests": ["tests/protocol-info.test.js", "tests/package.test.js"],
       "validator": "src/core/protocol-info.js"
+    },
+    "FL-WS-001": {
+      "source": "LOOP_ENGINEERING.md",
+      "statement": "A bound task MUST validate the current workspace before a task mutation or ForgeLoop-owned verification launch.",
+      "tests": ["tests/workspace-binding.test.js", "tests/workspace-binding-run-check.test.js"],
+      "validator": "src/core/workspace-binding.js"
+    },
+    "FL-HANDOFF-001": {
+      "source": "LOOP_ENGINEERING.md",
+      "statement": "A canonical handoff MUST remain an immutable protocol-derived snapshot.",
+      "tests": ["tests/handoff-envelope.test.js"],
+      "validator": "src/core/handoff.js"
+    },
+    "FL-SCOPE-001": {
+      "source": "LOOP_ENGINEERING.md",
+      "statement": "A verification scope MUST narrow execution only from current canonical evidence.",
+      "tests": ["tests/verification-scope.test.js", "tests/verification-scope-freshness.test.js"],
+      "validator": "src/core/verification-scope.js"
+    },
+    "FL-ATTEST-001": {
+      "source": "LOOP_ENGINEERING.md",
+      "statement": "A code attestation MUST bind exact source content to a valid completion receipt and event-ledger checkpoint.",
+      "tests": ["tests/code-manifest.test.js", "tests/attestation.test.js", "tests/attestation-verifier.test.js"],
+      "validator": "src/core/attestation-verifier.js"
+    },
+    "FL-ATTEST-002": {
+      "source": "PROTOCOL_INTEGRATION.md",
+      "statement": "An integration MUST consume the canonical attestation result and preserve its trust distinctions.",
+      "tests": ["tests/generic-ci-attestation.test.js", "tests/integration-runtime.test.js"],
+      "validator": "src/core/command-runtime.js"
+    },
+    "FL-ATTEST-003": {
+      "source": "PROTOCOL_INTEGRATION.md",
+      "statement": "A signing integration MUST keep private keys, OIDC tokens, and credentials outside ForgeLoop artifacts.",
+      "tests": ["tests/signing-provider.test.js"],
+      "validator": "src/core/signing/"
     }
   }
 }

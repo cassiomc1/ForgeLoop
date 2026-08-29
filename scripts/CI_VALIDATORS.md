@@ -16,6 +16,9 @@ change the historical scanner and validator contracts without a dedicated
 parity project. They are not runtime dependencies, are not shipped as the CLI
 runtime, and are not required by `npm install`.
 
+The minimum supported Python version for these validators is Python 3.9. CI
+must select or verify Python 3.9 or newer before invoking the frozen commands.
+
 ## CI invocation
 
 ```bash

@@ -10,7 +10,7 @@ import { readPersistedRoute } from "./route-artifact.js";
 import { assertWorkPhase, isValidTransition } from "./protocol.js";
 import { readWorkState, mutateWorkState } from "./work-state.js";
 import { authorizeCompletionRecoveryOrRebind } from "./completion-recovery-rebind.js";
-import { evaluateCompletion } from "./completion.js";
+import { evaluateCompletion, runComplete as persistCompletion } from "./completion.js";
 import { evaluatePreflight } from "./preflight.js";
 import { requiredEvidenceForTarget } from "./completion-artifacts.js";
 import { assertCompletionRelationships, assertStateIdentity } from "./completion-relationships.js";
@@ -173,6 +173,34 @@ export async function advanceWorkState(target, toPhase, options = {}) {
   if (!state) throw phaseError("E_PHASE_PREREQUISITE_MISSING", "Cannot advance without work state", [stateRel]);
   const eventsRel = eventsPath ?? (taskId ? taskArtifactPath(taskId, "events") : ARTIFACT_PATHS.events);
   const receiptRel = receiptPath ?? (taskId ? taskArtifactPath(taskId, "receipt") : ARTIFACT_PATHS.receipt);
+
+  // COMPLETE must use the same transactional completion path regardless of
+  // whether the caller selected the dedicated command or a phase transition.
+  // This keeps required code-manifest capture and its ledger event atomic with
+  // the final state and receipt.
+  if (toPhase === "COMPLETE" && state.phase === "REVIEWING") {
+    const completion = await persistCompletion({
+      target,
+      packageRoot,
+      taskId,
+      authorityContext,
+      runtimeContext,
+      contractPath,
+      routePath,
+      statePath,
+      receiptPath,
+      eventsPath,
+      preflightPath: null,
+    });
+    if (completion.status !== "VALID") {
+      throw phaseError(
+        "E_COMPLETION_REJECTED",
+        "COMPLETE requires a valid completion audit",
+        completion.errors.flatMap((error) => error.artifacts ?? []),
+      );
+    }
+    return readWorkState(target, { packageRoot, taskId, statePath });
+  }
 
   await assertPhasePrerequisites(target, state, toPhase, packageRoot, authorityContext, runtimeContext, { taskId, statePath, contractPath, routePath, receiptPath, eventsPath });
   await assertPersistedStateIdentity(target, state, toPhase, packageRoot, { taskId, contractPath, routePath });

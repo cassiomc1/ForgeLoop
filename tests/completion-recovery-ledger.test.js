@@ -111,7 +111,7 @@ test("completion rejection binds to ledger and authorizes REVIEWING -> VERIFYING
     assert.ok(state.lastCompletionAttempt?.missingRequirementIds?.length > 0);
 
     // Verify ledger has COMPLETION_REJECTED event
-    let ledger = await validateEventLedger(target, packageRoot);
+    const ledger = await validateEventLedger(target, packageRoot);
     assert.equal(ledger.valid, true);
     const rejectionEvent = ledger.events.find((e) => e.event === "COMPLETION_REJECTED");
     assert.ok(rejectionEvent);
@@ -123,7 +123,7 @@ test("completion rejection binds to ledger and authorizes REVIEWING -> VERIFYING
     assert.equal(auth.authorized, true);
 
     // nextAction should offer ENTER_VERIFYING
-    let next = await getNextAction(target, packageRoot);
+    const next = await getNextAction(target, packageRoot);
     assert.equal(next.nextAction, NEXT_ACTIONS.ENTER_VERIFYING);
 
     // 5. Advance back to VERIFYING (cycle 2)
@@ -175,7 +175,7 @@ test("forged recovery attempt (fake lastCompletionAttempt without ledger event) 
     await advanceWorkState(target, "REVIEWING", { packageRoot });
 
     // Manually forge lastCompletionAttempt in state without matching COMPLETION_REJECTED in ledger
-    let state = await readWorkState(target, packageRoot);
+    const state = await readWorkState(target, packageRoot);
     state.lastCompletionAttempt = {
       status: "REJECTED",
       verificationCycle: 1,
@@ -219,7 +219,7 @@ test("wrong recovery cycle (state cycle=2, rejection event cycle=1) is rejected 
     }, packageRoot);
 
     // State is at cycle 2 with lastCompletionAttempt claiming cycle 2
-    let state = await readWorkState(target, packageRoot);
+    const state = await readWorkState(target, packageRoot);
     state.verificationCycle = 2;
     state.lastCompletionAttempt = {
       status: "REJECTED",

@@ -1,0 +1,140 @@
+#!/usr/bin/env node
+
+import { readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { ARTIFACT_REGISTRY } from "../src/core/artifact-registry.js";
+import { CLI_COMMAND_DEFINITIONS } from "../src/core/cli-command-definitions.js";
+import { PUBLIC_ERROR_REGISTRY } from "../src/core/error-codes.js";
+import { protocolInfo } from "../src/core/protocol-info.js";
+
+const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const outputPath = path.join(repositoryRoot, "docs", "AGENT_PROTOCOL_SUMMARY.md");
+
+function cell(value) {
+  return String(value ?? "").replaceAll("|", "\\|").replaceAll("\n", " ");
+}
+
+function table(headers, rows) {
+  const lines = [
+    `| ${headers.map(cell).join(" | ")} |`,
+    `| ${headers.map(() => "---").join(" | ")} |`,
+  ];
+  for (const row of rows) lines.push(`| ${row.map(cell).join(" | ")} |`);
+  return lines.join("\n");
+}
+
+function commandCatalog() {
+  const groups = new Map();
+  for (const command of Object.values(CLI_COMMAND_DEFINITIONS).sort((left, right) => left.name.localeCompare(right.name))) {
+    const commands = groups.get(command.category) ?? [];
+    commands.push(command);
+    groups.set(command.category, commands);
+  }
+  return [...groups.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([category, commands]) => [
+      `### ${category}`,
+      table(["Command", "Mutation", "Purpose"], commands.map((command) => [command.name, command.mutation, command.description])),
+    ])
+    .flat()
+    .join("\n\n");
+}
+
+async function render() {
+  const packageJson = JSON.parse(await readFile(path.join(repositoryRoot, "package.json"), "utf8"));
+  const info = protocolInfo({ packageVersion: packageJson.version });
+  const features = Object.entries(info.features)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([name, feature]) => [name, feature.version ?? "n/a", feature.supported === false ? "no" : "yes"]);
+  const artifacts = Object.values(ARTIFACT_REGISTRY)
+    .filter((artifact) => artifact.isPublic)
+    .sort((left, right) => left.key.localeCompare(right.key))
+    .map((artifact) => [artifact.key, artifact.scope, artifact.path, artifact.schema, artifact.trustRole]);
+  const errors = Object.values(PUBLIC_ERROR_REGISTRY)
+    .filter((error) => /^(E_(CLI|WORKSPACE|HANDOFF|RESPONSIBILITY|VERIFICATION_SCOPE|REVISION|ATTESTATION)_)/u.test(error.code))
+    .sort((left, right) => left.code.localeCompare(right.code))
+    .map((error) => [error.code, error.meaning]);
+
+  return `# ForgeLoop Agent Protocol Summary
+
+> Generated from the ForgeLoop protocol registries. This file is a concise navigation aid; the normative documents, schemas, and CLI implementation remain authoritative.
+
+## Scope
+
+ForgeLoop is a portable protocol and support CLI for verifiable engineering workflows. It records and validates task state, contracts, routing, checks, evidence, continuity, and optional code attestations. It does not become an agent scheduler, delegation service, source-control authority, or secret manager.
+
+Protocol version: ${info.protocolVersion}  
+Package version: ${packageJson.version}
+
+## Canonical loop
+
+1. Discover existing work with forgeloop task-list --json.
+2. Select or create one task, then run forgeloop next --task <id> --json.
+3. Persist the contract, route, gates, and source registry; require forgeloop preflight to return READY.
+4. Execute bounded checks through the canonical CLI and preserve execution provenance.
+5. Reconcile continuity, inspect evidence, and advance through VERIFYING and REVIEWING.
+6. Run forgeloop complete; accept completion only when the validator returns VALID.
+7. Run forgeloop next again and follow the returned lifecycle action to a terminal state or an explicit blocker.
+
+## Authority boundaries
+
+- Protocol-derived facts outrank actor-provided labels, free-form summaries, and guessed identities.
+- Optional artifacts are reported as NOT_APPLICABLE when absent; malformed active security artifacts fail closed.
+- Workspace binding confirms an explicit Git worktree identity but is not a portability requirement for attestation.
+- Handoff envelopes record immutable intent and state snapshots; they do not delegate work or grant completion authority.
+- Responsibility contracts constrain paths, checks, and frozen inputs; they do not prove identity or authorship.
+- Verification scope describes planned verification breadth. Attestation coverage proves content for a concrete revision. These are separate claims.
+- Attestation manifests exclude ForgeLoop protocol metadata and bind to the completion receipt and append-only ledger without circular references.
+- Verification commands are read-only. Signing is external; private keys and credentials are never persisted by ForgeLoop.
+
+## Lifecycle
+
+Phases: ${info.lifecycle.phases.join(", ")}
+
+## Feature registry
+
+${table(["Feature", "Version", "Supported"], features)}
+
+## Public artifact registry
+
+${table(["Key", "Scope", "Path", "Schema", "Trust role"], artifacts)}
+
+## Command catalog
+
+${commandCatalog()}
+
+## Stable boundary and attestation errors
+
+${table(["Code", "Meaning"], errors)}
+
+## Authoritative implementation surfaces
+
+- Normative protocol: LOOP_ENGINEERING.md and PROTOCOL_INTEGRATION.md.
+- Artifact contracts: schemas/.
+- Lifecycle and command behavior: src/core/ and src/cli.js.
+- Integration surface: src/integration.js, src/integration.d.ts, and integrations/.
+- User-facing command and artifact references: docs/CLI_REFERENCE.md and docs/ARTIFACT_REFERENCE.md.
+`;
+}
+
+const check = process.argv.includes("--check");
+const content = await render();
+let current = null;
+try {
+  current = await readFile(outputPath, "utf8");
+} catch (error) {
+  if (error.code !== "ENOENT") throw error;
+}
+
+if (check) {
+  if (current !== content) {
+    console.error(`Generated agent summary is stale: ${path.relative(repositoryRoot, outputPath)}`);
+    process.exit(1);
+  }
+  console.log(`Generated agent summary is current: ${path.relative(repositoryRoot, outputPath)}`);
+} else {
+  await writeFile(outputPath, content, "utf8");
+  console.log(`Generated ${path.relative(repositoryRoot, outputPath)}`);
+}

@@ -7,7 +7,7 @@
     "url": "git+https://github.com/cassiomc1/forgeloop.git"
   },
   "homepage": "https://github.com/cassiomc1/forgeloop#readme",
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "MIT",
   "publishConfig": {
     "access": "public"
   },
@@ -36,7 +36,6 @@
     "ORCHESTRATOR_INTEGRATION.md",
     "THREAT_MODEL.md",
     "CONTRACT_COVERAGE.md",
-    "AGENT_COMPATIBILITY.md",
     "PROJECT_PROFILE.md",
     "THIRD_PARTY_NOTICES.md",
     "LICENSE",
@@ -54,14 +53,25 @@
     "docs/TROUBLESHOOTING.md",
     "docs/RECIPES.md",
     "docs/DOCUMENTATION_GUIDE.md",
-    "docs/RELEASE_CHECKLIST_1_4.md",
+    "docs/RELEASE_CHECKLIST.md",
     "scripts/CI_VALIDATORS.md",
     "docs/MCP.md",
     "docs/UNIVERSAL_INTEGRATION.md",
     "docs/DIAGNOSTIC_MODEL.md",
     "docs/EXECUTION_TRACE.md",
-    "docs/RELEASE_CHECKLIST_1_5_MCP.md",
-    "docs/RELEASE_CHECKLIST_1_6_1.md"
+    "docs/CODE_ATTESTATION.md",
+    "docs/REVISION_PROVIDERS.md",
+    "docs/SIGNING_PROVIDERS.md",
+    "docs/PLATFORM_ADAPTERS.md",
+    "docs/AGENT_PROTOCOL_SUMMARY.md",
+    "scripts/generate-shell-completions.mjs",
+    "scripts/generate-agent-protocol-summary.mjs",
+    "scripts/benchmark-cli-startup.mjs",
+    "scripts/check-critical-coverage.mjs",
+    "scripts/check-changelog-freshness.mjs",
+    "scripts/write-forgeloop-attestation-summary.mjs",
+    "completions",
+    "integrations/generic-ci"
   ],
   "scripts": {
     "test": "node scripts/run-tests.js",
@@ -78,9 +88,18 @@
     "docs:report": "node scripts/report_documentation_health.mjs",
     "docs:check": "node scripts/run-docs-check.js",
     "lint": "eslint .",
-    "coverage": "c8 --all --include=src/**/*.js --reporter=text --reporter=lcov --check-coverage --lines=80 --functions=75 --branches=70 --statements=80 node scripts/run-tests.js",
+    "coverage": "c8 --all --include=src/**/*.js --reporter=text --reporter=lcov --reporter=json-summary --check-coverage --lines=80 --functions=75 --branches=70 --statements=80 node scripts/run-tests.js",
     "dependency:policy": "node scripts/check-dependency-policy.mjs",
-    "mcp:test": "node --test integrations/mcp/tests/*.test.js",
+    "mcp:test": "node scripts/run-mcp-tests.mjs",
+    "completions:generate": "node scripts/generate-shell-completions.mjs --write",
+    "completions:check": "node scripts/generate-shell-completions.mjs --check",
+    "test:quick": "node --test tests/cli.test.js tests/schema-health.test.js tests/schema-golden.test.js tests/protocol-info.test.js tests/integration-capabilities.test.js",
+    "performance:check": "node scripts/benchmark-cli-startup.mjs",
+    "critical-coverage:check": "node scripts/check-critical-coverage.mjs",
+    "changelog:check": "node scripts/check-changelog-freshness.mjs",
+    "attestation:summary": "node scripts/write-forgeloop-attestation-summary.mjs",
+    "summary:generate": "node scripts/generate-agent-protocol-summary.mjs --write",
+    "summary:check": "node scripts/generate-agent-protocol-summary.mjs --check",
     "mcp:setup": "node scripts/mcp-setup.mjs",
     "mcp:pack:check": "node scripts/mcp-package-smoke.mjs",
     "poc:evidence:verify": "node scripts/verify_poc_evidence.mjs",
@@ -92,6 +111,9 @@
   },
   "exports": {
     ".": "./src/cli.js",
-    "./integration": "./src/integration.js"
+    "./integration": {
+      "types": "./src/integration.d.ts",
+      "default": "./src/integration.js"
+    }
   }
 }

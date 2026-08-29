@@ -39,3 +39,7 @@ exclude = [
 [hosts."docs.ansible.com"]
 concurrency = 1
 request_interval = "5s"
+
+# Link exclusions are compatibility exceptions, not permanent truth. Review
+# this list manually at least once per quarter and remove entries when the
+# referenced host becomes reliably checkable.

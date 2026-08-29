@@ -63,6 +63,19 @@ import { runTaskResume } from "../commands/task-resume.js";
 import { runTaskRepairLegacyRecovery } from "../commands/task-repair-legacy-recovery.js";
 import { runTaskLockStatus } from "../commands/task-lock-status.js";
 import { runProtocolInfo } from "../commands/protocol-info.js";
+import { runWorkspaceBind } from "../commands/workspace-bind.js";
+import { runWorkspaceStatus } from "../commands/workspace-status.js";
+import { runHandoffCreate } from "../commands/handoff-create.js";
+import { runHandoffList } from "../commands/handoff-list.js";
+import { runHandoffShow } from "../commands/handoff-show.js";
+import { runResponsibilitySet } from "../commands/responsibility-set.js";
+import { runResponsibilityStatus } from "../commands/responsibility-status.js";
+import { runVerifyScope } from "../commands/verify-scope.js";
+import { runAttestationCreate } from "../commands/attestation-create.js";
+import { runAttestationVerify } from "../commands/attestation-verify.js";
+import { runAttestationStatus } from "../commands/attestation-status.js";
+import { runAttestationVerifyRange } from "../commands/attestation-verify-range.js";
+import { exitCodeForAttestationResult } from "./exit-codes.js";
 
 /**
  * Canonical transport-neutral command executors.
@@ -171,11 +184,77 @@ export const COMMAND_EXECUTORS = {
       argv: options.commandArgv,
       details: options.checkDetails ?? undefined,
       timeoutMs: options.timeoutMs ?? undefined,
+      scopeRef: options.scopeRef ?? undefined,
       taskId: options.taskId,
       authorityContext,
       runtimeContext,
     });
     return { result, exitCode: result.check.status === "passed" ? 0 : 1 };
+  },
+  "workspace-bind": async ({ target, packageRoot, options }) => ({
+    result: await runWorkspaceBind({ target, packageRoot, taskId: options.taskId }),
+    exitCode: 0,
+  }),
+  "workspace-status": async ({ target, packageRoot, options }) => {
+    const result = await runWorkspaceStatus({ target, packageRoot, taskId: options.taskId });
+    return { result, exitCode: ["UNBOUND", "MATCH"].includes(result.status) ? 0 : 1 };
+  },
+  "handoff-create": async ({ target, packageRoot, options }) => ({
+    result: await runHandoffCreate({
+      target,
+      packageRoot,
+      taskId: options.taskId,
+      recipientHint: options.recipientHint,
+      handoffNote: options.handoffNote,
+    }),
+    exitCode: 0,
+  }),
+  "handoff-list": async ({ target, packageRoot, options }) => ({
+    result: await runHandoffList({ target, packageRoot, taskId: options.taskId }),
+    exitCode: 0,
+  }),
+  "handoff-show": async ({ target, packageRoot, options }) => ({
+    result: await runHandoffShow({ target, packageRoot, taskId: options.taskId, handoffId: options.handoffId }),
+    exitCode: 0,
+  }),
+  "responsibility-set": async ({ target, packageRoot, options }) => ({
+    result: await runResponsibilitySet({
+      target,
+      packageRoot,
+      taskId: options.taskId,
+      responsibilityLabel: options.responsibilityLabel,
+      responsibilityAllowedPaths: options.responsibilityAllowedPaths,
+      responsibilityReadOnlyPaths: options.responsibilityReadOnlyPaths,
+      responsibilityRequiredChecks: options.responsibilityRequiredChecks,
+      responsibilityFreezeContract: options.responsibilityFreezeContract,
+      responsibilityFreezeRoute: options.responsibilityFreezeRoute,
+      responsibilityFreezeClaims: options.responsibilityFreezeClaims,
+    }),
+    exitCode: 0,
+  }),
+  "responsibility-status": async ({ target, packageRoot, options }) => {
+    const result = await runResponsibilityStatus({ target, packageRoot, taskId: options.taskId });
+    return { result, exitCode: ["NOT_APPLICABLE", "VALID"].includes(result.status) ? 0 : 1 };
+  },
+  "verify-scope": async ({ target, packageRoot, options }) => ({
+    result: await runVerifyScope({ target, packageRoot, taskId: options.taskId, verificationScopeMode: options.verificationScopeMode }),
+    exitCode: 0,
+  }),
+  "attestation-create": async ({ target, packageRoot, options }) => ({
+    result: await runAttestationCreate({ target, packageRoot, taskId: options.taskId }),
+    exitCode: 0,
+  }),
+  "attestation-verify": async ({ target, packageRoot, options }) => {
+    const result = await runAttestationVerify({ target, packageRoot, taskId: options.taskId, ...options });
+    return { result, exitCode: exitCodeForAttestationResult(result) };
+  },
+  "attestation-status": async ({ target, packageRoot, options }) => {
+    const result = await runAttestationStatus({ target, packageRoot, taskId: options.taskId });
+    return { result, exitCode: exitCodeForAttestationResult(result) };
+  },
+  "attestation-verify-range": async ({ target, packageRoot, options }) => {
+    const result = await runAttestationVerifyRange({ target, packageRoot, ...options });
+    return { result, exitCode: exitCodeForAttestationResult(result) };
   },
   "run-action": async ({ target, packageRoot, options, authorityContext, runtimeContext }) => {
     const result = await runAction({ target, packageRoot, taskId: options.taskId,

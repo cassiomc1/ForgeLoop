@@ -6,7 +6,7 @@ import { taskArtifactPath } from "./task-paths.js";
 
 export async function persistRoute(target, route, packageRoot, options = {}) {
   assertRouteInvariants(route);
-  let { contractFingerprint, ...writeOptions } = options;
+  const { contractFingerprint, ...writeOptions } = options;
   let contractArtifact = null;
   if (contractFingerprint === undefined) {
     try {

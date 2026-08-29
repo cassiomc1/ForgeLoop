@@ -17,7 +17,8 @@ function publicSchemaVersions() {
   return Object.fromEntries(
     [...new Set(Object.values(ARTIFACT_REGISTRY)
       .filter((artifact) => artifact.isPublic && artifact.isPersisted)
-      .map((artifact) => artifact.schema))]
+      .map((artifact) => artifact.schema)
+      .filter(Boolean))]
       .sort()
       .map((schema) => [schema, [SCHEMA_COMPATIBILITY_POLICY.schemaVersion]]),
   );
@@ -93,6 +94,45 @@ export function protocolInfo({ packageVersion = null } = {}) {
       durableApprovals: { version: 1, supported: true, fingerprintBound: true, hostAttestationMinting: false },
       trajectoryMetrics: { version: 1, supported: true, usageUnknownWhenUnreported: true, overallScore: false },
       trajectoryEvaluation: { version: 1, supported: true, requiresReferenceScenario: true, source: "PROJECT_LOCAL_REFERENCE" },
+      workspaceBinding: {
+        version: 1,
+        supported: true,
+        optional: true,
+        modes: ["GIT_WORKTREE"],
+        statuses: ["UNBOUND", "MATCH", "MISMATCH", "INVALID", "UNAVAILABLE"],
+        rebinding: "EXPLICIT_ONLY",
+      },
+      canonicalHandoffs: {
+        version: 1,
+        supported: true,
+        immutable: true,
+        actorControlledIntent: true,
+        lifecycleAuthority: false,
+      },
+      responsibilityConstraints: {
+        version: 1,
+        supported: true,
+        immutableDuringPass: true,
+        frozenInputs: ["contract", "route", "claims"],
+        completionEnforced: true,
+      },
+      differentialVerificationScope: {
+        version: 1,
+        supported: true,
+        modes: ["AUTO", "CHANGED", "CLAIMED", "FULL"],
+        heuristicImpactedMode: false,
+        staleBinding: true,
+      },
+      codeAttestation: {
+        version: 1,
+        supported: true,
+        modes: ["off", "optional", "required"],
+        revisionProviders: ["git"],
+        signingProviders: ["none", "sigstore"],
+        statementType: "https://in-toto.io/Statement/v1",
+        completionLedgerBound: true,
+        excludesProtocolMetadata: true,
+      },
       observabilityStability: {
         executionHistory: "stable",
         structuredTrace: "stable",

@@ -77,7 +77,7 @@ test("every lifecycle action recommended by next is executable and makes progres
     await appendProtocolEvent(target, { taskId: contract.taskId, event: "ROUTE_VALIDATED" }, packageRoot);
 
     // In PLANNED: next recommends START_EXECUTION or RUN_PREFLIGHT
-    let preflight = await runPreflight({ target, packageRoot });
+    const preflight = await runPreflight({ target, packageRoot });
     assert.equal(preflight.status, "READY");
 
     let next = await getNextAction(target, packageRoot);

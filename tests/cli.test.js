@@ -454,9 +454,9 @@ test("rejects options that do not belong to the selected command", async () => {
     const initJson = runCli(target, "init", "--json");
     const doctorDryRun = runCli(target, "doctor", "--dry-run");
 
-    assert.equal(initJson.status, 1);
+    assert.equal(initJson.status, 2);
     assert.match(initJson.stderr, /not valid for init/i);
-    assert.equal(doctorDryRun.status, 1);
+    assert.equal(doctorDryRun.status, 2);
     assert.match(doctorDryRun.stderr, /not valid for doctor/i);
   });
 });
@@ -527,7 +527,7 @@ test("route rejects invalid signal values and unrelated flags", async () => {
 
     assert.equal(unknown.status, 1);
     assert.match(unknown.stderr, /unknown work type/i);
-    assert.equal(dryRun.status, 1);
+    assert.equal(dryRun.status, 2);
     assert.match(dryRun.stderr, /not valid for route/i);
   });
 });

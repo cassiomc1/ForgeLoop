@@ -1,16 +1,24 @@
 import { readdir } from "node:fs/promises";
 
-import { ARTIFACT_PATHS, readJsonArtifact, writeJsonArtifact } from "./artifacts.js";
+import { ARTIFACT_PATHS, canonicalFingerprint, readJsonArtifact, writeJsonArtifact } from "./artifacts.js";
 import { validateContract } from "./contract.js";
 import { assertSafePath, ensureWithin, fileExists, readBytes, writeFileAtomic } from "./filesystem.js";
 import { PROTOCOL_VERSION } from "./protocol.js";
 import { validateChecksExecutionProvenance } from "./completion-artifacts.js";
 import { readExecutionArtifact } from "./execution.js";
 import { assertContinuitySemantics } from "./continuity.js";
+import { validateEventLedger } from "./events.js";
 import { taskArtifactPath, taskDirectory } from "./task-paths.js";
 import { resolveTaskClaimState } from "./task-claim-state.js";
 import { E_TASK_CLAIM_OWNERSHIP_INCONSISTENT } from "./error-codes.js";
 import { listActions } from "./actions.js";
+import { validateCanonicalHandoff } from "./handoff.js";
+import { validateVerificationScope } from "./verification-scope.js";
+import { validateResponsibilityContract } from "./responsibility.js";
+import { validateWorkspaceBinding } from "./workspace-binding.js";
+import { validateCodeManifest, validateCodeManifestBindings } from "./code-manifest.js";
+import { assertAttestationStatementBindings } from "./attestation-verifier.js";
+import { validateAttestationStatement } from "./attestation.js";
 
 export const BUNDLE_SCHEMA_VERSION = 1;
 const BUNDLE_ROOT = ".forgeloop/tasks";
@@ -28,6 +36,34 @@ function bundleDirectory(taskId) {
   return `${BUNDLE_ROOT}/${safeTaskId(taskId)}`;
 }
 
+function bundleBindingError(code, message) {
+  const error = new Error(message);
+  error.code = code;
+  return error;
+}
+
+function assertBundledCodeManifestBindings({ loaded, ledger, taskId }) {
+  const manifest = loaded.codeManifest;
+  if (!manifest) return;
+  const comparisons = [
+    ["taskId", manifest.taskId, taskId, "E_BUNDLE_TASK_MISMATCH"],
+    ["contractFingerprint", manifest.bindings.contractFingerprint, loaded.contract ? canonicalFingerprint(loaded.contract) : null, "E_ATTESTATION_CONTRACT_MISMATCH"],
+    ["routeFingerprint", manifest.bindings.routeFingerprint, loaded.route ? canonicalFingerprint(loaded.route) : null, "E_ATTESTATION_ROUTE_MISMATCH"],
+    ["stateFingerprint", manifest.bindings.stateFingerprint, loaded.state ? canonicalFingerprint(loaded.state) : null, "E_ATTESTATION_STATE_MISMATCH"],
+    ["receiptFingerprint", manifest.bindings.receiptFingerprint, loaded.receipt ? canonicalFingerprint(loaded.receipt) : null, "E_ATTESTATION_RECEIPT_MISMATCH"],
+  ];
+  for (const [name, expected, actual, code] of comparisons) {
+    if (expected !== actual) throw bundleBindingError(code, `Bundled code manifest binding does not match ${name}`);
+  }
+  if (!ledger?.valid) {
+    throw bundleBindingError("E_ATTESTATION_LEDGER_MISMATCH", "A valid bundled event ledger is required by the code manifest");
+  }
+  const completion = ledger.events.findLast((event) => event.taskId === taskId && event.event === "COMPLETION_VALIDATED");
+  if (!completion || completion.seq !== manifest.bindings.ledgerSeq || completion.hash !== manifest.bindings.ledgerHash) {
+    throw bundleBindingError("E_ATTESTATION_LEDGER_MISMATCH", "Bundled code manifest does not match the COMPLETION_VALIDATED ledger checkpoint");
+  }
+}
+
 async function copyJson(target, sourcePath, destinationPath, schemaName, packageRoot, artifacts, relativeName) {
   try {
     const value = await readJsonArtifact(target, sourcePath, schemaName, packageRoot);
@@ -38,6 +74,23 @@ async function copyJson(target, sourcePath, destinationPath, schemaName, package
     if (error.code === "ARTIFACT_MISSING") return null;
     throw error;
   }
+}
+
+async function copyOptionalJson(target, taskPath, legacyPath, destinationPath, schemaName, packageRoot, artifacts, relativeName) {
+  const candidates = [taskPath, legacyPath].filter(Boolean);
+  for (const sourcePath of candidates) {
+    if (!(await fileExists(ensureWithin(target, sourcePath)))) continue;
+    return copyJson(target, sourcePath, destinationPath, schemaName, packageRoot, artifacts, relativeName);
+  }
+  return null;
+}
+
+async function copyRawFile(target, sourcePath, destinationPath, artifacts, relativeName) {
+  if (!(await fileExists(ensureWithin(target, sourcePath)))) return false;
+  await assertSafePath(target, destinationPath);
+  await writeFileAtomic(ensureWithin(target, destinationPath), await readBytes(ensureWithin(target, sourcePath)));
+  artifacts.push(relativeName);
+  return true;
 }
 
 async function tryReadJson(target, taskPath, legacyPath, schemaName, packageRoot) {
@@ -117,19 +170,89 @@ export async function exportTaskBundle(target, taskId, packageRoot) {
     [ARTIFACT_PATHS.config, null, "config.json", "config"],
     [taskArtifactPath(taskId, "continuity"), ARTIFACT_PATHS.continuity, "continuity.json", "continuity"],
     [taskArtifactPath(taskId, "recovery"), null, "recovery.json", "task-recovery"],
+    [taskArtifactPath(taskId, "workspaceBinding"), null, "workspace-binding.json", "workspace-binding"],
+    [taskArtifactPath(taskId, "responsibility"), null, "responsibility.json", "responsibility"],
+    [taskArtifactPath(taskId, "verificationScope"), null, "verification-scope.json", "verification-scope"],
+    [taskArtifactPath(taskId, "attestations") + "/code-manifest.json", null, "attestations/code-manifest.json", "code-manifest"],
+    [taskArtifactPath(taskId, "attestations") + "/statement.json", null, "attestations/statement.json", "in-toto-statement"],
   ];
+  let exportedWorkspaceBinding = null;
+  let exportedResponsibility = null;
+  let exportedVerificationScope = null;
+  let exportedManifest = null;
+  let exportedStatement = null;
   for (const [taskRel, legacyRel, destinationName, schemaName] of optional) {
-    let copied = null;
-    try {
-      copied = await copyJson(target, taskRel, `${directory}/${destinationName}`, schemaName, packageRoot, artifacts, destinationName);
-    } catch {
-      if (legacyRel) {
-        copied = await copyJson(target, legacyRel, `${directory}/${destinationName}`, schemaName, packageRoot, artifacts, destinationName);
-      }
-    }
+    const copied = await copyOptionalJson(target, taskRel, legacyRel, `${directory}/${destinationName}`, schemaName, packageRoot, artifacts, destinationName);
     if (copied && !artifacts.includes(destinationName)) artifacts.push(destinationName);
+    if (destinationName === "attestations/code-manifest.json") exportedManifest = copied;
+    if (destinationName === "attestations/statement.json") exportedStatement = copied;
+    if (destinationName === "workspace-binding.json") exportedWorkspaceBinding = copied;
+    if (destinationName === "responsibility.json") exportedResponsibility = copied;
+    if (destinationName === "verification-scope.json") exportedVerificationScope = copied;
   }
 
+  if (exportedWorkspaceBinding?.value) {
+    exportedWorkspaceBinding.value = await validateWorkspaceBinding(exportedWorkspaceBinding.value, packageRoot);
+    if (exportedWorkspaceBinding.value.taskId !== taskId) {
+      const error = new Error("Workspace binding taskId does not match its bundle task");
+      error.code = "E_BUNDLE_TASK_MISMATCH";
+      throw error;
+    }
+  }
+  if (exportedResponsibility?.value) {
+    exportedResponsibility.value = await validateResponsibilityContract(exportedResponsibility.value, packageRoot);
+    if (exportedResponsibility.value.taskId !== taskId) {
+      const error = new Error("Responsibility taskId does not match its bundle task");
+      error.code = "E_BUNDLE_TASK_MISMATCH";
+      throw error;
+    }
+  }
+  if (exportedVerificationScope?.value) {
+    exportedVerificationScope.value = await validateVerificationScope(exportedVerificationScope.value, packageRoot);
+    if (exportedVerificationScope.value.taskId !== taskId) {
+      const error = new Error("Verification scope taskId does not match its bundle task");
+      error.code = "E_BUNDLE_TASK_MISMATCH";
+      throw error;
+    }
+  }
+
+  const handoffDirectory = taskArtifactPath(taskId, "handoffs");
+  if (await fileExists(ensureWithin(target, handoffDirectory))) {
+    const handoffEntries = await readdir(ensureWithin(target, handoffDirectory), { withFileTypes: true });
+    for (const entry of handoffEntries
+      .filter((item) => item.isFile() && /^handoff-[A-Za-z0-9_-]+\.json$/u.test(item.name))
+      .sort((left, right) => left.name.localeCompare(right.name))) {
+      const sourcePath = `${handoffDirectory}/${entry.name}`;
+      const handoff = await readJsonArtifact(target, sourcePath, "handoff-envelope", packageRoot);
+      await validateCanonicalHandoff(target, handoff.value, { taskId, packageRoot });
+      const destination = `handoffs/${entry.name}`;
+      await writeJsonArtifact(target, `${directory}/${destination}`, handoff.value, "handoff-envelope", packageRoot);
+      artifacts.push(destination);
+    }
+  }
+
+  const rawAttestationBundle = `${taskArtifactPath(taskId, "attestations")}/statement.sigstore.json`;
+  await copyRawFile(target, rawAttestationBundle, `${directory}/attestations/statement.sigstore.json`, artifacts, "attestations/statement.sigstore.json");
+  if (exportedManifest?.value) {
+    exportedManifest.value = await validateCodeManifest(exportedManifest.value, packageRoot);
+    if (exportedManifest.value.taskId !== taskId) {
+      const error = new Error("Code manifest taskId does not match its bundle task");
+      error.code = "E_BUNDLE_TASK_MISMATCH";
+      throw error;
+    }
+    await validateCodeManifestBindings({ target, packageRoot, taskId, manifest: exportedManifest.value });
+  }
+  if (exportedStatement?.value) {
+    await validateAttestationStatement(exportedStatement.value, packageRoot);
+    if (exportedStatement.value.predicate.task.taskId !== taskId) {
+      const error = new Error("Attestation statement taskId does not match its bundle task");
+      error.code = "E_BUNDLE_TASK_MISMATCH";
+      throw error;
+    }
+  }
+  if (exportedManifest?.value && exportedStatement?.value) {
+    assertAttestationStatementBindings(exportedStatement.value, exportedManifest.value, taskId, canonicalFingerprint(exportedManifest.value));
+  }
   const actionArtifacts = await listActions(target, { packageRoot, taskId });
   for (const action of actionArtifacts) {
     const destination = `${directory}/actions/${action.actionId}.json`;
@@ -203,6 +326,11 @@ export async function readTaskBundle(target, taskId, packageRoot) {
     "continuity.json": ["continuity", "continuity"],
     "task.json": ["descriptor", "task-descriptor"],
     "recovery.json": ["recovery", "task-recovery"],
+    "workspace-binding.json": ["workspaceBinding", "workspace-binding"],
+    "responsibility.json": ["responsibility", "responsibility"],
+    "verification-scope.json": ["verificationScope", "verification-scope"],
+    "attestations/code-manifest.json": ["codeManifest", "code-manifest"],
+    "attestations/statement.json": ["attestationStatement", "in-toto-statement"],
     ...Object.fromEntries(manifest.value.artifacts.filter((artifact) => artifact.startsWith("actions/")).map((artifact) => [artifact, ["action", "action"]])),
   };
   const executions = {};
@@ -218,6 +346,24 @@ export async function readTaskBundle(target, taskId, packageRoot) {
       loaded.actions[action.value.actionId] = action.value;
       continue;
     }
+    if (artifact.startsWith("handoffs/") && artifact.endsWith(".json")) {
+      const handoff = await readJsonArtifact(target, `${directory}/${artifact}`, "handoff-envelope", packageRoot);
+      await validateCanonicalHandoff(target, handoff.value, { taskId, packageRoot });
+      loaded.handoffs ??= [];
+      loaded.handoffs.push(handoff.value);
+      continue;
+    }
+    if (artifact === "attestations/statement.sigstore.json") {
+      const raw = await readBytes(ensureWithin(target, `${directory}/${artifact}`));
+      try {
+        loaded.attestationBundle = JSON.parse(raw.toString("utf8"));
+      } catch (error) {
+        const invalid = new Error(`Attestation signature bundle is not valid JSON: ${error.message}`);
+        invalid.code = "E_ATTESTATION_SIGNATURE_INVALID";
+        throw invalid;
+      }
+      continue;
+    }
     const mapping = mappings[artifact];
     if (!mapping) continue;
     const loadedArtifact = await readJsonArtifact(target, `${directory}/${artifact}`, mapping[1], packageRoot);
@@ -227,7 +373,62 @@ export async function readTaskBundle(target, taskId, packageRoot) {
     if (mapping[1] === "continuity") {
       assertContinuitySemantics(loadedArtifact.value);
     }
+    if (mapping[1] === "workspace-binding" && loadedArtifact.value.taskId !== taskId) {
+      const error = new Error("Workspace binding taskId does not match its bundle task");
+      error.code = "E_BUNDLE_TASK_MISMATCH";
+      throw error;
+    }
+    if (mapping[1] === "workspace-binding") {
+      loadedArtifact.value = await validateWorkspaceBinding(loadedArtifact.value, packageRoot);
+    }
+    if (mapping[1] === "responsibility") {
+      loadedArtifact.value = await validateResponsibilityContract(loadedArtifact.value, packageRoot);
+      if (loadedArtifact.value.taskId !== taskId) {
+        const error = new Error("Responsibility taskId does not match its bundle task");
+        error.code = "E_BUNDLE_TASK_MISMATCH";
+        throw error;
+      }
+    }
+    if (mapping[1] === "verification-scope") {
+      loadedArtifact.value = await validateVerificationScope(loadedArtifact.value, packageRoot);
+      if (loadedArtifact.value.taskId !== taskId) {
+        const error = new Error("Verification scope taskId does not match its bundle task");
+        error.code = "E_BUNDLE_TASK_MISMATCH";
+        throw error;
+      }
+    }
+    if (mapping[1] === "code-manifest") {
+      loadedArtifact.value = await validateCodeManifest(loadedArtifact.value, packageRoot);
+      if (loadedArtifact.value.taskId !== taskId) {
+        const error = new Error("Code manifest taskId does not match its bundle task");
+        error.code = "E_BUNDLE_TASK_MISMATCH";
+        throw error;
+      }
+    }
+    if (mapping[1] === "in-toto-statement") {
+      await validateAttestationStatement(loadedArtifact.value, packageRoot);
+      if (loadedArtifact.value.predicate.task.taskId !== taskId) {
+        const error = new Error("Attestation statement taskId does not match its bundle task");
+        error.code = "E_BUNDLE_TASK_MISMATCH";
+        throw error;
+      }
+    }
     loaded[mapping[0]] = loadedArtifact.value;
+  }
+  const bundledLedger = loaded.codeManifest && manifest.value.artifacts.includes("events.ndjson")
+    ? await validateEventLedger(target, packageRoot, { taskId, eventsPath: `${directory}/events.ndjson` })
+    : null;
+  assertBundledCodeManifestBindings({ loaded, ledger: bundledLedger, taskId });
+  if (loaded.attestationStatement && !loaded.codeManifest) {
+    throw bundleBindingError("E_ATTESTATION_MANIFEST_MISSING", "A bundled attestation statement requires its code manifest");
+  }
+  if (loaded.codeManifest && loaded.attestationStatement) {
+    assertAttestationStatementBindings(
+      loaded.attestationStatement,
+      loaded.codeManifest,
+      taskId,
+      canonicalFingerprint(loaded.codeManifest),
+    );
   }
   if (Object.keys(executions).length > 0) loaded.executions = executions;
   if (loaded.state?.checks) {

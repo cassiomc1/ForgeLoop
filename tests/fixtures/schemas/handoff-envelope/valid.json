@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "handoffId": "handoff-fixture",
+  "taskId": "fixture",
+  "createdAt": "2026-08-29T00:00:00.000Z",
+  "intent": {
+    "recipientHint": "next-harness",
+    "note": "Continue verification."
+  },
+  "state": {
+    "phase": "EXECUTING",
+    "revision": 1,
+    "verificationCycle": 1,
+    "contractFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "routeFingerprint": null,
+    "repositoryFingerprint": {},
+    "writeClaims": ["src"],
+    "changedPaths": ["src/index.js"]
+  },
+  "evidence": {
+    "executionRefs": [],
+    "checkIds": []
+  },
+  "continuity": {
+    "ref": "none",
+    "fingerprint": null
+  },
+  "artifactDigest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+}

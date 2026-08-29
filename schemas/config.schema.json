@@ -10,7 +10,42 @@
     "complianceMode": { "enum": ["advisory", "standard", "strict"] },
     "policy": { "type": "string", "minLength": 1 },
     "requiredGates": { "type": "array", "items": { "type": "string", "minLength": 1 } },
-    "requiredEvidence": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+    "requiredEvidence": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "attestation": {
+      "type": "object",
+      "required": ["mode", "revisionProvider", "requireCompleteCoverage", "coverage", "signing"],
+      "additionalProperties": false,
+      "properties": {
+        "mode": { "enum": ["off", "optional", "required"] },
+        "revisionProvider": { "type": "string", "minLength": 1 },
+        "requireCompleteCoverage": { "type": "boolean" },
+        "coverage": {
+          "type": "object",
+          "required": ["exclude"],
+          "additionalProperties": false,
+          "properties": { "exclude": { "type": "array", "items": { "type": "string", "minLength": 1 } } }
+        },
+        "signing": {
+          "type": "object",
+          "required": ["provider", "required", "policy"],
+          "additionalProperties": false,
+          "properties": {
+            "provider": { "enum": ["none", "sigstore"] },
+            "required": { "type": "boolean" },
+            "policy": {
+              "type": "object",
+              "required": ["identities", "requireTransparencyLog"],
+              "additionalProperties": false,
+              "properties": {
+                "issuer": { "type": "string" },
+                "identities": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+                "requireTransparencyLog": { "type": "boolean" }
+              }
+            }
+          }
+        }
+      }
+    }
   },
   "additionalProperties": false
 }
