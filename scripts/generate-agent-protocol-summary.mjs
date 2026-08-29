@@ -13,7 +13,8 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 const outputPath = path.join(repositoryRoot, "docs", "AGENT_PROTOCOL_SUMMARY.md");
 
 function cell(value) {
-  return String(value ?? "").replaceAll("|", "\\|").replaceAll("\n", " ");
+  const normalized = String(value ?? "");
+  return (normalized || "n/a").replaceAll("|", "\\|").replaceAll("\n", " ");
 }
 
 function table(headers, rows) {

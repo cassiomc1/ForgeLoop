@@ -64,7 +64,7 @@ Phases: RECEIVED, DISCOVERING, CONTRACT_READY, ROUTED, DESIGNING, PLANNED, EXECU
 | --- | --- | --- | --- | --- |
 | actions | TASK | .forgeloop/task-state/<task-key>/actions/action-<id>.json | action | EXTERNAL_ACTION_PROVENANCE |
 | approvals | TASK | .forgeloop/task-state/<task-key>/approvals/approval-<id>.json | approval | ACTION_APPROVAL_ATTESTATION |
-| attestationBundle | TASK | .forgeloop/task-state/<task-key>/attestations/statement.sigstore.json |  | EXTERNAL_SIGNATURE_BUNDLE |
+| attestationBundle | TASK | .forgeloop/task-state/<task-key>/attestations/statement.sigstore.json | n/a | EXTERNAL_SIGNATURE_BUNDLE |
 | attestationStatement | TASK | .forgeloop/task-state/<task-key>/attestations/statement.json | in-toto-statement | CODE_ATTESTATION_STATEMENT |
 | capabilityPolicy | PROJECT | .forgeloop/policy/capabilities.json | capability-policy | CAPABILITY_POLICY_SPECIFICATION |
 | codeManifest | TASK | .forgeloop/task-state/<task-key>/attestations/code-manifest.json | code-manifest | CONTENT_INTEGRITY_SNAPSHOT |
