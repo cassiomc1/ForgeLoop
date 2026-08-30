@@ -26,7 +26,7 @@ async function deriveResumePhaseFromLedger(target, packageRoot, taskId) {
     return null;
   }
   if (!ledger?.valid) return null;
-  const scoped = (ledger.events ?? []).filter((event) => event.taskId === taskId);
+  const scoped = (ledger.events ?? []).filter((event) => !taskId || event.taskId === taskId);
   if (scoped.some((event) => event.event === "COMPLETION_VALIDATED")) return null;
   const positions = RESUME_PHASE_BY_MILESTONE;
   let derived = null;
@@ -40,6 +40,20 @@ async function deriveResumePhaseFromLedger(target, packageRoot, taskId) {
     if (phase === "VERIFYING") derived = "VERIFYING";
   }
   return derived;
+}
+
+function deriveVerificationCycleFromLedger(events) {
+  const cycleEvents = new Set([
+    "VERIFICATION_STARTED",
+    "VERIFICATION_RECORDED",
+    "DIAGNOSIS_RECORDED",
+    "DIAGNOSTIC_CASE_RECORDED",
+  ]);
+  const cycles = events
+    .filter((event) => cycleEvents.has(event.event))
+    .map((event) => event.details?.verificationCycle)
+    .filter((cycle) => Number.isInteger(cycle) && cycle >= 1);
+  return cycles.at(-1);
 }
 
 function resumeSteps(phase) {
@@ -61,6 +75,17 @@ export async function ensureResumableState({ target, packageRoot, contract, rout
   if (existing) return existing;
 
   const resumedPhase = await deriveResumePhaseFromLedger(target, packageRoot, taskId) ?? "ROUTED";
+  let verificationCycle;
+  try {
+    const ledger = await validateEventLedger(target, packageRoot, { taskId });
+    if (ledger.valid) {
+      verificationCycle = deriveVerificationCycleFromLedger(
+        (ledger.events ?? []).filter((event) => !taskId || event.taskId === taskId),
+      );
+    }
+  } catch {
+    verificationCycle = undefined;
+  }
   const steps = resumeSteps(resumedPhase);
   const state = createWorkState({
     taskId: contract.value.taskId,
@@ -71,6 +96,7 @@ export async function ensureResumableState({ target, packageRoot, contract, rout
     selectedGuides: route.value.guides,
     completedSteps: steps.completedSteps,
     pendingSteps: steps.pendingSteps,
+    ...(verificationCycle !== undefined ? { verificationCycle } : {}),
     checks: [],
     failures: [],
     blockers: [],

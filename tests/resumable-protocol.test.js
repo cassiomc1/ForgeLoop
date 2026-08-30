@@ -14,7 +14,8 @@ import { getNextAction, NEXT_ACTIONS } from "../src/core/next-action.js";
 import { evaluateRoute } from "../src/core/router.js";
 import { persistRoute } from "../src/core/route-artifact.js";
 import { getPackageRoot } from "../src/core/templates.js";
-import { readWorkState } from "../src/core/work-state.js";
+import { advanceWorkState } from "../src/core/phase.js";
+import { clearWorkState, readWorkState } from "../src/core/work-state.js";
 import { runPreflight } from "../src/commands/preflight.js";
 import { evaluateAudit } from "../src/core/audit.js";
 import { runValidateProtocol } from "../src/commands/validate-protocol.js";
@@ -90,6 +91,28 @@ test("READY preflight durably creates a resumable checkpoint and complete activa
     );
     assert.equal(ledger.valid, true);
     assert.notEqual((await getNextAction({ target, packageRoot })).nextAction, NEXT_ACTIONS.DISCOVER);
+  });
+});
+
+test("rebuilt VERIFYING checkpoints preserve the verification cycle recorded by the ledger", async () => {
+  await withTarget(async (target) => {
+    await prepareTarget(target);
+    assert.equal((await runPreflight({ target, packageRoot })).status, "READY");
+    await advanceWorkState(target, "PLANNED", { packageRoot });
+    await advanceWorkState(target, "EXECUTING", { packageRoot });
+    await advanceWorkState(target, "VERIFYING", { packageRoot });
+
+    const active = await readWorkState(target, packageRoot);
+    assert.equal(active.phase, "VERIFYING");
+    assert.equal(active.verificationCycle, 1);
+
+    await clearWorkState(target);
+    const restoredPreflight = await runPreflight({ target, packageRoot });
+    const restored = await readWorkState(target, packageRoot);
+
+    assert.equal(restoredPreflight.status, "READY");
+    assert.equal(restored.phase, "VERIFYING");
+    assert.equal(restored.verificationCycle, 1);
   });
 });
 
