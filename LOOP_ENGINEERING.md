@@ -1310,22 +1310,53 @@ mutation, verification, or trust result.
 <a id="FL-WS-001"></a> **FL-WS-001 — A bound task MUST validate the current workspace**
 before a task mutation or ForgeLoop-owned verification launch. Workspace
 identity is derived from the repository/worktree and is never accepted from
-actor input; a mismatch fails closed before a child process starts.
+actor input; a mismatch fails closed before a child process starts. A branch
+name or HEAD value by itself is insufficient to identify a checkout: the
+binding also covers the repository/worktree identity that the protocol derives.
+The artifact is optional; when absent, workspace binding is not applicable.
+When present, `workspace-status` and `run-check` cross the same boundary.
 
 <a id="FL-HANDOFF-001"></a> **FL-HANDOFF-001 — A canonical handoff MUST remain an immutable**
 protocol-derived snapshot. It can carry intent and resume context, but it does
-not delegate work, establish identity, grant authority, or prove completion.
+not delegate work, establish identity, grant authority, provide independent
+review evidence, or prove completion. An optional actor note or recipient hint
+is descriptive metadata only. This envelope is distinct from mutable
+`continuity.json`, which is operational resume context and non-evidence.
 
 <a id="FL-SCOPE-001"></a> **FL-SCOPE-001 — A verification scope MUST narrow execution only from**
 current canonical changed paths, effective claims, or an explicit full-project
 requirement. The resolver never guesses impacted tests, and a stale scope is
-not used as verification evidence.
+not used as verification evidence. The modes are `AUTO`, `CHANGED`, `CLAIMED`,
+and `FULL`; there is no heuristic `IMPACTED` mode. `AUTO` may resolve to
+`CHANGED` or `CLAIMED` only when a trusted scoped checker is configured,
+otherwise it resolves to `FULL`. An explicit `CHANGED` or `CLAIMED` request
+without that checker fails closed with `E_VERIFICATION_SCOPE_UNRESOLVED`.
+The selected paths, checker capability fingerprint, verification cycle,
+contract fingerprint, and repository fingerprint are bound before launch.
+`run-check` must match the configured `argvPrefix` plus the selected paths;
+drift is rejected before the process starts.
 
 <a id="FL-ATTEST-001"></a> **FL-ATTEST-001 — A code attestation MUST bind exact source content**
 to a valid completion receipt and event-ledger checkpoint. Protocol metadata is
 excluded from the source subject, verification is read-only, and a plain
-fingerprint is not a signature. Attestation does not claim authorship or
-absolute correctness.
+fingerprint is not a signature. The binding includes exact bytes, per-entry
+SHA-256 content digests, a deterministic in-toto Statement v1, and the
+provider-specific revision identity. `PROCESSED` means artifacts exist and can
+be parsed; `VERIFIED` means the applicable completion, evidence, manifest, and
+content relationships validate; `ATTESTED` additionally requires a valid
+external signature under the configured identity and issuer policy. Attestation
+does not claim authorship, bug-free code, or absolute security. Verification
+scope is a pre-completion execution decision; attestation coverage is a
+post-completion revision-range question, and one never proves the other.
+
+### Optional responsibility contracts
+
+An optional responsibility contract mechanically constrains a pass with
+allowed/read-only paths, required check IDs, and frozen contract, route, claim,
+and repository inputs. It is a boundary artifact, not an agent-role system.
+Labels such as `implementation` or `review` are descriptive; ForgeLoop has no
+built-in coder, reviewer, or cleaner roles. Completion and audit validate the
+constraint when it is present, and a path or frozen-input drift fails closed.
 
 ## Durable Actions and Trajectory Evidence
 

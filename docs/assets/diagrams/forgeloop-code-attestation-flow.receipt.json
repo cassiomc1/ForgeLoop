@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "diagramId": "forgeloop-code-attestation-flow",
+  "diagramType": "workflow",
+  "source": "docs/diagrams/forgeloop-code-attestation-flow.workflow.json",
+  "outputs": {
+    "html": "docs/assets/diagrams/forgeloop-code-attestation-flow.html",
+    "svg": "docs/assets/diagrams/forgeloop-code-attestation-flow.svg"
+  },
+  "renderer": {
+    "name": "archify",
+    "version": "2.15.0",
+    "commit": "e1ac748f19cf805e44bf74fb93c796662152e273",
+    "source": "https://github.com/tt-a1i/archify/tree/v2.15.0",
+    "license": "MIT"
+  },
+  "input": {
+    "sha256": "669966fba9e69df0525a3581baa4e90075923dbe3069f81f706761a40abf9073",
+    "bytes": 7744
+  },
+  "artifacts": {
+    "html": {
+      "sha256": "62666342ec4efbc295ed65f4450008ca5a39072d8a11ff7b8b675ab258711286",
+      "bytes": 652836
+    },
+    "svg": {
+      "sha256": "0af63dd51683d07981fc681042c437377a78ae8a7e6a7175c18a1def02e6280a",
+      "bytes": 216313
+    }
+  },
+  "staticSvg": {
+    "theme": "dark-first",
+    "accessible": true,
+    "externalResources": false
+  },
+  "reproducible": true
+}

@@ -63,32 +63,49 @@ test("Cross-Harness continuity mentions task selectors and ambiguity", async () 
   assert.match(crossHarness, /E_TASK_AMBIGUOUS/);
 });
 
-test("the typed Archify source and generated outputs are canonical and self-contained", async () => {
-  const source = JSON.parse(await readFile("docs/diagrams/forgeloop-engineering-flow.workflow.json", "utf8"));
+test("the typed Archify sources and generated outputs are canonical and self-contained", async () => {
+  const diagramIds = [
+    "forgeloop-engineering-flow",
+    "forgeloop-verification-trust-flow",
+    "forgeloop-code-attestation-flow",
+  ];
+  const sourceMarkers = {
+    "forgeloop-engineering-flow": /PREFLIGHT/,
+    "forgeloop-verification-trust-flow": /verify-scope/,
+    "forgeloop-code-attestation-flow": /CODE_MANIFEST_CAPTURED|in-toto|ATTESTED/,
+  };
   const manifest = JSON.parse(await readFile("docs/diagrams/manifest.json", "utf8"));
-  const animatedHtml = await readFile("docs/assets/diagrams/forgeloop-engineering-flow.html", "utf8");
-  const rendered = await readFile("docs/assets/diagrams/forgeloop-engineering-flow.svg", "utf8");
-  const receipt = JSON.parse(await readFile("docs/assets/diagrams/forgeloop-engineering-flow.receipt.json", "utf8"));
-  assert.equal(source.diagram_type, "workflow");
-  assert.equal(source.meta.visual_preset, "signal-flow");
-  assert.equal(source.meta.animation, "trace");
-  assert.match(JSON.stringify(source), /PREFLIGHT/);
+  assert.deepEqual(manifest.diagrams.map((diagram) => diagram.id), diagramIds);
   assert.equal(manifest.renderer.name, "archify");
   assert.equal(manifest.renderer.version, "2.15.0");
-  assert.equal(receipt.renderer.commit, manifest.renderer.commit);
-  assert.match(animatedHtml, /<svg\b[^>]*\bdata-animation="trace"/);
-  assert.match(animatedHtml, /data-animate="edge"/);
-  assert.match(animatedHtml, /@keyframes archify-edge-flow/);
-  assert.match(rendered, /<svg[\s>]/);
-  assert.match(rendered, /data-animation="trace"/);
-  assert.match(rendered, /data-animate="edge"/);
-  assert.match(rendered, /data-forgeloop-source-sha256="[a-f0-9]{64}"/);
-  assert.match(rendered, /data-theme="dark"/);
-  assert.match(rendered, /role="img"/);
-  assert.match(rendered, /<title/);
-  assert.match(rendered, /<desc/);
-  assert.doesNotMatch(rendered, /@import/);
-  assert.doesNotMatch(rendered, /fonts\.googleapis\.com/);
-  assert.doesNotMatch(rendered, /<script\b/i);
-  assert.doesNotMatch(rendered, /<foreignObject\b/i);
+  for (const diagramId of diagramIds) {
+    const source = JSON.parse(await readFile(`docs/diagrams/${diagramId}.workflow.json`, "utf8"));
+    const animatedHtml = await readFile(`docs/assets/diagrams/${diagramId}.html`, "utf8");
+    const rendered = await readFile(`docs/assets/diagrams/${diagramId}.svg`, "utf8");
+    const receipt = JSON.parse(await readFile(`docs/assets/diagrams/${diagramId}.receipt.json`, "utf8"));
+    assert.equal(source.diagram_type, "workflow");
+    assert.equal(source.meta.visual_preset, "signal-flow");
+    assert.equal(source.meta.animation, "trace");
+    assert.match(JSON.stringify(source), sourceMarkers[diagramId]);
+    assert.equal(receipt.diagramId, diagramId);
+    assert.equal(receipt.renderer.commit, manifest.renderer.commit);
+    assert.match(animatedHtml, /<svg\b[^>]*\bdata-animation="trace"/);
+    assert.match(animatedHtml, /data-animate="edge"/);
+    assert.match(animatedHtml, /@keyframes archify-edge-flow/);
+    assert.match(animatedHtml, /@media\s*\(prefers-reduced-motion:\s*reduce\)/);
+    assert.match(rendered, /<svg[\s>]/);
+    assert.match(rendered, /data-animation="trace"/);
+    assert.match(rendered, /data-animate="edge"/);
+    assert.match(rendered, /data-forgeloop-source-sha256="[a-f0-9]{64}"/);
+    assert.match(rendered, /data-theme="dark"/);
+    assert.match(rendered, /role="img"/);
+    assert.match(rendered, /<title/);
+    assert.match(rendered, /<desc/);
+    assert.match(rendered, /@media\s*\(prefers-reduced-motion:\s*reduce\)/);
+    assert.match(rendered, /animation:\s*none/);
+    assert.doesNotMatch(rendered, /@import/);
+    assert.doesNotMatch(rendered, /fonts\.googleapis\.com/);
+    assert.doesNotMatch(rendered, /<script\b/i);
+    assert.doesNotMatch(rendered, /<foreignObject\b/i);
+  }
 });

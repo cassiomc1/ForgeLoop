@@ -1,23 +1,29 @@
 # Documentation diagrams
 
-The ForgeLoop architecture flow is authored as typed Archify workflow IR in
-[`forgeloop-engineering-flow.workflow.json`](./forgeloop-engineering-flow.workflow.json).
-The checked-in outputs are generated from that source with the pinned Archify
-v2.15.0 toolchain. The animated interactive explorer is the primary experience:
+ForgeLoop maintains three canonical P0 visuals in typed Archify workflow IR.
+The manifest is the governance source for their identities, canonical
+purposes, renderer mapping, artifact ownership, references, and review files:
 
-- [animated HTML explorer](../assets/diagrams/forgeloop-engineering-flow.html)
-- [animated, self-contained SVG fallback](../assets/diagrams/forgeloop-engineering-flow.svg)
-- [deterministic generation receipt](../assets/diagrams/forgeloop-engineering-flow.receipt.json)
+| Visual | Canonical purpose | Source | Explorer | SVG fallback |
+| --- | --- | --- | --- | --- |
+| Engineering Flow | `high-level-engineering-flow` | [`forgeloop-engineering-flow.workflow.json`](./forgeloop-engineering-flow.workflow.json) | [HTML](../assets/diagrams/forgeloop-engineering-flow.html) | [SVG](../assets/diagrams/forgeloop-engineering-flow.svg) |
+| Verification Trust Flow | `differential-verification-trust-boundary` | [`forgeloop-verification-trust-flow.workflow.json`](./forgeloop-verification-trust-flow.workflow.json) | [HTML](../assets/diagrams/forgeloop-verification-trust-flow.html) | [SVG](../assets/diagrams/forgeloop-verification-trust-flow.svg) |
+| Code Attestation Chain | `code-attestation-chain` | [`forgeloop-code-attestation-flow.workflow.json`](./forgeloop-code-attestation-flow.workflow.json) | [HTML](../assets/diagrams/forgeloop-code-attestation-flow.html) | [SVG](../assets/diagrams/forgeloop-code-attestation-flow.svg) |
 
-The canonical source sets `meta.animation` to `trace`, so the explorer and SVG
-trace the workflow edges and nodes. Use the explorer's Present, playback, and
-focus controls for the full animated experience; the SVG remains available for
-repository previews and text-only fallbacks.
+Each visual also has a deterministic [receipt directory](../assets/diagrams/)
+entry and a source-bound [review directory](./reviews/). The Engineering Flow
+is the conceptual lifecycle; the Verification Trust Flow explains the
+fail-closed Differential Verification boundary; and the Code Attestation Chain
+explains exact-content provenance, optional signing, and revision-range
+coverage. Their text fallbacks remain in
+[`README.md`](../../README.md#architecture-flow),
+[`REVISION_PROVIDERS.md`](../REVISION_PROVIDERS.md#differential-verification-scope),
+and [`CODE_ATTESTATION.md`](../CODE_ATTESTATION.md#completion-flow).
 
-[`manifest.json`](./manifest.json) is the governance source for diagram types,
-renderer support, canonical purposes, artifact ownership, and required
-references. The persistent human approval is kept separately in
-[`reviews/forgeloop-engineering-flow.review.json`](./reviews/forgeloop-engineering-flow.review.json).
+The canonical sources set `meta.animation` to `trace`, so the explorers and
+SVGs trace workflow edges and emphasize active nodes. Use each explorer's
+Present, playback, and focus controls for the full animated experience; every
+SVG remains available for repository previews and text-only fallbacks.
 
 The JSON IR is the source of truth. Do not edit the generated HTML or SVG by
 hand. Run `npm run docs:diagrams` to regenerate the outputs and
@@ -49,7 +55,9 @@ canonical inputs only from `docs/diagrams/` and permits deliver outputs only
 under `docs/assets/diagrams/`.
 
 ForgeLoop governs five documentation-diagram categories: workflow,
-architecture, sequence, dataflow, and lifecycle. The current repository has
-one canonical workflow diagram. Governance support does not imply renderer
-support: a type requires an explicit renderer mapping before it can be added as
-an active diagram.
+architecture, sequence, dataflow, and lifecycle. The current active set uses
+three workflow diagrams because the pinned wrapper currently maps only
+`workflow`. Governance support does not imply renderer support: a type requires
+an explicit renderer mapping before it can be added as an active diagram.
+Additional safety-boundary, resume, or provider visuals remain intentionally
+deferred until their mappings are proven.

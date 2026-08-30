@@ -389,7 +389,12 @@ forgeloop task-migrate --json
 
 ---
 
-## 8. Optional workspace and verification boundaries
+## 8. Optional advanced capabilities
+
+The default walkthrough above is complete without these extensions. Add them
+only when the task needs an extra boundary or provenance result.
+
+### Workspace binding, handoff, and responsibility
 
 For a task that must remain in one Git worktree, bind it explicitly and check
 the derived status before mutation:
@@ -404,13 +409,54 @@ the workflow needs those boundaries:
 
 ```bash
 forgeloop handoff-create --task <taskId> --note "Continue verification" --json
-forgeloop responsibility-set --task <taskId> --label implementation --allowed-path src --json
-forgeloop verify-scope --task <taskId> --mode auto --json
+forgeloop handoff-list --task <taskId> --json
+forgeloop handoff-show --task <taskId> --id <handoffId> --json
+forgeloop responsibility-set --task <taskId> --label implementation --allowed-path src --required-check unit-tests --json
+forgeloop responsibility-status --task <taskId> --json
 ```
 
-The workspace binding, handoff, responsibility, and verification-scope
-artifacts are optional. They constrain or describe the task; they do not grant
-identity, delegation, authorship, or completion authority.
+Workspace binding, handoff, and responsibility artifacts are optional. A
+binding checks the complete derived repository/worktree identity; a branch name
+or HEAD alone is not enough. A handoff is immutable protocol-derived context,
+not delegation or evidence. A responsibility label is descriptive, not a
+coder/reviewer/cleaner role, and its allowed paths, required checks, and frozen
+inputs are mechanically enforced when present.
+
+### Differential Verification Scope
+
+Configure a trusted scoped checker only when it can consume canonical paths:
+
+```json
+{
+  "verification": {
+    "checkers": [
+      {
+        "checkId": "unit-tests",
+        "scopeMode": "PATH_ARGUMENTS",
+        "argvPrefix": ["node", "--test"],
+        "pathInsertion": "APPEND"
+      }
+    ]
+  }
+}
+```
+
+Then ask ForgeLoop to resolve the scope and pass its exact paths to the
+checker:
+
+```bash
+forgeloop verify-scope --task <taskId> --mode AUTO --json
+forgeloop run-check --task <taskId> --id unit-tests \
+  --requirement "Unit tests" \
+  --scope-ref .forgeloop/task-state/<taskKey>/verification-scope.json \
+  -- node --test <paths-returned-by-verify-scope>
+```
+
+`AUTO` can resolve to `CHANGED` or `CLAIMED` only with a trusted scoped
+checker; otherwise it resolves to `FULL`. Explicit `CHANGED` or `CLAIMED`
+without that checker returns `E_VERIFICATION_SCOPE_UNRESOLVED`, and an argv
+mismatch is rejected before launch. This pre-completion decision is not
+revision-range attestation coverage.
 
 ## 9. Optional code attestation
 

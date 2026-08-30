@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark" data-preset="signal-flow" data-present="true">
 <head>
-      <meta name="forgeloop-diagram-source-sha256" content="a83128a8639db5db497ac552cfdbc318839e6451c718581fbfcd064e3e869981">
+      <meta name="forgeloop-diagram-source-sha256" content="6fe11b0530cc6640f7b0f07d0f2d7e5a1f961745491f39016b340bc354af0e79">
     <meta name="forgeloop-diagram-renderer" content="archify@2.15.0 (e1ac748f19cf805e44bf74fb93c796662152e273)">
 <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="generator" content="archify 2.15.0">
-  <title>ForgeLoop Evidence-First Engineering Flow Diagram</title>
+  <title>ForgeLoop Verification Trust Flow Diagram</title>
   <script>
     // Resolve the theme before first paint so light-preference users don't
     // see a dark flash. The toolbar script below re-applies with UI state.
@@ -4863,12 +4863,12 @@
     <div class="header">
       <div class="header-row">
         <div class="pulse-dot"></div>
-        <h1>ForgeLoop Evidence-First Engineering Flow</h1>
+        <h1>ForgeLoop Verification Trust Flow</h1>
       </div>
-      <p class="subtitle">Typed intent → scoped work → observed evidence → validator-backed closure</p>
+      <p class="subtitle">Canonical scope planning before exact command execution</p>
     </div>
 
-    <script id="archify-guided-views-data" type="application/json">[{"id":"contract-to-work","label":"Contract to work","focus":["request","profile","contract","route","gates","preflight","work"],"note":"Follow how a request becomes scoped, routed, and safe to execute."},{"id":"evidence-to-close","label":"Evidence to close","focus":["work","evidence","review","valid"],"note":"See the evidence and review boundary that makes completion trustworthy."},{"id":"recovery-loop","label":"Recovery loop","focus":["evidence","diagnose","correct","preflight","blocked"],"note":"Failures return to diagnosis and correction before another claim is made."}]</script>
+    <script id="archify-guided-views-data" type="application/json">[{"id":"scope-resolution","label":"Resolve verification scope","focus":["claims","changes","checker","cycle","fingerprints","scope"],"note":"Follow the trusted inputs that determine whether a checker may narrow its execution."},{"id":"exact-execution","label":"Bind exact execution","focus":["scope","argv","observed"],"note":"See how the resolved scope binds the exact argv and observed execution evidence."},{"id":"fail-closed","label":"Fail closed when trust is missing","focus":["checker","full","unresolved","reject"],"note":"No trusted checker means AUTO uses FULL; explicit narrowing without one is unresolved."}]</script>
 
     <div class="guided-views no-print" id="guided-views" hidden aria-label="Guided diagram views">
       <button id="guided-view-prev" type="button" aria-label="Previous guided view" title="Previous guided view ([)">&#8592;</button>
@@ -4912,8 +4912,8 @@
     <!-- Main Diagram -->
     <div class="diagram-container" data-detail-level="read">
       <svg viewBox="0 0 720 900" role="img" aria-labelledby="archify-diagram-title archify-diagram-description" data-animation="trace" data-preset="signal-flow" data-quality-profile="showcase">
-        <title id="archify-diagram-title">ForgeLoop Evidence-First Engineering Flow</title>
-        <desc id="archify-diagram-description">Typed intent → scoped work → observed evidence → validator-backed closure</desc>
+        <title id="archify-diagram-title">ForgeLoop Verification Trust Flow</title>
+        <desc id="archify-diagram-description">Canonical scope planning before exact command execution</desc>
         <!-- Definitions -->
         <defs>
           <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
@@ -4938,216 +4938,204 @@
 
         <!-- Swimlanes -->
         <rect data-graph-role="structural-frame" data-composition-frame-kind="lane" data-composition-frame-id="lane-0" x="40" y="52" width="640" height="104" rx="10" class="c-lane" stroke-width="1"/>
-        <text x="54" y="74" class="t-dim" font-size="10" font-weight="600">01 / Intent + Context</text>
+        <text x="54" y="74" class="t-dim" font-size="10" font-weight="600">01 / Task + Revision Inputs</text>
 
         <rect data-graph-role="structural-frame" data-composition-frame-kind="lane" data-composition-frame-id="lane-1" x="40" y="176" width="640" height="104" rx="10" class="c-lane" stroke-width="1"/>
-        <text x="54" y="198" class="t-dim" font-size="10" font-weight="600">02 / Policy Boundary</text>
+        <text x="54" y="198" class="t-dim" font-size="10" font-weight="600">02 / Trust and Scope Policy</text>
 
         <rect data-graph-role="structural-frame" data-composition-frame-kind="lane" data-composition-frame-id="lane-2" x="40" y="300" width="640" height="104" rx="10" class="c-lane" stroke-width="1"/>
-        <text x="54" y="322" class="t-dim" font-size="10" font-weight="600">03 / Resumable Execution</text>
+        <text x="54" y="322" class="t-dim" font-size="10" font-weight="600">03 / Exact Execution</text>
 
         <rect data-graph-role="structural-frame" data-composition-frame-kind="lane" data-composition-frame-id="lane-3" x="40" y="424" width="640" height="104" rx="10" class="c-lane" stroke-width="1"/>
-        <text x="54" y="446" class="t-dim" font-size="10" font-weight="600">04 / Evidence Ledger</text>
+        <text x="54" y="446" class="t-dim" font-size="10" font-weight="600">04 / Observed Evidence</text>
 
         <rect data-graph-role="structural-frame" data-composition-frame-kind="lane" data-composition-frame-id="lane-4" x="40" y="548" width="640" height="104" rx="10" class="c-lane" stroke-width="1"/>
         <rect data-graph-role="structural-frame" data-composition-frame-kind="exception-lane" data-composition-frame-id="lane-4-exception" x="46" y="554" width="628" height="92" rx="8" class="c-security-group" stroke-width="1"/>
-        <text x="54" y="570" class="t-security" font-size="10" font-weight="600">EX / Recovery + Stops</text>
+        <text x="54" y="570" class="t-security" font-size="10" font-weight="600">EX / Fail-Closed Outcomes</text>
 
         <rect data-graph-role="structural-frame" data-composition-frame-kind="lane" data-composition-frame-id="lane-5" x="40" y="672" width="640" height="104" rx="10" class="c-lane" stroke-width="1"/>
-        <text x="54" y="694" class="t-dim" font-size="10" font-weight="600">06 / Review + Closure</text>
+        <text x="54" y="694" class="t-dim" font-size="10" font-weight="600">06 / Verification Boundary</text>
 
         <!-- Phase headers -->
-        <line x1="42" y1="35" x2="346" y2="35" class="a-default" stroke-width="1.1"/>
-        <rect x="42" y="27" width="304" height="16" rx="4" class="c-mask"/>
-        <text x="194" y="39" class="t-muted" font-size="8" font-weight="600" text-anchor="middle">Discover + scope</text>
-        <line x1="384" y1="35" x2="546" y2="35" class="a-emphasis" stroke-width="1.1"/>
-        <rect x="384" y="27" width="162" height="16" rx="4" class="c-mask"/>
-        <text x="465" y="39" class="t-backend" font-size="8" font-weight="600" text-anchor="middle">Route + authorize</text>
-        <line x1="579" y1="35" x2="671" y2="35" class="a-dashed" stroke-width="1.1"/>
-        <rect x="579" y="27" width="92" height="16" rx="4" class="c-mask"/>
-        <text x="625" y="39" class="t-messagebus" font-size="8" font-weight="600" text-anchor="middle">Execute + verify</text>
+        <line x1="42" y1="35" x2="266" y2="35" class="a-default" stroke-width="1.1"/>
+        <rect x="42" y="27" width="224" height="16" rx="4" class="c-mask"/>
+        <text x="154" y="39" class="t-muted" font-size="8" font-weight="600" text-anchor="middle">Collect bound inputs</text>
+        <line x1="254" y1="35" x2="476" y2="35" class="a-emphasis" stroke-width="1.1"/>
+        <rect x="254" y="27" width="222" height="16" rx="4" class="c-mask"/>
+        <text x="365" y="39" class="t-backend" font-size="8" font-weight="600" text-anchor="middle">Resolve safe scope</text>
+        <line x1="454" y1="35" x2="671" y2="35" class="a-dashed" stroke-width="1.1"/>
+        <rect x="454" y="27" width="217" height="16" rx="4" class="c-mask"/>
+        <text x="562.5" y="39" class="t-messagebus" font-size="8" font-weight="600" text-anchor="middle">Execute and observe</text>
 
         <!-- Workflow groups -->
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="group" data-composition-frame-id="group-0" x="380" y="214" width="295" height="58" rx="9" class="c-lane" stroke-width="1"/>
-        <text x="390" y="228" class="t-backend" font-size="7" font-weight="600">Contract boundary</text>
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="group" data-composition-frame-id="group-1" x="450" y="462" width="225" height="58" rx="9" class="c-lane" stroke-width="1"/>
-        <text x="460" y="476" class="t-messagebus" font-size="7" font-weight="600">Evidence boundary</text>
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="group" data-composition-frame-id="group-2" x="38" y="586" width="312" height="58" rx="9" class="c-security-group" stroke-width="1"/>
-        <text x="48" y="600" class="t-security" font-size="7" font-weight="600">Reconcile before retry</text>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="group" data-composition-frame-id="group-0" x="250" y="214" width="425" height="58" rx="9" class="c-lane" stroke-width="1"/>
+        <text x="260" y="228" class="t-backend" font-size="7" font-weight="600">Verification scope boundary</text>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="group" data-composition-frame-id="group-1" x="250" y="586" width="425" height="58" rx="9" class="c-security-group" stroke-width="1"/>
+        <text x="260" y="600" class="t-security" font-size="7" font-weight="600">No guessed narrowing</text>
 
         <!-- Edge paths -->
-        <path data-edge-from="request" data-edge-to="profile" data-edge-key="0" data-edge-id="request-profile" data-composition-points="113,119;195,119" d="M 113 119 L 195 119" class="a-emphasis" data-animate="edge" style="--step:0" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="profile" data-edge-to="contract" data-edge-key="1" data-edge-id="profile-contract" data-composition-points="245,119;275,119" d="M 245 119 L 275 119" class="a-default" data-animate="edge" style="--step:1" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="contract" data-edge-to="route" data-edge-key="2" data-edge-id="contract-route" data-composition-points="300,153;300,166;300,166;300,209" d="M 300 153 L 300 166 L 300 166 L 300 209" class="a-emphasis" data-animate="edge" style="--step:2" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="route" data-edge-to="gates" data-edge-key="3" data-edge-id="route-gates" data-composition-points="325,243;399,243" d="M 325 243 L 399 243" class="a-emphasis" data-animate="edge" style="--step:3" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="gates" data-edge-to="preflight" data-edge-key="4" data-edge-id="gates-preflight" data-composition-points="430,269;430,312;500,312;500,277" d="M 430 269 L 430 312 L 500 312 L 500 277" class="a-security" data-animate="edge" style="--step:4" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
-        <path data-edge-from="preflight" data-edge-to="work" data-edge-key="5" data-edge-id="preflight-work" data-composition-points="500,277;500,290;500,290;500,341" d="M 500 277 L 500 290 L 500 290 L 500 341" class="a-emphasis" data-animate="edge" style="--step:5" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="work" data-edge-to="evidence" data-edge-key="6" data-edge-id="work-evidence" data-composition-points="500,393;500,414;500,414;500,457" d="M 500 393 L 500 414 L 500 414 L 500 457" class="a-dashed" data-animate="edge" style="--step:6" stroke-width="1.4" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="evidence" data-edge-to="review" data-edge-key="7" data-edge-id="evidence-review" data-composition-points="465,491;360,491;360,739;600,739" d="M 465 491 L 360 491 L 360 739 L 600 739" class="a-emphasis" data-animate="edge" style="--step:7" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="review" data-edge-to="valid" data-edge-key="8" data-edge-id="review-valid" data-composition-points="650,739;760,739;760,491;650,491" d="M 650 739 L 760 739 L 760 491 L 650 491" class="a-emphasis" data-animate="edge" style="--step:8" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="evidence" data-edge-to="diagnose" data-edge-key="9" data-edge-id="evidence-diagnose" data-composition-points="465,491;360,491;360,615;325,615" d="M 465 491 L 360 491 L 360 615 L 325 615" class="a-security" data-animate="edge" style="--step:12" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
-        <path data-edge-from="diagnose" data-edge-to="correct" data-edge-key="10" data-edge-id="diagnose-correct" data-composition-points="275,615;167,615;167,615;245,615" d="M 275 615 L 167 615 L 167 615 L 245 615" class="a-dashed" data-animate="edge" style="--step:12" stroke-width="1.4" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="correct" data-edge-to="evidence" data-edge-key="11" data-edge-id="correct-evidence" data-composition-points="195,615;160,615;160,491;465,491" d="M 195 615 L 160 615 L 160 491 L 465 491" class="a-security" data-animate="edge" style="--step:12" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
-        <path data-edge-from="correct" data-edge-to="blocked" data-edge-key="12" data-edge-id="correct-blocked" data-composition-points="195,615;35,615;35,615;113,615" d="M 195 615 L 35 615 L 35 615 L 113 615" class="a-dashed" data-animate="edge" style="--step:12" stroke-width="1.4" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="claims" data-edge-to="changes" data-edge-key="0" data-edge-id="claims-changes" data-composition-points="120,119;185,119" d="M 120 119 L 185 119" class="a-emphasis" data-animate="edge" style="--step:0" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="changes" data-edge-to="checker" data-edge-key="1" data-edge-id="changes-checker" data-composition-points="220,145;220,166;300,166;300,209" d="M 220 145 L 220 166 L 300 166 L 300 209" class="a-default" data-animate="edge" style="--step:1" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="checker" data-edge-to="cycle" data-edge-key="2" data-edge-id="checker-cycle" data-composition-points="332,243;405,243" d="M 332 243 L 405 243" class="a-emphasis" data-animate="edge" style="--step:2" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="cycle" data-edge-to="fingerprints" data-edge-key="3" data-edge-id="cycle-fingerprints" data-composition-points="430,269;430,312;500,312;500,269" d="M 430 269 L 430 312 L 500 312 L 500 269" class="a-security" data-animate="edge" style="--step:3" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
+        <path data-edge-from="fingerprints" data-edge-to="scope" data-edge-key="4" data-edge-id="fingerprints-scope" data-composition-points="500,269;500,352;500,352;500,457" d="M 500 269 L 500 352 L 500 352 L 500 457" class="a-emphasis" data-animate="edge" style="--step:4" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="scope" data-edge-to="argv" data-edge-key="5" data-edge-id="scope-argv" data-composition-points="541,491;541,408;600,408;600,367" d="M 541 491 L 541 408 L 600 408 L 600 367" class="a-security" data-animate="edge" style="--step:5" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
+        <path data-edge-from="argv" data-edge-to="observed" data-edge-key="6" data-edge-id="argv-observed" data-composition-points="625,401;625,414;625,414;625,457" d="M 625 401 L 625 414 L 625 414 L 625 457" class="a-dashed" data-animate="edge" style="--step:6" stroke-width="1.4" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="checker" data-edge-to="full" data-edge-key="7" data-edge-id="checker-full" data-composition-points="268,243;234,243;234,615;338,615" d="M 268 243 L 234 243 L 234 615 L 338 615" class="a-dashed" data-animate="edge" style="--step:12" stroke-width="1.4" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="checker" data-edge-to="unresolved" data-edge-key="8" data-edge-id="checker-unresolved" data-composition-points="300,277;300,414;430,414;430,581" d="M 300 277 L 300 414 L 430 414 L 430 581" class="a-security" data-animate="edge" style="--step:12" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
+        <path data-edge-from="scope" data-edge-to="reject" data-edge-key="9" data-edge-id="scope-reject" data-composition-points="500,525;500,538;500,538;500,581" d="M 500 525 L 500 538 L 500 538 L 500 581" class="a-security" data-animate="edge" style="--step:12" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
+        <path data-edge-from="observed" data-edge-to="boundary" data-edge-key="10" data-edge-id="observed-boundary" data-composition-points="590,491;562,491;562,739;657,739" d="M 590 491 L 562 491 L 562 739 L 657 739" class="a-dashed" data-animate="edge" style="--step:12" stroke-width="1.4" marker-end="url(#arrowhead-dashed)"/>
 
         <!-- Nodes -->
-        <g id="node-request" data-node-id="request" data-node-label="Request" tabindex="0" role="button" aria-label="Focus Request, intent, Intent + Context › Discover + scope" aria-pressed="false" data-node-kind="external" data-node-sublabel="intent" data-node-context="Intent + Context › Discover + scope">
-          <title>Request · intent · Intent + Context › Discover + scope</title>
-          <rect x="63" y="93" width="50" height="52" rx="6" class="c-mask"/>
-          <rect x="63" y="93" width="50" height="52" rx="6" class="c-external" data-animate="node" style="--step:0" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(69 99) scale(0.6875)">
+        <g id="node-claims" data-node-id="claims" data-node-label="Claims" tabindex="0" role="button" aria-label="Focus Claims, write scope, Task + Revision Inputs › Collect bound inputs" aria-pressed="false" data-node-kind="external" data-node-sublabel="write scope" data-node-context="Task + Revision Inputs › Collect bound inputs">
+          <title>Claims · write scope · Task + Revision Inputs › Collect bound inputs</title>
+          <rect x="56" y="93" width="64" height="52" rx="6" class="c-mask"/>
+          <rect x="56" y="93" width="64" height="52" rx="6" class="c-external" data-animate="node" style="--step:0" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(62 99) scale(0.6875)">
             <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
             <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
           </g>
-          <text data-detail-anchor x="88" y="114" class="t-primary" font-size="10" font-weight="600" text-anchor="middle">Request</text>
-          <text data-detail="context" x="88" y="131" class="t-muted" font-size="8" text-anchor="middle">intent</text>
+          <text data-detail-anchor x="88" y="114" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Claims</text>
+          <text data-detail="context" x="88" y="131" class="t-muted" font-size="8" text-anchor="middle">write scope</text>
         </g>
 
-        <g id="node-profile" data-node-id="profile" data-node-label="Profile" tabindex="0" role="button" aria-label="Focus Profile, discover, Intent + Context › Discover + scope" aria-pressed="false" data-node-kind="backend" data-node-sublabel="discover" data-node-context="Intent + Context › Discover + scope">
-          <title>Profile · discover · Intent + Context › Discover + scope</title>
-          <rect x="195" y="93" width="50" height="52" rx="6" class="c-mask"/>
-          <rect x="195" y="93" width="50" height="52" rx="6" class="c-backend" data-animate="node" style="--step:1" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(201 99) scale(0.6875)">
+        <g id="node-changes" data-node-id="changes" data-node-label="Changes" tabindex="0" role="button" aria-label="Focus Changes, provider, Task + Revision Inputs › Collect bound inputs" aria-pressed="false" data-node-kind="backend" data-node-sublabel="provider" data-node-context="Task + Revision Inputs › Collect bound inputs">
+          <title>Changes · provider · Task + Revision Inputs › Collect bound inputs</title>
+          <rect x="185" y="93" width="70" height="52" rx="6" class="c-mask"/>
+          <rect x="185" y="93" width="70" height="52" rx="6" class="c-backend" data-animate="node" style="--step:1" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(191 99) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-detail-anchor x="220" y="114" class="t-primary" font-size="10" font-weight="600" text-anchor="middle">Profile</text>
-          <text data-detail="context" x="220" y="131" class="t-muted" font-size="8" text-anchor="middle">discover</text>
+          <text data-detail-anchor x="220" y="114" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Changes</text>
+          <text data-detail="context" x="220" y="131" class="t-muted" font-size="8" text-anchor="middle">provider</text>
         </g>
 
-        <g id="node-contract" data-node-id="contract" data-node-label="Contract" tabindex="0" role="button" aria-label="Focus Contract, scope, Intent + Context › Discover + scope" aria-pressed="false" data-node-kind="security" data-node-sublabel="scope" data-node-tag="saved" data-node-context="Intent + Context › Discover + scope">
-          <title>Contract · scope · Intent + Context › Discover + scope · saved</title>
-          <rect x="275" y="85" width="50" height="68" rx="6" class="c-mask"/>
-          <rect x="275" y="85" width="50" height="68" rx="6" class="c-security" data-animate="node" style="--step:2" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(281 91) scale(0.6875)">
+        <g id="node-checker" data-node-id="checker" data-node-label="Checker" tabindex="0" role="button" aria-label="Focus Checker, trusted scope, Trust and Scope Policy › Verification scope boundary › Resolve safe scope" aria-pressed="false" data-node-kind="security" data-node-sublabel="trusted scope" data-node-tag="capability" data-node-context="Trust and Scope Policy › Verification scope boundary › Resolve safe scope">
+          <title>Checker · trusted scope · Trust and Scope Policy › Verification scope boundary › Resolve safe scope · capability</title>
+          <rect x="268" y="209" width="64" height="68" rx="6" class="c-mask"/>
+          <rect x="268" y="209" width="64" height="68" rx="6" class="c-security" data-animate="node" style="--step:2" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(274 215) scale(0.6875)">
             <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
             <path d="m5.8 8 1.5 1.5 3-3"/>
           </g>
-          <text data-detail-anchor x="300" y="106" class="t-primary" font-size="9" font-weight="600" text-anchor="middle">Contract</text>
-          <text data-detail="context" x="300" y="123" class="t-muted" font-size="8" text-anchor="middle">scope</text>
-        <text data-detail="fine" x="300" y="141" class="t-security" font-size="7" text-anchor="middle">saved</text>
+          <text data-detail-anchor x="300" y="230" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Checker</text>
+          <text data-detail="context" x="300" y="247" class="t-muted" font-size="7.1" text-anchor="middle">trusted scope</text>
+        <text data-detail="fine" x="300" y="265" class="t-security" font-size="7" text-anchor="middle">capability</text>
         </g>
 
-        <g id="node-route" data-node-id="route" data-node-label="Route" tabindex="0" role="button" aria-label="Focus Route, guides, Policy Boundary › Discover + scope" aria-pressed="false" data-node-kind="security" data-node-sublabel="guides" data-node-tag="fail closed" data-node-context="Policy Boundary › Discover + scope">
-          <title>Route · guides · Policy Boundary › Discover + scope · fail closed</title>
-          <rect x="275" y="209" width="50" height="68" rx="6" class="c-mask"/>
-          <rect x="275" y="209" width="50" height="68" rx="6" class="c-security" data-animate="node" style="--step:3" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(281 215) scale(0.6875)">
-            <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
-            <path d="m5.8 8 1.5 1.5 3-3"/>
-          </g>
-          <text data-detail-anchor x="300" y="230" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Route</text>
-          <text data-detail="context" x="300" y="247" class="t-muted" font-size="8" text-anchor="middle">guides</text>
-        <text data-detail="fine" x="300" y="265" class="t-security" font-size="6.3" text-anchor="middle">fail closed</text>
-        </g>
-
-        <g id="node-gates" data-node-id="gates" data-node-label="Claims" tabindex="0" role="button" aria-label="Focus Claims, Task + gates, Policy Boundary › Contract boundary › Route + authorize" aria-pressed="false" data-node-kind="security" data-node-sublabel="Task + gates" data-node-context="Policy Boundary › Contract boundary › Route + authorize">
-          <title>Claims · Task + gates · Policy Boundary › Contract boundary › Route + authorize</title>
-          <rect x="399" y="217" width="62" height="52" rx="6" class="c-mask"/>
-          <rect x="399" y="217" width="62" height="52" rx="6" class="c-security" data-animate="node" style="--step:4" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(405 223) scale(0.6875)">
-            <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
-            <path d="m5.8 8 1.5 1.5 3-3"/>
-          </g>
-          <text data-detail-anchor x="430" y="238" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Claims</text>
-          <text data-detail="context" x="430" y="255" class="t-muted" font-size="7.5" text-anchor="middle">Task + gates</text>
-        </g>
-
-        <g id="node-preflight" data-node-id="preflight" data-node-label="READY" tabindex="0" role="button" aria-label="Focus READY, binding, Policy Boundary › Contract boundary › Route + authorize" aria-pressed="false" data-node-kind="security" data-node-sublabel="binding" data-node-tag="Preflight" data-node-context="Policy Boundary › Contract boundary › Route + authorize">
-          <title>READY · binding · Policy Boundary › Contract boundary › Route + authorize · Preflight</title>
-          <rect x="470" y="209" width="60" height="68" rx="6" class="c-mask"/>
-          <rect x="470" y="209" width="60" height="68" rx="6" class="c-security" data-animate="node" style="--step:5" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(476 215) scale(0.6875)">
-            <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
-            <path d="m5.8 8 1.5 1.5 3-3"/>
-          </g>
-          <text data-detail-anchor x="500" y="230" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">READY</text>
-          <text data-detail="context" x="500" y="247" class="t-muted" font-size="8" text-anchor="middle">binding</text>
-        <text data-detail="fine" x="500" y="265" class="t-security" font-size="7" text-anchor="middle">Preflight</text>
-        </g>
-
-        <g id="node-work" data-node-id="work" data-node-label="Execution" tabindex="0" role="button" aria-label="Focus Execution, checkpoint, Resumable Execution › Route + authorize" aria-pressed="false" data-node-kind="backend" data-node-sublabel="checkpoint" data-node-context="Resumable Execution › Route + authorize">
-          <title>Execution · checkpoint · Resumable Execution › Route + authorize</title>
-          <rect x="469" y="341" width="62" height="52" rx="6" class="c-mask"/>
-          <rect x="469" y="341" width="62" height="52" rx="6" class="c-backend" data-animate="node" style="--step:6" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(475 347) scale(0.6875)">
+        <g id="node-cycle" data-node-id="cycle" data-node-label="Cycle" tabindex="0" role="button" aria-label="Focus Cycle, fresh, Trust and Scope Policy › Verification scope boundary › Resolve safe scope" aria-pressed="false" data-node-kind="backend" data-node-sublabel="fresh" data-node-context="Trust and Scope Policy › Verification scope boundary › Resolve safe scope">
+          <title>Cycle · fresh · Trust and Scope Policy › Verification scope boundary › Resolve safe scope</title>
+          <rect x="405" y="217" width="50" height="52" rx="6" class="c-mask"/>
+          <rect x="405" y="217" width="50" height="52" rx="6" class="c-backend" data-animate="node" style="--step:3" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(411 223) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-detail-anchor x="500" y="362" class="t-primary" font-size="10" font-weight="600" text-anchor="middle">Execution</text>
-          <text data-detail="context" x="500" y="379" class="t-muted" font-size="8" text-anchor="middle">checkpoint</text>
+          <text data-detail-anchor x="430" y="238" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Cycle</text>
+          <text data-detail="context" x="430" y="255" class="t-muted" font-size="8" text-anchor="middle">fresh</text>
         </g>
 
-        <g id="node-evidence" data-node-id="evidence" data-node-label="Evidence" tabindex="0" role="button" aria-label="Focus Evidence, scope + checks, Evidence Ledger › Evidence boundary › Route + authorize" aria-pressed="false" data-node-kind="database" data-node-sublabel="scope + checks" data-node-tag="observed" data-node-context="Evidence Ledger › Evidence boundary › Route + authorize">
-          <title>Evidence · scope + checks · Evidence Ledger › Evidence boundary › Route + authorize · observed</title>
-          <rect x="465" y="457" width="70" height="68" rx="6" class="c-mask"/>
-          <rect x="465" y="457" width="70" height="68" rx="6" class="c-database" data-animate="node" style="--step:7" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(471 463) scale(0.6875)">
+        <g id="node-fingerprints" data-node-id="fingerprints" data-node-label="Bind" tabindex="0" role="button" aria-label="Focus Bind, contract/repo, Trust and Scope Policy › Verification scope boundary › Execute and observe" aria-pressed="false" data-node-kind="security" data-node-sublabel="contract/repo" data-node-context="Trust and Scope Policy › Verification scope boundary › Execute and observe">
+          <title>Bind · contract/repo · Trust and Scope Policy › Verification scope boundary › Execute and observe</title>
+          <rect x="471" y="217" width="58" height="52" rx="6" class="c-mask"/>
+          <rect x="471" y="217" width="58" height="52" rx="6" class="c-security" data-animate="node" style="--step:4" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(477 223) scale(0.6875)">
+            <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
+            <path d="m5.8 8 1.5 1.5 3-3"/>
+          </g>
+          <text data-detail-anchor x="500" y="238" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Bind</text>
+          <text data-detail="context" x="500" y="255" class="t-muted" font-size="6.4" text-anchor="middle">contract/repo</text>
+        </g>
+
+        <g id="node-scope" data-node-id="scope" data-node-label="verify-scope" tabindex="0" role="button" aria-label="Focus verify-scope, AUTO / explicit, Observed Evidence › Execute and observe" aria-pressed="false" data-node-kind="database" data-node-sublabel="AUTO / explicit" data-node-tag="scope" data-node-context="Observed Evidence › Execute and observe">
+          <title>verify-scope · AUTO / explicit · Observed Evidence › Execute and observe · scope</title>
+          <rect x="459" y="457" width="82" height="68" rx="6" class="c-mask"/>
+          <rect x="459" y="457" width="82" height="68" rx="6" class="c-database" data-animate="node" style="--step:5" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(465 463) scale(0.6875)">
             <ellipse cx="8" cy="4" rx="5" ry="2"/>
             <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
           </g>
-          <text data-detail-anchor x="500" y="478" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Evidence</text>
-          <text data-detail="context" x="500" y="495" class="t-muted" font-size="7.3" text-anchor="middle">scope + checks</text>
-        <text data-detail="fine" x="500" y="513" class="t-database" font-size="7" text-anchor="middle">observed</text>
+          <text data-detail-anchor x="500" y="478" class="t-primary" font-size="10.2" font-weight="600" text-anchor="middle">verify-scope</text>
+          <text data-detail="context" x="500" y="495" class="t-muted" font-size="8" text-anchor="middle">AUTO / explicit</text>
+        <text data-detail="fine" x="500" y="513" class="t-database" font-size="7" text-anchor="middle">scope</text>
         </g>
 
-        <g id="node-review" data-node-id="review" data-node-label="Review" tabindex="0" role="button" aria-label="Focus Review, drift, Review + Closure › Execute + verify" aria-pressed="false" data-node-kind="backend" data-node-sublabel="drift" data-node-context="Review + Closure › Execute + verify">
-          <title>Review · drift · Review + Closure › Execute + verify</title>
-          <rect x="600" y="713" width="50" height="52" rx="6" class="c-mask"/>
-          <rect x="600" y="713" width="50" height="52" rx="6" class="c-backend" data-animate="node" style="--step:8" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(606 719) scale(0.6875)">
-            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+        <g id="node-argv" data-node-id="argv" data-node-label="argv" tabindex="0" role="button" aria-label="Focus argv, paths, Exact Execution › Execute and observe" aria-pressed="false" data-node-kind="security" data-node-sublabel="paths" data-node-tag="exact" data-node-context="Exact Execution › Execute and observe">
+          <title>argv · paths · Exact Execution › Execute and observe · exact</title>
+          <rect x="600" y="333" width="50" height="68" rx="6" class="c-mask"/>
+          <rect x="600" y="333" width="50" height="68" rx="6" class="c-security" data-animate="node" style="--step:6" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(606 339) scale(0.6875)">
+            <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
+            <path d="m5.8 8 1.5 1.5 3-3"/>
           </g>
-          <text data-detail-anchor x="625" y="734" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Review</text>
-          <text data-detail="context" x="625" y="751" class="t-muted" font-size="8" text-anchor="middle">drift</text>
+          <text data-detail-anchor x="625" y="354" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">argv</text>
+          <text data-detail="context" x="625" y="371" class="t-muted" font-size="8" text-anchor="middle">paths</text>
+        <text data-detail="fine" x="625" y="389" class="t-security" font-size="7" text-anchor="middle">exact</text>
         </g>
 
-        <g id="node-valid" data-node-id="valid" data-node-label="VALID" tabindex="0" role="button" aria-label="Focus VALID, completion, Evidence Ledger › Evidence boundary › Execute + verify" aria-pressed="false" data-node-kind="database" data-node-sublabel="completion" data-node-tag="claim" data-node-context="Evidence Ledger › Evidence boundary › Execute + verify">
-          <title>VALID · completion · Evidence Ledger › Evidence boundary › Execute + verify · claim</title>
-          <rect x="600" y="457" width="50" height="68" rx="6" class="c-mask"/>
-          <rect x="600" y="457" width="50" height="68" rx="6" class="c-database" data-animate="node" style="--step:9" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(606 463) scale(0.6875)">
+        <g id="node-observed" data-node-id="observed" data-node-label="Evidence" tabindex="0" role="button" aria-label="Focus Evidence, executionRef, Observed Evidence › Execute and observe" aria-pressed="false" data-node-kind="database" data-node-sublabel="executionRef" data-node-tag="observed" data-node-context="Observed Evidence › Execute and observe">
+          <title>Evidence · executionRef · Observed Evidence › Execute and observe · observed</title>
+          <rect x="590" y="457" width="70" height="68" rx="6" class="c-mask"/>
+          <rect x="590" y="457" width="70" height="68" rx="6" class="c-database" data-animate="node" style="--step:7" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(596 463) scale(0.6875)">
             <ellipse cx="8" cy="4" rx="5" ry="2"/>
             <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
           </g>
-          <text data-detail-anchor x="625" y="478" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">VALID</text>
-          <text data-detail="context" x="625" y="495" class="t-muted" font-size="7" text-anchor="middle">completion</text>
-        <text data-detail="fine" x="625" y="513" class="t-database" font-size="7" text-anchor="middle">claim</text>
+          <text data-detail-anchor x="625" y="478" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Evidence</text>
+          <text data-detail="context" x="625" y="495" class="t-muted" font-size="8" text-anchor="middle">executionRef</text>
+        <text data-detail="fine" x="625" y="513" class="t-database" font-size="7" text-anchor="middle">observed</text>
         </g>
 
-        <g id="node-diagnose" data-node-id="diagnose" data-node-label="Diagnose" tabindex="0" role="button" aria-label="Focus Diagnose, failure, Recovery + Stops › Reconcile before retry › Discover + scope" aria-pressed="false" data-node-kind="messagebus" data-node-sublabel="failure" data-node-context="Recovery + Stops › Reconcile before retry › Discover + scope">
-          <title>Diagnose · failure · Recovery + Stops › Reconcile before retry › Discover + scope</title>
-          <rect x="275" y="589" width="50" height="52" rx="6" class="c-mask"/>
-          <rect x="275" y="589" width="50" height="52" rx="6" class="c-messagebus" data-animate="node" style="--step:12" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="messagebus" class="semantic-sigil s-messagebus" transform="translate(281 595) scale(0.6875)">
+        <g id="node-full" data-node-id="full" data-node-label="AUTO → FULL" tabindex="0" role="button" aria-label="Focus AUTO → FULL, no checker, Fail-Closed Outcomes › No guessed narrowing › Resolve safe scope" aria-pressed="false" data-node-kind="messagebus" data-node-sublabel="no checker" data-node-tag="safe" data-node-context="Fail-Closed Outcomes › No guessed narrowing › Resolve safe scope">
+          <title>AUTO → FULL · no checker · Fail-Closed Outcomes › No guessed narrowing › Resolve safe scope · safe</title>
+          <rect x="262" y="581" width="76" height="68" rx="6" class="c-mask"/>
+          <rect x="262" y="581" width="76" height="68" rx="6" class="c-messagebus" data-animate="node" style="--step:12" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="messagebus" class="semantic-sigil s-messagebus" transform="translate(268 587) scale(0.6875)">
             <path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11"/>
             <circle cx="5" cy="4.5" r="1" class="sigil-fill"/>
             <circle cx="10.5" cy="8" r="1" class="sigil-fill"/>
             <circle cx="7" cy="11.5" r="1" class="sigil-fill"/>
           </g>
-          <text data-detail-anchor x="300" y="610" class="t-primary" font-size="9" font-weight="600" text-anchor="middle">Diagnose</text>
-          <text data-detail="context" x="300" y="627" class="t-muted" font-size="8" text-anchor="middle">failure</text>
+          <text data-detail-anchor x="300" y="602" class="t-primary" font-size="10.3" font-weight="600" text-anchor="middle">AUTO → FULL</text>
+          <text data-detail="context" x="300" y="619" class="t-muted" font-size="8" text-anchor="middle">no checker</text>
+        <text data-detail="fine" x="300" y="637" class="t-messagebus" font-size="7" text-anchor="middle">safe</text>
         </g>
 
-        <g id="node-correct" data-node-id="correct" data-node-label="Correct" tabindex="0" role="button" aria-label="Focus Correct, repair, Recovery + Stops › Reconcile before retry › Discover + scope" aria-pressed="false" data-node-kind="backend" data-node-sublabel="repair" data-node-context="Recovery + Stops › Reconcile before retry › Discover + scope">
-          <title>Correct · repair · Recovery + Stops › Reconcile before retry › Discover + scope</title>
-          <rect x="195" y="589" width="50" height="52" rx="6" class="c-mask"/>
-          <rect x="195" y="589" width="50" height="52" rx="6" class="c-backend" data-animate="node" style="--step:12" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(201 595) scale(0.6875)">
-            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
-          </g>
-          <text data-detail-anchor x="220" y="610" class="t-primary" font-size="10" font-weight="600" text-anchor="middle">Correct</text>
-          <text data-detail="context" x="220" y="627" class="t-muted" font-size="8" text-anchor="middle">repair</text>
-        </g>
-
-        <g id="node-blocked" data-node-id="blocked" data-node-label="Blocked" tabindex="0" role="button" aria-label="Focus Blocked, stop, Recovery + Stops › Reconcile before retry › Discover + scope" aria-pressed="false" data-node-kind="security" data-node-sublabel="stop" data-node-context="Recovery + Stops › Reconcile before retry › Discover + scope">
-          <title>Blocked · stop · Recovery + Stops › Reconcile before retry › Discover + scope</title>
-          <rect x="63" y="589" width="50" height="52" rx="6" class="c-mask"/>
-          <rect x="63" y="589" width="50" height="52" rx="6" class="c-security" data-animate="node" style="--step:12" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(69 595) scale(0.6875)">
+        <g id="node-unresolved" data-node-id="unresolved" data-node-label="Open" tabindex="0" role="button" aria-label="Focus Open, narrow, Fail-Closed Outcomes › No guessed narrowing › Resolve safe scope" aria-pressed="false" data-node-kind="security" data-node-sublabel="narrow" data-node-tag="unresolved" data-node-context="Fail-Closed Outcomes › No guessed narrowing › Resolve safe scope">
+          <title>Open · narrow · Fail-Closed Outcomes › No guessed narrowing › Resolve safe scope · unresolved</title>
+          <rect x="405" y="581" width="50" height="68" rx="6" class="c-mask"/>
+          <rect x="405" y="581" width="50" height="68" rx="6" class="c-security" data-animate="node" style="--step:12" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(411 587) scale(0.6875)">
             <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
             <path d="m5.8 8 1.5 1.5 3-3"/>
           </g>
-          <text data-detail-anchor x="88" y="610" class="t-primary" font-size="10" font-weight="600" text-anchor="middle">Blocked</text>
-          <text data-detail="context" x="88" y="627" class="t-muted" font-size="8" text-anchor="middle">stop</text>
+          <text data-detail-anchor x="430" y="602" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Open</text>
+          <text data-detail="context" x="430" y="619" class="t-muted" font-size="8" text-anchor="middle">narrow</text>
+        <text data-detail="fine" x="430" y="637" class="t-security" font-size="7" text-anchor="middle">unresolved</text>
+        </g>
+
+        <g id="node-reject" data-node-id="reject" data-node-label="Reject" tabindex="0" role="button" aria-label="Focus Reject, pre-launch, Fail-Closed Outcomes › No guessed narrowing › Execute and observe" aria-pressed="false" data-node-kind="security" data-node-sublabel="pre-launch" data-node-tag="argv drift" data-node-context="Fail-Closed Outcomes › No guessed narrowing › Execute and observe">
+          <title>Reject · pre-launch · Fail-Closed Outcomes › No guessed narrowing › Execute and observe · argv drift</title>
+          <rect x="475" y="581" width="50" height="68" rx="6" class="c-mask"/>
+          <rect x="475" y="581" width="50" height="68" rx="6" class="c-security" data-animate="node" style="--step:12" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(481 587) scale(0.6875)">
+            <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
+            <path d="m5.8 8 1.5 1.5 3-3"/>
+          </g>
+          <text data-detail-anchor x="500" y="602" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Reject</text>
+          <text data-detail="context" x="500" y="619" class="t-muted" font-size="7" text-anchor="middle">pre-launch</text>
+        <text data-detail="fine" x="500" y="637" class="t-security" font-size="7" text-anchor="middle">argv drift</text>
+        </g>
+
+        <g id="node-boundary" data-node-id="boundary" data-node-label="Boundary" tabindex="0" role="button" aria-label="Focus Boundary, scope/coverage, Verification Boundary › Execute and observe" aria-pressed="false" data-node-kind="security" data-node-sublabel="scope/coverage" data-node-context="Verification Boundary › Execute and observe">
+          <title>Boundary · scope/coverage · Verification Boundary › Execute and observe</title>
+          <rect x="593" y="713" width="64" height="52" rx="6" class="c-mask"/>
+          <rect x="593" y="713" width="64" height="52" rx="6" class="c-security" data-animate="node" style="--step:12" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(599 719) scale(0.6875)">
+            <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
+            <path d="m5.8 8 1.5 1.5 3-3"/>
+          </g>
+          <text data-detail-anchor x="625" y="734" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Boundary</text>
+          <text data-detail="context" x="625" y="751" class="t-muted" font-size="6.6" text-anchor="middle">scope/coverage</text>
         </g>
 
         <!-- Edge labels -->
@@ -5163,30 +5151,28 @@
 
 
 
-
-
         <!-- Legend -->
         <g data-legend data-legend-bridge>
           <text x="20" y="800" class="t-primary" font-size="12" font-weight="650">Legend</text>
-          <g data-legend-semantic-kind="backend" data-legend-kind="backend" data-legend-label="ForgeLoop state" data-legend-x="20" data-legend-baseline="820" data-legend-width="109">
+          <g data-legend-semantic-kind="backend" data-legend-kind="backend" data-legend-label="Task/provider state" data-legend-x="20" data-legend-baseline="820" data-legend-width="126">
             <rect x="20" y="812" width="14" height="9" rx="2" class="c-backend" stroke-width="1"/>
-            <text x="42" y="820" class="t-muted" font-size="7.5" font-weight="500">ForgeLoop state</text>
+            <text x="42" y="820" class="t-muted" font-size="7.5" font-weight="500">Task/provider state</text>
           </g>
-          <g data-legend-semantic-kind="security" data-legend-kind="security" data-legend-label="Policy or gate" data-legend-x="136" data-legend-baseline="820" data-legend-width="104">
-            <rect x="136" y="812" width="14" height="9" rx="2" class="c-security" stroke-width="1"/>
-            <text x="158" y="820" class="t-muted" font-size="7.5" font-weight="500">Policy or gate</text>
+          <g data-legend-semantic-kind="security" data-legend-kind="security" data-legend-label="Trust boundary" data-legend-x="153" data-legend-baseline="820" data-legend-width="104">
+            <rect x="153" y="812" width="14" height="9" rx="2" class="c-security" stroke-width="1"/>
+            <text x="175" y="820" class="t-muted" font-size="7.5" font-weight="500">Trust boundary</text>
           </g>
-          <g data-legend-semantic-kind="messagebus" data-legend-kind="messagebus" data-legend-label="Recovery signal" data-legend-x="247" data-legend-baseline="820" data-legend-width="109">
-            <rect x="247" y="812" width="14" height="9" rx="2" class="c-messagebus" stroke-width="1"/>
-            <text x="269" y="820" class="t-muted" font-size="7.5" font-weight="500">Recovery signal</text>
+          <g data-legend-semantic-kind="messagebus" data-legend-kind="messagebus" data-legend-label="Fail-closed result" data-legend-x="264" data-legend-baseline="820" data-legend-width="122">
+            <rect x="264" y="812" width="14" height="9" rx="2" class="c-messagebus" stroke-width="1"/>
+            <text x="286" y="820" class="t-muted" font-size="7.5" font-weight="500">Fail-closed result</text>
           </g>
-          <g data-legend-semantic-kind="database" data-legend-kind="database" data-legend-label="Durable evidence" data-legend-x="363" data-legend-baseline="820" data-legend-width="113">
-            <rect x="363" y="812" width="14" height="9" rx="2" class="c-database" stroke-width="1"/>
-            <text x="385" y="820" class="t-muted" font-size="7.5" font-weight="500">Durable evidence</text>
+          <g data-legend-semantic-kind="database" data-legend-kind="database" data-legend-label="Bound evidence" data-legend-x="393" data-legend-baseline="820" data-legend-width="104">
+            <rect x="393" y="812" width="14" height="9" rx="2" class="c-database" stroke-width="1"/>
+            <text x="415" y="820" class="t-muted" font-size="7.5" font-weight="500">Bound evidence</text>
           </g>
-          <g data-legend-semantic-kind="external" data-legend-kind="external" data-legend-label="Request or result" data-legend-x="483" data-legend-baseline="820" data-legend-width="117">
-            <rect x="483" y="812" width="14" height="9" rx="2" class="c-external" stroke-width="1"/>
-            <text x="505" y="820" class="t-muted" font-size="7.5" font-weight="500">Request or result</text>
+          <g data-legend-semantic-kind="external" data-legend-kind="external" data-legend-label="Task input" data-legend-x="504" data-legend-baseline="820" data-legend-width="87">
+            <rect x="504" y="812" width="14" height="9" rx="2" class="c-external" stroke-width="1"/>
+            <text x="526" y="820" class="t-muted" font-size="7.5" font-weight="500">Task input</text>
           </g>
         </g>
       </svg>
@@ -5376,39 +5362,36 @@
       <div class="card">
         <div class="card-header">
           <div class="card-dot rose"></div>
-          <h3>Safety boundary</h3>
+          <h3>Fail-Closed Narrowing</h3>
         </div>
         <ul>
-          <li>&bull; Execution starts only after PREFLIGHT_READY</li>
-          <li>&bull; Workspace binding is optional but blocks mismatched execution</li>
-          <li>&bull; Failures return to diagnosis before another claim</li>
-          <li>&bull; Completion is validator-backed, not inferred from a screenshot</li>
+          <li>&bull; AUTO uses CHANGED or CLAIMED only with a trusted scoped checker</li>
+          <li>&bull; Without that capability, AUTO resolves safely to FULL</li>
+          <li>&bull; Explicit CHANGED or CLAIMED without a checker returns unresolved</li>
         </ul>
       </div>
 
       <div class="card">
         <div class="card-header">
           <div class="card-dot cyan"></div>
-          <h3>Evidence contract</h3>
+          <h3>Exact Process Binding</h3>
         </div>
         <ul>
-          <li>&bull; Verification scope narrows only through a fresh canonical boundary</li>
-          <li>&bull; run-check binds exact commands to an execution reference</li>
-          <li>&bull; record-check covers manual observations</li>
-          <li>&bull; Drift reopens verification instead of being hidden</li>
+          <li>&bull; RevisionProvider changes and task claims are canonical inputs</li>
+          <li>&bull; Contract, repository, and cycle fingerprints bind the scope</li>
+          <li>&bull; argv prefix and selected paths are checked before launch</li>
         </ul>
       </div>
 
       <div class="card">
         <div class="card-header">
           <div class="card-dot emerald"></div>
-          <h3>Portable output</h3>
+          <h3>Evidence Boundary</h3>
         </div>
         <ul>
-          <li>&bull; JSON IR is the source of truth</li>
-          <li>&bull; HTML stays explorable and SVG stays GitHub-safe</li>
-          <li>&bull; Attestation remains optional and separate from verification scope</li>
-          <li>&bull; The text fallback carries the same lifecycle semantics</li>
+          <li>&bull; run-check records exact process provenance as observed evidence</li>
+          <li>&bull; Stale scope or argv drift cannot become verification evidence</li>
+          <li>&bull; Verification scope is not attestation coverage</li>
         </ul>
       </div>
     </div>

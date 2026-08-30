@@ -322,6 +322,60 @@ same identity as the implementer. Simple documentation tasks may skip design,
 delegation, and full regression when the contract records why those states are
 not applicable.
 
+## Optional boundaries and provenance chain
+
+The current integration view keeps optional safety and provenance boundaries
+visible without turning them into a second state machine:
+
+```text
+Intent
+  ↓
+Contract
+  ↓
+Route
+  ↓
+Task + claim ownership
+  ↓
+Optional workspace binding
+  ↓
+Execution
+  ↓
+Optional responsibility constraint
+  ↓
+Verification planning
+  ↓
+Observed command evidence
+  ↓
+Review
+  ↓
+Transactional completion
+  ↓
+Optional code manifest / attestation
+  ↓
+Optional signing
+  ↓
+Read-only verification / range coverage
+```
+
+Each boundary has a distinct trust meaning. Repository and checkout state
+identify the implementation being inspected; task state owns lifecycle and
+claims; execution artifacts prove process provenance; the completion receipt
+summarizes validated evidence; the code manifest binds exact source bytes; the
+in-toto statement binds that manifest to completion; a signature is an
+external signer result; and a revision-range result evaluates coverage across
+multiple task attestations. A workspace binding is optional and a branch name
+or HEAD alone is not a complete checkout identity. A handoff is an immutable
+state snapshot, while mutable continuity is operational context; neither is
+independent review evidence. Verification scope decides which paths a specific
+checker may execute, whereas attestation coverage asks whether changed paths
+in a revision range are covered. These relationships are intentionally not
+interchangeable.
+
+The [Verification Trust Flow](./docs/REVISION_PROVIDERS.md#differential-verification-scope)
+(`docs/diagrams/forgeloop-verification-trust-flow.workflow.json`) and [Code
+Attestation Chain](./docs/CODE_ATTESTATION.md#completion-flow) diagrams provide
+the focused visual fallbacks for these two boundaries.
+
 ## Precedence and conflicts
 
 The system respects this order:

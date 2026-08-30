@@ -13,6 +13,13 @@ bug-free or secure.
 | `VERIFIED` | Completion, evidence bindings, manifest, and current content validate. |
 | `ATTESTED` | `VERIFIED` plus a cryptographically valid signature and trusted signer policy. |
 
+`PROCESSED` is an existence/parsing result, not a trust claim. A manifest or
+statement that merely exists never becomes `ATTESTED`; the signature must be
+verified against the configured signer identity, issuer, and trust policy.
+Attestation binds bounded source/evidence relationships. It does not prove
+authorship, AI or human origin, bug-free behavior, absolute security, or the
+absence of defects outside the captured subject.
+
 `code-manifest.json` is the ForgeLoop-generated source snapshot. It contains
 one SHA-256 digest per changed source entry and a deterministic aggregate
 `contentDigest`. Protocol metadata under `.forgeloop/**` is excluded from the
@@ -26,6 +33,20 @@ The deterministic in-toto Statement v1 is written to `statement.json`:
   statement.json
   statement.sigstore.json       # optional external signature bundle
 ```
+
+The source subject excludes ForgeLoop protocol metadata under `.forgeloop/**`.
+That metadata is bound separately through the task, receipt, route, contract,
+state, and ledger fingerprints. Configured coverage exclusions must be
+explicit and are still reported; an excluded path is not silently represented
+as covered source content.
+
+The [Code Attestation Chain](./assets/diagrams/forgeloop-code-attestation-flow.html)
+is the interactive visual fallback for this sequence, with a
+[self-contained SVG](./assets/diagrams/forgeloop-code-attestation-flow.svg).
+It also shows why verification scope and attestation coverage are separate
+questions.
+
+Its canonical source is `docs/diagrams/forgeloop-code-attestation-flow.workflow.json`.
 
 ## Completion flow
 
@@ -66,6 +87,22 @@ forgeloop attestation-verify --task <taskId> --ref HEAD --json
 
 `attestation-verify` and `attestation-verify-range` are read-only. They never
 write verification records or append ledger events.
+
+## What the chain proves
+
+The chain proves a bounded relationship among a valid completion, its receipt
+and ledger checkpoint, the exact bytes represented by the code manifest, and
+the deterministic in-toto statement. The `RevisionProvider` supplies opaque
+revision identity and exact content. The optional `SigningProvider` can add a
+cryptographic signature, but neither provider changes the ForgeLoop evidence
+semantics.
+
+Revision-range coverage is a separate multi-task evaluation: a provider
+enumerates changed paths between a base and head, then the verifier computes a
+union of valid task attestations. Uncovered paths and conflicting digests fail
+closed. A `CHANGED` or `CLAIMED` verification scope only describes which paths
+one checker may execute before completion; it is not complete revision-range
+coverage.
 
 ## Signature boundary
 

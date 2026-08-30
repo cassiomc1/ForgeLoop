@@ -61,6 +61,8 @@ async function copyDocumentationFixture() {
   await cp(path.join(repositoryRoot, "vendor"), path.join(rootDir, "vendor"), { recursive: true });
   await cp(path.join(repositoryRoot, "README.md"), path.join(rootDir, "README.md"));
   await cp(path.join(repositoryRoot, "DOCS_INDEX.md"), path.join(rootDir, "DOCS_INDEX.md"));
+  await cp(path.join(repositoryRoot, "LOOP_SYSTEM_DESIGN.md"), path.join(rootDir, "LOOP_SYSTEM_DESIGN.md"));
+  await cp(path.join(repositoryRoot, "QUALITY_SCORECARD.md"), path.join(rootDir, "QUALITY_SCORECARD.md"));
   return rootDir;
 }
 
@@ -102,6 +104,20 @@ test("generation preserves the human-owned review and emits no review state in r
     assert.deepEqual(after, before);
     assert.equal(Object.hasOwn(JSON.parse(await readFile(receiptPath, "utf8")), "visualReview"), false);
     await checkDocumentationDiagrams({ rootDir, reproducible: false });
+  } finally {
+    await rm(rootDir, { recursive: true, force: true });
+  }
+});
+
+test("diagram checking fails closed when one review is missing among multiple diagrams", async () => {
+  const rootDir = await copyDocumentationFixture();
+  try {
+    await rm(path.join(rootDir, "docs/diagrams/reviews/forgeloop-verification-trust-flow.review.json"));
+    await assert.rejects(
+      () => checkDocumentationDiagrams({ rootDir, reproducible: false }),
+      (error) => error.code === "E_DIAGRAM_REVIEW_MISSING"
+        && error.message.includes("forgeloop-verification-trust-flow.review.json"),
+    );
   } finally {
     await rm(rootDir, { recursive: true, force: true });
   }

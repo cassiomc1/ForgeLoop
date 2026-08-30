@@ -110,6 +110,13 @@ Any material difference produces `REVALIDATION_REQUIRED`. A non-Git target
 reports that branch/HEAD drift is not verifiable. Cheap checks may be rerun,
 but a completed destructive or publication action is never rerun automatically.
 
+When `workspace-binding.json` is present, it is an additional execution-safety
+boundary: the binding records the derived repository/worktree identity, and
+both task mutations and `run-check` validate the current checkout against it.
+A matching branch name or HEAD alone is not sufficient. When the optional
+artifact is absent, workspace binding is not applicable; it must not be
+invented from continuity notes, handoff prose, or actor input.
+
 The current contract is compared when resolving the target task:
 
 ```bash

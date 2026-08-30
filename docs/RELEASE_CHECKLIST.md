@@ -19,6 +19,10 @@ preparation and verification checklist; it does not authorize publication.
 - [ ] `npm run coverage` passes the configured global and critical-module gates.
 - [ ] `npm run docs:check`, `npm run docs:generated:check`,
       `npm run docs:conformance`, and `npm run docs:examples:check` pass.
+- [ ] `npm run docs:diagrams:check` and `npm run docs:diagram:inventory` pass;
+      every active diagram has typed source, dark-first animated HTML/SVG,
+      reduced-motion handling, a deterministic receipt, a text fallback, and
+      a current source-bound visual review.
 - [ ] `npm run completions:check` and `npm run summary:check` pass.
 - [ ] Workspace binding, handoff, responsibility, verification scope, revision,
       manifest, statement, signature, and range-coverage tests pass.

@@ -124,6 +124,33 @@ does not prove authorship or absolute security. See
 [`docs/CODE_ATTESTATION.md`](./docs/CODE_ATTESTATION.md) for configuration,
 read-only verification, signatures, and revision-range coverage.
 
+### Optional task boundaries and differential verification
+
+Workspace binding, immutable handoff envelopes, and responsibility contracts
+are optional boundaries around a task. They constrain where a task may run and
+what a pass may change; they do not grant identity, delegation, review,
+authorship, or completion authority. Differential Verification Scope is a
+separate pre-completion execution decision:
+
+```text
+AUTO
+ ├─ trusted scoped checker + safe changed paths → CHANGED
+ ├─ trusted scoped checker + claims fallback   → CLAIMED
+ └─ otherwise                                  → FULL
+```
+
+Explicit `CHANGED` or `CLAIMED` fails closed when no trusted scoped checker is
+configured. A `RevisionProvider` supplies opaque revisions and normalized
+changed entries; a `SigningProvider` is an optional external authority for
+raising `VERIFIED` to `ATTESTED`. See [`docs/REVISION_PROVIDERS.md`](./docs/REVISION_PROVIDERS.md),
+[`docs/ARTIFACT_REFERENCE.md`](./docs/ARTIFACT_REFERENCE.md), and
+[`docs/RECIPES.md`](./docs/RECIPES.md) for operational details.
+
+Generic CI provides a platform-neutral revision-range boundary; thin GitHub,
+GitLab, local, or enterprise adapters may translate revisions without adding
+trust rules to the protocol core. The CLI and integration API remain usable
+across supported platforms, with MCP as an optional local adapter.
+
 ### Durable external actions
 
 For external effects, record intent with `action-propose`, apply the capability
@@ -336,6 +363,21 @@ The broader architecture and boundaries are in
 [Open the animated ForgeLoop evidence-first engineering flow](./docs/assets/diagrams/forgeloop-engineering-flow.html)
 
 ![ForgeLoop evidence-first engineering flow (animated SVG fallback)](./docs/assets/diagrams/forgeloop-engineering-flow.svg)
+
+The architecture flow is complemented by two focused, source-bound workflow
+diagrams. The [Verification Trust Flow source](./docs/diagrams/forgeloop-verification-trust-flow.workflow.json),
+[animated explorer](./docs/assets/diagrams/forgeloop-verification-trust-flow.html),
+[SVG fallback](./docs/assets/diagrams/forgeloop-verification-trust-flow.svg),
+[receipt](./docs/assets/diagrams/forgeloop-verification-trust-flow.receipt.json),
+and [visual review](./docs/diagrams/reviews/forgeloop-verification-trust-flow.review.json)
+show why narrow verification is fail-closed. The [Code Attestation Chain
+source](./docs/diagrams/forgeloop-code-attestation-flow.workflow.json),
+[animated explorer](./docs/assets/diagrams/forgeloop-code-attestation-flow.html),
+[SVG fallback](./docs/assets/diagrams/forgeloop-code-attestation-flow.svg),
+[receipt](./docs/assets/diagrams/forgeloop-code-attestation-flow.receipt.json),
+and [visual review](./docs/diagrams/reviews/forgeloop-code-attestation-flow.review.json)
+show exact content binding, optional signing, and separate revision-range
+coverage.
 
 Text-only fallback: discovery creates the contract and route; required gates
 and `PREFLIGHT_READY` authorize execution; verification creates structured

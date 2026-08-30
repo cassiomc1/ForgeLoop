@@ -22,6 +22,12 @@ Concise, copy-paste friendly recipes for common ForgeLoop tasks.
 14. [Executable Policy, Baseline Ratchet, and Recovery](#recipe-14--executable-policy-baseline-ratchet-and-recovery)
 15. [Release and Reacquire Claims for an Abandoned Task](#recipe-15--release-and-reacquire-claims-for-an-abandoned-task)
 16. [Execute a Durable External Action Safely](#recipe-16--execute-a-durable-external-action-safely)
+17. [Bind a Task to the Current Workspace](#recipe-17--bind-a-task-to-the-current-workspace)
+18. [Create and Inspect an Immutable Handoff](#recipe-18--create-and-inspect-an-immutable-handoff)
+19. [Apply a Responsibility Contract](#recipe-19--apply-a-responsibility-contract)
+20. [Configure Trusted Narrow Verification](#recipe-20--configure-trusted-narrow-verification)
+21. [Generate and Verify Code Attestation](#recipe-21--generate-and-verify-code-attestation)
+22. [Verify a Revision Range](#recipe-22--verify-a-revision-range)
 
 ---
 
@@ -412,6 +418,138 @@ forgeloop eval --task release --scenario scenarios/release.json --json
 The efficiency comparison is present only when the scenario declares a
 positive `reference.comparableSteps`; absent host token/cost/model data stays
 unknown.
+
+---
+
+### Recipe 17 — Bind a Task to the Current Workspace
+
+Bind only when the task must remain in the current Git worktree. The binding is
+derived by ForgeLoop; do not supply branch or HEAD identity as actor input.
+
+```bash
+forgeloop workspace-bind --task task-001 --json
+forgeloop workspace-status --task task-001 --json
+```
+
+If the repository or worktree identity changes, `workspace-status` reports a
+mismatch and bound mutation or `run-check` fails closed before launch. Rebinding
+is an explicit new decision, not an automatic repair.
+
+---
+
+### Recipe 18 — Create and Inspect an Immutable Handoff
+
+Create a protocol-derived snapshot before changing tools or sessions, then
+inspect it from the receiving harness:
+
+```bash
+forgeloop handoff-create --task task-001 \
+  --recipient "next harness" \
+  --note "Continue verification" \
+  --json
+forgeloop handoff-list --task task-001 --json
+forgeloop handoff-show --task task-001 --id <handoffId> --json
+```
+
+The envelope is immutable and digest-bound. Its note and recipient hint are
+operational context only: a handoff is not delegation, authority, independent
+review evidence, or completion evidence. Use `continuity.json` for mutable
+resume notes and canonical execution artifacts for proof.
+
+---
+
+### Recipe 19 — Apply a Responsibility Contract
+
+Declare a mechanical pass boundary with allowed paths, read-only paths, and
+required checks. The label is descriptive and does not create an agent role.
+
+```bash
+forgeloop responsibility-set --task task-001 \
+  --label implementation \
+  --allowed-path src \
+  --read-only-path docs \
+  --required-check unit-tests \
+  --freeze-contract --freeze-route --freeze-claims \
+  --json
+forgeloop responsibility-status --task task-001 --json
+```
+
+Path changes, missing required checks, or drift in frozen inputs fail closed.
+
+---
+
+### Recipe 20 — Configure Trusted Narrow Verification
+
+Declare the checker capability in `.forgeloop/config.json`:
+
+```json
+{
+  "verification": {
+    "checkers": [
+      {
+        "checkId": "unit-tests",
+        "scopeMode": "PATH_ARGUMENTS",
+        "argvPrefix": ["node", "--test"],
+        "pathInsertion": "APPEND"
+      }
+    ]
+  }
+}
+```
+
+Resolve the scope and pass the exact returned paths to `run-check`:
+
+```bash
+forgeloop verify-scope --task task-001 --mode AUTO --json
+forgeloop run-check --task task-001 --id unit-tests \
+  --requirement "Unit tests" \
+  --scope-ref .forgeloop/task-state/<taskKey>/verification-scope.json \
+  -- node --test <paths-returned-by-verify-scope>
+```
+
+`AUTO` resolves to `CHANGED` or `CLAIMED` only with a trusted scoped checker;
+otherwise it resolves to `FULL`. Explicit `CHANGED` or `CLAIMED` without one
+returns `E_VERIFICATION_SCOPE_UNRESOLVED`. Any prefix or selected-path
+mismatch is rejected before the checker process starts.
+
+---
+
+### Recipe 21 — Generate and Verify Code Attestation
+
+After validator-backed completion, create the deterministic in-toto statement
+and verify its exact content without mutating the task:
+
+```bash
+forgeloop complete --task task-001 --json
+forgeloop attestation-create --task task-001 --json
+forgeloop attestation-status --task task-001 --json
+forgeloop attestation-verify --task task-001 --ref HEAD --json
+```
+
+The result is `PROCESSED` until the applicable relationships validate,
+`VERIFIED` when exact source and completion bindings validate, and `ATTESTED`
+only after a valid external signature passes the configured identity and issuer
+policy. No private key or token is persisted.
+
+---
+
+### Recipe 22 — Verify a Revision Range
+
+Use the provider-neutral command locally or from Generic CI:
+
+```bash
+forgeloop attestation-verify-range \
+  --revision-provider git \
+  --base origin/main \
+  --head HEAD \
+  --require-complete-coverage \
+  --json
+```
+
+The verifier reports changed, covered, uncovered, and conflicting paths. A
+coverage gap or conflicting task digest is invalid; provider or invocation
+failure is an error. This post-completion range result is distinct from the
+pre-completion verification scope used by one checker.
 
 ## Run ForgeLoop through MCP (safe mode)
 

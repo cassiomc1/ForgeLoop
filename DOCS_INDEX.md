@@ -46,6 +46,9 @@ integration and guide context. Use this map before editing documentation.
 | Guide content | [`ENG/`](./ENG/) | Context-specific, English-only operational guides |
 | Diagram governance | [`docs/diagrams/manifest.json`](./docs/diagrams/manifest.json) | Authoritative taxonomy, renderer mapping, canonical purposes, artifact ownership, and references |
 | Diagram maintainer entrypoint | [`docs/diagrams/README.md`](./docs/diagrams/README.md) | Typed Archify source, animated HTML explorer, animated SVG fallback, review, and regeneration workflow |
+| Engineering flow diagram | [`docs/assets/diagrams/forgeloop-engineering-flow.html`](./docs/assets/diagrams/forgeloop-engineering-flow.html) | Conceptual lifecycle from request through validator-backed completion |
+| Verification Trust Flow | [`docs/REVISION_PROVIDERS.md`](./docs/REVISION_PROVIDERS.md#differential-verification-scope) | Claims, changed paths, trusted checker capability, exact argv, and observed evidence |
+| Code Attestation Chain | [`docs/CODE_ATTESTATION.md`](./docs/CODE_ATTESTATION.md#completion-flow) | Completion, exact-content manifest, in-toto statement, optional signing, and range coverage |
 | Real Execution Proof of Concept (PoC) | [`poc/README.md`](./poc/README.md) | Non-normative, reproducible public engineering workload, audit evidence, and technical audit. Normative behavior remains owned by [`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md). |
 
 ## Audience map
@@ -62,6 +65,9 @@ integration and guide context. Use this map before editing documentation.
 | **Inspecting `.forgeloop/` files** | [`docs/ARTIFACT_REFERENCE.md`](./docs/ARTIFACT_REFERENCE.md) |
 | **Fixing a broken or stale state** | [`docs/TROUBLESHOOTING.md`](./docs/TROUBLESHOOTING.md) |
 | **Looking for quick recipes** | [`docs/RECIPES.md`](./docs/RECIPES.md) |
+| **Understanding verification trust** | [`docs/REVISION_PROVIDERS.md`](./docs/REVISION_PROVIDERS.md#differential-verification-scope) |
+| **Understanding attestation trust** | [`docs/CODE_ATTESTATION.md`](./docs/CODE_ATTESTATION.md#trust-levels) |
+| **Maintaining generated diagrams** | [`docs/diagrams/README.md`](./docs/diagrams/README.md) |
 | **Documentation contributor** | [`docs/DOCUMENTATION_GUIDE.md`](./docs/DOCUMENTATION_GUIDE.md) |
 | **Release maintainer (current)** | [`docs/RELEASE_CHECKLIST.md`](./docs/RELEASE_CHECKLIST.md) |
 | **Release maintainer (historical 1.5/MCP)** | [`docs/RELEASE_CHECKLIST_1_5_MCP.md`](./docs/RELEASE_CHECKLIST_1_5_MCP.md) |
@@ -85,6 +91,8 @@ integration and guide context. Use this map before editing documentation.
 - **Map ForgeLoop state into an external runtime/orchestrator**: [`ORCHESTRATOR_INTEGRATION.md`](./ORCHESTRATOR_INTEGRATION.md)
 - **Edit documentation safely**: [`docs/DOCUMENTATION_GUIDE.md`](./docs/DOCUMENTATION_GUIDE.md)
 - **Verify source-content attestations**: [`docs/CODE_ATTESTATION.md`](./docs/CODE_ATTESTATION.md)
+- **Understand narrow verification and checker binding**: [`docs/REVISION_PROVIDERS.md`](./docs/REVISION_PROVIDERS.md#differential-verification-scope)
+- **Inspect the governed diagrams**: [`docs/diagrams/README.md`](./docs/diagrams/README.md)
 
 `README.md` is intentionally a catalog and quickstart. Do not copy the full
 process into adapters or README sections; link to the canonical source.
@@ -100,6 +108,9 @@ process into adapters or README sections; link to the canonical source.
 5. Use [`GUIDE_ROUTER.md`](./GUIDE_ROUTER.md) to select only relevant guides.
 6. Use [`LOOP_SYSTEM_DESIGN.md`](./LOOP_SYSTEM_DESIGN.md) and schemas when a
    change affects protocol invariants or artifact shape.
+7. Use [`docs/REVISION_PROVIDERS.md`](./docs/REVISION_PROVIDERS.md) and
+   [`docs/CODE_ATTESTATION.md`](./docs/CODE_ATTESTATION.md) when verification
+   scope, provider boundaries, signing, or revision-range coverage is involved.
 
 ## Verification and release
 

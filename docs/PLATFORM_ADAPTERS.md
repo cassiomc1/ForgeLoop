@@ -31,6 +31,26 @@ The repository includes a shell adapter at
 [`integrations/generic-ci/verify.sh`](../integrations/generic-ci/verify.sh).
 It has no hosting-platform API dependency.
 
+Generic CI is the first-class provider-neutral boundary. A thin platform
+adapter may translate a pull request, merge request, branch comparison, or
+job baseline into the generic `revisionProvider`, `baseRevision`, and
+`headRevision` inputs, then present the canonical result. It must not add
+platform-specific trust rules to the protocol core or treat a platform status
+as a ForgeLoop signature.
+
+The adapter preserves the verifier exit contract:
+
+```text
+0 = VALID
+1 = INVALID, stale, uncovered, or untrusted
+2 = invocation, environment, configuration, or provider error
+```
+
+Missing or unavailable provider state is not a pass. The platform may publish
+annotations after the generic command returns, but it cannot override an
+invalid result or silently convert local success into publication, merge, or
+deployment evidence.
+
 ## Mapping examples
 
 | Platform context | Base revision | Head revision |

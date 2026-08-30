@@ -3,7 +3,7 @@
   "diagram_type": "workflow",
   "meta": {
     "title": "ForgeLoop Evidence-First Engineering Flow",
-    "subtitle": "Typed intent → gated work → validator-backed closure",
+    "subtitle": "Typed intent → scoped work → observed evidence → validator-backed closure",
     "animation": "trace",
     "visual_preset": "signal-flow",
     "quality_profile": "showcase",
@@ -62,15 +62,15 @@
   "mainPath": ["request", "profile", "contract", "route", "gates", "preflight", "work", "evidence", "review", "valid"],
   "nodes": [
     { "id": "request", "lane": "intent", "col": 0, "type": "external", "label": "Request", "sublabel": "intent", "width": 50 },
-    { "id": "profile", "lane": "intent", "col": 1, "type": "backend", "label": "Profile", "sublabel": "facts", "width": 50 },
+    { "id": "profile", "lane": "intent", "col": 1, "type": "backend", "label": "Profile", "sublabel": "discover", "width": 50 },
     { "id": "contract", "lane": "intent", "col": 2, "type": "security", "label": "Contract", "sublabel": "scope", "tag": "saved", "width": 50 },
     { "id": "route", "lane": "policy", "col": 2, "type": "security", "label": "Route", "sublabel": "guides", "tag": "fail closed", "width": 50 },
-    { "id": "gates", "lane": "policy", "col": 3, "type": "security", "label": "Gates", "sublabel": "policy", "width": 50 },
-    { "id": "preflight", "lane": "policy", "col": 4, "type": "security", "label": "READY", "sublabel": "unlock", "tag": "PREFLIGHT", "width": 50 },
-    { "id": "work", "lane": "execution", "col": 4, "type": "backend", "label": "Work", "sublabel": "checkpoint", "width": 50 },
-    { "id": "evidence", "lane": "evidence", "col": 4, "type": "database", "label": "Evidence", "sublabel": "checks", "tag": "freshness", "width": 50 },
+    { "id": "gates", "lane": "policy", "col": 3, "type": "security", "label": "Claims", "sublabel": "Task + gates", "width": 62 },
+    { "id": "preflight", "lane": "policy", "col": 4, "type": "security", "label": "READY", "sublabel": "binding", "tag": "Preflight", "width": 60 },
+    { "id": "work", "lane": "execution", "col": 4, "type": "backend", "label": "Execution", "sublabel": "checkpoint", "width": 62 },
+    { "id": "evidence", "lane": "evidence", "col": 4, "type": "database", "label": "Evidence", "sublabel": "scope + checks", "tag": "observed", "width": 70 },
     { "id": "review", "lane": "closure", "col": 5, "type": "backend", "label": "Review", "sublabel": "drift", "width": 50 },
-    { "id": "valid", "lane": "evidence", "col": 5, "type": "database", "label": "VALID", "sublabel": "validator", "tag": "claim", "width": 50 },
+    { "id": "valid", "lane": "evidence", "col": 5, "type": "database", "label": "VALID", "sublabel": "completion", "tag": "claim", "width": 50 },
     { "id": "diagnose", "lane": "recovery", "col": 2, "type": "messagebus", "label": "Diagnose", "sublabel": "failure", "width": 50 },
     { "id": "correct", "lane": "recovery", "col": 1, "type": "backend", "label": "Correct", "sublabel": "repair", "width": 50 },
     { "id": "blocked", "lane": "recovery", "col": 0, "type": "security", "label": "Blocked", "sublabel": "stop", "width": 50 }
@@ -96,6 +96,7 @@
       "title": "Safety boundary",
       "items": [
         "Execution starts only after PREFLIGHT_READY",
+        "Workspace binding is optional but blocks mismatched execution",
         "Failures return to diagnosis before another claim",
         "Completion is validator-backed, not inferred from a screenshot"
       ]
@@ -104,7 +105,8 @@
       "dot": "cyan",
       "title": "Evidence contract",
       "items": [
-        "run-check binds commands to an execution reference",
+        "Verification scope narrows only through a fresh canonical boundary",
+        "run-check binds exact commands to an execution reference",
         "record-check covers manual observations",
         "Drift reopens verification instead of being hidden"
       ]
@@ -115,6 +117,7 @@
       "items": [
         "JSON IR is the source of truth",
         "HTML stays explorable and SVG stays GitHub-safe",
+        "Attestation remains optional and separate from verification scope",
         "The text fallback carries the same lifecycle semantics"
       ]
     }
