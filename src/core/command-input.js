@@ -1,5 +1,6 @@
 import { continuityOptionDefaults, validateContinuityOptions } from "./continuity-cli-options.js";
 import { E_CLI_INVOCATION_INVALID } from "./error-codes.js";
+import { EXECUTION_PROFILE_REQUESTS } from "./execution-profile.js";
 
 function inputError(message) {
   const error = new Error(message);
@@ -17,6 +18,7 @@ export function defaultCommandInputValues() {
     path: ".",
     dryRun: false,
     json: false,
+    compact: false,
     strict: false,
     fix: false,
     adopt: [],
@@ -26,6 +28,17 @@ export function defaultCommandInputValues() {
     platforms: [],
     behaviorChange: false,
     executableChange: false,
+    executionProfile: null,
+    usageProvider: null,
+    usageModel: null,
+    usageInputTokens: null,
+    usageOutputTokens: null,
+    usageCacheReadTokens: null,
+    usageCacheWriteTokens: null,
+    usageTotalTokens: null,
+    usageCostUsd: null,
+    usageSource: "ACTOR_REPORTED",
+    baselinePath: null,
     to: null,
     file: null,
     contractFile: null,
@@ -101,6 +114,27 @@ export function validateForgeLoopCommandInput({ command, input, help = false } =
   }
   if (command === "task-create" && !options.taskId) {
     throw inputError("task-create requires --task");
+  }
+  if (options.executionProfile !== null && options.executionProfile !== undefined) {
+    if (command !== "route") throw inputError(`executionProfile is not valid for ${command}`);
+    if (!EXECUTION_PROFILE_REQUESTS.includes(options.executionProfile)) {
+      throw inputError(`route --execution-profile must be one of ${EXECUTION_PROFILE_REQUESTS.join(", ")}`);
+    }
+  }
+  if (command === "usage-record" && !help) {
+    if (!options.taskId) throw inputError("usage-record requires --task");
+    if ((options.usageSource ?? "ACTOR_REPORTED") !== "ACTOR_REPORTED") {
+      throw inputError("usage-record accepts only --source ACTOR_REPORTED");
+    }
+  }
+  if (command === "efficiency" && !help && !options.taskId) {
+    throw inputError("efficiency requires --task");
+  }
+  if (command !== "usage-record" && options.usageSource !== undefined && options.usageSource !== "ACTOR_REPORTED") {
+    throw inputError(`usageSource is not valid for ${command}`);
+  }
+  if (options.compact === true && !["next", "task-show"].includes(command)) {
+    throw inputError(`compact output is not valid for ${command}`);
   }
   if (["workspace-bind", "workspace-status", "handoff-create", "handoff-list", "handoff-show", "responsibility-set", "responsibility-status", "verify-scope", "attestation-create", "attestation-status", "attestation-verify"].includes(command)
     && !options.taskId) {

@@ -1,0 +1,19 @@
+{
+  "scenarioId": "explicit-full-low-risk",
+  "input": {
+    "workType": "documentation",
+    "surfaces": [],
+    "risks": [],
+    "platforms": []
+  },
+  "profileOptions": {
+    "requestedProfile": "full"
+  },
+  "expected": {
+    "requested": "full",
+    "floor": "light",
+    "resolved": "full",
+    "reasons": ["PROFILE_EXPLICIT_REQUEST", "WORK_LOW_RISK_DOCUMENTATION", "NO_HIGH_RISK_SIGNAL", "NARROW_DELIVERABLE_SCOPE"],
+    "escalated": false
+  }
+}

@@ -1,15 +1,35 @@
 import { getNextAction } from "../core/next-action.js";
 import { withResolvedTask } from "../core/task-command.js";
+import { readPersistedRoute } from "../core/route-artifact.js";
+import { projectExecutionProfile } from "../core/execution-profile.js";
 
-export async function runNext({ target, packageRoot, taskId, task, authorityContext, runtimeContext }) {
+export async function runNext({ target, packageRoot, taskId, task, authorityContext, runtimeContext, compact = false }) {
   return withResolvedTask(target, { taskId: taskId ?? task, packageRoot }, async (ctx) => {
-    return getNextAction({
+    const result = await getNextAction({
       target,
       packageRoot,
       taskId: ctx?.taskId ?? null,
       authorityContext,
       runtimeContext,
     });
+    if (!compact) return result;
+    const compactTaskId = ctx?.taskId ?? (result.taskId && result.taskId !== "unknown" ? result.taskId : null);
+    let profile = null;
+    try {
+      const route = await readPersistedRoute(target, packageRoot, { taskId: compactTaskId });
+      profile = projectExecutionProfile(route.value);
+    } catch {
+      // Legacy and incomplete tasks remain readable without a profile.
+    }
+    return {
+      taskId: compactTaskId ?? result.taskId,
+      phase: result.currentPhase,
+      profile,
+      nextAction: result.nextAction,
+      command: result.commandSpecs?.[0]?.argv ?? [],
+      terminal: result.terminal,
+      errors: result.reasonCodes ?? result.reasons?.map((reason) => reason.code) ?? [],
+    };
   });
 }
 
@@ -49,4 +69,8 @@ export function formatNextActionResult(result) {
   }
   if (result.terminal) lines.push("STATE: TERMINAL");
   return `${lines.join("\n")}\n`;
+}
+
+export function formatCompactNextActionResult(result) {
+  return `${JSON.stringify(result)}\n`;
 }

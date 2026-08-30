@@ -1,0 +1,16 @@
+{
+  "scenarioId": "light-static-site",
+  "input": {
+    "workType": "complete-website",
+    "surfaces": ["ui"],
+    "risks": [],
+    "platforms": ["web"]
+  },
+  "expected": {
+    "requested": "auto",
+    "floor": "light",
+    "resolved": "light",
+    "reasons": ["PROFILE_DEFAULT_AUTO", "WORK_LOW_RISK_UI", "NO_HIGH_RISK_SIGNAL", "NARROW_DELIVERABLE_SCOPE"],
+    "escalated": false
+  }
+}

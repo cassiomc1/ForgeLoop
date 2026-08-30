@@ -31,6 +31,25 @@ ForgeLoop uses a definition-driven command-line parser:
 - **Boolean Flags**: Never accept inline values (e.g. `--json=false` is rejected).
 - **Argv Passthrough**: Everything after a command's `--` passthrough marker is preserved exactly and is not parsed as ForgeLoop syntax.
 
+### Execution profile and compact context
+
+`route` resolves the orthogonal execution profile from `auto`, `light`,
+`balanced`, or `full`. CLI requests take precedence over project configuration,
+but a deterministic safety floor always wins. The profile changes context and
+process depth only; it never bypasses lifecycle phases, gates, verification,
+authority, provenance, or completion validation.
+
+For high-frequency host reads, request bounded projections:
+
+```bash
+forgeloop next --task <id> --compact --json
+forgeloop task-show --task <id> --compact --json
+```
+
+Compact output always preserves task identity, phase, resolved profile,
+required next action or status, terminal state where applicable, and blocker
+error codes. Default output and default JSON remain unchanged.
+
 ---
 
 ## Command Index by Purpose
@@ -39,7 +58,7 @@ ForgeLoop uses a definition-driven command-line parser:
 
 | Category | Commands |
 | --- | --- |
-| **Inspection & Diagnostics** | [`protocol-info`](#protocol-info), [`doctor`](#doctor), [`metrics`](#metrics), [`eval`](#eval), [`history`](#history), [`trace`](#trace), [`reflect`](#reflect), [`progress`](#progress), [`profile-interview`](#profile-interview), [`inspect`](#inspect), [`status`](#status), [`validate-state`](#validate-state), [`validate-protocol`](#validate-protocol) |
+| **Inspection & Diagnostics** | [`protocol-info`](#protocol-info), [`doctor`](#doctor), [`metrics`](#metrics), [`usage-record`](#usage-record), [`efficiency`](#efficiency), [`eval`](#eval), [`history`](#history), [`trace`](#trace), [`reflect`](#reflect), [`progress`](#progress), [`profile-interview`](#profile-interview), [`inspect`](#inspect), [`status`](#status), [`validate-state`](#validate-state), [`validate-protocol`](#validate-protocol) |
 | **Setup & Maintenance** | [`init`](#init), [`update`](#update), [`task-migrate`](#task-migrate), [`migrate-protocol`](#migrate-protocol), [`task-unlock`](#task-unlock), [`task-recover`](#task-recover), [`task-repair-legacy-recovery`](#task-repair-legacy-recovery), [`task-resume`](#task-resume) |
 | **Lifecycle & State** | [`activate`](#activate), [`route`](#route), [`preflight`](#preflight), [`advance`](#advance), [`next`](#next), [`record-diagnosis`](#record-diagnosis), [`record-intervention`](#record-intervention), [`record-hypothesis-disposition`](#record-hypothesis-disposition), [`record-decision-criterion`](#record-decision-criterion), [`complete`](#complete), [`clear-state`](#clear-state), [`reconcile-closure`](#reconcile-closure), [`task-create`](#task-create), [`task-list`](#task-list), [`task-show`](#task-show), [`task-lock-status`](#task-lock-status), [`task-scope`](#task-scope) |
 | **Cross-Harness Continuity** | [`continuity`](#continuity), [`record-continuity`](#record-continuity), [`reconcile-continuity`](#reconcile-continuity), [`clear-continuity`](#clear-continuity), [`handoff-create`](#handoff-create), [`handoff-list`](#handoff-list), [`handoff-show`](#handoff-show) |
@@ -476,6 +495,60 @@ only exact argv. Caller-reported and externally observed provenance are not host
 
 <!-- END FORGELOOP GENERATED: cli:metrics:options -->
 
+### `usage-record`
+
+Records optional actor-reported usage telemetry for a task. This data is
+informational and never satisfies verification or completion requirements.
+
+<!-- BEGIN FORGELOOP GENERATED: cli:usage-record:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--provider <name>`: provider name reported by the actor
+- `--model <name>`: model name reported by the actor
+- `--input-tokens <number>`: provider-reported input token count
+- `--output-tokens <number>`: provider-reported output token count
+- `--cache-read-tokens <number>`: provider-reported cache-read token count
+- `--cache-write-tokens <number>`: provider-reported cache-write token count
+- `--total-tokens <number>`: provider-reported total token count; never estimated
+- `--cost-usd <amount>`: provider-reported cost in USD; never estimated
+- `--source <kind>`: usage source; CLI fallback accepts only ACTOR_REPORTED
+- `--json`: emit usage telemetry as JSON
+
+<!-- END FORGELOOP GENERATED: cli:usage-record:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop usage-record --task task-001 --provider provider --model provider/model --input-tokens 10000 --output-tokens 2500 --source ACTOR_REPORTED --json
+  ```
+
+  The CLI fallback is always actor-reported. It never promotes the source to a
+  provider or host observation and never satisfies verification evidence.
+
+### `efficiency`
+
+Projects timing and usage efficiency. Comparisons are reported only when the
+project-local baseline metadata is compatible with the current task.
+
+<!-- BEGIN FORGELOOP GENERATED: cli:efficiency:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--baseline <path>`: optional comparable efficiency baseline JSON
+- `--json`: emit efficiency metrics as JSON
+
+<!-- END FORGELOOP GENERATED: cli:efficiency:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop efficiency --task task-001 --baseline benchmark-baseline.json --json
+  ```
+
+  A missing or metadata-incompatible baseline produces `NOT_COMPARABLE` and
+  null comparison values; ForgeLoop does not estimate token or time overhead.
+
 ### `eval`
 
 <!-- BEGIN FORGELOOP GENERATED: cli:eval:options -->
@@ -631,6 +704,7 @@ Calculates and persists deterministic engineering guide routing.
 - `--platform <value>`: affected platform (repeatable)
 - `--behavior-change`: declare behavior change
 - `--executable-change`: declare executable/configuration change
+- `--execution-profile <profile>`: requested execution profile; safety floors always win
 - `--json`: emit route result as JSON
 
 <!-- END FORGELOOP GENERATED: cli:route:options -->
@@ -639,6 +713,12 @@ Calculates and persists deterministic engineering guide routing.
 
   ```bash
   forgeloop route --work complete-website --surface ui --risk untrusted-input --json
+  ```
+
+  A requested profile is an override request, not a safety bypass:
+
+  ```bash
+  forgeloop route --task landing-page --work complete-website --surface ui --execution-profile light --json
   ```
 
 ### `preflight`
@@ -752,6 +832,7 @@ Computes the deterministic next action required by the protocol.
 
 - `--path <directory>`: target project directory (default: current directory)
 - `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--compact`: emit a bounded next-action projection
 - `--json`: emit structured output as JSON
 
 <!-- END FORGELOOP GENERATED: cli:next:options -->
@@ -1751,6 +1832,7 @@ Displays details of a specific task by ID or storage key.
 
 - `--path <directory>`: target project directory (default: current directory)
 - `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--compact`: emit a bounded task-status projection
 - `--json`: emit structured output as JSON
 
 <!-- END FORGELOOP GENERATED: cli:task-show:options -->

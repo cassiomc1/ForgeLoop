@@ -12,7 +12,7 @@ import { withTaskTransaction } from "./transaction.js";
 
 function evaluationError(code, message) { const error = new Error(message); error.code = code; return error; }
 
-export async function evaluateTrajectory({ target, packageRoot, taskId, scenarioPath, evaluationId = `eval-${randomUUID()}` }) {
+export async function evaluateTrajectory({ target, packageRoot, taskId, scenarioPath, evaluationId = `eval-${randomUUID()}`, runtimeContext = null }) {
   if (typeof scenarioPath !== "string" || !scenarioPath || path.isAbsolute(scenarioPath) || scenarioPath.includes("..")) {
     throw evaluationError("E_TRAJECTORY_SCENARIO_INVALID", "scenario path must be a relative project-local file");
   }
@@ -26,7 +26,7 @@ export async function evaluateTrajectory({ target, packageRoot, taskId, scenario
   assertSchema(scenario, await readSchema("trajectory-scenario", packageRoot), "trajectory scenario");
   if (!/^eval-[A-Za-z0-9_-]+$/.test(evaluationId)) throw evaluationError("E_TRAJECTORY_SCENARIO_INVALID", "evaluationId is invalid");
   const trace = await buildTaskTrace({ target, packageRoot, taskId });
-  const metrics = await buildTrajectoryMetrics({ target, packageRoot, taskId });
+  const metrics = await buildTrajectoryMetrics({ target, packageRoot, taskId, runtimeContext });
   const milestoneSet = new Set(trace.events.map((event) => event.type));
   const missingMilestones = (scenario.requiredMilestones ?? []).filter((milestone) => !milestoneSet.has(milestone));
   const completionEvent = trace.events.find((event) => event.type === "COMPLETION_VALIDATED");

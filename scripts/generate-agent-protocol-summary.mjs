@@ -79,6 +79,29 @@ Package version: ${packageJson.version}
 6. Run forgeloop complete; accept completion only when the validator returns VALID.
 7. Run forgeloop next again and follow the returned lifecycle action to a terminal state or an explicit blocker.
 
+## Adaptive execution profiles
+
+\`complianceMode\` controls how strongly project policy is enforced. The
+orthogonal \`executionProfile\` controls process and context depth: \`auto\`
+resolves deterministically to \`light\`, \`balanced\`, or \`full\` from route,
+contract, and task metadata. CLI requests take precedence over project
+configuration, but a safety floor always wins. Profiles never remove required
+contracts, gates, verification, provenance, lifecycle phases, or validated
+completion. Protocol-v1 routes without the field project to \`balanced\` for
+compatibility without rewriting historical artifacts.
+
+For \`light\` tasks, hosts should use \`next --compact\` or \`task-show --compact\`,
+load only relevant guide sections, keep plans concise, and avoid optional
+reflection, trajectory evaluation, handoff, attestation, and continuity
+artifacts unless requested, required, or needed for recovery. The lifecycle
+chronology remains unchanged.
+
+Usage telemetry is provider or host reported when available, actor-reported
+only through the explicit \`usage-record\` fallback, and \`UNKNOWN\` otherwise.
+ForgeLoop never estimates tokens or treats usage as verification evidence.
+\`efficiency --task\` is read-only and returns \`NOT_COMPARABLE\` unless a
+project-local baseline has matching metadata.
+
 ## Authority boundaries
 
 - Protocol-derived facts outrank actor-provided labels, free-form summaries, and guessed identities.

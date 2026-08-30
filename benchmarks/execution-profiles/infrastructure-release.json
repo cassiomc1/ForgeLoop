@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "benchmarkVersion": "1",
+  "scenarioId": "infrastructure-release",
+  "description": "Infrastructure or release/publication work with external and potentially irreversible effects.",
+  "input": {
+    "workType": "release",
+    "surfaces": ["ci"],
+    "risks": ["publication"],
+    "platforms": ["ci"]
+  },
+  "expectedProfile": "full",
+  "measurements": {
+    "direct": { "inputTokens": null, "outputTokens": null, "cacheReadTokens": null, "cacheWriteTokens": null, "totalTokens": null, "wallClockMs": null, "verification": "NOT_AVAILABLE" },
+    "forgeloopBalanced": { "inputTokens": null, "outputTokens": null, "cacheReadTokens": null, "cacheWriteTokens": null, "totalTokens": null, "wallClockMs": null, "verification": "NOT_AVAILABLE" },
+    "forgeloopAdaptive": { "inputTokens": null, "outputTokens": null, "cacheReadTokens": null, "cacheWriteTokens": null, "totalTokens": null, "wallClockMs": null, "verification": "NOT_AVAILABLE" }
+  }
+}

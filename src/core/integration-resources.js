@@ -104,6 +104,7 @@ export async function readForgeLoopIntegrationResource(uri, {
   packageVersion = null,
   taskId = null,
   actionId = null,
+  runtimeContext = null,
 } = {}) {
   const resource = INTEGRATION_RESOURCE_DEFINITIONS[uri];
   if (!resource) {
@@ -199,7 +200,11 @@ export async function readForgeLoopIntegrationResource(uri, {
     return { uri, taskId, data: { approvals: await listApprovals(projectPath, { packageRoot, taskId }) } };
   }
   if (uri === "task/metrics") {
-    return { uri, taskId, data: await buildTrajectoryMetrics({ target: projectPath, packageRoot, taskId }) };
+    return {
+      uri,
+      taskId,
+      data: await buildTrajectoryMetrics({ target: projectPath, packageRoot, taskId, runtimeContext }),
+    };
   }
   if (uri === "task/evaluations") {
     const dir = path.join(projectPath, taskDirectory(taskId), "evaluations");

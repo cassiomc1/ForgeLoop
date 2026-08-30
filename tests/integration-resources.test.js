@@ -164,6 +164,26 @@ test("project/tasks and task/status resources resolve through canonical discover
   });
 });
 
+test("task/metrics resource accepts trusted runtime usage context", async () => {
+  await withRecoveryTarget(async (target) => {
+    const { taskId } = await setupAbandonedTask(target, { taskId: "resource-metrics-usage" });
+    const metrics = await readForgeLoopIntegrationResource("task/metrics", {
+      projectPath: target,
+      packageRoot,
+      taskId,
+      runtimeContext: {
+        usageProvider: {
+          async getTaskUsage() {
+            return { source: "HOST_REPORTED", totalTokens: 3 };
+          },
+        },
+      },
+    });
+    assert.equal(metrics.data.usage.source, "HOST_REPORTED");
+    assert.equal(metrics.data.usage.totalTokens, 3);
+  });
+});
+
 test("task-scoped resources refuse missing taskId", async () => {
   await withRecoveryTarget(async (target) => {
     for (const uri of ["task/status", "task/ownership", "task/contract", "task/continuity"]) {

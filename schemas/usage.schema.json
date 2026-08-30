@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "forgeloop://schemas/usage.schema.json",
+  "title": "ForgeLoop task usage telemetry",
+  "type": "object",
+  "required": ["schemaVersion", "protocolVersion", "taskId", "recordedAt", "usage"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "protocolVersion": { "const": 1 },
+    "taskId": { "type": "string", "minLength": 1 },
+    "recordedAt": { "type": "string", "minLength": 1 },
+    "usage": {
+      "type": "object",
+      "required": ["inputTokens", "outputTokens", "cacheReadTokens", "cacheWriteTokens", "totalTokens", "costUsd", "model", "provider", "source"],
+      "additionalProperties": false,
+      "properties": {
+        "inputTokens": { "type": ["integer", "null"], "minimum": 0 },
+        "outputTokens": { "type": ["integer", "null"], "minimum": 0 },
+        "cacheReadTokens": { "type": ["integer", "null"], "minimum": 0 },
+        "cacheWriteTokens": { "type": ["integer", "null"], "minimum": 0 },
+        "totalTokens": { "type": ["integer", "null"], "minimum": 0 },
+        "costUsd": { "type": ["number", "null"], "minimum": 0 },
+        "model": { "type": ["string", "null"] },
+        "provider": { "type": ["string", "null"] },
+        "source": { "enum": ["PROVIDER_REPORTED", "HOST_REPORTED", "ACTOR_REPORTED", "UNKNOWN"] }
+      }
+    }
+  },
+  "additionalProperties": false
+}

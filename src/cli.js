@@ -35,6 +35,8 @@ import { formatActionVerifyResult } from "./commands/action-verify.js";
 import { formatActionShowResult } from "./commands/action-show.js";
 import { formatActionReconcileResult } from "./commands/action-reconcile.js";
 import { formatMetricsResult } from "./commands/metrics.js";
+import { formatUsageRecordResult } from "./commands/usage-record.js";
+import { formatEfficiencyResult } from "./commands/efficiency.js";
 import { formatEvalResult } from "./commands/eval.js";
 import { formatApprovalRequestResult } from "./commands/approval-request.js";
 import { formatApprovalResolveResult } from "./commands/approval-resolve.js";
@@ -48,14 +50,14 @@ import { formatTraceResult } from "./commands/trace.js";
 import { formatReflectResult } from "./commands/reflect.js";
 import { formatProgressResult } from "./commands/progress.js";
 import { formatRecordDecisionCriterionResult } from "./commands/record-decision-criterion.js";
-import { formatNextActionResult } from "./commands/next.js";
+import { formatNextActionResult, formatCompactNextActionResult } from "./commands/next.js";
 import { formatContinuityResult } from "./commands/continuity.js";
 import { formatRecordContinuityResult } from "./commands/record-continuity.js";
 import { formatReconcileContinuityResult } from "./commands/reconcile-continuity.js";
 import { formatClearContinuityResult } from "./commands/clear-continuity.js";
 import { formatTaskCreateResult } from "./commands/task-create.js";
 import { formatTaskListResult } from "./commands/task-list.js";
-import { formatTaskShowResult } from "./commands/task-show.js";
+import { formatTaskShowResult, formatCompactTaskShowResult } from "./commands/task-show.js";
 import { formatTaskScopeResult } from "./commands/task-scope.js";
 import { formatTaskMigrateResult } from "./commands/task-migrate.js";
 import { formatMigrateProtocolResult } from "./commands/migrate-protocol.js";
@@ -384,7 +386,8 @@ export const COMMAND_HANDLERS = Object.freeze({
   },
   next: async ({ target, packageRoot, options }) => {
     const { result } = await COMMAND_EXECUTORS.next({ target, packageRoot, options });
-    renderJsonOr(options, result, formatNextActionResult);
+    if (options.compact) console.log(formatCompactNextActionResult(result));
+    else renderJsonOr(options, result, formatNextActionResult);
     return 0;
   },
   continuity: async ({ target, packageRoot, options }) => {
@@ -509,6 +512,14 @@ export const COMMAND_HANDLERS = Object.freeze({
   metrics: async ({ target, packageRoot, options }) => {
     const { result } = await COMMAND_EXECUTORS.metrics({ target, packageRoot, options });
     renderJsonOr(options, result, formatMetricsResult); return 0;
+  },
+  "usage-record": async ({ target, packageRoot, options }) => {
+    const { result } = await COMMAND_EXECUTORS["usage-record"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatUsageRecordResult); return 0;
+  },
+  efficiency: async ({ target, packageRoot, options }) => {
+    const { result } = await COMMAND_EXECUTORS.efficiency({ target, packageRoot, options });
+    renderJsonOr(options, result, formatEfficiencyResult); return 0;
   },
   eval: async ({ target, packageRoot, options }) => {
     const { result, exitCode } = await COMMAND_EXECUTORS.eval({ target, packageRoot, options });
@@ -677,7 +688,8 @@ export const COMMAND_HANDLERS = Object.freeze({
   },
   "task-show": async ({ target, packageRoot, options }) => {
     const { result } = await COMMAND_EXECUTORS["task-show"]({ target, packageRoot, options });
-    renderJsonOr(options, result, formatTaskShowResult);
+    if (options.compact) console.log(formatCompactTaskShowResult(result));
+    else renderJsonOr(options, result, formatTaskShowResult);
     return 0;
   },
   "task-lock-status": async ({ target, packageRoot, options }) => {

@@ -94,5 +94,16 @@ export function createForgeLoopContext(options = {}) {
   if (options?.verificationExecutionPolicy !== undefined) {
     context.verificationExecutionPolicy = normalizeVerificationExecutionPolicy(options.verificationExecutionPolicy);
   }
+  if (options?.usageProvider !== undefined) {
+    if (!options.usageProvider
+      || typeof options.usageProvider !== "object"
+      || Array.isArray(options.usageProvider)
+      || typeof options.usageProvider.getTaskUsage !== "function") {
+      const error = new Error("Usage provider must expose getTaskUsage({ projectPath, taskId })");
+      error.code = "E_USAGE_INVALID";
+      throw error;
+    }
+    context.usageProvider = options.usageProvider;
+  }
   return Object.freeze(context);
 }

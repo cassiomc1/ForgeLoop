@@ -1,4 +1,5 @@
 import { GUIDE_IDS, PROTOCOL_VERSION } from "./protocol.js";
+import { assertExecutionProfile, resolveExecutionProfile } from "./execution-profile.js";
 
 export const ROUTING_SCHEMA_VERSION = 1;
 
@@ -50,6 +51,12 @@ const SIGNALS = Object.freeze({
     "critical-path",
     "performance",
     "accessibility",
+    "destructive",
+    "irreversible",
+    "production-deployment",
+    "credentials",
+    "payment",
+    "migration",
   ]),
   platforms: new Set(["web", "mobile", "desktop", "server", "ci", "cross-platform"]),
 });
@@ -167,7 +174,7 @@ export function normalizeRouteInput(input = {}) {
   };
 }
 
-export function evaluateRoute(input = {}) {
+export function evaluateRoute(input = {}, profileOptions = {}) {
   const normalized = normalizeRouteInput(input);
   const selected = new Map();
   const excluded = {};
@@ -259,6 +266,14 @@ export function evaluateRoute(input = {}) {
     guides,
     reasons: Object.fromEntries(guides.map((guide) => [guide, selected.get(guide)])),
     excluded,
+    executionProfile: resolveExecutionProfile({
+      routeInput: normalized,
+      contract: profileOptions.contract ?? input.contract ?? null,
+      taskDescriptor: profileOptions.taskDescriptor ?? input.taskDescriptor ?? null,
+      configuredProfile: profileOptions.configuredProfile ?? input.configuredProfile ?? "auto",
+      requestedProfile: profileOptions.requestedProfile
+        ?? (Object.prototype.hasOwnProperty.call(input, "executionProfile") ? input.executionProfile : null),
+    }),
   };
   return assertRouteInvariants(result);
 }
@@ -277,6 +292,13 @@ export function assertRouteInvariants(result) {
   }
   if (result.contractFingerprint !== undefined && !/^[a-f0-9]{64}$/.test(result.contractFingerprint)) {
     throw invariantError("E_ROUTE_INVALID", "Route contractFingerprint must be a lowercase SHA-256 fingerprint");
+  }
+  if (result.executionProfile !== undefined) {
+    try {
+      assertExecutionProfile(result.executionProfile);
+    } catch (error) {
+      throw invariantError(error.code ?? "E_EXECUTION_PROFILE_INCONSISTENT", error.message);
+    }
   }
   for (const guide of result.guides) {
     if (!GUIDE_IDS.includes(guide)) throw invariantError("E_ROUTE_INVALID", `Route result contains unknown guide: ${guide}`);

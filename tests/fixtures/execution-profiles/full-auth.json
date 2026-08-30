@@ -1,0 +1,16 @@
+{
+  "scenarioId": "full-auth",
+  "input": {
+    "workType": "code",
+    "surfaces": ["auth"],
+    "risks": [],
+    "platforms": []
+  },
+  "expected": {
+    "requested": "auto",
+    "floor": "full",
+    "resolved": "full",
+    "reasons": ["PROFILE_DEFAULT_AUTO", "SURFACE_AUTH"],
+    "escalated": false
+  }
+}

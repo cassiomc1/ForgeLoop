@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "taskId": "usage-fixture",
+  "recordedAt": "2026-08-30T00:00:00.000Z",
+  "usage": {
+    "inputTokens": 1,
+    "outputTokens": null,
+    "cacheReadTokens": null,
+    "cacheWriteTokens": null,
+    "totalTokens": null,
+    "costUsd": null,
+    "model": null,
+    "provider": null,
+    "source": "UNTRUSTED_SOURCE"
+  }
+}

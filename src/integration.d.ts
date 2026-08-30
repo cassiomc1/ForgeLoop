@@ -59,7 +59,42 @@ export interface ForgeLoopContext {
   authorityContext: Record<string, unknown>;
   verificationExecutionAdapter?: Record<string, unknown>;
   verificationExecutionPolicy?: { requiredIsolation: string };
+  usageProvider?: ForgeLoopUsageProvider;
 }
+
+export interface ForgeLoopUsageProvider {
+  getTaskUsage(input: { projectPath: string; taskId: string }): Promise<ForgeLoopUsage | Record<string, unknown>> | ForgeLoopUsage | Record<string, unknown>;
+}
+
+export interface ForgeLoopUsage {
+  inputTokens: number | null;
+  outputTokens: number | null;
+  cacheReadTokens: number | null;
+  cacheWriteTokens: number | null;
+  totalTokens: number | null;
+  costUsd: number | null;
+  model: string | null;
+  provider: string | null;
+  source: "PROVIDER_REPORTED" | "HOST_REPORTED";
+}
+
+export declare const EXECUTION_PROFILES: readonly ["light", "balanced", "full"];
+export declare const EXECUTION_PROFILE_REQUESTS: readonly ["auto", "light", "balanced", "full"];
+export declare const LEGACY_EXECUTION_PROFILE: "balanced";
+export declare function projectExecutionProfile(route?: Record<string, unknown> | null): "light" | "balanced" | "full" | null;
+export declare function resolveExecutionProfile(input?: {
+  routeInput?: Record<string, unknown>;
+  contract?: Record<string, unknown> | null;
+  taskDescriptor?: Record<string, unknown> | null;
+  configuredProfile?: "auto" | "light" | "balanced" | "full";
+  requestedProfile?: "auto" | "light" | "balanced" | "full" | null;
+}): {
+  requested: "auto" | "light" | "balanced" | "full";
+  floor: "light" | "balanced" | "full";
+  resolved: "light" | "balanced" | "full";
+  reasons: readonly string[];
+  escalated: boolean;
+};
 
 export declare const FORGELOOP_INTEGRATION_API_VERSION: number;
 export declare const FORGELOOP_INTEGRATION_RUNTIME_VERSION: number;

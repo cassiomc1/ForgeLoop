@@ -26,6 +26,34 @@ Core mental model:
 - `checks = verification truth`
 - `receipt = completion/publication record`
 
+### Adaptive execution profiles
+
+ForgeLoop uses `executionProfile` to choose the appropriate process and context
+depth without changing its assurance guarantees. It is separate from
+`complianceMode`, which controls policy enforcement.
+
+```text
+auto → light | balanced | full
+```
+
+Small, local, reversible documentation and UI work normally resolves to
+`light`; behavior changes and ordinary application work resolve to
+`balanced`; authentication, publication, infrastructure, secrets, personal
+data, critical paths, and irreversible work resolve to `full`. A CLI or project
+request may raise the profile, but never lower the deterministic safety floor.
+
+For compact host context, use:
+
+```bash
+forgeloop next --task task-contact-form-001 --compact --json
+forgeloop task-show --task task-contact-form-001 --compact --json
+```
+
+These commands do not bypass contracts, gates, verification, provenance,
+lifecycle phases, or validator-backed completion. Usage telemetry is optional,
+never estimated, and never verification evidence; `efficiency --task` compares
+only against a metadata-compatible local baseline.
+
 ---
 
 ## 2. Prerequisites

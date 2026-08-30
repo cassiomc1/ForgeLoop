@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "taskId": "usage-fixture",
+  "recordedAt": "2026-08-30T00:00:00.000Z",
+  "usage": {
+    "inputTokens": 10,
+    "outputTokens": 4,
+    "cacheReadTokens": null,
+    "cacheWriteTokens": null,
+    "totalTokens": 14,
+    "costUsd": 0.01,
+    "model": "fixture-model",
+    "provider": "fixture-provider",
+    "source": "PROVIDER_REPORTED"
+  }
+}

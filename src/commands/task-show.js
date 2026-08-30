@@ -7,6 +7,8 @@ import { readContract } from "../core/contract.js";
 import { fileExists, ensureWithin } from "../core/filesystem.js";
 import { E_TASK_NOT_FOUND } from "../core/error-codes.js";
 import { resolveTaskClaimState } from "../core/task-claim-state.js";
+import { readPersistedRoute } from "../core/route-artifact.js";
+import { projectExecutionProfile } from "../core/execution-profile.js";
 
 function taskError(code, message, artifacts = []) {
   const error = new Error(message);
@@ -15,7 +17,7 @@ function taskError(code, message, artifacts = []) {
   return error;
 }
 
-export async function runTaskShow({ target, packageRoot, taskId } = {}) {
+export async function runTaskShow({ target, packageRoot, taskId, compact = false } = {}) {
   const context = await resolveTaskContext(target, { taskId, packageRoot, explicitRequired: true, selectionMode: TASK_SELECTION_MODES.READ });
   const effectiveTaskId = context.taskId;
 
@@ -56,7 +58,7 @@ export async function runTaskShow({ target, packageRoot, taskId } = {}) {
     };
   }
 
-  return {
+  const result = {
     taskId: effectiveTaskId,
     taskKey: context.taskKey,
     directory: taskDirectory(effectiveTaskId),
@@ -68,6 +70,29 @@ export async function runTaskShow({ target, packageRoot, taskId } = {}) {
     artifacts,
     createdAt: descriptor.createdAt,
     updatedAt: descriptor.updatedAt,
+  };
+  if (!compact) return result;
+  let profile = null;
+  try {
+    const route = await readPersistedRoute(target, packageRoot, { taskId: effectiveTaskId });
+    profile = projectExecutionProfile(route.value);
+  } catch {
+    // Legacy routes remain readable without adaptive profile metadata.
+  }
+  return {
+    taskId: result.taskId,
+    phase: result.phase,
+    profile,
+    claimState: result.claimState,
+    mutationAllowed: result.mutationAllowed,
+    recoveryStatus: result.recoveryStatus,
+    lock: result.lock?.classification?.status ?? null,
+    artifacts: Object.fromEntries(Object.entries(result.artifacts).map(([name, artifact]) => [name, artifact.exists])),
+    errors: [...new Set([
+      ...(result.reasonCodes ?? []),
+      ...(result.errors ?? []).flatMap((error) => [error.code, error.causeCode]).filter(Boolean),
+      ...(result.ownershipErrors ?? []).flatMap((error) => [error.code, error.causeCode]).filter(Boolean),
+    ])],
   };
 }
 
@@ -92,4 +117,8 @@ export function formatTaskShowResult(result) {
     `Updated: ${result.updatedAt}`,
   ];
   return `${lines.join("\n")}\n`;
+}
+
+export function formatCompactTaskShowResult(result) {
+  return `${JSON.stringify(result)}\n`;
 }

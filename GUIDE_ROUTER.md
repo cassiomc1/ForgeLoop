@@ -237,7 +237,9 @@ The first routing contract is versioned as `schemaVersion: 1`. It accepts:
 - `surfaces`: `ui`, `forms`, `api`, `auth`, `data`, `database`, `mobile`,
   `desktop`, `game`, `video`, `ci`, `config`, `critical-path`, or `documentation`;
 - `risks`: `untrusted-input`, `personal-data`, `secrets`, `external-service`,
-  `publication`, `critical-path`, `performance`, or `accessibility`;
+  `publication`, `critical-path`, `performance`, `accessibility`, `destructive`,
+  `irreversible`, `production-deployment`, `credentials`, `payment`, or
+  `migration`;
 - `platforms`: `web`, `mobile`, `desktop`, `server`, `ci`, or
   `cross-platform`;
 - optional boolean `behaviorChange` and `executableChange` signals.
@@ -326,3 +328,26 @@ Verify Markdown, links, paths, commands, and examples.
 If investigation reveals a new surface, update the guide set before editing that area. Record only the concise reason; do not create a versioned task log.
 
 If an applicable guide is missing or inaccessible, use conservative defaults, do not invent its content, and disclose the limitation in the delivery.
+
+## Execution profile routing
+
+Guide selection and execution depth are separate deterministic decisions. The
+persisted route also contains `executionProfile` with `requested`, `floor`,
+`resolved`, `reasons`, and `escalated` fields. It is resolved from the same
+declared route signals plus contract and task-scope metadata; no model
+confidence, token estimate, or subjective complexity judgment is used.
+
+The safety floor is `light` for narrow low-risk documentation, copy, and local
+UI work; `balanced` for behavior or executable changes, ordinary application
+engineering, data/configuration/CI surfaces, and moderate scope; and `full`
+for authentication, critical paths, secrets, personal data, publication,
+infrastructure, destructive or irreversible operations, and authority-sensitive
+external mutations. A CLI request overrides project configuration only as a
+request: it cannot lower the resolved safety floor.
+
+Hosts should present `light` tasks with targeted guide sections, a compact
+plan, focused checks, and bounded `next --compact` or `task-show --compact`
+responses. Required gates, evidence, verification truth, lifecycle chronology,
+and validator-backed completion remain unchanged. Historical protocol-v1
+routes without the optional field remain valid and project to `balanced` for
+compatibility without being rewritten.

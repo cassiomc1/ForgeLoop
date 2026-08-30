@@ -1,0 +1,16 @@
+{
+  "scenarioId": "full-infrastructure",
+  "input": {
+    "workType": "infrastructure",
+    "surfaces": [],
+    "risks": [],
+    "platforms": []
+  },
+  "expected": {
+    "requested": "auto",
+    "floor": "full",
+    "resolved": "full",
+    "reasons": ["PROFILE_DEFAULT_AUTO", "WORK_INFRASTRUCTURE"],
+    "escalated": false
+  }
+}

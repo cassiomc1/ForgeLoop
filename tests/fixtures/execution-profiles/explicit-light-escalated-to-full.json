@@ -1,0 +1,19 @@
+{
+  "scenarioId": "explicit-light-escalated-to-full",
+  "input": {
+    "workType": "code",
+    "surfaces": [],
+    "risks": ["secrets"],
+    "platforms": []
+  },
+  "profileOptions": {
+    "requestedProfile": "light"
+  },
+  "expected": {
+    "requested": "light",
+    "floor": "full",
+    "resolved": "full",
+    "reasons": ["PROFILE_EXPLICIT_REQUEST", "RISK_SECRETS", "PROFILE_ESCALATED_BY_SAFETY"],
+    "escalated": true
+  }
+}

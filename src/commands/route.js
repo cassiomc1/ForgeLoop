@@ -1,11 +1,24 @@
 import { evaluateRoute } from "../core/router.js";
 import { persistRoute } from "../core/route-artifact.js";
 import { readContract } from "../core/contract.js";
+import { readConfig } from "../core/config.js";
 import { withTaskMutation } from "../core/task-command.js";
 
-export async function runRoute({ target, packageRoot, workType, surfaces, risks, platforms, behaviorChange, executableChange, taskId, task }) {
+export async function runRoute({ target, packageRoot, workType, surfaces, risks, platforms, behaviorChange, executableChange, executionProfile = null, taskId, task }) {
   return withTaskMutation(target, { taskId: taskId ?? task, packageRoot }, "route", async (ctx) => {
     const effectiveTaskId = ctx?.taskId ?? null;
+    let contract = null;
+    try {
+      contract = (await readContract(target, packageRoot, { taskId: effectiveTaskId })).value;
+    } catch (error) {
+      if (error.code !== "ARTIFACT_MISSING") throw error;
+    }
+    let configuredProfile = "auto";
+    try {
+      configuredProfile = (await readConfig(target, packageRoot)).executionProfile ?? "auto";
+    } catch (error) {
+      if (error.code !== "ARTIFACT_MISSING") throw error;
+    }
     const route = evaluateRoute({
       workType,
       surfaces,
@@ -13,6 +26,11 @@ export async function runRoute({ target, packageRoot, workType, surfaces, risks,
       platforms,
       behaviorChange,
       executableChange,
+    }, {
+      contract,
+      taskDescriptor: ctx?.descriptor ?? null,
+      configuredProfile,
+      requestedProfile: executionProfile,
     });
     if (target && packageRoot) {
       let contractFingerprint;
@@ -28,7 +46,7 @@ export async function runRoute({ target, packageRoot, workType, surfaces, risks,
 }
 
 export function formatRouteResult(result) {
-  const lines = ["Selected:"];
+  const lines = [`Execution profile: ${result.executionProfile?.resolved ?? "legacy"}`, "Selected:"];
   if (result.guides.length === 0) {
     lines.push("- none (use the relevant domain guide for this documentation task)");
   } else {

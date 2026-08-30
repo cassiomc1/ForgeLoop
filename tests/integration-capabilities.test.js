@@ -53,6 +53,39 @@ test("verification adapter and isolation policy are runtime-only context", () =>
   );
 });
 
+test("usage providers are optional trusted runtime context and actor reports stay separate", async () => {
+  const provider = { getTaskUsage: async () => null };
+  const context = createForgeLoopContext({ usageProvider: provider });
+  assert.equal(context.usageProvider, provider);
+  assert.throws(
+    () => createForgeLoopContext({ usageProvider: { getTaskUsage: "not-a-function" } }),
+    (error) => error.code === "E_USAGE_INVALID",
+  );
+  const { providerUsage } = await import("../src/core/usage.js");
+  assert.throws(
+    () => providerUsage({ source: "ACTOR_REPORTED", totalTokens: 10 }),
+    (error) => error.code === "E_USAGE_SOURCE_INVALID",
+  );
+});
+
+test("advertised adaptive and efficiency capabilities match their boundaries", () => {
+  const capabilities = getForgeLoopCapabilities();
+  assert.deepEqual(capabilities.features.adaptiveExecutionProfiles, {
+    version: 1,
+    supported: true,
+    deterministic: true,
+    lifecycleFastPath: false,
+  });
+  assert.deepEqual(capabilities.features.compactLifecycleOutput, {
+    version: 1,
+    supported: true,
+    commands: ["next", "task-show"],
+    preservesDefaultOutput: true,
+  });
+  assert.equal(capabilities.features.usageTelemetry.estimation, false);
+  assert.equal(capabilities.features.efficiencyMetrics.comparativeOnly, true);
+});
+
 test("every canonical command has a base risk class", () => {
   for (const name of Object.keys(CLI_COMMAND_DEFINITIONS)) {
     assert.match(getForgeLoopCapabilities().commands.find((c) => c.name === name).baseRiskClass, /^[A-Z_]+$/, name);

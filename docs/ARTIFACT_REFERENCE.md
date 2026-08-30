@@ -35,6 +35,7 @@ All artifact schemas are defined in `schemas/*.schema.json`. Persisted artifact 
 | `task-state/<task-key>/approvals/approval-<id>.json` | `approval` | Protocol Managed | Append Decision Once | Action Approval Attestation |
 | `policy/capabilities.json` | `capability-policy` | Operator Or Agent | Mutable Configuration | Capability Policy Specification |
 | `task-state/<task-key>/evaluations/eval-<id>.json` | `trajectory-evaluation` | Protocol Compiled | Immutable Once Written | Trajectory Evaluation |
+| `task-state/<task-key>/usage.json` | `usage` | Actor Or Trusted Host | Overwritten On Usage Record | Informational Usage Telemetry |
 | `task-state/<task-key>/workspace-binding.json` | `workspace-binding` | Protocol Generated | Immutable After Bind | Workspace Identity Binding |
 | `task-state/<task-key>/handoffs/handoff-<id>.json` | `handoff-envelope` | Protocol Compiled | Immutable Once Written | Canonical Handoff Snapshot |
 | `task-state/<task-key>/responsibility.json` | `responsibility` | Agent Or Harness Constrained | Immutable During Pass | Responsibility Constraint |
@@ -110,6 +111,14 @@ The operational task specification authored before execution begins.
 
 The deterministic result of routing task signals against the engineering guide router.
 
+New routes include a deterministic `executionProfile`. It is separate from
+the project `complianceMode`: the profile controls context/process depth while
+compliance controls enforcement. The persisted route is authoritative for the
+resolved profile and is included in route fingerprints. Historical protocol-v1
+routes may omit this optional field and remain readable; consumers project
+missing profile metadata to `balanced` compatibility behavior without rewriting
+the historical artifact.
+
 #### Canonical Fields
 
 <!-- BEGIN FORGELOOP GENERATED: schema:routing-result -->
@@ -117,6 +126,12 @@ The deterministic result of routing task signals against the engineering guide r
 - `schemaVersion` *(number, required, const: 1)*
 - `protocolVersion` *(number, required, const: 1)*
 - `contractFingerprint` *(string, optional, pattern: `^[a-f0-9]{64}$`)*
+- `executionProfile` *(object, optional)*
+  - `requested` *(string, required, enum: `auto`, `light`, `balanced`, `full`)*
+  - `floor` *(string, required, enum: `light`, `balanced`, `full`)*
+  - `resolved` *(string, required, enum: `light`, `balanced`, `full`)*
+  - `reasons` *(array<string>, required, minItems: 1)*
+  - `escalated` *(boolean, required)*
 - `input` *(object, required)*
 - `primary` *(string or null, required)*
 - `guides` *(array<string>, required)*
@@ -231,6 +246,7 @@ Local ForgeLoop configuration settings and policy bindings.
 - `schemaVersion` *(number, required, const: 1)*
 - `protocolVersion` *(number, required, const: 1)*
 - `complianceMode` *(string, required, enum: `advisory`, `standard`, `strict`)*
+- `executionProfile` *(string, optional, enum: `auto`, `light`, `balanced`, `full`)*
 - `policy` *(string, optional, minLength: 1)*
 - `requiredGates` *(array<string>, optional)*
 - `requiredEvidence` *(array<string>, optional)*
@@ -830,7 +846,37 @@ evidence and never override lifecycle validation.
 
 <!-- END FORGELOOP GENERATED: schema:trajectory-evaluation -->
 
-### 2.24 `task-state/<taskKey>/workspace-binding.json`
+### 2.24 `task-state/<taskKey>/usage.json`
+
+<!-- forgeloop-doc: schema=usage artifact=.forgeloop/task-state/<task-key>/usage.json -->
+
+Optional task-scoped usage telemetry. Provider and host reports cross the
+trusted runtime boundary; the CLI fallback remains explicitly
+`ACTOR_REPORTED`. Usage is informational and never acts as verification
+evidence.
+
+#### Canonical Fields
+
+<!-- BEGIN FORGELOOP GENERATED: schema:usage -->
+
+- `schemaVersion` *(number, required, const: 1)*
+- `protocolVersion` *(number, required, const: 1)*
+- `taskId` *(string, required, minLength: 1)*
+- `recordedAt` *(string, required, minLength: 1)*
+- `usage` *(object, required)*
+  - `inputTokens` *(integer,null, required, minimum: 0)*
+  - `outputTokens` *(integer,null, required, minimum: 0)*
+  - `cacheReadTokens` *(integer,null, required, minimum: 0)*
+  - `cacheWriteTokens` *(integer,null, required, minimum: 0)*
+  - `totalTokens` *(integer,null, required, minimum: 0)*
+  - `costUsd` *(number,null, required, minimum: 0)*
+  - `model` *(string,null, required)*
+  - `provider` *(string,null, required)*
+  - `source` *(string, required, enum: `PROVIDER_REPORTED`, `HOST_REPORTED`, `ACTOR_REPORTED`, `UNKNOWN`)*
+
+<!-- END FORGELOOP GENERATED: schema:usage -->
+
+### 2.25 `task-state/<taskKey>/workspace-binding.json`
 
 <!-- forgeloop-doc: schema=workspace-binding artifact=.forgeloop/task-state/<task-key>/workspace-binding.json -->
 
@@ -855,7 +901,7 @@ does not fabricate a binding when absent.
 
 <!-- END FORGELOOP GENERATED: schema:workspace-binding -->
 
-### 2.25 `task-state/<taskKey>/handoffs/handoff-<id>.json`
+### 2.26 `task-state/<taskKey>/handoffs/handoff-<id>.json`
 
 <!-- forgeloop-doc: schema=handoff-envelope artifact=.forgeloop/task-state/<task-key>/handoffs/handoff-<id>.json -->
 
@@ -895,7 +941,7 @@ completion, or authority evidence.
 
 <!-- END FORGELOOP GENERATED: schema:handoff-envelope -->
 
-### 2.26 `task-state/<taskKey>/responsibility.json`
+### 2.27 `task-state/<taskKey>/responsibility.json`
 
 <!-- forgeloop-doc: schema=responsibility artifact=.forgeloop/task-state/<task-key>/responsibility.json -->
 
@@ -926,7 +972,7 @@ and completion boundaries.
 
 <!-- END FORGELOOP GENERATED: schema:responsibility -->
 
-### 2.27 `task-state/<taskKey>/verification-scope.json`
+### 2.28 `task-state/<taskKey>/verification-scope.json`
 
 <!-- forgeloop-doc: schema=verification-scope artifact=.forgeloop/task-state/<task-key>/verification-scope.json -->
 
@@ -958,7 +1004,7 @@ otherwise it resolves to `FULL`. ForgeLoop does not publish a heuristic
 
 <!-- END FORGELOOP GENERATED: schema:verification-scope -->
 
-### 2.28 `task-state/<taskKey>/attestations/code-manifest.json`
+### 2.29 `task-state/<taskKey>/attestations/code-manifest.json`
 
 <!-- forgeloop-doc: schema=code-manifest artifact=.forgeloop/task-state/<task-key>/attestations/code-manifest.json -->
 
@@ -999,7 +1045,7 @@ represented by provider identities, and `.forgeloop/**` is excluded.
 
 <!-- END FORGELOOP GENERATED: schema:code-manifest -->
 
-### 2.29 `task-state/<taskKey>/attestations/statement.json`
+### 2.30 `task-state/<taskKey>/attestations/statement.json`
 
 <!-- forgeloop-doc: schema=in-toto-statement artifact=.forgeloop/task-state/<task-key>/attestations/statement.json -->
 
@@ -1022,7 +1068,7 @@ back-reference itself from the execution receipt.
 
 <!-- END FORGELOOP GENERATED: schema:in-toto-statement -->
 
-### 2.30 `task-state/<taskKey>/attestations/statement.sigstore.json`
+### 2.31 `task-state/<taskKey>/attestations/statement.sigstore.json`
 
 <!-- forgeloop-doc: external-artifact=.forgeloop/task-state/<task-key>/attestations/statement.sigstore.json -->
 

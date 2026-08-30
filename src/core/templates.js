@@ -83,6 +83,7 @@ export const TEMPLATE_PATHS = [
   "schemas/code-attestation.schema.json",
   "schemas/attestation-verification-result.schema.json",
   "schemas/in-toto-statement.schema.json",
+  "schemas/usage.schema.json",
 ];
 
 export function getPackageRoot() {

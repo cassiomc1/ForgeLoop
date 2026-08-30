@@ -195,6 +195,18 @@ configuration under `.forgeloop/`, and stores task-scoped protocol artifacts
 under `.forgeloop/task-state/<taskKey>/`.
 `update` preserves target-specific profile facts and locally modified files.
 
+ForgeLoop adapts protocol depth to task risk and scope, preserving verifiable
+completion while avoiding unnecessary context overhead for small tasks. The
+orthogonal `executionProfile` resolves to `light`, `balanced`, or `full`; it
+never weakens compliance policy, required verification, provenance, or
+validator-backed completion. Hosts can request bounded lifecycle context with
+`forgeloop next --task <id> --compact --json` and
+`forgeloop task-show --task <id> --compact --json`.
+
+Usage telemetry is optional and never estimated. `usage-record` keeps CLI data
+explicitly `ACTOR_REPORTED`; `efficiency --task` is read-only and compares only
+when a local baseline is metadata-compatible.
+
 Before npm publication, the same source checkout can be exercised without a
 network or package lookup:
 

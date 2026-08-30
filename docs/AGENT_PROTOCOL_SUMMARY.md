@@ -19,6 +19,29 @@ Package version: 1.6.5
 6. Run forgeloop complete; accept completion only when the validator returns VALID.
 7. Run forgeloop next again and follow the returned lifecycle action to a terminal state or an explicit blocker.
 
+## Adaptive execution profiles
+
+`complianceMode` controls how strongly project policy is enforced. The
+orthogonal `executionProfile` controls process and context depth: `auto`
+resolves deterministically to `light`, `balanced`, or `full` from route,
+contract, and task metadata. CLI requests take precedence over project
+configuration, but a safety floor always wins. Profiles never remove required
+contracts, gates, verification, provenance, lifecycle phases, or validated
+completion. Protocol-v1 routes without the field project to `balanced` for
+compatibility without rewriting historical artifacts.
+
+For `light` tasks, hosts should use `next --compact` or `task-show --compact`,
+load only relevant guide sections, keep plans concise, and avoid optional
+reflection, trajectory evaluation, handoff, attestation, and continuity
+artifacts unless requested, required, or needed for recovery. The lifecycle
+chronology remains unchanged.
+
+Usage telemetry is provider or host reported when available, actor-reported
+only through the explicit `usage-record` fallback, and `UNKNOWN` otherwise.
+ForgeLoop never estimates tokens or treats usage as verification evidence.
+`efficiency --task` is read-only and returns `NOT_COMPARABLE` unless a
+project-local baseline has matching metadata.
+
 ## Authority boundaries
 
 - Protocol-derived facts outrank actor-provided labels, free-form summaries, and guessed identities.
@@ -38,13 +61,16 @@ Phases: RECEIVED, DISCOVERING, CONTRACT_READY, ROUTED, DESIGNING, PLANNED, EXECU
 
 | Feature | Version | Supported |
 | --- | --- | --- |
+| adaptiveExecutionProfiles | 1 | yes |
 | canonicalHandoffs | 1 | yes |
 | capabilityPolicy | 1 | yes |
 | codeAttestation | 1 | yes |
+| compactLifecycleOutput | 1 | yes |
 | diagnostics | n/a | yes |
 | differentialVerificationScope | 1 | yes |
 | durableActions | 1 | yes |
 | durableApprovals | 1 | yes |
+| efficiencyMetrics | 1 | yes |
 | executionHistory | 1 | yes |
 | integrationApi | 1 | yes |
 | observabilityStability | n/a | yes |
@@ -55,6 +81,7 @@ Phases: RECEIVED, DISCOVERING, CONTRACT_READY, ROUTED, DESIGNING, PLANNED, EXECU
 | taskInspection | 1 | yes |
 | trajectoryEvaluation | 1 | yes |
 | trajectoryMetrics | 1 | yes |
+| usageTelemetry | 1 | yes |
 | verificationExecutionIsolation | 1 | yes |
 | workspaceBinding | 1 | yes |
 
@@ -90,6 +117,7 @@ Phases: RECEIVED, DISCOVERING, CONTRACT_READY, ROUTED, DESIGNING, PLANNED, EXECU
 | session | SESSION | .forgeloop/sessions/<session-id>.json | activation | SESSION_MARKER |
 | sources | PROJECT | .forgeloop/sources.json | source-registry | SOURCE_ATTESTATION |
 | state | TASK | .forgeloop/task-state/<task-key>/work-state.json | work-state | CANONICAL_LIFECYCLE_STATE |
+| usage | TASK | .forgeloop/task-state/<task-key>/usage.json | usage | INFORMATIONAL_USAGE_TELEMETRY |
 | verificationScope | TASK | .forgeloop/task-state/<task-key>/verification-scope.json | verification-scope | VERIFICATION_SCOPE_PLAN |
 | workspaceBinding | TASK | .forgeloop/task-state/<task-key>/workspace-binding.json | workspace-binding | WORKSPACE_IDENTITY_BINDING |
 
@@ -135,6 +163,7 @@ Phases: RECEIVED, DISCOVERING, CONTRACT_READY, ROUTED, DESIGNING, PLANNED, EXECU
 | Command | Mutation | Purpose |
 | --- | --- | --- |
 | doctor | MUTATING | Diagnoses project health, discovers adapters, and optionally repairs missing template files. |
+| efficiency | READ_ONLY | Projects usage and timing efficiency, comparing only against a metadata-compatible local baseline. |
 | eval | MUTATING | Evaluates the current trajectory against a validated project-local reference scenario. |
 | history | READ_ONLY | Shows chronological protocol history reconstructed from canonical ForgeLoop state. |
 | inspect | READ_ONLY | Inspects target repository health, dirty files, active branch, and artifact freshness. |
@@ -145,6 +174,7 @@ Phases: RECEIVED, DISCOVERING, CONTRACT_READY, ROUTED, DESIGNING, PLANNED, EXECU
 | reflect | READ_ONLY | Analyzes diagnostic and correction history deterministically for information gain, repeated failures, ineffective interventions, and oscillation. |
 | status | READ_ONLY | Displays current lifecycle phase, active checks, blockers, and artifact freshness bindings. |
 | trace | READ_ONLY | Emits detailed structured task trace with provenance and artifact relationships. |
+| usage-record | MUTATING | Records actor-reported usage telemetry without treating it as verification evidence. |
 | validate-protocol | READ_ONLY | Validates end-to-end cryptographic freshness, fingerprint bindings, and ledger integrity. |
 | validate-state | READ_ONLY | Validates schema adherence and internal consistency of work-state.json. |
 

@@ -29,6 +29,7 @@ const READ_ONLY_COMMANDS = Object.freeze(new Set([
   "inspect", "validate-state", "validate-protocol", "validate-receipt",
   "policy-status", "policy-diff", "rule-verify", "policy",
   "history", "trace", "reflect",
+  "efficiency",
   "workspace-status", "handoff-list", "handoff-show", "responsibility-status",
   "attestation-verify", "attestation-status", "attestation-verify-range",
 ]));
@@ -39,6 +40,7 @@ const LOOP_MUTATION_COMMANDS = Object.freeze(new Set([
   "record-check", "record-diagnosis", "record-decision-criterion",
   "record-terminal-result", "complete",
   "record-intervention", "record-hypothesis-disposition",
+  "usage-record",
   "workspace-bind", "handoff-create", "responsibility-set", "verify-scope", "attestation-create",
 ]));
 
@@ -59,6 +61,8 @@ const STATIC_RISK_CLASSES = Object.freeze({
   eval: INTEGRATION_RISK_CLASSES.LOOP_MUTATION,
   "action-show": INTEGRATION_RISK_CLASSES.READ_ONLY,
   metrics: INTEGRATION_RISK_CLASSES.READ_ONLY,
+  efficiency: INTEGRATION_RISK_CLASSES.READ_ONLY,
+  "usage-record": INTEGRATION_RISK_CLASSES.LOOP_MUTATION,
   init: INTEGRATION_RISK_CLASSES.MAINTENANCE,
   update: INTEGRATION_RISK_CLASSES.MAINTENANCE,
   activate: INTEGRATION_RISK_CLASSES.MAINTENANCE,
@@ -136,6 +140,29 @@ export function getForgeLoopCapabilities({ packageVersion = null } = {}) {
         version: 1,
         readOnlyMetrics: true,
         projectLocalReference: true,
+      },
+      adaptiveExecutionProfiles: {
+        version: 1,
+        supported: true,
+        deterministic: true,
+        lifecycleFastPath: false,
+      },
+      compactLifecycleOutput: {
+        version: 1,
+        supported: true,
+        commands: ["next", "task-show"],
+        preservesDefaultOutput: true,
+      },
+      usageTelemetry: {
+        version: 1,
+        supported: true,
+        estimation: false,
+        evidence: false,
+      },
+      efficiencyMetrics: {
+        version: 1,
+        supported: true,
+        comparativeOnly: true,
       },
       workspaceBinding: {
         version: 1,
