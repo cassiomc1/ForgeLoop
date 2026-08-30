@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Future release changes will be recorded here.
+
+## 1.6.4 - 2026-08-30
+
 ### Added
 
 - Added optional task workspace binding, immutable cross-harness handoff
@@ -19,6 +23,9 @@
   phase-oriented resolver while preserving existing lifecycle behavior.
 - Expanded protocol documentation, schemas, MCP capability metadata, and
   audit/bundle validation for the new optional artifacts.
+- Refreshed the documentation diagrams with dark-first animated HTML/SVG
+  sources, reduced-motion handling, text fallbacks, deterministic receipts,
+  and source-bound visual reviews.
 
 ## 1.6.3 - 2026-08-28
 
