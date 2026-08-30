@@ -207,6 +207,14 @@ Usage telemetry is optional and never estimated. `usage-record` keeps CLI data
 explicitly `ACTOR_REPORTED`; `efficiency --task` is read-only and compares only
 when a local baseline is metadata-compatible.
 
+Hosts can consume the read-only `task/context` integration resource for a
+profile-aware objective, guide, next-action, and verification projection. The
+profile changes presentation depth only; it never skips a required lifecycle
+phase or gate. Measured profile comparisons use the reproducible commands in
+[`docs/EXECUTION_PROFILE_BENCHMARKS.md`](./docs/EXECUTION_PROFILE_BENCHMARKS.md)
+and do not claim efficiency when provider or host telemetry is unavailable or
+non-comparable.
+
 Before npm publication, the same source checkout can be exercised without a
 network or package lookup:
 

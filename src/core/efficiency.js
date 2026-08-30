@@ -55,6 +55,7 @@ function compareMetadata(actual, baseline) {
     "projectRevision",
     "benchmarkVersion",
     "environmentClass",
+    "usageSource",
   ];
   const mismatches = [];
   for (const field of fields) {
@@ -109,11 +110,13 @@ export async function buildEfficiencyReport({ target, packageRoot, taskId, basel
     projectRevision: repository.head ?? null,
     benchmarkVersion: null,
     environmentClass: environmentClass(),
+    usageSource: metrics.usage.source,
   };
   const base = {
     taskId,
     executionProfile: metrics.executionProfile,
     usage: metrics.usage,
+    usageSource: metrics.usage.source,
     timing: metrics.timing,
     tokensPerComparableStep: validNumber(metrics.usage.totalTokens) && metrics.comparableSteps > 0
       ? metrics.usage.totalTokens / metrics.comparableSteps
@@ -124,6 +127,8 @@ export async function buildEfficiencyReport({ target, packageRoot, taskId, basel
       ...base,
       comparison: {
         status: "NOT_COMPARABLE",
+        comparable: false,
+        usageSource: metrics.usage.source,
         reason: "No baseline was supplied.",
         metadata: actualMetadata,
         baseline: null,
@@ -143,6 +148,8 @@ export async function buildEfficiencyReport({ target, packageRoot, taskId, basel
       ...base,
       comparison: {
         status: "NOT_COMPARABLE",
+        comparable: false,
+        usageSource: metrics.usage.source,
         reason: "Baseline metadata does not match the current task execution.",
         metadata: actualMetadata,
         mismatches: metadata.mismatches,
@@ -160,6 +167,8 @@ export async function buildEfficiencyReport({ target, packageRoot, taskId, basel
     ...base,
     comparison: {
       status: "COMPARABLE",
+      comparable: true,
+      usageSource: metrics.usage.source,
       reason: "Baseline metadata matches the current task execution.",
       metadata: actualMetadata,
       baseline: {

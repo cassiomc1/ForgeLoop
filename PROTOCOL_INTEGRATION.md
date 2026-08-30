@@ -157,6 +157,24 @@ verification truth, lifecycle chronology, authority, or validator-backed
 completion. A protocol-v1 route without profile metadata remains readable and
 projects to `balanced` compatibility behavior.
 
+The integration API also exposes the read-only `task/context` projection. It
+contains the resolved profile, objective, deliverables, constraints, selected
+guide IDs, next action, verification requirements, and a bounded context
+policy for hosts. A host may omit optional presentation context, but
+`light` never authorizes a skipped lifecycle phase or required gate. A phase
+may be absent only when the canonical protocol marks it not applicable.
+
+The profile invariant block is explicit:
+
+```text
+execution depth changes presentation and optional context only.
+required lifecycle phases remain unchanged.
+required gates remain unchanged.
+verification truth and evidence requirements remain unchanged.
+authority, provenance, and safety-floor decisions remain unchanged.
+validator-backed completion remains unchanged.
+```
+
 Optional observability is lazy. Reflection, trajectory evaluation, handoff,
 responsibility, attestation, benchmark analysis, and continuity artifacts are
 not required merely because the capability exists; policy, user/host request,
@@ -169,6 +187,12 @@ fallback records only `ACTOR_REPORTED`, and absent data is `UNKNOWN`. ForgeLoop
 never estimates tokens or accepts usage as verification evidence. The
 read-only `efficiency --task` command reports `NOT_COMPARABLE` until an
 optional project-local baseline has matching metadata.
+
+Execution-profile benchmark evidence is a separate observational boundary.
+The reproducible runner compares direct, balanced, and adaptive modes only
+when provider or host usage, actual timing, PASS verification, comparable
+steps, and matching metadata are present. Missing or non-comparable values
+remain `UNKNOWN`/`NOT_COMPARABLE`; no efficiency claim is inferred.
 
 ## CLI resolution policy
 

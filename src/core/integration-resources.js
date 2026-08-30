@@ -17,6 +17,7 @@ import { listCanonicalHandoffs } from "./handoff.js";
 import { resolveResponsibilityStatus } from "./responsibility.js";
 import { readVerificationScope } from "./verification-scope.js";
 import { resolveAttestationStatus } from "./attestation.js";
+import { buildExecutionProfileContext } from "./execution-profile-context.js";
 
 /**
  * Canonical integration resource allowlist.
@@ -80,6 +81,7 @@ export const INTEGRATION_RESOURCE_DEFINITIONS = Object.freeze({
   "task/action": Object.freeze({ scope: "TASK", description: "One canonical durable action artifact." }),
   "task/approvals": Object.freeze({ scope: "TASK", description: "Durable approval artifacts for one task." }),
   "task/metrics": Object.freeze({ scope: "TASK", description: "Read-only trajectory metrics for one task." }),
+  "task/context": Object.freeze({ scope: "TASK", description: "Read-only profile-aware task context with bounded presentation policy." }),
   "task/evaluations": Object.freeze({ scope: "TASK", description: "Persisted trajectory evaluations for one task." }),
   "project/capability-policy": Object.freeze({ scope: "PROJECT", description: "Project capability policy, never host authority." }),
 });
@@ -159,6 +161,7 @@ export async function readForgeLoopIntegrationResource(uri, {
     case "task/action":
     case "task/approvals":
     case "task/metrics":
+    case "task/context":
     case "task/evaluations": {
       if (typeof taskId !== "string" || !taskId) {
         const error = new Error(`Resource ${uri} requires a taskId`); error.code = "E_TASK_REQUIRED"; throw error;
@@ -204,6 +207,19 @@ export async function readForgeLoopIntegrationResource(uri, {
       uri,
       taskId,
       data: await buildTrajectoryMetrics({ target: projectPath, packageRoot, taskId, runtimeContext }),
+    };
+  }
+  if (uri === "task/context") {
+    return {
+      uri,
+      taskId,
+      data: await buildExecutionProfileContext({
+        target: projectPath,
+        packageRoot,
+        taskId,
+        authorityContext: runtimeContext?.authorityContext,
+        runtimeContext,
+      }),
     };
   }
   if (uri === "task/evaluations") {

@@ -46,6 +46,13 @@ export {
 
 export { createForgeLoopContext } from "./core/runtime-context.js";
 export {
+  PROFILE_CONTEXT_POLICIES,
+  buildExecutionProfileContext,
+  getExecutionProfileContextPolicy,
+  legacyExecutionProfile,
+  projectExecutionProfileContext,
+} from "./core/execution-profile-context.js";
+export {
   EXECUTION_PROFILES,
   EXECUTION_PROFILE_REQUESTS,
   LEGACY_EXECUTION_PROFILE,

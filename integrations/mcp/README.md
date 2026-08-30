@@ -46,6 +46,12 @@ canonical command-level acknowledgement:
 Tool input can never upgrade launch policy. `acknowledgeRecovery: true` in tool
 input is not an authorization grant. There is no generic shell tool.
 
+The read-only resource `forgeloop://task/{taskId}/context` exposes the
+canonical profile-aware host projection. It lets a client choose targeted,
+standard, or expanded presentation context while preserving lifecycle phases,
+required gates, verification truth, authority, provenance, safety floors, and
+validator-backed completion.
+
 ## Security model
 
 - Project root is pinned at startup (realpath + frozen); never a tool input.

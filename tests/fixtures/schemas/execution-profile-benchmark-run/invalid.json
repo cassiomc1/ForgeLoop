@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "benchmarkVersion": "1",
+  "runSetId": "fixture-set",
+  "runId": "invalid",
+  "scenarioId": "fixture-scenario",
+  "mode": "direct",
+  "runIndex": 0
+}

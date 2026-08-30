@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "benchmarkVersion": "1",
+  "runSetId": "fixture-set",
+  "runId": "run-fixture-001",
+  "scenarioId": "fixture-scenario",
+  "mode": "direct",
+  "runIndex": 1,
+  "recordedAt": "2026-08-30T00:00:00.000Z",
+  "usage": {
+    "inputTokens": null,
+    "outputTokens": null,
+    "cacheReadTokens": null,
+    "cacheWriteTokens": null,
+    "totalTokens": null,
+    "costUsd": null,
+    "model": null,
+    "provider": null,
+    "source": "UNKNOWN"
+  },
+  "wallClockMs": null,
+  "verification": "NOT_AVAILABLE",
+  "verificationCycles": null,
+  "comparableSteps": null,
+  "metadata": {
+    "scenarioId": "fixture-scenario",
+    "mode": "direct",
+    "model": null,
+    "provider": null,
+    "promptSpecFingerprint": "fixture-prompt",
+    "projectRevision": null,
+    "benchmarkVersion": "1",
+    "environmentClass": "darwin-node20",
+    "requestedProfile": null,
+    "resolvedProfile": null,
+    "verificationCycles": null,
+    "comparableSteps": null
+  }
+}

@@ -42,6 +42,13 @@ compact `next`/`task-show` projections. `complianceMode` remains the policy
 enforcement dimension; `executionProfile` is the independent process/context
 depth dimension.
 
+The API's read-only `task/context` resource provides the canonical host
+projection for this decision. It includes the objective, deliverables,
+constraints, selected guide IDs, current phase, next action, verification
+requirements, resolved profile, and bounded optional-context policy. The MCP
+adapter exposes the same projection at
+`forgeloop://task/{taskId}/context`.
+
 For `light`, an adapter should send only the current objective, deliverables,
 hard constraints, resolved profile, selected guide IDs or relevant guide
 sections, current phase, exact next action, and verification requirements. It
@@ -54,6 +61,11 @@ of protocol v1.
 Optional reflection, trajectory evaluation, handoff, responsibility,
 attestation, benchmark, and continuity artifacts are lazy and should be
 created only when policy, an explicit request, or recovery requires them.
+
+The profile never authorizes a lifecycle-phase or required-gate skip. A phase
+may be absent only when the canonical protocol marks it not applicable;
+presentation depth cannot change evidence, verification truth, authority,
+provenance, safety-floor, or validator-backed completion requirements.
 
 ### Usage and efficiency boundary
 
@@ -75,6 +87,11 @@ token or cost estimate is produced. Usage never satisfies a check or
 completion requirement. Use `efficiency --task --baseline <project-local-json>`
 only for metadata-compatible comparisons; otherwise the result is
 `NOT_COMPARABLE`.
+
+For measured execution-profile comparisons, use the reproducible benchmark
+commands in [`EXECUTION_PROFILE_BENCHMARKS.md`](./EXECUTION_PROFILE_BENCHMARKS.md).
+The benchmark source policy accepts provider or host observations only and
+keeps unavailable or non-comparable measurements out of efficiency claims.
 
 ## Consumers
 

@@ -96,6 +96,17 @@ permits broader risk and dependency context. The host must not reinterpret the
 profile or use it to skip lifecycle phases, required gates, verification
 requirements, authority checks, provenance, or completion validation.
 
+Hosts can consume the canonical `task/context` projection from the universal
+integration API (or `forgeloop://task/{taskId}/context` through MCP). It
+provides the objective, deliverables, constraints, selected guide IDs, next
+action, verification requirements, and the profile-specific presentation
+policy. A phase may be absent only when the canonical protocol says it is not
+applicable; `light` is never a reason to omit it.
+
+The profile changes context depth only. Required phases and gates, evidence and
+verification truth, authority and provenance, the safety floor, and
+validator-backed completion remain invariant.
+
 The profile is orthogonal to `complianceMode`. CLI requests take precedence
 over project configuration only as requests, while the deterministic safety
 floor always wins. Historical routes without the optional profile field remain

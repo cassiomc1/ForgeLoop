@@ -10,7 +10,7 @@ import { logResourceRead } from "./logging.js";
 
 const TASK_RESOURCE_KINDS = [
   "status", "ownership", "contract", "continuity", "workspace-binding", "handoffs",
-  "responsibility", "verification-scope", "attestation", "actions", "approvals", "metrics", "evaluations",
+  "responsibility", "verification-scope", "attestation", "actions", "approvals", "metrics", "context", "evaluations",
 ];
 
 /**

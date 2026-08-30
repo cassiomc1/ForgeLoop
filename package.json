@@ -1,6 +1,6 @@
 {
   "name": "@cassiomc1/forgeloop",
-  "version": "1.6.5",
+  "version": "1.7.0",
   "description": "Portable, verifiable engineering protocol for AI coding environments and developer workflows",
   "repository": {
     "type": "git",
@@ -22,6 +22,7 @@
     "src",
     "ENG",
     "schemas",
+    "benchmarks/execution-profiles",
     ".forgeloop/forgeloop.gitignore",
     "AGENTS.md",
     "CLAUDE.md",
@@ -65,8 +66,13 @@
     "docs/SIGNING_PROVIDERS.md",
     "docs/PLATFORM_ADAPTERS.md",
     "docs/AGENT_PROTOCOL_SUMMARY.md",
+    "docs/EXECUTION_PROFILE_BENCHMARKS.md",
     "scripts/generate-shell-completions.mjs",
     "scripts/generate-agent-protocol-summary.mjs",
+    "scripts/run-execution-profile-benchmarks.mjs",
+    "scripts/summarize-execution-profile-benchmarks.mjs",
+    "scripts/validate-execution-profile-benchmarks.mjs",
+    "scripts/lib/execution-profile-benchmark-io.mjs",
     "scripts/benchmark-cli-startup.mjs",
     "scripts/check-critical-coverage.mjs",
     "scripts/check-changelog-freshness.mjs",
@@ -104,7 +110,10 @@
     "mcp:setup": "node scripts/mcp-setup.mjs",
     "mcp:pack:check": "node scripts/mcp-package-smoke.mjs",
     "poc:evidence:verify": "node scripts/verify_poc_evidence.mjs",
-    "poc:evidence:test": "node --test poc/test/poc-evidence-publication.test.js"
+    "poc:evidence:test": "node --test poc/test/poc-evidence-publication.test.js",
+    "benchmark:profiles": "node scripts/run-execution-profile-benchmarks.mjs",
+    "benchmark:profiles:summary": "node scripts/summarize-execution-profile-benchmarks.mjs",
+    "benchmark:profiles:check": "node scripts/validate-execution-profile-benchmarks.mjs"
   },
   "devDependencies": {
     "c8": "^12.0.0",

@@ -102,6 +102,14 @@ only when required by policy, requested by the user or host, or needed for
 recovery. The first profile release does not change lifecycle chronology or
 introduce a fast path.
 
+The profile-aware context projection is presentation guidance only. A host may
+use `task/context` to select targeted, normal, or expanded context, but a
+profile never authorizes skipping a lifecycle phase, required gate,
+verification requirement, authority check, provenance binding, safety floor,
+or validator-backed completion. A phase may be absent only when the canonical
+protocol determines that it is not applicable; it may never be omitted because
+the resolved profile is `light`.
+
 Usage telemetry is a separate informational domain. Only a trusted provider or
 host can report `PROVIDER_REPORTED` or `HOST_REPORTED`; the CLI fallback is
 explicitly `ACTOR_REPORTED`; absent data is `UNKNOWN`. ForgeLoop never

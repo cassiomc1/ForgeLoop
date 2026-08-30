@@ -84,6 +84,9 @@ export const TEMPLATE_PATHS = [
   "schemas/attestation-verification-result.schema.json",
   "schemas/in-toto-statement.schema.json",
   "schemas/usage.schema.json",
+  "schemas/execution-profile-benchmark-scenario.schema.json",
+  "schemas/execution-profile-benchmark-run.schema.json",
+  "schemas/execution-profile-benchmark-aggregate.schema.json",
 ];
 
 export function getPackageRoot() {

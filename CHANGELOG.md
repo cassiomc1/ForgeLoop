@@ -4,6 +4,30 @@
 
 - Future release changes will be recorded here.
 
+## 1.7.0 - 2026-08-30
+
+### Added
+
+- Added schema-validated execution-profile benchmark scenarios, a host-adapter
+  runner, reproducible raw/aggregate results, and summary/validation commands.
+- Added the read-only `task/context` integration projection and MCP resource
+  for bounded profile-aware host context.
+- Added explicit benchmark methodology and profile invariant documentation.
+
+### Changed
+
+- Expanded profile-aware context guidance without changing lifecycle chronology,
+  required gates, verification truth, authority, provenance, safety floors, or
+  validator-backed completion.
+- Updated package metadata and release identity to 1.7.0.
+
+### Verification boundary
+
+- Benchmark claims remain observational and require actual provider/host
+  telemetry, timing, PASS verification, and matching comparability metadata.
+  Without those inputs, the summary remains `NOT_MEASURED` or
+  `NOT_COMPARABLE`.
+
 ## 1.6.5 - 2026-08-30
 
 ### Fixed

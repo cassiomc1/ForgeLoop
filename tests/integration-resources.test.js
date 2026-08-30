@@ -184,9 +184,26 @@ test("task/metrics resource accepts trusted runtime usage context", async () => 
   });
 });
 
+test("task/context projects the resolved profile into bounded host context", async () => {
+  await withRecoveryTarget(async (target) => {
+    const { taskId } = await setupAbandonedTask(target, { taskId: "resource-profile-context" });
+    const resource = await readForgeLoopIntegrationResource("task/context", {
+      projectPath: target,
+      packageRoot,
+      taskId,
+    });
+    assert.equal(resource.data.executionProfile.resolved, "light");
+    assert.equal(resource.data.contextPolicy.output, "compact");
+    assert.deepEqual(resource.data.optionalContext.available, []);
+    assert.equal(resource.data.invariants.requiredGatesPreserved, true);
+    assert.equal(resource.data.invariants.verificationTruthPreserved, true);
+    assert.equal(resource.data.invariants.lifecyclePhaseSkippingAllowed, false);
+  });
+});
+
 test("task-scoped resources refuse missing taskId", async () => {
   await withRecoveryTarget(async (target) => {
-    for (const uri of ["task/status", "task/ownership", "task/contract", "task/continuity"]) {
+    for (const uri of ["task/status", "task/ownership", "task/contract", "task/continuity", "task/context"]) {
       await assert.rejects(
         () => readForgeLoopIntegrationResource(uri, { projectPath: target, packageRoot }),
         (error) => error.code === "E_TASK_REQUIRED",

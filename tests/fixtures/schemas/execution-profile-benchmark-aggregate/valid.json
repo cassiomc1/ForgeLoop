@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "benchmarkVersion": "1",
+  "runSetId": "fixture-set",
+  "scenarioId": "fixture-scenario",
+  "expectedProfile": "light",
+  "modeAggregates": {
+    "direct": {},
+    "forgeloopBalanced": {},
+    "forgeloopAdaptive": {}
+  },
+  "comparisons": {
+    "direct": null,
+    "forgeloopBalanced": null,
+    "forgeloopAdaptive": null
+  },
+  "lightObjectives": null,
+  "sourcePolicy": "PROVIDER_REPORTED_OR_HOST_REPORTED_ONLY",
+  "claimsAllowed": false,
+  "generatedFromRunCount": 1
+}
