@@ -2,6 +2,7 @@ import { PROTOCOL_VERSION } from "./protocol.js";
 import { ARTIFACT_PATHS, readJsonArtifact, writeJsonArtifact } from "./artifacts.js";
 import { E_ATTESTATION_CONFIGURATION_INVALID } from "./error-codes.js";
 import { normalizeVerificationConfiguration } from "./verification-scope-capability.js";
+import { EXECUTION_PROFILE_REQUESTS } from "./execution-profile.js";
 
 export const CONFIG_SCHEMA_VERSION = 1;
 export const COMPLIANCE_MODES = Object.freeze(["advisory", "standard", "strict"]);
@@ -72,6 +73,13 @@ export function createConfig(input = {}) {
       throw configurationError(error.message);
     }
   }
+  let executionProfile;
+  if (input.executionProfile !== undefined) {
+    if (!EXECUTION_PROFILE_REQUESTS.includes(input.executionProfile)) {
+      throw configurationError(`Unknown execution profile: ${input.executionProfile}`);
+    }
+    executionProfile = input.executionProfile;
+  }
   return {
     schemaVersion: CONFIG_SCHEMA_VERSION,
     protocolVersion: PROTOCOL_VERSION,
@@ -81,6 +89,7 @@ export function createConfig(input = {}) {
     ...(input.requiredEvidence !== undefined ? { requiredEvidence: stringArray(input.requiredEvidence, "requiredEvidence") } : {}),
     ...(verification ? { verification } : {}),
     ...(attestation ? { attestation } : {}),
+    ...(executionProfile ? { executionProfile } : {}),
   };
 }
 

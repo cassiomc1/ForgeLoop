@@ -1,0 +1,16 @@
+{
+  "scenarioId": "full-publication",
+  "input": {
+    "workType": "code",
+    "surfaces": [],
+    "risks": ["publication"],
+    "platforms": []
+  },
+  "expected": {
+    "requested": "auto",
+    "floor": "full",
+    "resolved": "full",
+    "reasons": ["PROFILE_DEFAULT_AUTO", "RISK_PUBLICATION"],
+    "escalated": false
+  }
+}

@@ -283,6 +283,18 @@ export const ARTIFACT_REGISTRY = Object.freeze({
     isPersisted: true,
     description: "Immutable trajectory evaluation results compiled from the canonical trace against a local reference scenario.",
   }),
+  usage: Object.freeze({
+    key: "usage",
+    scope: "TASK",
+    path: `${TASK_STATE_ROOT}/<task-key>/${TASK_ARTIFACT_FILES.usage}`,
+    schema: "usage",
+    owner: "ACTOR_OR_TRUSTED_HOST",
+    mutability: "OVERWRITTEN_ON_USAGE_RECORD",
+    trustRole: "INFORMATIONAL_USAGE_TELEMETRY",
+    isPublic: true,
+    isPersisted: true,
+    description: "Task-scoped token, cost, model, and provider telemetry; never verification or completion evidence.",
+  }),
   workspaceBinding: Object.freeze({
     key: "workspaceBinding",
     scope: "TASK",

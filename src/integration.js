@@ -46,6 +46,13 @@ export {
 
 export { createForgeLoopContext } from "./core/runtime-context.js";
 export {
+  EXECUTION_PROFILES,
+  EXECUTION_PROFILE_REQUESTS,
+  LEGACY_EXECUTION_PROFILE,
+  projectExecutionProfile,
+  resolveExecutionProfile,
+} from "./core/execution-profile.js";
+export {
   E_VERIFICATION_EXECUTION_INVALID,
   E_VERIFICATION_ISOLATION_UNAVAILABLE,
   VERIFICATION_EXECUTION_POLICY_MODES,

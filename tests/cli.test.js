@@ -702,3 +702,69 @@ test("does not relabel an existing installation when init is rerun", async () =>
     assert.equal(after.packageVersion, "0.0.9");
   });
 });
+
+test("usage-record persists actor telemetry and metrics preserve its provenance", async () => {
+  await withTarget(async (target) => {
+    const created = runCli(target, "task-create", "--task", "usage-cli", "--claim", "notes.md", "--json");
+    assert.equal(created.status, 0, created.stderr);
+
+    const recorded = runCli(
+      target,
+      "usage-record",
+      "--task", "usage-cli",
+      "--provider", "openrouter",
+      "--model", "example/model",
+      "--input-tokens", "10",
+      "--output-tokens", "4",
+      "--cache-write-tokens", "2",
+      "--total-tokens", "16",
+      "--source", "ACTOR_REPORTED",
+      "--json",
+    );
+    assert.equal(recorded.status, 0, recorded.stderr);
+    const usageResult = JSON.parse(recorded.stdout);
+    assert.equal(usageResult.usage.source, "ACTOR_REPORTED");
+    assert.equal(usageResult.usage.totalTokens, 16);
+    await readFile(path.join(target, usageResult.path), "utf8");
+
+    const metrics = runCli(target, "metrics", "--task", "usage-cli", "--json");
+    assert.equal(metrics.status, 0, metrics.stderr);
+    assert.equal(JSON.parse(metrics.stdout).usage.source, "ACTOR_REPORTED");
+
+    const efficiency = runCli(target, "efficiency", "--task", "usage-cli", "--json");
+    assert.equal(efficiency.status, 0, efficiency.stderr);
+    const efficiencyResult = JSON.parse(efficiency.stdout);
+    assert.equal(efficiencyResult.comparison.status, "NOT_COMPARABLE");
+    assert.equal(efficiencyResult.comparison.tokenOverheadPercent, null);
+
+    const promoted = runCli(target, "usage-record", "--task", "usage-cli", "--source", "HOST_REPORTED", "--json");
+    assert.notEqual(promoted.status, 0);
+    assert.match(promoted.stderr, /ACTOR_REPORTED/);
+  });
+});
+
+test("route CLI persists the resolved execution profile and compact reads stay minimal", async () => {
+  await withTarget(async (target) => {
+    const created = runCli(target, "task-create", "--task", "compact-cli", "--claim", "notes.md", "--json");
+    assert.equal(created.status, 0, created.stderr);
+    const routed = runCli(target, "route", "--task", "compact-cli", "--work", "documentation", "--json");
+    assert.equal(routed.status, 0, routed.stderr);
+    assert.equal(JSON.parse(routed.stdout).executionProfile.resolved, "light");
+
+    const shown = runCli(target, "task-show", "--task", "compact-cli", "--compact", "--json");
+    assert.equal(shown.status, 0, shown.stderr);
+    const shownResult = JSON.parse(shown.stdout);
+    assert.equal(shownResult.profile, "light");
+    assert.equal(shownResult.taskId, "compact-cli");
+    assert.equal(shownResult.errors.length, 0);
+    assert.equal(Object.prototype.hasOwnProperty.call(shownResult, "contract"), false);
+
+    const next = runCli(target, "next", "--task", "compact-cli", "--compact", "--json");
+    assert.equal(next.status, 0, next.stderr);
+    const nextResult = JSON.parse(next.stdout);
+    assert.equal(nextResult.taskId, "compact-cli");
+    assert.equal(nextResult.profile, "light");
+    assert.equal(typeof nextResult.terminal, "boolean");
+    assert.ok(Array.isArray(nextResult.errors));
+  });
+});

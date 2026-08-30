@@ -33,6 +33,8 @@ import { runActionAuthorize } from "../commands/action-authorize.js";
 import { runActionVerify } from "../commands/action-verify.js";
 import { runActionReconcile } from "../commands/action-reconcile.js";
 import { runMetrics } from "../commands/metrics.js";
+import { runUsageRecord } from "../commands/usage-record.js";
+import { runEfficiency } from "../commands/efficiency.js";
 import { runEval } from "../commands/eval.js";
 import { runApprovalRequest } from "../commands/approval-request.js";
 import { runApprovalResolve } from "../commands/approval-resolve.js";
@@ -117,6 +119,7 @@ export const COMMAND_EXECUTORS = {
       platforms: options.platforms,
       behaviorChange: options.behaviorChange,
       executableChange: options.executableChange,
+      executionProfile: options.executionProfile,
       taskId: options.taskId,
     }),
     exitCode: 0,
@@ -141,7 +144,7 @@ export const COMMAND_EXECUTORS = {
     exitCode: 0,
   }),
   next: async ({ target, packageRoot, options, authorityContext, runtimeContext }) => ({
-    result: await runNext({ target, packageRoot, taskId: options.taskId, authorityContext, runtimeContext }),
+    result: await runNext({ target, packageRoot, taskId: options.taskId, authorityContext, runtimeContext, compact: options.compact }),
     exitCode: 0,
   }),
   continuity: async ({ target, packageRoot, options }) => ({
@@ -305,9 +308,30 @@ export const COMMAND_EXECUTORS = {
     // executor parameter; actor input can never supply it.
     authorityContext,
   }), exitCode: 0 }),
-  metrics: async ({ target, packageRoot, options }) => ({ result: await runMetrics({ target, packageRoot, taskId: options.taskId }), exitCode: 0 }),
-  eval: async ({ target, packageRoot, options }) => {
-    const result = await runEval({ target, packageRoot, taskId: options.taskId, scenarioPath: options.scenarioPath });
+  metrics: async ({ target, packageRoot, options, runtimeContext }) => ({ result: await runMetrics({ target, packageRoot, taskId: options.taskId, runtimeContext }), exitCode: 0 }),
+  "usage-record": async ({ target, packageRoot, options }) => ({
+    result: await runUsageRecord({
+      target,
+      packageRoot,
+      taskId: options.taskId,
+      provider: options.usageProvider,
+      model: options.usageModel,
+      inputTokens: options.usageInputTokens,
+      outputTokens: options.usageOutputTokens,
+      cacheReadTokens: options.usageCacheReadTokens,
+      cacheWriteTokens: options.usageCacheWriteTokens,
+      totalTokens: options.usageTotalTokens,
+      costUsd: options.usageCostUsd,
+      source: options.usageSource ?? "ACTOR_REPORTED",
+    }),
+    exitCode: 0,
+  }),
+  efficiency: async ({ target, packageRoot, options, runtimeContext }) => ({
+    result: await runEfficiency({ target, packageRoot, taskId: options.taskId, baselinePath: options.baselinePath, runtimeContext }),
+    exitCode: 0,
+  }),
+  eval: async ({ target, packageRoot, options, runtimeContext }) => {
+    const result = await runEval({ target, packageRoot, taskId: options.taskId, scenarioPath: options.scenarioPath, runtimeContext });
     return { result, exitCode: result.result === "PASS" ? 0 : 1 };
   },
   "approval-request": async ({ target, packageRoot, options }) => ({ result: await runApprovalRequest({ target, packageRoot, taskId: options.taskId, approvalId: options.approvalId, actionId: options.actionId, reason: options.reason }), exitCode: 0 }),
@@ -547,7 +571,7 @@ export const COMMAND_EXECUTORS = {
     exitCode: 0,
   }),
   "task-show": async ({ target, packageRoot, options }) => ({
-    result: await runTaskShow({ target, packageRoot, taskId: options.taskId }),
+    result: await runTaskShow({ target, packageRoot, taskId: options.taskId, compact: options.compact }),
     exitCode: 0,
   }),
   "task-lock-status": async ({ target, packageRoot, options }) => ({

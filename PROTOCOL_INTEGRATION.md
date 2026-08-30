@@ -138,6 +138,38 @@ versions. A harness must not infer compatibility from the package version
 alone, and it must fail closed when its required protocol or schema version is
 absent from the relevant list.
 
+## Adaptive execution profiles and context presentation
+
+`complianceMode` and `executionProfile` are independent dimensions. Compliance
+mode (`advisory`, `standard`, or `strict`) describes enforcement policy;
+execution profile (`auto`, `light`, `balanced`, or `full`) describes process and
+context depth. ForgeLoop resolves the profile deterministically from route,
+contract, and task-scope metadata. CLI requests override project configuration
+as requests, but never lower the safety floor.
+
+Hosts may use the resolved profile to control presentation. For `light`, pass
+the objective, deliverables, constraints, profile, selected guide IDs, phase,
+next action, and verification requirements; reuse unchanged state locally and
+avoid reinjecting complete ledgers, schemas, receipts, and protocol documents.
+`next --compact` and `task-show --compact` provide bounded machine-readable
+projections. These presentation choices never alter required gates, evidence,
+verification truth, lifecycle chronology, authority, or validator-backed
+completion. A protocol-v1 route without profile metadata remains readable and
+projects to `balanced` compatibility behavior.
+
+Optional observability is lazy. Reflection, trajectory evaluation, handoff,
+responsibility, attestation, benchmark analysis, and continuity artifacts are
+not required merely because the capability exists; policy, user/host request,
+or recovery need must require them.
+
+Usage telemetry is a separate informational boundary. A runtime may supply an
+optional `ForgeLoopUsageProvider.getTaskUsage({ projectPath, taskId })`; the
+provider must report only `PROVIDER_REPORTED` or `HOST_REPORTED`. The CLI
+fallback records only `ACTOR_REPORTED`, and absent data is `UNKNOWN`. ForgeLoop
+never estimates tokens or accepts usage as verification evidence. The
+read-only `efficiency --task` command reports `NOT_COMPARABLE` until an
+optional project-local baseline has matching metadata.
+
 ## CLI resolution policy
 
 Lifecycle-owned protocol state must be managed through the project-local ForgeLoop CLI:

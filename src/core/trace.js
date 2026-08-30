@@ -68,6 +68,7 @@ const EVENT_CATEGORY_MAP = Object.freeze({
   APPROVAL_REQUESTED: "execution",
   APPROVAL_RESOLVED: "execution",
   TRAJECTORY_EVALUATED: "audit",
+  USAGE_RECORDED: "audit",
 });
 
 const LIFECYCLE_TRANSITIONS = Object.freeze([

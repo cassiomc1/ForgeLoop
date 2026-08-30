@@ -1,0 +1,16 @@
+{
+  "scenarioId": "balanced-code-change",
+  "input": {
+    "workType": "bug",
+    "surfaces": [],
+    "risks": [],
+    "platforms": []
+  },
+  "expected": {
+    "requested": "auto",
+    "floor": "balanced",
+    "resolved": "balanced",
+    "reasons": ["PROFILE_DEFAULT_AUTO", "WORK_BUG"],
+    "escalated": false
+  }
+}

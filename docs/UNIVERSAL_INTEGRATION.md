@@ -35,6 +35,47 @@ import {
   FORCE_DESTRUCTIVE) describe what an invocation would do; launch policy
   decides what is allowed.
 
+### Profile-aware context
+
+The resolved execution profile is available from the persisted route and from
+compact `next`/`task-show` projections. `complianceMode` remains the policy
+enforcement dimension; `executionProfile` is the independent process/context
+depth dimension.
+
+For `light`, an adapter should send only the current objective, deliverables,
+hard constraints, resolved profile, selected guide IDs or relevant guide
+sections, current phase, exact next action, and verification requirements. It
+should reuse unchanged state locally instead of repeatedly sending full
+ledgers, schemas, receipts, or protocol documents. This is presentation
+optimization only: required gates, verification truth, authority, provenance,
+and validated completion remain unchanged. A lifecycle fast path is not part
+of protocol v1.
+
+Optional reflection, trajectory evaluation, handoff, responsibility,
+attestation, benchmark, and continuity artifacts are lazy and should be
+created only when policy, an explicit request, or recovery requires them.
+
+### Usage and efficiency boundary
+
+Create a context with an optional trusted provider:
+
+```js
+const context = createForgeLoopContext({
+  usageProvider: {
+    async getTaskUsage({ projectPath, taskId }) {
+      return hostUsageStore.lookup({ projectPath, taskId });
+    },
+  },
+});
+```
+
+The provider returns `PROVIDER_REPORTED` or `HOST_REPORTED` snapshots. The CLI
+fallback is explicitly `ACTOR_REPORTED`; missing fields remain `null` and no
+token or cost estimate is produced. Usage never satisfies a check or
+completion requirement. Use `efficiency --task --baseline <project-local-json>`
+only for metadata-compatible comparisons; otherwise the result is
+`NOT_COMPARABLE`.
+
 ## Consumers
 
 | Surface | Entry |

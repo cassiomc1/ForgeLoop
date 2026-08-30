@@ -86,6 +86,26 @@ edited by hand.
 
 <!-- END FORGELOOP GENERATED: work-transitions -->
 
+## Profile-aware host behavior
+
+The host may adapt context and presentation depth after reading the resolved
+`executionProfile` from the persisted route or a compact task projection.
+`light` uses targeted guide sections, a compact plan, focused checks, and
+bounded lifecycle output; `balanced` keeps the normal relevant context; `full`
+permits broader risk and dependency context. The host must not reinterpret the
+profile or use it to skip lifecycle phases, required gates, verification
+requirements, authority checks, provenance, or completion validation.
+
+The profile is orthogonal to `complianceMode`. CLI requests take precedence
+over project configuration only as requests, while the deterministic safety
+floor always wins. Historical routes without the optional profile field remain
+readable and project to `balanced` compatibility behavior. The first release
+does not add a lifecycle fast path.
+
+Optional reflection, evaluation, handoff, responsibility, attestation,
+benchmark, and continuity artifacts are lazy. Create them only when required
+by policy, requested by the user or host, or needed for recovery.
+
 The host may skip proportional phases, but it must preserve the state
 invariants and record why a skipped phase was not applicable.
 

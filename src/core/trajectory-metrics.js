@@ -1,12 +1,15 @@
 import { buildTaskTrace } from "./trace.js";
 import { buildTaskReflection } from "./reflection.js";
+import { readPersistedRoute } from "./route-artifact.js";
+import { providerUsage, readTaskUsage, unknownUsage } from "./usage.js";
+import { projectExecutionProfile } from "./execution-profile.js";
 
 export const COMPARABLE_WORK_EVENTS = new Set([
   "EXECUTION_STARTED", "VERIFICATION_RECORDED", "DIAGNOSTIC_CASE_RECORDED",
   "INTERVENTION_RECORDED", "ACTION_STARTED", "ACTION_RECONCILED", "REVIEW_STARTED",
 ]);
 
-export async function buildTrajectoryMetrics({ target, packageRoot, taskId }) {
+export async function buildTrajectoryMetrics({ target, packageRoot, taskId, runtimeContext = null }) {
   const trace = await buildTaskTrace({ target, packageRoot, taskId });
   const reflection = await buildTaskReflection({ target, packageRoot, taskId });
   const events = trace.events;
@@ -18,6 +21,18 @@ export async function buildTrajectoryMetrics({ target, packageRoot, taskId }) {
   const firstMs = firstEventAt ? Date.parse(firstEventAt) : NaN;
   const lastMs = lastEventAt ? Date.parse(lastEventAt) : NaN;
   const interventions = reflection.interventions ?? { count: 0, informative: 0, nonInformative: 0 };
+  let executionProfile = null;
+  try {
+    const route = await readPersistedRoute(target, packageRoot, { taskId });
+    executionProfile = projectExecutionProfile(route.value);
+  } catch {
+    // Legacy tasks and incomplete task namespaces may not have a route.
+  }
+  let usage = await readTaskUsage(target, packageRoot, taskId);
+  const usageProvider = runtimeContext?.usageProvider;
+  if (usageProvider && typeof usageProvider.getTaskUsage === "function") {
+    usage = providerUsage(await usageProvider.getTaskUsage({ projectPath: target, taskId }));
+  }
   return {
     schemaVersion: 1,
     taskId,
@@ -74,7 +89,8 @@ export async function buildTrajectoryMetrics({ target, packageRoot, taskId }) {
       lastEventAt,
       wallClockMs: Number.isFinite(firstMs) && Number.isFinite(lastMs) ? Math.max(0, lastMs - firstMs) : null,
     },
-    usage: { tokens: null, costUsd: null, source: "UNKNOWN" },
+    executionProfile,
+    usage: usage ?? unknownUsage(),
     comparableSteps: events.filter((event) => COMPARABLE_WORK_EVENTS.has(event.type)).length,
   };
 }

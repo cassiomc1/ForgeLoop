@@ -11,6 +11,7 @@ import { createWorkState, writeWorkState } from "../src/core/work-state.js";
 import { createEvidence } from "../src/core/evidence.js";
 import { proposeAction, transitionAction, transitionAuthorizedAction, readAction } from "../src/core/actions.js";
 import { buildTrajectoryMetrics } from "../src/core/trajectory-metrics.js";
+import { providerUsage } from "../src/core/usage.js";
 
 const packageRoot = getPackageRoot();
 
@@ -125,9 +126,83 @@ test("trajectory metrics are deterministic canonical projections and preserve un
     assert.equal(first.actions.total, 1);
     assert.equal(first.actions.ambiguous, 1);
     assert.equal(first.actions.reconciliations, 1);
-    assert.equal(first.usage.tokens, null);
+    assert.equal(first.usage.inputTokens, null);
+    assert.equal(first.usage.outputTokens, null);
+    assert.equal(first.usage.cacheReadTokens, null);
+    assert.equal(first.usage.cacheWriteTokens, null);
+    assert.equal(first.usage.totalTokens, null);
     assert.equal(first.usage.costUsd, null);
+    assert.equal(first.usage.model, null);
+    assert.equal(first.usage.provider, null);
     assert.equal(first.usage.source, "UNKNOWN");
     assert.equal(first.comparableSteps, 5);
   });
+});
+
+test("trajectory metrics preserve trusted host usage and never promote actor usage", async () => {
+  await withTarget(async (target) => {
+    await seedTask(target, "task-host-usage");
+    const calls = [];
+    const metrics = await buildTrajectoryMetrics({
+      target,
+      packageRoot,
+      taskId: "task-host-usage",
+      runtimeContext: {
+        usageProvider: {
+          async getTaskUsage(input) {
+            calls.push(input);
+            return {
+              inputTokens: 12,
+              outputTokens: 4,
+              cacheReadTokens: null,
+              cacheWriteTokens: 2,
+              totalTokens: 18,
+              costUsd: null,
+              model: "provider/model",
+              provider: "provider",
+              source: "HOST_REPORTED",
+            };
+          },
+        },
+      },
+    });
+    assert.deepEqual(metrics.usage, {
+      inputTokens: 12,
+      outputTokens: 4,
+      cacheReadTokens: null,
+      cacheWriteTokens: 2,
+      totalTokens: 18,
+      costUsd: null,
+      model: "provider/model",
+      provider: "provider",
+      source: "HOST_REPORTED",
+    });
+    assert.deepEqual(calls, [{ projectPath: target, taskId: "task-host-usage" }]);
+    assert.deepEqual(providerUsage(null), {
+      inputTokens: null,
+      outputTokens: null,
+      cacheReadTokens: null,
+      cacheWriteTokens: null,
+      totalTokens: null,
+      costUsd: null,
+      model: null,
+      provider: null,
+      source: "UNKNOWN",
+    });
+    assert.throws(
+      () => providerUsage({ source: "ACTOR_REPORTED", totalTokens: 18 }),
+      (error) => error.code === "E_USAGE_SOURCE_INVALID",
+    );
+  });
+});
+
+test("usage normalizer rejects negative and non-integer token values", () => {
+  assert.throws(
+    () => providerUsage({ source: "HOST_REPORTED", inputTokens: -1 }),
+    (error) => error.code === "E_USAGE_INVALID",
+  );
+  assert.throws(
+    () => providerUsage({ source: "HOST_REPORTED", outputTokens: 1.5 }),
+    (error) => error.code === "E_USAGE_INVALID",
+  );
 });

@@ -50,6 +50,7 @@ export const SHIPPED_SCHEMA_NAMES = Object.freeze([
   "code-attestation",
   "attestation-verification-result",
   "in-toto-statement",
+  "usage",
 ]);
 
 export class SchemaValidationError extends Error {

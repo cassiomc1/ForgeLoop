@@ -19,6 +19,7 @@
 - [Project Discovery](#project-discovery)
 - [Capability Discovery & Authority](#capability-discovery-and-on-demand-extensions)
 - [Guide Selection](#guide-selection)
+- [Adaptive Execution Profiles](#adaptive-execution-profiles)
 - [Design & Implementation Gates](#design-and-implementation-gates)
 - [Proportional Planning](#proportional-planning)
 - [Execution Loop](#execution-loop)
@@ -68,6 +69,45 @@ If it discovered the ForgeLoop project adapter, evaluate capabilities:
 
 Never downgrade ForgeLoop to optional guidance solely because the runtime
 name is unknown.
+
+## Adaptive execution profiles
+
+ForgeLoop separates compliance policy from execution depth:
+
+- `complianceMode` (`advisory`, `standard`, `strict`) controls how strongly
+  project policy is enforced.
+- `executionProfile` (`auto`, `light`, `balanced`, `full`) controls how much
+  process and context depth is appropriate for the task.
+
+The default request is `auto`. ForgeLoop resolves it deterministically from
+route signals, the task contract, and task scope. A CLI request takes
+precedence over project configuration, and project configuration takes
+precedence over `auto`; the safety floor always wins. A low explicit request is
+escalated with a structured reason rather than treated as an error.
+
+`light` is intended for small, local, reversible, low-risk work. Hosts should
+use the smallest sufficient discovery, compact plans, targeted guide sections,
+focused verification, and `next --compact` or `task-show --compact`. It does
+not remove contracts, routes, preflight, required gates, verification truth,
+provenance, lifecycle phases, review, or validator-backed completion.
+
+`balanced` remains the normal profile for behavior changes, ordinary bugs,
+refactors, APIs, configuration, and moderate scope. `full` is required by
+authentication, secrets, personal data, publication, infrastructure,
+critical-path, destructive, irreversible, and authority-sensitive work.
+
+Optional reflection, trajectory evaluation, handoff, responsibility,
+attestation, benchmark, and continuity artifacts are lazy: they are created
+only when required by policy, requested by the user or host, or needed for
+recovery. The first profile release does not change lifecycle chronology or
+introduce a fast path.
+
+Usage telemetry is a separate informational domain. Only a trusted provider or
+host can report `PROVIDER_REPORTED` or `HOST_REPORTED`; the CLI fallback is
+explicitly `ACTOR_REPORTED`; absent data is `UNKNOWN`. ForgeLoop never
+estimates tokens, promotes actor data, or treats usage as verification
+evidence. `efficiency --task` reports comparisons only for a metadata-compatible
+project-local baseline.
 
 ### CLI-owned artifact policy
 

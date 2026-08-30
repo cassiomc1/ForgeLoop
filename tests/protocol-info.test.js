@@ -32,6 +32,17 @@ test("protocol-info exposes a complete public compatibility handshake", () => {
     protocolProjectRootSeparateFromExecutionCwd: true,
   });
   assert.equal(info.compatibility.schemaVersion, 1);
+  assert.deepEqual(info.features.adaptiveExecutionProfiles, {
+    version: 1,
+    supported: true,
+    requests: ["auto", "light", "balanced", "full"],
+    resolvedProfiles: ["light", "balanced", "full"],
+    deterministic: true,
+    lifecycleFastPath: false,
+  });
+  assert.equal(info.features.compactLifecycleOutput.preservesDefaultOutput, true);
+  assert.equal(info.features.usageTelemetry.estimation, false);
+  assert.equal(info.features.efficiencyMetrics.comparativeOnly, true);
   assert.ok(info.commands.some((command) => command.name === "protocol-info"));
   assert.ok(info.commands.some((command) => command.name === "task-resume"));
   assert.equal(info.errors.length, ALL_KNOWN_ERROR_CODES.size);

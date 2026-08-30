@@ -93,6 +93,33 @@ export function protocolInfo({ packageVersion = null } = {}) {
       capabilityPolicy: { version: 1, supported: true, decisions: ["ALLOW", "DENY", "REQUIRE_AUTHORITY", "REQUIRE_APPROVAL"] },
       durableApprovals: { version: 1, supported: true, fingerprintBound: true, hostAttestationMinting: false },
       trajectoryMetrics: { version: 1, supported: true, usageUnknownWhenUnreported: true, overallScore: false },
+      adaptiveExecutionProfiles: {
+        version: 1,
+        supported: true,
+        requests: ["auto", "light", "balanced", "full"],
+        resolvedProfiles: ["light", "balanced", "full"],
+        deterministic: true,
+        lifecycleFastPath: false,
+      },
+      compactLifecycleOutput: {
+        version: 1,
+        supported: true,
+        commands: ["next", "task-show"],
+        preservesDefaultOutput: true,
+      },
+      usageTelemetry: {
+        version: 1,
+        supported: true,
+        sources: ["PROVIDER_REPORTED", "HOST_REPORTED", "ACTOR_REPORTED", "UNKNOWN"],
+        estimation: false,
+        evidence: false,
+      },
+      efficiencyMetrics: {
+        version: 1,
+        supported: true,
+        comparativeOnly: true,
+        baseline: "OPTIONAL_PROJECT_LOCAL_JSON",
+      },
       trajectoryEvaluation: { version: 1, supported: true, requiresReferenceScenario: true, source: "PROJECT_LOCAL_REFERENCE" },
       workspaceBinding: {
         version: 1,

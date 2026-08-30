@@ -1,0 +1,16 @@
+{
+  "scenarioId": "balanced-api",
+  "input": {
+    "workType": "api",
+    "surfaces": ["api"],
+    "risks": [],
+    "platforms": []
+  },
+  "expected": {
+    "requested": "auto",
+    "floor": "balanced",
+    "resolved": "balanced",
+    "reasons": ["PROFILE_DEFAULT_AUTO", "WORK_API"],
+    "escalated": false
+  }
+}
