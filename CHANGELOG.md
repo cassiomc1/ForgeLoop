@@ -4,6 +4,13 @@
 
 - Future release changes will be recorded here.
 
+## 1.6.5 - 2026-08-30
+
+### Fixed
+
+- Fixed npm package contents so `forgeloop init` ships the required
+  `AGENT_COMPATIBILITY.md` compatibility template.
+
 ## 1.6.4 - 2026-08-30
 
 ### Added

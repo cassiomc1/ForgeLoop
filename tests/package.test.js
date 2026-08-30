@@ -30,7 +30,7 @@ test("npm tarball contains the CLI, templates, and license notices only", () => 
     "src/core/verification-capability.js",
     "src/core/task-claim-state.js",
     "src/core/recovery-history.js",
-    ...TEMPLATE_PATHS.filter((relativePath) => ![".forgeloop/.gitignore", "AGENT_COMPATIBILITY.md"].includes(relativePath)),
+    ...TEMPLATE_PATHS.filter((relativePath) => relativePath !== ".forgeloop/.gitignore"),
     ".forgeloop/forgeloop.gitignore",
     "QUALITY_SCORECARD.md",
     "TERMINOLOGY.md",
