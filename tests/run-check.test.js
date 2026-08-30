@@ -9,6 +9,8 @@ import {
   E_INSTALLATION_AUTHORITY_REQUIRED,
   E_COMMAND_RESOLUTION_AMBIGUOUS,
 } from "../src/core/verification-capability.js";
+import { createConfig, writeConfig } from "../src/core/config.js";
+import { runCheck } from "../src/commands/run-check.js";
 import {
   readExecutionArtifact,
   runCommandExecution,
@@ -16,6 +18,11 @@ import {
 } from "../src/core/execution.js";
 import { executionArtifactPath } from "../src/core/artifacts.js";
 import { getPackageRoot } from "../src/core/templates.js";
+import { captureVerificationScope } from "../src/core/verification-scope.js";
+import { taskVerificationScopePath } from "../src/core/task-paths.js";
+import { setupVerifyingTask } from "./helpers/durable-lifecycle.js";
+import { createGitRepository } from "./helpers/git-fixture.js";
+import { removeTempTree } from "./helpers/rm-safe.js";
 
 const packageRoot = getPackageRoot();
 
@@ -27,6 +34,80 @@ async function withTarget(run) {
     await rm(target, { recursive: true, force: true });
   }
 }
+
+test("run-check launches the registered scoped checker with exact argv and scope evidence", async () => {
+  const target = await createGitRepository("forgeloop-run-check-scope-");
+  const taskId = "run-check-scope-001";
+  try {
+    await setupVerifyingTask(target, packageRoot, { taskId });
+    await writeConfig(target, createConfig({
+      verification: {
+        checkers: [{
+          checkId: "unit-tests",
+          scopeMode: "PATH_ARGUMENTS",
+          argvPrefix: [process.execPath, "--test"],
+          pathInsertion: "APPEND",
+        }],
+      },
+    }), packageRoot);
+    await writeFile(path.join(target, "src", "index.js"), "export const fixture = false;\n", "utf8");
+    await captureVerificationScope(target, { taskId, packageRoot, mode: "CHANGED" });
+
+    const result = await runCheck({
+      target,
+      packageRoot,
+      taskId,
+      id: "unit-tests",
+      requirement: "postcondition verified",
+      scopeRef: taskVerificationScopePath(taskId),
+      argv: [process.execPath, "--test", "src/index.js"],
+    });
+
+    assert.deepEqual(result.execution.argv, [process.execPath, "--test", "src/index.js"]);
+    assert.deepEqual(result.check.details.verificationScope.argv, result.execution.argv);
+    assert.equal(result.check.details.verificationScope.mode, "CHANGED");
+    assert.equal(result.check.details.verificationScope.checkerId, "unit-tests");
+    assert.match(result.check.details.verificationScope.fingerprint, /^[a-f0-9]{64}$/);
+    assert.match(result.check.details.verificationScope.checkerCapabilityFingerprint, /^[a-f0-9]{64}$/);
+  } finally {
+    await removeTempTree(target);
+  }
+});
+
+test("run-check rejects a scoped argv mismatch before launching a process", async () => {
+  const target = await createGitRepository("forgeloop-run-check-scope-mismatch-");
+  const taskId = "run-check-scope-mismatch-001";
+  try {
+    await setupVerifyingTask(target, packageRoot, { taskId });
+    await writeConfig(target, createConfig({
+      verification: {
+        checkers: [{
+          checkId: "unit-tests",
+          scopeMode: "PATH_ARGUMENTS",
+          argvPrefix: [process.execPath, "--test"],
+          pathInsertion: "APPEND",
+        }],
+      },
+    }), packageRoot);
+    await writeFile(path.join(target, "src", "index.js"), "export const fixture = false;\n", "utf8");
+    await captureVerificationScope(target, { taskId, packageRoot, mode: "CHANGED" });
+
+    await assert.rejects(
+      () => runCheck({
+        target,
+        packageRoot,
+        taskId,
+        id: "unit-tests",
+        requirement: "postcondition verified",
+        scopeRef: taskVerificationScopePath(taskId),
+        argv: [process.execPath, "--test", "wrong.js"],
+      }),
+      (error) => error.code === "E_VERIFICATION_SCOPE_UNRESOLVED" && error.reason === "ARGV_MISMATCH",
+    );
+  } finally {
+    await removeTempTree(target);
+  }
+});
 
 test("classifyCommandResolution uses the exact argv vector", () => {
   assert.deepEqual(classifyCommandResolution(["npx", "@liustack/modlens", "image.png"]), {

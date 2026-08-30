@@ -11,6 +11,27 @@
     "policy": { "type": "string", "minLength": 1 },
     "requiredGates": { "type": "array", "items": { "type": "string", "minLength": 1 } },
     "requiredEvidence": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "verification": {
+      "type": "object",
+      "required": ["checkers"],
+      "additionalProperties": false,
+      "properties": {
+        "checkers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["checkId", "scopeMode", "argvPrefix", "pathInsertion"],
+            "additionalProperties": false,
+            "properties": {
+              "checkId": { "type": "string", "minLength": 1 },
+              "scopeMode": { "const": "PATH_ARGUMENTS" },
+              "argvPrefix": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+              "pathInsertion": { "const": "APPEND" }
+            }
+          }
+        }
+      }
+    },
     "attestation": {
       "type": "object",
       "required": ["mode", "revisionProvider", "requireCompleteCoverage", "coverage", "signing"],

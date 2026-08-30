@@ -36,9 +36,6 @@ jobs:
       - name: Install locked Node toolchain
         run: npm ci --ignore-scripts
 
-      - name: Test npm CLI
-        run: npm test
-
       - name: Verify ForgeLoop PoC evidence package
         run: npm run poc:evidence:verify
 
@@ -51,14 +48,34 @@ jobs:
       - name: Lint JavaScript
         run: npm run lint
 
+      - name: Test npm CLI
+        if: matrix.node-version != 24
+        run: npm test
+
       - name: Measure test coverage
+        if: matrix.node-version == 24
         run: npm run coverage
+
+      - name: Enforce critical-module coverage
+        if: matrix.node-version == 24
+        run: npm run critical-coverage:check
 
       - name: Verify npm package contents
         run: npm run pack:check
 
       - name: Verify generated Markdown freshness
         run: npm run docs:generated:check
+
+      - name: Verify generated protocol assistance
+        run: |
+          npm run completions:check
+          npm run summary:check
+          npm run changelog:check
+        if: matrix.node-version == 24
+
+      - name: Check CLI startup budget
+        run: npm run performance:check
+        if: matrix.node-version == 24
 
       - name: Validate documentation semantics
         run: npm run docs:conformance
@@ -93,11 +110,13 @@ jobs:
 
       - name: Validate Markdown
         run: |
+          python3 -c 'import sys; assert sys.version_info >= (3, 9), "Python 3.9+ is required"'
           python3 -m unittest tests.test_validate_markdown -v
           python3 scripts/validate_markdown.py --self-test
           python3 scripts/validate_markdown.py
       - name: Validate universal project loop
         run: |
+          python3 -c 'import sys; assert sys.version_info >= (3, 9), "Python 3.9+ is required"'
           python3 -m unittest tests.test_validate_loop_system -v
           python3 scripts/validate_loop_system.py --self-test
           python3 scripts/validate_loop_system.py
