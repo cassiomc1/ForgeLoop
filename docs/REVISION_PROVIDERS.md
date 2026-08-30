@@ -47,6 +47,47 @@ Git metadata is an implementation detail of this provider. The attestation
 core does not import Git helpers and can accept a future snapshot or
 content-addressable provider without changing the statement schema.
 
+## Narrow verification checkers
+
+Differential verification uses the same provider boundary as attestation. A
+project may opt into a narrow checker by declaring a schema-validated,
+deterministic descriptor in `.forgeloop/config.json`:
+
+```json
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "complianceMode": "standard",
+  "verification": {
+    "checkers": [
+      {
+        "checkId": "unit-tests",
+        "scopeMode": "PATH_ARGUMENTS",
+        "argvPrefix": ["node", "--test"],
+        "pathInsertion": "APPEND"
+      }
+    ]
+  }
+}
+```
+
+With this descriptor, `AUTO` may resolve to `CHANGED` or `CLAIMED`. The
+corresponding `run-check` invocation must contain the exact prefix followed by
+the selected canonical paths:
+
+```bash
+forgeloop verify-scope --task task-001 --mode CHANGED
+forgeloop run-check --task task-001 --id unit-tests \
+  --requirement "unit tests" \
+  --scope-ref .forgeloop/task-state/<task-key>/verification-scope.json \
+  -- node --test src/example.js
+```
+
+Without a trusted descriptor, `AUTO` resolves to `FULL`; explicit `CHANGED`
+and `CLAIMED` requests fail closed. A mismatched scoped argv is rejected
+before the checker process starts, and successful binding records the scope
+and capability fingerprints with the execution evidence.
+
 ## Error boundary
 
 Providers must expose stable ForgeLoop errors rather than requiring callers to

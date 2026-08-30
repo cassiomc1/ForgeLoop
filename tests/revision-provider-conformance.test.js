@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
+import { execFile } from "node:child_process";
 import { appendFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { test } from "node:test";
+import { promisify } from "node:util";
 
 import { createGitRevisionProvider } from "../src/core/revision/git.js";
 import {
@@ -10,6 +12,8 @@ import {
   resolveRevisionProvider,
 } from "../src/core/revision/provider.js";
 import { createGitRepository } from "./helpers/git-fixture.js";
+
+const execFileAsync = promisify(execFile);
 
 async function withRepository(fn) {
   const target = await createGitRepository("forgeloop-revision-provider-");
@@ -55,6 +59,20 @@ test("Git revision provider reports worktree modifications, additions, and delet
     await rm(path.join(target, "src", "index.js"));
     const withDeletion = await provider.getChangedEntries({ target, headRevision: "WORKTREE" });
     assert.equal(withDeletion.find((entry) => entry.path === "src/index.js").kind, "DELETED");
+  });
+});
+
+test("Git revision provider preserves both sides of staged renames with spaces and unicode", async () => {
+  await withRepository(async (target) => {
+    const provider = createGitRevisionProvider();
+    const renamedPath = "src/renamed file-ação.js";
+    await execFileAsync("git", ["-C", target, "mv", "src/index.js", renamedPath]);
+
+    const entries = await provider.getChangedEntries({ target, headRevision: "WORKTREE" });
+    const renamed = entries.find((entry) => entry.path === renamedPath);
+    assert.equal(renamed.operation, "RENAMED");
+    assert.equal(renamed.sourcePath, "src/index.js");
+    assert.deepEqual(renamed.bytes, Buffer.from("export const fixture = true;\n"));
   });
 });
 

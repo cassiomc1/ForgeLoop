@@ -35,6 +35,26 @@ policy are all present.
 | Trajectory evaluation | Read-only trace/reflection metrics, unknown usage preservation, canonical comparable-step definition, and scenario-bound efficiency without an arbitrary overall score. |
 | Maintenance quality | Small modules, built-in runtime, deterministic JSON contracts, malformed/version fixtures, package gates, and backward-compatible protocol versions. |
 
+## Capability evidence matrix
+
+The rows below record the protocol capabilities covered by the post-
+implementation correction plan. `VERIFIED` means the structure and local
+tests are present in this checkout; `ATTESTED` is reserved for evidence from
+an external runner, pull request, or publication boundary.
+
+| Capability | Contract/docs | Core implementation | Schema/artifacts | Positive tests | Negative/adversarial tests | CI/E2E | Status |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Workspace Binding | `LOOP_ENGINEERING.md`, workspace binding contract | `src/core/workspace-binding.js` | `schemas/workspace-binding.schema.json`, task binding artifact | `tests/workspace-binding.test.js`, `tests/workspace-binding-cli.test.js` | `tests/workspace-binding-mutation.test.js`, `tests/workspace-binding-run-check.test.js` | Local protocol suite; external runner pending | VERIFIED / NOT_ATTESTED |
+| Canonical Handoff Envelope | `LOOP_ENGINEERING.md`, handoff contract | `src/core/handoff.js` | `schemas/handoff-envelope.schema.json` | `tests/handoff-envelope.test.js`, `tests/handoff-cli.test.js` | `tests/handoff-tamper.test.js`, `tests/handoff-continuity.test.js` | Local protocol suite; external runner pending | VERIFIED / NOT_ATTESTED |
+| Responsibility Contract | Responsibility and ownership rules in `LOOP_ENGINEERING.md` | `src/core/responsibility.js` | `schemas/responsibility.schema.json` | `tests/responsibility-cli.test.js` | `tests/responsibility-completion.test.js` | Local protocol suite; external runner pending | VERIFIED / NOT_ATTESTED |
+| Differential Verification Scope | Correction plan Section 1; `docs/CLI_REFERENCE.md` | `src/core/verification-scope.js`, `src/core/verification-scope-capability.js` | `schemas/verification-scope.schema.json`, scoped checker config | `tests/verification-scope.test.js`, `tests/revision-provider-conformance.test.js` | `tests/verification-scope-freshness.test.js`, `tests/run-check.test.js` | Node matrix and post-merge workflow pending | VERIFIED / NOT_ATTESTED |
+| RevisionProvider | `docs/REVISION_PROVIDERS.md` | `src/core/revision/provider.js`, `src/core/revision/registry.js`, `src/core/revision/git.js` | Normalized revision entries and provider identity artifacts | `tests/revision-provider-conformance.test.js` | Unsafe path, unavailable provider, ambiguity, deletion, and rename cases in the conformance suite | Local Node suite; external runner pending | VERIFIED / NOT_ATTESTED |
+| Code Manifest | `docs/CODE_ATTESTATION.md` | `src/core/code-manifest.js` | `schemas/code-manifest.schema.json`, code manifest artifact | `tests/code-manifest.test.js`, `tests/attestation-e2e.test.js` | Manifest mutation and coverage failures | Local attestation suite; external runner pending | VERIFIED / NOT_ATTESTED |
+| Code Attestation | `docs/CODE_ATTESTATION.md` | `src/core/attestation.js`, `src/core/attestation-verifier.js` | `schemas/code-attestation.schema.json`, statement artifact | `tests/attestation.test.js`, `tests/attestation-e2e.test.js` | `tests/attestation-verifier.test.js`, stale-content cases | Local attestation suite; external runner pending | VERIFIED / NOT_ATTESTED |
+| SigningProvider | `docs/SIGNING_PROVIDERS.md` | `src/core/signing/provider.js`, `src/core/signing/registry.js` | Sigstore bundle and signing provider contracts | `tests/signing-provider.test.js`, `tests/signing-provider-conformance.test.js` | Invalid provider, missing signature, and policy mismatch cases | Local conformance; external signer pending | VERIFIED / NOT_ATTESTED |
+| Revision-range coverage | `docs/CODE_ATTESTATION.md` | `src/core/attestation-coverage.js` | `schemas/attestation-verification-result.schema.json` | `tests/attestation-coverage.test.js`, `tests/attestation-e2e.test.js` | Missing, conflicting, stale, and incomplete coverage cases | Local range checks; external revision range pending | VERIFIED / NOT_ATTESTED |
+| Generic CI attestation | `integrations/generic-ci/verify.sh`, `docs/UNIVERSAL_INTEGRATION.md` | Generic CI verification and evidence boundary | CI verification outputs and attestation inputs | `tests/generic-ci-attestation.test.js` | Invalid or incomplete CI evidence cases | Pull-request workflow evidence required for ATTESTED | VERIFIED / NOT_ATTESTED |
+
 ## Score rules
 
 - `Observed` evidence is a command result, file, hash, or test output available

@@ -1,6 +1,7 @@
 import { PROTOCOL_VERSION } from "./protocol.js";
 import { ARTIFACT_PATHS, readJsonArtifact, writeJsonArtifact } from "./artifacts.js";
 import { E_ATTESTATION_CONFIGURATION_INVALID } from "./error-codes.js";
+import { normalizeVerificationConfiguration } from "./verification-scope-capability.js";
 
 export const CONFIG_SCHEMA_VERSION = 1;
 export const COMPLIANCE_MODES = Object.freeze(["advisory", "standard", "strict"]);
@@ -63,6 +64,14 @@ export function createConfig(input = {}) {
       },
     };
   }
+  let verification;
+  if (input.verification !== undefined) {
+    try {
+      verification = normalizeVerificationConfiguration(input.verification);
+    } catch (error) {
+      throw configurationError(error.message);
+    }
+  }
   return {
     schemaVersion: CONFIG_SCHEMA_VERSION,
     protocolVersion: PROTOCOL_VERSION,
@@ -70,6 +79,7 @@ export function createConfig(input = {}) {
     ...(input.policy !== undefined ? { policy: input.policy } : {}),
     ...(input.requiredGates !== undefined ? { requiredGates: stringArray(input.requiredGates, "requiredGates") } : {}),
     ...(input.requiredEvidence !== undefined ? { requiredEvidence: stringArray(input.requiredEvidence, "requiredEvidence") } : {}),
+    ...(verification ? { verification } : {}),
     ...(attestation ? { attestation } : {}),
   };
 }

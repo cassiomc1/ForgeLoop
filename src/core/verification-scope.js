@@ -1,7 +1,10 @@
 import { canonicalFingerprint, readJsonArtifact, writeJsonArtifact } from "./artifacts.js";
 import { assertSchema, readSchema } from "./schema-validation.js";
 import { getPackageRoot } from "./templates.js";
-import { currentChangedPaths, currentRepositoryFingerprint } from "./repository.js";
+import { currentRepositoryFingerprint } from "./repository.js";
+import { resolveRevisionProvider } from "./revision/provider.js";
+import { REVISION_PROVIDERS } from "./revision/registry.js";
+import { readScopedCheckerCapabilities } from "./verification-scope-capability.js";
 import { readContract } from "./contract.js";
 import { readPersistedRoute } from "./route-artifact.js";
 import { readWorkState } from "./work-state.js";
@@ -61,14 +64,26 @@ function requiresFullVerification(contract) {
     .some((requirement) => /(?:full|entire|whole|global)\s+(?:project|repository|repo|suite|verification)|all\s+(?:tests|checks)/iu.test(requirementText(requirement)));
 }
 
+async function currentChangedPathsFromRevisionProvider(target) {
+  try {
+    const provider = await resolveRevisionProvider({ target, registry: REVISION_PROVIDERS });
+    const entries = await provider.getChangedEntries({ target, headRevision: "WORKTREE" });
+    return [...new Set(entries
+      .flatMap((entry) => [entry.path, entry.sourcePath].filter(Boolean)))].sort((left, right) => left.localeCompare(right));
+  } catch {
+    return null;
+  }
+}
+
 async function currentInputs(target, { taskId, packageRoot }) {
-  const [contract, route, state, claims, repositoryFingerprint, changedPaths] = await Promise.all([
+  const [contract, route, state, claims, repositoryFingerprint, changedPaths, checkerCapabilities] = await Promise.all([
     readContract(target, packageRoot, { taskId }),
     readPersistedRoute(target, packageRoot, { taskId }),
     readWorkState(target, { packageRoot, taskId }),
     resolveTaskClaimState(target, { packageRoot, taskId }),
     currentRepositoryFingerprint(target),
-    currentChangedPaths(target),
+    currentChangedPathsFromRevisionProvider(target),
+    readScopedCheckerCapabilities(target, packageRoot),
   ]);
   return {
     contract,
@@ -78,6 +93,7 @@ async function currentInputs(target, { taskId, packageRoot }) {
     claimsFingerprint: canonicalFingerprint(claims.effectiveWriteClaims ?? []),
     repositoryFingerprint,
     changedPaths: changedPaths === null ? null : sortedPaths(changedPaths),
+    checkerCapabilities,
   };
 }
 
@@ -134,6 +150,8 @@ export async function validateVerificationScopeFreshness(target, {
   if (JSON.stringify(sortedPaths(scope.changedPaths)) !== JSON.stringify(current.changedPaths)) mismatches.push("changedPaths");
   if (scope.claimsFingerprint && scope.claimsFingerprint !== current.claimsFingerprint) mismatches.push("claimsFingerprint");
   if (JSON.stringify(sortedPaths(scope.claimedPaths)) !== JSON.stringify(sortedPaths(current.claims.effectiveWriteClaims ?? []))) mismatches.push("claimedPaths");
+  if (scope.checkerCapabilityFingerprint !== undefined
+    && scope.checkerCapabilityFingerprint !== current.checkerCapabilities.fingerprint) mismatches.push("checkerCapabilityFingerprint");
   if (mismatches.length > 0) {
     throw scopeError("E_VERIFICATION_SCOPE_STALE", `Verification scope is stale; changed bindings: ${mismatches.join(", ")}`, [taskVerificationScopePath(taskId)]);
   }
@@ -151,6 +169,7 @@ export async function resolveVerificationScope(target, {
   if (!inputs.state) throw scopeError("E_VERIFICATION_SCOPE_UNRESOLVED", "Work state is required to resolve verification scope");
   const changedPaths = inputs.changedPaths;
   const claimedPaths = sortedPaths(inputs.claims.effectiveWriteClaims ?? []);
+  const hasTrustedScopedChecker = inputs.checkerCapabilities.valid && inputs.checkerCapabilities.checkers.length > 0;
   const reasons = [];
   let resolvedMode = requestedMode;
   let selectedPaths = [];
@@ -167,6 +186,7 @@ export async function resolveVerificationScope(target, {
     resolvedMode = "FULL";
     reasons.push("Full verification was explicitly requested.");
   } else if (requestedMode === "CHANGED") {
+    if (!hasTrustedScopedChecker) throw scopeError("E_VERIFICATION_SCOPE_UNRESOLVED", "CHANGED scope requires a trusted scoped-checker capability");
     if (changedPaths === null) throw scopeError("E_VERIFICATION_SCOPE_UNRESOLVED", "CHANGED scope cannot be proved because repository changes are unavailable");
     if (!inputs.claims.valid || !changedIsSafe) {
       throw scopeError("E_VERIFICATION_SCOPE_UNRESOLVED", "CHANGED scope cannot be used because every changed path is not inside valid effective task claims");
@@ -175,17 +195,18 @@ export async function resolveVerificationScope(target, {
     selectedPaths = changedPaths;
     reasons.push("Selected exact canonical changed paths inside effective task claims.");
   } else if (requestedMode === "CLAIMED") {
+    if (!hasTrustedScopedChecker) throw scopeError("E_VERIFICATION_SCOPE_UNRESOLVED", "CLAIMED scope requires a trusted scoped-checker capability");
     if (!inputs.claims.valid || claimedPaths.length === 0) {
       throw scopeError("E_VERIFICATION_SCOPE_UNRESOLVED", "CLAIMED scope cannot be proved because effective task claims are unavailable");
     }
     resolvedMode = "CLAIMED";
     selectedPaths = claimedPaths;
     reasons.push("Selected the canonical effective task claims.");
-  } else if (changedIsSafe) {
+  } else if (hasTrustedScopedChecker && changedIsSafe) {
     resolvedMode = "CHANGED";
     selectedPaths = changedPaths;
-    reasons.push("AUTO selected exact changed paths because they are all inside valid effective task claims.");
-  } else if (inputs.claims.valid && claimedPaths.length > 0 && changedPaths !== null) {
+    reasons.push("AUTO selected exact changed paths because a trusted scoped checker exists and all paths are inside valid effective task claims.");
+  } else if (hasTrustedScopedChecker && inputs.claims.valid && claimedPaths.length > 0 && changedPaths !== null) {
     resolvedMode = "CLAIMED";
     selectedPaths = claimedPaths;
     fallback = { from: "CHANGED", to: "CLAIMED", reason: "Changed paths could not be safely narrowed to the effective claims." };
@@ -193,8 +214,16 @@ export async function resolveVerificationScope(target, {
   } else {
     resolvedMode = "FULL";
     selectedPaths = [];
-    fallback = { from: "CHANGED", to: "FULL", reason: "Repository changes or claim ownership could not be proved." };
-    reasons.push("AUTO escalated to full verification because a narrow boundary was not provable.");
+    fallback = {
+      from: "CHANGED",
+      to: "FULL",
+      reason: hasTrustedScopedChecker
+        ? "Repository changes or claim ownership could not be proved."
+        : "No trusted scoped-checker capability was established.",
+    };
+    reasons.push(hasTrustedScopedChecker
+      ? "AUTO escalated to full verification because a narrow boundary was not provable."
+      : "AUTO selected full verification because no trusted scoped-checker capability was established.");
   }
 
   const scope = await validateVerificationScope({
@@ -212,6 +241,9 @@ export async function resolveVerificationScope(target, {
     contractFingerprint: inputs.contract.fingerprint,
     repositoryFingerprint: inputs.repositoryFingerprint,
     claimsFingerprint: inputs.claimsFingerprint,
+    ...(inputs.checkerCapabilities.fingerprint
+      ? { checkerCapabilityFingerprint: inputs.checkerCapabilities.fingerprint }
+      : {}),
     createdAt,
   }, packageRoot);
   return { scope, inputs };

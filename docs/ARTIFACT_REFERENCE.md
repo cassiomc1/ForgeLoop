@@ -234,6 +234,12 @@ Local ForgeLoop configuration settings and policy bindings.
 - `policy` *(string, optional, minLength: 1)*
 - `requiredGates` *(array<string>, optional)*
 - `requiredEvidence` *(array<string>, optional)*
+- `verification` *(object, optional)*
+  - `checkers` *(array<object>, required)*
+    - `checkId` *(string, required, minLength: 1)*
+    - `scopeMode` *(string, required, const: `PATH_ARGUMENTS`)*
+    - `argvPrefix` *(array<string>, required, minItems: 1)*
+    - `pathInsertion` *(string, required, const: `APPEND`)*
 - `attestation` *(object, optional)*
   - `mode` *(string, required, enum: `off`, `optional`, `required`)*
   - `revisionProvider` *(string, required, minLength: 1)*
@@ -924,9 +930,10 @@ and completion boundaries.
 
 <!-- forgeloop-doc: schema=verification-scope artifact=.forgeloop/task-state/<task-key>/verification-scope.json -->
 
-Read-only verification planning artifact. `AUTO` resolves only to a provable
-`CHANGED`, `CLAIMED`, or `FULL` boundary; ForgeLoop does not publish a
-heuristic `IMPACTED` mode.
+Read-only verification planning artifact. `AUTO` resolves to `CHANGED` or
+`CLAIMED` only when a trusted scoped-checker capability is available;
+otherwise it resolves to `FULL`. ForgeLoop does not publish a heuristic
+`IMPACTED` mode.
 
 #### Canonical Fields
 
@@ -946,6 +953,7 @@ heuristic `IMPACTED` mode.
 - `contractFingerprint` *(string, required, pattern: `^[a-f0-9]{64}$`)*
 - `repositoryFingerprint` *(object, required)*
 - `claimsFingerprint` *(string, required, pattern: `^[a-f0-9]{64}$`)*
+- `checkerCapabilityFingerprint` *(string, optional, pattern: `^[a-f0-9]{64}$`)*
 - `createdAt` *(string, required, minLength: 1)*
 
 <!-- END FORGELOOP GENERATED: schema:verification-scope -->

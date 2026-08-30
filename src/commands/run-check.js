@@ -5,6 +5,7 @@ import {
 import { runCommandExecution } from "../core/execution.js";
 import { withTaskMutation } from "../core/task-command.js";
 import { readVerificationScope, validateVerificationScopeFreshness } from "../core/verification-scope.js";
+import { bindVerificationScopeCommand } from "../core/verification-scope-capability.js";
 
 export async function runCheck({
   target,
@@ -28,17 +29,27 @@ export async function runCheck({
   return withTaskMutation(target, { taskId: taskId ?? task, packageRoot }, "run-check", async (ctx) => {
     const effectiveTaskId = ctx?.taskId ?? null;
     let executionDetails = details;
+    let commandArgv = [...argv];
     if (scopeRef) {
       const scope = await readVerificationScope(target, {
         packageRoot,
         taskId: effectiveTaskId,
         scopePath: scopeRef,
       });
-      await validateVerificationScopeFreshness(target, {
+      const freshness = await validateVerificationScopeFreshness(target, {
         packageRoot,
         taskId: effectiveTaskId,
         scope: scope.value,
       });
+      const binding = await bindVerificationScopeCommand({
+        target,
+        packageRoot,
+        checkId: id,
+        argv: commandArgv,
+        scope: scope.value,
+        capabilities: freshness.current.checkerCapabilities,
+      });
+      commandArgv = binding.argv;
       executionDetails = {
         ...(details ?? {}),
         verificationScope: {
@@ -46,6 +57,11 @@ export async function runCheck({
           fingerprint: scope.fingerprint,
           mode: scope.value.resolvedMode,
           selectedPaths: scope.value.selectedPaths,
+          argv: [...commandArgv],
+          ...(binding.checker ? {
+            checkerId: binding.checker.checkId,
+            checkerCapabilityFingerprint: binding.capabilityFingerprint,
+          } : {}),
         },
       };
     }
@@ -67,7 +83,7 @@ export async function runCheck({
       checkId: id,
       requirement,
       verificationCycle,
-      argv,
+      argv: commandArgv,
       details: executionDetails,
       timeoutMs,
       authorityContext,

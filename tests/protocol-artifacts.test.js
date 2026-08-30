@@ -158,4 +158,19 @@ test("gate, source, and compliance configuration artifacts expose versioned shap
     "USER-001": { kind: "user-request", summary: "Implement the protocol" },
   }).sources["USER-001"].kind, "user-request");
   assert.equal(createConfig({ complianceMode: "strict" }).complianceMode, "strict");
+  assert.deepEqual(createConfig({
+    verification: {
+      checkers: [{
+        checkId: "unit-tests",
+        scopeMode: "PATH_ARGUMENTS",
+        argvPrefix: ["node", "--test"],
+        pathInsertion: "APPEND",
+      }],
+    },
+  }).verification.checkers, [{
+    checkId: "unit-tests",
+    scopeMode: "PATH_ARGUMENTS",
+    argvPrefix: ["node", "--test"],
+    pathInsertion: "APPEND",
+  }]);
 });
