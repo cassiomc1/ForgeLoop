@@ -14,7 +14,7 @@ ForgeLoop strictly separates normative protocol definitions from operational doc
 | **Operational & Reference** | `docs/` (`GETTING_STARTED.md`, `CROSS_HARNESS_CONTINUITY.md`, `CLI_REFERENCE.md`, `ARTIFACT_REFERENCE.md`, `TROUBLESHOOTING.md`, `RECIPES.md`) | Tutorials, command reference, handoff workflows, and troubleshooting | Explains how to operate the system. Links to normative sources for formal specifications. |
 | **Domain Engineering** | `ENG/` (`clean-code-eng.md`, `design-code-eng.md`, `test-code-eng.md`, etc.) | Domain-specific implementation and quality standards | Frontmatter must adhere to `validate_loop_system.py` standards. |
 | **Consumer Documentation Quality** | [`ENG/documentation-quality-eng.md`](../ENG/documentation-quality-eng.md) | Quality standards for documentation work in projects using ForgeLoop | Governs client/consumer project documentation tasks via guide routing. |
-| **Visual Architecture** | `docs/diagrams/manifest.json` + `docs/diagrams/forgeloop-engineering-flow.workflow.json` | Governance metadata and canonical typed Archify workflow source | Animated HTML explorer, animated SVG fallback, deterministic receipt, and source-bound human review are committed under `docs/assets/diagrams/` and `docs/diagrams/reviews/`. |
+| **Visual Architecture** | `docs/diagrams/manifest.json` + the three typed workflow sources under `docs/diagrams/` | Governance metadata and canonical typed Archify workflow sources | Animated HTML explorers, animated SVG fallbacks, deterministic receipts, and source-bound human reviews are committed under `docs/assets/diagrams/` and `docs/diagrams/reviews/`. |
 | **Documentation Index** | `DOCS_INDEX.md` | Single repository index and ownership map | Updated whenever documentation structure changes. |
 
 ---
@@ -84,7 +84,7 @@ cross-platform CI (.github/workflows/docs-quality.yml)
 | **CLI Command Options** | `CLI_COMMAND_DEFINITIONS` (`src/core/cli-command-definitions.js`) | `docs/CLI_REFERENCE.md` | `<!-- BEGIN FORGELOOP GENERATED: cli:<command>:options -->` |
 | **Work-State Transitions** | `WORK_PHASES` / `WORK_TRANSITIONS` (`src/core/protocol.js`) | `ORCHESTRATOR_INTEGRATION.md` | `<!-- BEGIN FORGELOOP GENERATED: work-transitions -->` |
 | **Public Error Codes** | `PUBLIC_ERROR_CODES` (`src/core/error-codes.js`) | `docs/TROUBLESHOOTING.md` | `<!-- BEGIN FORGELOOP GENERATED: public-error-codes -->` |
-| **Architecture Flow** | `docs/diagrams/manifest.json` + `docs/diagrams/forgeloop-engineering-flow.workflow.json` | `docs/assets/diagrams/forgeloop-engineering-flow.{html,svg,receipt.json}` + `docs/diagrams/reviews/forgeloop-engineering-flow.review.json` | Verified via pinned Archify renderer, trace-animation markers, source/SVG fingerprints, artifact hashes, persistent review, and composition checks |
+| **Architecture and trust diagrams** | `docs/diagrams/manifest.json` + typed workflow sources | Generated HTML/SVG/receipt/review files for Engineering Flow, Verification Trust Flow, and Code Attestation Chain | Verified via the pinned Archify renderer, trace-animation and reduced-motion markers, source/SVG fingerprints, artifact hashes, persistent review, and composition checks |
 
 ### Maintenance Workflow
 
@@ -122,7 +122,7 @@ conformance checks detect omissions.
 | **Discovery resume rules** | `DISCOVERY_SURFACES` & `nativeShim` | `scripts/validate_documentation_conformance.mjs` |
 | **Task-layout path freshness** | `TASK_LAYOUT_DOCUMENTS` & `task-paths.js` | `scripts/validate_documentation_conformance.mjs` |
 | **Package-shipped docs** | `package.json` (`files`) | `tests/package.test.js` |
-| **Architecture diagram** | `docs/diagrams/forgeloop-engineering-flow.workflow.json` | `scripts/check-documentation-diagrams.mjs` and `scripts/documentation-diagram-inventory.mjs` |
+| **Architecture and trust diagrams** | `docs/diagrams/manifest.json` plus each typed workflow source | `scripts/check-documentation-diagrams.mjs` and `scripts/documentation-diagram-inventory.mjs` |
 
 ---
 
@@ -179,18 +179,19 @@ migration, or security-sensitive require `npm run docs:check` before merge.
 
 ## 7. Archify Diagrams and Animated SVG Generation
 
-1. **Typed source is canonical**: The architecture flow is authored in Archify workflow IR at `docs/diagrams/forgeloop-engineering-flow.workflow.json`. Never modify generated HTML or SVG files directly.
+1. **Typed source is canonical**: The Engineering Flow, Verification Trust Flow, and Code Attestation Chain are authored in Archify workflow IR under `docs/diagrams/`; the high-level source is `docs/diagrams/forgeloop-engineering-flow.workflow.json`. Never modify generated HTML, SVG, or receipt files directly.
 2. **Pinned local renderer**: Generation uses only the vendored Archify v2.15.0 source at the reviewed commit recorded in `docs/diagrams/manifest.json` and `vendor/archify/v2.15.0/PIN.json`.
-3. **Animated committed outputs**: The source uses `meta.animation: "trace"`. The interactive HTML is the primary animated explorer, and the self-contained SVG fallback carries trace-capable edge/node animation while remaining usable in repository previews. The deterministic receipt is committed under `docs/assets/diagrams/`.
+3. **Animated committed outputs**: Every active source uses `meta.animation: "trace"`. Each interactive HTML is the primary animated explorer, and each self-contained SVG fallback carries trace-capable edge/node animation while remaining usable in repository previews. Deterministic receipts are committed under `docs/assets/diagrams/`.
 4. **GitHub-safe SVG**: The SVG must not embed `<script>` or `<foreignObject>`, must expose accessible title/description metadata, and must remain visible through standard Markdown image syntax.
 5. **Fingerprint and review verification**: The generated SVG embeds a `data-forgeloop-source-sha256` attribute, the outputs expose trace markers, and the receipt binds the source, HTML, and SVG hashes. The human-owned review at `docs/diagrams/reviews/` binds the current source and SVG hashes and is never generated or overwritten. Run `npm run docs:diagrams:check` before review.
 6. **Scoped wrapper**: The ForgeLoop Archify wrapper is intentionally documentation-scoped. It reads canonical inputs only from `docs/diagrams/` and permits deliver outputs only under `docs/assets/diagrams/`.
 
 ForgeLoop governs five documentation-diagram categories: workflow,
-architecture, sequence, dataflow, and lifecycle. The current repository has
-one canonical workflow diagram. Governance support does not imply renderer
-support: a type requires an explicit renderer mapping before it can be added as
-an active diagram.
+architecture, sequence, dataflow, and lifecycle. The active repository set has
+three canonical workflow diagrams: the Engineering Flow, Verification Trust
+Flow, and Code Attestation Chain. The pinned wrapper currently maps only
+`workflow`; governance support does not imply renderer support, so a new type
+requires an explicit mapping and tests before activation.
 
 ---
 
@@ -215,8 +216,9 @@ The README hero is intentionally GitHub-repository-only:
   `tests/package.test.js`.
 
 Never edit or delete a generated diagram output independently of its source;
-regenerate `docs/assets/diagrams/` from the typed workflow and keep the receipt
-in sync.
+regenerate all declared outputs from the typed workflow sources and keep each
+receipt and human-owned review binding in sync. Every diagram must also have a
+concise text fallback in the canonical document named by its manifest.
 
 ---
 

@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "diagramId": "forgeloop-verification-trust-flow",
+  "diagramType": "workflow",
+  "source": "docs/diagrams/forgeloop-verification-trust-flow.workflow.json",
+  "outputs": {
+    "html": "docs/assets/diagrams/forgeloop-verification-trust-flow.html",
+    "svg": "docs/assets/diagrams/forgeloop-verification-trust-flow.svg"
+  },
+  "renderer": {
+    "name": "archify",
+    "version": "2.15.0",
+    "commit": "e1ac748f19cf805e44bf74fb93c796662152e273",
+    "source": "https://github.com/tt-a1i/archify/tree/v2.15.0",
+    "license": "MIT"
+  },
+  "input": {
+    "sha256": "6fe11b0530cc6640f7b0f07d0f2d7e5a1f961745491f39016b340bc354af0e79",
+    "bytes": 6917
+  },
+  "artifacts": {
+    "html": {
+      "sha256": "9dee511d07c01b6570dbfe0e6127517813f7843056e7faa93af00b133b6e44ba",
+      "bytes": 646396
+    },
+    "svg": {
+      "sha256": "e225c69f2ec90f403c394d88b5d41af75363c7fa336181ee85664f5d495f4555",
+      "bytes": 209918
+    }
+  },
+  "staticSvg": {
+    "theme": "dark-first",
+    "accessible": true,
+    "externalResources": false
+  },
+  "reproducible": true
+}

@@ -24,6 +24,11 @@ This guide provides symptom-first recovery procedures for common ForgeLoop proto
 - [Policy weakening detected (`E_POLICY_WEAKENING`)](#symptom-policy-weakening-detected)
 - [Baseline re-record blocked during active task (`E_BASELINE_RECORD_DURING_ACTIVE_TASK`)](#symptom-baseline-re-record-blocked-during-active-task)
 - [Mutation checker execution error (`E_CHECK_MUTATION_EXECUTION_ERROR`)](#symptom-mutation-checker-execution-error)
+- [Workspace binding mismatch or invalid identity](#symptom-workspace-binding-mismatch-or-invalid-identity)
+- [Handoff is invalid or tampered](#symptom-handoff-is-invalid-or-tampered)
+- [Responsibility contract rejects a pass](#symptom-responsibility-contract-rejects-a-pass)
+- [Verification scope is stale or unresolved](#symptom-verification-scope-is-stale-or-unresolved)
+- [Attestation or revision coverage is invalid](#symptom-attestation-or-revision-coverage-is-invalid)
 - [Another harness cannot resume the task](#symptom-another-harness-cannot-resume)
 - [Task claim conflict or recovered task](#symptom-task-creation-blocked-by-a-write-claim-conflict-e_task_scope_conflict)
 - [Stable Error & Reason Code Reference](#stable-error-and-reason-codes)
@@ -723,6 +728,140 @@ A policy rule checker threw an unhandled exception while evaluating its syntheti
 2. Repair the unhandled exception path in the checker adapter.
 
 3. Re-run `forgeloop rule-verify --rule <rule-id> --json` until the mutation is proven (`PROVEN`).
+
+---
+
+### Symptom: Workspace Binding Mismatch or Invalid Identity
+
+#### Error Codes: `E_WORKSPACE_BINDING_MISMATCH`, `E_WORKSPACE_IDENTITY_UNAVAILABLE`, `E_WORKSPACE_BINDING_INVALID`
+
+#### What it means
+
+The task's optional workspace binding does not match the current repository or
+worktree, or the identity cannot be derived or parsed. A branch name or HEAD
+alone is not a complete workspace identity.
+
+#### Safe recovery
+
+Inspect the derived result and current task before changing anything:
+
+```bash
+forgeloop workspace-status --task <id> --json
+forgeloop status --task <id> --json
+forgeloop inspect --task <id> --json
+```
+
+Return to the bound checkout or create a deliberate new task/worktree. Do not
+edit `workspace-binding.json` manually or bypass the boundary. Rebinding is an
+explicit operation only when the task's scope permits it.
+
+---
+
+### Symptom: Handoff Is Invalid or Tampered
+
+#### Error Codes: `E_HANDOFF_INVALID`, `E_HANDOFF_STATE_UNAVAILABLE`, `E_HANDOFF_TAMPERED`, `E_HANDOFF_NOT_FOUND`
+
+#### What it means
+
+The immutable handoff envelope is malformed, its state is unavailable, its
+digest no longer matches, or the requested snapshot does not exist. A handoff
+note is not delegation, authority, independent review evidence, or completion
+evidence.
+
+#### Safe recovery
+
+```bash
+forgeloop handoff-list --task <id> --json
+forgeloop handoff-show --task <id> --id <handoffId> --json
+forgeloop continuity --task <id> --json
+forgeloop reconcile-continuity --task <id> --json
+```
+
+Use the last valid handoff or continuity only to focus inspection, then trust
+the canonical task state and checkout. Never repair a handoff by editing or
+deleting its JSON file.
+
+---
+
+### Symptom: Responsibility Contract Rejects a Pass
+
+#### Error Codes: `E_RESPONSIBILITY_INVALID`, `E_RESPONSIBILITY_SCOPE_VIOLATION`, `E_RESPONSIBILITY_FROZEN_INPUT_DRIFT`, `E_RESPONSIBILITY_REQUIRED_CHECK_MISSING`
+
+#### What it means
+
+An optional responsibility contract is malformed, a changed path is outside
+the allowed boundary, a frozen contract/route/claims input drifted, or a
+required check is missing. Its label is descriptive and does not represent a
+coder, reviewer, or cleaner role.
+
+#### Safe recovery
+
+```bash
+forgeloop responsibility-status --task <id> --json
+forgeloop inspect --task <id> --json
+forgeloop next --task <id> --json
+```
+
+Restore the declared scope or create a new explicit responsibility decision
+through `responsibility-set`. Do not widen the JSON artifact manually and do
+not relabel the pass to bypass enforcement.
+
+---
+
+### Symptom: Verification Scope Is Stale or Unresolved
+
+#### Error Codes: `E_VERIFICATION_SCOPE_INVALID`, `E_VERIFICATION_SCOPE_STALE`, `E_VERIFICATION_SCOPE_UNRESOLVED`
+
+#### What it means
+
+The scope is malformed or no longer matches the task's cycle, claims, contract,
+repository fingerprint, changed paths, or checker capability. `CHANGED` and
+`CLAIMED` require a trusted scoped checker; `AUTO` uses those modes only when
+they can be proved and otherwise resolves to `FULL`. There is no heuristic
+`IMPACTED` mode.
+
+#### Safe recovery
+
+```bash
+forgeloop verify-scope --task <id> --mode AUTO --json
+forgeloop run-check --task <id> --id <checkId> \
+  --requirement "<requirement>" \
+  --scope-ref .forgeloop/task-state/<taskKey>/verification-scope.json \
+  -- <exact-argv-prefix-and-paths>
+```
+
+If no trusted scoped checker is configured, run a full check or record the
+scope as unresolved. An exact argv or selected-path mismatch is rejected before
+launch; do not retry with guessed paths or edit the scope artifact.
+
+---
+
+### Symptom: Attestation or Revision Coverage Is Invalid
+
+#### Error Codes: `E_ATTESTATION_MANIFEST_INVALID`, `E_ATTESTATION_MANIFEST_STALE`, `E_ATTESTATION_STATEMENT_INVALID`, `E_ATTESTATION_UNSIGNED`, `E_ATTESTATION_SIGNATURE_INVALID`, `E_ATTESTATION_SIGNER_UNAVAILABLE`, `E_ATTESTATION_IDENTITY_UNTRUSTED`, `E_ATTESTATION_ISSUER_UNTRUSTED`, `E_ATTESTATION_COVERAGE_GAP`, `E_ATTESTATION_COVERAGE_CONFLICT`, `E_REVISION_PROVIDER_UNAVAILABLE`, `E_REVISION_CONTENT_UNAVAILABLE`
+
+#### What it means
+
+The exact source-content manifest, completion/ledger binding, in-toto
+statement, signer policy, revision provider, or range coverage is missing,
+stale, invalid, unavailable, or conflicting. `PROCESSED` is not `VERIFIED`,
+and `VERIFIED` is not `ATTESTED` without a valid external signature.
+
+#### Safe recovery
+
+Use read-only inspection first:
+
+```bash
+forgeloop attestation-status --task <id> --json
+forgeloop attestation-verify --task <id> --ref HEAD --json
+forgeloop attestation-verify-range --revision-provider git \
+  --base origin/main --head HEAD --require-complete-coverage --json
+```
+
+Correct the named source or provider boundary through its canonical lifecycle.
+Uncovered paths and conflicting task digests fail closed; an unavailable signer
+does not become a valid signature. Never edit a manifest, statement, receipt,
+ledger, or signature bundle manually, and never persist credentials in them.
 
 ---
 

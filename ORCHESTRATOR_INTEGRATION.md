@@ -102,6 +102,29 @@ invariants and record why a skipped phase was not applicable.
 - `forgeloop progress` deterministically evaluates task progress across cycles as `ADVANCING`, `WATCH`, or `STALLED`.
 - `forgeloop record-decision-criterion` attaches contract-bound guidance to unresolved decisions without breaking the schema.
 
+## Optional serializable boundaries
+
+An external orchestrator may expose the following optional protocol artifacts
+without changing the lifecycle or adding a graph runtime:
+
+| Boundary | Serializable view | Required host behavior |
+| --- | --- | --- |
+| Workspace identity | `workspace-binding.json` | Preserve the current checkout and surface a mismatch before mutation or verification launch |
+| Handoff | Immutable handoff envelope | Carry protocol-derived state and any descriptive note without treating it as delegation, authority, or evidence |
+| Responsibility | Allowed/read-only paths, required checks, and frozen-input fingerprints | Enforce the declared boundary and report scope drift |
+| Verification scope | `AUTO`, `CHANGED`, `CLAIMED`, or `FULL` plus scope fingerprint | Consume the canonical result and exact scoped argv; do not infer an `IMPACTED` mode |
+| Attestation | Code manifest, in-toto Statement v1, optional signature, and range result | Preserve `PROCESSED`, `VERIFIED`, and `ATTESTED` distinctions and keep verification read-only |
+
+The host owns scheduling, workers, model calls, checkout selection, transport,
+and platform presentation. ForgeLoop owns schema validation, fingerprints,
+claims, lifecycle transitions, evidence binding, completion, and fail-closed
+trust decisions. Workspace binding, responsibility, narrow verification,
+signing, and MCP are not prerequisites for basic protocol compatibility.
+
+Focused visual fallbacks are maintained in the [Verification Trust
+Flow](./docs/REVISION_PROVIDERS.md#differential-verification-scope) and [Code
+Attestation Chain](./docs/CODE_ATTESTATION.md#completion-flow).
+
 ## Serializable interfaces
 
 The following JSON Schemas define the boundaries a host may implement:

@@ -36,6 +36,17 @@
 | Historical claims | The write claims retained in `task.json` as task history, including while recovery releases their active ownership. |
 | Effective claims | The claims currently enforced for ownership conflicts: descriptor claims for an active task, or an empty set after validator-backed completion or active recovery. |
 | Claim reacquisition | The serialized `task-resume` operation that rechecks conflicts and checkout cleanliness before removing recovery state and restoring mutation authority. |
+| Workspace binding | An optional protocol-derived repository/worktree identity boundary that blocks mutation or `run-check` when the current checkout differs. |
+| Handoff envelope | An immutable protocol-derived task snapshot; it is not delegation, authority, independent review evidence, or completion evidence. |
+| Responsibility contract | An optional mechanical boundary for allowed/read-only paths, required checks, and frozen inputs; labels are descriptive rather than roles. |
+| Verification scope | The pre-completion set of paths a specific checker may execute, resolved as `AUTO`, `CHANGED`, `CLAIMED`, or `FULL`. |
+| Scoped checker | A trusted checker configuration whose exact argv prefix and selected paths are bound before launch. |
+| RevisionProvider | The provider-neutral boundary for opaque revisions, exact content, normalized changes, and revision-range coverage. |
+| SigningProvider | An optional external authority that can raise a valid attestation from `VERIFIED` to `ATTESTED` under identity and issuer policy. |
+| Code manifest | A deterministic source-content snapshot with per-entry SHA-256 digests and an aggregate content digest. |
+| Attestation statement | A deterministic in-toto Statement v1 binding the code manifest to valid ForgeLoop completion evidence. |
+| Revision-range coverage | A post-completion result asking whether changed paths between two revisions are covered by valid task attestations. |
+| Generic CI | The provider-neutral range-verification boundary that thin platform adapters may invoke without adding platform trust rules to the core. |
 
 | Execution continuity | Bounded current-task implementation context used to resume the same ForgeLoop task across sessions or harnesses. |
 | Continuity artifact | `.forgeloop/continuity.json`; non-evidence operational context bound to canonical work state. |

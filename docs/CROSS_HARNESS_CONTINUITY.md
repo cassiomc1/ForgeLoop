@@ -46,6 +46,20 @@ Key continuity invariants:
 - **Task identity survives harness changes**: Work state remains the single source of lifecycle truth.
 - **Stale continuity cannot authorize transitions**: Forward lifecycle progression requires valid work-state checkpoints.
 
+These three surfaces must remain distinct:
+
+| Concept | Mutable? | Evidence? | Purpose |
+| --- | --- | --- | --- |
+| `continuity.json` | Yes | No | Mutable operational resume notes (`NON_EVIDENCE_HANDOFF`) |
+| Handoff envelope | No | No | Immutable protocol-derived state snapshot; not authority or independent review evidence |
+| Execution/completion evidence | Controlled by protocol | Yes when valid | Exact process provenance, observed checks, receipt, and validated ledger proof |
+
+The handoff envelope may carry an actor note or recipient hint, but it never
+delegates work, establishes identity, grants authority, or proves completion.
+The [Verification Trust Flow](./REVISION_PROVIDERS.md#differential-verification-scope)
+and [Code Attestation Chain](./CODE_ATTESTATION.md#completion-flow) diagrams
+show the evidence boundaries that continuity and handoff cannot replace.
+
 ---
 
 ## 2. Source-of-Truth Hierarchy
@@ -89,10 +103,16 @@ HARNESS B (Starting / Taking Over)
    ├── 4. Reconciles continuity: `forgeloop reconcile-continuity --task <id> --json`
    ├── 5. Inspects modified files: `forgeloop inspect --task <id> --json`
    └── 6. Asks for next action: `forgeloop next --task <id> --json`
-          │
-          ▼
+     │
+     ▼
      Continues execution without duplicating planning
 ```
+
+Harness B must trust the canonical task state and checkout over prose: inspect
+the task, read and reconcile continuity, inspect the latest handoff when one
+exists, compare the current checkout, and only then follow `forgeloop next`.
+Handoff notes can focus inspection, but only valid execution evidence,
+completion receipts, and the append-only ledger can satisfy verification.
 
 ---
 

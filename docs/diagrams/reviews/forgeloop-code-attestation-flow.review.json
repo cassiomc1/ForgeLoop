@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "diagramId": "forgeloop-engineering-flow",
+  "diagramId": "forgeloop-code-attestation-flow",
   "status": "approved",
   "binding": {
-    "sourceSha256": "a83128a8639db5db497ac552cfdbc318839e6451c718581fbfcd064e3e869981",
-    "svgSha256": "37244a07cc862e3fe4a7188f5236a509a4adf565d5b785ba3c0932057ac6f3a8"
+    "sourceSha256": "669966fba9e69df0525a3581baa4e90075923dbe3069f81f706761a40abf9073",
+    "svgSha256": "0af63dd51683d07981fc681042c437377a78ae8a7e6a7175c18a1def02e6280a"
   },
   "checks": {
     "darkThemeLegible": true,

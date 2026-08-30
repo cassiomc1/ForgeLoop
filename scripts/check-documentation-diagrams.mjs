@@ -42,6 +42,12 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
+function checkReducedMotion(content, diagramId, artifactKind) {
+  const reducedMotion = content.match(/@media\s*\(prefers-reduced-motion:\s*reduce\)([\s\S]{0,1200})/);
+  assert(reducedMotion, `${diagramId}: ${artifactKind} reduced-motion media rule is missing`);
+  assert(/animation:\s*none/.test(reducedMotion[1]), `${diagramId}: ${artifactKind} reduced-motion rule must disable animation`);
+}
+
 function checkHtml(html, diagramId) {
   assert((html.match(/<svg\b/g) ?? []).length === 1, `${diagramId}: HTML must contain one inline SVG`);
   assert(/<html\b[^>]*\bdata-theme="dark"/.test(html), `${diagramId}: HTML must default to the dark theme`);
@@ -52,6 +58,7 @@ function checkHtml(html, diagramId) {
   assert(/<svg\b[^>]*\brole="img"/.test(html), `${diagramId}: HTML SVG must expose role=img`);
   assert(/<title\b[^>]*>[^<]+<\/title>/.test(html), `${diagramId}: HTML SVG title is missing`);
   assert(/<desc\b[^>]*>[^<]+<\/desc>/.test(html), `${diagramId}: HTML SVG description is missing`);
+  checkReducedMotion(html, diagramId, "HTML");
   assert(!/<(?:link|script|img|iframe)\b[^>]*(?:href|src)=["']https?:/i.test(html), `${diagramId}: HTML contains an external loaded resource`);
 }
 
@@ -68,6 +75,7 @@ function checkSvg(svg, sourceSha256, diagramId) {
   assert(new RegExp(`data-forgeloop-source-sha256="${sourceSha256}"`).test(svg), `${diagramId}: static SVG source fingerprint is stale`);
   assert(/<style\b[\s\S]*--bg:/.test(svg), `${diagramId}: static SVG must embed its theme CSS`);
   assert(/class="c-bg-rect"/.test(svg), `${diagramId}: static SVG background is missing`);
+  checkReducedMotion(svg, diagramId, "SVG");
   assert(!/<script\b/i.test(svg), `${diagramId}: static SVG must not contain scripts`);
   assert(!/<foreignObject\b/i.test(svg), `${diagramId}: static SVG must not contain foreignObject`);
   assert(!/\sdata-(?:detail-anchor|legend(?:-bridge)?)(?=\s|\/?>)/.test(svg), `${diagramId}: static SVG contains unquoted boolean attributes`);

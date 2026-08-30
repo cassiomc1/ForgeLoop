@@ -46,3 +46,14 @@ import {
 All consumers share one protocol authority: `.forgeloop/` state written only
 by canonical ForgeLoop commands, so cross-harness continuity and recovery work
 identically regardless of transport.
+
+Optional integrations use the same ownership boundary. ForgeLoop derives and
+validates workspace bindings, immutable handoffs, responsibility constraints,
+verification scopes, execution evidence, code manifests, attestation
+statements, and provider results. The embedding host owns checkout selection,
+model/tool execution, scheduling, transport, external signer credentials, and
+platform presentation. A handoff or continuity note never becomes evidence;
+`CHANGED`/`CLAIMED` verification scope never becomes revision-range coverage;
+and only a validated external signature can raise `VERIFIED` to `ATTESTED`.
+These extensions are optional and do not change the zero-configuration basic
+loop.

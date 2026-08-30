@@ -83,6 +83,14 @@ content.
 Raw recovery artifacts, transaction journals, lock files, and unbounded event
 ledgers are intentionally not exposed.
 
+Optional workspace binding, handoff, responsibility, verification-scope,
+RevisionProvider, SigningProvider, and attestation operations remain governed
+by the same canonical command executors when exposed by a compatible host.
+MCP transport metadata cannot establish workspace identity, narrow a checker,
+mint signer authority, or turn continuity into evidence. Read-only attestation
+and range verification preserve the core `PROCESSED`, `VERIFIED`, and
+`ATTESTED` distinctions and never write verification events.
+
 ## Optional stateless HTTP transport
 
 `forgeloop-mcp-http` serves the same deterministic catalog over the **strict

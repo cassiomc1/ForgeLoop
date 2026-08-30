@@ -47,7 +47,22 @@ Git metadata is an implementation detail of this provider. The attestation
 core does not import Git helpers and can accept a future snapshot or
 content-addressable provider without changing the statement schema.
 
-## Narrow verification checkers
+## Differential Verification Scope
+
+The provider boundary has two consumers with different semantics:
+
+1. Differential Verification uses current changed entries or effective task
+   claims to decide which paths one checker may execute before completion.
+2. Attestation and revision-range coverage use exact content and valid task
+   attestations to decide whether changed paths across a revision range are
+   covered after completion.
+
+A shared `RevisionProvider` does not make these questions interchangeable.
+Verification scope is an execution-safety boundary; attestation coverage is a
+provenance-coverage result. `CHANGED` or `CLAIMED` never means complete range
+coverage.
+
+### Trusted scoped checker
 
 Differential verification uses the same provider boundary as attestation. A
 project may opt into a narrow checker by declaring a schema-validated,
@@ -87,6 +102,15 @@ Without a trusted descriptor, `AUTO` resolves to `FULL`; explicit `CHANGED`
 and `CLAIMED` requests fail closed. A mismatched scoped argv is rejected
 before the checker process starts, and successful binding records the scope
 and capability fingerprints with the execution evidence.
+
+The [Verification Trust Flow](./assets/diagrams/forgeloop-verification-trust-flow.html)
+explorer and its [animated SVG fallback](./assets/diagrams/forgeloop-verification-trust-flow.svg)
+show the claims, provider changes, checker capability, fingerprints, exact
+argv, and observed evidence boundary. If no trusted checker exists, `AUTO`
+falls back to `FULL`; an explicit `CHANGED` or `CLAIMED` request returns
+`E_VERIFICATION_SCOPE_UNRESOLVED` rather than guessing.
+
+The canonical source is `docs/diagrams/forgeloop-verification-trust-flow.workflow.json`.
 
 ## Error boundary
 

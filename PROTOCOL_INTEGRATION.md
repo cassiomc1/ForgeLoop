@@ -436,6 +436,23 @@ and provider-neutral code attestation. Integrations pass opaque revision IDs
 and optional signing policy to the canonical runtime; they do not reimplement
 content coverage, evidence binding, or signer trust.
 
+The ownership boundary for these extensions is explicit:
+
+| Capability | ForgeLoop owns | Host owns |
+| --- | --- | --- |
+| Workspace binding | Derives repository/worktree identity, persists the binding, and rejects mismatch before mutation or `run-check` launch | Chooses whether a task needs binding and provides the current checkout |
+| Handoff envelope | Creates immutable protocol-derived snapshots and verifies their digest and ledger relationships | Supplies any descriptive note or recipient hint; it cannot turn the envelope into delegation or evidence |
+| Responsibility contract | Validates allowed/read-only paths, required checks, and frozen-input fingerprints | Chooses the optional boundary and performs the work inside it |
+| Verification scope | Resolves `AUTO`, `CHANGED`, `CLAIMED`, or `FULL`, binds scoped-checker argv, and fails closed on stale or mismatched inputs | Declares checker configuration and consumes the returned scope without guessing a narrower one |
+| RevisionProvider | Reads opaque revisions, exact bytes, normalized changes, and range coverage through the provider contract | Supplies or selects the provider and revision identifiers |
+| SigningProvider | Validates provider results and preserves `VERIFIED` versus `ATTESTED` semantics | Owns the external signer, identity/issuer policy, credentials, and availability |
+| Generic CI / MCP | Keeps canonical command, evidence, and trust semantics | Owns the platform job, transport, scheduling, and presentation layer |
+
+These capabilities are additive. Basic ForgeLoop compatibility still consists
+of the canonical task, contract, route, preflight, lifecycle, evidence, and
+completion boundaries; a host must not make workspace binding, narrow
+checking, signing, Generic CI, or MCP prerequisites for the default loop.
+
 <a id="FL-ATTEST-002"></a> **FL-ATTEST-002 — An integration MUST consume the canonical**
 attestation result and preserve its distinction between `VALID`, invalid,
 uncovered, stale, and provider/environment failure. An adapter cannot upgrade

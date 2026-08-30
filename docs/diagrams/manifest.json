@@ -37,6 +37,48 @@
         "docs/DOCUMENTATION_GUIDE.md",
         "docs/diagrams/README.md"
       ]
+    },
+    {
+      "id": "forgeloop-verification-trust-flow",
+      "type": "workflow",
+      "defaultTheme": "dark",
+      "canonicalFor": [
+        "differential-verification-trust-boundary"
+      ],
+      "source": "docs/diagrams/forgeloop-verification-trust-flow.workflow.json",
+      "html": "docs/assets/diagrams/forgeloop-verification-trust-flow.html",
+      "svg": "docs/assets/diagrams/forgeloop-verification-trust-flow.svg",
+      "receipt": "docs/assets/diagrams/forgeloop-verification-trust-flow.receipt.json",
+      "review": "docs/diagrams/reviews/forgeloop-verification-trust-flow.review.json",
+      "fallback": "docs/REVISION_PROVIDERS.md#differential-verification-scope",
+      "referencedBy": [
+        "README.md",
+        "DOCS_INDEX.md",
+        "LOOP_SYSTEM_DESIGN.md",
+        "docs/REVISION_PROVIDERS.md",
+        "docs/diagrams/README.md"
+      ]
+    },
+    {
+      "id": "forgeloop-code-attestation-flow",
+      "type": "workflow",
+      "defaultTheme": "dark",
+      "canonicalFor": [
+        "code-attestation-chain"
+      ],
+      "source": "docs/diagrams/forgeloop-code-attestation-flow.workflow.json",
+      "html": "docs/assets/diagrams/forgeloop-code-attestation-flow.html",
+      "svg": "docs/assets/diagrams/forgeloop-code-attestation-flow.svg",
+      "receipt": "docs/assets/diagrams/forgeloop-code-attestation-flow.receipt.json",
+      "review": "docs/diagrams/reviews/forgeloop-code-attestation-flow.review.json",
+      "fallback": "docs/CODE_ATTESTATION.md#completion-flow",
+      "referencedBy": [
+        "README.md",
+        "DOCS_INDEX.md",
+        "QUALITY_SCORECARD.md",
+        "docs/CODE_ATTESTATION.md",
+        "docs/diagrams/README.md"
+      ]
     }
   ]
 }

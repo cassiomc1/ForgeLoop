@@ -18,6 +18,13 @@ The `none` provider is always available and yields `VERIFIED` at most. The
 optional `sigstore` provider can produce `ATTESTED` after successful Cosign
 verification under an exact signer policy.
 
+Signing is optional and never part of the basic completion path. When an
+external signer is unavailable, times out, exits nonzero, or returns output
+over the configured bound, the result stays `VERIFIED` only when the unsigned
+attestation itself validates; a policy that requires a signature returns an
+unavailable or invalid result and never upgrades trust. A manifest, receipt,
+npm provenance signal, or platform status is not a signature.
+
 ## Sigstore boundary
 
 ForgeLoop delegates signing and verification to a locally available
@@ -29,6 +36,12 @@ Cosign-compatible executable. The provider:
 - accepts an optional trusted-root path;
 - keeps identity and issuer policy outside the signed predicate;
 - returns stable unavailable, invalid, identity, and issuer error codes.
+
+The provider must use bounded stdout/stderr capture and an explicit timeout.
+Those limits protect the adapter boundary; they do not make the external
+signer trustworthy by themselves. Credentials remain in the host environment
+or signer configuration and never enter a ForgeLoop artifact, statement, or
+receipt.
 
 Example external signing command:
 

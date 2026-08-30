@@ -15,17 +15,17 @@
     "license": "MIT"
   },
   "input": {
-    "sha256": "e4778296d1b9b2129b1ff6c956acaa1e7faba3dbfe68e0e5a6fb47dae3499308",
-    "bytes": 7329
+    "sha256": "a83128a8639db5db497ac552cfdbc318839e6451c718581fbfcd064e3e869981",
+    "bytes": 7610
   },
   "artifacts": {
     "html": {
-      "sha256": "d121216816942648e0de296093cf104b05b0b94efd0a4a8946add6acbd771504",
-      "bytes": 647371
+      "sha256": "55d71098d15a46778454d53690110195e0e923d37f34cb6c57fcc5e6601ab7ec",
+      "bytes": 647796
     },
     "svg": {
-      "sha256": "f549d1f998c2c84793783b9b6ce7aabe05d9a91edebecb764403c67dfbb4cc52",
-      "bytes": 211037
+      "sha256": "37244a07cc862e3fe4a7188f5236a509a4adf565d5b785ba3c0932057ac6f3a8",
+      "bytes": 211160
     }
   },
   "staticSvg": {
