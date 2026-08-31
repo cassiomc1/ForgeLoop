@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "benchmarkVersion": "1",
+  "benchmarkVersion": "2",
   "scenarioId": "authentication-change",
   "description": "Authentication behavior change crossing a trust boundary.",
   "input": {

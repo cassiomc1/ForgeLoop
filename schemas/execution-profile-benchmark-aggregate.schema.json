@@ -6,10 +6,11 @@
   "required": ["schemaVersion", "benchmarkVersion", "runSetId", "scenarioId", "expectedProfile", "modeAggregates", "comparisons", "lightObjectives", "sourcePolicy", "claimsAllowed", "generatedFromRunCount"],
   "properties": {
     "schemaVersion": { "const": 1 },
-    "benchmarkVersion": { "const": "1" },
+    "benchmarkVersion": { "enum": ["1", "2"] },
     "runSetId": { "type": "string", "minLength": 1 },
     "scenarioId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,127}$" },
     "expectedProfile": { "enum": ["light", "balanced", "full"] },
+    "outlierAnalysis": { "$ref": "#/$defs/outlierAnalysis" },
     "modeAggregates": {
       "type": "object",
       "required": ["direct", "forgeloopBalanced", "forgeloopAdaptive"],
@@ -38,6 +39,55 @@
     "sourcePolicy": { "const": "PROVIDER_REPORTED_OR_HOST_REPORTED_ONLY" },
     "claimsAllowed": { "type": "boolean" },
     "generatedFromRunCount": { "type": "integer", "minimum": 1 }
+  },
+  "$defs": {
+    "outlierAnalysis": {
+      "type": "object",
+      "required": ["policy", "minimumSamples", "modes"],
+      "properties": {
+        "policy": { "const": "TOKEN_IQR_1_5" },
+        "minimumSamples": { "type": "integer", "minimum": 1 },
+        "modes": {
+          "type": "object",
+          "required": ["direct", "forgeloopBalanced", "forgeloopAdaptive"],
+          "additionalProperties": { "$ref": "#/$defs/modeOutlierAnalysis" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "modeOutlierAnalysis": {
+      "type": "object",
+      "required": ["sampleCount", "measuredCount", "status", "q1", "q3", "iqr", "median", "upperFence", "outliers"],
+      "properties": {
+        "sampleCount": { "type": "integer", "minimum": 0 },
+        "measuredCount": { "type": "integer", "minimum": 0 },
+        "status": { "enum": ["MEASURED", "NOT_ENOUGH_SAMPLES"] },
+        "q1": { "type": ["number", "null"] },
+        "q3": { "type": ["number", "null"] },
+        "iqr": { "type": ["number", "null"] },
+        "median": { "type": ["number", "null"] },
+        "upperFence": { "type": ["number", "null"] },
+        "outliers": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/outlierRecord" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "outlierRecord": {
+      "type": "object",
+      "required": ["runId", "runIndex", "totalTokens", "scenarioMedianTokens", "ratioToMedian", "reasons", "diagnosticSignals"],
+      "properties": {
+        "runId": { "type": "string", "pattern": "^run-[A-Za-z0-9][A-Za-z0-9_-]{0,127}$" },
+        "runIndex": { "type": "integer", "minimum": 1 },
+        "totalTokens": { "type": "integer", "minimum": 0 },
+        "scenarioMedianTokens": { "type": ["number", "null"] },
+        "ratioToMedian": { "type": ["number", "null"] },
+        "reasons": { "type": "array", "items": { "const": "TOKEN_IQR_OUTLIER" } },
+        "diagnosticSignals": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      },
+      "additionalProperties": false
+    }
   },
   "additionalProperties": false
 }

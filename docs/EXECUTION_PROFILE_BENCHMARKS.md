@@ -56,6 +56,20 @@ npm run benchmark:profiles -- \
   --json
 ```
 
+Repetition counts are bounded by an explicit tier so the statistical purpose
+of a run set is visible in the command itself:
+
+| Tier | Runs | Purpose |
+| --- | --- | --- |
+| `smoke` | 1–3 | Fast adapter and pipeline checks; never efficiency evidence. |
+| `evidence` | 5–10 | Central-tendency comparisons (default when no tier is given: 5 runs). |
+| `tail` | 20–30 | Tail-risk and P95 stability analysis. |
+
+`--tier smoke|evidence|tail` enforces these bounds and selects the tier
+default when `--runs` is omitted. Runs outside a tier's bounds are rejected.
+Tail-stability conclusions additionally require the sample minimum described
+under tail analysis below.
+
 The adapter exports `runBenchmark(input)` and must execute the supplied
 scenario. Its result must include actual usage and verification data:
 
@@ -78,6 +92,22 @@ export async function runBenchmark({ scenario, mode, runIndex, target }) {
     verification: "PASS",
     verificationCycles: 1,
     comparableSteps: 4,
+    diagnostics: {
+      executionProfile: "light",
+      verificationCycles: 1,
+      modelTurns: 3,
+      toolCalls: 5,
+      retries: null,
+      correctionCycles: null,
+      filesRead: null,
+      filesWritten: 2,
+      contextRefreshes: null,
+      guideCount: 1,
+      guideIds: ["test"],
+      hostWarnings: [],
+      terminationReason: "COMPLETED",
+      flags: [],
+    },
   };
 }
 ```
@@ -87,6 +117,14 @@ unless the host actually reports them. The runner owns the elapsed-time
 measurement and derives the Git revision from the target checkout. Results
 are written under a unique run-set directory and existing history is never
 overwritten.
+
+The optional `diagnostics` object records host-observed execution detail for
+tail-risk attribution. Every field is nullable: a host must leave a value
+`null` (or omit `diagnostics` entirely) whenever it does not actually observe
+that telemetry, and must never estimate it from prompt size, elapsed time, or
+file size. `flags` may carry host-reported runaway signals from the fixed
+signal vocabulary; the aggregate additionally derives deterministic signals
+where recorded diagnostics support them.
 
 An adapter may also return host-observed context usage. ForgeLoop does not
 tokenize provider prompts. The optional shape is:
@@ -178,6 +216,7 @@ claim is permitted.
 ```bash
 npm run benchmark:profiles:summary -- --json
 npm run benchmark:profiles:check -- --json
+npm run benchmark:profiles:outliers -- --json
 ```
 
 To enable the optional blind UI finalizer, provide paths to the host's
@@ -228,6 +267,75 @@ For LIGHT scenarios, the initial non-blocking objectives are P50 token
 overhead no greater than +35% and P95 token overhead no greater than +60%
 against a comparable direct baseline. These objectives never trade away
 verification quality, requirement coverage, or protocol safety.
+
+## Robust statistics and tail stability
+
+Benchmark methodology v2 reports robust variability for skewed token
+distributions. Methodology-v2 mode aggregates include, for every measured
+quantity, `count`, `average`, `minimum`, `p25`, `p50`, `p75`, `p90`, `p95`,
+`maximum`, `iqr`, `mad`, and `outlierCount`. Percentiles use linear
+interpolation; `iqr` is the interquartile range and `mad` the median absolute
+deviation around the median. Methodology-v1 aggregates keep their frozen
+historical shape.
+
+Every non-direct comparison in a v2 aggregate gains a `tail` object:
+
+```json
+{
+  "tail": {
+    "sampleMinimum": 20,
+    "sampleCount": 20,
+    "p95TokenOverheadPercent": 12.5,
+    "outlierCount": 0,
+    "status": "TAIL_STABLE"
+  }
+}
+```
+
+Tail status is observational and is classified as:
+
+- `NOT_ENOUGH_SAMPLES` when comparable pairs are below the sample minimum
+  (20) or the P95 overhead is unavailable;
+- `TAIL_REGRESSION` when the P95 token overhead exceeds the +60% objective;
+- `TAIL_WARNING` when the sample is sufficient but IQR outliers are present;
+- `TAIL_STABLE` otherwise.
+
+Tail status never gates lifecycle completion; it tells operators when a run
+set is large enough to trust its tail.
+
+## Outlier classification and runaway signals
+
+Token outliers are classified deterministically per scenario and mode with
+the `TOKEN_IQR_1_5` policy: a measured run whose total tokens exceed
+`Q3 + 1.5 × IQR` of that mode's measured distribution is an outlier, and at
+least 4 measured samples are required before classification. Each outlier
+record keeps the run identity, token values, `ratioToMedian`, and the
+diagnostic signals that explain it.
+
+```bash
+npm run benchmark:profiles:outliers -- [--results <dir>] [--run-set <id>] [--json]
+```
+
+The report is read-only: it never rewrites raw runs or aggregates and it
+never changes lifecycle truth. Signals come from two sources: host-reported
+`diagnostics.flags` and deterministic derivations from recorded diagnostics
+(model turns or tool calls more than double the mode median, repeated
+verification or correction cycles, retries, repeated context refreshes). An
+outlier with no recorded explanation is reported as `UNKNOWN_TOKEN_SPIKE`,
+which is an admission of missing telemetry, not an estimate. Historical
+methodology-v1 runs carry no diagnostics, so their spikes legitimately remain
+`UNKNOWN_TOKEN_SPIKE`.
+
+## Methodology versioning and historical compatibility
+
+Scenarios, runs, and aggregates carry a `benchmarkVersion`. Methodology v2
+bumps the current version to `2`; readers accept versions `1` and `2`.
+Historical v1 run sets are immutable evidence: their raw runs and stored
+aggregates are never rewritten, and recomputation reproduces the frozen v1
+aggregate shape exactly. Version checks therefore never invalidate committed
+history; a run set aggregates under the methodology its runs were measured
+with. Only new run sets recorded under methodology v2 receive robust
+statistics, tail status, outlier analysis, and diagnostics.
 
 ## Host context contract
 

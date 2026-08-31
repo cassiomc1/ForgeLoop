@@ -42,3 +42,21 @@ Initial non-blocking efficiency goals for LIGHT scenarios are P50 token
 overhead of at most +35% and P95 token overhead of at most +60% against a
 comparable direct baseline. These are benchmark objectives, not completion
 rules, and quality or verification coverage may not be traded for them.
+
+Raw runs may carry an optional `diagnostics` object with host-observed
+execution detail (model turns, tool calls, retries, correction cycles, files
+written, guide selections, termination reason, runaway-signal flags). Every
+field is nullable; never estimate a value the host does not actually report.
+
+Benchmark methodology v2 (`benchmarkVersion: "2"`) adds robust variability
+statistics (median, quartiles, IQR, MAD), per-comparison tail stability
+status, and deterministic token-outlier classification under the
+`TOKEN_IQR_1_5` policy. Runner repetitions are bounded by explicit tiers:
+`smoke` (1–3), `evidence` (5–10), and `tail` (20–30). Tail conclusions
+require at least 20 comparable pairs.
+
+Methodology versioning protects history: readers accept benchmark versions
+`1` and `2`, historical v1 run sets are never rewritten, and their stored
+aggregates reproduce byte-for-byte under the frozen v1 methodology. All of
+these diagnostics are observational and never change lifecycle truth,
+required gates, verification validity, or completion authority.

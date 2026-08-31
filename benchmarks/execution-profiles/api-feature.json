@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "benchmarkVersion": "1",
+  "benchmarkVersion": "2",
   "scenarioId": "api-feature",
   "description": "Ordinary API behavior change without authentication or publication authority.",
   "input": {

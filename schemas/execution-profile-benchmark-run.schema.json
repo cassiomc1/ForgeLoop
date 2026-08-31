@@ -6,7 +6,7 @@
   "required": ["schemaVersion", "benchmarkVersion", "runSetId", "runId", "scenarioId", "mode", "runIndex", "recordedAt", "usage", "wallClockMs", "verification", "verificationCycles", "comparableSteps", "metadata"],
   "properties": {
     "schemaVersion": { "const": 1 },
-    "benchmarkVersion": { "const": "1" },
+    "benchmarkVersion": { "enum": ["1", "2"] },
     "runSetId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$" },
     "runId": { "type": "string", "pattern": "^run-[A-Za-z0-9][A-Za-z0-9_-]{0,127}$" },
     "scenarioId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,127}$" },
@@ -33,6 +33,7 @@
     "verification": { "enum": ["PASS", "FAIL", "NOT_AVAILABLE"] },
     "verificationCycles": { "type": ["integer", "null"], "minimum": 0 },
     "comparableSteps": { "type": ["integer", "null"], "minimum": 0 },
+    "diagnostics": { "$ref": "#/$defs/diagnostics" },
     "contextUsage": { "$ref": "#/$defs/contextUsage" },
     "quality": { "$ref": "#/$defs/quality" },
     "metadata": {
@@ -45,7 +46,7 @@
         "provider": { "type": ["string", "null"] },
         "promptSpecFingerprint": { "type": "string", "minLength": 1 },
         "projectRevision": { "type": ["string", "null"] },
-        "benchmarkVersion": { "const": "1" },
+        "benchmarkVersion": { "enum": ["1", "2"] },
         "environmentClass": { "type": "string", "minLength": 1 },
         "requestedProfile": { "type": ["string", "null"] },
         "resolvedProfile": { "type": ["string", "null"] },
@@ -59,6 +60,43 @@
     }
   },
   "$defs": {
+    "diagnostics": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "executionProfile": { "enum": ["light", "balanced", "full", null] },
+        "verificationCycles": { "type": ["integer", "null"], "minimum": 0 },
+        "modelTurns": { "type": ["integer", "null"], "minimum": 0 },
+        "toolCalls": { "type": ["integer", "null"], "minimum": 0 },
+        "retries": { "type": ["integer", "null"], "minimum": 0 },
+        "correctionCycles": { "type": ["integer", "null"], "minimum": 0 },
+        "filesRead": { "type": ["integer", "null"], "minimum": 0 },
+        "filesWritten": { "type": ["integer", "null"], "minimum": 0 },
+        "contextRefreshes": { "type": ["integer", "null"], "minimum": 0 },
+        "guideCount": { "type": ["integer", "null"], "minimum": 0 },
+        "guideIds": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "hostWarnings": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "terminationReason": { "type": ["string", "null"], "minLength": 1 },
+        "flags": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "EXCESSIVE_MODEL_TURNS",
+              "EXCESSIVE_TOOL_CALLS",
+              "EXCESSIVE_VERIFICATION_CYCLES",
+              "REPEATED_CONTEXT_REFRESH",
+              "REPEATED_FILE_READ",
+              "REPEATED_GUIDE_LOAD",
+              "UNEXPECTED_RETRY",
+              "CORRECTION_LOOP",
+              "HOST_RETRY",
+              "MODEL_STALL",
+              "UNKNOWN_TOKEN_SPIKE"
+            ]
+          }
+        }
+      }
+    },
     "contextUsage": {
       "type": "object",
       "required": ["source", "profile", "items"],

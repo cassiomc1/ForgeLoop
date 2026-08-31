@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "benchmarkVersion": "1",
+  "benchmarkVersion": "2",
   "scenarioId": "small-bug-fix",
   "description": "Small application bug fix with behavior implications and focused regression checks.",
   "input": {

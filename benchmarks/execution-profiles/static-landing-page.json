@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "benchmarkVersion": "1",
+  "benchmarkVersion": "2",
   "scenarioId": "static-landing-page",
   "description": "Small local HTML, CSS, and JavaScript landing page without external services or sensitive boundaries.",
   "input": {
