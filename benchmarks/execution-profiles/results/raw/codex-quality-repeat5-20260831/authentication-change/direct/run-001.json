@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "benchmarkVersion": "1",
+  "runSetId": "codex-quality-repeat5-20260831",
+  "runId": "run-authentication-change-direct-001",
+  "scenarioId": "authentication-change",
+  "mode": "direct",
+  "runIndex": 1,
+  "recordedAt": "2026-08-31T07:36:38.106Z",
+  "usage": {
+    "inputTokens": 55245,
+    "outputTokens": 726,
+    "cacheReadTokens": 50176,
+    "cacheWriteTokens": 0,
+    "totalTokens": 55971,
+    "costUsd": null,
+    "model": "gpt-5.4-mini",
+    "provider": "codex-chatgpt",
+    "source": "HOST_REPORTED"
+  },
+  "wallClockMs": 18056.1386,
+  "verification": "PASS",
+  "verificationCycles": 1,
+  "comparableSteps": 5,
+  "contextUsage": {
+    "source": "UNKNOWN",
+    "profile": null,
+    "items": {
+      "taskContext": null,
+      "guides": null,
+      "history": null,
+      "protocolInstructions": null,
+      "repositoryContext": null,
+      "other": null
+    }
+  },
+  "quality": {
+    "source": "UNKNOWN",
+    "scores": {
+      "visualQuality": null,
+      "responsiveQuality": null,
+      "accessibility": null,
+      "interactionPolish": null,
+      "requirementsCompleteness": null
+    }
+  },
+  "metadata": {
+    "scenarioId": "authentication-change",
+    "mode": "direct",
+    "model": "gpt-5.4-mini",
+    "provider": "codex-chatgpt",
+    "promptSpecFingerprint": "abbd4eb65e5874a12364dd1545a4db5dbb858237caaf4f54bcbe3e633a1f0c5d",
+    "projectRevision": "db46c034dc9dba1b8d8fad6e7fe5340cd38485fb",
+    "benchmarkVersion": "1",
+    "environmentClass": "codex-cli-darwin-arm64",
+    "requestedProfile": null,
+    "resolvedProfile": null,
+    "verificationCycles": 1,
+    "comparableSteps": 5,
+    "nodeVersion": "26.8.1",
+    "os": "darwin",
+    "arch": "arm64"
+  }
+}

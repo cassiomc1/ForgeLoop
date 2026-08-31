@@ -70,6 +70,7 @@ function helpText() {
     "Usage: npm run benchmark:profiles -- --adapter <module> [options]",
     "",
     "The adapter must execute each scenario and return actual provider/host usage, verification, comparable steps, and optional host-reported contextUsage.",
+    "An optional finalizeBenchmark hook may attach independently evaluated quality by runner-owned runId after all host timings finish.",
     "Options: --target <path> --runs <1..100> --run-set <id> --output <directory> --json",
   ].join("\n");
 }
@@ -93,11 +94,18 @@ async function loadScenarios() {
 async function loadAdapter(adapterSpecifier) {
   const adapterPath = path.resolve(process.cwd(), adapterSpecifier);
   const adapterModule = await import(pathToFileURL(adapterPath).href);
-  const adapter = adapterModule.runBenchmark ?? adapterModule.default?.runBenchmark ?? adapterModule.default;
-  if (typeof adapter !== "function") {
+  const defaultExport = adapterModule.default;
+  const runBenchmark = adapterModule.runBenchmark
+    ?? defaultExport?.runBenchmark
+    ?? (typeof defaultExport === "function" ? defaultExport : null);
+  if (typeof runBenchmark !== "function") {
     throw usageError("benchmark adapter must export runBenchmark(input) or be a function default export");
   }
-  return adapter;
+  return {
+    runBenchmark,
+    finalizeBenchmark: adapterModule.finalizeBenchmark ?? defaultExport?.finalizeBenchmark ?? null,
+    cleanup: adapterModule.cleanup ?? defaultExport?.cleanup ?? null,
+  };
 }
 
 function generatedRunSetId() {
@@ -139,14 +147,37 @@ function normalizedAdapterMetadata(response, target, repository, scenario, mode)
   };
 }
 
+function normalizeFinalizationResult(value, records) {
+  if (value === undefined || value === null) {
+    return { qualityByRunId: {}, summary: { status: "NOT_CONFIGURED" } };
+  }
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw usageError("benchmark finalizer must return an object");
+  }
+  const qualityByRunId = value.qualityByRunId ?? {};
+  if (!qualityByRunId || typeof qualityByRunId !== "object" || Array.isArray(qualityByRunId)) {
+    throw usageError("benchmark finalizer qualityByRunId must be an object");
+  }
+  const runIds = new Set(records.map((record) => record.runId));
+  for (const runId of Object.keys(qualityByRunId)) {
+    if (!runIds.has(runId)) throw usageError(`benchmark finalizer returned an unknown runId: ${runId}`);
+  }
+  return {
+    qualityByRunId,
+    summary: value.summary && typeof value.summary === "object" && !Array.isArray(value.summary)
+      ? value.summary
+      : { status: "MEASURED" },
+  };
+}
+
 async function executeRuns({ adapter, scenarios, target, runSetId, runs }) {
   const repository = await currentRepositoryFingerprint(target);
-  const allRuns = [];
+  const records = [];
   for (const scenario of scenarios) {
     for (const mode of BENCHMARK_MODES) {
       for (let runIndex = 1; runIndex <= runs; runIndex += 1) {
         const started = performance.now();
-        const response = await adapter({
+        const response = await adapter.runBenchmark({
           benchmarkVersion: BENCHMARK_VERSION,
           scenario: structuredClone(scenario),
           mode,
@@ -159,26 +190,46 @@ async function executeRuns({ adapter, scenarios, target, runSetId, runs }) {
         if (!response || typeof response !== "object" || Array.isArray(response)) {
           throw usageError(`${scenario.scenarioId}/${mode}/${runIndex}: adapter must return an object`);
         }
-        const run = createBenchmarkRun({
+        records.push({
           runSetId,
           runId: `run-${scenario.scenarioId}-${mode}-${String(runIndex).padStart(3, "0")}`,
           runIndex,
           scenario,
           mode,
-          usage: response.usage ?? {},
+          response,
           wallClockMs,
-          verification: response.verification ?? "NOT_AVAILABLE",
-          verificationCycles: response.verificationCycles ?? null,
-          comparableSteps: response.comparableSteps ?? null,
-          contextUsage: response.contextUsage,
-          quality: response.quality,
-          metadata: normalizedAdapterMetadata(response, target, repository, scenario, mode),
         });
-        allRuns.push(run);
       }
     }
   }
-  return allRuns;
+  const finalization = typeof adapter.finalizeBenchmark === "function"
+    ? normalizeFinalizationResult(await adapter.finalizeBenchmark({
+      benchmarkVersion: BENCHMARK_VERSION,
+      records,
+      scenarios,
+      target,
+      runSetId,
+    }), records)
+    : normalizeFinalizationResult(null, records);
+  const allRuns = records.map((record) => {
+    const { scenario, mode, response } = record;
+    return createBenchmarkRun({
+      runSetId: record.runSetId,
+      runId: record.runId,
+      runIndex: record.runIndex,
+      scenario,
+      mode,
+      usage: response.usage ?? {},
+      wallClockMs: record.wallClockMs,
+      verification: response.verification ?? "NOT_AVAILABLE",
+      verificationCycles: response.verificationCycles ?? null,
+      comparableSteps: response.comparableSteps ?? null,
+      contextUsage: response.contextUsage,
+      quality: finalization.qualityByRunId[record.runId] ?? response.quality,
+      metadata: normalizedAdapterMetadata(response, target, repository, scenario, mode),
+    });
+  });
+  return { runs: allRuns, finalization: finalization.summary };
 }
 
 async function writeResults({ outputDirectory, runSetId, scenarios, runs }) {
@@ -239,24 +290,30 @@ async function main() {
   const outputDirectory = path.resolve(options.output);
   const runSetId = options.runSetId ?? generatedRunSetId();
   const adapter = await loadAdapter(options.adapter);
-  const scenarios = await loadScenarios();
-  const runs = await executeRuns({ adapter, scenarios, target, runSetId, runs: options.runs });
-  const result = await writeResults({ outputDirectory, runSetId, scenarios, runs });
-  const output = {
-    status: "MEASURED",
-    runSetId,
-    scenarioCount: scenarios.length,
-    runCount: runs.length,
-    outputDirectory,
-    claimsAllowed: result.summary.claimsAllowed,
-  };
-  console.log(options.json ? JSON.stringify(output) : [
-    `Benchmark run set: ${runSetId}`,
-    `Scenarios: ${scenarios.length}`,
-    `Runs: ${runs.length}`,
-    `Claims allowed: ${result.summary.claimsAllowed ? "yes (observational only)" : "no"}`,
-    `Results: ${outputDirectory}`,
-  ].join("\n"));
+  try {
+    const scenarios = await loadScenarios();
+    const execution = await executeRuns({ adapter, scenarios, target, runSetId, runs: options.runs });
+    const result = await writeResults({ outputDirectory, runSetId, scenarios, runs: execution.runs });
+    const output = {
+      status: "MEASURED",
+      runSetId,
+      scenarioCount: scenarios.length,
+      runCount: execution.runs.length,
+      outputDirectory,
+      claimsAllowed: result.summary.claimsAllowed,
+      qualityFinalization: execution.finalization,
+    };
+    console.log(options.json ? JSON.stringify(output) : [
+      `Benchmark run set: ${runSetId}`,
+      `Scenarios: ${scenarios.length}`,
+      `Runs: ${execution.runs.length}`,
+      `Claims allowed: ${result.summary.claimsAllowed ? "yes (observational only)" : "no"}`,
+      `Quality finalization: ${execution.finalization.status ?? "MEASURED"}`,
+      `Results: ${outputDirectory}`,
+    ].join("\n"));
+  } finally {
+    if (typeof adapter.cleanup === "function") await adapter.cleanup();
+  }
 }
 
 main().catch((error) => {
