@@ -20,6 +20,13 @@ preparation and verification checklist; it does not authorize publication.
       is reported as `NOT_MEASURED`, never as zero or a passing efficiency claim.
 - [ ] `npm run benchmark:profiles:regression` reports the observed status;
       `EFFICIENCY_REGRESSION` remains a non-blocking warning.
+- [ ] `npm run benchmark:profiles:outliers` and
+      `npm run benchmark:profiles:tail-analysis` report the observed
+      `TOKEN_IQR_1_5`, paired-ratio, and distribution-tail results without
+      conflating `pairedOverheadPercent` with `distributionDeltaPercent`.
+- [ ] Historical v1 run sets remain byte-for-byte immutable while v2 run sets
+      carry robust statistics, low-baseline diagnostics, and explicit tail
+      interpretations.
 - [ ] `npm run coverage` passes the configured global and critical-module gates.
 - [ ] `npm run docs:check`, `npm run docs:generated:check`,
       `npm run docs:conformance`, and `npm run docs:examples:check` pass.
