@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "benchmarkVersion": "2",
+  "runSetId": "codex-tail-repeat20-20260831",
+  "runId": "run-static-landing-page-forgeloopBalanced-018",
+  "scenarioId": "static-landing-page",
+  "mode": "forgeloopBalanced",
+  "runIndex": 18,
+  "recordedAt": "2026-08-31T15:59:19.210Z",
+  "usage": {
+    "inputTokens": 62377,
+    "outputTokens": 2485,
+    "cacheReadTokens": 53760,
+    "cacheWriteTokens": 0,
+    "totalTokens": 64862,
+    "costUsd": null,
+    "model": "gpt-5.4-mini",
+    "provider": "codex-chatgpt",
+    "source": "HOST_REPORTED"
+  },
+  "wallClockMs": 44211.8813,
+  "verification": "PASS",
+  "verificationCycles": 1,
+  "comparableSteps": 8,
+  "diagnostics": {
+    "executionProfile": "balanced",
+    "verificationCycles": 1,
+    "modelTurns": 1,
+    "toolCalls": 6,
+    "retries": null,
+    "correctionCycles": null,
+    "filesRead": null,
+    "filesWritten": 0,
+    "contextRefreshes": null,
+    "guideCount": 8,
+    "guideIds": [
+      "premium",
+      "design",
+      "taste",
+      "accessibility",
+      "clean",
+      "test",
+      "security",
+      "performance"
+    ],
+    "hostWarnings": [],
+    "terminationReason": "COMPLETED",
+    "flags": []
+  },
+  "contextUsage": {
+    "source": "UNKNOWN",
+    "profile": "balanced",
+    "items": {
+      "taskContext": null,
+      "guides": null,
+      "history": null,
+      "protocolInstructions": null,
+      "repositoryContext": null,
+      "other": null
+    }
+  },
+  "quality": {
+    "source": "EXTERNAL_REPORTED",
+    "scores": {
+      "visualQuality": 4.4,
+      "responsiveQuality": 4.7,
+      "accessibility": 4.7,
+      "interactionPolish": 4.4,
+      "requirementsCompleteness": 4.8
+    }
+  },
+  "metadata": {
+    "scenarioId": "static-landing-page",
+    "mode": "forgeloopBalanced",
+    "model": "gpt-5.4-mini",
+    "provider": "codex-chatgpt",
+    "promptSpecFingerprint": "619f18150b5355210c00bd69b16c2f83c183009f4bf12960b250cfe3b257769b",
+    "projectRevision": "3cf40c202d84bbc0cf19f0439497698b2e56b652",
+    "benchmarkVersion": "2",
+    "environmentClass": "codex-cli-darwin-arm64",
+    "requestedProfile": "balanced",
+    "resolvedProfile": "balanced",
+    "verificationCycles": 1,
+    "comparableSteps": 8,
+    "nodeVersion": "26.8.1",
+    "os": "darwin",
+    "arch": "arm64"
+  }
+}

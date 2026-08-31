@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "benchmarkVersion": "2",
+  "runSetId": "codex-tail-repeat20-20260831",
+  "runId": "run-api-feature-forgeloopBalanced-014",
+  "scenarioId": "api-feature",
+  "mode": "forgeloopBalanced",
+  "runIndex": 14,
+  "recordedAt": "2026-08-31T15:59:19.202Z",
+  "usage": {
+    "inputTokens": 57369,
+    "outputTokens": 1081,
+    "cacheReadTokens": 51200,
+    "cacheWriteTokens": 0,
+    "totalTokens": 58450,
+    "costUsd": null,
+    "model": "gpt-5.4-mini",
+    "provider": "codex-chatgpt",
+    "source": "HOST_REPORTED"
+  },
+  "wallClockMs": 26736.0973,
+  "verification": "PASS",
+  "verificationCycles": 1,
+  "comparableSteps": 4,
+  "diagnostics": {
+    "executionProfile": "balanced",
+    "verificationCycles": 1,
+    "modelTurns": 1,
+    "toolCalls": 5,
+    "retries": null,
+    "correctionCycles": null,
+    "filesRead": null,
+    "filesWritten": 1,
+    "contextRefreshes": null,
+    "guideCount": 2,
+    "guideIds": [
+      "clean",
+      "test"
+    ],
+    "hostWarnings": [],
+    "terminationReason": "COMPLETED",
+    "flags": []
+  },
+  "contextUsage": {
+    "source": "UNKNOWN",
+    "profile": "balanced",
+    "items": {
+      "taskContext": null,
+      "guides": null,
+      "history": null,
+      "protocolInstructions": null,
+      "repositoryContext": null,
+      "other": null
+    }
+  },
+  "quality": {
+    "source": "UNKNOWN",
+    "scores": {
+      "visualQuality": null,
+      "responsiveQuality": null,
+      "accessibility": null,
+      "interactionPolish": null,
+      "requirementsCompleteness": null
+    }
+  },
+  "metadata": {
+    "scenarioId": "api-feature",
+    "mode": "forgeloopBalanced",
+    "model": "gpt-5.4-mini",
+    "provider": "codex-chatgpt",
+    "promptSpecFingerprint": "a89788ce6fc36973b50fab4b0c2646ffa2405b60824373f865795047d32501ac",
+    "projectRevision": "3cf40c202d84bbc0cf19f0439497698b2e56b652",
+    "benchmarkVersion": "2",
+    "environmentClass": "codex-cli-darwin-arm64",
+    "requestedProfile": "balanced",
+    "resolvedProfile": "balanced",
+    "verificationCycles": 1,
+    "comparableSteps": 4,
+    "nodeVersion": "26.8.1",
+    "os": "darwin",
+    "arch": "arm64"
+  }
+}

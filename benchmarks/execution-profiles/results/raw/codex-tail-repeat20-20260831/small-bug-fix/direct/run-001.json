@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "benchmarkVersion": "2",
+  "runSetId": "codex-tail-repeat20-20260831",
+  "runId": "run-small-bug-fix-direct-001",
+  "scenarioId": "small-bug-fix",
+  "mode": "direct",
+  "runIndex": 1,
+  "recordedAt": "2026-08-31T15:59:19.209Z",
+  "usage": {
+    "inputTokens": 57401,
+    "outputTokens": 785,
+    "cacheReadTokens": 49664,
+    "cacheWriteTokens": 0,
+    "totalTokens": 58186,
+    "costUsd": null,
+    "model": "gpt-5.4-mini",
+    "provider": "codex-chatgpt",
+    "source": "HOST_REPORTED"
+  },
+  "wallClockMs": 20041.9932,
+  "verification": "PASS",
+  "verificationCycles": 1,
+  "comparableSteps": 3,
+  "diagnostics": {
+    "executionProfile": null,
+    "verificationCycles": 1,
+    "modelTurns": 1,
+    "toolCalls": 5,
+    "retries": null,
+    "correctionCycles": null,
+    "filesRead": null,
+    "filesWritten": 1,
+    "contextRefreshes": null,
+    "guideCount": 0,
+    "guideIds": [],
+    "hostWarnings": [],
+    "terminationReason": "COMPLETED",
+    "flags": []
+  },
+  "contextUsage": {
+    "source": "UNKNOWN",
+    "profile": null,
+    "items": {
+      "taskContext": null,
+      "guides": null,
+      "history": null,
+      "protocolInstructions": null,
+      "repositoryContext": null,
+      "other": null
+    }
+  },
+  "quality": {
+    "source": "UNKNOWN",
+    "scores": {
+      "visualQuality": null,
+      "responsiveQuality": null,
+      "accessibility": null,
+      "interactionPolish": null,
+      "requirementsCompleteness": null
+    }
+  },
+  "metadata": {
+    "scenarioId": "small-bug-fix",
+    "mode": "direct",
+    "model": "gpt-5.4-mini",
+    "provider": "codex-chatgpt",
+    "promptSpecFingerprint": "620cf0c64bbce08360d47cbac9cf3756b54bc790bcf030a9b273e03a4186e8a2",
+    "projectRevision": "3cf40c202d84bbc0cf19f0439497698b2e56b652",
+    "benchmarkVersion": "2",
+    "environmentClass": "codex-cli-darwin-arm64",
+    "requestedProfile": null,
+    "resolvedProfile": null,
+    "verificationCycles": 1,
+    "comparableSteps": 3,
+    "nodeVersion": "26.8.1",
+    "os": "darwin",
+    "arch": "arm64"
+  }
+}

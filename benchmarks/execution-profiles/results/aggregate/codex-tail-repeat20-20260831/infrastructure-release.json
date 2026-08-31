@@ -1,0 +1,1633 @@
+{
+  "schemaVersion": 1,
+  "benchmarkVersion": "2",
+  "runSetId": "codex-tail-repeat20-20260831",
+  "scenarioId": "infrastructure-release",
+  "expectedProfile": "full",
+  "modeAggregates": {
+    "direct": {
+      "runCount": 20,
+      "verificationSuccessRate": 1,
+      "usageSources": [
+        "HOST_REPORTED"
+      ],
+      "totalTokens": {
+        "count": 20,
+        "average": 59632.65,
+        "minimum": 54825,
+        "p25": 55162.5,
+        "p50": 55648,
+        "p75": 69237.5,
+        "p90": 69446.5,
+        "p95": 69659.1,
+        "maximum": 70535,
+        "iqr": 14075,
+        "mad": 512.5,
+        "outlierCount": 0
+      },
+      "wallClockMs": {
+        "count": 20,
+        "average": 16620.7759,
+        "minimum": 12852.3587,
+        "p25": 14452.2157,
+        "p50": 16049.8433,
+        "p75": 17758.1431,
+        "p90": 19156.8817,
+        "p95": 22844.4335,
+        "maximum": 24331.3396,
+        "iqr": 3305.9274,
+        "mad": 1716.7627,
+        "outlierCount": 2
+      },
+      "verificationCycles": {
+        "count": 20,
+        "average": 1,
+        "minimum": 1,
+        "p25": 1,
+        "p50": 1,
+        "p75": 1,
+        "p90": 1,
+        "p95": 1,
+        "maximum": 1,
+        "iqr": 0,
+        "mad": 0,
+        "outlierCount": 0
+      },
+      "comparableSteps": {
+        "count": 20,
+        "average": 4,
+        "minimum": 4,
+        "p25": 4,
+        "p50": 4,
+        "p75": 4,
+        "p90": 4,
+        "p95": 4,
+        "maximum": 4,
+        "iqr": 0,
+        "mad": 0,
+        "outlierCount": 0
+      },
+      "tokensPerComparableStep": {
+        "count": 20,
+        "average": 14908.1625,
+        "minimum": 13706.25,
+        "p25": 13790.625,
+        "p50": 13912,
+        "p75": 17309.375,
+        "p90": 17361.625,
+        "p95": 17414.775,
+        "maximum": 17633.75,
+        "iqr": 3518.75,
+        "mad": 128.125,
+        "outlierCount": 0
+      },
+      "diagnostics": {
+        "verificationCycles": {
+          "count": 20,
+          "average": 1,
+          "minimum": 1,
+          "p25": 1,
+          "p50": 1,
+          "p75": 1,
+          "p90": 1,
+          "p95": 1,
+          "maximum": 1,
+          "iqr": 0,
+          "mad": 0,
+          "outlierCount": 0
+        },
+        "modelTurns": {
+          "count": 20,
+          "average": 1,
+          "minimum": 1,
+          "p25": 1,
+          "p50": 1,
+          "p75": 1,
+          "p90": 1,
+          "p95": 1,
+          "maximum": 1,
+          "iqr": 0,
+          "mad": 0,
+          "outlierCount": 0
+        },
+        "toolCalls": {
+          "count": 20,
+          "average": 3.65,
+          "minimum": 3,
+          "p25": 3,
+          "p50": 4,
+          "p75": 4,
+          "p90": 4,
+          "p95": 4.05,
+          "maximum": 5,
+          "iqr": 1,
+          "mad": 0,
+          "outlierCount": 0
+        },
+        "retries": {
+          "count": 0,
+          "average": null,
+          "minimum": null,
+          "p25": null,
+          "p50": null,
+          "p75": null,
+          "p90": null,
+          "p95": null,
+          "maximum": null,
+          "iqr": null,
+          "mad": null,
+          "outlierCount": 0
+        },
+        "correctionCycles": {
+          "count": 0,
+          "average": null,
+          "minimum": null,
+          "p25": null,
+          "p50": null,
+          "p75": null,
+          "p90": null,
+          "p95": null,
+          "maximum": null,
+          "iqr": null,
+          "mad": null,
+          "outlierCount": 0
+        },
+        "filesRead": {
+          "count": 0,
+          "average": null,
+          "minimum": null,
+          "p25": null,
+          "p50": null,
+          "p75": null,
+          "p90": null,
+          "p95": null,
+          "maximum": null,
+          "iqr": null,
+          "mad": null,
+          "outlierCount": 0
+        },
+        "filesWritten": {
+          "count": 20,
+          "average": 1,
+          "minimum": 1,
+          "p25": 1,
+          "p50": 1,
+          "p75": 1,
+          "p90": 1,
+          "p95": 1,
+          "maximum": 1,
+          "iqr": 0,
+          "mad": 0,
+          "outlierCount": 0
+        },
+        "contextRefreshes": {
+          "count": 0,
+          "average": null,
+          "minimum": null,
+          "p25": null,
+          "p50": null,
+          "p75": null,
+          "p90": null,
+          "p95": null,
+          "maximum": null,
+          "iqr": null,
+          "mad": null,
+          "outlierCount": 0
+        }
+      },
+      "contextUsage": {
+        "sources": [
+          "UNKNOWN"
+        ],
+        "profiles": [],
+        "measuredRuns": 0,
+        "totalTokens": {
+          "count": 0,
+          "average": null,
+          "minimum": null,
+          "p25": null,
+          "p50": null,
+          "p75": null,
+          "p90": null,
+          "p95": null,
+          "maximum": null,
+          "iqr": null,
+          "mad": null,
+          "outlierCount": 0
+        },
+        "items": {
+          "taskContext": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "guides": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "history": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "protocolInstructions": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "repositoryContext": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "other": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          }
+        }
+      },
+      "quality": {
+        "sources": [
+          "UNKNOWN"
+        ],
+        "scores": {
+          "visualQuality": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "responsiveQuality": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "accessibility": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "interactionPolish": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "requirementsCompleteness": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          }
+        }
+      }
+    },
+    "forgeloopBalanced": {
+      "runCount": 20,
+      "verificationSuccessRate": 1,
+      "usageSources": [
+        "HOST_REPORTED"
+      ],
+      "totalTokens": {
+        "count": 20,
+        "average": 61676.45,
+        "minimum": 56695,
+        "p25": 57286,
+        "p50": 57598.5,
+        "p75": 71251.25,
+        "p90": 71546.4,
+        "p95": 71827.7,
+        "maximum": 73000,
+        "iqr": 13965.25,
+        "mad": 362,
+        "outlierCount": 0
+      },
+      "wallClockMs": {
+        "count": 20,
+        "average": 18969.6675,
+        "minimum": 15880.9801,
+        "p25": 17616.819,
+        "p50": 18482.4661,
+        "p75": 19588.758,
+        "p90": 22508.5462,
+        "p95": 22813.8508,
+        "maximum": 25053.5869,
+        "iqr": 1971.939,
+        "mad": 942.9563,
+        "outlierCount": 2
+      },
+      "verificationCycles": {
+        "count": 20,
+        "average": 1,
+        "minimum": 1,
+        "p25": 1,
+        "p50": 1,
+        "p75": 1,
+        "p90": 1,
+        "p95": 1,
+        "maximum": 1,
+        "iqr": 0,
+        "mad": 0,
+        "outlierCount": 0
+      },
+      "comparableSteps": {
+        "count": 20,
+        "average": 4,
+        "minimum": 4,
+        "p25": 4,
+        "p50": 4,
+        "p75": 4,
+        "p90": 4,
+        "p95": 4,
+        "maximum": 4,
+        "iqr": 0,
+        "mad": 0,
+        "outlierCount": 0
+      },
+      "tokensPerComparableStep": {
+        "count": 20,
+        "average": 15419.1125,
+        "minimum": 14173.75,
+        "p25": 14321.5,
+        "p50": 14399.625,
+        "p75": 17812.8125,
+        "p90": 17886.6,
+        "p95": 17956.925,
+        "maximum": 18250,
+        "iqr": 3491.3125,
+        "mad": 90.5,
+        "outlierCount": 0
+      },
+      "diagnostics": {
+        "verificationCycles": {
+          "count": 20,
+          "average": 1,
+          "minimum": 1,
+          "p25": 1,
+          "p50": 1,
+          "p75": 1,
+          "p90": 1,
+          "p95": 1,
+          "maximum": 1,
+          "iqr": 0,
+          "mad": 0,
+          "outlierCount": 0
+        },
+        "modelTurns": {
+          "count": 20,
+          "average": 1,
+          "minimum": 1,
+          "p25": 1,
+          "p50": 1,
+          "p75": 1,
+          "p90": 1,
+          "p95": 1,
+          "maximum": 1,
+          "iqr": 0,
+          "mad": 0,
+          "outlierCount": 0
+        },
+        "toolCalls": {
+          "count": 20,
+          "average": 4.25,
+          "minimum": 3,
+          "p25": 4,
+          "p50": 4,
+          "p75": 4.25,
+          "p90": 5,
+          "p95": 5.1,
+          "maximum": 7,
+          "iqr": 0.25,
+          "mad": 0,
+          "outlierCount": 5
+        },
+        "retries": {
+          "count": 0,
+          "average": null,
+          "minimum": null,
+          "p25": null,
+          "p50": null,
+          "p75": null,
+          "p90": null,
+          "p95": null,
+          "maximum": null,
+          "iqr": null,
+          "mad": null,
+          "outlierCount": 0
+        },
+        "correctionCycles": {
+          "count": 0,
+          "average": null,
+          "minimum": null,
+          "p25": null,
+          "p50": null,
+          "p75": null,
+          "p90": null,
+          "p95": null,
+          "maximum": null,
+          "iqr": null,
+          "mad": null,
+          "outlierCount": 0
+        },
+        "filesRead": {
+          "count": 0,
+          "average": null,
+          "minimum": null,
+          "p25": null,
+          "p50": null,
+          "p75": null,
+          "p90": null,
+          "p95": null,
+          "maximum": null,
+          "iqr": null,
+          "mad": null,
+          "outlierCount": 0
+        },
+        "filesWritten": {
+          "count": 20,
+          "average": 0.95,
+          "minimum": 0,
+          "p25": 1,
+          "p50": 1,
+          "p75": 1,
+          "p90": 1,
+          "p95": 1,
+          "maximum": 1,
+          "iqr": 0,
+          "mad": 0,
+          "outlierCount": 0
+        },
+        "contextRefreshes": {
+          "count": 0,
+          "average": null,
+          "minimum": null,
+          "p25": null,
+          "p50": null,
+          "p75": null,
+          "p90": null,
+          "p95": null,
+          "maximum": null,
+          "iqr": null,
+          "mad": null,
+          "outlierCount": 0
+        }
+      },
+      "contextUsage": {
+        "sources": [
+          "UNKNOWN"
+        ],
+        "profiles": [
+          "full"
+        ],
+        "measuredRuns": 0,
+        "totalTokens": {
+          "count": 0,
+          "average": null,
+          "minimum": null,
+          "p25": null,
+          "p50": null,
+          "p75": null,
+          "p90": null,
+          "p95": null,
+          "maximum": null,
+          "iqr": null,
+          "mad": null,
+          "outlierCount": 0
+        },
+        "items": {
+          "taskContext": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "guides": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "history": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "protocolInstructions": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "repositoryContext": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "other": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          }
+        }
+      },
+      "quality": {
+        "sources": [
+          "UNKNOWN"
+        ],
+        "scores": {
+          "visualQuality": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "responsiveQuality": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "accessibility": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "interactionPolish": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "requirementsCompleteness": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          }
+        }
+      }
+    },
+    "forgeloopAdaptive": {
+      "runCount": 20,
+      "verificationSuccessRate": 1,
+      "usageSources": [
+        "HOST_REPORTED"
+      ],
+      "totalTokens": {
+        "count": 20,
+        "average": 66129.2,
+        "minimum": 56702,
+        "p25": 57202,
+        "p50": 57510.5,
+        "p75": 71258.25,
+        "p90": 73881.2,
+        "p95": 86802.95,
+        "maximum": 107930,
+        "iqr": 14056.25,
+        "mad": 774,
+        "outlierCount": 1
+      },
+      "wallClockMs": {
+        "count": 20,
+        "average": 21191.9512,
+        "minimum": 16500.6625,
+        "p25": 18593.3591,
+        "p50": 20393.8181,
+        "p75": 22811.1409,
+        "p90": 24170.7202,
+        "p95": 26068.0161,
+        "maximum": 33812.0385,
+        "iqr": 4217.7818,
+        "mad": 2182.1436,
+        "outlierCount": 1
+      },
+      "verificationCycles": {
+        "count": 20,
+        "average": 1,
+        "minimum": 1,
+        "p25": 1,
+        "p50": 1,
+        "p75": 1,
+        "p90": 1,
+        "p95": 1,
+        "maximum": 1,
+        "iqr": 0,
+        "mad": 0,
+        "outlierCount": 0
+      },
+      "comparableSteps": {
+        "count": 20,
+        "average": 4,
+        "minimum": 4,
+        "p25": 4,
+        "p50": 4,
+        "p75": 4,
+        "p90": 4,
+        "p95": 4,
+        "maximum": 4,
+        "iqr": 0,
+        "mad": 0,
+        "outlierCount": 0
+      },
+      "tokensPerComparableStep": {
+        "count": 20,
+        "average": 16532.3,
+        "minimum": 14175.5,
+        "p25": 14300.5,
+        "p50": 14377.625,
+        "p75": 17814.5625,
+        "p90": 18470.3,
+        "p95": 21700.7375,
+        "maximum": 26982.5,
+        "iqr": 3514.0625,
+        "mad": 193.5,
+        "outlierCount": 1
+      },
+      "diagnostics": {
+        "verificationCycles": {
+          "count": 20,
+          "average": 1,
+          "minimum": 1,
+          "p25": 1,
+          "p50": 1,
+          "p75": 1,
+          "p90": 1,
+          "p95": 1,
+          "maximum": 1,
+          "iqr": 0,
+          "mad": 0,
+          "outlierCount": 0
+        },
+        "modelTurns": {
+          "count": 20,
+          "average": 1,
+          "minimum": 1,
+          "p25": 1,
+          "p50": 1,
+          "p75": 1,
+          "p90": 1,
+          "p95": 1,
+          "maximum": 1,
+          "iqr": 0,
+          "mad": 0,
+          "outlierCount": 0
+        },
+        "toolCalls": {
+          "count": 20,
+          "average": 4.65,
+          "minimum": 4,
+          "p25": 4,
+          "p50": 5,
+          "p75": 5,
+          "p90": 5.1,
+          "p95": 6,
+          "maximum": 6,
+          "iqr": 1,
+          "mad": 1,
+          "outlierCount": 0
+        },
+        "retries": {
+          "count": 0,
+          "average": null,
+          "minimum": null,
+          "p25": null,
+          "p50": null,
+          "p75": null,
+          "p90": null,
+          "p95": null,
+          "maximum": null,
+          "iqr": null,
+          "mad": null,
+          "outlierCount": 0
+        },
+        "correctionCycles": {
+          "count": 0,
+          "average": null,
+          "minimum": null,
+          "p25": null,
+          "p50": null,
+          "p75": null,
+          "p90": null,
+          "p95": null,
+          "maximum": null,
+          "iqr": null,
+          "mad": null,
+          "outlierCount": 0
+        },
+        "filesRead": {
+          "count": 0,
+          "average": null,
+          "minimum": null,
+          "p25": null,
+          "p50": null,
+          "p75": null,
+          "p90": null,
+          "p95": null,
+          "maximum": null,
+          "iqr": null,
+          "mad": null,
+          "outlierCount": 0
+        },
+        "filesWritten": {
+          "count": 20,
+          "average": 0.95,
+          "minimum": 0,
+          "p25": 1,
+          "p50": 1,
+          "p75": 1,
+          "p90": 1,
+          "p95": 1,
+          "maximum": 1,
+          "iqr": 0,
+          "mad": 0,
+          "outlierCount": 0
+        },
+        "contextRefreshes": {
+          "count": 0,
+          "average": null,
+          "minimum": null,
+          "p25": null,
+          "p50": null,
+          "p75": null,
+          "p90": null,
+          "p95": null,
+          "maximum": null,
+          "iqr": null,
+          "mad": null,
+          "outlierCount": 0
+        }
+      },
+      "contextUsage": {
+        "sources": [
+          "UNKNOWN"
+        ],
+        "profiles": [
+          "full"
+        ],
+        "measuredRuns": 0,
+        "totalTokens": {
+          "count": 0,
+          "average": null,
+          "minimum": null,
+          "p25": null,
+          "p50": null,
+          "p75": null,
+          "p90": null,
+          "p95": null,
+          "maximum": null,
+          "iqr": null,
+          "mad": null,
+          "outlierCount": 0
+        },
+        "items": {
+          "taskContext": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "guides": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "history": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "protocolInstructions": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "repositoryContext": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "other": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          }
+        }
+      },
+      "quality": {
+        "sources": [
+          "UNKNOWN"
+        ],
+        "scores": {
+          "visualQuality": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "responsiveQuality": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "accessibility": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "interactionPolish": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "requirementsCompleteness": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          }
+        }
+      }
+    }
+  },
+  "comparisons": {
+    "direct": null,
+    "forgeloopBalanced": {
+      "comparablePairs": 20,
+      "tokenComparablePairs": 20,
+      "timeComparablePairs": 20,
+      "tokenOverheadPercent": {
+        "p50": 3.7761,
+        "p95": 29.5832
+      },
+      "pairedOverheadPercent": {
+        "p50": 3.7761,
+        "p95": 29.5832
+      },
+      "distributionDeltaPercent": {
+        "p50": 3.5051,
+        "p95": 3.1132
+      },
+      "timeOverheadPercent": {
+        "p50": 20.9421,
+        "p95": 58.729
+      },
+      "pairedRatioDiagnostics": {
+        "pairCount": 20,
+        "baselineMinimum": 54825,
+        "baselineP25": 55162.5,
+        "baselineP50": 55648,
+        "lowBaselineThreshold": 33388.8,
+        "lowBaselinePairCount": 0
+      },
+      "pairedRuns": [
+        {
+          "runIndex": 1,
+          "directTokens": 69251,
+          "candidateTokens": 57432,
+          "absoluteDeltaTokens": -11819,
+          "pairedOverheadPercent": -17.0669,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 2,
+          "directTokens": 55634,
+          "candidateTokens": 71766,
+          "absoluteDeltaTokens": 16132,
+          "pairedOverheadPercent": 28.9967,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 3,
+          "directTokens": 54825,
+          "candidateTokens": 57112,
+          "absoluteDeltaTokens": 2287,
+          "pairedOverheadPercent": 4.1715,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 4,
+          "directTokens": 55137,
+          "candidateTokens": 71223,
+          "absoluteDeltaTokens": 16086,
+          "pairedOverheadPercent": 29.1746,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 5,
+          "directTokens": 70535,
+          "candidateTokens": 71522,
+          "absoluteDeltaTokens": 987,
+          "pairedOverheadPercent": 1.3993,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 6,
+          "directTokens": 55134,
+          "candidateTokens": 71372,
+          "absoluteDeltaTokens": 16238,
+          "pairedOverheadPercent": 29.4519,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 7,
+          "directTokens": 69233,
+          "candidateTokens": 57650,
+          "absoluteDeltaTokens": -11583,
+          "pairedOverheadPercent": -16.7305,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 8,
+          "directTokens": 55474,
+          "candidateTokens": 57904,
+          "absoluteDeltaTokens": 2430,
+          "pairedOverheadPercent": 4.3804,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 9,
+          "directTokens": 69613,
+          "candidateTokens": 56940,
+          "absoluteDeltaTokens": -12673,
+          "pairedOverheadPercent": -18.2049,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 10,
+          "directTokens": 55658,
+          "candidateTokens": 57277,
+          "absoluteDeltaTokens": 1619,
+          "pairedOverheadPercent": 2.9088,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 11,
+          "directTokens": 69428,
+          "candidateTokens": 57196,
+          "absoluteDeltaTokens": -12232,
+          "pairedOverheadPercent": -17.6183,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 12,
+          "directTokens": 55638,
+          "candidateTokens": 57704,
+          "absoluteDeltaTokens": 2066,
+          "pairedOverheadPercent": 3.7133,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 13,
+          "directTokens": 55849,
+          "candidateTokens": 56695,
+          "absoluteDeltaTokens": 846,
+          "pairedOverheadPercent": 1.5148,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 14,
+          "directTokens": 55721,
+          "candidateTokens": 57344,
+          "absoluteDeltaTokens": 1623,
+          "pairedOverheadPercent": 2.9127,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 15,
+          "directTokens": 55692,
+          "candidateTokens": 57851,
+          "absoluteDeltaTokens": 2159,
+          "pairedOverheadPercent": 3.8767,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 16,
+          "directTokens": 55270,
+          "candidateTokens": 73000,
+          "absoluteDeltaTokens": 17730,
+          "pairedOverheadPercent": 32.0789,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 17,
+          "directTokens": 55171,
+          "candidateTokens": 57289,
+          "absoluteDeltaTokens": 2118,
+          "pairedOverheadPercent": 3.839,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 18,
+          "directTokens": 69345,
+          "candidateTokens": 57369,
+          "absoluteDeltaTokens": -11976,
+          "pairedOverheadPercent": -17.2702,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 19,
+          "directTokens": 54937,
+          "candidateTokens": 57547,
+          "absoluteDeltaTokens": 2610,
+          "pairedOverheadPercent": 4.7509,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 20,
+          "directTokens": 55108,
+          "candidateTokens": 71336,
+          "absoluteDeltaTokens": 16228,
+          "pairedOverheadPercent": 29.4476,
+          "baselineRegime": "NORMAL"
+        }
+      ],
+      "claimStatus": "OBSERVATIONAL",
+      "claimAllowed": true,
+      "reason": "Trusted usage, actual timing, verification, and matching comparability metadata are present.",
+      "tail": {
+        "sampleMinimum": 20,
+        "sampleCount": 20,
+        "p95TokenOverheadPercent": 29.5832,
+        "pairedOverheadP95Percent": 29.5832,
+        "distributionP95DeltaPercent": 3.1132,
+        "outlierCount": 0,
+        "status": "TAIL_STABLE",
+        "pairedStatus": "TAIL_STABLE",
+        "distributionStatus": "TAIL_ACCEPTABLE",
+        "combinedInterpretation": "TAIL_CONSISTENT"
+      }
+    },
+    "forgeloopAdaptive": {
+      "comparablePairs": 20,
+      "tokenComparablePairs": 20,
+      "timeComparablePairs": 20,
+      "tokenOverheadPercent": {
+        "p50": 3.1882,
+        "p95": 34.7505
+      },
+      "pairedOverheadPercent": {
+        "p50": 3.1882,
+        "p95": 34.7505
+      },
+      "distributionDeltaPercent": {
+        "p50": 3.3469,
+        "p95": 24.6111
+      },
+      "timeOverheadPercent": {
+        "p50": 22.5116,
+        "p95": 85.009
+      },
+      "pairedRatioDiagnostics": {
+        "pairCount": 20,
+        "baselineMinimum": 54825,
+        "baselineP25": 55162.5,
+        "baselineP50": 55648,
+        "lowBaselineThreshold": 33388.8,
+        "lowBaselinePairCount": 0
+      },
+      "pairedRuns": [
+        {
+          "runIndex": 1,
+          "directTokens": 69251,
+          "candidateTokens": 56702,
+          "absoluteDeltaTokens": -12549,
+          "pairedOverheadPercent": -18.121,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 2,
+          "directTokens": 55634,
+          "candidateTokens": 57339,
+          "absoluteDeltaTokens": 1705,
+          "pairedOverheadPercent": 3.0647,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 3,
+          "directTokens": 54825,
+          "candidateTokens": 57016,
+          "absoluteDeltaTokens": 2191,
+          "pairedOverheadPercent": 3.9964,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 4,
+          "directTokens": 55137,
+          "candidateTokens": 71881,
+          "absoluteDeltaTokens": 16744,
+          "pairedOverheadPercent": 30.368,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 5,
+          "directTokens": 70535,
+          "candidateTokens": 85691,
+          "absoluteDeltaTokens": 15156,
+          "pairedOverheadPercent": 21.4872,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 6,
+          "directTokens": 55134,
+          "candidateTokens": 57490,
+          "absoluteDeltaTokens": 2356,
+          "pairedOverheadPercent": 4.2732,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 7,
+          "directTokens": 69233,
+          "candidateTokens": 57490,
+          "absoluteDeltaTokens": -11743,
+          "pairedOverheadPercent": -16.9616,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 8,
+          "directTokens": 55474,
+          "candidateTokens": 56771,
+          "absoluteDeltaTokens": 1297,
+          "pairedOverheadPercent": 2.338,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 9,
+          "directTokens": 69613,
+          "candidateTokens": 71058,
+          "absoluteDeltaTokens": 1445,
+          "pairedOverheadPercent": 2.0758,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 10,
+          "directTokens": 55658,
+          "candidateTokens": 56860,
+          "absoluteDeltaTokens": 1202,
+          "pairedOverheadPercent": 2.1596,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 11,
+          "directTokens": 69428,
+          "candidateTokens": 56956,
+          "absoluteDeltaTokens": -12472,
+          "pairedOverheadPercent": -17.9639,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 12,
+          "directTokens": 55638,
+          "candidateTokens": 70867,
+          "absoluteDeltaTokens": 15229,
+          "pairedOverheadPercent": 27.3716,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 13,
+          "directTokens": 55849,
+          "candidateTokens": 57264,
+          "absoluteDeltaTokens": 1415,
+          "pairedOverheadPercent": 2.5336,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 14,
+          "directTokens": 55721,
+          "candidateTokens": 57434,
+          "absoluteDeltaTokens": 1713,
+          "pairedOverheadPercent": 3.0742,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 15,
+          "directTokens": 55692,
+          "candidateTokens": 57531,
+          "absoluteDeltaTokens": 1839,
+          "pairedOverheadPercent": 3.3021,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 16,
+          "directTokens": 55270,
+          "candidateTokens": 70999,
+          "absoluteDeltaTokens": 15729,
+          "pairedOverheadPercent": 28.4585,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 17,
+          "directTokens": 55171,
+          "candidateTokens": 72569,
+          "absoluteDeltaTokens": 17398,
+          "pairedOverheadPercent": 31.5347,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 18,
+          "directTokens": 69345,
+          "candidateTokens": 70877,
+          "absoluteDeltaTokens": 1532,
+          "pairedOverheadPercent": 2.2092,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 19,
+          "directTokens": 54937,
+          "candidateTokens": 71859,
+          "absoluteDeltaTokens": 16922,
+          "pairedOverheadPercent": 30.8026,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 20,
+          "directTokens": 55108,
+          "candidateTokens": 107930,
+          "absoluteDeltaTokens": 52822,
+          "pairedOverheadPercent": 95.8518,
+          "baselineRegime": "NORMAL"
+        }
+      ],
+      "claimStatus": "OBSERVATIONAL",
+      "claimAllowed": true,
+      "reason": "Trusted usage, actual timing, verification, and matching comparability metadata are present.",
+      "tail": {
+        "sampleMinimum": 20,
+        "sampleCount": 20,
+        "p95TokenOverheadPercent": 34.7505,
+        "pairedOverheadP95Percent": 34.7505,
+        "distributionP95DeltaPercent": 24.6111,
+        "outlierCount": 1,
+        "status": "TAIL_WARNING",
+        "pairedStatus": "TAIL_WARNING",
+        "distributionStatus": "TAIL_ACCEPTABLE",
+        "combinedInterpretation": "TAIL_CONSISTENT"
+      }
+    }
+  },
+  "lightObjectives": null,
+  "sourcePolicy": "PROVIDER_REPORTED_OR_HOST_REPORTED_ONLY",
+  "claimsAllowed": true,
+  "generatedFromRunCount": 60,
+  "contextInflation": {
+    "status": "NOT_COMPARABLE",
+    "comparablePairs": 0,
+    "inflatedPairs": 0,
+    "lightContextTokens": {
+      "count": 0,
+      "average": null,
+      "p50": null,
+      "p95": null,
+      "minimum": null,
+      "maximum": null
+    },
+    "balancedContextTokens": {
+      "count": 0,
+      "average": null,
+      "p50": null,
+      "p95": null,
+      "minimum": null,
+      "maximum": null
+    },
+    "blocking": false,
+    "reason": "The adaptive mode did not resolve to LIGHT for this scenario."
+  },
+  "outlierAnalysis": {
+    "policy": "TOKEN_IQR_1_5",
+    "minimumSamples": 4,
+    "modes": {
+      "direct": {
+        "sampleCount": 20,
+        "measuredCount": 20,
+        "status": "MEASURED",
+        "q1": 55162.5,
+        "q3": 69237.5,
+        "iqr": 14075,
+        "median": 55648,
+        "upperFence": 90350,
+        "outliers": []
+      },
+      "forgeloopBalanced": {
+        "sampleCount": 20,
+        "measuredCount": 20,
+        "status": "MEASURED",
+        "q1": 57286,
+        "q3": 71251.25,
+        "iqr": 13965.25,
+        "median": 57598.5,
+        "upperFence": 92199.125,
+        "outliers": []
+      },
+      "forgeloopAdaptive": {
+        "sampleCount": 20,
+        "measuredCount": 20,
+        "status": "MEASURED",
+        "q1": 57202,
+        "q3": 71258.25,
+        "iqr": 14056.25,
+        "median": 57510.5,
+        "upperFence": 92342.625,
+        "outliers": [
+          {
+            "runId": "run-infrastructure-release-forgeloopAdaptive-020",
+            "runIndex": 20,
+            "totalTokens": 107930,
+            "scenarioMedianTokens": 57510.5,
+            "ratioToMedian": 1.8767,
+            "reasons": [
+              "TOKEN_IQR_OUTLIER"
+            ],
+            "diagnosticSignals": [
+              "UNKNOWN_TOKEN_SPIKE"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

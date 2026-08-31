@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "benchmarkVersion": "2",
+  "runSetId": "codex-tail-repeat20-20260831",
+  "runId": "run-novatask-saas-landing-page-forgeloopAdaptive-003",
+  "scenarioId": "novatask-saas-landing-page",
+  "mode": "forgeloopAdaptive",
+  "runIndex": 3,
+  "recordedAt": "2026-08-31T15:59:19.208Z",
+  "usage": {
+    "inputTokens": 152352,
+    "outputTokens": 4921,
+    "cacheReadTokens": 137472,
+    "cacheWriteTokens": 0,
+    "totalTokens": 157273,
+    "costUsd": null,
+    "model": "gpt-5.4-mini",
+    "provider": "codex-chatgpt",
+    "source": "HOST_REPORTED"
+  },
+  "wallClockMs": 86764.7488,
+  "verification": "PASS",
+  "verificationCycles": 1,
+  "comparableSteps": 11,
+  "diagnostics": {
+    "executionProfile": "light",
+    "verificationCycles": 1,
+    "modelTurns": 1,
+    "toolCalls": 14,
+    "retries": null,
+    "correctionCycles": null,
+    "filesRead": null,
+    "filesWritten": 3,
+    "contextRefreshes": null,
+    "guideCount": 8,
+    "guideIds": [
+      "premium",
+      "design",
+      "taste",
+      "accessibility",
+      "clean",
+      "test",
+      "security",
+      "performance"
+    ],
+    "hostWarnings": [],
+    "terminationReason": "COMPLETED",
+    "flags": []
+  },
+  "contextUsage": {
+    "source": "UNKNOWN",
+    "profile": "light",
+    "items": {
+      "taskContext": null,
+      "guides": null,
+      "history": null,
+      "protocolInstructions": null,
+      "repositoryContext": null,
+      "other": null
+    }
+  },
+  "quality": {
+    "source": "EXTERNAL_REPORTED",
+    "scores": {
+      "visualQuality": 4.5,
+      "responsiveQuality": 4.6,
+      "accessibility": 4.6,
+      "interactionPolish": 4,
+      "requirementsCompleteness": 4.7
+    }
+  },
+  "metadata": {
+    "scenarioId": "novatask-saas-landing-page",
+    "mode": "forgeloopAdaptive",
+    "model": "gpt-5.4-mini",
+    "provider": "codex-chatgpt",
+    "promptSpecFingerprint": "7ef45827539a668fd8f406807bbefac6b92b72de917f9c03d650c165606d314b",
+    "projectRevision": "3cf40c202d84bbc0cf19f0439497698b2e56b652",
+    "benchmarkVersion": "2",
+    "environmentClass": "codex-cli-darwin-arm64",
+    "requestedProfile": "auto",
+    "resolvedProfile": "light",
+    "verificationCycles": 1,
+    "comparableSteps": 11,
+    "nodeVersion": "26.8.1",
+    "os": "darwin",
+    "arch": "arm64"
+  }
+}

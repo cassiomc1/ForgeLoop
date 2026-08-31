@@ -14,8 +14,11 @@ import {
   aggregateBenchmarkRuns,
   analyzeTokenOutliers,
   assertBenchmarkScenario,
+  classifyCombinedTailStatus,
+  classifyDistributionTailStatus,
   classifyTailStatus,
   createBenchmarkRun,
+  distributionDeltaPercent,
   evaluateRunawaySignals,
   normalizeBenchmarkContextUsage,
   normalizeBenchmarkDiagnostics,
@@ -403,6 +406,202 @@ test("tail stability status distinguishes sample, regression, warning, and stabl
   assert.equal(classifyTailStatus({ sampleCount: 20, p95TokenOverheadPercent: 60 }), "TAIL_STABLE");
   assert.equal(classifyTailStatus({ sampleCount: 20, p95TokenOverheadPercent: 10, outlierCount: 2 }), "TAIL_WARNING");
   assert.equal(classifyTailStatus({ sampleCount: 20, p95TokenOverheadPercent: 10 }), "TAIL_STABLE");
+});
+
+test("distribution delta compares candidate and baseline distribution percentiles directly", () => {
+  assert.deepEqual(distributionDeltaPercent({ p50: 100, p95: 100 }, { p50: 110, p95: 120 }), { p50: 10, p95: 20 });
+  assert.deepEqual(distributionDeltaPercent(null, { p50: 100, p95: 100 }), { p50: null, p95: null });
+  assert.deepEqual(distributionDeltaPercent({ p50: 0, p95: 0 }, { p50: 100, p95: 100 }), { p50: null, p95: null });
+});
+
+test("paired denominator sensitivity: low baseline values inflate paired overhead beyond distribution delta", () => {
+  const directRuns = [100, 100, 20];
+  const adaptiveRuns = [110, 110, 50];
+  const directStats = robustStatistic(directRuns);
+  const adaptiveStats = robustStatistic(adaptiveRuns);
+  const distDelta = distributionDeltaPercent(directStats, adaptiveStats);
+  
+  // Paired overheads: (110-100)/100 = 10%, (110-100)/100 = 10%, (50-20)/20 = 150%
+  const pairedOverheads = [10, 10, 150];
+  const pairedP95 = robustStatistic(pairedOverheads).p95;
+
+  assert.ok(pairedP95 > 100, `paired P95 (${pairedP95}%) should reflect low denominator spike`);
+  assert.ok(distDelta.p95 < 20, `distribution P95 delta (${distDelta.p95}%) remains modest`);
+});
+
+test("low baseline classification and combined tail interpretation identify ratio sensitivity", () => {
+  assert.equal(classifyDistributionTailStatus({ sampleCount: 20, distributionP95DeltaPercent: 13.2 }), "TAIL_ACCEPTABLE");
+  assert.equal(classifyDistributionTailStatus({ sampleCount: 20, distributionP95DeltaPercent: 65 }), "TAIL_REGRESSION");
+  assert.equal(classifyDistributionTailStatus({ sampleCount: 19, distributionP95DeltaPercent: 10 }), "NOT_ENOUGH_SAMPLES");
+
+  assert.equal(classifyCombinedTailStatus({
+    pairedStatus: "TAIL_REGRESSION",
+    distributionStatus: "TAIL_ACCEPTABLE",
+    lowBaselinePairCount: 7,
+    sampleCount: 20,
+  }), "TAIL_PAIRED_RATIO_SENSITIVE");
+
+  assert.equal(classifyCombinedTailStatus({
+    pairedStatus: "TAIL_REGRESSION",
+    distributionStatus: "TAIL_REGRESSION",
+    lowBaselinePairCount: 0,
+    sampleCount: 20,
+  }), "TAIL_DISTRIBUTION_REGRESSION");
+
+  assert.equal(classifyCombinedTailStatus({
+    pairedStatus: "TAIL_STABLE",
+    distributionStatus: "TAIL_ACCEPTABLE",
+    lowBaselinePairCount: 0,
+    sampleCount: 20,
+  }), "TAIL_CONSISTENT");
+
+  assert.equal(classifyCombinedTailStatus({
+    pairedStatus: "NOT_ENOUGH_SAMPLES",
+    distributionStatus: "NOT_ENOUGH_SAMPLES",
+    lowBaselinePairCount: 2,
+    sampleCount: 18,
+  }), "TAIL_UNRESOLVED");
+});
+
+test("methodology-v1 aggregate comparison shape remains frozen without v2 fields", () => {
+  const scenario = {
+    schemaVersion: 1,
+    benchmarkVersion: "2",
+    scenarioId: "documentation-correction",
+    description: "Fixture v1 scenario.",
+    input: { workType: "documentation", surfaces: [], risks: [], platforms: [] },
+    expectedProfile: "light",
+    measurements: {
+      direct: { inputTokens: null, outputTokens: null, cacheReadTokens: null, cacheWriteTokens: null, totalTokens: null, wallClockMs: null, verification: "NOT_AVAILABLE" },
+      forgeloopBalanced: { inputTokens: null, outputTokens: null, cacheReadTokens: null, cacheWriteTokens: null, totalTokens: null, wallClockMs: null, verification: "NOT_AVAILABLE" },
+      forgeloopAdaptive: { inputTokens: null, outputTokens: null, cacheReadTokens: null, cacheWriteTokens: null, totalTokens: null, wallClockMs: null, verification: "NOT_AVAILABLE" },
+    },
+  };
+  const runs = ["direct", "forgeloopBalanced", "forgeloopAdaptive"].map((mode) => ({
+    schemaVersion: 1,
+    benchmarkVersion: "1",
+    runSetId: "v1-fixture",
+    runId: `run-${mode}-001`,
+    runIndex: 1,
+    scenarioId: "documentation-correction",
+    mode,
+    usage: {
+      inputTokens: 50,
+      outputTokens: 50,
+      cacheReadTokens: 0,
+      cacheWriteTokens: 0,
+      totalTokens: 100,
+      costUsd: 0,
+      model: "fixture-model",
+      provider: "fixture-provider",
+      source: "HOST_REPORTED",
+    },
+    wallClockMs: 100,
+    verification: "PASS",
+    verificationCycles: 1,
+    comparableSteps: 2,
+    recordedAt: "2026-08-31T00:00:00.000Z",
+    metadata: {
+      scenarioId: "documentation-correction",
+      mode,
+      model: "fixture-model",
+      provider: "fixture-provider",
+      promptSpecFingerprint: "fixture-prompt",
+      projectRevision: "a".repeat(40),
+      benchmarkVersion: "1",
+      environmentClass: "darwin-node20",
+      requestedProfile: mode === "direct" ? null : mode === "forgeloopBalanced" ? "balanced" : "auto",
+      resolvedProfile: mode === "direct" ? null : mode === "forgeloopBalanced" ? "balanced" : "light",
+      verificationCycles: 1,
+      comparableSteps: 2,
+    },
+  }));
+  const aggregate = aggregateBenchmarkRuns({ scenario, runs });
+  const comp = aggregate.comparisons.forgeloopAdaptive;
+  assert.equal("tokenOverheadPercent" in comp, true);
+  assert.equal("distributionDeltaPercent" in comp, false);
+  assert.equal("pairedOverheadPercent" in comp, false);
+  assert.equal("pairedRatioDiagnostics" in comp, false);
+  assert.equal("pairedRuns" in comp, false);
+  assert.equal("tail" in comp, false);
+});
+
+test("v2 comparative distribution and low-baseline diagnostics use only trusted comparable runs", () => {
+  const scenario = {
+    schemaVersion: 1,
+    benchmarkVersion: "2",
+    scenarioId: "documentation-correction",
+    description: "Fixture v2 scenario.",
+    input: { workType: "documentation", surfaces: [], risks: [], platforms: [] },
+    expectedProfile: "light",
+    measurements: {
+      direct: { inputTokens: null, outputTokens: null, cacheReadTokens: null, cacheWriteTokens: null, totalTokens: null, wallClockMs: null, verification: "NOT_AVAILABLE" },
+      forgeloopBalanced: { inputTokens: null, outputTokens: null, cacheReadTokens: null, cacheWriteTokens: null, totalTokens: null, wallClockMs: null, verification: "NOT_AVAILABLE" },
+      forgeloopAdaptive: { inputTokens: null, outputTokens: null, cacheReadTokens: null, cacheWriteTokens: null, totalTokens: null, wallClockMs: null, verification: "NOT_AVAILABLE" },
+    },
+  };
+  const makeRun = (mode, runIndex, totalTokens, verification) => createBenchmarkRun({
+    runSetId: "v2-filter-fixture",
+    runId: `run-${mode}-${String(runIndex).padStart(3, "0")}`,
+    runIndex,
+    scenario,
+    mode,
+    usage: {
+      inputTokens: Math.floor(totalTokens / 2),
+      outputTokens: Math.ceil(totalTokens / 2),
+      cacheReadTokens: 0,
+      cacheWriteTokens: 0,
+      totalTokens,
+      costUsd: 0,
+      model: "fixture-model",
+      provider: "fixture-provider",
+      source: "HOST_REPORTED",
+    },
+    wallClockMs: 100,
+    verification,
+    verificationCycles: 1,
+    comparableSteps: 2,
+    metadata: {
+      promptSpecFingerprint: "fixture-prompt",
+      projectRevision: "a".repeat(40),
+      environmentClass: "darwin-node20",
+      resolvedProfile: mode === "direct" ? null : mode === "forgeloopBalanced" ? "balanced" : "light",
+    },
+  });
+
+  // Direct: 3 PASS runs (100, 100, 20)
+  // Adaptive: 2 PASS runs (110 on run 1, 50 on run 3) and 1 FAIL run (999 on run 2)
+  const runs = [
+    makeRun("direct", 1, 100, "PASS"),
+    makeRun("direct", 2, 100, "PASS"),
+    makeRun("direct", 3, 20, "PASS"),
+    makeRun("forgeloopBalanced", 1, 100, "PASS"),
+    makeRun("forgeloopBalanced", 2, 100, "PASS"),
+    makeRun("forgeloopBalanced", 3, 100, "PASS"),
+    makeRun("forgeloopAdaptive", 1, 110, "PASS"),
+    makeRun("forgeloopAdaptive", 2, 999, "FAIL"),
+    makeRun("forgeloopAdaptive", 3, 50, "PASS"),
+  ];
+
+  const aggregate = aggregateBenchmarkRuns({ scenario, runs });
+  const comp = aggregate.comparisons.forgeloopAdaptive;
+
+  assert.equal(comp.comparablePairs, 2);
+  assert.equal(comp.tokenComparablePairs, 2);
+  assert.equal(comp.pairedRuns.length, 2);
+  assert.deepEqual(comp.pairedRuns.map((r) => r.runIndex), [1, 3]);
+
+  // Comparable Direct population is [100, 20], median = 60.
+  // Low baseline threshold = 60 * 0.6 = 36.
+  // Run 3 directTokens (20) < 36 -> LOW_BASELINE_TOKEN_REGIME.
+  // Run 1 directTokens (100) >= 36 -> NORMAL.
+  assert.equal(comp.pairedRatioDiagnostics.baselineP50, 60);
+  assert.equal(comp.pairedRatioDiagnostics.lowBaselineThreshold, 36);
+  assert.equal(comp.pairedRatioDiagnostics.lowBaselinePairCount, 1);
+
+  // Comparable Adaptive population is [110, 50], median = 80.
+  // Distribution P50 delta = (80 - 60)/60 * 100 = +33.3333%.
+  assert.equal(comp.distributionDeltaPercent.p50, 33.3333);
 });
 
 test("benchmark tiers bound the runner repetition counts", () => {

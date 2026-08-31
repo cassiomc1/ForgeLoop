@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "benchmarkVersion": "2",
+  "runSetId": "codex-tail-repeat20-20260831",
+  "runId": "run-static-landing-page-direct-006",
+  "scenarioId": "static-landing-page",
+  "mode": "direct",
+  "runIndex": 6,
+  "recordedAt": "2026-08-31T15:59:19.210Z",
+  "usage": {
+    "inputTokens": 138822,
+    "outputTokens": 2785,
+    "cacheReadTokens": 127232,
+    "cacheWriteTokens": 0,
+    "totalTokens": 141607,
+    "costUsd": null,
+    "model": "gpt-5.4-mini",
+    "provider": "codex-chatgpt",
+    "source": "HOST_REPORTED"
+  },
+  "wallClockMs": 52085.9814,
+  "verification": "PASS",
+  "verificationCycles": 1,
+  "comparableSteps": 8,
+  "diagnostics": {
+    "executionProfile": null,
+    "verificationCycles": 1,
+    "modelTurns": 1,
+    "toolCalls": 13,
+    "retries": null,
+    "correctionCycles": null,
+    "filesRead": null,
+    "filesWritten": 3,
+    "contextRefreshes": null,
+    "guideCount": 0,
+    "guideIds": [],
+    "hostWarnings": [],
+    "terminationReason": "COMPLETED",
+    "flags": []
+  },
+  "contextUsage": {
+    "source": "UNKNOWN",
+    "profile": null,
+    "items": {
+      "taskContext": null,
+      "guides": null,
+      "history": null,
+      "protocolInstructions": null,
+      "repositoryContext": null,
+      "other": null
+    }
+  },
+  "quality": {
+    "source": "EXTERNAL_REPORTED",
+    "scores": {
+      "visualQuality": 4.1,
+      "responsiveQuality": 4.3,
+      "accessibility": 4.4,
+      "interactionPolish": 3.9,
+      "requirementsCompleteness": 4.6
+    }
+  },
+  "metadata": {
+    "scenarioId": "static-landing-page",
+    "mode": "direct",
+    "model": "gpt-5.4-mini",
+    "provider": "codex-chatgpt",
+    "promptSpecFingerprint": "619f18150b5355210c00bd69b16c2f83c183009f4bf12960b250cfe3b257769b",
+    "projectRevision": "3cf40c202d84bbc0cf19f0439497698b2e56b652",
+    "benchmarkVersion": "2",
+    "environmentClass": "codex-cli-darwin-arm64",
+    "requestedProfile": null,
+    "resolvedProfile": null,
+    "verificationCycles": 1,
+    "comparableSteps": 8,
+    "nodeVersion": "26.8.1",
+    "os": "darwin",
+    "arch": "arm64"
+  }
+}
