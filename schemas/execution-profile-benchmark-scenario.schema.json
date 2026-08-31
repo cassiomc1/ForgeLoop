@@ -23,6 +23,7 @@
       "additionalProperties": false
     },
     "expectedProfile": { "enum": ["light", "balanced", "full"] },
+    "referenceTask": { "$ref": "#/$defs/referenceTask" },
     "measurements": {
       "type": "object",
       "required": ["direct", "forgeloopBalanced", "forgeloopAdaptive"],
@@ -35,6 +36,17 @@
     }
   },
   "$defs": {
+    "referenceTask": {
+      "type": "object",
+      "required": ["name", "requirements", "exclusions", "artifactMode"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "requirements": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 },
+        "exclusions": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 },
+        "artifactMode": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
     "measurement": {
       "type": "object",
       "required": ["inputTokens", "outputTokens", "cacheReadTokens", "cacheWriteTokens", "totalTokens", "wallClockMs", "verification"],

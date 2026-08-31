@@ -22,6 +22,13 @@ metadata needed to determine whether a comparison is valid. The runner never
 derives token counts, costs, cache values, verification results, or comparable
 steps from prompt length, elapsed time, model names, or estimates.
 
+The required reference set contains the six original scenarios plus
+`novatask-saas-landing-page`: documentation correction, static landing page,
+small bug fix, API feature, authentication change, infrastructure/release, and
+the NovaTask static SaaS landing page. NovaTask is a local HTML5/CSS3/vanilla
+JavaScript workload with no external services, authentication, secrets, or
+publication, and must resolve to `light`.
+
 Trusted efficiency comparisons require all of the following:
 
 - `PROVIDER_REPORTED` or `HOST_REPORTED` usage;
@@ -81,6 +88,54 @@ measurement and derives the Git revision from the target checkout. Results
 are written under a unique run-set directory and existing history is never
 overwritten.
 
+An adapter may also return host-observed context usage. ForgeLoop does not
+tokenize provider prompts. The optional shape is:
+
+```json
+{
+  "contextUsage": {
+    "source": "HOST_REPORTED",
+    "profile": "light",
+    "items": {
+      "taskContext": null,
+      "guides": null,
+      "history": null,
+      "protocolInstructions": null,
+      "repositoryContext": null,
+      "other": null
+    }
+  }
+}
+```
+
+Every item is nullable and `UNKNOWN` requires all items to remain `null`.
+Missing values are never inferred. When adaptive resolves to `light`, the
+aggregate compares complete host-reported context items with the matching
+balanced run and reports `CONTEXT_INFLATION` when light context is larger.
+This is an observational diagnostic and never blocks lifecycle completion.
+
+UI adapters may additionally return independently evaluated quality scores:
+
+```json
+{
+  "quality": {
+    "source": "EXTERNAL_REPORTED",
+    "scores": {
+      "visualQuality": null,
+      "responsiveQuality": null,
+      "accessibility": null,
+      "interactionPolish": null,
+      "requirementsCompleteness": null
+    }
+  }
+}
+```
+
+Scores are on a 0–5 scale and remain `UNKNOWN` when no external evaluator or
+host observation is available. Implementer self-ratings should not be used as
+independent quality evidence; for NovaTask, review direct and ForgeLoop
+outputs blind to execution mode before revealing the labels.
+
 ## Inspecting and validating results
 
 ```bash
@@ -102,6 +157,10 @@ recomputed aggregates below `benchmarks/execution-profiles/results/aggregate/`.
 The validator checks all scenario, raw-run, and aggregate schemas and
 recomputes aggregates from raw measurements. A changed overhead target is
 observable in the report; it is not a blocking lifecycle gate.
+
+CI can run `npm run benchmark:profiles:regression -- --json`. It reports
+`OK`, `EFFICIENCY_REGRESSION`, `NOT_MEASURED`, or `NOT_COMPARABLE`; a regression
+is a release-quality warning, not a ForgeLoop lifecycle failure.
 
 For LIGHT scenarios, the initial non-blocking objectives are P50 token
 overhead no greater than +35% and P95 token overhead no greater than +60%
@@ -128,6 +187,12 @@ but it may not use `light` to skip a required lifecycle phase or gate.
 
 Historical protocol-v1 routes without profile metadata remain readable and are
 projected to the balanced compatibility profile.
+
+For UI scenarios, hosts should report independent visual, responsive,
+accessibility, interaction-polish, and requirements-completeness scores when
+an external evaluator or blind human review is available. Implementer
+self-ratings are not trusted as a substitute. NovaTask comparisons should
+hide the execution mode until this review is complete.
 
 ## Schemas and source policy
 

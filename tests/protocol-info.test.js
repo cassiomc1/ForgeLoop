@@ -43,6 +43,10 @@ test("protocol-info exposes a complete public compatibility handshake", () => {
   assert.equal(info.features.compactLifecycleOutput.preservesDefaultOutput, true);
   assert.equal(info.features.usageTelemetry.estimation, false);
   assert.equal(info.features.efficiencyMetrics.comparativeOnly, true);
+  assert.equal(info.features.executionProfileContext.resource, "task/context");
+  assert.equal(info.features.executionProfileContext.resolvedProfileAuthoritative, true);
+  assert.deepEqual(info.features.contextUsageObservability.sources, ["HOST_REPORTED", "UNKNOWN"]);
+  assert.equal(info.features.contextUsageObservability.estimation, false);
   assert.ok(info.commands.some((command) => command.name === "protocol-info"));
   assert.ok(info.commands.some((command) => command.name === "task-resume"));
   assert.equal(info.errors.length, ALL_KNOWN_ERROR_CODES.size);

@@ -3,7 +3,11 @@ import path from "node:path";
 
 import { assertSchema, readSchema } from "../../src/core/schema-validation.js";
 import { getPackageRoot } from "../../src/core/templates.js";
-import { assertBenchmarkScenario, assertBenchmarkRun } from "../../src/core/execution-profile-benchmarks.js";
+import {
+  assertBenchmarkScenario,
+  assertBenchmarkRun,
+  assertRequiredBenchmarkScenarios,
+} from "../../src/core/execution-profile-benchmarks.js";
 
 export async function readBenchmarkScenarios(repositoryRoot) {
   const directory = path.join(repositoryRoot, "benchmarks", "execution-profiles");
@@ -15,8 +19,7 @@ export async function readBenchmarkScenarios(repositoryRoot) {
     assertSchema(scenario, schema, name);
     scenarios.push(assertBenchmarkScenario(scenario));
   }
-  if (scenarios.length !== 6) throw new Error(`expected six benchmark scenarios, found ${scenarios.length}`);
-  return scenarios;
+  return assertRequiredBenchmarkScenarios(scenarios);
 }
 
 async function readJsonFiles(directory) {

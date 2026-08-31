@@ -10,6 +10,9 @@
 
 - Added schema-validated execution-profile benchmark scenarios, a host-adapter
   runner, reproducible raw/aggregate results, and summary/validation commands.
+- Added the NovaTask static SaaS landing-page reference scenario, optional
+  host-reported context usage, observational `CONTEXT_INFLATION` diagnostics,
+  and a non-blocking CI efficiency regression report.
 - Added the read-only `task/context` integration projection and MCP resource
   for bounded profile-aware host context.
 - Added explicit benchmark methodology and profile invariant documentation.
@@ -19,6 +22,8 @@
 - Expanded profile-aware context guidance without changing lifecycle chronology,
   required gates, verification truth, authority, provenance, safety floors, or
   validator-backed completion.
+- Advertised the canonical `task/context` resource and its resolved-profile
+  authority explicitly through the integration capability handshake.
 - Updated package metadata and release identity to 1.7.0.
 
 ### Verification boundary

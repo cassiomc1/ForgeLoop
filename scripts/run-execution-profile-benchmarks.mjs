@@ -14,6 +14,7 @@ import {
   BENCHMARK_MODES,
   BENCHMARK_VERSION,
   assertBenchmarkScenario,
+  assertRequiredBenchmarkScenarios,
   createBenchmarkRun,
 } from "../src/core/execution-profile-benchmarks.js";
 
@@ -68,7 +69,7 @@ function helpText() {
   return [
     "Usage: npm run benchmark:profiles -- --adapter <module> [options]",
     "",
-    "The adapter must execute each scenario and return actual provider/host usage, verification, and comparable steps.",
+    "The adapter must execute each scenario and return actual provider/host usage, verification, comparable steps, and optional host-reported contextUsage.",
     "Options: --target <path> --runs <1..100> --run-set <id> --output <directory> --json",
   ].join("\n");
 }
@@ -82,8 +83,11 @@ async function loadScenarios() {
     assertSchema(scenario, scenarioSchema, name);
     scenarios.push(assertBenchmarkScenario(scenario));
   }
-  if (scenarios.length !== 6) throw usageError(`expected six benchmark scenarios, found ${scenarios.length}`);
-  return scenarios;
+  try {
+    return assertRequiredBenchmarkScenarios(scenarios);
+  } catch (error) {
+    throw usageError(error.message);
+  }
 }
 
 async function loadAdapter(adapterSpecifier) {
@@ -166,6 +170,8 @@ async function executeRuns({ adapter, scenarios, target, runSetId, runs }) {
           verification: response.verification ?? "NOT_AVAILABLE",
           verificationCycles: response.verificationCycles ?? null,
           comparableSteps: response.comparableSteps ?? null,
+          contextUsage: response.contextUsage,
+          quality: response.quality,
           metadata: normalizedAdapterMetadata(response, target, repository, scenario, mode),
         });
         allRuns.push(run);
@@ -216,6 +222,7 @@ async function writeResults({ outputDirectory, runSetId, scenarios, runs }) {
       expectedProfile: aggregate.expectedProfile,
       claimsAllowed: aggregate.claimsAllowed,
       lightObjectives: aggregate.lightObjectives,
+      contextInflation: aggregate.contextInflation ?? null,
     })),
   };
   await writeFile(path.join(aggregateDirectory, "summary.json"), `${JSON.stringify(summary, null, 2)}\n`, "utf8");

@@ -18,6 +18,8 @@ preparation and verification checklist; it does not authorize publication.
 - [ ] `npm test` passes.
 - [ ] `npm run benchmark:profiles:check` passes; absent provider/host history
       is reported as `NOT_MEASURED`, never as zero or a passing efficiency claim.
+- [ ] `npm run benchmark:profiles:regression` reports the observed status;
+      `EFFICIENCY_REGRESSION` remains a non-blocking warning.
 - [ ] `npm run coverage` passes the configured global and critical-module gates.
 - [ ] `npm run docs:check`, `npm run docs:generated:check`,
       `npm run docs:conformance`, and `npm run docs:examples:check` pass.

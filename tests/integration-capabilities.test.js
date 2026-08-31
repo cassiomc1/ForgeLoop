@@ -36,6 +36,7 @@ test("capabilities report versions, features, commands, and resources", () => {
 
   const resourceNames = capabilities.resources.map((resource) => resource.name);
   assert.ok(resourceNames.includes("task/ownership"));
+  assert.ok(resourceNames.includes("task/context"));
 });
 
 test("verification adapter and isolation policy are runtime-only context", () => {
@@ -84,6 +85,15 @@ test("advertised adaptive and efficiency capabilities match their boundaries", (
   });
   assert.equal(capabilities.features.usageTelemetry.estimation, false);
   assert.equal(capabilities.features.efficiencyMetrics.comparativeOnly, true);
+  assert.deepEqual(capabilities.features.executionProfileContext, {
+    version: 1,
+    supported: true,
+    resource: "task/context",
+    resolvedProfileAuthoritative: true,
+    compatibilityFallback: "balanced",
+    lifecycleFastPath: false,
+  });
+  assert.equal(capabilities.features.contextUsageObservability.estimation, false);
 });
 
 test("every canonical command has a base risk class", () => {

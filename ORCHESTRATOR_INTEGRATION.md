@@ -107,6 +107,13 @@ The profile changes context depth only. Required phases and gates, evidence and
 verification truth, authority and provenance, the safety floor, and
 validator-backed completion remain invariant.
 
+The canonical integration capability is `executionProfileContext`, and the
+host-facing `task/context` projection is the default input for profile-aware
+presentation. A host that cannot read that resource falls back to balanced
+compatibility behavior. It must consume `executionProfile.resolved`, preserve
+the safety floor, and pass missing context or usage as unavailable rather than
+estimating it.
+
 The profile is orthogonal to `complianceMode`. CLI requests take precedence
 over project configuration only as requests, while the deterministic safety
 floor always wins. Historical routes without the optional profile field remain
