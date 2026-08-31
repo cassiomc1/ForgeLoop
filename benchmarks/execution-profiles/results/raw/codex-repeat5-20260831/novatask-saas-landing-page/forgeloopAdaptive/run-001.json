@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "benchmarkVersion": "1",
+  "runSetId": "codex-repeat5-20260831",
+  "runId": "run-novatask-saas-landing-page-forgeloopAdaptive-001",
+  "scenarioId": "novatask-saas-landing-page",
+  "mode": "forgeloopAdaptive",
+  "runIndex": 1,
+  "recordedAt": "2026-08-31T05:09:59.032Z",
+  "usage": {
+    "inputTokens": 145655,
+    "outputTokens": 4426,
+    "cacheReadTokens": 131328,
+    "cacheWriteTokens": 0,
+    "totalTokens": 150081,
+    "costUsd": null,
+    "model": "gpt-5.4-mini",
+    "provider": "codex-chatgpt",
+    "source": "HOST_REPORTED"
+  },
+  "wallClockMs": 74556.7569,
+  "verification": "PASS",
+  "verificationCycles": 1,
+  "comparableSteps": 11,
+  "contextUsage": {
+    "source": "UNKNOWN",
+    "profile": "light",
+    "items": {
+      "taskContext": null,
+      "guides": null,
+      "history": null,
+      "protocolInstructions": null,
+      "repositoryContext": null,
+      "other": null
+    }
+  },
+  "quality": {
+    "source": "UNKNOWN",
+    "scores": {
+      "visualQuality": null,
+      "responsiveQuality": null,
+      "accessibility": null,
+      "interactionPolish": null,
+      "requirementsCompleteness": null
+    }
+  },
+  "metadata": {
+    "scenarioId": "novatask-saas-landing-page",
+    "mode": "forgeloopAdaptive",
+    "model": "gpt-5.4-mini",
+    "provider": "codex-chatgpt",
+    "promptSpecFingerprint": "b6515e63a431aaf1e782f33b29f4ce9b0adeed55b87ee13f41749129fc982536",
+    "projectRevision": "1eaae5cbb2046ef606d201161aa5abbbeddab153",
+    "benchmarkVersion": "1",
+    "environmentClass": "codex-cli-darwin-arm64",
+    "requestedProfile": "auto",
+    "resolvedProfile": "light",
+    "verificationCycles": 1,
+    "comparableSteps": 11,
+    "nodeVersion": "26.8.1",
+    "os": "darwin",
+    "arch": "arm64"
+  }
+}

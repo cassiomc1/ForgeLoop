@@ -1,0 +1,552 @@
+{
+  "schemaVersion": 1,
+  "benchmarkVersion": "1",
+  "runSetId": "codex-repeat5-20260831",
+  "scenarioId": "small-bug-fix",
+  "expectedProfile": "balanced",
+  "modeAggregates": {
+    "direct": {
+      "runCount": 5,
+      "verificationSuccessRate": 1,
+      "usageSources": [
+        "HOST_REPORTED"
+      ],
+      "totalTokens": {
+        "count": 5,
+        "average": 56260,
+        "p50": 56274,
+        "p95": 56511.8,
+        "minimum": 55929,
+        "maximum": 56551
+      },
+      "wallClockMs": {
+        "count": 5,
+        "average": 17639.5338,
+        "p50": 17173.6287,
+        "p95": 20345.2739,
+        "minimum": 15993.8594,
+        "maximum": 21025.5631
+      },
+      "verificationCycles": {
+        "count": 5,
+        "average": 1,
+        "p50": 1,
+        "p95": 1,
+        "minimum": 1,
+        "maximum": 1
+      },
+      "comparableSteps": {
+        "count": 5,
+        "average": 3,
+        "p50": 3,
+        "p95": 3,
+        "minimum": 3,
+        "maximum": 3
+      },
+      "tokensPerComparableStep": {
+        "count": 5,
+        "average": 18753.3333,
+        "p50": 18758,
+        "p95": 18837.2667,
+        "minimum": 18643,
+        "maximum": 18850.333333333332
+      },
+      "contextUsage": {
+        "sources": [
+          "UNKNOWN"
+        ],
+        "profiles": [],
+        "measuredRuns": 0,
+        "totalTokens": {
+          "count": 0,
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "items": {
+          "taskContext": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          },
+          "guides": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          },
+          "history": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          },
+          "protocolInstructions": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          },
+          "repositoryContext": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          },
+          "other": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          }
+        }
+      },
+      "quality": {
+        "sources": [
+          "UNKNOWN"
+        ],
+        "scores": {
+          "visualQuality": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          },
+          "responsiveQuality": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          },
+          "accessibility": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          },
+          "interactionPolish": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          },
+          "requirementsCompleteness": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          }
+        }
+      }
+    },
+    "forgeloopBalanced": {
+      "runCount": 5,
+      "verificationSuccessRate": 1,
+      "usageSources": [
+        "HOST_REPORTED"
+      ],
+      "totalTokens": {
+        "count": 5,
+        "average": 60360.4,
+        "p50": 57492,
+        "p95": 69094.4,
+        "minimum": 57388,
+        "maximum": 71989
+      },
+      "wallClockMs": {
+        "count": 5,
+        "average": 18639.9877,
+        "p50": 18562.8753,
+        "p95": 20042.1446,
+        "minimum": 17276.9206,
+        "maximum": 20344.47
+      },
+      "verificationCycles": {
+        "count": 5,
+        "average": 1,
+        "p50": 1,
+        "p95": 1,
+        "minimum": 1,
+        "maximum": 1
+      },
+      "comparableSteps": {
+        "count": 5,
+        "average": 3,
+        "p50": 3,
+        "p95": 3,
+        "minimum": 3,
+        "maximum": 3
+      },
+      "tokensPerComparableStep": {
+        "count": 5,
+        "average": 20120.1333,
+        "p50": 19164,
+        "p95": 23031.4667,
+        "minimum": 19129.333333333332,
+        "maximum": 23996.333333333332
+      },
+      "contextUsage": {
+        "sources": [
+          "UNKNOWN"
+        ],
+        "profiles": [
+          "balanced"
+        ],
+        "measuredRuns": 0,
+        "totalTokens": {
+          "count": 0,
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "items": {
+          "taskContext": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          },
+          "guides": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          },
+          "history": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          },
+          "protocolInstructions": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          },
+          "repositoryContext": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          },
+          "other": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          }
+        }
+      },
+      "quality": {
+        "sources": [
+          "UNKNOWN"
+        ],
+        "scores": {
+          "visualQuality": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          },
+          "responsiveQuality": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          },
+          "accessibility": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          },
+          "interactionPolish": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          },
+          "requirementsCompleteness": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          }
+        }
+      }
+    },
+    "forgeloopAdaptive": {
+      "runCount": 5,
+      "verificationSuccessRate": 1,
+      "usageSources": [
+        "HOST_REPORTED"
+      ],
+      "totalTokens": {
+        "count": 5,
+        "average": 60196.6,
+        "p50": 57817,
+        "p95": 68585.8,
+        "minimum": 56865,
+        "maximum": 71259
+      },
+      "wallClockMs": {
+        "count": 5,
+        "average": 21186.5,
+        "p50": 21700.473,
+        "p95": 24390.8641,
+        "minimum": 17102.4958,
+        "maximum": 24583.9206
+      },
+      "verificationCycles": {
+        "count": 5,
+        "average": 1,
+        "p50": 1,
+        "p95": 1,
+        "minimum": 1,
+        "maximum": 1
+      },
+      "comparableSteps": {
+        "count": 5,
+        "average": 3,
+        "p50": 3,
+        "p95": 3,
+        "minimum": 3,
+        "maximum": 3
+      },
+      "tokensPerComparableStep": {
+        "count": 5,
+        "average": 20065.5333,
+        "p50": 19272.3333,
+        "p95": 22861.9333,
+        "minimum": 18955,
+        "maximum": 23753
+      },
+      "contextUsage": {
+        "sources": [
+          "UNKNOWN"
+        ],
+        "profiles": [
+          "balanced"
+        ],
+        "measuredRuns": 0,
+        "totalTokens": {
+          "count": 0,
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "items": {
+          "taskContext": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          },
+          "guides": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          },
+          "history": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          },
+          "protocolInstructions": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          },
+          "repositoryContext": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          },
+          "other": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          }
+        }
+      },
+      "quality": {
+        "sources": [
+          "UNKNOWN"
+        ],
+        "scores": {
+          "visualQuality": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          },
+          "responsiveQuality": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          },
+          "accessibility": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          },
+          "interactionPolish": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          },
+          "requirementsCompleteness": {
+            "count": 0,
+            "average": null,
+            "p50": null,
+            "p95": null,
+            "minimum": null,
+            "maximum": null
+          }
+        }
+      }
+    }
+  },
+  "comparisons": {
+    "direct": null,
+    "forgeloopBalanced": {
+      "comparablePairs": 5,
+      "tokenComparablePairs": 5,
+      "timeComparablePairs": 5,
+      "tokenOverheadPercent": {
+        "p50": 2.1644,
+        "p95": 22.4069
+      },
+      "timeOverheadPercent": {
+        "p50": 5.3266,
+        "p95": 22.9095
+      },
+      "claimStatus": "OBSERVATIONAL",
+      "claimAllowed": true,
+      "reason": "Trusted usage, actual timing, verification, and matching comparability metadata are present."
+    },
+    "forgeloopAdaptive": {
+      "comparablePairs": 5,
+      "tokenComparablePairs": 5,
+      "timeComparablePairs": 5,
+      "tokenOverheadPercent": {
+        "p50": 2.877,
+        "p95": 21.8324
+      },
+      "timeOverheadPercent": {
+        "p50": 16.924,
+        "p95": 42.7644
+      },
+      "claimStatus": "OBSERVATIONAL",
+      "claimAllowed": true,
+      "reason": "Trusted usage, actual timing, verification, and matching comparability metadata are present."
+    }
+  },
+  "lightObjectives": null,
+  "sourcePolicy": "PROVIDER_REPORTED_OR_HOST_REPORTED_ONLY",
+  "claimsAllowed": true,
+  "generatedFromRunCount": 15,
+  "contextInflation": {
+    "status": "NOT_COMPARABLE",
+    "comparablePairs": 0,
+    "inflatedPairs": 0,
+    "lightContextTokens": {
+      "count": 0,
+      "average": null,
+      "p50": null,
+      "p95": null,
+      "minimum": null,
+      "maximum": null
+    },
+    "balancedContextTokens": {
+      "count": 0,
+      "average": null,
+      "p50": null,
+      "p95": null,
+      "minimum": null,
+      "maximum": null
+    },
+    "blocking": false,
+    "reason": "The adaptive mode did not resolve to LIGHT for this scenario."
+  }
+}

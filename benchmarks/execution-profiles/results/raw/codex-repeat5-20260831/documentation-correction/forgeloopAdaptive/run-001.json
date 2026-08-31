@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "benchmarkVersion": "1",
+  "runSetId": "codex-repeat5-20260831",
+  "runId": "run-documentation-correction-forgeloopAdaptive-001",
+  "scenarioId": "documentation-correction",
+  "mode": "forgeloopAdaptive",
+  "runIndex": 1,
+  "recordedAt": "2026-08-31T04:50:01.715Z",
+  "usage": {
+    "inputTokens": 56357,
+    "outputTokens": 665,
+    "cacheReadTokens": 50688,
+    "cacheWriteTokens": 0,
+    "totalTokens": 57022,
+    "costUsd": null,
+    "model": "gpt-5.4-mini",
+    "provider": "codex-chatgpt",
+    "source": "HOST_REPORTED"
+  },
+  "wallClockMs": 17590.0387,
+  "verification": "PASS",
+  "verificationCycles": 1,
+  "comparableSteps": 3,
+  "contextUsage": {
+    "source": "UNKNOWN",
+    "profile": "light",
+    "items": {
+      "taskContext": null,
+      "guides": null,
+      "history": null,
+      "protocolInstructions": null,
+      "repositoryContext": null,
+      "other": null
+    }
+  },
+  "quality": {
+    "source": "UNKNOWN",
+    "scores": {
+      "visualQuality": null,
+      "responsiveQuality": null,
+      "accessibility": null,
+      "interactionPolish": null,
+      "requirementsCompleteness": null
+    }
+  },
+  "metadata": {
+    "scenarioId": "documentation-correction",
+    "mode": "forgeloopAdaptive",
+    "model": "gpt-5.4-mini",
+    "provider": "codex-chatgpt",
+    "promptSpecFingerprint": "8a88cba20b5d6a7cbb61f8c4b7423217d8b0c3d13b663a61d59f9efb0909bb66",
+    "projectRevision": "1eaae5cbb2046ef606d201161aa5abbbeddab153",
+    "benchmarkVersion": "1",
+    "environmentClass": "codex-cli-darwin-arm64",
+    "requestedProfile": "auto",
+    "resolvedProfile": "light",
+    "verificationCycles": 1,
+    "comparableSteps": 3,
+    "nodeVersion": "26.8.1",
+    "os": "darwin",
+    "arch": "arm64"
+  }
+}

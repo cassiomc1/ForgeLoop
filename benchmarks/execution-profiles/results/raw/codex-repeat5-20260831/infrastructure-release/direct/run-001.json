@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "benchmarkVersion": "1",
+  "runSetId": "codex-repeat5-20260831",
+  "runId": "run-infrastructure-release-direct-001",
+  "scenarioId": "infrastructure-release",
+  "mode": "direct",
+  "runIndex": 1,
+  "recordedAt": "2026-08-31T04:51:27.180Z",
+  "usage": {
+    "inputTokens": 68737,
+    "outputTokens": 589,
+    "cacheReadTokens": 62720,
+    "cacheWriteTokens": 0,
+    "totalTokens": 69326,
+    "costUsd": null,
+    "model": "gpt-5.4-mini",
+    "provider": "codex-chatgpt",
+    "source": "HOST_REPORTED"
+  },
+  "wallClockMs": 15805.5469,
+  "verification": "PASS",
+  "verificationCycles": 1,
+  "comparableSteps": 4,
+  "contextUsage": {
+    "source": "UNKNOWN",
+    "profile": null,
+    "items": {
+      "taskContext": null,
+      "guides": null,
+      "history": null,
+      "protocolInstructions": null,
+      "repositoryContext": null,
+      "other": null
+    }
+  },
+  "quality": {
+    "source": "UNKNOWN",
+    "scores": {
+      "visualQuality": null,
+      "responsiveQuality": null,
+      "accessibility": null,
+      "interactionPolish": null,
+      "requirementsCompleteness": null
+    }
+  },
+  "metadata": {
+    "scenarioId": "infrastructure-release",
+    "mode": "direct",
+    "model": "gpt-5.4-mini",
+    "provider": "codex-chatgpt",
+    "promptSpecFingerprint": "b5d17711968aaee4376c30f2c8df7135499adeaa2028108024b8199af244f9e8",
+    "projectRevision": "1eaae5cbb2046ef606d201161aa5abbbeddab153",
+    "benchmarkVersion": "1",
+    "environmentClass": "codex-cli-darwin-arm64",
+    "requestedProfile": null,
+    "resolvedProfile": null,
+    "verificationCycles": 1,
+    "comparableSteps": 4,
+    "nodeVersion": "26.8.1",
+    "os": "darwin",
+    "arch": "arm64"
+  }
+}
