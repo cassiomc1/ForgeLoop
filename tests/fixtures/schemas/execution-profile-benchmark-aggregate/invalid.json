@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "benchmarkVersion": "1",
+  "runSetId": "fixture-set",
+  "scenarioId": "fixture-scenario",
+  "expectedProfile": "unknown"
+}

@@ -96,11 +96,23 @@ reflection, trajectory evaluation, handoff, attestation, and continuity
 artifacts unless requested, required, or needed for recovery. The lifecycle
 chronology remains unchanged.
 
+The read-only \`task/context\` integration resource provides the canonical
+profile-aware projection: objective, deliverables, constraints, selected guide
+IDs, phase, next action, verification requirements, and context policy. A
+profile changes presentation and optional context only; it never permits a
+phase or required gate to be skipped.
+
 Usage telemetry is provider or host reported when available, actor-reported
 only through the explicit \`usage-record\` fallback, and \`UNKNOWN\` otherwise.
 ForgeLoop never estimates tokens or treats usage as verification evidence.
 \`efficiency --task\` is read-only and returns \`NOT_COMPARABLE\` unless a
 project-local baseline has matching metadata.
+
+Measured execution-profile benchmarks are observational. The reproducible
+runner accepts provider or host usage, records actual timing, requires PASS
+verification and matching metadata for comparisons, and reports \`NOT_MEASURED\`
+or \`NOT_COMPARABLE\` when evidence is absent or incompatible. See
+\`docs/EXECUTION_PROFILE_BENCHMARKS.md\` for the runner and schemas.
 
 ## Authority boundaries
 

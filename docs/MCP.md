@@ -50,6 +50,7 @@ Capability flags (process-scoped, immutable after launch):
 - `forgeloop://task/{taskId}/action/{actionId}`
 - `forgeloop://task/{taskId}/approvals`
 - `forgeloop://task/{taskId}/metrics`
+- `forgeloop://task/{taskId}/context` — bounded profile-aware host context
 - `forgeloop://task/{taskId}/evaluations`
 - `forgeloop://project/capability-policy`
 
@@ -82,6 +83,11 @@ content.
 
 Raw recovery artifacts, transaction journals, lock files, and unbounded event
 ledgers are intentionally not exposed.
+
+The context resource is read-only. It lets an MCP host adapt presentation depth
+from the canonical resolved execution profile while preserving lifecycle
+phases, required gates, verification truth, authority, provenance, and
+validator-backed completion.
 
 Optional workspace binding, handoff, responsibility, verification-scope,
 RevisionProvider, SigningProvider, and attestation operations remain governed

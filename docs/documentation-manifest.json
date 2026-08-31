@@ -512,6 +512,19 @@
       "packaged": true
     },
     {
+      "path": "docs/EXECUTION_PROFILE_BENCHMARKS.md",
+      "id": "execution-profile-benchmarks",
+      "class": "reference",
+      "audience": [
+        "integrator",
+        "maintainer"
+      ],
+      "canonicalFor": [
+        "execution-profile-benchmarks"
+      ],
+      "packaged": true
+    },
+    {
       "path": "docs/AGENT_PROTOCOL_SUMMARY.md",
       "id": "agent-protocol-summary",
       "class": "generated",

@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "forgeloop://schemas/execution-profile-benchmark-run.schema.json",
+  "title": "ForgeLoop execution-profile benchmark run",
+  "type": "object",
+  "required": ["schemaVersion", "benchmarkVersion", "runSetId", "runId", "scenarioId", "mode", "runIndex", "recordedAt", "usage", "wallClockMs", "verification", "verificationCycles", "comparableSteps", "metadata"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "benchmarkVersion": { "const": "1" },
+    "runSetId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$" },
+    "runId": { "type": "string", "pattern": "^run-[A-Za-z0-9][A-Za-z0-9_-]{0,127}$" },
+    "scenarioId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,127}$" },
+    "mode": { "enum": ["direct", "forgeloopBalanced", "forgeloopAdaptive"] },
+    "runIndex": { "type": "integer", "minimum": 1 },
+    "recordedAt": { "type": "string", "minLength": 1 },
+    "usage": {
+      "type": "object",
+      "required": ["inputTokens", "outputTokens", "cacheReadTokens", "cacheWriteTokens", "totalTokens", "costUsd", "model", "provider", "source"],
+      "properties": {
+        "inputTokens": { "type": ["integer", "null"], "minimum": 0 },
+        "outputTokens": { "type": ["integer", "null"], "minimum": 0 },
+        "cacheReadTokens": { "type": ["integer", "null"], "minimum": 0 },
+        "cacheWriteTokens": { "type": ["integer", "null"], "minimum": 0 },
+        "totalTokens": { "type": ["integer", "null"], "minimum": 0 },
+        "costUsd": { "type": ["number", "null"], "minimum": 0 },
+        "model": { "type": ["string", "null"] },
+        "provider": { "type": ["string", "null"] },
+        "source": { "enum": ["PROVIDER_REPORTED", "HOST_REPORTED", "UNKNOWN"] }
+      },
+      "additionalProperties": false
+    },
+    "wallClockMs": { "type": ["number", "null"], "minimum": 0 },
+    "verification": { "enum": ["PASS", "FAIL", "NOT_AVAILABLE"] },
+    "verificationCycles": { "type": ["integer", "null"], "minimum": 0 },
+    "comparableSteps": { "type": ["integer", "null"], "minimum": 0 },
+    "metadata": {
+      "type": "object",
+      "required": ["scenarioId", "mode", "model", "provider", "promptSpecFingerprint", "projectRevision", "benchmarkVersion", "environmentClass", "requestedProfile", "resolvedProfile", "verificationCycles", "comparableSteps"],
+      "properties": {
+        "scenarioId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,127}$" },
+        "mode": { "enum": ["direct", "forgeloopBalanced", "forgeloopAdaptive"] },
+        "model": { "type": ["string", "null"] },
+        "provider": { "type": ["string", "null"] },
+        "promptSpecFingerprint": { "type": "string", "minLength": 1 },
+        "projectRevision": { "type": ["string", "null"] },
+        "benchmarkVersion": { "const": "1" },
+        "environmentClass": { "type": "string", "minLength": 1 },
+        "requestedProfile": { "type": ["string", "null"] },
+        "resolvedProfile": { "type": ["string", "null"] },
+        "verificationCycles": { "type": ["integer", "null"], "minimum": 0 },
+        "comparableSteps": { "type": ["integer", "null"], "minimum": 0 },
+        "nodeVersion": { "type": "string", "minLength": 1 },
+        "os": { "type": "string", "minLength": 1 },
+        "arch": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "forgeloop://schemas/execution-profile-benchmark-aggregate.schema.json",
+  "title": "ForgeLoop execution-profile benchmark aggregate",
+  "type": "object",
+  "required": ["schemaVersion", "benchmarkVersion", "runSetId", "scenarioId", "expectedProfile", "modeAggregates", "comparisons", "lightObjectives", "sourcePolicy", "claimsAllowed", "generatedFromRunCount"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "benchmarkVersion": { "const": "1" },
+    "runSetId": { "type": "string", "minLength": 1 },
+    "scenarioId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,127}$" },
+    "expectedProfile": { "enum": ["light", "balanced", "full"] },
+    "modeAggregates": {
+      "type": "object",
+      "required": ["direct", "forgeloopBalanced", "forgeloopAdaptive"],
+      "additionalProperties": { "type": "object" }
+    },
+    "comparisons": {
+      "type": "object",
+      "required": ["direct", "forgeloopBalanced", "forgeloopAdaptive"],
+      "additionalProperties": true
+    },
+    "lightObjectives": { "type": ["object", "null"] },
+    "sourcePolicy": { "const": "PROVIDER_REPORTED_OR_HOST_REPORTED_ONLY" },
+    "claimsAllowed": { "type": "boolean" },
+    "generatedFromRunCount": { "type": "integer", "minimum": 1 }
+  },
+  "additionalProperties": false
+}

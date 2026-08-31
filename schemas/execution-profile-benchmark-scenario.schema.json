@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "forgeloop://schemas/execution-profile-benchmark-scenario.schema.json",
+  "title": "ForgeLoop execution-profile benchmark scenario",
+  "type": "object",
+  "required": ["schemaVersion", "benchmarkVersion", "scenarioId", "description", "input", "expectedProfile", "measurements"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "benchmarkVersion": { "type": "string", "minLength": 1 },
+    "scenarioId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,127}$" },
+    "description": { "type": "string", "minLength": 1 },
+    "input": {
+      "type": "object",
+      "required": ["workType", "surfaces", "risks", "platforms"],
+      "properties": {
+        "workType": { "type": "string", "minLength": 1 },
+        "surfaces": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "risks": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "platforms": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "behaviorChange": { "type": "boolean" },
+        "executableChange": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "expectedProfile": { "enum": ["light", "balanced", "full"] },
+    "measurements": {
+      "type": "object",
+      "required": ["direct", "forgeloopBalanced", "forgeloopAdaptive"],
+      "properties": {
+        "direct": { "$ref": "#/$defs/measurement" },
+        "forgeloopBalanced": { "$ref": "#/$defs/measurement" },
+        "forgeloopAdaptive": { "$ref": "#/$defs/measurement" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "measurement": {
+      "type": "object",
+      "required": ["inputTokens", "outputTokens", "cacheReadTokens", "cacheWriteTokens", "totalTokens", "wallClockMs", "verification"],
+      "properties": {
+        "inputTokens": { "type": ["integer", "null"], "minimum": 0 },
+        "outputTokens": { "type": ["integer", "null"], "minimum": 0 },
+        "cacheReadTokens": { "type": ["integer", "null"], "minimum": 0 },
+        "cacheWriteTokens": { "type": ["integer", "null"], "minimum": 0 },
+        "totalTokens": { "type": ["integer", "null"], "minimum": 0 },
+        "wallClockMs": { "type": ["number", "null"], "minimum": 0 },
+        "verification": { "enum": ["PASS", "FAIL", "NOT_AVAILABLE"] }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

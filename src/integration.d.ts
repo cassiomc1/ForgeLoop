@@ -96,6 +96,41 @@ export declare function resolveExecutionProfile(input?: {
   escalated: boolean;
 };
 
+export interface ForgeLoopExecutionProfileContext {
+  schemaVersion: 1;
+  protocolVersion: 1;
+  taskId: string;
+  executionProfile: {
+    requested: "auto" | "light" | "balanced" | "full";
+    floor: "light" | "balanced" | "full";
+    resolved: "light" | "balanced" | "full";
+    reasons: readonly string[];
+    escalated: boolean;
+  };
+  phase: string;
+  nextAction: string | null;
+  objective: string | null;
+  deliverables: readonly string[];
+  constraints: readonly string[];
+  selectedGuideIds: readonly string[];
+  verificationRequirements: readonly Record<string, unknown>[];
+  contextPolicy: Record<string, unknown>;
+  optionalContext: { available: readonly string[]; loaded: readonly string[] };
+  invariants: Record<string, boolean>;
+}
+
+export declare const PROFILE_CONTEXT_POLICIES: Readonly<Record<string, Record<string, unknown>>>;
+export declare function getExecutionProfileContextPolicy(profile: "light" | "balanced" | "full"): Record<string, unknown>;
+export declare function legacyExecutionProfile(): ForgeLoopExecutionProfileContext["executionProfile"];
+export declare function projectExecutionProfileContext(input: Record<string, unknown>): ForgeLoopExecutionProfileContext;
+export declare function buildExecutionProfileContext(input: {
+  target: string;
+  packageRoot?: string;
+  taskId: string;
+  authorityContext?: Record<string, unknown>;
+  runtimeContext?: Record<string, unknown>;
+}): Promise<ForgeLoopExecutionProfileContext>;
+
 export declare const FORGELOOP_INTEGRATION_API_VERSION: number;
 export declare const FORGELOOP_INTEGRATION_RUNTIME_VERSION: number;
 export declare const CLI_COMMAND_DEFINITIONS: Readonly<Record<string, ForgeLoopCommandDefinition>>;

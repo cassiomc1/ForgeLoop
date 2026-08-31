@@ -51,6 +51,9 @@ export const SHIPPED_SCHEMA_NAMES = Object.freeze([
   "attestation-verification-result",
   "in-toto-statement",
   "usage",
+  "execution-profile-benchmark-scenario",
+  "execution-profile-benchmark-run",
+  "execution-profile-benchmark-aggregate",
 ]);
 
 export class SchemaValidationError extends Error {

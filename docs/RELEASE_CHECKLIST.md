@@ -16,6 +16,8 @@ preparation and verification checklist; it does not authorize publication.
 - [ ] `npm run dependency:policy` passes without adding runtime dependencies.
 - [ ] `npm run lint` passes.
 - [ ] `npm test` passes.
+- [ ] `npm run benchmark:profiles:check` passes; absent provider/host history
+      is reported as `NOT_MEASURED`, never as zero or a passing efficiency claim.
 - [ ] `npm run coverage` passes the configured global and critical-module gates.
 - [ ] `npm run docs:check`, `npm run docs:generated:check`,
       `npm run docs:conformance`, and `npm run docs:examples:check` pass.
