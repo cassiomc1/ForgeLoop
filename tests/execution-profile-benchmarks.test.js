@@ -21,6 +21,7 @@ import { removeTempTree } from "./helpers/rm-safe.js";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const fixtureAdapter = path.join(repositoryRoot, "tests", "fixtures", "execution-profile-benchmark-adapter.mjs");
+const finalizerAdapter = path.join(repositoryRoot, "tests", "fixtures", "execution-profile-benchmark-finalizer-adapter.mjs");
 
 test("all benchmark scenarios are schema-valid and resolve to their expected profiles", async () => {
   const schema = await readSchema("execution-profile-benchmark-scenario", getPackageRoot());
@@ -214,6 +215,39 @@ test("runner records raw runs, writes reproducible aggregates, and never claims 
     }));
     assert.equal(validation.status, "VALID");
     assert.equal(validation.benchmarkStatus, "MEASURED");
+  } finally {
+    await removeTempTree(output);
+  }
+});
+
+test("runner finalizes quality after the complete host run set without changing efficiency records", async () => {
+  const output = await mkdtemp(path.join(os.tmpdir(), "forgeloop-benchmark-finalizer-"));
+  try {
+    const runner = path.join(repositoryRoot, "scripts", "run-execution-profile-benchmarks.mjs");
+    const result = JSON.parse(execFileSync(process.execPath, [
+      runner,
+      "--target", repositoryRoot,
+      "--adapter", finalizerAdapter,
+      "--runs", "1",
+      "--run-set", "fixture-finalizer",
+      "--output", output,
+      "--json",
+    ], { cwd: repositoryRoot, encoding: "utf8" }));
+    assert.deepEqual(result.qualityFinalization, { status: "MEASURED", recordCount: 21 });
+
+    const uiRun = JSON.parse(await readFile(
+      path.join(output, "raw", "fixture-finalizer", "static-landing-page", "direct", "run-001.json"),
+      "utf8",
+    ));
+    const codeRun = JSON.parse(await readFile(
+      path.join(output, "raw", "fixture-finalizer", "api-feature", "direct", "run-001.json"),
+      "utf8",
+    ));
+    assert.equal(uiRun.quality.source, "EXTERNAL_REPORTED");
+    assert.equal(uiRun.quality.scores.visualQuality, 4);
+    assert.equal(codeRun.quality.source, "UNKNOWN");
+    assert.equal(typeof uiRun.wallClockMs, "number");
+    assert.equal(typeof codeRun.wallClockMs, "number");
   } finally {
     await removeTempTree(output);
   }

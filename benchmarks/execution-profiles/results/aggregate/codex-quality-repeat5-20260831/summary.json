@@ -1,0 +1,231 @@
+{
+  "schemaVersion": 1,
+  "benchmarkVersion": "1",
+  "runSetId": "codex-quality-repeat5-20260831",
+  "scenarioCount": 7,
+  "runCount": 105,
+  "claimsAllowed": true,
+  "scenarios": [
+    {
+      "scenarioId": "api-feature",
+      "expectedProfile": "balanced",
+      "claimsAllowed": true,
+      "lightObjectives": null,
+      "contextInflation": {
+        "status": "NOT_COMPARABLE",
+        "comparablePairs": 0,
+        "inflatedPairs": 0,
+        "lightContextTokens": {
+          "count": 0,
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "balancedContextTokens": {
+          "count": 0,
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "blocking": false,
+        "reason": "The adaptive mode did not resolve to LIGHT for this scenario."
+      }
+    },
+    {
+      "scenarioId": "authentication-change",
+      "expectedProfile": "full",
+      "claimsAllowed": true,
+      "lightObjectives": null,
+      "contextInflation": {
+        "status": "NOT_COMPARABLE",
+        "comparablePairs": 0,
+        "inflatedPairs": 0,
+        "lightContextTokens": {
+          "count": 0,
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "balancedContextTokens": {
+          "count": 0,
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "blocking": false,
+        "reason": "The adaptive mode did not resolve to LIGHT for this scenario."
+      }
+    },
+    {
+      "scenarioId": "documentation-correction",
+      "expectedProfile": "light",
+      "claimsAllowed": true,
+      "lightObjectives": {
+        "p50TokenOverheadPercent": 35,
+        "p95TokenOverheadPercent": 60,
+        "status": "OBSERVATIONAL",
+        "p50Pass": true,
+        "p95Pass": true
+      },
+      "contextInflation": {
+        "status": "NOT_COMPARABLE",
+        "comparablePairs": 0,
+        "inflatedPairs": 0,
+        "lightContextTokens": {
+          "count": 0,
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "balancedContextTokens": {
+          "count": 0,
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "blocking": false,
+        "reason": "Context inflation requires complete HOST_REPORTED context items for matching LIGHT and BALANCED runs."
+      }
+    },
+    {
+      "scenarioId": "infrastructure-release",
+      "expectedProfile": "full",
+      "claimsAllowed": true,
+      "lightObjectives": null,
+      "contextInflation": {
+        "status": "NOT_COMPARABLE",
+        "comparablePairs": 0,
+        "inflatedPairs": 0,
+        "lightContextTokens": {
+          "count": 0,
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "balancedContextTokens": {
+          "count": 0,
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "blocking": false,
+        "reason": "The adaptive mode did not resolve to LIGHT for this scenario."
+      }
+    },
+    {
+      "scenarioId": "novatask-saas-landing-page",
+      "expectedProfile": "light",
+      "claimsAllowed": true,
+      "lightObjectives": {
+        "p50TokenOverheadPercent": 35,
+        "p95TokenOverheadPercent": 60,
+        "status": "OBSERVATIONAL",
+        "p50Pass": true,
+        "p95Pass": true
+      },
+      "contextInflation": {
+        "status": "NOT_COMPARABLE",
+        "comparablePairs": 0,
+        "inflatedPairs": 0,
+        "lightContextTokens": {
+          "count": 0,
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "balancedContextTokens": {
+          "count": 0,
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "blocking": false,
+        "reason": "Context inflation requires complete HOST_REPORTED context items for matching LIGHT and BALANCED runs."
+      }
+    },
+    {
+      "scenarioId": "small-bug-fix",
+      "expectedProfile": "balanced",
+      "claimsAllowed": true,
+      "lightObjectives": null,
+      "contextInflation": {
+        "status": "NOT_COMPARABLE",
+        "comparablePairs": 0,
+        "inflatedPairs": 0,
+        "lightContextTokens": {
+          "count": 0,
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "balancedContextTokens": {
+          "count": 0,
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "blocking": false,
+        "reason": "The adaptive mode did not resolve to LIGHT for this scenario."
+      }
+    },
+    {
+      "scenarioId": "static-landing-page",
+      "expectedProfile": "light",
+      "claimsAllowed": true,
+      "lightObjectives": {
+        "p50TokenOverheadPercent": 35,
+        "p95TokenOverheadPercent": 60,
+        "status": "OBSERVATIONAL",
+        "p50Pass": true,
+        "p95Pass": false
+      },
+      "contextInflation": {
+        "status": "NOT_COMPARABLE",
+        "comparablePairs": 0,
+        "inflatedPairs": 0,
+        "lightContextTokens": {
+          "count": 0,
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "balancedContextTokens": {
+          "count": 0,
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "blocking": false,
+        "reason": "Context inflation requires complete HOST_REPORTED context items for matching LIGHT and BALANCED runs."
+      }
+    }
+  ]
+}

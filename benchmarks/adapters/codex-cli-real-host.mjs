@@ -22,6 +22,7 @@ const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const codexBinary = process.env.FORGELOOP_BENCHMARK_CODEX_BIN || "codex";
 const model = process.env.FORGELOOP_BENCHMARK_MODEL || "gpt-5.4-mini";
 const reasoningEffort = process.env.FORGELOOP_BENCHMARK_REASONING || "low";
+const qualityEvaluatorSpecifier = process.env.FORGELOOP_BENCHMARK_QUALITY_EVALUATOR || null;
 const provider = "codex-chatgpt";
 const environmentClass = `codex-cli-${process.platform}-${process.arch}`;
 const canonicalCli = path.join(packageRoot, "src", "cli.js");
@@ -29,6 +30,7 @@ const canonicalIntegration = await import(pathToFileURL(path.join(packageRoot, "
 const canonicalUsage = await import(pathToFileURL(path.join(packageRoot, "src", "core", "usage.js")).href);
 const canonicalEvents = await import(pathToFileURL(path.join(packageRoot, "src", "core", "events.js")).href);
 const canonicalTempRoots = new Set();
+const qualityTempRoots = new Set();
 
 const WORKLOADS = {
   "documentation-correction": {
@@ -409,7 +411,58 @@ async function recordCanonicalUsage({ context, usage }) {
 async function cleanupRoot(root) {
   if (!root) return;
   canonicalTempRoots.delete(root);
+  qualityTempRoots.delete(root);
   await rm(root, { recursive: true, force: true });
+}
+
+function qualityEligible(scenario) {
+  return scenario?.input?.surfaces?.includes("ui") === true;
+}
+
+function unknownQuality() {
+  return {
+    source: "UNKNOWN",
+    scores: {
+      visualQuality: null,
+      responsiveQuality: null,
+      accessibility: null,
+      interactionPolish: null,
+      requirementsCompleteness: null,
+    },
+  };
+}
+
+async function loadQualityEvaluator() {
+  if (!qualityEvaluatorSpecifier) return null;
+  const evaluatorPath = path.resolve(process.cwd(), qualityEvaluatorSpecifier);
+  const evaluatorModule = await import(pathToFileURL(evaluatorPath).href);
+  const evaluator = evaluatorModule.evaluateBlindVisualCandidates
+    ?? evaluatorModule.default?.evaluateBlindVisualCandidates
+    ?? evaluatorModule.default;
+  if (!evaluator || typeof evaluator !== "function") {
+    throw new Error("quality evaluator must export evaluateBlindVisualCandidates(input)");
+  }
+  return evaluator;
+}
+
+function assertQualityResults(results, candidateCount) {
+  if (!Array.isArray(results) || results.length !== candidateCount) {
+    throw new Error(`quality evaluator must return one result per candidate (${candidateCount})`);
+  }
+  return results.map((quality, index) => {
+    if (!quality || quality.source !== "EXTERNAL_REPORTED" || !quality.scores || typeof quality.scores !== "object") {
+      throw new Error(`quality evaluator returned an invalid result for candidate ${index + 1}`);
+    }
+    const scores = {};
+    for (const field of ["visualQuality", "responsiveQuality", "accessibility", "interactionPolish", "requirementsCompleteness"]) {
+      const score = quality.scores[field];
+      if (typeof score !== "number" || !Number.isFinite(score) || score < 0 || score > 5) {
+        throw new Error(`quality evaluator returned an invalid ${field} score for candidate ${index + 1}`);
+      }
+      scores[field] = score;
+    }
+    return { source: "EXTERNAL_REPORTED", scores };
+  });
 }
 
 export async function runBenchmark({ scenario, mode, runIndex }) {
@@ -417,6 +470,7 @@ export async function runBenchmark({ scenario, mode, runIndex }) {
   const promptSpecFingerprint = sha256(JSON.stringify(taskSpecification(scenario, workload)));
   const workspace = await mkdtemp(path.join(os.tmpdir(), "forgeloop-benchmark-workspace-"));
   let canonical = null;
+  let retainForQuality = false;
   try {
     for (const [filename, contents] of Object.entries(workload.files)) {
       await writeFile(path.join(workspace, filename), contents, "utf8");
@@ -428,6 +482,7 @@ export async function runBenchmark({ scenario, mode, runIndex }) {
     let verification = { pass: false, steps: workload.comparableSteps };
     if (!codexResult.error && usage) verification = await workload.verify(workspace);
     if (canonical && usage) await recordCanonicalUsage({ context: canonical, usage });
+    retainForQuality = qualityEvaluatorSpecifier !== null && qualityEligible(scenario);
     return {
       usage: usage ?? {},
       promptSpecFingerprint,
@@ -444,13 +499,74 @@ export async function runBenchmark({ scenario, mode, runIndex }) {
         host: "codex-cli",
         workloadFingerprint: promptSpecFingerprint,
       },
+      ...(retainForQuality ? { qualityWorkspace: workspace } : {}),
     };
   } finally {
-    await cleanupRoot(workspace);
+    if (retainForQuality) qualityTempRoots.add(workspace);
+    else await cleanupRoot(workspace);
     await cleanupRoot(canonical?.root);
   }
 }
 
+export async function finalizeBenchmark({ records }) {
+  if (!qualityEvaluatorSpecifier) {
+    return { qualityByRunId: {}, summary: { status: "NOT_CONFIGURED" } };
+  }
+  const evaluator = await loadQualityEvaluator();
+  const qualityByRunId = {};
+  const failures = [];
+  const groups = new Map();
+  for (const record of records) {
+    if (!qualityEligible(record.scenario)) continue;
+    const key = `${record.scenario.scenarioId}:${record.runIndex}`;
+    const group = groups.get(key) ?? [];
+    group.push(record);
+    groups.set(key, group);
+  }
+  let evaluatedGroups = 0;
+  try {
+    for (const group of groups.values()) {
+      const ordered = ["direct", "forgeloopBalanced", "forgeloopAdaptive"]
+        .map((mode) => group.find((record) => record.mode === mode));
+      const scenario = group[0]?.scenario;
+      if (!scenario || ordered.some((record) => !record?.response?.qualityWorkspace)) {
+        failures.push("incomplete-ui-candidate-group");
+        for (const record of ordered.filter(Boolean)) qualityByRunId[record.runId] = unknownQuality();
+        continue;
+      }
+      try {
+        const results = await evaluator({
+          requirements: [...new Set(workloadFor(scenario).requirements)],
+          candidates: ordered.map((record) => ({ workspace: record.response.qualityWorkspace })),
+        });
+        const qualities = assertQualityResults(results, ordered.length);
+        ordered.forEach((record, index) => {
+          qualityByRunId[record.runId] = qualities[index];
+        });
+        evaluatedGroups += 1;
+      } catch (error) {
+        failures.push(error.message);
+        for (const record of ordered) qualityByRunId[record.runId] = unknownQuality();
+      }
+    }
+  } finally {
+    await Promise.all([...qualityTempRoots].map((root) => cleanupRoot(root)));
+  }
+  return {
+    qualityByRunId,
+    summary: {
+      status: failures.length > 0 ? "PARTIAL" : "MEASURED",
+      eligibleGroups: groups.size,
+      evaluatedGroups,
+      unknownGroups: failures.length,
+      ...(failures.length > 0 ? { failures } : {}),
+    },
+  };
+}
+
 export async function cleanup() {
-  await Promise.all([...canonicalTempRoots].map((root) => cleanupRoot(root)));
+  await Promise.all([
+    ...[...canonicalTempRoots].map((root) => cleanupRoot(root)),
+    ...[...qualityTempRoots].map((root) => cleanupRoot(root)),
+  ]);
 }

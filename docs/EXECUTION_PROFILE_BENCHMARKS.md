@@ -136,12 +136,74 @@ host observation is available. Implementer self-ratings should not be used as
 independent quality evidence; for NovaTask, review direct and ForgeLoop
 outputs blind to execution mode before revealing the labels.
 
+## Blind UI quality finalization
+
+The runner supports an optional post-run finalization hook for adapters that
+can collect independent UI evidence:
+
+```js
+export async function finalizeBenchmark({ benchmarkVersion, records, scenarios, target, runSetId }) {
+  // Render and evaluate retained UI workspaces after all host timings finish.
+  return {
+    qualityByRunId: {
+      // Keys are the runner-owned run IDs; values use the quality shape above.
+    },
+    summary: { status: "MEASURED" },
+  };
+}
+```
+
+The runner calls this hook only after every `runBenchmark` call has returned.
+The adapter's `wallClockMs` therefore excludes browser rendering and evaluator
+latency. The finalizer may attach quality only to known runner run IDs; usage,
+timing, verification, comparable steps, context telemetry, and metadata are
+not rewritten by finalization. A finalizer must leave quality `UNKNOWN` when a
+candidate cannot be rendered or the evaluator cannot return schema-valid
+scores.
+
+The maintained Codex visual evaluator is intentionally outside ForgeLoop
+Core. It requires an explicitly supplied, already-installed Playwright runtime
+and Chromium executable, renders desktop (1440×900) and mobile (390×844)
+screenshots, blocks HTTP(S) requests, and gives the separate evaluator only
+requirements, neutral browser observations, and anonymized candidate labels.
+The evaluator receives no execution-mode labels, run IDs, source files, or
+implementer self-ratings. Its validated scores are recorded as
+`EXTERNAL_REPORTED`; this is independent observational evidence, not a human
+acceptance decision and not lifecycle authority. If the evaluator is not
+configured or fails, quality remains `UNKNOWN` and no quality-preservation
+claim is permitted.
+
 ## Inspecting and validating results
 
 ```bash
 npm run benchmark:profiles:summary -- --json
 npm run benchmark:profiles:check -- --json
 ```
+
+To enable the optional blind UI finalizer, provide paths to the host's
+existing Playwright and Chromium installations and a separate evaluator
+model. The benchmark does not install these resources:
+
+```bash
+FORGELOOP_BENCHMARK_MODEL=gpt-5.4-mini \
+FORGELOOP_BENCHMARK_REASONING=low \
+FORGELOOP_BENCHMARK_QUALITY_EVALUATOR=./benchmarks/evaluators/codex-cli-blind-visual.mjs \
+FORGELOOP_BENCHMARK_PLAYWRIGHT_ROOT=/absolute/path/to/playwright \
+FORGELOOP_BENCHMARK_BROWSER=/absolute/path/to/Google\ Chrome\ for\ Testing \
+FORGELOOP_BENCHMARK_EVALUATOR_MODEL=gpt-5.4 \
+npm run benchmark:profiles -- \
+  --adapter ./benchmarks/adapters/codex-cli-real-host.mjs \
+  --runs 5 \
+  --run-set codex-quality-repeat5-YYYYMMDD \
+  --output /tmp/forgeloop-benchmark-results-quality \
+  --json
+```
+
+The two evaluator processes have separate responsibilities: the
+implementation host reports actual usage and deterministic verification, and
+the read-only evaluator reports blind screenshot scores. Neither process may
+invent context-item counts, token counts, costs, cache values, or lifecycle
+state.
 
 Before a host run exists, the summary is intentionally:
 
