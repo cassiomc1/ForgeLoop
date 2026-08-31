@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "benchmarkVersion": "1",
+  "runSetId": "codex-repeat5-20260831",
+  "runId": "run-authentication-change-forgeloopBalanced-002",
+  "scenarioId": "authentication-change",
+  "mode": "forgeloopBalanced",
+  "runIndex": 2,
+  "recordedAt": "2026-08-31T04:44:37.757Z",
+  "usage": {
+    "inputTokens": 71486,
+    "outputTokens": 849,
+    "cacheReadTokens": 64256,
+    "cacheWriteTokens": 0,
+    "totalTokens": 72335,
+    "costUsd": null,
+    "model": "gpt-5.4-mini",
+    "provider": "codex-chatgpt",
+    "source": "HOST_REPORTED"
+  },
+  "wallClockMs": 21638.9758,
+  "verification": "PASS",
+  "verificationCycles": 1,
+  "comparableSteps": 5,
+  "contextUsage": {
+    "source": "UNKNOWN",
+    "profile": "full",
+    "items": {
+      "taskContext": null,
+      "guides": null,
+      "history": null,
+      "protocolInstructions": null,
+      "repositoryContext": null,
+      "other": null
+    }
+  },
+  "quality": {
+    "source": "UNKNOWN",
+    "scores": {
+      "visualQuality": null,
+      "responsiveQuality": null,
+      "accessibility": null,
+      "interactionPolish": null,
+      "requirementsCompleteness": null
+    }
+  },
+  "metadata": {
+    "scenarioId": "authentication-change",
+    "mode": "forgeloopBalanced",
+    "model": "gpt-5.4-mini",
+    "provider": "codex-chatgpt",
+    "promptSpecFingerprint": "abbd4eb65e5874a12364dd1545a4db5dbb858237caaf4f54bcbe3e633a1f0c5d",
+    "projectRevision": "1eaae5cbb2046ef606d201161aa5abbbeddab153",
+    "benchmarkVersion": "1",
+    "environmentClass": "codex-cli-darwin-arm64",
+    "requestedProfile": "balanced",
+    "resolvedProfile": "full",
+    "verificationCycles": 1,
+    "comparableSteps": 5,
+    "nodeVersion": "26.8.1",
+    "os": "darwin",
+    "arch": "arm64"
+  }
+}
