@@ -2,29 +2,38 @@
 
 ## Unreleased
 
+- The 1.8.0 release notes below are the current release record; future changes
+  will be added to this section.
+
+## 1.8.0 - 2026-08-31
+
 ### Added
 
-- Added benchmark methodology v2 (`benchmarkVersion: "2"`): optional
-  host-reported per-run diagnostics with a fixed runaway-signal vocabulary,
-  robust variability statistics (median, quartiles, IQR, MAD), per-comparison
-  tail stability status, deterministic `TOKEN_IQR_1_5` token-outlier
-  classification, and the `benchmark:profiles:outliers` report.
-- Added runner `--tier` bounds (`smoke` 1–3, `evidence` 5–10, `tail` 20–30)
-  so run-set size reflects its statistical purpose.
+- Added methodology-v2 benchmark evidence with optional host-reported
+  diagnostics, robust P25/P50/P75/P90/P95, IQR/MAD, deterministic
+  `TOKEN_IQR_1_5` outlier classification, and explicit tail analysis.
+- Added benchmark runner tiers (`smoke` 1–3, `evidence` 5–10, `tail` 20–30)
+  and preserved the real-host repeat sets for balanced, quality, and tail
+  comparisons.
 
 ### Changed
 
-- Bumped benchmark scenarios to methodology v2 while keeping historical v1
-  run sets immutable: readers accept versions `1` and `2`, and stored v1
-  aggregates still reproduce byte-for-byte under the frozen v1 methodology.
+- Corrected comparative populations so paired statistics use matching run
+  metadata and distribution statistics remain separately reported.
+- Documented the distinction between `pairedOverheadPercent` and
+  `distributionDeltaPercent`, including `LOW_BASELINE_TOKEN_REGIME`,
+  `TAIL_PAIRED_RATIO_SENSITIVE`, `TAIL_DISTRIBUTION_REGRESSION`, and
+  `TAIL_UNRESOLVED` interpretations.
+- Kept historical benchmark methodology-v1 run sets and aggregates immutable;
+  readers continue to accept benchmark versions `1` and `2`.
 
 ### Verification boundary
 
-- Diagnostics, tail status, and outlier classification remain observational
-  benchmark evidence. They never change lifecycle phases, required gates,
-  verification truth, authority, provenance, safety floors, or completion
-  validity, and unavailable telemetry stays `null`/`UNKNOWN` rather than
-  estimated.
+- Diagnostics, tail status, outlier classification, and efficiency warnings
+  remain observational benchmark evidence. They never change lifecycle
+  phases, required gates, verification truth, authority, provenance, safety
+  floors, or completion validity. Unavailable telemetry stays `null` or
+  `UNKNOWN` rather than being estimated.
 
 ## 1.7.0 - 2026-08-30
 
