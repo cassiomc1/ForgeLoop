@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "benchmarkVersion": "2",
+  "runSetId": "codex-tail-repeat20-20260831",
+  "runId": "run-novatask-saas-landing-page-direct-008",
+  "scenarioId": "novatask-saas-landing-page",
+  "mode": "direct",
+  "runIndex": 8,
+  "recordedAt": "2026-08-31T15:59:19.207Z",
+  "usage": {
+    "inputTokens": 164457,
+    "outputTokens": 4755,
+    "cacheReadTokens": 150016,
+    "cacheWriteTokens": 0,
+    "totalTokens": 169212,
+    "costUsd": null,
+    "model": "gpt-5.4-mini",
+    "provider": "codex-chatgpt",
+    "source": "HOST_REPORTED"
+  },
+  "wallClockMs": 82068.9988,
+  "verification": "PASS",
+  "verificationCycles": 1,
+  "comparableSteps": 11,
+  "diagnostics": {
+    "executionProfile": null,
+    "verificationCycles": 1,
+    "modelTurns": 1,
+    "toolCalls": 12,
+    "retries": null,
+    "correctionCycles": null,
+    "filesRead": null,
+    "filesWritten": 3,
+    "contextRefreshes": null,
+    "guideCount": 0,
+    "guideIds": [],
+    "hostWarnings": [],
+    "terminationReason": "COMPLETED",
+    "flags": []
+  },
+  "contextUsage": {
+    "source": "UNKNOWN",
+    "profile": null,
+    "items": {
+      "taskContext": null,
+      "guides": null,
+      "history": null,
+      "protocolInstructions": null,
+      "repositoryContext": null,
+      "other": null
+    }
+  },
+  "quality": {
+    "source": "EXTERNAL_REPORTED",
+    "scores": {
+      "visualQuality": 4.2,
+      "responsiveQuality": 4.5,
+      "accessibility": 4.6,
+      "interactionPolish": 4.1,
+      "requirementsCompleteness": 4.5
+    }
+  },
+  "metadata": {
+    "scenarioId": "novatask-saas-landing-page",
+    "mode": "direct",
+    "model": "gpt-5.4-mini",
+    "provider": "codex-chatgpt",
+    "promptSpecFingerprint": "7ef45827539a668fd8f406807bbefac6b92b72de917f9c03d650c165606d314b",
+    "projectRevision": "3cf40c202d84bbc0cf19f0439497698b2e56b652",
+    "benchmarkVersion": "2",
+    "environmentClass": "codex-cli-darwin-arm64",
+    "requestedProfile": null,
+    "resolvedProfile": null,
+    "verificationCycles": 1,
+    "comparableSteps": 11,
+    "nodeVersion": "26.8.1",
+    "os": "darwin",
+    "arch": "arm64"
+  }
+}

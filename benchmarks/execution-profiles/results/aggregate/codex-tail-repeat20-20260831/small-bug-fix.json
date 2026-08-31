@@ -1,0 +1,1360 @@
+{
+  "schemaVersion": 1,
+  "benchmarkVersion": "2",
+  "runSetId": "codex-tail-repeat20-20260831",
+  "scenarioId": "small-bug-fix",
+  "expectedProfile": "balanced",
+  "modeAggregates": {
+    "direct": {
+      "runCount": 20,
+      "verificationSuccessRate": 1,
+      "usageSources": [
+        "HOST_REPORTED"
+      ],
+      "totalTokens": {
+        "count": 20,
+        "average": 56670.1,
+        "minimum": 55347,
+        "p25": 55521.25,
+        "p50": 55881,
+        "p75": 56258,
+        "p90": 56989,
+        "p95": 58769.2,
+        "maximum": 69850,
+        "iqr": 736.75,
+        "mad": 372.5,
+        "outlierCount": 2
+      },
+      "wallClockMs": {
+        "count": 20,
+        "average": 18349.0661,
+        "minimum": 15330.1854,
+        "p25": 16611.836,
+        "p50": 18664.3253,
+        "p75": 19572.3228,
+        "p90": 21229.0042,
+        "p95": 21518.0196,
+        "maximum": 22731.0132,
+        "iqr": 2960.4868,
+        "mad": 1686.554,
+        "outlierCount": 0
+      },
+      "verificationCycles": {
+        "count": 20,
+        "average": 1,
+        "minimum": 1,
+        "p25": 1,
+        "p50": 1,
+        "p75": 1,
+        "p90": 1,
+        "p95": 1,
+        "maximum": 1,
+        "iqr": 0,
+        "mad": 0,
+        "outlierCount": 0
+      },
+      "comparableSteps": {
+        "count": 20,
+        "average": 3,
+        "minimum": 3,
+        "p25": 3,
+        "p50": 3,
+        "p75": 3,
+        "p90": 3,
+        "p95": 3,
+        "maximum": 3,
+        "iqr": 0,
+        "mad": 0,
+        "outlierCount": 0
+      },
+      "tokensPerComparableStep": {
+        "count": 20,
+        "average": 18890.0333,
+        "minimum": 18449,
+        "p25": 18507.0833,
+        "p50": 18627,
+        "p75": 18752.6667,
+        "p90": 18996.3333,
+        "p95": 19589.7333,
+        "maximum": 23283.333333333332,
+        "iqr": 245.5833,
+        "mad": 124.1667,
+        "outlierCount": 2
+      },
+      "diagnostics": {
+        "verificationCycles": {
+          "count": 20,
+          "average": 1,
+          "minimum": 1,
+          "p25": 1,
+          "p50": 1,
+          "p75": 1,
+          "p90": 1,
+          "p95": 1,
+          "maximum": 1,
+          "iqr": 0,
+          "mad": 0,
+          "outlierCount": 0
+        },
+        "modelTurns": {
+          "count": 20,
+          "average": 1,
+          "minimum": 1,
+          "p25": 1,
+          "p50": 1,
+          "p75": 1,
+          "p90": 1,
+          "p95": 1,
+          "maximum": 1,
+          "iqr": 0,
+          "mad": 0,
+          "outlierCount": 0
+        },
+        "toolCalls": {
+          "count": 20,
+          "average": 3.6,
+          "minimum": 3,
+          "p25": 3,
+          "p50": 3.5,
+          "p75": 4,
+          "p90": 4.1,
+          "p95": 5,
+          "maximum": 5,
+          "iqr": 1,
+          "mad": 0.5,
+          "outlierCount": 0
+        },
+        "retries": {
+          "count": 0,
+          "average": null,
+          "minimum": null,
+          "p25": null,
+          "p50": null,
+          "p75": null,
+          "p90": null,
+          "p95": null,
+          "maximum": null,
+          "iqr": null,
+          "mad": null,
+          "outlierCount": 0
+        },
+        "correctionCycles": {
+          "count": 0,
+          "average": null,
+          "minimum": null,
+          "p25": null,
+          "p50": null,
+          "p75": null,
+          "p90": null,
+          "p95": null,
+          "maximum": null,
+          "iqr": null,
+          "mad": null,
+          "outlierCount": 0
+        },
+        "filesRead": {
+          "count": 0,
+          "average": null,
+          "minimum": null,
+          "p25": null,
+          "p50": null,
+          "p75": null,
+          "p90": null,
+          "p95": null,
+          "maximum": null,
+          "iqr": null,
+          "mad": null,
+          "outlierCount": 0
+        },
+        "filesWritten": {
+          "count": 20,
+          "average": 1,
+          "minimum": 1,
+          "p25": 1,
+          "p50": 1,
+          "p75": 1,
+          "p90": 1,
+          "p95": 1,
+          "maximum": 1,
+          "iqr": 0,
+          "mad": 0,
+          "outlierCount": 0
+        },
+        "contextRefreshes": {
+          "count": 0,
+          "average": null,
+          "minimum": null,
+          "p25": null,
+          "p50": null,
+          "p75": null,
+          "p90": null,
+          "p95": null,
+          "maximum": null,
+          "iqr": null,
+          "mad": null,
+          "outlierCount": 0
+        }
+      },
+      "contextUsage": {
+        "sources": [
+          "UNKNOWN"
+        ],
+        "profiles": [],
+        "measuredRuns": 0,
+        "totalTokens": {
+          "count": 0,
+          "average": null,
+          "minimum": null,
+          "p25": null,
+          "p50": null,
+          "p75": null,
+          "p90": null,
+          "p95": null,
+          "maximum": null,
+          "iqr": null,
+          "mad": null,
+          "outlierCount": 0
+        },
+        "items": {
+          "taskContext": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "guides": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "history": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "protocolInstructions": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "repositoryContext": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "other": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          }
+        }
+      },
+      "quality": {
+        "sources": [
+          "UNKNOWN"
+        ],
+        "scores": {
+          "visualQuality": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "responsiveQuality": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "accessibility": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "interactionPolish": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "requirementsCompleteness": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          }
+        }
+      }
+    },
+    "forgeloopBalanced": {
+      "runCount": 20,
+      "verificationSuccessRate": 1,
+      "usageSources": [
+        "HOST_REPORTED"
+      ],
+      "totalTokens": {
+        "count": 20,
+        "average": 58337.2,
+        "minimum": 56730,
+        "p25": 57276.75,
+        "p50": 57694.5,
+        "p75": 57907,
+        "p90": 58283.1,
+        "p95": 60376.8,
+        "maximum": 71925,
+        "iqr": 630.25,
+        "mad": 321,
+        "outlierCount": 2
+      },
+      "wallClockMs": {
+        "count": 20,
+        "average": 20237.9209,
+        "minimum": 16923.9356,
+        "p25": 18568.651,
+        "p50": 20799.7946,
+        "p75": 21363.2597,
+        "p90": 22207.7159,
+        "p95": 22769.1177,
+        "maximum": 23586.0939,
+        "iqr": 2794.6087,
+        "mad": 1300.1206,
+        "outlierCount": 0
+      },
+      "verificationCycles": {
+        "count": 20,
+        "average": 1,
+        "minimum": 1,
+        "p25": 1,
+        "p50": 1,
+        "p75": 1,
+        "p90": 1,
+        "p95": 1,
+        "maximum": 1,
+        "iqr": 0,
+        "mad": 0,
+        "outlierCount": 0
+      },
+      "comparableSteps": {
+        "count": 20,
+        "average": 3,
+        "minimum": 3,
+        "p25": 3,
+        "p50": 3,
+        "p75": 3,
+        "p90": 3,
+        "p95": 3,
+        "maximum": 3,
+        "iqr": 0,
+        "mad": 0,
+        "outlierCount": 0
+      },
+      "tokensPerComparableStep": {
+        "count": 20,
+        "average": 19445.7333,
+        "minimum": 18910,
+        "p25": 19092.25,
+        "p50": 19231.5,
+        "p75": 19302.3333,
+        "p90": 19427.7,
+        "p95": 20125.6,
+        "maximum": 23975,
+        "iqr": 210.0833,
+        "mad": 107,
+        "outlierCount": 2
+      },
+      "diagnostics": {
+        "verificationCycles": {
+          "count": 20,
+          "average": 1,
+          "minimum": 1,
+          "p25": 1,
+          "p50": 1,
+          "p75": 1,
+          "p90": 1,
+          "p95": 1,
+          "maximum": 1,
+          "iqr": 0,
+          "mad": 0,
+          "outlierCount": 0
+        },
+        "modelTurns": {
+          "count": 20,
+          "average": 1,
+          "minimum": 1,
+          "p25": 1,
+          "p50": 1,
+          "p75": 1,
+          "p90": 1,
+          "p95": 1,
+          "maximum": 1,
+          "iqr": 0,
+          "mad": 0,
+          "outlierCount": 0
+        },
+        "toolCalls": {
+          "count": 20,
+          "average": 3.65,
+          "minimum": 3,
+          "p25": 3,
+          "p50": 4,
+          "p75": 4,
+          "p90": 4.1,
+          "p95": 5,
+          "maximum": 5,
+          "iqr": 1,
+          "mad": 1,
+          "outlierCount": 0
+        },
+        "retries": {
+          "count": 0,
+          "average": null,
+          "minimum": null,
+          "p25": null,
+          "p50": null,
+          "p75": null,
+          "p90": null,
+          "p95": null,
+          "maximum": null,
+          "iqr": null,
+          "mad": null,
+          "outlierCount": 0
+        },
+        "correctionCycles": {
+          "count": 0,
+          "average": null,
+          "minimum": null,
+          "p25": null,
+          "p50": null,
+          "p75": null,
+          "p90": null,
+          "p95": null,
+          "maximum": null,
+          "iqr": null,
+          "mad": null,
+          "outlierCount": 0
+        },
+        "filesRead": {
+          "count": 0,
+          "average": null,
+          "minimum": null,
+          "p25": null,
+          "p50": null,
+          "p75": null,
+          "p90": null,
+          "p95": null,
+          "maximum": null,
+          "iqr": null,
+          "mad": null,
+          "outlierCount": 0
+        },
+        "filesWritten": {
+          "count": 20,
+          "average": 1,
+          "minimum": 1,
+          "p25": 1,
+          "p50": 1,
+          "p75": 1,
+          "p90": 1,
+          "p95": 1,
+          "maximum": 1,
+          "iqr": 0,
+          "mad": 0,
+          "outlierCount": 0
+        },
+        "contextRefreshes": {
+          "count": 0,
+          "average": null,
+          "minimum": null,
+          "p25": null,
+          "p50": null,
+          "p75": null,
+          "p90": null,
+          "p95": null,
+          "maximum": null,
+          "iqr": null,
+          "mad": null,
+          "outlierCount": 0
+        }
+      },
+      "contextUsage": {
+        "sources": [
+          "UNKNOWN"
+        ],
+        "profiles": [
+          "balanced"
+        ],
+        "measuredRuns": 0,
+        "totalTokens": {
+          "count": 0,
+          "average": null,
+          "minimum": null,
+          "p25": null,
+          "p50": null,
+          "p75": null,
+          "p90": null,
+          "p95": null,
+          "maximum": null,
+          "iqr": null,
+          "mad": null,
+          "outlierCount": 0
+        },
+        "items": {
+          "taskContext": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "guides": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "history": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "protocolInstructions": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "repositoryContext": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "other": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          }
+        }
+      },
+      "quality": {
+        "sources": [
+          "UNKNOWN"
+        ],
+        "scores": {
+          "visualQuality": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "responsiveQuality": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "accessibility": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "interactionPolish": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "requirementsCompleteness": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          }
+        }
+      }
+    },
+    "forgeloopAdaptive": {
+      "runCount": 20,
+      "verificationSuccessRate": 1,
+      "usageSources": [
+        "HOST_REPORTED"
+      ],
+      "totalTokens": {
+        "count": 20,
+        "average": 60230.45,
+        "minimum": 56833,
+        "p25": 57140.25,
+        "p50": 57615.5,
+        "p75": 57864.25,
+        "p90": 71528,
+        "p95": 71660.65,
+        "maximum": 71787,
+        "iqr": 724,
+        "mad": 364.5,
+        "outlierCount": 4
+      },
+      "wallClockMs": {
+        "count": 20,
+        "average": 21294.5926,
+        "minimum": 18008.8417,
+        "p25": 20509.5906,
+        "p50": 21359.3947,
+        "p75": 21794.7066,
+        "p90": 23739.2419,
+        "p95": 24212.519,
+        "maximum": 24343.4589,
+        "iqr": 1285.116,
+        "mad": 647.1247,
+        "outlierCount": 2
+      },
+      "verificationCycles": {
+        "count": 20,
+        "average": 1,
+        "minimum": 1,
+        "p25": 1,
+        "p50": 1,
+        "p75": 1,
+        "p90": 1,
+        "p95": 1,
+        "maximum": 1,
+        "iqr": 0,
+        "mad": 0,
+        "outlierCount": 0
+      },
+      "comparableSteps": {
+        "count": 20,
+        "average": 3,
+        "minimum": 3,
+        "p25": 3,
+        "p50": 3,
+        "p75": 3,
+        "p90": 3,
+        "p95": 3,
+        "maximum": 3,
+        "iqr": 0,
+        "mad": 0,
+        "outlierCount": 0
+      },
+      "tokensPerComparableStep": {
+        "count": 20,
+        "average": 20076.8167,
+        "minimum": 18944.333333333332,
+        "p25": 19046.75,
+        "p50": 19205.1667,
+        "p75": 19288.0833,
+        "p90": 23842.6667,
+        "p95": 23886.8833,
+        "maximum": 23929,
+        "iqr": 241.3333,
+        "mad": 121.5,
+        "outlierCount": 4
+      },
+      "diagnostics": {
+        "verificationCycles": {
+          "count": 20,
+          "average": 1,
+          "minimum": 1,
+          "p25": 1,
+          "p50": 1,
+          "p75": 1,
+          "p90": 1,
+          "p95": 1,
+          "maximum": 1,
+          "iqr": 0,
+          "mad": 0,
+          "outlierCount": 0
+        },
+        "modelTurns": {
+          "count": 20,
+          "average": 1,
+          "minimum": 1,
+          "p25": 1,
+          "p50": 1,
+          "p75": 1,
+          "p90": 1,
+          "p95": 1,
+          "maximum": 1,
+          "iqr": 0,
+          "mad": 0,
+          "outlierCount": 0
+        },
+        "toolCalls": {
+          "count": 20,
+          "average": 3.95,
+          "minimum": 3,
+          "p25": 4,
+          "p50": 4,
+          "p75": 4,
+          "p90": 5,
+          "p95": 5,
+          "maximum": 5,
+          "iqr": 0,
+          "mad": 0,
+          "outlierCount": 3
+        },
+        "retries": {
+          "count": 0,
+          "average": null,
+          "minimum": null,
+          "p25": null,
+          "p50": null,
+          "p75": null,
+          "p90": null,
+          "p95": null,
+          "maximum": null,
+          "iqr": null,
+          "mad": null,
+          "outlierCount": 0
+        },
+        "correctionCycles": {
+          "count": 0,
+          "average": null,
+          "minimum": null,
+          "p25": null,
+          "p50": null,
+          "p75": null,
+          "p90": null,
+          "p95": null,
+          "maximum": null,
+          "iqr": null,
+          "mad": null,
+          "outlierCount": 0
+        },
+        "filesRead": {
+          "count": 0,
+          "average": null,
+          "minimum": null,
+          "p25": null,
+          "p50": null,
+          "p75": null,
+          "p90": null,
+          "p95": null,
+          "maximum": null,
+          "iqr": null,
+          "mad": null,
+          "outlierCount": 0
+        },
+        "filesWritten": {
+          "count": 20,
+          "average": 1,
+          "minimum": 1,
+          "p25": 1,
+          "p50": 1,
+          "p75": 1,
+          "p90": 1,
+          "p95": 1,
+          "maximum": 1,
+          "iqr": 0,
+          "mad": 0,
+          "outlierCount": 0
+        },
+        "contextRefreshes": {
+          "count": 0,
+          "average": null,
+          "minimum": null,
+          "p25": null,
+          "p50": null,
+          "p75": null,
+          "p90": null,
+          "p95": null,
+          "maximum": null,
+          "iqr": null,
+          "mad": null,
+          "outlierCount": 0
+        }
+      },
+      "contextUsage": {
+        "sources": [
+          "UNKNOWN"
+        ],
+        "profiles": [
+          "balanced"
+        ],
+        "measuredRuns": 0,
+        "totalTokens": {
+          "count": 0,
+          "average": null,
+          "minimum": null,
+          "p25": null,
+          "p50": null,
+          "p75": null,
+          "p90": null,
+          "p95": null,
+          "maximum": null,
+          "iqr": null,
+          "mad": null,
+          "outlierCount": 0
+        },
+        "items": {
+          "taskContext": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "guides": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "history": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "protocolInstructions": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "repositoryContext": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "other": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          }
+        }
+      },
+      "quality": {
+        "sources": [
+          "UNKNOWN"
+        ],
+        "scores": {
+          "visualQuality": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "responsiveQuality": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "accessibility": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "interactionPolish": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          },
+          "requirementsCompleteness": {
+            "count": 0,
+            "average": null,
+            "minimum": null,
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null,
+            "p95": null,
+            "maximum": null,
+            "iqr": null,
+            "mad": null,
+            "outlierCount": 0
+          }
+        }
+      }
+    }
+  },
+  "comparisons": {
+    "direct": null,
+    "forgeloopBalanced": {
+      "comparablePairs": 20,
+      "tokenComparablePairs": 20,
+      "timeComparablePairs": 20,
+      "tokenOverheadPercent": {
+        "p50": 2.8741,
+        "p95": 8.0642
+      },
+      "timeOverheadPercent": {
+        "p50": 10.4481,
+        "p95": 35.7284
+      },
+      "claimStatus": "OBSERVATIONAL",
+      "claimAllowed": true,
+      "reason": "Trusted usage, actual timing, verification, and matching comparability metadata are present.",
+      "tail": {
+        "sampleMinimum": 20,
+        "sampleCount": 20,
+        "p95TokenOverheadPercent": 8.0642,
+        "outlierCount": 2,
+        "status": "TAIL_WARNING"
+      }
+    },
+    "forgeloopAdaptive": {
+      "comparablePairs": 20,
+      "tokenComparablePairs": 20,
+      "timeComparablePairs": 20,
+      "tokenOverheadPercent": {
+        "p50": 2.8677,
+        "p95": 28.3485
+      },
+      "timeOverheadPercent": {
+        "p50": 15.294,
+        "p95": 32.237
+      },
+      "claimStatus": "OBSERVATIONAL",
+      "claimAllowed": true,
+      "reason": "Trusted usage, actual timing, verification, and matching comparability metadata are present.",
+      "tail": {
+        "sampleMinimum": 20,
+        "sampleCount": 20,
+        "p95TokenOverheadPercent": 28.3485,
+        "outlierCount": 4,
+        "status": "TAIL_WARNING"
+      }
+    }
+  },
+  "lightObjectives": null,
+  "sourcePolicy": "PROVIDER_REPORTED_OR_HOST_REPORTED_ONLY",
+  "claimsAllowed": true,
+  "generatedFromRunCount": 60,
+  "contextInflation": {
+    "status": "NOT_COMPARABLE",
+    "comparablePairs": 0,
+    "inflatedPairs": 0,
+    "lightContextTokens": {
+      "count": 0,
+      "average": null,
+      "p50": null,
+      "p95": null,
+      "minimum": null,
+      "maximum": null
+    },
+    "balancedContextTokens": {
+      "count": 0,
+      "average": null,
+      "p50": null,
+      "p95": null,
+      "minimum": null,
+      "maximum": null
+    },
+    "blocking": false,
+    "reason": "The adaptive mode did not resolve to LIGHT for this scenario."
+  },
+  "outlierAnalysis": {
+    "policy": "TOKEN_IQR_1_5",
+    "minimumSamples": 4,
+    "modes": {
+      "direct": {
+        "sampleCount": 20,
+        "measuredCount": 20,
+        "status": "MEASURED",
+        "q1": 55521.25,
+        "q3": 56258,
+        "iqr": 736.75,
+        "median": 55881,
+        "upperFence": 57363.125,
+        "outliers": [
+          {
+            "runId": "run-small-bug-fix-direct-001",
+            "runIndex": 1,
+            "totalTokens": 58186,
+            "scenarioMedianTokens": 55881,
+            "ratioToMedian": 1.0412,
+            "reasons": [
+              "TOKEN_IQR_OUTLIER"
+            ],
+            "diagnosticSignals": [
+              "UNKNOWN_TOKEN_SPIKE"
+            ]
+          },
+          {
+            "runId": "run-small-bug-fix-direct-018",
+            "runIndex": 18,
+            "totalTokens": 69850,
+            "scenarioMedianTokens": 55881,
+            "ratioToMedian": 1.25,
+            "reasons": [
+              "TOKEN_IQR_OUTLIER"
+            ],
+            "diagnosticSignals": [
+              "UNKNOWN_TOKEN_SPIKE"
+            ]
+          }
+        ]
+      },
+      "forgeloopBalanced": {
+        "sampleCount": 20,
+        "measuredCount": 20,
+        "status": "MEASURED",
+        "q1": 57276.75,
+        "q3": 57907,
+        "iqr": 630.25,
+        "median": 57694.5,
+        "upperFence": 58852.375,
+        "outliers": [
+          {
+            "runId": "run-small-bug-fix-forgeloopBalanced-009",
+            "runIndex": 9,
+            "totalTokens": 71925,
+            "scenarioMedianTokens": 57694.5,
+            "ratioToMedian": 1.2467,
+            "reasons": [
+              "TOKEN_IQR_OUTLIER"
+            ],
+            "diagnosticSignals": [
+              "UNKNOWN_TOKEN_SPIKE"
+            ]
+          },
+          {
+            "runId": "run-small-bug-fix-forgeloopBalanced-013",
+            "runIndex": 13,
+            "totalTokens": 59769,
+            "scenarioMedianTokens": 57694.5,
+            "ratioToMedian": 1.036,
+            "reasons": [
+              "TOKEN_IQR_OUTLIER"
+            ],
+            "diagnosticSignals": [
+              "UNKNOWN_TOKEN_SPIKE"
+            ]
+          }
+        ]
+      },
+      "forgeloopAdaptive": {
+        "sampleCount": 20,
+        "measuredCount": 20,
+        "status": "MEASURED",
+        "q1": 57140.25,
+        "q3": 57864.25,
+        "iqr": 724,
+        "median": 57615.5,
+        "upperFence": 58950.25,
+        "outliers": [
+          {
+            "runId": "run-small-bug-fix-forgeloopAdaptive-004",
+            "runIndex": 4,
+            "totalTokens": 71514,
+            "scenarioMedianTokens": 57615.5,
+            "ratioToMedian": 1.2412,
+            "reasons": [
+              "TOKEN_IQR_OUTLIER"
+            ],
+            "diagnosticSignals": [
+              "UNKNOWN_TOKEN_SPIKE"
+            ]
+          },
+          {
+            "runId": "run-small-bug-fix-forgeloopAdaptive-008",
+            "runIndex": 8,
+            "totalTokens": 71787,
+            "scenarioMedianTokens": 57615.5,
+            "ratioToMedian": 1.246,
+            "reasons": [
+              "TOKEN_IQR_OUTLIER"
+            ],
+            "diagnosticSignals": [
+              "UNKNOWN_TOKEN_SPIKE"
+            ]
+          },
+          {
+            "runId": "run-small-bug-fix-forgeloopAdaptive-009",
+            "runIndex": 9,
+            "totalTokens": 71654,
+            "scenarioMedianTokens": 57615.5,
+            "ratioToMedian": 1.2437,
+            "reasons": [
+              "TOKEN_IQR_OUTLIER"
+            ],
+            "diagnosticSignals": [
+              "UNKNOWN_TOKEN_SPIKE"
+            ]
+          },
+          {
+            "runId": "run-small-bug-fix-forgeloopAdaptive-014",
+            "runIndex": 14,
+            "totalTokens": 71228,
+            "scenarioMedianTokens": 57615.5,
+            "ratioToMedian": 1.2363,
+            "reasons": [
+              "TOKEN_IQR_OUTLIER"
+            ],
+            "diagnosticSignals": [
+              "UNKNOWN_TOKEN_SPIKE"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,826 @@
+{
+  "schemaVersion": 1,
+  "benchmarkVersion": "2",
+  "runSetId": "codex-tail-repeat20-20260831",
+  "tier": "tail",
+  "scenarioCount": 7,
+  "runCount": 420,
+  "claimsAllowed": true,
+  "scenarios": [
+    {
+      "scenarioId": "api-feature",
+      "expectedProfile": "balanced",
+      "claimsAllowed": true,
+      "lightObjectives": null,
+      "contextInflation": {
+        "status": "NOT_COMPARABLE",
+        "comparablePairs": 0,
+        "inflatedPairs": 0,
+        "lightContextTokens": {
+          "count": 0,
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "balancedContextTokens": {
+          "count": 0,
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "blocking": false,
+        "reason": "The adaptive mode did not resolve to LIGHT for this scenario."
+      },
+      "outlierAnalysis": {
+        "policy": "TOKEN_IQR_1_5",
+        "minimumSamples": 4,
+        "modes": {
+          "direct": {
+            "sampleCount": 20,
+            "measuredCount": 20,
+            "status": "MEASURED",
+            "q1": 56165,
+            "q3": 70016.25,
+            "iqr": 13851.25,
+            "median": 56593,
+            "upperFence": 90793.125,
+            "outliers": []
+          },
+          "forgeloopBalanced": {
+            "sampleCount": 20,
+            "measuredCount": 20,
+            "status": "MEASURED",
+            "q1": 57518,
+            "q3": 58303,
+            "iqr": 785,
+            "median": 57692,
+            "upperFence": 59480.5,
+            "outliers": [
+              {
+                "runId": "run-api-feature-forgeloopBalanced-003",
+                "runIndex": 3,
+                "totalTokens": 72277,
+                "scenarioMedianTokens": 57692,
+                "ratioToMedian": 1.2528,
+                "reasons": [
+                  "TOKEN_IQR_OUTLIER"
+                ],
+                "diagnosticSignals": [
+                  "UNKNOWN_TOKEN_SPIKE"
+                ]
+              },
+              {
+                "runId": "run-api-feature-forgeloopBalanced-004",
+                "runIndex": 4,
+                "totalTokens": 72290,
+                "scenarioMedianTokens": 57692,
+                "ratioToMedian": 1.253,
+                "reasons": [
+                  "TOKEN_IQR_OUTLIER"
+                ],
+                "diagnosticSignals": [
+                  "UNKNOWN_TOKEN_SPIKE"
+                ]
+              },
+              {
+                "runId": "run-api-feature-forgeloopBalanced-009",
+                "runIndex": 9,
+                "totalTokens": 72268,
+                "scenarioMedianTokens": 57692,
+                "ratioToMedian": 1.2527,
+                "reasons": [
+                  "TOKEN_IQR_OUTLIER"
+                ],
+                "diagnosticSignals": [
+                  "UNKNOWN_TOKEN_SPIKE"
+                ]
+              },
+              {
+                "runId": "run-api-feature-forgeloopBalanced-016",
+                "runIndex": 16,
+                "totalTokens": 72113,
+                "scenarioMedianTokens": 57692,
+                "ratioToMedian": 1.25,
+                "reasons": [
+                  "TOKEN_IQR_OUTLIER"
+                ],
+                "diagnosticSignals": [
+                  "UNKNOWN_TOKEN_SPIKE"
+                ]
+              }
+            ]
+          },
+          "forgeloopAdaptive": {
+            "sampleCount": 20,
+            "measuredCount": 20,
+            "status": "MEASURED",
+            "q1": 57505.75,
+            "q3": 71707,
+            "iqr": 14201.25,
+            "median": 71380,
+            "upperFence": 93008.875,
+            "outliers": []
+          }
+        }
+      }
+    },
+    {
+      "scenarioId": "authentication-change",
+      "expectedProfile": "full",
+      "claimsAllowed": true,
+      "lightObjectives": null,
+      "contextInflation": {
+        "status": "NOT_COMPARABLE",
+        "comparablePairs": 0,
+        "inflatedPairs": 0,
+        "lightContextTokens": {
+          "count": 0,
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "balancedContextTokens": {
+          "count": 0,
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "blocking": false,
+        "reason": "The adaptive mode did not resolve to LIGHT for this scenario."
+      },
+      "outlierAnalysis": {
+        "policy": "TOKEN_IQR_1_5",
+        "minimumSamples": 4,
+        "modes": {
+          "direct": {
+            "sampleCount": 20,
+            "measuredCount": 20,
+            "status": "MEASURED",
+            "q1": 55985.5,
+            "q3": 69780,
+            "iqr": 13794.5,
+            "median": 56205.5,
+            "upperFence": 90471.75,
+            "outliers": []
+          },
+          "forgeloopBalanced": {
+            "sampleCount": 20,
+            "measuredCount": 20,
+            "status": "MEASURED",
+            "q1": 57666,
+            "q3": 71947.75,
+            "iqr": 14281.75,
+            "median": 58088.5,
+            "upperFence": 93370.375,
+            "outliers": []
+          },
+          "forgeloopAdaptive": {
+            "sampleCount": 20,
+            "measuredCount": 20,
+            "status": "MEASURED",
+            "q1": 57368.75,
+            "q3": 71479.75,
+            "iqr": 14111,
+            "median": 57585.5,
+            "upperFence": 92646.25,
+            "outliers": []
+          }
+        }
+      }
+    },
+    {
+      "scenarioId": "documentation-correction",
+      "expectedProfile": "light",
+      "claimsAllowed": true,
+      "lightObjectives": {
+        "p50TokenOverheadPercent": 35,
+        "p95TokenOverheadPercent": 60,
+        "status": "OBSERVATIONAL",
+        "p50Pass": true,
+        "p95Pass": true
+      },
+      "contextInflation": {
+        "status": "NOT_COMPARABLE",
+        "comparablePairs": 0,
+        "inflatedPairs": 0,
+        "lightContextTokens": {
+          "count": 0,
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "balancedContextTokens": {
+          "count": 0,
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "blocking": false,
+        "reason": "Context inflation requires complete HOST_REPORTED context items for matching LIGHT and BALANCED runs."
+      },
+      "outlierAnalysis": {
+        "policy": "TOKEN_IQR_1_5",
+        "minimumSamples": 4,
+        "modes": {
+          "direct": {
+            "sampleCount": 20,
+            "measuredCount": 20,
+            "status": "MEASURED",
+            "q1": 54965,
+            "q3": 60397.5,
+            "iqr": 5432.5,
+            "median": 56068.5,
+            "upperFence": 68546.25,
+            "outliers": [
+              {
+                "runId": "run-documentation-correction-direct-004",
+                "runIndex": 4,
+                "totalTokens": 69133,
+                "scenarioMedianTokens": 56068.5,
+                "ratioToMedian": 1.233,
+                "reasons": [
+                  "TOKEN_IQR_OUTLIER"
+                ],
+                "diagnosticSignals": [
+                  "UNKNOWN_TOKEN_SPIKE"
+                ]
+              },
+              {
+                "runId": "run-documentation-correction-direct-005",
+                "runIndex": 5,
+                "totalTokens": 68931,
+                "scenarioMedianTokens": 56068.5,
+                "ratioToMedian": 1.2294,
+                "reasons": [
+                  "TOKEN_IQR_OUTLIER"
+                ],
+                "diagnosticSignals": [
+                  "UNKNOWN_TOKEN_SPIKE"
+                ]
+              },
+              {
+                "runId": "run-documentation-correction-direct-013",
+                "runIndex": 13,
+                "totalTokens": 70653,
+                "scenarioMedianTokens": 56068.5,
+                "ratioToMedian": 1.2601,
+                "reasons": [
+                  "TOKEN_IQR_OUTLIER"
+                ],
+                "diagnosticSignals": [
+                  "UNKNOWN_TOKEN_SPIKE"
+                ]
+              },
+              {
+                "runId": "run-documentation-correction-direct-016",
+                "runIndex": 16,
+                "totalTokens": 70565,
+                "scenarioMedianTokens": 56068.5,
+                "ratioToMedian": 1.2585,
+                "reasons": [
+                  "TOKEN_IQR_OUTLIER"
+                ],
+                "diagnosticSignals": [
+                  "UNKNOWN_TOKEN_SPIKE"
+                ]
+              },
+              {
+                "runId": "run-documentation-correction-direct-019",
+                "runIndex": 19,
+                "totalTokens": 69196,
+                "scenarioMedianTokens": 56068.5,
+                "ratioToMedian": 1.2341,
+                "reasons": [
+                  "TOKEN_IQR_OUTLIER"
+                ],
+                "diagnosticSignals": [
+                  "UNKNOWN_TOKEN_SPIKE"
+                ]
+              }
+            ]
+          },
+          "forgeloopBalanced": {
+            "sampleCount": 20,
+            "measuredCount": 20,
+            "status": "MEASURED",
+            "q1": 56380.75,
+            "q3": 57941.5,
+            "iqr": 1560.75,
+            "median": 57034,
+            "upperFence": 60282.625,
+            "outliers": [
+              {
+                "runId": "run-documentation-correction-forgeloopBalanced-006",
+                "runIndex": 6,
+                "totalTokens": 72438,
+                "scenarioMedianTokens": 57034,
+                "ratioToMedian": 1.2701,
+                "reasons": [
+                  "TOKEN_IQR_OUTLIER"
+                ],
+                "diagnosticSignals": [
+                  "UNKNOWN_TOKEN_SPIKE"
+                ]
+              },
+              {
+                "runId": "run-documentation-correction-forgeloopBalanced-018",
+                "runIndex": 18,
+                "totalTokens": 88987,
+                "scenarioMedianTokens": 57034,
+                "ratioToMedian": 1.5602,
+                "reasons": [
+                  "TOKEN_IQR_OUTLIER"
+                ],
+                "diagnosticSignals": [
+                  "UNKNOWN_TOKEN_SPIKE"
+                ]
+              },
+              {
+                "runId": "run-documentation-correction-forgeloopBalanced-020",
+                "runIndex": 20,
+                "totalTokens": 71234,
+                "scenarioMedianTokens": 57034,
+                "ratioToMedian": 1.249,
+                "reasons": [
+                  "TOKEN_IQR_OUTLIER"
+                ],
+                "diagnosticSignals": [
+                  "UNKNOWN_TOKEN_SPIKE"
+                ]
+              }
+            ]
+          },
+          "forgeloopAdaptive": {
+            "sampleCount": 20,
+            "measuredCount": 20,
+            "status": "MEASURED",
+            "q1": 57644,
+            "q3": 71181.25,
+            "iqr": 13537.25,
+            "median": 58530,
+            "upperFence": 91487.125,
+            "outliers": []
+          }
+        }
+      }
+    },
+    {
+      "scenarioId": "infrastructure-release",
+      "expectedProfile": "full",
+      "claimsAllowed": true,
+      "lightObjectives": null,
+      "contextInflation": {
+        "status": "NOT_COMPARABLE",
+        "comparablePairs": 0,
+        "inflatedPairs": 0,
+        "lightContextTokens": {
+          "count": 0,
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "balancedContextTokens": {
+          "count": 0,
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "blocking": false,
+        "reason": "The adaptive mode did not resolve to LIGHT for this scenario."
+      },
+      "outlierAnalysis": {
+        "policy": "TOKEN_IQR_1_5",
+        "minimumSamples": 4,
+        "modes": {
+          "direct": {
+            "sampleCount": 20,
+            "measuredCount": 20,
+            "status": "MEASURED",
+            "q1": 55162.5,
+            "q3": 69237.5,
+            "iqr": 14075,
+            "median": 55648,
+            "upperFence": 90350,
+            "outliers": []
+          },
+          "forgeloopBalanced": {
+            "sampleCount": 20,
+            "measuredCount": 20,
+            "status": "MEASURED",
+            "q1": 57286,
+            "q3": 71251.25,
+            "iqr": 13965.25,
+            "median": 57598.5,
+            "upperFence": 92199.125,
+            "outliers": []
+          },
+          "forgeloopAdaptive": {
+            "sampleCount": 20,
+            "measuredCount": 20,
+            "status": "MEASURED",
+            "q1": 57202,
+            "q3": 71258.25,
+            "iqr": 14056.25,
+            "median": 57510.5,
+            "upperFence": 92342.625,
+            "outliers": [
+              {
+                "runId": "run-infrastructure-release-forgeloopAdaptive-020",
+                "runIndex": 20,
+                "totalTokens": 107930,
+                "scenarioMedianTokens": 57510.5,
+                "ratioToMedian": 1.8767,
+                "reasons": [
+                  "TOKEN_IQR_OUTLIER"
+                ],
+                "diagnosticSignals": [
+                  "UNKNOWN_TOKEN_SPIKE"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "scenarioId": "novatask-saas-landing-page",
+      "expectedProfile": "light",
+      "claimsAllowed": true,
+      "lightObjectives": {
+        "p50TokenOverheadPercent": 35,
+        "p95TokenOverheadPercent": 60,
+        "status": "OBSERVATIONAL",
+        "p50Pass": true,
+        "p95Pass": false
+      },
+      "contextInflation": {
+        "status": "NOT_COMPARABLE",
+        "comparablePairs": 0,
+        "inflatedPairs": 0,
+        "lightContextTokens": {
+          "count": 0,
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "balancedContextTokens": {
+          "count": 0,
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "blocking": false,
+        "reason": "Context inflation requires complete HOST_REPORTED context items for matching LIGHT and BALANCED runs."
+      },
+      "outlierAnalysis": {
+        "policy": "TOKEN_IQR_1_5",
+        "minimumSamples": 4,
+        "modes": {
+          "direct": {
+            "sampleCount": 20,
+            "measuredCount": 20,
+            "status": "MEASURED",
+            "q1": 150716.25,
+            "q3": 174624.25,
+            "iqr": 23908,
+            "median": 153845,
+            "upperFence": 210486.25,
+            "outliers": [
+              {
+                "runId": "run-novatask-saas-landing-page-direct-015",
+                "runIndex": 15,
+                "totalTokens": 220766,
+                "scenarioMedianTokens": 153845,
+                "ratioToMedian": 1.435,
+                "reasons": [
+                  "TOKEN_IQR_OUTLIER"
+                ],
+                "diagnosticSignals": [
+                  "UNKNOWN_TOKEN_SPIKE"
+                ]
+              }
+            ]
+          },
+          "forgeloopBalanced": {
+            "sampleCount": 20,
+            "measuredCount": 20,
+            "status": "MEASURED",
+            "q1": 152393,
+            "q3": 173189.5,
+            "iqr": 20796.5,
+            "median": 158196,
+            "upperFence": 204384.25,
+            "outliers": [
+              {
+                "runId": "run-novatask-saas-landing-page-forgeloopBalanced-014",
+                "runIndex": 14,
+                "totalTokens": 215837,
+                "scenarioMedianTokens": 158196,
+                "ratioToMedian": 1.3644,
+                "reasons": [
+                  "TOKEN_IQR_OUTLIER"
+                ],
+                "diagnosticSignals": [
+                  "UNKNOWN_TOKEN_SPIKE"
+                ]
+              },
+              {
+                "runId": "run-novatask-saas-landing-page-forgeloopBalanced-020",
+                "runIndex": 20,
+                "totalTokens": 230539,
+                "scenarioMedianTokens": 158196,
+                "ratioToMedian": 1.4573,
+                "reasons": [
+                  "TOKEN_IQR_OUTLIER"
+                ],
+                "diagnosticSignals": [
+                  "UNKNOWN_TOKEN_SPIKE"
+                ]
+              }
+            ]
+          },
+          "forgeloopAdaptive": {
+            "sampleCount": 20,
+            "measuredCount": 20,
+            "status": "MEASURED",
+            "q1": 133976,
+            "q3": 180443.5,
+            "iqr": 46467.5,
+            "median": 157093.5,
+            "upperFence": 250144.75,
+            "outliers": []
+          }
+        }
+      }
+    },
+    {
+      "scenarioId": "small-bug-fix",
+      "expectedProfile": "balanced",
+      "claimsAllowed": true,
+      "lightObjectives": null,
+      "contextInflation": {
+        "status": "NOT_COMPARABLE",
+        "comparablePairs": 0,
+        "inflatedPairs": 0,
+        "lightContextTokens": {
+          "count": 0,
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "balancedContextTokens": {
+          "count": 0,
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "blocking": false,
+        "reason": "The adaptive mode did not resolve to LIGHT for this scenario."
+      },
+      "outlierAnalysis": {
+        "policy": "TOKEN_IQR_1_5",
+        "minimumSamples": 4,
+        "modes": {
+          "direct": {
+            "sampleCount": 20,
+            "measuredCount": 20,
+            "status": "MEASURED",
+            "q1": 55521.25,
+            "q3": 56258,
+            "iqr": 736.75,
+            "median": 55881,
+            "upperFence": 57363.125,
+            "outliers": [
+              {
+                "runId": "run-small-bug-fix-direct-001",
+                "runIndex": 1,
+                "totalTokens": 58186,
+                "scenarioMedianTokens": 55881,
+                "ratioToMedian": 1.0412,
+                "reasons": [
+                  "TOKEN_IQR_OUTLIER"
+                ],
+                "diagnosticSignals": [
+                  "UNKNOWN_TOKEN_SPIKE"
+                ]
+              },
+              {
+                "runId": "run-small-bug-fix-direct-018",
+                "runIndex": 18,
+                "totalTokens": 69850,
+                "scenarioMedianTokens": 55881,
+                "ratioToMedian": 1.25,
+                "reasons": [
+                  "TOKEN_IQR_OUTLIER"
+                ],
+                "diagnosticSignals": [
+                  "UNKNOWN_TOKEN_SPIKE"
+                ]
+              }
+            ]
+          },
+          "forgeloopBalanced": {
+            "sampleCount": 20,
+            "measuredCount": 20,
+            "status": "MEASURED",
+            "q1": 57276.75,
+            "q3": 57907,
+            "iqr": 630.25,
+            "median": 57694.5,
+            "upperFence": 58852.375,
+            "outliers": [
+              {
+                "runId": "run-small-bug-fix-forgeloopBalanced-009",
+                "runIndex": 9,
+                "totalTokens": 71925,
+                "scenarioMedianTokens": 57694.5,
+                "ratioToMedian": 1.2467,
+                "reasons": [
+                  "TOKEN_IQR_OUTLIER"
+                ],
+                "diagnosticSignals": [
+                  "UNKNOWN_TOKEN_SPIKE"
+                ]
+              },
+              {
+                "runId": "run-small-bug-fix-forgeloopBalanced-013",
+                "runIndex": 13,
+                "totalTokens": 59769,
+                "scenarioMedianTokens": 57694.5,
+                "ratioToMedian": 1.036,
+                "reasons": [
+                  "TOKEN_IQR_OUTLIER"
+                ],
+                "diagnosticSignals": [
+                  "UNKNOWN_TOKEN_SPIKE"
+                ]
+              }
+            ]
+          },
+          "forgeloopAdaptive": {
+            "sampleCount": 20,
+            "measuredCount": 20,
+            "status": "MEASURED",
+            "q1": 57140.25,
+            "q3": 57864.25,
+            "iqr": 724,
+            "median": 57615.5,
+            "upperFence": 58950.25,
+            "outliers": [
+              {
+                "runId": "run-small-bug-fix-forgeloopAdaptive-004",
+                "runIndex": 4,
+                "totalTokens": 71514,
+                "scenarioMedianTokens": 57615.5,
+                "ratioToMedian": 1.2412,
+                "reasons": [
+                  "TOKEN_IQR_OUTLIER"
+                ],
+                "diagnosticSignals": [
+                  "UNKNOWN_TOKEN_SPIKE"
+                ]
+              },
+              {
+                "runId": "run-small-bug-fix-forgeloopAdaptive-008",
+                "runIndex": 8,
+                "totalTokens": 71787,
+                "scenarioMedianTokens": 57615.5,
+                "ratioToMedian": 1.246,
+                "reasons": [
+                  "TOKEN_IQR_OUTLIER"
+                ],
+                "diagnosticSignals": [
+                  "UNKNOWN_TOKEN_SPIKE"
+                ]
+              },
+              {
+                "runId": "run-small-bug-fix-forgeloopAdaptive-009",
+                "runIndex": 9,
+                "totalTokens": 71654,
+                "scenarioMedianTokens": 57615.5,
+                "ratioToMedian": 1.2437,
+                "reasons": [
+                  "TOKEN_IQR_OUTLIER"
+                ],
+                "diagnosticSignals": [
+                  "UNKNOWN_TOKEN_SPIKE"
+                ]
+              },
+              {
+                "runId": "run-small-bug-fix-forgeloopAdaptive-014",
+                "runIndex": 14,
+                "totalTokens": 71228,
+                "scenarioMedianTokens": 57615.5,
+                "ratioToMedian": 1.2363,
+                "reasons": [
+                  "TOKEN_IQR_OUTLIER"
+                ],
+                "diagnosticSignals": [
+                  "UNKNOWN_TOKEN_SPIKE"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "scenarioId": "static-landing-page",
+      "expectedProfile": "light",
+      "claimsAllowed": true,
+      "lightObjectives": {
+        "p50TokenOverheadPercent": 35,
+        "p95TokenOverheadPercent": 60,
+        "status": "OBSERVATIONAL",
+        "p50Pass": true,
+        "p95Pass": false
+      },
+      "contextInflation": {
+        "status": "NOT_COMPARABLE",
+        "comparablePairs": 0,
+        "inflatedPairs": 0,
+        "lightContextTokens": {
+          "count": 0,
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "balancedContextTokens": {
+          "count": 0,
+          "average": null,
+          "p50": null,
+          "p95": null,
+          "minimum": null,
+          "maximum": null
+        },
+        "blocking": false,
+        "reason": "Context inflation requires complete HOST_REPORTED context items for matching LIGHT and BALANCED runs."
+      },
+      "outlierAnalysis": {
+        "policy": "TOKEN_IQR_1_5",
+        "minimumSamples": 4,
+        "modes": {
+          "direct": {
+            "sampleCount": 20,
+            "measuredCount": 20,
+            "status": "MEASURED",
+            "q1": 65742.25,
+            "q3": 141980.25,
+            "iqr": 76238,
+            "median": 140632,
+            "upperFence": 256337.25,
+            "outliers": []
+          },
+          "forgeloopBalanced": {
+            "sampleCount": 20,
+            "measuredCount": 20,
+            "status": "MEASURED",
+            "q1": 77488,
+            "q3": 160943.75,
+            "iqr": 83455.75,
+            "median": 132263.5,
+            "upperFence": 286127.375,
+            "outliers": []
+          },
+          "forgeloopAdaptive": {
+            "sampleCount": 20,
+            "measuredCount": 20,
+            "status": "MEASURED",
+            "q1": 123597.75,
+            "q3": 162809.75,
+            "iqr": 39212,
+            "median": 145513,
+            "upperFence": 221627.75,
+            "outliers": []
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "benchmarkVersion": "2",
+  "runSetId": "codex-tail-repeat20-20260831",
+  "runId": "run-documentation-correction-forgeloopAdaptive-005",
+  "scenarioId": "documentation-correction",
+  "mode": "forgeloopAdaptive",
+  "runIndex": 5,
+  "recordedAt": "2026-08-31T15:59:19.206Z",
+  "usage": {
+    "inputTokens": 57291,
+    "outputTokens": 449,
+    "cacheReadTokens": 50688,
+    "cacheWriteTokens": 0,
+    "totalTokens": 57740,
+    "costUsd": null,
+    "model": "gpt-5.4-mini",
+    "provider": "codex-chatgpt",
+    "source": "HOST_REPORTED"
+  },
+  "wallClockMs": 15995.5746,
+  "verification": "FAIL",
+  "verificationCycles": 1,
+  "comparableSteps": 3,
+  "diagnostics": {
+    "executionProfile": "light",
+    "verificationCycles": 1,
+    "modelTurns": 1,
+    "toolCalls": 3,
+    "retries": null,
+    "correctionCycles": null,
+    "filesRead": null,
+    "filesWritten": 1,
+    "contextRefreshes": null,
+    "guideCount": 1,
+    "guideIds": [
+      "documentation"
+    ],
+    "hostWarnings": [],
+    "terminationReason": "VERIFICATION_FAILED",
+    "flags": []
+  },
+  "contextUsage": {
+    "source": "UNKNOWN",
+    "profile": "light",
+    "items": {
+      "taskContext": null,
+      "guides": null,
+      "history": null,
+      "protocolInstructions": null,
+      "repositoryContext": null,
+      "other": null
+    }
+  },
+  "quality": {
+    "source": "UNKNOWN",
+    "scores": {
+      "visualQuality": null,
+      "responsiveQuality": null,
+      "accessibility": null,
+      "interactionPolish": null,
+      "requirementsCompleteness": null
+    }
+  },
+  "metadata": {
+    "scenarioId": "documentation-correction",
+    "mode": "forgeloopAdaptive",
+    "model": "gpt-5.4-mini",
+    "provider": "codex-chatgpt",
+    "promptSpecFingerprint": "418537baaa682e2cbfe90f0609c84c6b22062aaae2779b2357a19cfd8ffa6534",
+    "projectRevision": "3cf40c202d84bbc0cf19f0439497698b2e56b652",
+    "benchmarkVersion": "2",
+    "environmentClass": "codex-cli-darwin-arm64",
+    "requestedProfile": "auto",
+    "resolvedProfile": "light",
+    "verificationCycles": 1,
+    "comparableSteps": 3,
+    "nodeVersion": "26.8.1",
+    "os": "darwin",
+    "arch": "arm64"
+  }
+}
