@@ -680,7 +680,7 @@ export function distributionDeltaPercent(baselineStats, candidateStats) {
   return { p50: p50Delta, p95: p95Delta };
 }
 
-function comparisonForMode(directRuns, modeRuns, { directStats = null, modeStats = null } = {}) {
+function legacyComparisonForMode(directRuns, modeRuns) {
   const directByIndex = new Map(directRuns.map((run) => [run.runIndex, run]));
   const pairs = modeRuns
     .map((run) => ({ variant: run, direct: directByIndex.get(run.runIndex) }))
@@ -694,16 +694,55 @@ function comparisonForMode(directRuns, modeRuns, { directStats = null, modeStats
   const tokenStats = statistic(tokenOverheads);
   const timeStats = statistic(timeOverheads);
   const claimAllowed = tokenStats.count > 0 && timeStats.count > 0;
-  const lowBaselineThreshold = (directStats && Number.isFinite(directStats.p50) && directStats.p50 > 0)
-    ? Number((directStats.p50 * LOW_BASELINE_RATIO).toFixed(4))
+  return {
+    comparablePairs: pairs.length,
+    tokenComparablePairs: tokenStats.count,
+    timeComparablePairs: timeStats.count,
+    tokenOverheadPercent: { p50: tokenStats.p50, p95: tokenStats.p95 },
+    timeOverheadPercent: { p50: timeStats.p50, p95: timeStats.p95 },
+    claimStatus: claimAllowed ? "OBSERVATIONAL" : "NOT_COMPARABLE",
+    claimAllowed,
+    reason: claimAllowed
+      ? "Trusted usage, actual timing, verification, and matching comparability metadata are present."
+      : "Efficiency claims require trusted usage, actual timing, PASS verification, positive comparable steps, and matching metadata.",
+  };
+}
+
+function comparisonForMode(directRuns, modeRuns) {
+  const directByIndex = new Map(directRuns.map((run) => [run.runIndex, run]));
+  const pairs = modeRuns
+    .map((run) => ({ variant: run, direct: directByIndex.get(run.runIndex) }))
+    .filter((pair) => pair.direct && comparablePair(pair.direct, pair.variant));
+
+  const validTokenPairs = pairs.filter(({ direct, variant }) => (
+    Number.isFinite(direct.usage?.totalTokens)
+    && Number.isFinite(variant.usage?.totalTokens)
+    && direct.usage.totalTokens > 0
+  ));
+  const validTimePairs = pairs.filter(({ direct, variant }) => (
+    Number.isFinite(direct.wallClockMs)
+    && Number.isFinite(variant.wallClockMs)
+    && direct.wallClockMs > 0
+  ));
+
+  const comparableDirectTokens = validTokenPairs.map(({ direct }) => direct.usage.totalTokens);
+  const comparableCandidateTokens = validTokenPairs.map(({ variant }) => variant.usage.totalTokens);
+
+  const comparableDirectStats = robustStatistic(comparableDirectTokens);
+  const comparableCandidateStats = robustStatistic(comparableCandidateTokens);
+
+  const distDelta = distributionDeltaPercent(comparableDirectStats, comparableCandidateStats);
+
+  const lowBaselineThreshold = (Number.isFinite(comparableDirectStats.p50) && comparableDirectStats.p50 > 0)
+    ? Number((comparableDirectStats.p50 * LOW_BASELINE_RATIO).toFixed(4))
     : null;
-  const pairedRuns = pairs.map(({ direct, variant }) => {
-    const directTokens = direct.usage?.totalTokens ?? null;
-    const candidateTokens = variant.usage?.totalTokens ?? null;
-    const hasTokens = Number.isFinite(directTokens) && Number.isFinite(candidateTokens) && directTokens > 0;
-    const pairedOverhead = hasTokens ? Number((((candidateTokens - directTokens) / directTokens) * 100).toFixed(4)) : null;
-    const absoluteDelta = hasTokens ? candidateTokens - directTokens : null;
-    const baselineRegime = (hasTokens && lowBaselineThreshold !== null && directTokens < lowBaselineThreshold)
+
+  const pairedRuns = validTokenPairs.map(({ direct, variant }) => {
+    const directTokens = direct.usage.totalTokens;
+    const candidateTokens = variant.usage.totalTokens;
+    const pairedOverhead = Number((((candidateTokens - directTokens) / directTokens) * 100).toFixed(4));
+    const absoluteDelta = candidateTokens - directTokens;
+    const baselineRegime = (lowBaselineThreshold !== null && directTokens < lowBaselineThreshold)
       ? "LOW_BASELINE_TOKEN_REGIME"
       : "NORMAL";
     return {
@@ -715,8 +754,20 @@ function comparisonForMode(directRuns, modeRuns, { directStats = null, modeStats
       baselineRegime,
     };
   });
-  const distDelta = distributionDeltaPercent(directStats, modeStats);
+
+  const tokenOverheads = validTokenPairs.map(({ direct, variant }) => (
+    ((variant.usage.totalTokens - direct.usage.totalTokens) / direct.usage.totalTokens) * 100
+  ));
+  const timeOverheads = validTimePairs.map(({ direct, variant }) => (
+    ((variant.wallClockMs - direct.wallClockMs) / direct.wallClockMs) * 100
+  ));
+
+  const tokenStats = statistic(tokenOverheads);
+  const timeStats = statistic(timeOverheads);
+  const claimAllowed = tokenStats.count > 0 && timeStats.count > 0;
+
   const lowBaselinePairCount = pairedRuns.filter((p) => p.baselineRegime === "LOW_BASELINE_TOKEN_REGIME").length;
+
   return {
     comparablePairs: pairs.length,
     tokenComparablePairs: tokenStats.count,
@@ -727,9 +778,9 @@ function comparisonForMode(directRuns, modeRuns, { directStats = null, modeStats
     timeOverheadPercent: { p50: timeStats.p50, p95: timeStats.p95 },
     pairedRatioDiagnostics: {
       pairCount: pairs.length,
-      baselineMinimum: directStats?.minimum ?? null,
-      baselineP25: directStats?.p25 ?? null,
-      baselineP50: directStats?.p50 ?? null,
+      baselineMinimum: comparableDirectStats.minimum,
+      baselineP25: comparableDirectStats.p25,
+      baselineP50: comparableDirectStats.p50,
       lowBaselineThreshold,
       lowBaselinePairCount,
     },
@@ -994,23 +1045,15 @@ export function aggregateBenchmarkRuns({ scenario, runs } = {}) {
     duplicateKeys.add(key);
   }
   const directRuns = byMode.direct;
-  const legacy = runs.every((run) => run.benchmarkVersion === "1");
-  const directStats = legacy
-    ? statistic(byMode.direct.map((run) => run.usage.totalTokens))
-    : robustStatistic(byMode.direct.map((run) => run.usage.totalTokens));
-  const comparisons = Object.fromEntries(BENCHMARK_MODES.map((mode) => {
-    if (mode === "direct") return [mode, null];
-    const modeStats = legacy
-      ? statistic(byMode[mode].map((run) => run.usage.totalTokens))
-      : robustStatistic(byMode[mode].map((run) => run.usage.totalTokens));
-    return [mode, comparisonForMode(directRuns, byMode[mode], { directStats, modeStats })];
-  }));
-  const lightObjectives = lightObjectivesFor(scenario, comparisons);
   const includeContextUsage = runs.some((run) => Object.prototype.hasOwnProperty.call(run, "contextUsage"));
   const includeQuality = runs.some((run) => Object.prototype.hasOwnProperty.call(run, "quality"));
-  // Historical methodology-v1 run sets must reproduce their stored aggregates
-  // exactly; the v1 shape is intentionally frozen.
+  const legacy = runs.every((run) => run.benchmarkVersion === "1");
   if (legacy) {
+    const comparisons = Object.fromEntries(BENCHMARK_MODES.map((mode) => [
+      mode,
+      mode === "direct" ? null : legacyComparisonForMode(directRuns, byMode[mode]),
+    ]));
+    const lightObjectives = lightObjectivesFor(scenario, comparisons);
     return {
       schemaVersion: 1,
       benchmarkVersion: "1",
@@ -1028,6 +1071,11 @@ export function aggregateBenchmarkRuns({ scenario, runs } = {}) {
         : {}),
     };
   }
+  const comparisons = Object.fromEntries(BENCHMARK_MODES.map((mode) => [
+    mode,
+    mode === "direct" ? null : comparisonForMode(directRuns, byMode[mode]),
+  ]));
+  const lightObjectives = lightObjectivesFor(scenario, comparisons);
   const outlierAnalysis = analyzeTokenOutliers(byMode);
   const comparisonsWithTail = Object.fromEntries(BENCHMARK_MODES.map((mode) => {
     const comparison = comparisons[mode];

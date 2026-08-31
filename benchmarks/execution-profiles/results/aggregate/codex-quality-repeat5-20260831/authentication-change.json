@@ -497,68 +497,10 @@
         "p50": 3.2999,
         "p95": 22.8243
       },
-      "pairedOverheadPercent": {
-        "p50": 3.2999,
-        "p95": 22.8243
-      },
-      "distributionDeltaPercent": {
-        "p50": 3.4689,
-        "p95": 3.1695
-      },
       "timeOverheadPercent": {
         "p50": 8.2084,
         "p95": 14.0483
       },
-      "pairedRatioDiagnostics": {
-        "pairCount": 5,
-        "baselineMinimum": 55948,
-        "baselineP25": null,
-        "baselineP50": 55983,
-        "lowBaselineThreshold": 33589.8,
-        "lowBaselinePairCount": 0
-      },
-      "pairedRuns": [
-        {
-          "runIndex": 1,
-          "directTokens": 55971,
-          "candidateTokens": 57818,
-          "absoluteDeltaTokens": 1847,
-          "pairedOverheadPercent": 3.2999,
-          "baselineRegime": "NORMAL"
-        },
-        {
-          "runIndex": 2,
-          "directTokens": 55948,
-          "candidateTokens": 57925,
-          "absoluteDeltaTokens": 1977,
-          "pairedOverheadPercent": 3.5336,
-          "baselineRegime": "NORMAL"
-        },
-        {
-          "runIndex": 3,
-          "directTokens": 56187,
-          "candidateTokens": 71721,
-          "absoluteDeltaTokens": 15534,
-          "pairedOverheadPercent": 27.647,
-          "baselineRegime": "NORMAL"
-        },
-        {
-          "runIndex": 4,
-          "directTokens": 69508,
-          "candidateTokens": 57928,
-          "absoluteDeltaTokens": -11580,
-          "pairedOverheadPercent": -16.66,
-          "baselineRegime": "NORMAL"
-        },
-        {
-          "runIndex": 5,
-          "directTokens": 55983,
-          "candidateTokens": 57334,
-          "absoluteDeltaTokens": 1351,
-          "pairedOverheadPercent": 2.4132,
-          "baselineRegime": "NORMAL"
-        }
-      ],
       "claimStatus": "OBSERVATIONAL",
       "claimAllowed": true,
       "reason": "Trusted usage, actual timing, verification, and matching comparability metadata are present."
@@ -571,68 +513,10 @@
         "p50": 2.7121,
         "p95": 3.1454
       },
-      "pairedOverheadPercent": {
-        "p50": 2.7121,
-        "p95": 3.1454
-      },
-      "distributionDeltaPercent": {
-        "p50": 2.7723,
-        "p95": 2.4083
-      },
       "timeOverheadPercent": {
         "p50": 18.3299,
         "p95": 21.4037
       },
-      "pairedRatioDiagnostics": {
-        "pairCount": 5,
-        "baselineMinimum": 55948,
-        "baselineP25": null,
-        "baselineP50": 55983,
-        "lowBaselineThreshold": 33589.8,
-        "lowBaselinePairCount": 0
-      },
-      "pairedRuns": [
-        {
-          "runIndex": 1,
-          "directTokens": 55971,
-          "candidateTokens": 57489,
-          "absoluteDeltaTokens": 1518,
-          "pairedOverheadPercent": 2.7121,
-          "baselineRegime": "NORMAL"
-        },
-        {
-          "runIndex": 2,
-          "directTokens": 55948,
-          "candidateTokens": 57760,
-          "absoluteDeltaTokens": 1812,
-          "pairedOverheadPercent": 3.2387,
-          "baselineRegime": "NORMAL"
-        },
-        {
-          "runIndex": 3,
-          "directTokens": 56187,
-          "candidateTokens": 57439,
-          "absoluteDeltaTokens": 1252,
-          "pairedOverheadPercent": 2.2283,
-          "baselineRegime": "NORMAL"
-        },
-        {
-          "runIndex": 4,
-          "directTokens": 69508,
-          "candidateTokens": 71127,
-          "absoluteDeltaTokens": 1619,
-          "pairedOverheadPercent": 2.3292,
-          "baselineRegime": "NORMAL"
-        },
-        {
-          "runIndex": 5,
-          "directTokens": 55983,
-          "candidateTokens": 57535,
-          "absoluteDeltaTokens": 1552,
-          "pairedOverheadPercent": 2.7723,
-          "baselineRegime": "NORMAL"
-        }
-      ],
       "claimStatus": "OBSERVATIONAL",
       "claimAllowed": true,
       "reason": "Trusted usage, actual timing, verification, and matching comparability metadata are present."

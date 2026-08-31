@@ -463,6 +463,147 @@ test("low baseline classification and combined tail interpretation identify rati
   }), "TAIL_UNRESOLVED");
 });
 
+test("methodology-v1 aggregate comparison shape remains frozen without v2 fields", () => {
+  const scenario = {
+    schemaVersion: 1,
+    benchmarkVersion: "2",
+    scenarioId: "documentation-correction",
+    description: "Fixture v1 scenario.",
+    input: { workType: "documentation", surfaces: [], risks: [], platforms: [] },
+    expectedProfile: "light",
+    measurements: {
+      direct: { inputTokens: null, outputTokens: null, cacheReadTokens: null, cacheWriteTokens: null, totalTokens: null, wallClockMs: null, verification: "NOT_AVAILABLE" },
+      forgeloopBalanced: { inputTokens: null, outputTokens: null, cacheReadTokens: null, cacheWriteTokens: null, totalTokens: null, wallClockMs: null, verification: "NOT_AVAILABLE" },
+      forgeloopAdaptive: { inputTokens: null, outputTokens: null, cacheReadTokens: null, cacheWriteTokens: null, totalTokens: null, wallClockMs: null, verification: "NOT_AVAILABLE" },
+    },
+  };
+  const runs = ["direct", "forgeloopBalanced", "forgeloopAdaptive"].map((mode) => ({
+    schemaVersion: 1,
+    benchmarkVersion: "1",
+    runSetId: "v1-fixture",
+    runId: `run-${mode}-001`,
+    runIndex: 1,
+    scenarioId: "documentation-correction",
+    mode,
+    usage: {
+      inputTokens: 50,
+      outputTokens: 50,
+      cacheReadTokens: 0,
+      cacheWriteTokens: 0,
+      totalTokens: 100,
+      costUsd: 0,
+      model: "fixture-model",
+      provider: "fixture-provider",
+      source: "HOST_REPORTED",
+    },
+    wallClockMs: 100,
+    verification: "PASS",
+    verificationCycles: 1,
+    comparableSteps: 2,
+    recordedAt: "2026-08-31T00:00:00.000Z",
+    metadata: {
+      scenarioId: "documentation-correction",
+      mode,
+      model: "fixture-model",
+      provider: "fixture-provider",
+      promptSpecFingerprint: "fixture-prompt",
+      projectRevision: "a".repeat(40),
+      benchmarkVersion: "1",
+      environmentClass: "darwin-node20",
+      requestedProfile: mode === "direct" ? null : mode === "forgeloopBalanced" ? "balanced" : "auto",
+      resolvedProfile: mode === "direct" ? null : mode === "forgeloopBalanced" ? "balanced" : "light",
+      verificationCycles: 1,
+      comparableSteps: 2,
+    },
+  }));
+  const aggregate = aggregateBenchmarkRuns({ scenario, runs });
+  const comp = aggregate.comparisons.forgeloopAdaptive;
+  assert.equal("tokenOverheadPercent" in comp, true);
+  assert.equal("distributionDeltaPercent" in comp, false);
+  assert.equal("pairedOverheadPercent" in comp, false);
+  assert.equal("pairedRatioDiagnostics" in comp, false);
+  assert.equal("pairedRuns" in comp, false);
+  assert.equal("tail" in comp, false);
+});
+
+test("v2 comparative distribution and low-baseline diagnostics use only trusted comparable runs", () => {
+  const scenario = {
+    schemaVersion: 1,
+    benchmarkVersion: "2",
+    scenarioId: "documentation-correction",
+    description: "Fixture v2 scenario.",
+    input: { workType: "documentation", surfaces: [], risks: [], platforms: [] },
+    expectedProfile: "light",
+    measurements: {
+      direct: { inputTokens: null, outputTokens: null, cacheReadTokens: null, cacheWriteTokens: null, totalTokens: null, wallClockMs: null, verification: "NOT_AVAILABLE" },
+      forgeloopBalanced: { inputTokens: null, outputTokens: null, cacheReadTokens: null, cacheWriteTokens: null, totalTokens: null, wallClockMs: null, verification: "NOT_AVAILABLE" },
+      forgeloopAdaptive: { inputTokens: null, outputTokens: null, cacheReadTokens: null, cacheWriteTokens: null, totalTokens: null, wallClockMs: null, verification: "NOT_AVAILABLE" },
+    },
+  };
+  const makeRun = (mode, runIndex, totalTokens, verification) => createBenchmarkRun({
+    runSetId: "v2-filter-fixture",
+    runId: `run-${mode}-${String(runIndex).padStart(3, "0")}`,
+    runIndex,
+    scenario,
+    mode,
+    usage: {
+      inputTokens: Math.floor(totalTokens / 2),
+      outputTokens: Math.ceil(totalTokens / 2),
+      cacheReadTokens: 0,
+      cacheWriteTokens: 0,
+      totalTokens,
+      costUsd: 0,
+      model: "fixture-model",
+      provider: "fixture-provider",
+      source: "HOST_REPORTED",
+    },
+    wallClockMs: 100,
+    verification,
+    verificationCycles: 1,
+    comparableSteps: 2,
+    metadata: {
+      promptSpecFingerprint: "fixture-prompt",
+      projectRevision: "a".repeat(40),
+      environmentClass: "darwin-node20",
+      resolvedProfile: mode === "direct" ? null : mode === "forgeloopBalanced" ? "balanced" : "light",
+    },
+  });
+
+  // Direct: 3 PASS runs (100, 100, 20)
+  // Adaptive: 2 PASS runs (110 on run 1, 50 on run 3) and 1 FAIL run (999 on run 2)
+  const runs = [
+    makeRun("direct", 1, 100, "PASS"),
+    makeRun("direct", 2, 100, "PASS"),
+    makeRun("direct", 3, 20, "PASS"),
+    makeRun("forgeloopBalanced", 1, 100, "PASS"),
+    makeRun("forgeloopBalanced", 2, 100, "PASS"),
+    makeRun("forgeloopBalanced", 3, 100, "PASS"),
+    makeRun("forgeloopAdaptive", 1, 110, "PASS"),
+    makeRun("forgeloopAdaptive", 2, 999, "FAIL"),
+    makeRun("forgeloopAdaptive", 3, 50, "PASS"),
+  ];
+
+  const aggregate = aggregateBenchmarkRuns({ scenario, runs });
+  const comp = aggregate.comparisons.forgeloopAdaptive;
+
+  assert.equal(comp.comparablePairs, 2);
+  assert.equal(comp.tokenComparablePairs, 2);
+  assert.equal(comp.pairedRuns.length, 2);
+  assert.deepEqual(comp.pairedRuns.map((r) => r.runIndex), [1, 3]);
+
+  // Comparable Direct population is [100, 20], median = 60.
+  // Low baseline threshold = 60 * 0.6 = 36.
+  // Run 3 directTokens (20) < 36 -> LOW_BASELINE_TOKEN_REGIME.
+  // Run 1 directTokens (100) >= 36 -> NORMAL.
+  assert.equal(comp.pairedRatioDiagnostics.baselineP50, 60);
+  assert.equal(comp.pairedRatioDiagnostics.lowBaselineThreshold, 36);
+  assert.equal(comp.pairedRatioDiagnostics.lowBaselinePairCount, 1);
+
+  // Comparable Adaptive population is [110, 50], median = 80.
+  // Distribution P50 delta = (80 - 60)/60 * 100 = +33.3333%.
+  assert.equal(comp.distributionDeltaPercent.p50, 33.3333);
+});
+
 test("benchmark tiers bound the runner repetition counts", () => {
   const runner = path.join(repositoryRoot, "scripts", "run-execution-profile-benchmarks.mjs");
   const attempt = (args) => {

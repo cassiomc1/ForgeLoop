@@ -45,14 +45,40 @@ function buildScenarioReport(aggregate) {
   const tail = adaptiveComp?.tail ?? {};
   const diag = adaptiveComp?.pairedRatioDiagnostics ?? {};
 
+  const hasComparableRuns = (adaptiveComp?.pairedRuns?.length ?? 0) > 0;
+  let compDirectP50 = diag.baselineP50 ?? directTokens.p50 ?? null;
+  let compDirectP95 = directTokens.p95 ?? null;
+  let compAdaptiveP50 = adaptiveTokens.p50 ?? null;
+  let compAdaptiveP95 = adaptiveTokens.p95 ?? null;
+
+  if (hasComparableRuns) {
+    const dTokens = adaptiveComp.pairedRuns.map((r) => r.directTokens).sort((a, b) => a - b);
+    const aTokens = adaptiveComp.pairedRuns.map((r) => r.candidateTokens).sort((a, b) => a - b);
+    const pos95 = (dTokens.length - 1) * 0.95;
+    const lower = Math.floor(pos95);
+    const upper = Math.ceil(pos95);
+    const calcP95 = (arr) => (lower === upper ? arr[lower] : arr[lower] + ((arr[upper] - arr[lower]) * (pos95 - lower)));
+    const pos50 = (dTokens.length - 1) * 0.5;
+    const lower50 = Math.floor(pos50);
+    const upper50 = Math.ceil(pos50);
+    const calcP50 = (arr) => (lower50 === upper50 ? arr[lower50] : arr[lower50] + ((arr[upper50] - arr[lower50]) * (pos50 - lower50)));
+
+    compDirectP50 = Number(calcP50(dTokens).toFixed(4));
+    compDirectP95 = Number(calcP95(dTokens).toFixed(4));
+    compAdaptiveP50 = Number(calcP50(aTokens).toFixed(4));
+    compAdaptiveP95 = Number(calcP95(aTokens).toFixed(4));
+  }
+
   return {
     scenarioId: aggregate.scenarioId,
     expectedProfile: aggregate.expectedProfile,
-    directP50: directTokens.p50 ?? null,
-    adaptiveP50: adaptiveTokens.p50 ?? null,
+    totalRunsPerMode: directAgg?.runCount ?? 0,
+    verificationSuccessRate: adaptiveAgg?.verificationSuccessRate ?? 1,
+    directP50: compDirectP50,
+    adaptiveP50: compAdaptiveP50,
     distributionP50DeltaPercent: dist.p50 ?? null,
-    directP95: directTokens.p95 ?? null,
-    adaptiveP95: adaptiveTokens.p95 ?? null,
+    directP95: compDirectP95,
+    adaptiveP95: compAdaptiveP95,
     distributionP95DeltaPercent: dist.p95 ?? null,
     pairedOverheadP50Percent: paired.p50 ?? null,
     pairedOverheadP95Percent: paired.p95 ?? null,

@@ -497,68 +497,10 @@
         "p50": 2.2423,
         "p95": 96.7566
       },
-      "pairedOverheadPercent": {
-        "p50": 2.2423,
-        "p95": 96.7566
-      },
-      "distributionDeltaPercent": {
-        "p50": 3.2706,
-        "p95": -11.1139
-      },
       "timeOverheadPercent": {
         "p50": -7.003,
         "p95": 3.7881
       },
-      "pairedRatioDiagnostics": {
-        "pairCount": 5,
-        "baselineMinimum": 73281,
-        "baselineP25": null,
-        "baselineP50": 153949,
-        "lowBaselineThreshold": 92369.4,
-        "lowBaselinePairCount": 1
-      },
-      "pairedRuns": [
-        {
-          "runIndex": 1,
-          "directTokens": 154580,
-          "candidateTokens": 156177,
-          "absoluteDeltaTokens": 1597,
-          "pairedOverheadPercent": 1.0331,
-          "baselineRegime": "NORMAL"
-        },
-        {
-          "runIndex": 2,
-          "directTokens": 153949,
-          "candidateTokens": 157401,
-          "absoluteDeltaTokens": 3452,
-          "pairedOverheadPercent": 2.2423,
-          "baselineRegime": "NORMAL"
-        },
-        {
-          "runIndex": 3,
-          "directTokens": 214285,
-          "candidateTokens": 180711,
-          "absoluteDeltaTokens": -33574,
-          "pairedOverheadPercent": -15.6679,
-          "baselineRegime": "NORMAL"
-        },
-        {
-          "runIndex": 4,
-          "directTokens": 152127,
-          "candidateTokens": 176434,
-          "absoluteDeltaTokens": 24307,
-          "pairedOverheadPercent": 15.9781,
-          "baselineRegime": "NORMAL"
-        },
-        {
-          "runIndex": 5,
-          "directTokens": 73281,
-          "candidateTokens": 158984,
-          "absoluteDeltaTokens": 85703,
-          "pairedOverheadPercent": 116.9512,
-          "baselineRegime": "LOW_BASELINE_TOKEN_REGIME"
-        }
-      ],
       "claimStatus": "OBSERVATIONAL",
       "claimAllowed": true,
       "reason": "Trusted usage, actual timing, verification, and matching comparability metadata are present."
@@ -571,68 +513,10 @@
         "p50": 1.5694,
         "p95": 71.4597
       },
-      "pairedOverheadPercent": {
-        "p50": 1.5694,
-        "p95": 71.4597
-      },
-      "distributionDeltaPercent": {
-        "p50": 1.5694,
-        "p95": -10.2679
-      },
       "timeOverheadPercent": {
         "p50": -7.2407,
         "p95": 17.0731
       },
-      "pairedRatioDiagnostics": {
-        "pairCount": 5,
-        "baselineMinimum": 73281,
-        "baselineP25": null,
-        "baselineP50": 153949,
-        "lowBaselineThreshold": 92369.4,
-        "lowBaselinePairCount": 1
-      },
-      "pairedRuns": [
-        {
-          "runIndex": 1,
-          "directTokens": 154580,
-          "candidateTokens": 150081,
-          "absoluteDeltaTokens": -4499,
-          "pairedOverheadPercent": -2.9105,
-          "baselineRegime": "NORMAL"
-        },
-        {
-          "runIndex": 2,
-          "directTokens": 153949,
-          "candidateTokens": 156365,
-          "absoluteDeltaTokens": 2416,
-          "pairedOverheadPercent": 1.5694,
-          "baselineRegime": "NORMAL"
-        },
-        {
-          "runIndex": 3,
-          "directTokens": 214285,
-          "candidateTokens": 181772,
-          "absoluteDeltaTokens": -32513,
-          "pairedOverheadPercent": -15.1728,
-          "baselineRegime": "NORMAL"
-        },
-        {
-          "runIndex": 4,
-          "directTokens": 152127,
-          "candidateTokens": 180750,
-          "absoluteDeltaTokens": 28623,
-          "pairedOverheadPercent": 18.8152,
-          "baselineRegime": "NORMAL"
-        },
-        {
-          "runIndex": 5,
-          "directTokens": 73281,
-          "candidateTokens": 135292,
-          "absoluteDeltaTokens": 62011,
-          "pairedOverheadPercent": 84.6208,
-          "baselineRegime": "LOW_BASELINE_TOKEN_REGIME"
-        }
-      ],
       "claimStatus": "OBSERVATIONAL",
       "claimAllowed": true,
       "reason": "Trusted usage, actual timing, verification, and matching comparability metadata are present."

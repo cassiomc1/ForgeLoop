@@ -497,44 +497,10 @@
         "p50": 1.6212,
         "p95": 1.7311
       },
-      "pairedOverheadPercent": {
-        "p50": 1.6212,
-        "p95": 1.7311
-      },
-      "distributionDeltaPercent": {
-        "p50": 1.499,
-        "p95": 2.5682
-      },
       "timeOverheadPercent": {
         "p50": 12.806,
         "p95": 33.417
       },
-      "pairedRatioDiagnostics": {
-        "pairCount": 2,
-        "baselineMinimum": 55698,
-        "baselineP25": null,
-        "baselineP50": 56370,
-        "lowBaselineThreshold": 33822,
-        "lowBaselinePairCount": 0
-      },
-      "pairedRuns": [
-        {
-          "runIndex": 2,
-          "directTokens": 55698,
-          "candidateTokens": 56669,
-          "absoluteDeltaTokens": 971,
-          "pairedOverheadPercent": 1.7433,
-          "baselineRegime": "NORMAL"
-        },
-        {
-          "runIndex": 5,
-          "directTokens": 56370,
-          "candidateTokens": 57215,
-          "absoluteDeltaTokens": 845,
-          "pairedOverheadPercent": 1.499,
-          "baselineRegime": "NORMAL"
-        }
-      ],
       "claimStatus": "OBSERVATIONAL",
       "claimAllowed": true,
       "reason": "Trusted usage, actual timing, verification, and matching comparability metadata are present."
@@ -547,36 +513,10 @@
         "p50": 5.4472,
         "p95": 5.4472
       },
-      "pairedOverheadPercent": {
-        "p50": 5.4472,
-        "p95": 5.4472
-      },
-      "distributionDeltaPercent": {
-        "p50": 1.4564,
-        "p95": -11.8644
-      },
       "timeOverheadPercent": {
         "p50": 16.168,
         "p95": 16.168
       },
-      "pairedRatioDiagnostics": {
-        "pairCount": 1,
-        "baselineMinimum": 55698,
-        "baselineP25": null,
-        "baselineP50": 56370,
-        "lowBaselineThreshold": 33822,
-        "lowBaselinePairCount": 0
-      },
-      "pairedRuns": [
-        {
-          "runIndex": 2,
-          "directTokens": 55698,
-          "candidateTokens": 58732,
-          "absoluteDeltaTokens": 3034,
-          "pairedOverheadPercent": 5.4472,
-          "baselineRegime": "NORMAL"
-        }
-      ],
       "claimStatus": "OBSERVATIONAL",
       "claimAllowed": true,
       "reason": "Trusted usage, actual timing, verification, and matching comparability metadata are present."
