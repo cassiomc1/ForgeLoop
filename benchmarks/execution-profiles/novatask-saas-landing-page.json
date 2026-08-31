@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "benchmarkVersion": "1",
+  "benchmarkVersion": "2",
   "scenarioId": "novatask-saas-landing-page",
   "description": "NovaTask reference workload: a local static SaaS landing page with no external or sensitive boundary.",
   "input": {

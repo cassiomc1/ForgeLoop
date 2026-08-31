@@ -338,10 +338,14 @@ function promptFor({ scenario, workload, mode, context }) {
   ].join("\n");
 }
 
-function parseUsage(stdout) {
-  const events = stdout.split(/\r?\n/u).map((line) => {
+function codexEvents(stdout) {
+  return stdout.split(/\r?\n/u).map((line) => {
     try { return JSON.parse(line); } catch { return null; }
   }).filter(Boolean);
+}
+
+function parseUsage(stdout) {
+  const events = codexEvents(stdout);
   const completed = [...events].reverse().find((event) => event.type === "turn.completed" && event.usage);
   if (!completed) return null;
   const reported = completed.usage;
@@ -361,6 +365,61 @@ function parseUsage(stdout) {
     model,
     provider,
     source: "HOST_REPORTED",
+  };
+}
+
+const CODEX_TOOL_ITEM_TYPES = new Set([
+  "command_execution",
+  "local_shell_call",
+  "exec_command",
+  "mcp_tool_call",
+  "custom_tool_call",
+  "web_search",
+  "file_change",
+]);
+
+// Counts only what the Codex event stream reports; empty streams stay null
+// rather than zero so missing telemetry is never presented as measured.
+function parseHostDiagnostics(stdout) {
+  const events = codexEvents(stdout);
+  if (events.length === 0) return { modelTurns: null, toolCalls: null, filesWritten: null };
+  let modelTurns = 0;
+  let toolCalls = 0;
+  const writtenPaths = new Set();
+  for (const event of events) {
+    if (event.type === "turn.completed") modelTurns += 1;
+    if (event.type !== "item.completed" || !event.item) continue;
+    if (CODEX_TOOL_ITEM_TYPES.has(event.item.type)) toolCalls += 1;
+    if (event.item.type === "file_change" && Array.isArray(event.item.changes)) {
+      for (const change of event.item.changes) {
+        if (typeof change?.path === "string" && change.path.length > 0) writtenPaths.add(change.path);
+      }
+    }
+  }
+  return { modelTurns, toolCalls, filesWritten: writtenPaths.size };
+}
+
+function hostDiagnostics({ stdout, mode, context, verificationPass, hostError }) {
+  const observed = parseHostDiagnostics(stdout ?? "");
+  const selectedGuideIds = mode === "direct"
+    ? []
+    : (Array.isArray(context?.selectedGuideIds) ? context.selectedGuideIds : [])
+      .filter((guideId) => typeof guideId === "string" && guideId.length > 0);
+  return {
+    executionProfile: mode === "direct" ? null : context?.executionProfile?.resolved ?? null,
+    verificationCycles: 1,
+    modelTurns: observed.modelTurns,
+    toolCalls: observed.toolCalls,
+    retries: null,
+    correctionCycles: null,
+    filesRead: null,
+    filesWritten: observed.filesWritten,
+    contextRefreshes: null,
+    guideCount: selectedGuideIds.length,
+    guideIds: selectedGuideIds,
+    hostWarnings: [],
+    terminationReason: hostError ? "HOST_ERROR" : verificationPass ? "COMPLETED" : "VERIFICATION_FAILED",
+    flags: [],
   };
 }
 
@@ -482,6 +541,13 @@ export async function runBenchmark({ scenario, mode, runIndex }) {
     let verification = { pass: false, steps: workload.comparableSteps };
     if (!codexResult.error && usage) verification = await workload.verify(workspace);
     if (canonical && usage) await recordCanonicalUsage({ context: canonical, usage });
+    const diagnostics = hostDiagnostics({
+      stdout: codexResult.stdout ?? "",
+      mode,
+      context: canonical?.context ?? null,
+      verificationPass: verification.pass,
+      hostError: Boolean(codexResult.error),
+    });
     retainForQuality = qualityEvaluatorSpecifier !== null && qualityEligible(scenario);
     return {
       usage: usage ?? {},
@@ -489,6 +555,7 @@ export async function runBenchmark({ scenario, mode, runIndex }) {
       verification: verification.pass ? "PASS" : "FAIL",
       verificationCycles: 1,
       comparableSteps: verification.steps,
+      diagnostics,
       // Codex exposes aggregate prompt usage, not a trustworthy decomposition
       // into ForgeLoop context items. Keep this explicitly unknown.
       contextUsage: undefined,

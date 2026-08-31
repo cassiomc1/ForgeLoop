@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "benchmarkVersion": "1",
+  "benchmarkVersion": "2",
   "scenarioId": "documentation-correction",
   "description": "Narrow documentation correction with no executable behavior or sensitive content.",
   "input": {

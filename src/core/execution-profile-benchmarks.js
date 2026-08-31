@@ -2,11 +2,51 @@ import { canonicalFingerprint } from "./artifacts.js";
 import { evaluateRoute } from "./router.js";
 import { normalizeUsage } from "./usage.js";
 
-export const BENCHMARK_VERSION = "1";
+export const BENCHMARK_VERSION = "2";
+export const SUPPORTED_BENCHMARK_VERSIONS = Object.freeze(["1", "2"]);
 export const BENCHMARK_MODES = Object.freeze([
   "direct",
   "forgeloopBalanced",
   "forgeloopAdaptive",
+]);
+// Observational runaway-execution diagnostics only; they never gate lifecycle
+// truth or completion validity.
+export const BENCHMARK_RUNAWAY_SIGNALS = Object.freeze([
+  "EXCESSIVE_MODEL_TURNS",
+  "EXCESSIVE_TOOL_CALLS",
+  "EXCESSIVE_VERIFICATION_CYCLES",
+  "REPEATED_CONTEXT_REFRESH",
+  "REPEATED_FILE_READ",
+  "REPEATED_GUIDE_LOAD",
+  "UNEXPECTED_RETRY",
+  "CORRECTION_LOOP",
+  "HOST_RETRY",
+  "MODEL_STALL",
+  "UNKNOWN_TOKEN_SPIKE",
+]);
+export const BENCHMARK_DIAGNOSTIC_COUNT_FIELDS = Object.freeze([
+  "verificationCycles",
+  "modelTurns",
+  "toolCalls",
+  "retries",
+  "correctionCycles",
+  "filesRead",
+  "filesWritten",
+  "contextRefreshes",
+]);
+export const BENCHMARK_TIERS = Object.freeze({
+  smoke: Object.freeze({ minimumRuns: 1, maximumRuns: 3, defaultRuns: 1 }),
+  evidence: Object.freeze({ minimumRuns: 5, maximumRuns: 10, defaultRuns: 5 }),
+  tail: Object.freeze({ minimumRuns: 20, maximumRuns: 30, defaultRuns: 20 }),
+});
+export const OUTLIER_POLICY = "TOKEN_IQR_1_5";
+export const OUTLIER_MINIMUM_SAMPLES = 4;
+export const TAIL_SAMPLE_MINIMUM = 20;
+export const TAIL_STATUSES = Object.freeze([
+  "TAIL_STABLE",
+  "TAIL_WARNING",
+  "TAIL_REGRESSION",
+  "NOT_ENOUGH_SAMPLES",
 ]);
 export const BENCHMARK_VERIFICATION_RESULTS = Object.freeze([
   "PASS",
@@ -306,6 +346,81 @@ export function normalizeBenchmarkQuality(value) {
   return { source, scores: normalizedScores };
 }
 
+function assertStringArray(value, label) {
+  if (!Array.isArray(value)) throw benchmarkError(`${label} must be an array`);
+  for (const item of value) {
+    if (typeof item !== "string" || item.length === 0) {
+      throw benchmarkError(`${label} must contain only non-empty strings`);
+    }
+  }
+  return value;
+}
+
+// Every diagnostics field is nullable. Unavailable host telemetry stays null;
+// it is never estimated from prompt size, file size, or elapsed time.
+export function normalizeBenchmarkDiagnostics(value) {
+  if (value === undefined || value === null) return null;
+  const diagnostics = assertObject(value, "diagnostics");
+  const allowedKeys = new Set([
+    "executionProfile",
+    ...BENCHMARK_DIAGNOSTIC_COUNT_FIELDS,
+    "guideCount",
+    "guideIds",
+    "contextRefreshes",
+    "hostWarnings",
+    "terminationReason",
+    "flags",
+  ]);
+  const unknownKey = Object.keys(diagnostics).find((key) => !allowedKeys.has(key));
+  if (unknownKey) throw benchmarkError(`diagnostics contains unsupported field: ${unknownKey}`);
+  const executionProfile = diagnostics.executionProfile ?? null;
+  assertNullableProfile(executionProfile, "diagnostics.executionProfile");
+  const normalized = { executionProfile };
+  for (const field of BENCHMARK_DIAGNOSTIC_COUNT_FIELDS) {
+    normalized[field] = assertNullableNonNegativeInteger(diagnostics[field] ?? null, `diagnostics.${field}`);
+  }
+  normalized.guideCount = assertNullableNonNegativeInteger(diagnostics.guideCount ?? null, "diagnostics.guideCount");
+  normalized.guideIds = assertStringArray(diagnostics.guideIds ?? [], "diagnostics.guideIds");
+  normalized.hostWarnings = assertStringArray(diagnostics.hostWarnings ?? [], "diagnostics.hostWarnings");
+  normalized.terminationReason = assertString(diagnostics.terminationReason ?? null, "diagnostics.terminationReason", { nullable: true });
+  const flags = assertStringArray(diagnostics.flags ?? [], "diagnostics.flags");
+  const unknownFlag = flags.find((flag) => !BENCHMARK_RUNAWAY_SIGNALS.includes(flag));
+  if (unknownFlag) throw benchmarkError(`diagnostics.flags contains unsupported signal: ${unknownFlag}`);
+  normalized.flags = BENCHMARK_RUNAWAY_SIGNALS.filter((signal) => flags.includes(signal));
+  return normalized;
+}
+
+// Observational runaway-execution signals. Host-reported flags are preserved;
+// deterministic signals are added only where the recorded diagnostics support
+// them. A token outlier with no explanatory signal becomes UNKNOWN_TOKEN_SPIKE.
+export function evaluateRunawaySignals(run, {
+  medianModelTurns = null,
+  medianToolCalls = null,
+  tokenOutlier = false,
+} = {}) {
+  const diagnostics = normalizeBenchmarkDiagnostics(run?.diagnostics ?? null);
+  const signals = new Set(diagnostics?.flags ?? []);
+  const doubled = (value, median) => (
+    typeof value === "number"
+    && typeof median === "number"
+    && median > 0
+    && value > median * 2
+  );
+  if (doubled(diagnostics?.modelTurns ?? null, medianModelTurns)) signals.add("EXCESSIVE_MODEL_TURNS");
+  if (doubled(diagnostics?.toolCalls ?? null, medianToolCalls)) signals.add("EXCESSIVE_TOOL_CALLS");
+  const verificationCycles = diagnostics?.verificationCycles ?? run?.verificationCycles ?? null;
+  if (verificationCycles !== null && verificationCycles > 1) signals.add("EXCESSIVE_VERIFICATION_CYCLES");
+  if ((diagnostics?.contextRefreshes ?? null) !== null && diagnostics.contextRefreshes > 1) {
+    signals.add("REPEATED_CONTEXT_REFRESH");
+  }
+  if ((diagnostics?.retries ?? null) !== null && diagnostics.retries > 0) signals.add("UNEXPECTED_RETRY");
+  if ((diagnostics?.correctionCycles ?? null) !== null && diagnostics.correctionCycles > 1) {
+    signals.add("CORRECTION_LOOP");
+  }
+  if (tokenOutlier && signals.size === 0) signals.add("UNKNOWN_TOKEN_SPIKE");
+  return BENCHMARK_RUNAWAY_SIGNALS.filter((signal) => signals.has(signal));
+}
+
 function contextUsageForRun(run) {
   return normalizeBenchmarkContextUsage(run.contextUsage, run.metadata?.resolvedProfile ?? null);
 }
@@ -352,8 +467,8 @@ function assertBenchmarkMetadata(metadata, run) {
 export function assertBenchmarkRun(value) {
   const run = assertObject(value, "benchmark run");
   if (run.schemaVersion !== 1) throw benchmarkError("benchmark run schemaVersion must be 1");
-  if (run.benchmarkVersion !== BENCHMARK_VERSION) {
-    throw benchmarkError(`benchmark run benchmarkVersion must be ${BENCHMARK_VERSION}`);
+  if (!SUPPORTED_BENCHMARK_VERSIONS.includes(run.benchmarkVersion)) {
+    throw benchmarkError(`benchmark run benchmarkVersion must be one of ${SUPPORTED_BENCHMARK_VERSIONS.join(", ")}`);
   }
   assertRunSetId(run.runSetId);
   assertRunId(run.runId);
@@ -369,6 +484,7 @@ export function assertBenchmarkRun(value) {
   assertNullableNonNegativeInteger(run.verificationCycles, "verificationCycles");
   assertNullableNonNegativeInteger(run.comparableSteps, "comparableSteps");
   assertBenchmarkMetadata(run.metadata, run);
+  if ("diagnostics" in run) normalizeBenchmarkDiagnostics(run.diagnostics);
   normalizeBenchmarkContextUsage(run.contextUsage, run.metadata.resolvedProfile);
   normalizeBenchmarkQuality(run.quality);
   if (usage.model !== null && run.metadata.model !== usage.model) {
@@ -392,6 +508,7 @@ export function createBenchmarkRun({
   verification = "NOT_AVAILABLE",
   verificationCycles = null,
   comparableSteps = null,
+  diagnostics = undefined,
   contextUsage = undefined,
   quality = undefined,
   metadata = {},
@@ -402,6 +519,7 @@ export function createBenchmarkRun({
   if (!profile) throw benchmarkError(`Unsupported benchmark mode: ${mode}`);
   const resolvedProfile = metadata.resolvedProfile ?? profile.resolvedProfile;
   normalizedModeProfile(mode, resolvedProfile);
+  const normalizedDiagnostics = normalizeBenchmarkDiagnostics(diagnostics);
   const run = {
     schemaVersion: 1,
     benchmarkVersion: BENCHMARK_VERSION,
@@ -416,6 +534,7 @@ export function createBenchmarkRun({
     verification,
     verificationCycles,
     comparableSteps,
+    ...(normalizedDiagnostics === null ? {} : { diagnostics: normalizedDiagnostics }),
     contextUsage: normalizeBenchmarkContextUsage(contextUsage, resolvedProfile),
     quality: normalizeBenchmarkQuality(quality),
     metadata: {
@@ -439,23 +558,70 @@ export function createBenchmarkRun({
   return assertBenchmarkRun(run);
 }
 
+function sortedFinite(values) {
+  return values.filter((value) => typeof value === "number" && Number.isFinite(value)).sort((a, b) => a - b);
+}
+
+function percentileOf(sorted, fraction) {
+  const position = (sorted.length - 1) * fraction;
+  const lower = Math.floor(position);
+  const upper = Math.ceil(position);
+  if (lower === upper) return sorted[lower];
+  return sorted[lower] + ((sorted[upper] - sorted[lower]) * (position - lower));
+}
+
 function statistic(values) {
-  const usable = values.filter((value) => typeof value === "number" && Number.isFinite(value)).sort((a, b) => a - b);
+  const usable = sortedFinite(values);
   if (usable.length === 0) return { count: 0, average: null, p50: null, p95: null, minimum: null, maximum: null };
-  const percentile = (fraction) => {
-    const position = (usable.length - 1) * fraction;
-    const lower = Math.floor(position);
-    const upper = Math.ceil(position);
-    if (lower === upper) return usable[lower];
-    return usable[lower] + ((usable[upper] - usable[lower]) * (position - lower));
-  };
   return {
     count: usable.length,
     average: Number((usable.reduce((sum, value) => sum + value, 0) / usable.length).toFixed(4)),
-    p50: Number(percentile(0.5).toFixed(4)),
-    p95: Number(percentile(0.95).toFixed(4)),
+    p50: Number(percentileOf(usable, 0.5).toFixed(4)),
+    p95: Number(percentileOf(usable, 0.95).toFixed(4)),
     minimum: usable[0],
     maximum: usable.at(-1),
+  };
+}
+
+// Benchmark methodology v2 favors robust statistics for skewed token
+// distributions: median/IQR/MAD instead of average/stddev alone.
+export function robustStatistic(values) {
+  const usable = sortedFinite(values);
+  if (usable.length === 0) {
+    return {
+      count: 0,
+      average: null,
+      minimum: null,
+      p25: null,
+      p50: null,
+      p75: null,
+      p90: null,
+      p95: null,
+      maximum: null,
+      iqr: null,
+      mad: null,
+      outlierCount: 0,
+    };
+  }
+  const q1 = percentileOf(usable, 0.25);
+  const median = percentileOf(usable, 0.5);
+  const q3 = percentileOf(usable, 0.75);
+  const iqr = q3 - q1;
+  const upperFence = q3 + 1.5 * iqr;
+  const deviations = usable.map((value) => Math.abs(value - median)).sort((a, b) => a - b);
+  return {
+    count: usable.length,
+    average: Number((usable.reduce((sum, value) => sum + value, 0) / usable.length).toFixed(4)),
+    minimum: usable[0],
+    p25: Number(q1.toFixed(4)),
+    p50: Number(median.toFixed(4)),
+    p75: Number(q3.toFixed(4)),
+    p90: Number(percentileOf(usable, 0.9).toFixed(4)),
+    p95: Number(percentileOf(usable, 0.95).toFixed(4)),
+    maximum: usable.at(-1),
+    iqr: Number(iqr.toFixed(4)),
+    mad: Number(percentileOf(deviations, 0.5).toFixed(4)),
+    outlierCount: usable.filter((value) => value > upperFence).length,
   };
 }
 
@@ -515,28 +681,28 @@ function comparisonForMode(directRuns, modeRuns) {
   };
 }
 
-function contextUsageAggregate(runs) {
+function contextUsageAggregate(runs, statisticFn = statistic) {
   const contextUsages = runs.map(contextUsageForRun);
   const totals = contextUsages.map(measuredContextTokens);
   return {
     sources: [...new Set(contextUsages.map((contextUsage) => contextUsage.source))].sort(),
     profiles: [...new Set(contextUsages.map((contextUsage) => contextUsage.profile).filter(Boolean))].sort(),
     measuredRuns: totals.filter((value) => value !== null).length,
-    totalTokens: statistic(totals),
+    totalTokens: statisticFn(totals),
     items: Object.fromEntries(BENCHMARK_CONTEXT_USAGE_ITEMS.map((item) => [
       item,
-      statistic(contextUsages.map((contextUsage) => contextUsage.items[item])),
+      statisticFn(contextUsages.map((contextUsage) => contextUsage.items[item])),
     ])),
   };
 }
 
-function qualityAggregate(runs) {
+function qualityAggregate(runs, statisticFn = statistic) {
   const quality = runs.map((run) => normalizeBenchmarkQuality(run.quality));
   return {
     sources: [...new Set(quality.map((item) => item.source))].sort(),
     scores: Object.fromEntries(BENCHMARK_QUALITY_FIELDS.map((field) => [
       field,
-      statistic(quality.map((item) => item.scores[field])),
+      statisticFn(quality.map((item) => item.scores[field])),
     ])),
   };
 }
@@ -578,6 +744,107 @@ function contextInflationForScenario(balancedRuns, adaptiveRuns) {
   };
 }
 
+// Deterministic benchmark-level outlier classification. The IQR rule is an
+// analysis convention, not protocol truth; it never changes lifecycle state.
+export function analyzeTokenOutliers(runsByMode) {
+  return {
+    policy: OUTLIER_POLICY,
+    minimumSamples: OUTLIER_MINIMUM_SAMPLES,
+    modes: Object.fromEntries(BENCHMARK_MODES.map((mode) => [
+      mode,
+      tokenOutlierAnalysisForMode(runsByMode[mode] ?? []),
+    ])),
+  };
+}
+
+function tokenOutlierAnalysisForMode(runs) {
+  const measured = runs.filter((run) => Number.isFinite(run.usage.totalTokens));
+  const notEnough = {
+    sampleCount: runs.length,
+    measuredCount: measured.length,
+    status: "NOT_ENOUGH_SAMPLES",
+    q1: null,
+    q3: null,
+    iqr: null,
+    median: null,
+    upperFence: null,
+    outliers: [],
+  };
+  if (measured.length < OUTLIER_MINIMUM_SAMPLES) return notEnough;
+  const stats = robustStatistic(measured.map((run) => run.usage.totalTokens));
+  const medianModelTurns = robustStatistic(measured.map((run) => run.diagnostics?.modelTurns ?? null)).p50;
+  const medianToolCalls = robustStatistic(measured.map((run) => run.diagnostics?.toolCalls ?? null)).p50;
+  const upperFence = stats.p75 + 1.5 * stats.iqr;
+  const outliers = measured
+    .filter((run) => run.usage.totalTokens > upperFence)
+    .map((run) => ({
+      runId: run.runId,
+      runIndex: run.runIndex,
+      totalTokens: run.usage.totalTokens,
+      scenarioMedianTokens: stats.p50,
+      ratioToMedian: stats.p50 > 0 ? Number((run.usage.totalTokens / stats.p50).toFixed(4)) : null,
+      reasons: ["TOKEN_IQR_OUTLIER"],
+      diagnosticSignals: evaluateRunawaySignals(run, { medianModelTurns, medianToolCalls, tokenOutlier: true }),
+    }))
+    .sort((left, right) => left.runIndex - right.runIndex);
+  return {
+    sampleCount: runs.length,
+    measuredCount: measured.length,
+    status: "MEASURED",
+    q1: stats.p25,
+    q3: stats.p75,
+    iqr: stats.iqr,
+    median: stats.p50,
+    upperFence: Number(upperFence.toFixed(4)),
+    outliers,
+  };
+}
+
+// Observational tail stability status; the thresholds are benchmark policy,
+// never lifecycle policy.
+export function classifyTailStatus({
+  sampleCount,
+  p95TokenOverheadPercent,
+  outlierCount = 0,
+  sampleMinimum = TAIL_SAMPLE_MINIMUM,
+  regressionPercent = LIGHT_EFFICIENCY_OBJECTIVES.p95TokenOverheadPercent,
+} = {}) {
+  if (!Number.isInteger(sampleCount) || sampleCount < sampleMinimum) return "NOT_ENOUGH_SAMPLES";
+  if (p95TokenOverheadPercent === null || p95TokenOverheadPercent === undefined) return "NOT_ENOUGH_SAMPLES";
+  if (p95TokenOverheadPercent > regressionPercent) return "TAIL_REGRESSION";
+  if (outlierCount > 0) return "TAIL_WARNING";
+  return "TAIL_STABLE";
+}
+
+function diagnosticsAggregate(runs) {
+  return Object.fromEntries(BENCHMARK_DIAGNOSTIC_COUNT_FIELDS.map((field) => [
+    field,
+    robustStatistic(runs.map((run) => run.diagnostics?.[field] ?? null)),
+  ]));
+}
+
+function modeAggregateRobust(runs, { includeContextUsage = false, includeQuality = false } = {}) {
+  const verificationCount = runs.filter((run) => run.verification === "PASS").length;
+  const tokenPerStep = runs.map((run) => (
+    Number.isFinite(run.usage.totalTokens) && Number.isInteger(run.comparableSteps) && run.comparableSteps > 0
+      ? run.usage.totalTokens / run.comparableSteps
+      : null
+  ));
+  return {
+    runCount: runs.length,
+    verificationSuccessRate: runs.length > 0 ? Number((verificationCount / runs.length).toFixed(4)) : null,
+    usageSources: [...new Set(runs.map((run) => run.usage.source))].sort(),
+    totalTokens: robustStatistic(runs.map((run) => run.usage.totalTokens)),
+    wallClockMs: robustStatistic(runs.map((run) => run.wallClockMs)),
+    verificationCycles: robustStatistic(runs.map((run) => run.verificationCycles)),
+    comparableSteps: robustStatistic(runs.map((run) => run.comparableSteps)),
+    tokensPerComparableStep: robustStatistic(tokenPerStep),
+    diagnostics: diagnosticsAggregate(runs),
+    ...(includeContextUsage ? { contextUsage: contextUsageAggregate(runs, robustStatistic) } : {}),
+    ...(includeQuality ? { quality: qualityAggregate(runs, robustStatistic) } : {}),
+  };
+}
+
 function modeAggregate(runs, { includeContextUsage = false, includeQuality = false } = {}) {
   const verificationCount = runs.filter((run) => run.verification === "PASS").length;
   const comparableSteps = runs.map((run) => run.comparableSteps);
@@ -597,6 +864,21 @@ function modeAggregate(runs, { includeContextUsage = false, includeQuality = fal
     tokensPerComparableStep: statistic(tokenPerStep),
     ...(includeContextUsage ? { contextUsage: contextUsageAggregate(runs) } : {}),
     ...(includeQuality ? { quality: qualityAggregate(runs) } : {}),
+  };
+}
+
+function lightObjectivesFor(scenario, comparisons) {
+  if (scenario.expectedProfile !== "light") return null;
+  return {
+    p50TokenOverheadPercent: LIGHT_EFFICIENCY_OBJECTIVES.p50TokenOverheadPercent,
+    p95TokenOverheadPercent: LIGHT_EFFICIENCY_OBJECTIVES.p95TokenOverheadPercent,
+    status: comparisons.forgeloopAdaptive?.claimAllowed ? "OBSERVATIONAL" : "NOT_VERIFIED",
+    p50Pass: comparisons.forgeloopAdaptive?.tokenOverheadPercent.p50 === null
+      ? null
+      : comparisons.forgeloopAdaptive.tokenOverheadPercent.p50 <= LIGHT_EFFICIENCY_OBJECTIVES.p50TokenOverheadPercent,
+    p95Pass: comparisons.forgeloopAdaptive?.tokenOverheadPercent.p95 === null
+      ? null
+      : comparisons.forgeloopAdaptive.tokenOverheadPercent.p95 <= LIGHT_EFFICIENCY_OBJECTIVES.p95TokenOverheadPercent,
   };
 }
 
@@ -624,29 +906,58 @@ export function aggregateBenchmarkRuns({ scenario, runs } = {}) {
     mode,
     mode === "direct" ? null : comparisonForMode(directRuns, byMode[mode]),
   ]));
-  const lightObjectives = scenario.expectedProfile === "light"
-    ? {
-      p50TokenOverheadPercent: LIGHT_EFFICIENCY_OBJECTIVES.p50TokenOverheadPercent,
-      p95TokenOverheadPercent: LIGHT_EFFICIENCY_OBJECTIVES.p95TokenOverheadPercent,
-      status: comparisons.forgeloopAdaptive?.claimAllowed ? "OBSERVATIONAL" : "NOT_VERIFIED",
-      p50Pass: comparisons.forgeloopAdaptive?.tokenOverheadPercent.p50 === null
-        ? null
-        : comparisons.forgeloopAdaptive.tokenOverheadPercent.p50 <= LIGHT_EFFICIENCY_OBJECTIVES.p50TokenOverheadPercent,
-      p95Pass: comparisons.forgeloopAdaptive?.tokenOverheadPercent.p95 === null
-        ? null
-        : comparisons.forgeloopAdaptive.tokenOverheadPercent.p95 <= LIGHT_EFFICIENCY_OBJECTIVES.p95TokenOverheadPercent,
-    }
-      : null;
+  const lightObjectives = lightObjectivesFor(scenario, comparisons);
   const includeContextUsage = runs.some((run) => Object.prototype.hasOwnProperty.call(run, "contextUsage"));
   const includeQuality = runs.some((run) => Object.prototype.hasOwnProperty.call(run, "quality"));
+  // Historical methodology-v1 run sets must reproduce their stored aggregates
+  // exactly; the v1 shape is intentionally frozen.
+  const legacy = runs.every((run) => run.benchmarkVersion === "1");
+  if (legacy) {
+    return {
+      schemaVersion: 1,
+      benchmarkVersion: "1",
+      runSetId: runs[0].runSetId,
+      scenarioId: scenario.scenarioId,
+      expectedProfile: scenario.expectedProfile,
+      modeAggregates: Object.fromEntries(BENCHMARK_MODES.map((mode) => [mode, modeAggregate(byMode[mode], { includeContextUsage, includeQuality })])),
+      comparisons,
+      lightObjectives,
+      sourcePolicy: "PROVIDER_REPORTED_OR_HOST_REPORTED_ONLY",
+      claimsAllowed: Object.values(comparisons).some((comparison) => comparison?.claimAllowed === true),
+      generatedFromRunCount: runs.length,
+      ...(includeContextUsage
+        ? { contextInflation: contextInflationForScenario(byMode.forgeloopBalanced, byMode.forgeloopAdaptive) }
+        : {}),
+    };
+  }
+  const outlierAnalysis = analyzeTokenOutliers(byMode);
+  const comparisonsWithTail = Object.fromEntries(BENCHMARK_MODES.map((mode) => {
+    const comparison = comparisons[mode];
+    if (comparison === null) return [mode, null];
+    const outlierCount = outlierAnalysis.modes[mode].outliers.length;
+    return [mode, {
+      ...comparison,
+      tail: {
+        sampleMinimum: TAIL_SAMPLE_MINIMUM,
+        sampleCount: comparison.tokenComparablePairs,
+        p95TokenOverheadPercent: comparison.tokenOverheadPercent.p95,
+        outlierCount,
+        status: classifyTailStatus({
+          sampleCount: comparison.tokenComparablePairs,
+          p95TokenOverheadPercent: comparison.tokenOverheadPercent.p95,
+          outlierCount,
+        }),
+      },
+    }];
+  }));
   return {
     schemaVersion: 1,
     benchmarkVersion: BENCHMARK_VERSION,
     runSetId: runs[0].runSetId,
     scenarioId: scenario.scenarioId,
     expectedProfile: scenario.expectedProfile,
-    modeAggregates: Object.fromEntries(BENCHMARK_MODES.map((mode) => [mode, modeAggregate(byMode[mode], { includeContextUsage, includeQuality })])),
-    comparisons,
+    modeAggregates: Object.fromEntries(BENCHMARK_MODES.map((mode) => [mode, modeAggregateRobust(byMode[mode], { includeContextUsage, includeQuality })])),
+    comparisons: comparisonsWithTail,
     lightObjectives,
     sourcePolicy: "PROVIDER_REPORTED_OR_HOST_REPORTED_ONLY",
     claimsAllowed: Object.values(comparisons).some((comparison) => comparison?.claimAllowed === true),
@@ -654,6 +965,7 @@ export function aggregateBenchmarkRuns({ scenario, runs } = {}) {
     ...(includeContextUsage
       ? { contextInflation: contextInflationForScenario(byMode.forgeloopBalanced, byMode.forgeloopAdaptive) }
       : {}),
+    outlierAnalysis,
   };
 }
 

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "benchmarkVersion": "1",
+  "benchmarkVersion": "2",
   "scenarioId": "infrastructure-release",
   "description": "Infrastructure or release/publication work with external and potentially irreversible effects.",
   "input": {
