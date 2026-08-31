@@ -147,6 +147,14 @@ export function getForgeLoopCapabilities({ packageVersion = null } = {}) {
         deterministic: true,
         lifecycleFastPath: false,
       },
+      executionProfileContext: {
+        version: 1,
+        supported: true,
+        resource: "task/context",
+        resolvedProfileAuthoritative: true,
+        compatibilityFallback: "balanced",
+        lifecycleFastPath: false,
+      },
       compactLifecycleOutput: {
         version: 1,
         supported: true,
@@ -163,6 +171,13 @@ export function getForgeLoopCapabilities({ packageVersion = null } = {}) {
         version: 1,
         supported: true,
         comparativeOnly: true,
+      },
+      contextUsageObservability: {
+        version: 1,
+        supported: true,
+        sources: ["HOST_REPORTED", "UNKNOWN"],
+        estimation: false,
+        inflationStatus: "OBSERVATIONAL",
       },
       workspaceBinding: {
         version: 1,
@@ -221,6 +236,7 @@ export function getForgeLoopCapabilities({ packageVersion = null } = {}) {
       { name: "task/action", scope: "TASK" },
       { name: "task/approvals", scope: "TASK" },
       { name: "task/metrics", scope: "TASK" },
+      { name: "task/context", scope: "TASK" },
       { name: "task/evaluations", scope: "TASK" },
       { name: "project/capability-policy", scope: "PROJECT" },
     ],

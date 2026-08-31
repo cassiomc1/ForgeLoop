@@ -14,6 +14,7 @@ import {
   aggregateBenchmarkRuns,
   assertBenchmarkScenario,
   createBenchmarkRun,
+  normalizeBenchmarkContextUsage,
 } from "../src/core/execution-profile-benchmarks.js";
 import { readBenchmarkRunSets, readBenchmarkScenarios } from "../scripts/lib/execution-profile-benchmark-io.mjs";
 import { removeTempTree } from "./helpers/rm-safe.js";
@@ -24,7 +25,8 @@ const fixtureAdapter = path.join(repositoryRoot, "tests", "fixtures", "execution
 test("all benchmark scenarios are schema-valid and resolve to their expected profiles", async () => {
   const schema = await readSchema("execution-profile-benchmark-scenario", getPackageRoot());
   const scenarios = await readBenchmarkScenarios(repositoryRoot);
-  assert.equal(scenarios.length, 6);
+  assert.equal(scenarios.length, 7);
+  assert.ok(scenarios.some((scenario) => scenario.scenarioId === "novatask-saas-landing-page"));
   for (const scenario of scenarios) {
     assertSchema(scenario, schema, scenario.scenarioId);
     assert.equal(evaluateRoute(scenario.input).executionProfile.resolved, scenario.expectedProfile, scenario.scenarioId);
@@ -60,6 +62,31 @@ test("profile-aware context changes optional depth without permitting a safety d
   assert.equal(context.invariants.lifecyclePhasesPreserved, true);
   assert.equal(context.invariants.requiredGatesPreserved, true);
   assert.equal(context.invariants.lifecyclePhaseSkippingAllowed, false);
+});
+
+test("context usage is host-observed, profile-bound, and never estimated", () => {
+  assert.deepEqual(normalizeBenchmarkContextUsage(undefined, "light"), {
+    source: "UNKNOWN",
+    profile: "light",
+    items: {
+      taskContext: null,
+      guides: null,
+      history: null,
+      protocolInstructions: null,
+      repositoryContext: null,
+      other: null,
+    },
+  });
+  assert.throws(() => normalizeBenchmarkContextUsage({
+    source: "UNKNOWN",
+    profile: "light",
+    items: { taskContext: 10 },
+  }, "light"), /UNKNOWN context usage/);
+  assert.throws(() => normalizeBenchmarkContextUsage({
+    source: "HOST_REPORTED",
+    profile: "balanced",
+    items: {},
+  }, "light"), /match the resolved benchmark profile/);
 });
 
 test("aggregates preserve unavailable telemetry and permit only comparable observations", async () => {
@@ -99,6 +126,18 @@ test("aggregates preserve unavailable telemetry and permit only comparable obser
       verification: "PASS",
       verificationCycles: 1,
       comparableSteps: 2,
+      contextUsage: {
+        source: "HOST_REPORTED",
+        profile: mode === "direct" ? null : mode === "forgeloopBalanced" ? "balanced" : "light",
+        items: {
+          taskContext: mode === "direct" ? 100 : mode === "forgeloopBalanced" ? 80 : 60,
+          guides: 0,
+          history: 0,
+          protocolInstructions: 0,
+          repositoryContext: 0,
+          other: 0,
+        },
+      },
       metadata: {
         promptSpecFingerprint: "fixture-prompt",
         projectRevision: "a".repeat(40),
@@ -111,6 +150,8 @@ test("aggregates preserve unavailable telemetry and permit only comparable obser
   assert.equal(aggregate.claimsAllowed, true);
   assert.equal(aggregate.comparisons.forgeloopAdaptive.claimStatus, "OBSERVATIONAL");
   assert.equal(aggregate.lightObjectives.status, "OBSERVATIONAL");
+  assert.equal(aggregate.contextInflation.status, "NOT_DETECTED");
+  assert.equal(aggregate.modeAggregates.forgeloopAdaptive.contextUsage.totalTokens.p50, 60);
   assert.throws(() => createBenchmarkRun({
     runSetId: "fixture-set",
     runId: "run-invalid-profile-001",
@@ -155,8 +196,8 @@ test("runner records raw runs, writes reproducible aggregates, and never claims 
       "--json",
     ], { cwd: repositoryRoot, encoding: "utf8" }));
     assert.equal(result.status, "MEASURED");
-    assert.equal(result.scenarioCount, 6);
-    assert.equal(result.runCount, 36);
+    assert.equal(result.scenarioCount, 7);
+    assert.equal(result.runCount, 42);
     assert.equal(result.claimsAllowed, true);
 
     const aggregate = JSON.parse(await readFile(
@@ -164,6 +205,7 @@ test("runner records raw runs, writes reproducible aggregates, and never claims 
       "utf8",
     ));
     assert.equal(aggregate.comparisons.forgeloopAdaptive.claimStatus, "OBSERVATIONAL");
+    assert.equal(aggregate.contextInflation.status, "NOT_DETECTED");
 
     const validator = path.join(repositoryRoot, "scripts", "validate-execution-profile-benchmarks.mjs");
     const validation = JSON.parse(execFileSync(process.execPath, [validator, "--results", output, "--json"], {
@@ -187,7 +229,7 @@ test("summary reports NOT_MEASURED when no provider or host run history exists",
     }));
     assert.equal(result.status, "NOT_MEASURED");
     assert.equal(result.claimsAllowed, false);
-    assert.equal(result.scenarioCount, 6);
+    assert.equal(result.scenarioCount, 7);
   } finally {
     await removeTempTree(output);
   }

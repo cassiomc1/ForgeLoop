@@ -101,6 +101,14 @@ export function protocolInfo({ packageVersion = null } = {}) {
         deterministic: true,
         lifecycleFastPath: false,
       },
+      executionProfileContext: {
+        version: 1,
+        supported: true,
+        resource: "task/context",
+        resolvedProfileAuthoritative: true,
+        compatibilityFallback: "balanced",
+        lifecycleFastPath: false,
+      },
       compactLifecycleOutput: {
         version: 1,
         supported: true,
@@ -119,6 +127,13 @@ export function protocolInfo({ packageVersion = null } = {}) {
         supported: true,
         comparativeOnly: true,
         baseline: "OPTIONAL_PROJECT_LOCAL_JSON",
+      },
+      contextUsageObservability: {
+        version: 1,
+        supported: true,
+        sources: ["HOST_REPORTED", "UNKNOWN"],
+        estimation: false,
+        inflationStatus: "OBSERVATIONAL",
       },
       trajectoryEvaluation: { version: 1, supported: true, requiresReferenceScenario: true, source: "PROJECT_LOCAL_REFERENCE" },
       workspaceBinding: {

@@ -12,6 +12,8 @@ export const PROFILE_CONTEXT_POLICIES = Object.freeze({
     guideStrategy: "targeted",
     verificationStrategy: "focused",
     optionalArtifacts: "lazy",
+    requiredSections: ["objective", "scope", "implementation", "verification"],
+    excludedContext: ["full-history", "full-trace", "all-schemas", "all-guides", "reflection", "unrelated-repository-context"],
   }),
   balanced: Object.freeze({
     contextDepth: "relevant",
@@ -20,6 +22,8 @@ export const PROFILE_CONTEXT_POLICIES = Object.freeze({
     guideStrategy: "relevant",
     verificationStrategy: "normal",
     optionalArtifacts: "lazy",
+    requiredSections: ["objective", "scope", "implementation", "verification", "relevant-history"],
+    excludedContext: ["unrelated-repository-context"],
   }),
   full: Object.freeze({
     contextDepth: "expanded",
@@ -28,6 +32,8 @@ export const PROFILE_CONTEXT_POLICIES = Object.freeze({
     guideStrategy: "broad-risk",
     verificationStrategy: "expanded-when-justified",
     optionalArtifacts: "when-required-or-useful",
+    requiredSections: ["objective", "scope", "implementation", "verification", "risk", "relevant-history"],
+    excludedContext: [],
   }),
 });
 

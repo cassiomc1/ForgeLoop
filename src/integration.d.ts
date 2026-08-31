@@ -78,6 +78,19 @@ export interface ForgeLoopUsage {
   source: "PROVIDER_REPORTED" | "HOST_REPORTED";
 }
 
+export interface ForgeLoopContextUsage {
+  source: "HOST_REPORTED" | "UNKNOWN";
+  profile: "light" | "balanced" | "full" | null;
+  items: {
+    taskContext: number | null;
+    guides: number | null;
+    history: number | null;
+    protocolInstructions: number | null;
+    repositoryContext: number | null;
+    other: number | null;
+  };
+}
+
 export declare const EXECUTION_PROFILES: readonly ["light", "balanced", "full"];
 export declare const EXECUTION_PROFILE_REQUESTS: readonly ["auto", "light", "balanced", "full"];
 export declare const LEGACY_EXECUTION_PROFILE: "balanced";
@@ -115,6 +128,7 @@ export interface ForgeLoopExecutionProfileContext {
   selectedGuideIds: readonly string[];
   verificationRequirements: readonly Record<string, unknown>[];
   contextPolicy: Record<string, unknown>;
+  contextUsage?: ForgeLoopContextUsage;
   optionalContext: { available: readonly string[]; loaded: readonly string[] };
   invariants: Record<string, boolean>;
 }

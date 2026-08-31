@@ -78,12 +78,14 @@ Phases: RECEIVED, DISCOVERING, CONTRACT_READY, ROUTED, DESIGNING, PLANNED, EXECU
 | capabilityPolicy | 1 | yes |
 | codeAttestation | 1 | yes |
 | compactLifecycleOutput | 1 | yes |
+| contextUsageObservability | 1 | yes |
 | diagnostics | n/a | yes |
 | differentialVerificationScope | 1 | yes |
 | durableActions | 1 | yes |
 | durableApprovals | 1 | yes |
 | efficiencyMetrics | 1 | yes |
 | executionHistory | 1 | yes |
+| executionProfileContext | 1 | yes |
 | integrationApi | 1 | yes |
 | observabilityStability | n/a | yes |
 | reflection | 1 | yes |

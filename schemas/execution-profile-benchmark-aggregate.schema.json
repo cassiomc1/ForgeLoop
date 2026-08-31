@@ -21,6 +21,20 @@
       "additionalProperties": true
     },
     "lightObjectives": { "type": ["object", "null"] },
+    "contextInflation": {
+      "type": "object",
+      "required": ["status", "comparablePairs", "inflatedPairs", "lightContextTokens", "balancedContextTokens", "blocking", "reason"],
+      "properties": {
+        "status": { "enum": ["CONTEXT_INFLATION", "NOT_DETECTED", "NOT_COMPARABLE"] },
+        "comparablePairs": { "type": "integer", "minimum": 0 },
+        "inflatedPairs": { "type": "integer", "minimum": 0 },
+        "lightContextTokens": { "type": "object" },
+        "balancedContextTokens": { "type": "object" },
+        "blocking": { "const": false },
+        "reason": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
     "sourcePolicy": { "const": "PROVIDER_REPORTED_OR_HOST_REPORTED_ONLY" },
     "claimsAllowed": { "type": "boolean" },
     "generatedFromRunCount": { "type": "integer", "minimum": 1 }

@@ -33,6 +33,8 @@
     "verification": { "enum": ["PASS", "FAIL", "NOT_AVAILABLE"] },
     "verificationCycles": { "type": ["integer", "null"], "minimum": 0 },
     "comparableSteps": { "type": ["integer", "null"], "minimum": 0 },
+    "contextUsage": { "$ref": "#/$defs/contextUsage" },
+    "quality": { "$ref": "#/$defs/quality" },
     "metadata": {
       "type": "object",
       "required": ["scenarioId", "mode", "model", "provider", "promptSpecFingerprint", "projectRevision", "benchmarkVersion", "environmentClass", "requestedProfile", "resolvedProfile", "verificationCycles", "comparableSteps"],
@@ -52,6 +54,50 @@
         "nodeVersion": { "type": "string", "minLength": 1 },
         "os": { "type": "string", "minLength": 1 },
         "arch": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "contextUsage": {
+      "type": "object",
+      "required": ["source", "profile", "items"],
+      "properties": {
+        "source": { "enum": ["HOST_REPORTED", "UNKNOWN"] },
+        "profile": { "enum": ["light", "balanced", "full", null] },
+        "items": {
+          "type": "object",
+          "required": ["taskContext", "guides", "history", "protocolInstructions", "repositoryContext", "other"],
+          "properties": {
+            "taskContext": { "type": ["integer", "null"], "minimum": 0 },
+            "guides": { "type": ["integer", "null"], "minimum": 0 },
+            "history": { "type": ["integer", "null"], "minimum": 0 },
+            "protocolInstructions": { "type": ["integer", "null"], "minimum": 0 },
+            "repositoryContext": { "type": ["integer", "null"], "minimum": 0 },
+            "other": { "type": ["integer", "null"], "minimum": 0 }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "quality": {
+      "type": "object",
+      "required": ["source", "scores"],
+      "properties": {
+        "source": { "enum": ["EXTERNAL_REPORTED", "HOST_REPORTED", "UNKNOWN"] },
+        "scores": {
+          "type": "object",
+          "required": ["visualQuality", "responsiveQuality", "accessibility", "interactionPolish", "requirementsCompleteness"],
+          "properties": {
+            "visualQuality": { "type": ["number", "null"], "minimum": 0, "maximum": 5 },
+            "responsiveQuality": { "type": ["number", "null"], "minimum": 0, "maximum": 5 },
+            "accessibility": { "type": ["number", "null"], "minimum": 0, "maximum": 5 },
+            "interactionPolish": { "type": ["number", "null"], "minimum": 0, "maximum": 5 },
+            "requirementsCompleteness": { "type": ["number", "null"], "minimum": 0, "maximum": 5 }
+          },
+          "additionalProperties": false
+        }
       },
       "additionalProperties": false
     }

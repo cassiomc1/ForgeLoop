@@ -164,6 +164,12 @@ policy for hosts. A host may omit optional presentation context, but
 `light` never authorizes a skipped lifecycle phase or required gate. A phase
 may be absent only when the canonical protocol marks it not applicable.
 
+The capability handshake names this contract as `executionProfileContext` and
+marks `executionProfile.resolved` as authoritative. Historical consumers that
+do not expose `task/context` must use balanced compatibility behavior rather
+than inventing a local LIGHT heuristic. Optional benchmark context telemetry is
+host-reported or `UNKNOWN`; ForgeLoop does not tokenize provider prompts.
+
 The profile invariant block is explicit:
 
 ```text

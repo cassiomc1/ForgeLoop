@@ -215,6 +215,11 @@ phase or gate. Measured profile comparisons use the reproducible commands in
 and do not claim efficiency when provider or host telemetry is unavailable or
 non-comparable.
 
+The integration capability handshake marks the resolved profile as
+authoritative. Hosts without `task/context` use balanced compatibility behavior
+and must not invent a local LIGHT heuristic. Optional context usage is
+host-reported or `UNKNOWN`; values are never estimated.
+
 Before npm publication, the same source checkout can be exercised without a
 network or package lookup:
 

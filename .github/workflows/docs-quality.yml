@@ -73,6 +73,10 @@ jobs:
           npm run changelog:check
         if: matrix.node-version == 24
 
+      - name: Report efficiency regression status
+        run: npm run benchmark:profiles:regression -- --json
+        if: matrix.node-version == 24
+
       - name: Check CLI startup budget
         run: npm run performance:check
         if: matrix.node-version == 24

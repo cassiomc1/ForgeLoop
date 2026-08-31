@@ -72,6 +72,7 @@
     "scripts/run-execution-profile-benchmarks.mjs",
     "scripts/summarize-execution-profile-benchmarks.mjs",
     "scripts/validate-execution-profile-benchmarks.mjs",
+    "scripts/check-efficiency-regression.mjs",
     "scripts/lib/execution-profile-benchmark-io.mjs",
     "scripts/benchmark-cli-startup.mjs",
     "scripts/check-critical-coverage.mjs",
@@ -113,7 +114,8 @@
     "poc:evidence:test": "node --test poc/test/poc-evidence-publication.test.js",
     "benchmark:profiles": "node scripts/run-execution-profile-benchmarks.mjs",
     "benchmark:profiles:summary": "node scripts/summarize-execution-profile-benchmarks.mjs",
-    "benchmark:profiles:check": "node scripts/validate-execution-profile-benchmarks.mjs"
+    "benchmark:profiles:check": "node scripts/validate-execution-profile-benchmarks.mjs",
+    "benchmark:profiles:regression": "node scripts/check-efficiency-regression.mjs"
   },
   "devDependencies": {
     "c8": "^12.0.0",

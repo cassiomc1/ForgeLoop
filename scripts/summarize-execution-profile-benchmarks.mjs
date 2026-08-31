@@ -55,6 +55,8 @@ async function main() {
         claimsAllowed: aggregate.claimsAllowed,
         comparisons: aggregate.comparisons,
         lightObjectives: aggregate.lightObjectives,
+        modeAggregates: aggregate.modeAggregates,
+        contextInflation: aggregate.contextInflation ?? null,
       })),
     });
   }

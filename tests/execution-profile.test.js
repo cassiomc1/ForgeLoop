@@ -87,7 +87,7 @@ test("invalid requested profile fails with a stable error", () => {
 
 test("benchmark scenarios resolve to their documented profiles without token estimation", async () => {
   const files = (await readdir(benchmarkRoot)).filter((name) => name.endsWith(".json")).sort();
-  assert.equal(files.length, 6);
+  assert.equal(files.length, 7);
   for (const filename of files) {
     const scenario = JSON.parse(await readFile(path.join(benchmarkRoot, filename), "utf8"));
     const route = evaluateRoute(scenario.input);
