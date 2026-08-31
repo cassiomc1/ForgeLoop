@@ -320,6 +320,7 @@ Every non-direct comparison in a v2 aggregate gains a `tail` object, `pairedRati
 `distributionP95DeltaPercent` compares the P95 values of the candidate and baseline token distributions directly (`((adaptiveP95 - directP95) / directP95) * 100`).
 
 These are distinct statistics and must not be presented as interchangeable metrics:
+
 - When a candidate distribution is genuinely heavy-tailed, `distributionP95DeltaPercent` itself exceeds the objective (`TAIL_DISTRIBUTION_REGRESSION`).
 - When the candidate distribution P95 is acceptable but paired overhead is inflated by low-baseline runs, the combined interpretation is `TAIL_PAIRED_RATIO_SENSITIVE`.
 
@@ -335,6 +336,7 @@ Tail status is observational and is classified as:
 - `TAIL_STABLE` / `TAIL_ACCEPTABLE` otherwise.
 
 Combined interpretation states:
+
 - `TAIL_CONSISTENT`: paired and distribution views agree;
 - `TAIL_PAIRED_RATIO_SENSITIVE`: paired P95 fails while distribution P95 passes and low-baseline pairs are present;
 - `TAIL_DISTRIBUTION_REGRESSION`: absolute distribution P95 delta exceeds the objective;
