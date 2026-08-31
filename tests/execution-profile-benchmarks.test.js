@@ -14,8 +14,11 @@ import {
   aggregateBenchmarkRuns,
   analyzeTokenOutliers,
   assertBenchmarkScenario,
+  classifyCombinedTailStatus,
+  classifyDistributionTailStatus,
   classifyTailStatus,
   createBenchmarkRun,
+  distributionDeltaPercent,
   evaluateRunawaySignals,
   normalizeBenchmarkContextUsage,
   normalizeBenchmarkDiagnostics,
@@ -403,6 +406,61 @@ test("tail stability status distinguishes sample, regression, warning, and stabl
   assert.equal(classifyTailStatus({ sampleCount: 20, p95TokenOverheadPercent: 60 }), "TAIL_STABLE");
   assert.equal(classifyTailStatus({ sampleCount: 20, p95TokenOverheadPercent: 10, outlierCount: 2 }), "TAIL_WARNING");
   assert.equal(classifyTailStatus({ sampleCount: 20, p95TokenOverheadPercent: 10 }), "TAIL_STABLE");
+});
+
+test("distribution delta compares candidate and baseline distribution percentiles directly", () => {
+  assert.deepEqual(distributionDeltaPercent({ p50: 100, p95: 100 }, { p50: 110, p95: 120 }), { p50: 10, p95: 20 });
+  assert.deepEqual(distributionDeltaPercent(null, { p50: 100, p95: 100 }), { p50: null, p95: null });
+  assert.deepEqual(distributionDeltaPercent({ p50: 0, p95: 0 }, { p50: 100, p95: 100 }), { p50: null, p95: null });
+});
+
+test("paired denominator sensitivity: low baseline values inflate paired overhead beyond distribution delta", () => {
+  const directRuns = [100, 100, 20];
+  const adaptiveRuns = [110, 110, 50];
+  const directStats = robustStatistic(directRuns);
+  const adaptiveStats = robustStatistic(adaptiveRuns);
+  const distDelta = distributionDeltaPercent(directStats, adaptiveStats);
+  
+  // Paired overheads: (110-100)/100 = 10%, (110-100)/100 = 10%, (50-20)/20 = 150%
+  const pairedOverheads = [10, 10, 150];
+  const pairedP95 = robustStatistic(pairedOverheads).p95;
+
+  assert.ok(pairedP95 > 100, `paired P95 (${pairedP95}%) should reflect low denominator spike`);
+  assert.ok(distDelta.p95 < 20, `distribution P95 delta (${distDelta.p95}%) remains modest`);
+});
+
+test("low baseline classification and combined tail interpretation identify ratio sensitivity", () => {
+  assert.equal(classifyDistributionTailStatus({ sampleCount: 20, distributionP95DeltaPercent: 13.2 }), "TAIL_ACCEPTABLE");
+  assert.equal(classifyDistributionTailStatus({ sampleCount: 20, distributionP95DeltaPercent: 65 }), "TAIL_REGRESSION");
+  assert.equal(classifyDistributionTailStatus({ sampleCount: 19, distributionP95DeltaPercent: 10 }), "NOT_ENOUGH_SAMPLES");
+
+  assert.equal(classifyCombinedTailStatus({
+    pairedStatus: "TAIL_REGRESSION",
+    distributionStatus: "TAIL_ACCEPTABLE",
+    lowBaselinePairCount: 7,
+    sampleCount: 20,
+  }), "TAIL_PAIRED_RATIO_SENSITIVE");
+
+  assert.equal(classifyCombinedTailStatus({
+    pairedStatus: "TAIL_REGRESSION",
+    distributionStatus: "TAIL_REGRESSION",
+    lowBaselinePairCount: 0,
+    sampleCount: 20,
+  }), "TAIL_DISTRIBUTION_REGRESSION");
+
+  assert.equal(classifyCombinedTailStatus({
+    pairedStatus: "TAIL_STABLE",
+    distributionStatus: "TAIL_ACCEPTABLE",
+    lowBaselinePairCount: 0,
+    sampleCount: 20,
+  }), "TAIL_CONSISTENT");
+
+  assert.equal(classifyCombinedTailStatus({
+    pairedStatus: "NOT_ENOUGH_SAMPLES",
+    distributionStatus: "NOT_ENOUGH_SAMPLES",
+    lowBaselinePairCount: 2,
+    sampleCount: 18,
+  }), "TAIL_UNRESOLVED");
 });
 
 test("benchmark tiers bound the runner repetition counts", () => {

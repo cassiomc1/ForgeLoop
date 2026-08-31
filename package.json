@@ -73,6 +73,7 @@
     "scripts/summarize-execution-profile-benchmarks.mjs",
     "scripts/validate-execution-profile-benchmarks.mjs",
     "scripts/report-execution-profile-outliers.mjs",
+    "scripts/report-tail-interpretation.mjs",
     "scripts/check-efficiency-regression.mjs",
     "scripts/lib/execution-profile-benchmark-io.mjs",
     "scripts/benchmark-cli-startup.mjs",
@@ -117,6 +118,7 @@
     "benchmark:profiles:summary": "node scripts/summarize-execution-profile-benchmarks.mjs",
     "benchmark:profiles:check": "node scripts/validate-execution-profile-benchmarks.mjs",
     "benchmark:profiles:outliers": "node scripts/report-execution-profile-outliers.mjs",
+    "benchmark:profiles:tail-analysis": "node scripts/report-tail-interpretation.mjs",
     "benchmark:profiles:regression": "node scripts/check-efficiency-regression.mjs"
   },
   "devDependencies": {

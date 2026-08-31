@@ -278,27 +278,67 @@ interpolation; `iqr` is the interquartile range and `mad` the median absolute
 deviation around the median. Methodology-v1 aggregates keep their frozen
 historical shape.
 
-Every non-direct comparison in a v2 aggregate gains a `tail` object:
+Every non-direct comparison in a v2 aggregate gains a `tail` object, `pairedRatioDiagnostics`, `pairedRuns`, and separate paired and distribution statistics:
 
 ```json
 {
+  "pairedOverheadPercent": {
+    "p50": 3.5685,
+    "p95": 174.1502
+  },
+  "distributionDeltaPercent": {
+    "p50": 3.4708,
+    "p95": 13.1906
+  },
+  "pairedRatioDiagnostics": {
+    "pairCount": 20,
+    "baselineMinimum": 63298,
+    "baselineP25": 65742.25,
+    "baselineP50": 140632,
+    "lowBaselineThreshold": 84379.2,
+    "lowBaselinePairCount": 7
+  },
   "tail": {
     "sampleMinimum": 20,
     "sampleCount": 20,
-    "p95TokenOverheadPercent": 12.5,
+    "p95TokenOverheadPercent": 174.1502,
+    "pairedOverheadP95Percent": 174.1502,
+    "distributionP95DeltaPercent": 13.1906,
     "outlierCount": 0,
-    "status": "TAIL_STABLE"
+    "status": "TAIL_REGRESSION",
+    "pairedStatus": "TAIL_REGRESSION",
+    "distributionStatus": "TAIL_ACCEPTABLE",
+    "combinedInterpretation": "TAIL_PAIRED_RATIO_SENSITIVE"
   }
 }
 ```
 
+### Paired overhead vs. distribution tail delta
+
+`pairedOverheadP95Percent` is the P95 of run-level relative overhead values (`((adaptive_i - direct_i) / direct_i) * 100`) across matched run indices. Because execution runs are independent stochastic trials, paired ratios can become very large when an individual direct baseline run finishes in an unusually low token regime (`LOW_BASELINE_TOKEN_REGIME`, defined as `directTokens < directP50 * 0.60`).
+
+`distributionP95DeltaPercent` compares the P95 values of the candidate and baseline token distributions directly (`((adaptiveP95 - directP95) / directP95) * 100`).
+
+These are distinct statistics and must not be presented as interchangeable metrics:
+- When a candidate distribution is genuinely heavy-tailed, `distributionP95DeltaPercent` itself exceeds the objective (`TAIL_DISTRIBUTION_REGRESSION`).
+- When the candidate distribution P95 is acceptable but paired overhead is inflated by low-baseline runs, the combined interpretation is `TAIL_PAIRED_RATIO_SENSITIVE`.
+
+```bash
+npm run benchmark:profiles:tail-analysis -- [--results <dir>] [--run-set <id>] [--json]
+```
+
 Tail status is observational and is classified as:
 
-- `NOT_ENOUGH_SAMPLES` when comparable pairs are below the sample minimum
-  (20) or the P95 overhead is unavailable;
-- `TAIL_REGRESSION` when the P95 token overhead exceeds the +60% objective;
+- `NOT_ENOUGH_SAMPLES` when comparable pairs are below the sample minimum (20) or P95 telemetry is unavailable;
+- `TAIL_REGRESSION` when the P95 token metric exceeds the +60% objective;
 - `TAIL_WARNING` when the sample is sufficient but IQR outliers are present;
-- `TAIL_STABLE` otherwise.
+- `TAIL_STABLE` / `TAIL_ACCEPTABLE` otherwise.
+
+Combined interpretation states:
+- `TAIL_CONSISTENT`: paired and distribution views agree;
+- `TAIL_PAIRED_RATIO_SENSITIVE`: paired P95 fails while distribution P95 passes and low-baseline pairs are present;
+- `TAIL_DISTRIBUTION_REGRESSION`: absolute distribution P95 delta exceeds the objective;
+- `TAIL_UNRESOLVED`: sample count is insufficient or evidence is incomplete.
 
 Tail status never gates lifecycle completion; it tells operators when a run
 set is large enough to trust its tail.

@@ -42,11 +42,27 @@ export const BENCHMARK_TIERS = Object.freeze({
 export const OUTLIER_POLICY = "TOKEN_IQR_1_5";
 export const OUTLIER_MINIMUM_SAMPLES = 4;
 export const TAIL_SAMPLE_MINIMUM = 20;
+export const LOW_BASELINE_RATIO = 0.60;
+export const BASELINE_TOKEN_REGIMES = Object.freeze([
+  "NORMAL",
+  "LOW_BASELINE_TOKEN_REGIME",
+]);
 export const TAIL_STATUSES = Object.freeze([
   "TAIL_STABLE",
   "TAIL_WARNING",
   "TAIL_REGRESSION",
   "NOT_ENOUGH_SAMPLES",
+]);
+export const DISTRIBUTION_TAIL_STATUSES = Object.freeze([
+  "TAIL_ACCEPTABLE",
+  "TAIL_REGRESSION",
+  "NOT_ENOUGH_SAMPLES",
+]);
+export const COMBINED_TAIL_STATUSES = Object.freeze([
+  "TAIL_CONSISTENT",
+  "TAIL_PAIRED_RATIO_SENSITIVE",
+  "TAIL_DISTRIBUTION_REGRESSION",
+  "TAIL_UNRESOLVED",
 ]);
 export const BENCHMARK_VERIFICATION_RESULTS = Object.freeze([
   "PASS",
@@ -653,7 +669,18 @@ function comparablePair(left, right) {
   return fields.every((field) => (left.metadata[field] ?? null) === (right.metadata[field] ?? null));
 }
 
-function comparisonForMode(directRuns, modeRuns) {
+export function distributionDeltaPercent(baselineStats, candidateStats) {
+  if (!baselineStats || !candidateStats) return { p50: null, p95: null };
+  const p50Delta = (Number.isFinite(baselineStats.p50) && Number.isFinite(candidateStats.p50) && baselineStats.p50 > 0)
+    ? Number((((candidateStats.p50 - baselineStats.p50) / baselineStats.p50) * 100).toFixed(4))
+    : null;
+  const p95Delta = (Number.isFinite(baselineStats.p95) && Number.isFinite(candidateStats.p95) && baselineStats.p95 > 0)
+    ? Number((((candidateStats.p95 - baselineStats.p95) / baselineStats.p95) * 100).toFixed(4))
+    : null;
+  return { p50: p50Delta, p95: p95Delta };
+}
+
+function comparisonForMode(directRuns, modeRuns, { directStats = null, modeStats = null } = {}) {
   const directByIndex = new Map(directRuns.map((run) => [run.runIndex, run]));
   const pairs = modeRuns
     .map((run) => ({ variant: run, direct: directByIndex.get(run.runIndex) }))
@@ -667,12 +694,46 @@ function comparisonForMode(directRuns, modeRuns) {
   const tokenStats = statistic(tokenOverheads);
   const timeStats = statistic(timeOverheads);
   const claimAllowed = tokenStats.count > 0 && timeStats.count > 0;
+  const lowBaselineThreshold = (directStats && Number.isFinite(directStats.p50) && directStats.p50 > 0)
+    ? Number((directStats.p50 * LOW_BASELINE_RATIO).toFixed(4))
+    : null;
+  const pairedRuns = pairs.map(({ direct, variant }) => {
+    const directTokens = direct.usage?.totalTokens ?? null;
+    const candidateTokens = variant.usage?.totalTokens ?? null;
+    const hasTokens = Number.isFinite(directTokens) && Number.isFinite(candidateTokens) && directTokens > 0;
+    const pairedOverhead = hasTokens ? Number((((candidateTokens - directTokens) / directTokens) * 100).toFixed(4)) : null;
+    const absoluteDelta = hasTokens ? candidateTokens - directTokens : null;
+    const baselineRegime = (hasTokens && lowBaselineThreshold !== null && directTokens < lowBaselineThreshold)
+      ? "LOW_BASELINE_TOKEN_REGIME"
+      : "NORMAL";
+    return {
+      runIndex: variant.runIndex,
+      directTokens,
+      candidateTokens,
+      absoluteDeltaTokens: absoluteDelta,
+      pairedOverheadPercent: pairedOverhead,
+      baselineRegime,
+    };
+  });
+  const distDelta = distributionDeltaPercent(directStats, modeStats);
+  const lowBaselinePairCount = pairedRuns.filter((p) => p.baselineRegime === "LOW_BASELINE_TOKEN_REGIME").length;
   return {
     comparablePairs: pairs.length,
     tokenComparablePairs: tokenStats.count,
     timeComparablePairs: timeStats.count,
     tokenOverheadPercent: { p50: tokenStats.p50, p95: tokenStats.p95 },
+    pairedOverheadPercent: { p50: tokenStats.p50, p95: tokenStats.p95 },
+    distributionDeltaPercent: distDelta,
     timeOverheadPercent: { p50: timeStats.p50, p95: timeStats.p95 },
+    pairedRatioDiagnostics: {
+      pairCount: pairs.length,
+      baselineMinimum: directStats?.minimum ?? null,
+      baselineP25: directStats?.p25 ?? null,
+      baselineP50: directStats?.p50 ?? null,
+      lowBaselineThreshold,
+      lowBaselinePairCount,
+    },
+    pairedRuns,
     claimStatus: claimAllowed ? "OBSERVATIONAL" : "NOT_COMPARABLE",
     claimAllowed,
     reason: claimAllowed
@@ -816,6 +877,37 @@ export function classifyTailStatus({
   return "TAIL_STABLE";
 }
 
+export function classifyDistributionTailStatus({
+  sampleCount,
+  distributionP95DeltaPercent,
+  sampleMinimum = TAIL_SAMPLE_MINIMUM,
+  regressionPercent = LIGHT_EFFICIENCY_OBJECTIVES.p95TokenOverheadPercent,
+} = {}) {
+  if (!Number.isInteger(sampleCount) || sampleCount < sampleMinimum) return "NOT_ENOUGH_SAMPLES";
+  if (distributionP95DeltaPercent === null || distributionP95DeltaPercent === undefined) return "NOT_ENOUGH_SAMPLES";
+  if (distributionP95DeltaPercent > regressionPercent) return "TAIL_REGRESSION";
+  return "TAIL_ACCEPTABLE";
+}
+
+export function classifyCombinedTailStatus({
+  pairedStatus,
+  distributionStatus,
+  lowBaselinePairCount = 0,
+  sampleCount,
+  sampleMinimum = TAIL_SAMPLE_MINIMUM,
+} = {}) {
+  if (!Number.isInteger(sampleCount) || sampleCount < sampleMinimum) return "TAIL_UNRESOLVED";
+  if (pairedStatus === "NOT_ENOUGH_SAMPLES" || distributionStatus === "NOT_ENOUGH_SAMPLES") return "TAIL_UNRESOLVED";
+  if (distributionStatus === "TAIL_REGRESSION") return "TAIL_DISTRIBUTION_REGRESSION";
+  if (pairedStatus === "TAIL_REGRESSION" && distributionStatus === "TAIL_ACCEPTABLE" && lowBaselinePairCount > 0) {
+    return "TAIL_PAIRED_RATIO_SENSITIVE";
+  }
+  if (pairedStatus === "TAIL_STABLE" && distributionStatus === "TAIL_ACCEPTABLE") return "TAIL_CONSISTENT";
+  if (pairedStatus === "TAIL_WARNING" && distributionStatus === "TAIL_ACCEPTABLE") return "TAIL_CONSISTENT";
+  if (pairedStatus === distributionStatus) return "TAIL_CONSISTENT";
+  return "TAIL_UNRESOLVED";
+}
+
 function diagnosticsAggregate(runs) {
   return Object.fromEntries(BENCHMARK_DIAGNOSTIC_COUNT_FIELDS.map((field) => [
     field,
@@ -902,16 +994,22 @@ export function aggregateBenchmarkRuns({ scenario, runs } = {}) {
     duplicateKeys.add(key);
   }
   const directRuns = byMode.direct;
-  const comparisons = Object.fromEntries(BENCHMARK_MODES.map((mode) => [
-    mode,
-    mode === "direct" ? null : comparisonForMode(directRuns, byMode[mode]),
-  ]));
+  const legacy = runs.every((run) => run.benchmarkVersion === "1");
+  const directStats = legacy
+    ? statistic(byMode.direct.map((run) => run.usage.totalTokens))
+    : robustStatistic(byMode.direct.map((run) => run.usage.totalTokens));
+  const comparisons = Object.fromEntries(BENCHMARK_MODES.map((mode) => {
+    if (mode === "direct") return [mode, null];
+    const modeStats = legacy
+      ? statistic(byMode[mode].map((run) => run.usage.totalTokens))
+      : robustStatistic(byMode[mode].map((run) => run.usage.totalTokens));
+    return [mode, comparisonForMode(directRuns, byMode[mode], { directStats, modeStats })];
+  }));
   const lightObjectives = lightObjectivesFor(scenario, comparisons);
   const includeContextUsage = runs.some((run) => Object.prototype.hasOwnProperty.call(run, "contextUsage"));
   const includeQuality = runs.some((run) => Object.prototype.hasOwnProperty.call(run, "quality"));
   // Historical methodology-v1 run sets must reproduce their stored aggregates
   // exactly; the v1 shape is intentionally frozen.
-  const legacy = runs.every((run) => run.benchmarkVersion === "1");
   if (legacy) {
     return {
       schemaVersion: 1,
@@ -935,18 +1033,34 @@ export function aggregateBenchmarkRuns({ scenario, runs } = {}) {
     const comparison = comparisons[mode];
     if (comparison === null) return [mode, null];
     const outlierCount = outlierAnalysis.modes[mode].outliers.length;
+    const pairedStatus = classifyTailStatus({
+      sampleCount: comparison.tokenComparablePairs,
+      p95TokenOverheadPercent: comparison.tokenOverheadPercent.p95,
+      outlierCount,
+    });
+    const distributionStatus = classifyDistributionTailStatus({
+      sampleCount: comparison.tokenComparablePairs,
+      distributionP95DeltaPercent: comparison.distributionDeltaPercent.p95,
+    });
+    const combinedInterpretation = classifyCombinedTailStatus({
+      pairedStatus,
+      distributionStatus,
+      lowBaselinePairCount: comparison.pairedRatioDiagnostics?.lowBaselinePairCount ?? 0,
+      sampleCount: comparison.tokenComparablePairs,
+    });
     return [mode, {
       ...comparison,
       tail: {
         sampleMinimum: TAIL_SAMPLE_MINIMUM,
         sampleCount: comparison.tokenComparablePairs,
         p95TokenOverheadPercent: comparison.tokenOverheadPercent.p95,
+        pairedOverheadP95Percent: comparison.pairedOverheadPercent.p95,
+        distributionP95DeltaPercent: comparison.distributionDeltaPercent.p95,
         outlierCount,
-        status: classifyTailStatus({
-          sampleCount: comparison.tokenComparablePairs,
-          p95TokenOverheadPercent: comparison.tokenOverheadPercent.p95,
-          outlierCount,
-        }),
+        status: pairedStatus,
+        pairedStatus,
+        distributionStatus,
+        combinedInterpretation,
       },
     }];
   }));

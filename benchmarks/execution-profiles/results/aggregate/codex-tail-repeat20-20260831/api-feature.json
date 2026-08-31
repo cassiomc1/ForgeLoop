@@ -1145,10 +1145,172 @@
         "p50": 2.124,
         "p95": 8.3306
       },
+      "pairedOverheadPercent": {
+        "p50": 2.124,
+        "p95": 8.3306
+      },
+      "distributionDeltaPercent": {
+        "p50": 1.9419,
+        "p95": 3.0288
+      },
       "timeOverheadPercent": {
         "p50": 10.1044,
         "p95": 58.4035
       },
+      "pairedRatioDiagnostics": {
+        "pairCount": 18,
+        "baselineMinimum": 55602,
+        "baselineP25": 56165,
+        "baselineP50": 56593,
+        "lowBaselineThreshold": 33955.8,
+        "lowBaselinePairCount": 0
+      },
+      "pairedRuns": [
+        {
+          "runIndex": 1,
+          "directTokens": 56642,
+          "candidateTokens": 57532,
+          "absoluteDeltaTokens": 890,
+          "pairedOverheadPercent": 1.5713,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 2,
+          "directTokens": 56225,
+          "candidateTokens": 57463,
+          "absoluteDeltaTokens": 1238,
+          "pairedOverheadPercent": 2.2019,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 3,
+          "directTokens": 55602,
+          "candidateTokens": 72277,
+          "absoluteDeltaTokens": 16675,
+          "pairedOverheadPercent": 29.9899,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 4,
+          "directTokens": 70148,
+          "candidateTokens": 72290,
+          "absoluteDeltaTokens": 2142,
+          "pairedOverheadPercent": 3.0535,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 5,
+          "directTokens": 70113,
+          "candidateTokens": 57476,
+          "absoluteDeltaTokens": -12637,
+          "pairedOverheadPercent": -18.0238,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 6,
+          "directTokens": 56449,
+          "candidateTokens": 57604,
+          "absoluteDeltaTokens": 1155,
+          "pairedOverheadPercent": 2.0461,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 7,
+          "directTokens": 55668,
+          "candidateTokens": 57468,
+          "absoluteDeltaTokens": 1800,
+          "pairedOverheadPercent": 3.2335,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 8,
+          "directTokens": 70149,
+          "candidateTokens": 57640,
+          "absoluteDeltaTokens": -12509,
+          "pairedOverheadPercent": -17.832,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 10,
+          "directTokens": 56544,
+          "candidateTokens": 57279,
+          "absoluteDeltaTokens": 735,
+          "pairedOverheadPercent": 1.2999,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 11,
+          "directTokens": 55985,
+          "candidateTokens": 57828,
+          "absoluteDeltaTokens": 1843,
+          "pairedOverheadPercent": 3.292,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 12,
+          "directTokens": 70009,
+          "candidateTokens": 58212,
+          "absoluteDeltaTokens": -11797,
+          "pairedOverheadPercent": -16.8507,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 13,
+          "directTokens": 55741,
+          "candidateTokens": 58254,
+          "absoluteDeltaTokens": 2513,
+          "pairedOverheadPercent": 4.5084,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 14,
+          "directTokens": 69872,
+          "candidateTokens": 58450,
+          "absoluteDeltaTokens": -11422,
+          "pairedOverheadPercent": -16.347,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 15,
+          "directTokens": 56690,
+          "candidateTokens": 57723,
+          "absoluteDeltaTokens": 1033,
+          "pairedOverheadPercent": 1.8222,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 16,
+          "directTokens": 69891,
+          "candidateTokens": 72113,
+          "absoluteDeltaTokens": 2222,
+          "pairedOverheadPercent": 3.1792,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 17,
+          "directTokens": 56338,
+          "candidateTokens": 57632,
+          "absoluteDeltaTokens": 1294,
+          "pairedOverheadPercent": 2.2969,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 18,
+          "directTokens": 70226,
+          "candidateTokens": 57264,
+          "absoluteDeltaTokens": -12962,
+          "pairedOverheadPercent": -18.4576,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 19,
+          "directTokens": 55923,
+          "candidateTokens": 57661,
+          "absoluteDeltaTokens": 1738,
+          "pairedOverheadPercent": 3.1078,
+          "baselineRegime": "NORMAL"
+        }
+      ],
       "claimStatus": "OBSERVATIONAL",
       "claimAllowed": true,
       "reason": "Trusted usage, actual timing, verification, and matching comparability metadata are present.",
@@ -1156,8 +1318,13 @@
         "sampleMinimum": 20,
         "sampleCount": 18,
         "p95TokenOverheadPercent": 8.3306,
+        "pairedOverheadP95Percent": 8.3306,
+        "distributionP95DeltaPercent": 3.0288,
         "outlierCount": 4,
-        "status": "NOT_ENOUGH_SAMPLES"
+        "status": "NOT_ENOUGH_SAMPLES",
+        "pairedStatus": "NOT_ENOUGH_SAMPLES",
+        "distributionStatus": "NOT_ENOUGH_SAMPLES",
+        "combinedInterpretation": "TAIL_UNRESOLVED"
       }
     },
     "forgeloopAdaptive": {
@@ -1168,10 +1335,156 @@
         "p50": 2.7444,
         "p95": 28.6951
       },
+      "pairedOverheadPercent": {
+        "p50": 2.7444,
+        "p95": 28.6951
+      },
+      "distributionDeltaPercent": {
+        "p50": 26.1287,
+        "p95": 3.2262
+      },
       "timeOverheadPercent": {
         "p50": 12.441,
         "p95": 35.4131
       },
+      "pairedRatioDiagnostics": {
+        "pairCount": 16,
+        "baselineMinimum": 55602,
+        "baselineP25": 56165,
+        "baselineP50": 56593,
+        "lowBaselineThreshold": 33955.8,
+        "lowBaselinePairCount": 0
+      },
+      "pairedRuns": [
+        {
+          "runIndex": 2,
+          "directTokens": 56225,
+          "candidateTokens": 71462,
+          "absoluteDeltaTokens": 15237,
+          "pairedOverheadPercent": 27.1,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 3,
+          "directTokens": 55602,
+          "candidateTokens": 71647,
+          "absoluteDeltaTokens": 16045,
+          "pairedOverheadPercent": 28.8569,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 5,
+          "directTokens": 70113,
+          "candidateTokens": 71649,
+          "absoluteDeltaTokens": 1536,
+          "pairedOverheadPercent": 2.1907,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 6,
+          "directTokens": 56449,
+          "candidateTokens": 57508,
+          "absoluteDeltaTokens": 1059,
+          "pairedOverheadPercent": 1.876,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 7,
+          "directTokens": 55668,
+          "candidateTokens": 71207,
+          "absoluteDeltaTokens": 15539,
+          "pairedOverheadPercent": 27.9137,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 8,
+          "directTokens": 70149,
+          "candidateTokens": 57499,
+          "absoluteDeltaTokens": -12650,
+          "pairedOverheadPercent": -18.033,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 10,
+          "directTokens": 56544,
+          "candidateTokens": 71298,
+          "absoluteDeltaTokens": 14754,
+          "pairedOverheadPercent": 26.093,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 11,
+          "directTokens": 55985,
+          "candidateTokens": 57413,
+          "absoluteDeltaTokens": 1428,
+          "pairedOverheadPercent": 2.5507,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 12,
+          "directTokens": 70009,
+          "candidateTokens": 72066,
+          "absoluteDeltaTokens": 2057,
+          "pairedOverheadPercent": 2.9382,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 13,
+          "directTokens": 55741,
+          "candidateTokens": 71521,
+          "absoluteDeltaTokens": 15780,
+          "pairedOverheadPercent": 28.3095,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 14,
+          "directTokens": 69872,
+          "candidateTokens": 57476,
+          "absoluteDeltaTokens": -12396,
+          "pairedOverheadPercent": -17.741,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 15,
+          "directTokens": 56690,
+          "candidateTokens": 71881,
+          "absoluteDeltaTokens": 15191,
+          "pairedOverheadPercent": 26.7966,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 16,
+          "directTokens": 69891,
+          "candidateTokens": 70954,
+          "absoluteDeltaTokens": 1063,
+          "pairedOverheadPercent": 1.5209,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 18,
+          "directTokens": 70226,
+          "candidateTokens": 71533,
+          "absoluteDeltaTokens": 1307,
+          "pairedOverheadPercent": 1.8611,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 19,
+          "directTokens": 55923,
+          "candidateTokens": 71940,
+          "absoluteDeltaTokens": 16017,
+          "pairedOverheadPercent": 28.6412,
+          "baselineRegime": "NORMAL"
+        },
+        {
+          "runIndex": 20,
+          "directTokens": 56533,
+          "candidateTokens": 57769,
+          "absoluteDeltaTokens": 1236,
+          "pairedOverheadPercent": 2.1863,
+          "baselineRegime": "NORMAL"
+        }
+      ],
       "claimStatus": "OBSERVATIONAL",
       "claimAllowed": true,
       "reason": "Trusted usage, actual timing, verification, and matching comparability metadata are present.",
@@ -1179,8 +1492,13 @@
         "sampleMinimum": 20,
         "sampleCount": 16,
         "p95TokenOverheadPercent": 28.6951,
+        "pairedOverheadP95Percent": 28.6951,
+        "distributionP95DeltaPercent": 3.2262,
         "outlierCount": 0,
-        "status": "NOT_ENOUGH_SAMPLES"
+        "status": "NOT_ENOUGH_SAMPLES",
+        "pairedStatus": "NOT_ENOUGH_SAMPLES",
+        "distributionStatus": "NOT_ENOUGH_SAMPLES",
+        "combinedInterpretation": "TAIL_UNRESOLVED"
       }
     }
   },

@@ -56,8 +56,8 @@ comparable direct baseline:
 | NovaTask SaaS landing page | -30.0426% / -4.3345% | -15.6764% / -13.2952% | P50 and P95 token objectives pass |
 | Static landing page | +2.2143% / +133.2808% | +12.3455% / +19.1648% | P50 passes; P95 token objective fails |
 
-The static landing-page P95 observation is reported by the regression check as
-`EFFICIENCY_REGRESSION`. These are observational results and are not a
+The static landing-page P95 paired observation is reported by the regression check as
+`EFFICIENCY_REGRESSION`. Note that `pairedOverheadP95Percent` measures the P95 of run-index paired relative ratios (`((adaptive_i - direct_i) / direct_i) * 100`), which is sensitive to runs falling into `LOW_BASELINE_TOKEN_REGIME` in the direct baseline. When comparing overall distribution percentiles directly (`distributionP95DeltaPercent`), candidate distribution spread remains bounded. These are observational results and are not a
 completion gate. The deterministic verifier is a requirements check, not a
 visual-quality evaluator.
 
