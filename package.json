@@ -67,6 +67,7 @@
     "docs/PLATFORM_ADAPTERS.md",
     "docs/AGENT_PROTOCOL_SUMMARY.md",
     "docs/EXECUTION_PROFILE_BENCHMARKS.md",
+    "docs/KNOWLEDGE_SOURCES.md",
     "scripts/generate-shell-completions.mjs",
     "scripts/generate-agent-protocol-summary.mjs",
     "scripts/run-execution-profile-benchmarks.mjs",

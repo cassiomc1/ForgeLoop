@@ -52,6 +52,8 @@
     { "path": "docs/AGENT_PROTOCOL_SUMMARY.md", "status": "reviewed", "action": "new", "sourceOfTruth": ["scripts/generate-agent-protocol-summary.mjs", "src/core/protocol-info.js", "src/core/artifact-registry.js", "src/core/cli-command-definitions.js"] },
     { "path": "docs/DIAGNOSTIC_MODEL.md", "status": "reviewed", "action": "unchanged", "sourceOfTruth": ["src/core/diagnostic-model.js", "docs/CLI_REFERENCE.md"] },
     { "path": "docs/EXECUTION_TRACE.md", "status": "reviewed", "action": "unchanged", "sourceOfTruth": ["src/core/history.js", "src/core/trace.js", "src/core/trajectory-evaluation.js"] },
-    { "path": "docs/EXECUTION_PROFILE_BENCHMARKS.md", "status": "reviewed", "action": "new", "sourceOfTruth": ["src/core/execution-profile-benchmarks.js", "scripts/run-execution-profile-benchmarks.mjs", "schemas/execution-profile-benchmark-scenario.schema.json", "schemas/execution-profile-benchmark-run.schema.json", "schemas/execution-profile-benchmark-aggregate.schema.json"] }
+    { "path": "docs/EXECUTION_PROFILE_BENCHMARKS.md", "status": "reviewed", "action": "new", "sourceOfTruth": ["src/core/execution-profile-benchmarks.js", "scripts/run-execution-profile-benchmarks.mjs", "schemas/execution-profile-benchmark-scenario.schema.json", "schemas/execution-profile-benchmark-run.schema.json", "schemas/execution-profile-benchmark-aggregate.schema.json"] },
+    { "path": "docs/KNOWLEDGE_INTEGRATION_GAP_ANALYSIS.md", "status": "reviewed", "action": "new", "sourceOfTruth": ["docs/KNOWLEDGE_SOURCES.md", "ENG/accessibility-eng.md", "ENG/design-code-eng.md", "GUIDE_ROUTER.md", "LOOP_ENGINEERING.md", "LOOP_SYSTEM_DESIGN.md", "QUALITY_SCORECARD.md", "docs/EXECUTION_PROFILE_BENCHMARKS.md"] },
+    { "path": "docs/KNOWLEDGE_SOURCES.md", "status": "reviewed", "action": "new", "sourceOfTruth": ["docs/KNOWLEDGE_INTEGRATION_GAP_ANALYSIS.md", "DOCS_INDEX.md", "docs/DOCUMENTATION_GUIDE.md"] }
   ]
 }
