@@ -10,13 +10,13 @@ import { sha256 } from "../manifest.js";
 import {
   E_STRUCTURAL_QUALITY_BASELINE_BINDING_MISMATCH,
   E_STRUCTURAL_QUALITY_BASELINE_MISSING,
+  E_STRUCTURAL_QUALITY_EVALUATION_INCOMPARABLE,
   E_STRUCTURAL_QUALITY_EVIDENCE_STALE,
   E_STRUCTURAL_QUALITY_PROVIDER_UNAVAILABLE,
 } from "../error-codes.js";
 import {
   STRUCTURAL_QUALITY_CHECK_ID,
   STRUCTURAL_QUALITY_DEFAULT_TIMEOUT_MS,
-  STRUCTURAL_QUALITY_MODES,
   STRUCTURAL_QUALITY_REQUIREMENT,
   structuralQualityError,
 } from "./constants.js";
@@ -315,25 +315,32 @@ async function persistEvaluationAndCheck({ target, packageRoot, taskId, inputs, 
   // transaction. This projection transaction can therefore fail safely
   // without erasing the provider evidence.
   const { prepareCompletion, recordCheck } = await import("../completion-artifacts.js");
-  const projection = checkProjection(inputs.policy, persisted);
-  const record = (context) => recordCheck({
+  const record = (context, evaluation) => recordCheck({
     target,
     packageRoot,
     id: STRUCTURAL_QUALITY_CHECK_ID,
     kind: "structural-quality",
     requirement: STRUCTURAL_QUALITY_REQUIREMENT,
-    status: projection.status,
-    evidenceKind: projection.evidenceKind,
-    result: `structural quality ${persisted.status}`,
-    details: evaluationDetails(persisted),
+    status: checkProjection(inputs.policy, evaluation).status,
+    evidenceKind: checkProjection(inputs.policy, evaluation).evidenceKind,
+    result: `structural quality ${evaluation.status}`,
+    details: evaluationDetails(evaluation),
     authorityContext,
     runtimeContext,
     taskId: context?.taskId ?? taskId,
   });
   const recorded = await withTaskMutation(target, { taskId, packageRoot }, "quality-verify-check", async (context) => {
     const effectiveTaskId = context?.taskId ?? taskId;
+    const evaluations = await listStructuralQualityEvaluations(target, effectiveTaskId, packageRoot);
+    const latest = evaluations
+      .filter((item) => item.value.verificationCycle === persisted.verificationCycle)
+      .at(-1);
+    const evaluation = latest && latest.value.attempt > persisted.attempt
+      ? { ...latest.value, artifactRef: latest.path, artifactFingerprint: latest.fingerprint }
+      : persisted;
+    const publish = () => record(context, evaluation);
     try {
-      return await record(context);
+      return await publish();
     } catch (error) {
       // record-check normally expects the canonical receipt prepared by the
       // completion pipeline. quality-verify is itself that pipeline's typed
@@ -347,7 +354,7 @@ async function persistEvaluationAndCheck({ target, packageRoot, taskId, inputs, 
         runtimeContext,
         taskId: effectiveTaskId,
       });
-      return record(context);
+      return publish();
     }
   });
   return { evaluation: persisted, check: recorded.check, receipt: recorded };
@@ -527,11 +534,12 @@ function optimizationProjection(policy, evaluations, current, scopeStatus = { st
     next: null,
   };
   if (policy.optimization.mode !== "bounded") return optimization;
-  const cycle = current?.verificationCycle;
+  const currentValue = current?.value ?? current;
+  const cycle = currentValue?.verificationCycle;
   const sameCycle = (evaluations ?? []).filter((item) => item.value.verificationCycle === cycle);
   optimization.attempts = sameCycle.length;
   if (sameCycle.length < 2) {
-    if (current?.status === "PASS" && sameCycle.length < 1 + policy.optimization.maxExtraEvaluations && scopeStatus.status === "SAFE") {
+    if (currentValue?.status === "PASS" && sameCycle.length < 1 + policy.optimization.maxExtraEvaluations && scopeStatus.status === "SAFE") {
       optimization.next = "OPTIONAL_STRUCTURAL_QUALITY_EVALUATION";
     }
     return optimization;
@@ -607,7 +615,7 @@ export async function projectStructuralQualityStatus({ target, packageRoot = get
   } catch (error) {
     return { ...projectionFromArtifacts(policy, baseline, null, state), reasonCodes: [error.code ?? E_STRUCTURAL_QUALITY_EVIDENCE_STALE] };
   }
-  const optimizationScope = policy.optimization.mode === "bounded" && current?.status === "PASS"
+  const optimizationScope = policy.optimization.mode === "bounded" && current?.value?.status === "PASS"
     ? await optimizationScopeStatus(target, packageRoot, taskId)
     : null;
   return projectionFromArtifacts(policy, baseline, current, state, evaluations, optimizationScope);

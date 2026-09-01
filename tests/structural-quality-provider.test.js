@@ -4,7 +4,6 @@ import { test } from "node:test";
 import {
   assertStructuralQualityProvider,
   createStructuralQualityProviderRegistry,
-  normalizeStructuralQualityDetection,
   normalizeStructuralQualitySnapshot,
 } from "../src/core/structural-quality/provider.js";
 import { createForgeLoopContext } from "../src/core/runtime-context.js";

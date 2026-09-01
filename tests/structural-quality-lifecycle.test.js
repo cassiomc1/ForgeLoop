@@ -18,6 +18,7 @@ import { createConfig, writeConfig } from "../src/core/config.js";
 import { createContract, writeContract } from "../src/core/contract.js";
 import { createForgeLoopContext } from "../src/core/runtime-context.js";
 import { getPackageRoot } from "../src/core/templates.js";
+import { readWorkState } from "../src/core/work-state.js";
 
 const packageRoot = getPackageRoot();
 const taskId = "structural-quality-lifecycle-task";
@@ -167,6 +168,13 @@ test("concurrent quality evaluations allocate unique attempts under the task loc
     assert.ok(results.every((result) => result.evaluation.status === "PASS"));
     const status = await runQualityStatus({ target, packageRoot, taskId: selectedTaskId });
     assert.equal(status.current.attempt, 2);
+    assert.equal(status.optimization.attempts, 2);
+    assert.equal(status.optimization.gain, 0);
+    assert.equal(status.optimization.converged, true);
+    const state = await readWorkState(target, { packageRoot, taskId: selectedTaskId });
+    const qualityCheck = state.checks.find((check) => check.id === "structural-quality");
+    assert.equal(qualityCheck.details.attempt, 2);
+    assert.equal(qualityCheck.status, "passed");
     const optional = await runQualityVerify({ target, packageRoot, taskId: selectedTaskId, runtimeContext });
     assert.equal(optional.evaluation.status, "PASS");
     const converged = await runQualityVerify({ target, packageRoot, taskId: selectedTaskId, runtimeContext });
