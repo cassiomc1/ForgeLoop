@@ -2,8 +2,19 @@
 
 ## Unreleased
 
-- The 1.8.0 release notes below are the current release record; future changes
+- The 1.8.1 release notes below are the current release record; future changes
   will be added to this section.
+
+## 1.8.1 - 2026-09-01
+
+### Fixed
+
+- Removed historical raw and aggregate benchmark results from the core npm
+  package while retaining the scenario definitions required to run new
+  measurements.
+- Hardened the GitHub Actions npm publication workflow with fail-closed
+  candidate-version and package-content checks while retaining trusted OIDC
+  publication and provenance.
 
 ## 1.8.0 - 2026-08-31
 

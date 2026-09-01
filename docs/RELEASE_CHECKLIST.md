@@ -10,6 +10,9 @@ preparation and verification checklist; it does not authorize publication.
 - [ ] `PROTOCOL_VERSION` and the integration API version remain compatible.
 - [ ] `npm run release:identity` passes for the candidate version.
 - [ ] No release tag or registry version collision exists.
+- [ ] `npm pack --dry-run` contains the required scenario definitions but no
+      raw or aggregate benchmark results, tests, local state, or repository
+      metadata.
 
 ## Protocol and attestation
 
@@ -58,6 +61,8 @@ preparation and verification checklist; it does not authorize publication.
 - [ ] The exact validated commit is the release source.
 - [ ] GitHub Actions remain immutably pinned and use least-privilege permissions.
 - [ ] The npm workflow retains trusted OIDC publishing and explicit provenance.
+- [ ] The publication workflow fails closed when the candidate npm version
+      already exists or the package inspection finds forbidden paths.
 - [ ] Publication is performed only by the authorized release workflow.
 - [ ] Post-publication registry, tag, checksum, and release identity checks pass.
 
