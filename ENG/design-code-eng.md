@@ -3,7 +3,7 @@ name: design-code-eng
 language: en
 description: "Visual direction, UX, motion, and perceived performance for premium digital experiences."
 version: "2026.09"
-last-reviewed: "2026-08-17"
+last-reviewed: "2026-08-31"
 guide-id: design
 requires-gates:
   - design
@@ -260,6 +260,27 @@ Canvas, WebGL, SVG displacement, and Liquid Glass effects follow the **normative
 ---
 
 ## Premium Components (measurable defaults)
+
+### Component state contract
+
+Before polishing an interactive or data-bearing component, list the states it
+can actually reach. Use only the applicable states; this is a review aid, not a
+requirement to manufacture every variant.
+
+- **Resting and interaction:** default, hover where supported, focus-visible,
+  and active/pressed.
+- **Availability:** disabled and loading when the operation or dependency is
+  unavailable or in progress.
+- **Data and outcome:** empty, selected, expanded/collapsed, success, and error
+  when the component can display those conditions.
+
+Every reachable state must preserve the component's semantic name, action,
+focus behavior, contrast, and a non-color cue where color alone would be
+ambiguous. Define the authoritative transition for asynchronous states,
+including cancellation or a repeated request, so an interrupted operation
+cannot leave stale loading, success, or error feedback. Verify reachable
+transitions with interaction and semantic checks; a screenshot can show an
+appearance but cannot prove the state behavior or accessibility.
 
 **Primary button**
 

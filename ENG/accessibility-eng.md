@@ -3,7 +3,7 @@ name: accessibility-eng
 language: en
 description: "Practical WCAG 2.2-oriented accessibility protocol for web, mobile, and desktop."
 version: "2026.09"
-last-reviewed: "2026-08-10"
+last-reviewed: "2026-08-31"
 guide-id: accessibility
 completion-evidence:
   - keyboard-navigation
@@ -77,6 +77,8 @@ To ensure technical integrity, any AI interacting with the project **MUST**:
 - **Keyboard (SC 2.1.1):** all functionality **MUST** be operable without a mouse. Where the function depends on the path of movement rather than only its endpoints, document why the WCAG exception applies and provide a practical alternative when possible. Avoid purely pointer-based listeners without keyboard event equivalents (`onKeyDown`).
 - **Focus (SC 2.4.7, 2.4.11):** focus **MUST** be visible, never entirely obscured by author content (e.g., sticky headers/footers), persistent, and never suppressed via CSS (`outline: none` without fallback is forbidden).
 - **SPA routing:** after client-side routing changes, focus **MUST** be managed and properly reset (e.g., sending focus to the top or an `h1`). Avoid lost focus on the screen.
+- **Focus order and lifecycle (SC 2.4.3):** the sequential keyboard path **MUST** preserve meaning and operability. Prefer alignment between DOM order, reading order, and visual order when divergence would create confusing or illogical navigation. Avoid positive `tabindex` as a ForgeLoop accessibility best practice; repair the document structure whenever practical. When content is inserted, removed, expanded, collapsed, replaced, or routed, define the next logical focus destination and do not leave focus on a removed or unavailable node.
+- **Modal dialog focus contract:** for a modal dialog, choose the initial focus target according to the modal task, move focus inside the modal, keep the inactive background out of the keyboard path, and remember the invoking control. On close, return focus to that control only when it still exists and is available; otherwise move focus to a documented logical fallback, such as the control that owns the resulting content or the newly exposed heading. A trigger removed during the operation is a lifecycle case, not permission to drop focus. Do not apply modal containment rules to non-modal dialogs.
 - **Targets (SC 2.5.8):** interactive elements MUST have a minimum size of **24×24 CSS pixels** — the WCAG 2.2 AA floor — except when an equivalent larger target exists, sufficient spacing prevents accidental activation, or the target sits inline in text.
   **House Rule†:** design to **44×44px** (48×48 under Shield), the ergonomic floor shared by Apple HIG and Material Design. Under Shield, 44×44 is normative (SC 2.5.5 AAA).
 - **Dragging (SC 2.5.7, AA):** all functionality operated by dragging MUST have a simple pointer alternative that does not require dragging, unless dragging is essential or the behavior is provided by the user agent and has not been modified by the author. The alternative cannot rely only on a path-based gesture.
@@ -95,6 +97,12 @@ To ensure technical integrity, any AI interacting with the project **MUST**:
 
 - **Semantic HTML:** **MUST** prefer native (HTML5) elements over custom ones.
 - **Interoperability:** the code **MUST** be compatible with current assistive technologies (ISO 9241-171).
+
+### Composite visuals, code, and status
+
+- When several DOM nodes together communicate one informative visual, expose one meaningful semantic representation and keep decorative fragments out of the accessibility tree. Do not make users traverse borders, connector lines, repeated labels, or illustration layers that add no information.
+- A code example **MUST** remain available as text with code semantics. Line-number gutters, syntax decoration, and duplicate visual labels **SHOULD** be hidden from assistive technology when they do not add meaning. A copy or expand action **MUST** be a named, keyboard-operable control; its result belongs in the pre-mounted status region described above rather than only in a changed icon or color.
+- A composite presentation is not evidence that its semantics work. Verify the accessible name, role, value, focus path, and status announcement in the supported browser and assistive-technology combinations; automated tree checks cover only part of this behavior.
 
 ## 4. Visual directives (strict UI criteria)
 
@@ -120,7 +128,7 @@ When identifying an unmapped or highly complex component (e.g., charts, dynamic 
 - **Leaked focus traps:** **MUST NOT** create modals without managing focus. When a modal is open:
   - focus MUST move into the modal;
   - focus MUST be trapped within the modal;
-  - focus MUST return to the triggering element when closed;
+  - focus MUST return to the triggering element when it still exists and remains available; otherwise focus MUST move to a documented logical fallback;
   - background content MUST NOT be interactive or reachable via keyboard.
 - **Placeholder labels:** **MUST NOT** use `placeholder` as the sole form of label. Crucial instructions (like date formats) **MUST** be visible outside the field to prevent disappearance during filling.
 - **ARIA soup:** **MUST NOT** add ARIA where native HTML already provides the semantics — no ARIA is better than bad ARIA. Forbidden by default: redundant roles (`role="button"` on a `<button>`), `aria-label` duplicating visible text (harmless today, but it drifts into an SC 2.5.3 failure when the text changes), and static ARIA states that are never updated (hardcoded `aria-expanded` — an SC 4.1.2 failure). ARIA is the fallback for gaps in native semantics ([First Rule of ARIA Use](https://www.w3.org/TR/using-aria/#rule1)), not a seasoning. The number of ARIA attributes is not evidence of accessibility; validate behavior, semantics, and assistive-technology support.
@@ -131,12 +139,14 @@ When identifying an unmapped or highly complex component (e.g., charts, dynamic 
 
 - [ ] **Technical check:** run the project's already configured static accessibility checks and engines such as `Axe` where applicable (see [`test-code-eng.md`](./test-code-eng.md) for tool selection). Do not install a tool solely to satisfy this item; record a required unavailable check as blocked.
 - [ ] **Tab order:** `Tab` key path manually validated (ensures absence of frontend dead-ends).
+- [ ] **Focus order and lifecycle:** sequential order preserves meaning and operability; DOM, reading, and visual order are aligned where divergence would create confusing or illogical navigation; no positive `tabindex` is used; inserted, removed, expanded, collapsed, replaced, and routed content has a defined logical focus destination; modal dialogs have intentional initial focus and a valid return or fallback target.
 - [ ] **Focus (SC 2.4.13, AAA when applicable):** measure the area equivalent to a 2 CSS pixel perimeter and 3:1 contrast between the same pixels in focused and unfocused states; also verify applicable non-text contrast.
 - [ ] **Dragging (SC 2.5.7, AA):** test every drag operation with a simple pointer alternative that does not require dragging; document the essentiality or user-agent exception, if any.
 - [ ] **Consistent help (SC 3.2.6, A):** compare pages in the same set and confirm repeated help mechanisms retain the same relative order, unless the user initiated a change.
 - [ ] **Redundant entry (SC 3.3.7, A):** run multi-step processes and confirm auto-population or selection of previously provided information, or record the applicable exception.
 - [ ] **Authentication (SC 3.3.8, AA):** test the whole flow, including MFA, without requiring unassisted memorization, solving, or transcription; confirm password-manager and paste support when they are the chosen mechanism.
 - [ ] **User flow and announcements:** manually test dynamic interactions without a mouse. Confirm DOM-present regions announce non-urgent messages through `role="status"` or `aria-live="polite"`, reserve `role="alert"` for urgent errors, and work in supported browser and assistive-technology combinations.
+- [ ] **Composite content:** informative multi-node visuals have one meaningful representation, decorative fragments are not announced, code remains readable as text, code controls have names, and copy/result status is announced through the intended region.
 - [ ] **Zoom and reflow:** text resizes up to 200% without loss of content or function (SC 1.4.4); content reflows at 320 CSS px width — equivalent to 400% zoom on a 1280px viewport — without two-dimensional scrolling (SC 1.4.10). Preserve flexibility using relative units (rem/em).
 - [ ] **Color and perception:** no functional loss when color is unavailable; confirm the additional channel appropriate to the meaning without requiring universal visual redundancy.
 - [ ] **Exceptions audit:** `EXCEPTIONS.md` reviewed — every active entry has a risk owner, approver, tracking issue, and expiry; no expired entries left unaddressed.
