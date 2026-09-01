@@ -255,9 +255,12 @@ Before a host run exists, the summary is intentionally:
 
 Raw runs are stored below `benchmarks/execution-profiles/results/raw/` and
 recomputed aggregates below `benchmarks/execution-profiles/results/aggregate/`.
-The validator checks all scenario, raw-run, and aggregate schemas and
-recomputes aggregates from raw measurements. A changed overhead target is
-observable in the report; it is not a blocking lifecycle gate.
+Those recorded measurements are repository evidence and are intentionally not
+included in the core npm package. The package ships the deterministic scenario
+definitions and benchmark schemas needed to run a new measurement; the
+validator checks all scenario, raw-run, and aggregate schemas and recomputes
+aggregates from raw measurements. A changed overhead target is observable in
+the report; it is not a blocking lifecycle gate.
 
 CI can run `npm run benchmark:profiles:regression -- --json`. It reports
 `OK`, `EFFICIENCY_REGRESSION`, `NOT_MEASURED`, or `NOT_COMPARABLE`; a regression
