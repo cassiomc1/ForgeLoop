@@ -43,14 +43,17 @@ universal software-quality score.
 ## 4. Delta-first policy
 
 Gate decisions compare the current observation with the immutable baseline.
-The default aggregate and per-dimension budgets are zero, so a regression is
-not silently accepted. A configured positive budget is intentional policy and
+By default, the aggregate budget is zero (`maxRegressionPoints: 0`), new cycles
+are forbidden (`forbidNewCycles: true`), and individual dimension budgets are
+unenforced (`null`), allowing flexible dimension trade-offs as long as aggregate
+signal does not regress. A configured dimension budget is intentional policy and
 is bound to the baseline by a policy fingerprint.
 
-The comparison also checks provider identity and version, task/contract/route
-bindings, scan scope, rules fingerprint, and optional cycle/minimum conditions.
-Any mismatch is incomparable; it is never treated as a pass. A per-dimension
-failure can fail the gate even when the aggregate signal improves.
+The comparison also checks provider identity, measurement model (`measurementModel`),
+compatibility key (`compatibilityKey`), task/contract/route bindings, source
+material fingerprints, scan scope, provider config fingerprints, and optional
+cycle/minimum conditions. Any mismatch is incomparable; it is never treated as a pass.
+An explicit per-dimension failure fails the gate even when the aggregate signal improves.
 
 ## 5. Modes
 
@@ -98,9 +101,9 @@ Strict gate mode with an intentional 50-point modularity budget:
     "dimensionBudgets": {
       "modularity": 50,
       "acyclicity": 0,
-      "depth": 0,
-      "equality": 0,
-      "redundancy": 0
+      "depth": null,
+      "equality": null,
+      "redundancy": null
     },
     "forbidNewCycles": true
   }
@@ -171,9 +174,9 @@ The recommendation is suppressed when task scope is unavailable, stale, or
 outside effective claims. A gain below `minGainPoints` converges the advisory
 loop, and no optimization seeks a perfect `10000` score or widens the task.
 
-## 10. Provider contract
+## 10. Provider contract and measurement model
 
-The public provider boundary is intentionally vendor-neutral:
+The public provider boundary is vendor-neutral:
 
 ```ts
 type StructuralQualityProviderInput = {
@@ -185,22 +188,35 @@ type StructuralQualityProviderInput = {
 
 type StructuralQualityProvider = {
   id: string;
-  detect(input: StructuralQualityProviderInput): Promise<Detection>;
-  scan(input: StructuralQualityProviderInput): Promise<Snapshot>;
+  detect?(input: StructuralQualityProviderInput): Promise<Detection>;
+  scan?(input: StructuralQualityProviderInput): Promise<SnapshotResult>;
+  observe?(input: StructuralQualityProviderInput): Promise<SnapshotResult>;
+  scopeBinding?(input: { projectPath: string }): Promise<ScopeBinding>;
 };
 ```
+
+Providers declare `measurementModel` (such as `structural-root-causes-v1`) and
+an optional `compatibilityKey` (such as `sentrux-structural-root-causes-v1`).
+When baseline and evaluation share a compatibility key, non-breaking version
+differences between provider releases compare cleanly.
 
 Runtime hosts may inject a provider through `createForgeLoopContext`. Provider
 IDs are lower-case stable names matching `^[a-z][a-z0-9-]{0,63}$`; the built-in
 `sentrux` name is reserved. Provider output is untrusted until every field is
 normalized, bounded, schema-validated, and semantically bound to the task.
 
-## 11. Sentrux installation is user-managed
+## 11. Sentrux MCP adapter and tool arguments
 
 Sentrux is not a ForgeLoop npm dependency. ForgeLoop never installs, upgrades,
 or selects an arbitrary Sentrux executable. The built-in adapter invokes the
-trusted command name `sentrux` through a shell-free local MCP process, requires
-version `0.5.5` or newer, and applies timeout and combined output limits.
+trusted command name `sentrux --mcp` through a shell-free local MCP process, requires
+version `0.5.5` or newer, and strictly conforms to Sentrux tool argument schemas:
+
+- `scan`: `arguments: { path: "<project-path>" }`
+- `health`: `arguments: {}`
+
+Sentrux-specific configuration (such as `.sentrux/rules.toml`) is owned
+exclusively by the Sentrux provider adapter via `scopeBinding()`.
 
 If Sentrux is absent, preserve the resulting `NOT_OBSERVED` or `BLOCKED` state
 and follow the configured mode. Install or upgrade Sentrux only through the
@@ -246,7 +262,7 @@ Provider installation, runner identity, and remote publication are separate
 CI evidence. A green local or CI quality command does not imply a merge,
 publication, or deployment.
 
-## 15. Artifacts and bundles
+## 15. Artifacts, locking, and projection reconciliation
 
 Quality artifacts are task-owned and have no mutable `latest.json`:
 
@@ -257,12 +273,17 @@ Quality artifacts are task-owned and have no mutable `latest.json`:
     cycle-<cycle>-attempt-<attempt>.json
 ```
 
-The baseline is immutable after `EXECUTING`. Evaluations are allocated under
-the task mutation lock, written atomically, and include provider, policy,
-scope, cycle, baseline, and contract bindings. Portable bundles include the
-baseline and evaluations required for audit. Bundle readers validate typed
-artifacts and fingerprints without rescanning the project or requiring
-Sentrux.
+The baseline is immutable after `EXECUTING`. External provider scans execute
+outside the task mutation lock to prevent starvation of concurrent operations.
+Pre-scan and post-scan source material fingerprints ensure observations are
+stable against mid-scan source drift (`E_STRUCTURAL_QUALITY_SOURCE_DRIFT`).
+If an evaluation artifact was committed but check projection was interrupted,
+subsequent verification retries automatically reconcile and repair the canonical
+receipt check without rescanning or incrementing attempt counts.
+
+Portable bundles include the baseline and evaluations required for audit.
+Bundle readers validate typed artifacts and fingerprints without rescanning
+the project or requiring Sentrux.
 
 ## 16. Error-code troubleshooting table
 
@@ -273,6 +294,7 @@ Sentrux.
 | `E_STRUCTURAL_QUALITY_PROVIDER_UNAVAILABLE` | The configured provider cannot be detected. | In observe mode continue with the limitation; in gate mode make the user-managed provider available. |
 | `E_STRUCTURAL_QUALITY_PROVIDER_VERSION_UNSUPPORTED` | The provider is older than the supported contract. | Use a user-authorized supported provider version. |
 | `E_STRUCTURAL_QUALITY_PROVIDER_PROTOCOL_INVALID` | MCP initialization, tool discovery, or response protocol is invalid. | Inspect the provider installation and keep the evidence blocked. |
+| `E_STRUCTURAL_QUALITY_PROVIDER_TOOL_CONTRACT_INVALID` | The provider tool schemas do not expose required argument definitions. | Ensure provider exposes valid `scan` and `health` MCP tool argument schemas. |
 | `E_STRUCTURAL_QUALITY_SCAN_FAILED` | The provider scan failed. | Diagnose the provider failure; never treat it as a pass. |
 | `E_STRUCTURAL_QUALITY_TIMEOUT` | The bounded provider deadline expired. | Inspect provider health and rerun only after the cause is understood. |
 | `E_STRUCTURAL_QUALITY_OUTPUT_LIMIT` | Combined provider output exceeded the safety limit. | Reduce provider verbosity or repair the provider; do not persist partial output. |
@@ -281,5 +303,9 @@ Sentrux.
 | `E_STRUCTURAL_QUALITY_BASELINE_PHASE_INVALID` | Baseline replacement was attempted after execution began. | Repair against the existing baseline in a new verification cycle. |
 | `E_STRUCTURAL_QUALITY_BASELINE_BINDING_MISMATCH` | Baseline bindings no longer match the task inputs. | Inspect policy, route, scope, and rules drift; do not bypass the binding. |
 | `E_STRUCTURAL_QUALITY_EVALUATION_INCOMPARABLE` | Current and baseline observations cannot be compared. | Resolve provider/version/policy/scope/rules drift and verify again. |
+| `E_STRUCTURAL_QUALITY_MEASUREMENT_MODEL_MISMATCH` | Measurement models differ between baseline and evaluation. | Ensure baseline and evaluation share a compatible measurement model. |
 | `E_STRUCTURAL_QUALITY_EVIDENCE_STALE` | A quality check is from an old cycle or points to stale evidence. | Run the current-cycle verification and record its canonical check. |
+| `E_STRUCTURAL_QUALITY_SOURCE_DRIFT` | Source material was mutated during provider observation. | Ensure worktree remains stable during quality scans and rerun verification. |
+| `E_STRUCTURAL_QUALITY_OBSERVATION_EPOCH_STALE` | Task state epoch changed during observation. | Re-run quality verification under the active task epoch. |
+| `E_STRUCTURAL_QUALITY_PROJECTION_INCOMPLETE` | Check projection was incomplete. | Re-run quality verification to reconcile the canonical check from the evaluation. |
 | `E_STRUCTURAL_QUALITY_REGRESSION` | The configured aggregate, dimension, cycle, or minimum policy failed. | Record a diagnosis from the evaluation evidence and correct the scoped code. |

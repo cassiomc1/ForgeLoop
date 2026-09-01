@@ -99,10 +99,22 @@ export function validateStructuralQualityArtifact(value, label = "structural-qua
   if (value.provider?.id !== value.detection?.providerId) {
     throw qualityArtifactError(E_STRUCTURAL_QUALITY_BASELINE_BINDING_MISMATCH, `${label} provider and detection IDs differ`);
   }
+  if (value.sourceObservation !== undefined && value.sourceObservation !== null) {
+    if (typeof value.sourceObservation !== "object" || Array.isArray(value.sourceObservation)) {
+      throw qualityArtifactError(E_STRUCTURAL_QUALITY_EVIDENCE_STALE, `${label} sourceObservation must be an object`);
+    }
+    if (typeof value.sourceObservation.beforeFingerprint !== "string"
+      || typeof value.sourceObservation.afterFingerprint !== "string"
+      || typeof value.sourceObservation.stable !== "boolean") {
+      throw qualityArtifactError(E_STRUCTURAL_QUALITY_EVIDENCE_STALE, `${label} sourceObservation requires beforeFingerprint, afterFingerprint, and stable`);
+    }
+  }
   normalizeStructuralQualityDetection(value.detection, {
     providerId: value.provider?.id,
     version: value.provider?.version,
     transport: value.provider?.transport,
+    measurementModel: value.provider?.measurementModel,
+    compatibilityKey: value.provider?.compatibilityKey,
   });
   if (value.snapshot !== undefined) normalizeStructuralQualitySnapshot(value.snapshot);
   if (["PASS", "FAIL"].includes(value.status) && value.snapshot === undefined) {

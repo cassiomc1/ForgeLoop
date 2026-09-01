@@ -18,18 +18,18 @@
       "properties": {
         "mode": { "enum": ["off", "observe", "gate"] },
         "provider": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,63}$" },
-        "maxRegressionPoints": { "type": "integer" },
+        "maxRegressionPoints": { "type": "integer", "minimum": 0, "maximum": 10000 },
         "dimensionBudgets": { "$ref": "#/$defs/dimensionMap" },
         "forbidNewCycles": { "type": "boolean" },
-        "minQualitySignal": { "oneOf": [{ "type": "integer" }, { "type": "null" }] },
+        "minQualitySignal": { "oneOf": [{ "type": "integer", "minimum": 0, "maximum": 10000 }, { "type": "null" }] },
         "minimums": { "$ref": "#/$defs/minimumMap" },
         "optimization": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
             "mode": { "enum": ["off", "bounded"] },
-            "maxExtraEvaluations": { "type": "integer" },
-            "minGainPoints": { "type": "integer" }
+            "maxExtraEvaluations": { "type": "integer", "minimum": 0, "maximum": 2 },
+            "minGainPoints": { "type": "integer", "minimum": 1, "maximum": 10000 }
           }
         }
       }
@@ -95,22 +95,22 @@
     "dimensionMap": {
       "type": "object",
       "properties": {
-        "modularity": { "type": "integer" },
-        "acyclicity": { "type": "integer" },
-        "depth": { "type": "integer" },
-        "equality": { "type": "integer" },
-        "redundancy": { "type": "integer" }
+        "modularity": { "oneOf": [{ "type": "integer", "minimum": 0, "maximum": 10000 }, { "type": "null" }] },
+        "acyclicity": { "oneOf": [{ "type": "integer", "minimum": 0, "maximum": 10000 }, { "type": "null" }] },
+        "depth": { "oneOf": [{ "type": "integer", "minimum": 0, "maximum": 10000 }, { "type": "null" }] },
+        "equality": { "oneOf": [{ "type": "integer", "minimum": 0, "maximum": 10000 }, { "type": "null" }] },
+        "redundancy": { "oneOf": [{ "type": "integer", "minimum": 0, "maximum": 10000 }, { "type": "null" }] }
       },
       "additionalProperties": false
     },
     "minimumMap": {
       "type": "object",
       "properties": {
-        "modularity": { "type": "integer" },
-        "acyclicity": { "type": "integer" },
-        "depth": { "type": "integer" },
-        "equality": { "type": "integer" },
-        "redundancy": { "type": "integer" }
+        "modularity": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "acyclicity": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "depth": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "equality": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "redundancy": { "type": "integer", "minimum": 0, "maximum": 10000 }
       },
       "additionalProperties": false
     }

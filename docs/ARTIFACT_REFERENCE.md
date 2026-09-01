@@ -255,25 +255,25 @@ Local ForgeLoop configuration settings and policy bindings.
 - `structuralQuality` *(object, optional)*
   - `mode` *(string, optional, enum: `off`, `observe`, `gate`)*
   - `provider` *(string, optional, pattern: `^[a-z][a-z0-9-]{0,63}$`)*
-  - `maxRegressionPoints` *(integer, optional)*
+  - `maxRegressionPoints` *(integer, optional, minimum: 0, maximum: 10000)*
   - `dimensionBudgets` *(dimensionMap, optional)*
-    - `modularity` *(integer, optional)*
-    - `acyclicity` *(integer, optional)*
-    - `depth` *(integer, optional)*
-    - `equality` *(integer, optional)*
-    - `redundancy` *(integer, optional)*
+    - `modularity` *(integer or null, optional)*
+    - `acyclicity` *(integer or null, optional)*
+    - `depth` *(integer or null, optional)*
+    - `equality` *(integer or null, optional)*
+    - `redundancy` *(integer or null, optional)*
   - `forbidNewCycles` *(boolean, optional)*
   - `minQualitySignal` *(integer or null, optional)*
   - `minimums` *(minimumMap, optional)*
-    - `modularity` *(integer, optional)*
-    - `acyclicity` *(integer, optional)*
-    - `depth` *(integer, optional)*
-    - `equality` *(integer, optional)*
-    - `redundancy` *(integer, optional)*
+    - `modularity` *(integer, optional, minimum: 0, maximum: 10000)*
+    - `acyclicity` *(integer, optional, minimum: 0, maximum: 10000)*
+    - `depth` *(integer, optional, minimum: 0, maximum: 10000)*
+    - `equality` *(integer, optional, minimum: 0, maximum: 10000)*
+    - `redundancy` *(integer, optional, minimum: 0, maximum: 10000)*
   - `optimization` *(object, optional)*
     - `mode` *(string, optional, enum: `off`, `bounded`)*
-    - `maxExtraEvaluations` *(integer, optional)*
-    - `minGainPoints` *(integer, optional)*
+    - `maxExtraEvaluations` *(integer, optional, minimum: 0, maximum: 2)*
+    - `minGainPoints` *(integer, optional, minimum: 1, maximum: 10000)*
 - `verification` *(object, optional)*
   - `checkers` *(array<object>, required)*
     - `checkId` *(string, required, minLength: 1)*
@@ -1126,7 +1126,7 @@ validate it without starting the provider.
 - `taskId` *(string, required, minLength: 1)*
 - `capturedAt` *(string, required, minLength: 1)*
 - `verificationCycle` *(integer or null, required)*
-- `attempt` *(integer, required)*
+- `attempt` *(integer, required, minimum: 1)*
 - `status` *(string, required, enum: `PASS`, `FAIL`, `BLOCKED`, `NOT_OBSERVED`)*
 - `reasonCodes` *(array<string>, required)*
 - `errorCode` *(string or null, optional)*
@@ -1138,40 +1138,50 @@ validate it without starting the provider.
   - `policyFingerprint` *(string, required, pattern: `^[a-f0-9]{64}$`)*
   - `scopeFingerprint` *(string, required, pattern: `^[a-f0-9]{64}$`)*
   - `baselineFingerprint` *(string or null, optional)*
-  - `stateRevision` *(integer, optional)*
+  - `sourceMaterialFingerprint` *(string or null, optional)*
+  - `stateRevision` *(integer, optional, minimum: 0)*
+- `sourceObservation` *(object, optional)*
+  - `beforeFingerprint` *(string, required, pattern: `^[a-f0-9]{64}$`)*
+  - `afterFingerprint` *(string, required, pattern: `^[a-f0-9]{64}$`)*
+  - `stable` *(boolean, required)*
 - `provider` *(object, required)*
   - `id` *(string, required, minLength: 1)*
   - `version` *(string or null, required)*
   - `transport` *(string, required, minLength: 1)*
   - `executionMode` *(string, required, minLength: 1)*
+  - `measurementModel` *(string, optional, minLength: 1)*
+  - `compatibilityKey` *(string or null, optional)*
 - `detection` *(object, optional)*
   - `available` *(boolean, required)*
   - `providerId` *(string, required, minLength: 1)*
   - `providerVersion` *(string or null, optional)*
   - `transport` *(string, required, minLength: 1)*
+  - `measurementModel` *(string, optional, minLength: 1)*
+  - `compatibilityKey` *(string or null, optional)*
   - `reasonCode` *(string or null, required)*
 - `scope` *(object, required)*
   - `kind` *(string, required, const: `PROJECT`)*
   - `projectRoot` *(string, required, const: `.`)*
-  - `rulesFingerprint` *(string or null, required)*
+  - `providerConfigFingerprint` *(string or null, optional)*
+  - `rulesFingerprint` *(string or null, optional)*
 - `snapshot` *(snapshot, optional)*
-  - `qualitySignal` *(integer, required)*
+  - `qualitySignal` *(integer, required, minimum: 0, maximum: 10000)*
   - `bottleneck` *(string, required, enum: `modularity`, `acyclicity`, `depth`, `equality`, `redundancy`)*
   - `rootCauses` *(object, required)*
     - `modularity` *(rootCause, required)*
-      - `score` *(integer, required)*
+      - `score` *(integer, required, minimum: 0, maximum: 10000)*
       - `raw` *(number, required)*
     - `acyclicity` *(rootCause, required)*
-      - `score` *(integer, required)*
+      - `score` *(integer, required, minimum: 0, maximum: 10000)*
       - `raw` *(number, required)*
     - `depth` *(rootCause, required)*
-      - `score` *(integer, required)*
+      - `score` *(integer, required, minimum: 0, maximum: 10000)*
       - `raw` *(number, required)*
     - `equality` *(rootCause, required)*
-      - `score` *(integer, required)*
+      - `score` *(integer, required, minimum: 0, maximum: 10000)*
       - `raw` *(number, required)*
     - `redundancy` *(rootCause, required)*
-      - `score` *(integer, required)*
+      - `score` *(integer, required, minimum: 0, maximum: 10000)*
       - `raw` *(number, required)*
   - `statistics` *(object, required)*
     - `files` *(integer or null, required)*

@@ -10,13 +10,13 @@
     "role": { "enum": ["BASELINE", "EVALUATION"] },
     "taskId": { "type": "string", "minLength": 1 },
     "capturedAt": { "type": "string", "minLength": 1 },
-    "verificationCycle": { "oneOf": [{ "type": "integer" }, { "type": "null" }] },
-    "attempt": { "type": "integer" },
+    "verificationCycle": { "oneOf": [{ "type": "integer", "minimum": 1 }, { "type": "null" }] },
+    "attempt": { "type": "integer", "minimum": 1 },
     "status": { "enum": ["PASS", "FAIL", "BLOCKED", "NOT_OBSERVED"] },
     "reasonCodes": { "type": "array", "items": { "type": "string", "minLength": 1 } },
     "errorCode": { "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
-    "baselineSignal": { "oneOf": [{ "type": "integer" }, { "type": "null" }] },
-    "currentSignal": { "oneOf": [{ "type": "integer" }, { "type": "null" }] },
+    "baselineSignal": { "oneOf": [{ "type": "integer", "minimum": 0, "maximum": 10000 }, { "type": "null" }] },
+    "currentSignal": { "oneOf": [{ "type": "integer", "minimum": 0, "maximum": 10000 }, { "type": "null" }] },
     "bindings": {
       "type": "object",
       "required": ["contractFingerprint", "routeFingerprint", "policyFingerprint", "scopeFingerprint"],
@@ -26,7 +26,18 @@
         "policyFingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
         "scopeFingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
         "baselineFingerprint": { "oneOf": [{ "type": "string", "pattern": "^[a-f0-9]{64}$" }, { "type": "null" }] },
-        "stateRevision": { "type": "integer" }
+        "sourceMaterialFingerprint": { "oneOf": [{ "type": "string", "pattern": "^[a-f0-9]{64}$" }, { "type": "null" }] },
+        "stateRevision": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "sourceObservation": {
+      "type": "object",
+      "required": ["beforeFingerprint", "afterFingerprint", "stable"],
+      "properties": {
+        "beforeFingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "afterFingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "stable": { "type": "boolean" }
       },
       "additionalProperties": false
     },
@@ -37,7 +48,9 @@
         "id": { "type": "string", "minLength": 1 },
         "version": { "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
         "transport": { "type": "string", "minLength": 1 },
-        "executionMode": { "type": "string", "minLength": 1 }
+        "executionMode": { "type": "string", "minLength": 1 },
+        "measurementModel": { "type": "string", "minLength": 1 },
+        "compatibilityKey": { "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] }
       },
       "additionalProperties": false
     },
@@ -49,16 +62,19 @@
         "providerId": { "type": "string", "minLength": 1 },
         "providerVersion": { "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
         "transport": { "type": "string", "minLength": 1 },
+        "measurementModel": { "type": "string", "minLength": 1 },
+        "compatibilityKey": { "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
         "reasonCode": { "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] }
       },
       "additionalProperties": false
     },
     "scope": {
       "type": "object",
-      "required": ["kind", "projectRoot", "rulesFingerprint"],
+      "required": ["kind", "projectRoot"],
       "properties": {
         "kind": { "const": "PROJECT" },
         "projectRoot": { "const": "." },
+        "providerConfigFingerprint": { "oneOf": [{ "type": "string", "pattern": "^[a-f0-9]{64}$" }, { "type": "null" }] },
         "rulesFingerprint": { "oneOf": [{ "type": "string", "pattern": "^[a-f0-9]{64}$" }, { "type": "null" }] }
       },
       "additionalProperties": false
@@ -72,7 +88,7 @@
       "type": "object",
       "required": ["score", "raw"],
       "properties": {
-        "score": { "type": "integer" },
+        "score": { "type": "integer", "minimum": 0, "maximum": 10000 },
         "raw": { "type": "number" }
       },
       "additionalProperties": false
@@ -81,7 +97,7 @@
       "type": "object",
       "required": ["qualitySignal", "bottleneck", "rootCauses", "statistics", "diagnostics"],
       "properties": {
-        "qualitySignal": { "type": "integer" },
+        "qualitySignal": { "type": "integer", "minimum": 0, "maximum": 10000 },
         "bottleneck": { "enum": ["modularity", "acyclicity", "depth", "equality", "redundancy"] },
         "rootCauses": {
           "type": "object",
@@ -99,10 +115,10 @@
           "type": "object",
           "required": ["files", "lines", "importEdges", "crossModuleEdges"],
           "properties": {
-            "files": { "oneOf": [{ "type": "integer" }, { "type": "null" }] },
-            "lines": { "oneOf": [{ "type": "integer" }, { "type": "null" }] },
-            "importEdges": { "oneOf": [{ "type": "integer" }, { "type": "null" }] },
-            "crossModuleEdges": { "oneOf": [{ "type": "integer" }, { "type": "null" }] }
+            "files": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }] },
+            "lines": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }] },
+            "importEdges": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }] },
+            "crossModuleEdges": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }] }
           },
           "additionalProperties": false
         },

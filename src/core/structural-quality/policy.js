@@ -45,10 +45,13 @@ function normalizeBudgets(value, label) {
   if (unknown) {
     throw structuralQualityError(E_STRUCTURAL_QUALITY_CONFIGURATION_INVALID, `${label} contains unknown root cause: ${unknown}`);
   }
-  return Object.fromEntries(STRUCTURAL_QUALITY_ROOT_CAUSES.map((cause) => [
-    cause,
-    integer(source[cause] ?? STRUCTURAL_QUALITY_DEFAULT_DIMENSION_BUDGETS[cause], `${label}.${cause}`),
-  ]));
+  return Object.fromEntries(STRUCTURAL_QUALITY_ROOT_CAUSES.map((cause) => {
+    const raw = source[cause];
+    if (raw === null || raw === undefined) {
+      return [cause, STRUCTURAL_QUALITY_DEFAULT_DIMENSION_BUDGETS[cause] ?? null];
+    }
+    return [cause, integer(raw, `${label}.${cause}`)];
+  }));
 }
 
 function normalizeMinimums(value) {
@@ -133,8 +136,20 @@ function assertComparableInputs(baseline, current) {
   const currentScope = current?.scope;
   if (baselineProvider?.id !== undefined && currentProvider?.id !== undefined
     && baselineProvider.id !== currentProvider.id) reasons.push("PROVIDER_ID_CHANGED");
+  if (baselineProvider?.measurementModel !== undefined && currentProvider?.measurementModel !== undefined
+    && baselineProvider.measurementModel !== currentProvider.measurementModel) reasons.push("MEASUREMENT_MODEL_MISMATCH");
+  if (baselineProvider?.compatibilityKey !== undefined && currentProvider?.compatibilityKey !== undefined
+    && baselineProvider.compatibilityKey !== currentProvider.compatibilityKey) reasons.push("COMPATIBILITY_KEY_CHANGED");
   if (baselineProvider?.version !== undefined && currentProvider?.version !== undefined
-    && baselineProvider.version !== currentProvider.version) reasons.push("PROVIDER_VERSION_CHANGED");
+    && baselineProvider.version !== currentProvider.version) {
+    const sameCompat = baselineProvider?.compatibilityKey && currentProvider?.compatibilityKey
+      && baselineProvider.compatibilityKey === currentProvider.compatibilityKey;
+    if (!sameCompat) {
+      reasons.push("PROVIDER_VERSION_CHANGED");
+    }
+  }
+  if (baselineScope?.providerConfigFingerprint !== undefined && currentScope?.providerConfigFingerprint !== undefined
+    && baselineScope.providerConfigFingerprint !== currentScope.providerConfigFingerprint) reasons.push("PROVIDER_CONFIG_CHANGED");
   if (baselineScope?.rulesFingerprint !== undefined && currentScope?.rulesFingerprint !== undefined
     && baselineScope.rulesFingerprint !== currentScope.rulesFingerprint) reasons.push("RULES_CHANGED");
   if (baseline?.bindings?.policyFingerprint && current?.bindings?.policyFingerprint
@@ -165,8 +180,11 @@ export function compareStructuralQuality({ baseline, current, policy } = {}) {
       failedConditions.push("qualitySignal");
     }
     for (const cause of STRUCTURAL_QUALITY_ROOT_CAUSES) {
-      const delta = rootCauseDeltas[cause];
-      if (delta === null || delta < -normalizedPolicy.dimensionBudgets[cause]) failedConditions.push(cause);
+      const budget = normalizedPolicy.dimensionBudgets[cause];
+      if (budget !== null && budget !== undefined) {
+        const delta = rootCauseDeltas[cause];
+        if (delta === null || delta < -budget) failedConditions.push(cause);
+      }
       const minimum = normalizedPolicy.minimums[cause];
       if (minimum > 0 && (!Number.isInteger(currentSnapshot?.rootCauses?.[cause]?.score)
         || currentSnapshot.rootCauses[cause].score < minimum)) failedConditions.push(`${cause}:minimum`);
@@ -183,6 +201,9 @@ export function compareStructuralQuality({ baseline, current, policy } = {}) {
     }
     if (failedConditions.length > 0) reasonCodes.push("E_STRUCTURAL_QUALITY_REGRESSION");
   } else {
+    if (incompatibilities.includes("MEASUREMENT_MODEL_MISMATCH")) {
+      reasonCodes.push("E_STRUCTURAL_QUALITY_MEASUREMENT_MODEL_MISMATCH");
+    }
     reasonCodes.push("E_STRUCTURAL_QUALITY_EVALUATION_INCOMPARABLE");
   }
   const sortedReasons = [...new Set(reasonCodes)].sort();

@@ -1,22 +1,24 @@
 import { canonicalFingerprint, readJsonArtifact } from "../artifacts.js";
-import { assertSafePath, ensureWithin, fileExists, readBytes } from "../filesystem.js";
 import { readConfig } from "../config.js";
 import { readContract } from "../contract.js";
 import { readPersistedRoute } from "../route-artifact.js";
 import { readWorkState } from "../work-state.js";
 import { evaluatePreflight, validatePersistedPreflight } from "../preflight.js";
 import { taskArtifactPath } from "../task-paths.js";
-import { sha256 } from "../manifest.js";
 import {
   E_STRUCTURAL_QUALITY_BASELINE_BINDING_MISMATCH,
   E_STRUCTURAL_QUALITY_BASELINE_MISSING,
   E_STRUCTURAL_QUALITY_EVALUATION_INCOMPARABLE,
   E_STRUCTURAL_QUALITY_EVIDENCE_STALE,
+  E_STRUCTURAL_QUALITY_MEASUREMENT_MODEL_MISMATCH,
+  E_STRUCTURAL_QUALITY_OBSERVATION_EPOCH_STALE,
   E_STRUCTURAL_QUALITY_PROVIDER_UNAVAILABLE,
+  E_STRUCTURAL_QUALITY_SOURCE_DRIFT,
 } from "../error-codes.js";
 import {
   STRUCTURAL_QUALITY_CHECK_ID,
   STRUCTURAL_QUALITY_DEFAULT_TIMEOUT_MS,
+  STRUCTURAL_QUALITY_MEASUREMENT_MODEL,
   STRUCTURAL_QUALITY_REQUIREMENT,
   structuralQualityError,
 } from "./constants.js";
@@ -36,8 +38,7 @@ import { withTaskMutation } from "../task-command.js";
 import { findTaskById } from "../task-discovery.js";
 import { currentChangedPaths } from "../repository.js";
 import { assertClaimsCoverChangedPaths } from "../task-scope.js";
-
-const SENTRUX_RULES_PATH = ".sentrux/rules.toml";
+import { computeMaterialSourceFingerprint } from "./source-fingerprint.js";
 
 function qualityError(code, message, artifacts = []) {
   return structuralQualityError(code, message, artifacts);
@@ -61,17 +62,21 @@ function configuredPolicy(config) {
   return normalizeStructuralQualityConfig(config.structuralQuality);
 }
 
-async function scopeIdentity(target, providerId = null) {
-  let rulesFingerprint = null;
-  await assertSafePath(target, SENTRUX_RULES_PATH);
-  const rulesAbsolute = ensureWithin(target, SENTRUX_RULES_PATH);
-  if (await fileExists(rulesAbsolute)) rulesFingerprint = sha256(await readBytes(rulesAbsolute));
-  const scope = { kind: "PROJECT", projectRoot: ".", rulesFingerprint };
+async function scopeIdentity(target, provider = null, providerId = null) {
+  let providerConfigFingerprint = null;
+  const effectiveProviderId = provider?.id ?? providerId;
+  if (provider && typeof provider.scopeBinding === "function") {
+    try {
+      const binding = await provider.scopeBinding({ projectPath: target });
+      providerConfigFingerprint = binding?.providerConfigFingerprint ?? null;
+    } catch {
+      providerConfigFingerprint = null;
+    }
+  }
+  const scope = { kind: "PROJECT", projectRoot: ".", providerConfigFingerprint };
   return {
     scope,
-    // Include provider identity in the scope binding so a baseline cannot be
-    // silently reused for a different analyzer with the same project rules.
-    scopeFingerprint: canonicalFingerprint({ providerId, ...scope }),
+    scopeFingerprint: canonicalFingerprint({ providerId: effectiveProviderId, ...scope }),
   };
 }
 
@@ -84,6 +89,8 @@ function providerMetadata(provider, detection) {
     version,
     transport: metadata?.transport ?? detection.transport ?? "runtime",
     executionMode: metadata?.executionMode ?? "runtime-context",
+    measurementModel: metadata?.measurementModel ?? detection.measurementModel ?? STRUCTURAL_QUALITY_MEASUREMENT_MODEL,
+    compatibilityKey: metadata?.compatibilityKey ?? detection.compatibilityKey ?? null,
   };
 }
 
@@ -102,10 +109,11 @@ function normalizeScanResult(result, provider, detection, projectPath) {
     snapshot,
     provider: metadata,
     detection: providerDetection(source.detection ?? detection, provider.id),
+    providerScopeBinding: source.providerScopeBinding ?? null,
   };
 }
 
-async function taskInputs(target, packageRoot, taskId) {
+async function taskInputs(target, packageRoot, taskId, providerInstance = null) {
   if (typeof taskId !== "string" || taskId.trim() === "") {
     throw qualityError(E_STRUCTURAL_QUALITY_BASELINE_BINDING_MISMATCH, "Structural-quality operations require a task ID");
   }
@@ -115,7 +123,7 @@ async function taskInputs(target, packageRoot, taskId) {
   const route = await readPersistedRoute(target, packageRoot, { taskId });
   const config = await loadOptionalConfig(target, packageRoot);
   const policy = configuredPolicy(config);
-  const scopeData = await scopeIdentity(target, policy?.provider ?? null);
+  const scopeData = await scopeIdentity(target, providerInstance, policy?.provider ?? null);
   return {
     state,
     contract,
@@ -127,13 +135,14 @@ async function taskInputs(target, packageRoot, taskId) {
   };
 }
 
-function baseBindings(inputs, policyFingerprint, baselineFingerprint = null) {
+function baseBindings(inputs, policyFingerprint, baselineFingerprint = null, sourceMaterialFingerprint = null) {
   return {
     contractFingerprint: inputs.contract.fingerprint,
     routeFingerprint: inputs.route.fingerprint,
     policyFingerprint,
     scopeFingerprint: inputs.scopeFingerprint,
     baselineFingerprint,
+    sourceMaterialFingerprint,
     stateRevision: inputs.state.revision ?? 0,
   };
 }
@@ -194,11 +203,23 @@ async function invokeProvider({ target, taskId, policy, runtimeContext, timeoutM
     timeoutMs: timeoutMs ?? STRUCTURAL_QUALITY_DEFAULT_TIMEOUT_MS,
     maxOutputBytes: maxOutputBytes ?? 2 * 1024 * 1024,
   });
+  if (typeof provider.observe === "function") {
+    const result = await provider.observe(input);
+    return normalizeScanResult(result, provider, result.detection, target);
+  }
   let detection;
   try {
     detection = providerDetection(await provider.detect(input), provider.id);
   } catch (error) {
-    detection = providerDetection({ available: false, providerId: provider.id, providerVersion: null, transport: "runtime", reasonCode: error.code ?? E_STRUCTURAL_QUALITY_PROVIDER_UNAVAILABLE }, provider.id);
+    detection = providerDetection({
+      available: false,
+      providerId: provider.id,
+      providerVersion: null,
+      transport: "runtime",
+      measurementModel: STRUCTURAL_QUALITY_MEASUREMENT_MODEL,
+      compatibilityKey: null,
+      reasonCode: error.code ?? E_STRUCTURAL_QUALITY_PROVIDER_UNAVAILABLE,
+    }, provider.id);
   }
   if (!detection.available) {
     throw qualityError(detection.reasonCode ?? E_STRUCTURAL_QUALITY_PROVIDER_UNAVAILABLE, `Structural-quality provider ${provider.id} is unavailable`);
@@ -243,6 +264,7 @@ export async function captureStructuralQualityBaseline({ target, packageRoot = g
     };
   }
   const policyFingerprint = structuralQualityPolicyFingerprint(policy);
+  const sourceFingerprintBefore = await computeMaterialSourceFingerprint(target);
   let scan;
   try {
     scan = await invokeProvider({ target, taskId, policy, runtimeContext, timeoutMs, maxOutputBytes });
@@ -256,6 +278,8 @@ export async function captureStructuralQualityBaseline({ target, packageRoot = g
           version: null,
           transport: "runtime",
           executionMode: "runtime-context",
+          measurementModel: STRUCTURAL_QUALITY_MEASUREMENT_MODEL,
+          compatibilityKey: null,
         },
         artifactRef: null,
         artifactFingerprint: null,
@@ -267,6 +291,32 @@ export async function captureStructuralQualityBaseline({ target, packageRoot = g
     }
     throw error;
   }
+  const sourceFingerprintAfter = await computeMaterialSourceFingerprint(target);
+  if (sourceFingerprintBefore !== sourceFingerprintAfter) {
+    if (policy.mode === "observe") {
+      return {
+        status: "NOT_OBSERVED",
+        mode: policy.mode,
+        provider: scan.provider,
+        artifactRef: null,
+        artifactFingerprint: null,
+        reasonCodes: [E_STRUCTURAL_QUALITY_SOURCE_DRIFT],
+        errorCode: E_STRUCTURAL_QUALITY_SOURCE_DRIFT,
+        existing: false,
+        identical: false,
+      };
+    }
+    throw qualityError(E_STRUCTURAL_QUALITY_SOURCE_DRIFT, "Source material was mutated during structural-quality baseline capture");
+  }
+
+  let effectiveScope = inputs.scope;
+  let effectiveScopeFingerprint = inputs.scopeFingerprint;
+  if (scan.providerScopeBinding?.providerConfigFingerprint !== undefined) {
+    effectiveScope = { kind: "PROJECT", projectRoot: ".", providerConfigFingerprint: scan.providerScopeBinding.providerConfigFingerprint };
+    effectiveScopeFingerprint = canonicalFingerprint({ providerId: scan.provider.id, ...effectiveScope });
+  }
+  const updatedInputs = { ...inputs, scope: effectiveScope, scopeFingerprint: effectiveScopeFingerprint };
+
   const value = {
     schemaVersion: 1,
     protocolVersion: 1,
@@ -277,10 +327,15 @@ export async function captureStructuralQualityBaseline({ target, packageRoot = g
     attempt: 1,
     status: "PASS",
     reasonCodes: [],
-    bindings: baseBindings(inputs, policyFingerprint, null),
+    bindings: baseBindings(updatedInputs, policyFingerprint, null, sourceFingerprintBefore),
+    sourceObservation: {
+      beforeFingerprint: sourceFingerprintBefore,
+      afterFingerprint: sourceFingerprintAfter,
+      stable: true,
+    },
     provider: scan.provider,
     detection: scan.detection,
-    scope: inputs.scope,
+    scope: updatedInputs.scope,
     snapshot: scan.snapshot,
   };
   const written = await writeStructuralQualityBaseline(target, taskId, value, packageRoot, { phase: inputs.state.phase, replace, taskId });
@@ -311,9 +366,6 @@ export async function captureStructuralQualityBaseline({ target, packageRoot = g
 }
 
 async function persistEvaluationAndCheck({ target, packageRoot, taskId, inputs, persisted, authorityContext, runtimeContext }) {
-  // The immutable sensor artifact has already been committed in a separate
-  // transaction. This projection transaction can therefore fail safely
-  // without erasing the provider evidence.
   const { prepareCompletion, recordCheck } = await import("../completion-artifacts.js");
   const record = (context, evaluation) => recordCheck({
     target,
@@ -342,10 +394,6 @@ async function persistEvaluationAndCheck({ target, packageRoot, taskId, inputs, 
     try {
       return await publish();
     } catch (error) {
-      // record-check normally expects the canonical receipt prepared by the
-      // completion pipeline. quality-verify is itself that pipeline's typed
-      // quality entry point, so bootstrap the receipt only when it is absent;
-      // all other failures remain visible and cannot promote the evaluation.
       if (error.code !== "E_RECEIPT_MISSING") throw error;
       await prepareCompletion({
         target,
@@ -360,13 +408,15 @@ async function persistEvaluationAndCheck({ target, packageRoot, taskId, inputs, 
   return { evaluation: persisted, check: recorded.check, receipt: recorded };
 }
 
-function nonPassEvaluation({ taskId, inputs, cycle, attempt, policy, reasonCode, providerId = policy.provider, providerVersion = null, detection = null, baseline = null }) {
+function nonPassEvaluation({ taskId, inputs, cycle, attempt, policy, reasonCode, providerId = policy.provider, providerVersion = null, detection = null, baseline = null, sourceObservation = null, sourceMaterialFingerprint = null }) {
   const status = policy.mode === "gate" ? "BLOCKED" : "NOT_OBSERVED";
   const detectionValue = detection ?? {
     available: false,
     providerId,
     providerVersion,
     transport: "runtime",
+    measurementModel: STRUCTURAL_QUALITY_MEASUREMENT_MODEL,
+    compatibilityKey: null,
     reasonCode,
   };
   const policyFingerprint = structuralQualityPolicyFingerprint(policy);
@@ -381,8 +431,16 @@ function nonPassEvaluation({ taskId, inputs, cycle, attempt, policy, reasonCode,
     status,
     reasonCodes: [reasonCode],
     errorCode: reasonCode,
-    bindings: baseBindings(inputs, policyFingerprint, baseline?.fingerprint ?? null),
-    provider: { id: providerId, version: providerVersion, transport: detectionValue.transport, executionMode: "runtime-context" },
+    bindings: baseBindings(inputs, policyFingerprint, baseline?.fingerprint ?? null, sourceMaterialFingerprint),
+    ...(sourceObservation ? { sourceObservation } : {}),
+    provider: {
+      id: providerId,
+      version: providerVersion,
+      transport: detectionValue.transport,
+      executionMode: "runtime-context",
+      measurementModel: detectionValue.measurementModel ?? STRUCTURAL_QUALITY_MEASUREMENT_MODEL,
+      compatibilityKey: detectionValue.compatibilityKey ?? null,
+    },
     detection: detectionValue,
     scope: inputs.scope,
     ...(baseline?.value?.snapshot ? { baselineSignal: baseline.value.snapshot.qualitySignal } : {}),
@@ -398,90 +456,240 @@ function nonPassEvaluation({ taskId, inputs, cycle, attempt, policy, reasonCode,
 }
 
 export async function evaluateStructuralQuality({ target, packageRoot = getPackageRoot(), taskId, timeoutMs, maxOutputBytes, authorityContext, runtimeContext } = {}) {
-  const configuredInputs = await taskInputs(target, packageRoot, taskId);
-  const policy = configuredInputs.policy;
+  const initialInputs = await taskInputs(target, packageRoot, taskId);
+  const policy = initialInputs.policy;
   if (!policy || policy.mode === "off") return { status: "NOT_REQUESTED", mode: "off", check: null };
-  const captured = await withTaskMutation(target, { taskId, packageRoot }, "quality-verify-evaluation", async (context) => {
-    const lockedTaskId = context?.taskId ?? taskId;
-    const inputs = await taskInputs(target, packageRoot, lockedTaskId);
-    if (inputs.state.phase !== "VERIFYING") {
-      throw qualityError(E_STRUCTURAL_QUALITY_EVIDENCE_STALE, `Structural-quality verification requires VERIFYING; found ${inputs.state.phase}`, [taskArtifactPath(lockedTaskId, "state")]);
+
+  if (initialInputs.state.phase !== "VERIFYING") {
+    throw qualityError(E_STRUCTURAL_QUALITY_EVIDENCE_STALE, `Structural-quality verification requires VERIFYING; found ${initialInputs.state.phase}`, [taskArtifactPath(taskId, "state")]);
+  }
+
+  const cycle = initialInputs.state.verificationCycle ?? 1;
+  const prior = await listStructuralQualityEvaluations(target, taskId, packageRoot);
+  const attemptsInCycle = prior.filter((item) => item.value.verificationCycle === cycle);
+  const latestEvaluation = attemptsInCycle.at(-1);
+
+  // Check if projection reconciliation is needed for an existing evaluation
+  if (latestEvaluation) {
+    let checkProjected = false;
+    try {
+      const receiptArtifact = await readJsonArtifact(target, taskArtifactPath(taskId, "receipt"), "execution-receipt", packageRoot);
+      const matchingCheck = receiptArtifact.value?.checks?.find((c) => c.id === STRUCTURAL_QUALITY_CHECK_ID);
+      if (matchingCheck
+        && matchingCheck.details?.artifactRef === latestEvaluation.path
+        && matchingCheck.details?.artifactFingerprint === latestEvaluation.fingerprint) {
+        checkProjected = true;
+      }
+    } catch {
+      checkProjected = false;
     }
-    const cycle = inputs.state.verificationCycle ?? 1;
-    const prior = await listStructuralQualityEvaluations(target, lockedTaskId, packageRoot);
-    const attemptsInCycle = prior.filter((item) => item.value.verificationCycle === cycle);
-    const maxAttempts = 1 + (inputs.policy.optimization.mode === "bounded" ? inputs.policy.optimization.maxExtraEvaluations : 0);
-    if (attemptsInCycle.length >= maxAttempts) {
-      const last = attemptsInCycle.at(-1);
-      return { converged: true, inputs, evaluation: last?.value ?? null, attempts: attemptsInCycle.length };
+
+    if (!checkProjected) {
+      // Reconcile and repair the orphaned check projection without rescanning or consuming another attempt
+      return persistEvaluationAndCheck({
+        target,
+        packageRoot,
+        taskId,
+        inputs: initialInputs,
+        persisted: {
+          ...latestEvaluation.value,
+          artifactRef: latestEvaluation.path,
+          artifactFingerprint: latestEvaluation.fingerprint,
+        },
+        authorityContext,
+        runtimeContext,
+      });
     }
-    const attempt = attemptsInCycle.length + 1;
-    const baseline = await readStructuralQualityBaseline(target, lockedTaskId, packageRoot);
-    let evaluation;
-    if (!baseline) {
-      evaluation = nonPassEvaluation({ taskId: lockedTaskId, inputs, cycle, attempt, policy: inputs.policy, reasonCode: E_STRUCTURAL_QUALITY_BASELINE_MISSING });
-    } else {
-      try {
-        assertStructuralQualityBindings(baseline.value, {
-          taskId: lockedTaskId,
-          contractFingerprint: inputs.contract.fingerprint,
-          routeFingerprint: inputs.route.fingerprint,
-          policyFingerprint: structuralQualityPolicyFingerprint(inputs.policy),
-          scopeFingerprint: inputs.scopeFingerprint,
+  }
+
+  const maxAttempts = 1 + (policy.optimization.mode === "bounded" ? policy.optimization.maxExtraEvaluations : 0);
+  if (attemptsInCycle.length >= maxAttempts) {
+    const last = attemptsInCycle.at(-1);
+    const evalVal = last ? { ...last.value, artifactRef: last.path, artifactFingerprint: last.fingerprint } : null;
+    const evaluationStatus = evalVal?.status ?? (policy.mode === "gate" ? "BLOCKED" : "NOT_OBSERVED");
+    return {
+      status: evaluationStatus === "PASS" ? "CONVERGED" : evaluationStatus,
+      mode: policy.mode,
+      evaluation: evalVal,
+      check: null,
+      attempts: attemptsInCycle.length,
+    };
+  }
+
+  const attempt = attemptsInCycle.length + 1;
+  const reservationEpoch = {
+    stateRevision: initialInputs.state.revision ?? 0,
+    cycle,
+  };
+
+  const baseline = await readStructuralQualityBaseline(target, taskId, packageRoot);
+
+  // Execute provider observation OUTSIDE task mutation lock
+  const sourceFingerprintBefore = await computeMaterialSourceFingerprint(target);
+  let evaluation;
+  let effectiveScope = initialInputs.scope;
+  let effectiveScopeFingerprint = initialInputs.scopeFingerprint;
+
+  if (!baseline) {
+    evaluation = nonPassEvaluation({
+      taskId,
+      inputs: initialInputs,
+      cycle,
+      attempt,
+      policy,
+      reasonCode: E_STRUCTURAL_QUALITY_BASELINE_MISSING,
+      sourceObservation: { beforeFingerprint: sourceFingerprintBefore, afterFingerprint: sourceFingerprintBefore, stable: true },
+      sourceMaterialFingerprint: sourceFingerprintBefore,
+    });
+  } else {
+    try {
+      assertStructuralQualityBindings(baseline.value, {
+        taskId,
+        contractFingerprint: initialInputs.contract.fingerprint,
+        routeFingerprint: initialInputs.route.fingerprint,
+        policyFingerprint: structuralQualityPolicyFingerprint(policy),
+        scopeFingerprint: initialInputs.scopeFingerprint,
+      });
+      const scan = await invokeProvider({ target, taskId, policy, runtimeContext, timeoutMs, maxOutputBytes });
+      const sourceFingerprintAfter = await computeMaterialSourceFingerprint(target);
+      const isStable = sourceFingerprintBefore === sourceFingerprintAfter;
+
+      if (!isStable) {
+        evaluation = nonPassEvaluation({
+          taskId,
+          inputs: initialInputs,
+          cycle,
+          attempt,
+          policy,
+          reasonCode: E_STRUCTURAL_QUALITY_SOURCE_DRIFT,
+          providerId: scan.provider.id,
+          providerVersion: scan.provider.version,
+          detection: scan.detection,
+          baseline,
+          sourceObservation: { beforeFingerprint: sourceFingerprintBefore, afterFingerprint: sourceFingerprintAfter, stable: false },
+          sourceMaterialFingerprint: sourceFingerprintBefore,
         });
-        const scan = await invokeProvider({ target, taskId: lockedTaskId, policy: inputs.policy, runtimeContext, timeoutMs, maxOutputBytes });
-        const comparison = compareStructuralQuality({ baseline: baseline.value, current: { ...scan, bindings: baseBindings(inputs, structuralQualityPolicyFingerprint(inputs.policy), baseline.fingerprint), scope: inputs.scope }, policy: inputs.policy });
-        const status = statusForComparison(inputs.policy, comparison);
+      } else {
+        if (scan.providerScopeBinding?.providerConfigFingerprint !== undefined) {
+          effectiveScope = { kind: "PROJECT", projectRoot: ".", providerConfigFingerprint: scan.providerScopeBinding.providerConfigFingerprint };
+          effectiveScopeFingerprint = canonicalFingerprint({ providerId: scan.provider.id, ...effectiveScope });
+        }
+        const updatedInputs = { ...initialInputs, scope: effectiveScope, scopeFingerprint: effectiveScopeFingerprint };
+        const comparison = compareStructuralQuality({
+          baseline: baseline.value,
+          current: {
+            ...scan,
+            bindings: baseBindings(updatedInputs, structuralQualityPolicyFingerprint(policy), baseline.fingerprint, sourceFingerprintBefore),
+            scope: effectiveScope,
+          },
+          policy,
+        });
+        const status = statusForComparison(policy, comparison);
         evaluation = {
           schemaVersion: 1,
           protocolVersion: 1,
           role: "EVALUATION",
-          taskId: lockedTaskId,
+          taskId,
           capturedAt: new Date().toISOString(),
           verificationCycle: cycle,
           attempt,
           status,
           reasonCodes: comparison.reasonCodes,
           errorCode: null,
-          bindings: baseBindings(inputs, structuralQualityPolicyFingerprint(inputs.policy), baseline.fingerprint),
+          bindings: baseBindings(updatedInputs, structuralQualityPolicyFingerprint(policy), baseline.fingerprint, sourceFingerprintBefore),
+          sourceObservation: {
+            beforeFingerprint: sourceFingerprintBefore,
+            afterFingerprint: sourceFingerprintAfter,
+            stable: true,
+          },
           provider: scan.provider,
           detection: scan.detection,
-          scope: inputs.scope,
-          baselineSignal: baseline.value.snapshot.qualitySignal,
+          scope: effectiveScope,
+          baselineSignal: baseline.value.snapshot?.qualitySignal,
           currentSignal: scan.snapshot.qualitySignal,
           snapshot: scan.snapshot,
           comparison,
         };
-      } catch (error) {
-        const code = error.code ?? E_STRUCTURAL_QUALITY_PROVIDER_UNAVAILABLE;
-        evaluation = nonPassEvaluation({
-          taskId: lockedTaskId,
-          inputs,
-          cycle,
-          attempt,
-          policy: inputs.policy,
-          reasonCode: code,
-          providerId: inputs.policy.provider,
-          baseline,
-        });
       }
+    } catch (error) {
+      const sourceFingerprintAfter = await computeMaterialSourceFingerprint(target).catch(() => sourceFingerprintBefore);
+      const code = error.code ?? E_STRUCTURAL_QUALITY_PROVIDER_UNAVAILABLE;
+      evaluation = nonPassEvaluation({
+        taskId,
+        inputs: initialInputs,
+        cycle,
+        attempt,
+        policy,
+        reasonCode: code,
+        providerId: policy.provider,
+        baseline,
+        sourceObservation: {
+          beforeFingerprint: sourceFingerprintBefore,
+          afterFingerprint: sourceFingerprintAfter,
+          stable: sourceFingerprintBefore === sourceFingerprintAfter,
+        },
+        sourceMaterialFingerprint: sourceFingerprintBefore,
+      });
     }
+  }
+
+  // Commit under task mutation lock
+  const captured = await withTaskMutation(target, { taskId, packageRoot }, "quality-verify-evaluation", async (context) => {
+    const lockedTaskId = context?.taskId ?? taskId;
+    const inputs = await taskInputs(target, packageRoot, lockedTaskId);
+    if (inputs.state.phase !== "VERIFYING") {
+      throw qualityError(E_STRUCTURAL_QUALITY_OBSERVATION_EPOCH_STALE, `Task phase changed during observation; found ${inputs.state.phase}`);
+    }
+    if ((inputs.state.verificationCycle ?? 1) !== reservationEpoch.cycle) {
+      throw qualityError(E_STRUCTURAL_QUALITY_OBSERVATION_EPOCH_STALE, "Task verification cycle changed during observation");
+    }
+    if (inputs.contract.fingerprint !== initialInputs.contract.fingerprint
+      || inputs.route.fingerprint !== initialInputs.route.fingerprint
+      || structuralQualityPolicyFingerprint(inputs.policy) !== structuralQualityPolicyFingerprint(initialInputs.policy)
+      || inputs.scopeFingerprint !== initialInputs.scopeFingerprint) {
+      throw qualityError(E_STRUCTURAL_QUALITY_OBSERVATION_EPOCH_STALE, "Task state configuration changed during observation");
+    }
+
+    const currentAttempts = (await listStructuralQualityEvaluations(target, lockedTaskId, packageRoot))
+      .filter((item) => item.value.verificationCycle === cycle);
+    const assignedAttempt = currentAttempts.length + 1;
+
+    if (assignedAttempt > maxAttempts) {
+      const last = currentAttempts.at(-1);
+      return {
+        inputs,
+        evaluation: last ? { ...last.value, artifactRef: last.path, artifactFingerprint: last.fingerprint } : null,
+        converged: true,
+        attempts: currentAttempts.length,
+      };
+    }
+
+    const assignedEvaluation = {
+      ...evaluation,
+      attempt: assignedAttempt,
+      bindings: {
+        ...evaluation.bindings,
+        stateRevision: inputs.state.revision ?? 0,
+      },
+    };
+
     const written = await writeStructuralQualityEvaluation(
       target,
       lockedTaskId,
-      evaluation.verificationCycle,
-      evaluation.attempt,
-      evaluation,
+      assignedEvaluation.verificationCycle,
+      assignedEvaluation.attempt,
+      assignedEvaluation,
       packageRoot,
       { transactionTaskId: lockedTaskId },
     );
     return {
-      converged: false,
       inputs,
-      evaluation: { ...evaluation, artifactRef: written.path, artifactFingerprint: written.fingerprint },
-      attempts: attemptsInCycle.length + 1,
+      evaluation: { ...assignedEvaluation, artifactRef: written.path, artifactFingerprint: written.fingerprint },
+      converged: false,
+      attempts: assignedAttempt,
     };
   });
+
   if (captured.converged) {
     const evaluationStatus = captured.evaluation?.status ?? (policy.mode === "gate" ? "BLOCKED" : "NOT_OBSERVED");
     return {
@@ -492,6 +700,7 @@ export async function evaluateStructuralQuality({ target, packageRoot = getPacka
       attempts: captured.attempts,
     };
   }
+
   return persistEvaluationAndCheck({
     target,
     packageRoot,
@@ -589,11 +798,21 @@ function projectionFromArtifacts(policy, baseline, current, state, evaluations =
     projection.reasonCodes = [E_STRUCTURAL_QUALITY_BASELINE_MISSING];
   }
   projection.optimization = optimizationProjection(policy, evaluations, current, optimizationScope ?? undefined);
-  if (!baseline) projection.next = policy.mode === "gate" ? "CAPTURE_STRUCTURAL_QUALITY_BASELINE" : null;
-  else if (!current || current.value.verificationCycle !== (state?.verificationCycle ?? 1)) projection.next = "VERIFY_STRUCTURAL_QUALITY";
-  else if (current.value.status === "FAIL") projection.next = "DIAGNOSE_STRUCTURAL_QUALITY_REGRESSION";
-  else if (current.value.status === "BLOCKED") projection.next = "RESOLVE_STRUCTURAL_QUALITY_BLOCKER";
-  else projection.next = null;
+  if (!baseline) {
+    projection.next = policy.mode === "gate"
+      ? "CAPTURE_STRUCTURAL_QUALITY_BASELINE"
+      : (policy.mode === "observe" ? "OPTIONAL_CAPTURE_STRUCTURAL_QUALITY_BASELINE" : null);
+  } else if (!current || current.value.verificationCycle !== (state?.verificationCycle ?? 1)) {
+    projection.next = policy.mode === "gate"
+      ? "VERIFY_STRUCTURAL_QUALITY"
+      : (policy.mode === "observe" ? "OPTIONAL_VERIFY_STRUCTURAL_QUALITY" : null);
+  } else if (current.value.status === "FAIL") {
+    projection.next = "DIAGNOSE_STRUCTURAL_QUALITY_REGRESSION";
+  } else if (current.value.status === "BLOCKED") {
+    projection.next = "RESOLVE_STRUCTURAL_QUALITY_BLOCKER";
+  } else {
+    projection.next = null;
+  }
   return projection;
 }
 
@@ -627,13 +846,12 @@ export async function validateStructuralQualityCheckProvenance(check, { target, 
   const artifactRef = details.artifactRef;
   if (typeof artifactRef !== "string" || !artifactRef) return [qualityError(E_STRUCTURAL_QUALITY_EVIDENCE_STALE, "Structural-quality check is missing artifactRef")];
   try {
-    await assertSafePath(target, artifactRef);
     const artifact = await readJsonArtifact(target, artifactRef, "structural-quality", packageRoot);
     const policy = configuredPolicy(config ?? await loadOptionalConfig(target, packageRoot));
     if (!policy || policy.mode === "off") return [qualityError(E_STRUCTURAL_QUALITY_EVIDENCE_STALE, "Structural-quality check is configured off")];
     const activeContract = contract ?? await readContract(target, packageRoot, { taskId });
     const activeRoute = route ?? await readPersistedRoute(target, packageRoot, { taskId });
-    const activeScope = await scopeIdentity(target, policy.provider);
+    const activeScope = await scopeIdentity(target, null, policy.provider);
     const baseline = artifact.value.role === "EVALUATION"
       ? await readStructuralQualityBaseline(target, taskId, packageRoot)
       : null;
@@ -651,9 +869,31 @@ export async function validateStructuralQualityCheckProvenance(check, { target, 
     validateStructuralQualityArtifact(artifact.value, artifactRef);
     if (artifact.value.taskId !== taskId) errors.push(qualityError(E_STRUCTURAL_QUALITY_BASELINE_BINDING_MISMATCH, "Structural-quality artifact task ID does not match the active task"));
     errors.push(...validateBindingErrors(artifact.value, expected));
-    if (baseline && artifact.value.role === "EVALUATION"
-      && baseline.value.provider?.version !== artifact.value.provider?.version) {
-      errors.push(qualityError(E_STRUCTURAL_QUALITY_EVALUATION_INCOMPARABLE, "Structural-quality evaluation provider version differs from the captured baseline"));
+
+    // Material source binding freshness verification
+    if (artifact.value.bindings?.sourceMaterialFingerprint) {
+      const currentSourceFingerprint = await computeMaterialSourceFingerprint(target);
+      if (currentSourceFingerprint !== artifact.value.bindings.sourceMaterialFingerprint) {
+        errors.push(qualityError(E_STRUCTURAL_QUALITY_EVIDENCE_STALE, "Structural-quality observation source material has changed since evaluation"));
+      }
+    }
+
+    if (baseline && artifact.value.role === "EVALUATION") {
+      if (baseline.value.provider?.measurementModel && artifact.value.provider?.measurementModel
+        && baseline.value.provider.measurementModel !== artifact.value.provider.measurementModel) {
+        errors.push(qualityError(E_STRUCTURAL_QUALITY_MEASUREMENT_MODEL_MISMATCH, "Structural-quality evaluation measurement model differs from the captured baseline"));
+      }
+      if (baseline.value.provider?.compatibilityKey && artifact.value.provider?.compatibilityKey
+        && baseline.value.provider.compatibilityKey !== artifact.value.provider.compatibilityKey) {
+        errors.push(qualityError(E_STRUCTURAL_QUALITY_EVALUATION_INCOMPARABLE, "Structural-quality evaluation compatibility key differs from the captured baseline"));
+      }
+      if (baseline.value.provider?.version !== artifact.value.provider?.version) {
+        const sameCompat = baseline.value.provider?.compatibilityKey && artifact.value.provider?.compatibilityKey
+          && baseline.value.provider.compatibilityKey === artifact.value.provider.compatibilityKey;
+        if (!sameCompat) {
+          errors.push(qualityError(E_STRUCTURAL_QUALITY_EVALUATION_INCOMPARABLE, "Structural-quality evaluation provider version differs from the captured baseline"));
+        }
+      }
     }
     const expectedCheckStatus = checkProjection(policy, artifact.value).status;
     if (check.status !== expectedCheckStatus) errors.push(qualityError(E_STRUCTURAL_QUALITY_EVIDENCE_STALE, "Structural-quality check status does not match its persisted evaluation"));
@@ -693,5 +933,3 @@ export async function assertStructuralQualityExecutionReady({ target, packageRoo
   if (errors.length > 0) throw errors[0];
   return { required: true, baseline };
 }
-
-export { SENTRUX_RULES_PATH };

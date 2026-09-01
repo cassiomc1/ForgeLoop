@@ -10,6 +10,13 @@
 - Added bounded Sentrux MCP stdio integration, `quality-baseline`,
   `quality-verify`, and read-only `quality-status` surfaces across the CLI,
   integration API, and MCP projections.
+- Corrected Sentrux MCP tool argument schemas (`scan` requires `path`, `health`
+  requires empty object) and handshake tool schema validation.
+- Added source material fingerprinting and mid-scan source drift detection (`E_STRUCTURAL_QUALITY_SOURCE_DRIFT`).
+- Added single-session provider observation (`observe()`) and decoupled provider-specific rule files from core.
+- Added measurement model compatibility checking across `measurementModel` and `compatibilityKey`.
+- Relaxed default dimension budgets to unenforced (`null`) with strict aggregate non-regression and cycle prevention.
+- Added two-phase scan execution outside task mutation lock with atomic reservation and projection reconciliation on retry.
 - Added typed, atomic, task-scoped quality artifacts, bundle validation,
   completion provenance checks, and corrective lifecycle guidance.
 

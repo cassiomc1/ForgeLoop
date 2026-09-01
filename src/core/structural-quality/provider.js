@@ -140,6 +140,12 @@ export function normalizeStructuralQualityDetection(raw = {}, defaults = {}) {
   }
   const transport = source.transport ?? defaults.transport ?? DETECTION_TRANSPORT;
   requiredString(transport, "detection.transport");
+  const measurementModel = source.measurementModel ?? source.measurement_model ?? defaults.measurementModel ?? defaults.measurement_model ?? "structural-root-causes-v1";
+  requiredString(measurementModel, "detection.measurementModel");
+  const compatibilityKey = source.compatibilityKey ?? source.compatibility_key ?? defaults.compatibilityKey ?? defaults.compatibility_key ?? null;
+  if (compatibilityKey !== null && typeof compatibilityKey !== "string") {
+    throw providerError(E_STRUCTURAL_QUALITY_PROVIDER_INVALID, "detection.compatibilityKey must be a string or null");
+  }
   const reasonCode = source.reasonCode ?? source.reason_code ?? null;
   if (reasonCode !== null && typeof reasonCode !== "string") {
     throw providerError(E_STRUCTURAL_QUALITY_PROVIDER_INVALID, "detection.reasonCode must be a string or null");
@@ -149,6 +155,8 @@ export function normalizeStructuralQualityDetection(raw = {}, defaults = {}) {
     providerId,
     providerVersion,
     transport,
+    measurementModel,
+    compatibilityKey,
     reasonCode,
   };
 }
@@ -186,8 +194,8 @@ export function assertStructuralQualityProvider(provider) {
   if (typeof provider.id !== "string" || !STRUCTURAL_QUALITY_PROVIDER_ID_PATTERN.test(provider.id)) {
     throw providerError(E_STRUCTURAL_QUALITY_PROVIDER_INVALID, "Structural-quality provider id must be a lower-case provider ID");
   }
-  if (typeof provider.detect !== "function" || typeof provider.scan !== "function") {
-    throw providerError(E_STRUCTURAL_QUALITY_PROVIDER_INVALID, "Structural-quality provider must expose detect(input) and scan(input)");
+  if (typeof provider.observe !== "function" && (typeof provider.detect !== "function" || typeof provider.scan !== "function")) {
+    throw providerError(E_STRUCTURAL_QUALITY_PROVIDER_INVALID, "Structural-quality provider must expose observe(input) or detect(input) and scan(input)");
   }
   return provider;
 }

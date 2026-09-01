@@ -1,10 +1,13 @@
 import { spawn as nodeSpawn } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
 
+import { assertSafePath, ensureWithin, fileExists, readBytes } from "../filesystem.js";
+import { sha256 } from "../manifest.js";
 import {
   E_STRUCTURAL_QUALITY_OUTPUT_LIMIT,
   E_STRUCTURAL_QUALITY_PROVIDER_INVALID,
   E_STRUCTURAL_QUALITY_PROVIDER_PROTOCOL_INVALID,
+  E_STRUCTURAL_QUALITY_PROVIDER_TOOL_CONTRACT_INVALID,
   E_STRUCTURAL_QUALITY_PROVIDER_UNAVAILABLE,
   E_STRUCTURAL_QUALITY_PROVIDER_VERSION_UNSUPPORTED,
   E_STRUCTURAL_QUALITY_SCAN_FAILED,
@@ -14,6 +17,8 @@ import {
   STRUCTURAL_QUALITY_DEFAULT_TIMEOUT_MS,
   STRUCTURAL_QUALITY_MAX_OUTPUT_BYTES,
   STRUCTURAL_QUALITY_MAX_TIMEOUT_MS,
+  STRUCTURAL_QUALITY_MEASUREMENT_MODEL,
+  STRUCTURAL_QUALITY_SENTRUX_COMPATIBILITY_KEY,
   STRUCTURAL_QUALITY_SENTRUX_MIN_VERSION,
   structuralQualityError,
 } from "./constants.js";
@@ -22,6 +27,7 @@ import { assertStructuralQualityProvider, normalizeStructuralQualityDetection, n
 const DEFAULT_EXECUTABLE = "sentrux";
 const DEFAULT_ARGS = Object.freeze(["--mcp"]);
 const MCP_PROTOCOL_VERSION = "2024-11-05";
+const SENTRUX_RULES_PATH = ".sentrux/rules.toml";
 
 function mcpError(code, message) {
   return structuralQualityError(code, message);
@@ -232,6 +238,31 @@ class McpStdioSession {
   }
 }
 
+function inspectSentruxToolContract(tools) {
+  if (!Array.isArray(tools)) {
+    throw mcpError(E_STRUCTURAL_QUALITY_PROVIDER_PROTOCOL_INVALID, "Sentrux tools/list response has no tools array");
+  }
+  const scan = tools.find((t) => t?.name === "scan");
+  const health = tools.find((t) => t?.name === "health");
+  if (!scan || !health) {
+    throw mcpError(E_STRUCTURAL_QUALITY_PROVIDER_PROTOCOL_INVALID, "Sentrux must expose both scan and health MCP tools");
+  }
+  const scanSchema = scan.inputSchema;
+  if (!isRecord(scanSchema)
+    || scanSchema.type !== "object"
+    || !Array.isArray(scanSchema.required)
+    || !scanSchema.required.includes("path")
+    || !isRecord(scanSchema.properties)
+    || scanSchema.properties.path?.type !== "string") {
+    throw mcpError(E_STRUCTURAL_QUALITY_PROVIDER_TOOL_CONTRACT_INVALID, "Sentrux scan tool contract must be an object schema requiring a string path property");
+  }
+  const healthSchema = health.inputSchema;
+  if (healthSchema !== undefined && healthSchema !== null
+    && (!isRecord(healthSchema) || healthSchema.type !== "object")) {
+    throw mcpError(E_STRUCTURAL_QUALITY_PROVIDER_TOOL_CONTRACT_INVALID, "Sentrux health tool contract must be an object schema");
+  }
+}
+
 async function openHandshake(options) {
   const session = await new McpStdioSession(options).start();
   try {
@@ -249,12 +280,7 @@ async function openHandshake(options) {
     }
     session.notify("notifications/initialized");
     const listed = await session.request("tools/list", {});
-    const tools = listed?.tools;
-    if (!Array.isArray(tools)) throw mcpError(E_STRUCTURAL_QUALITY_PROVIDER_PROTOCOL_INVALID, "Sentrux tools/list response has no tools array");
-    const names = new Set(tools.map((tool) => tool?.name).filter((name) => typeof name === "string"));
-    if (!names.has("scan") || !names.has("health")) {
-      throw mcpError(E_STRUCTURAL_QUALITY_PROVIDER_PROTOCOL_INVALID, "Sentrux must expose both scan and health MCP tools");
-    }
+    inspectSentruxToolContract(listed?.tools);
     return { session, serverInfo };
   } catch (error) {
     await session.stop();
@@ -262,10 +288,10 @@ async function openHandshake(options) {
   }
 }
 
-async function callTool(session, name, projectPath) {
+async function callTool(session, name, args = {}) {
   const response = await session.request("tools/call", {
     name,
-    arguments: { project_path: projectPath, projectPath },
+    arguments: args,
   });
   if (!isRecord(response) || response.isError === true || !Array.isArray(response.content)) {
     throw mcpError(E_STRUCTURAL_QUALITY_PROVIDER_PROTOCOL_INVALID, `Sentrux ${name} tool returned an invalid MCP result`);
@@ -305,6 +331,23 @@ function mergedSnapshot(scan, health, projectPath) {
   return normalizeStructuralQualitySnapshot(snapshot, { projectPath });
 }
 
+async function sentruxScopeBinding(projectPath) {
+  let rulesFingerprint = null;
+  if (projectPath) {
+    try {
+      await assertSafePath(projectPath, SENTRUX_RULES_PATH);
+      const rulesAbsolute = ensureWithin(projectPath, SENTRUX_RULES_PATH);
+      if (await fileExists(rulesAbsolute)) rulesFingerprint = sha256(await readBytes(rulesAbsolute));
+    } catch {
+      // invalid path handled gracefully
+    }
+  }
+  return {
+    providerConfigFingerprint: rulesFingerprint,
+    measurementCompatibilityKey: STRUCTURAL_QUALITY_SENTRUX_COMPATIBILITY_KEY,
+  };
+}
+
 export function createSentruxStructuralQualityProvider({
   projectPath,
   timeoutMs = STRUCTURAL_QUALITY_DEFAULT_TIMEOUT_MS,
@@ -334,6 +377,8 @@ export function createSentruxStructuralQualityProvider({
           providerId: "sentrux",
           providerVersion: serverInfo.version,
           transport: "mcp-stdio",
+          measurementModel: STRUCTURAL_QUALITY_MEASUREMENT_MODEL,
+          compatibilityKey: STRUCTURAL_QUALITY_SENTRUX_COMPATIBILITY_KEY,
           reasonCode: null,
         });
       } catch (error) {
@@ -342,9 +387,15 @@ export function createSentruxStructuralQualityProvider({
           providerId: "sentrux",
           providerVersion: error.providerVersion ?? null,
           transport: "mcp-stdio",
+          measurementModel: STRUCTURAL_QUALITY_MEASUREMENT_MODEL,
+          compatibilityKey: STRUCTURAL_QUALITY_SENTRUX_COMPATIBILITY_KEY,
           reasonCode: error.code ?? E_STRUCTURAL_QUALITY_PROVIDER_UNAVAILABLE,
         });
       }
+    },
+    async scopeBinding(input = {}) {
+      const resolvedProjectPath = input.projectPath ?? projectPath;
+      return sentruxScopeBinding(resolvedProjectPath);
     },
     async scan(input = {}) {
       const resolvedProjectPath = input.projectPath ?? projectPath;
@@ -359,8 +410,9 @@ export function createSentruxStructuralQualityProvider({
       };
       const { session, serverInfo } = await openHandshake(options);
       try {
-        const scanResult = await callTool(session, "scan", resolvedProjectPath);
-        const healthResult = await callTool(session, "health", resolvedProjectPath);
+        const scanResult = await callTool(session, "scan", { path: resolvedProjectPath });
+        const healthResult = await callTool(session, "health", {});
+        const providerScopeBinding = await sentruxScopeBinding(resolvedProjectPath);
         return {
           snapshot: mergedSnapshot(scanResult, healthResult, resolvedProjectPath),
           provider: {
@@ -368,19 +420,25 @@ export function createSentruxStructuralQualityProvider({
             version: serverInfo.version,
             transport: "mcp-stdio",
             executionMode: "trusted-path-mcp-stdio",
+            measurementModel: STRUCTURAL_QUALITY_MEASUREMENT_MODEL,
+            compatibilityKey: STRUCTURAL_QUALITY_SENTRUX_COMPATIBILITY_KEY,
           },
           detection: normalizeStructuralQualityDetection({
             available: true,
             providerId: "sentrux",
             providerVersion: serverInfo.version,
             transport: "mcp-stdio",
+            measurementModel: STRUCTURAL_QUALITY_MEASUREMENT_MODEL,
+            compatibilityKey: STRUCTURAL_QUALITY_SENTRUX_COMPATIBILITY_KEY,
             reasonCode: null,
           }),
+          providerScopeBinding,
         };
       } catch (error) {
         if (error.code === E_STRUCTURAL_QUALITY_TIMEOUT
           || error.code === E_STRUCTURAL_QUALITY_OUTPUT_LIMIT
           || error.code === E_STRUCTURAL_QUALITY_PROVIDER_PROTOCOL_INVALID
+          || error.code === E_STRUCTURAL_QUALITY_PROVIDER_TOOL_CONTRACT_INVALID
           || error.code === E_STRUCTURAL_QUALITY_PROVIDER_INVALID
           || error.code === E_STRUCTURAL_QUALITY_PROVIDER_VERSION_UNSUPPORTED
           || error.code === E_STRUCTURAL_QUALITY_PROVIDER_UNAVAILABLE) throw error;
@@ -389,8 +447,11 @@ export function createSentruxStructuralQualityProvider({
         await session.stop();
       }
     },
+    async observe(input = {}) {
+      return this.scan(input);
+    },
   };
   return assertStructuralQualityProvider(provider);
 }
 
-export { DEFAULT_EXECUTABLE as SENTRUX_EXECUTABLE, DEFAULT_ARGS as SENTRUX_ARGS };
+export { DEFAULT_EXECUTABLE as SENTRUX_EXECUTABLE, DEFAULT_ARGS as SENTRUX_ARGS, SENTRUX_RULES_PATH };

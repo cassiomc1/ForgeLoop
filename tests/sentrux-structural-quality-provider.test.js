@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { test } from "node:test";
+import { mkdir, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
+import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { createSentruxStructuralQualityProvider } from "../src/core/structural-quality/sentrux-mcp.js";
+import { STRUCTURAL_QUALITY_MEASUREMENT_MODEL, STRUCTURAL_QUALITY_SENTRUX_COMPATIBILITY_KEY } from "../src/core/structural-quality/constants.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const fixture = path.join(here, "fixtures", "fake-sentrux-mcp.mjs");
@@ -39,10 +42,58 @@ test("Sentrux MCP handshake, scan, and health produce one normalized snapshot", 
   assert.equal(result.provider.id, "sentrux");
   assert.equal(result.provider.version, "0.5.7");
   assert.equal(result.provider.transport, "mcp-stdio");
+  assert.equal(result.provider.measurementModel, STRUCTURAL_QUALITY_MEASUREMENT_MODEL);
+  assert.equal(result.provider.compatibilityKey, STRUCTURAL_QUALITY_SENTRUX_COMPATIBILITY_KEY);
   assert.equal(result.detection.available, true);
+  assert.equal(result.detection.measurementModel, STRUCTURAL_QUALITY_MEASUREMENT_MODEL);
+  assert.equal(result.detection.compatibilityKey, STRUCTURAL_QUALITY_SENTRUX_COMPATIBILITY_KEY);
   assert.equal(result.snapshot.qualitySignal, 9000);
   assert.equal(result.snapshot.bottleneck, "modularity");
   assert.equal(result.snapshot.statistics.crossModuleEdges, 2);
+});
+
+test("Sentrux MCP provider supports single-session observe()", async () => {
+  const projectPath = path.dirname(fixture);
+  const result = await provider(projectPath).observe(input(projectPath));
+  assert.equal(result.provider.id, "sentrux");
+  assert.equal(result.provider.version, "0.5.7");
+  assert.equal(result.detection.available, true);
+  assert.equal(result.snapshot.qualitySignal, 9000);
+});
+
+test("Sentrux MCP tool contract schema is strictly validated during handshake", async () => {
+  const projectPath = path.dirname(fixture);
+  for (const mode of [
+    "invalid-scan-schema",
+    "missing-scan-path-required",
+    "invalid-scan-path-type",
+  ]) {
+    const detected = await provider(projectPath, mode).detect(input(projectPath));
+    assert.equal(detected.available, false, mode);
+    assert.equal(detected.reasonCode, "E_STRUCTURAL_QUALITY_PROVIDER_TOOL_CONTRACT_INVALID", mode);
+    await assert.rejects(
+      () => provider(projectPath, mode).scan(input(projectPath)),
+      { code: "E_STRUCTURAL_QUALITY_PROVIDER_TOOL_CONTRACT_INVALID" },
+      mode,
+    );
+  }
+});
+
+test("Sentrux adapter owns .sentrux/rules.toml scopeBinding", async () => {
+  const tmpDir = await mkdir(path.join(os.tmpdir(), "forgeloop-sentrux-scope-test-"), { recursive: true });
+  try {
+    const sentruxProvider = provider(tmpDir);
+    const initialScope = await sentruxProvider.scopeBinding({ projectPath: tmpDir });
+    assert.equal(initialScope.providerConfigFingerprint, null);
+    assert.equal(initialScope.measurementCompatibilityKey, STRUCTURAL_QUALITY_SENTRUX_COMPATIBILITY_KEY);
+
+    await mkdir(path.join(tmpDir, ".sentrux"), { recursive: true });
+    await writeFile(path.join(tmpDir, ".sentrux", "rules.toml"), 'version = "1.0"\n');
+    const updatedScope = await sentruxProvider.scopeBinding({ projectPath: tmpDir });
+    assert.ok(typeof updatedScope.providerConfigFingerprint === "string" && updatedScope.providerConfigFingerprint.length === 64);
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true });
+  }
 });
 
 test("the adapter invokes a trusted process without a shell", async () => {

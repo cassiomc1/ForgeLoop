@@ -1,0 +1,24 @@
+{
+  "serverInfo": {
+    "name": "sentrux"
+  },
+  "protocolVersion": "2024-11-05",
+  "minSupportedVersion": "0.5.5",
+  "tools": {
+    "scan": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        }
+      },
+      "required": ["path"]
+    },
+    "health": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  "measurementModel": "structural-root-causes-v1",
+  "compatibilityKey": "sentrux-structural-root-causes-v1"
+}

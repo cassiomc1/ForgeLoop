@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import { writeFileSync } from "node:fs";
+
 const mode = process.env.SENTRUX_FAKE_MODE ?? "valid";
 const version = process.env.SENTRUX_FAKE_VERSION ?? "0.5.7";
 const serverName = process.env.SENTRUX_FAKE_SERVER_NAME ?? (mode === "wrong-server-name" ? "other-analyzer" : "sentrux");
@@ -44,6 +46,75 @@ function toolResult(value) {
   return { content: [{ type: "text", text: JSON.stringify(value) }] };
 }
 
+function toolsListForMode(currentMode) {
+  if (currentMode === "missing-health") {
+    return [
+      {
+        name: "scan",
+        inputSchema: {
+          type: "object",
+          properties: { path: { type: "string" } },
+          required: ["path"],
+        },
+      },
+    ];
+  }
+  if (currentMode === "missing-scan") {
+    return [
+      {
+        name: "health",
+        inputSchema: { type: "object", properties: {} },
+      },
+    ];
+  }
+  if (currentMode === "invalid-scan-schema") {
+    return [
+      { name: "scan", inputSchema: "not-an-object" },
+      { name: "health", inputSchema: { type: "object", properties: {} } },
+    ];
+  }
+  if (currentMode === "missing-scan-path-required") {
+    return [
+      {
+        name: "scan",
+        inputSchema: {
+          type: "object",
+          properties: { path: { type: "string" } },
+          required: [],
+        },
+      },
+      { name: "health", inputSchema: { type: "object", properties: {} } },
+    ];
+  }
+  if (currentMode === "invalid-scan-path-type") {
+    return [
+      {
+        name: "scan",
+        inputSchema: {
+          type: "object",
+          properties: { path: { type: "number" } },
+          required: ["path"],
+        },
+      },
+      { name: "health", inputSchema: { type: "object", properties: {} } },
+    ];
+  }
+  return [
+    {
+      name: "scan",
+      inputSchema: {
+        type: "object",
+        properties: { path: { type: "string" } },
+        required: ["path"],
+      },
+    },
+    {
+      name: "health",
+      inputSchema: { type: "object", properties: {} },
+    },
+  ];
+}
+
 if (mode === "early-exit") process.exit(17);
 if (mode === "hang") {
   setInterval(() => {}, 1000);
@@ -82,9 +153,7 @@ if (mode === "hang") {
         } });
       } else if (request.method === "tools/list") {
         send({ jsonrpc: "2.0", id: request.id, result: {
-          tools: mode === "missing-health"
-            ? [{ name: "scan" }]
-            : [{ name: "scan" }, { name: "health" }],
+          tools: toolsListForMode(mode),
         } });
       } else if (request.method === "tools/call") {
         if (!initialized) {
@@ -92,7 +161,19 @@ if (mode === "hang") {
         } else if (mode === "provider-error") {
           send({ jsonrpc: "2.0", id: request.id, error: { code: -32001, message: "fake provider failure" } });
         } else if (request.params?.name === "scan") {
-          send({ jsonrpc: "2.0", id: request.id, result: toolResult(snapshot()) });
+          const args = request.params?.arguments;
+          if (!args || typeof args.path !== "string" || !args.path) {
+            send({ jsonrpc: "2.0", id: request.id, error: { code: -32602, message: "Missing 'path' argument" } });
+          } else {
+            if (process.env.SENTRUX_FAKE_MUTATE_FILE_DURING_SCAN) {
+              try {
+                writeFileSync(process.env.SENTRUX_FAKE_MUTATE_FILE_DURING_SCAN, "mutated content mid scan\n");
+              } catch {
+                // ignore
+              }
+            }
+            send({ jsonrpc: "2.0", id: request.id, result: toolResult(snapshot()) });
+          }
         } else if (request.params?.name === "health") {
           if (mode === "malformed-health-json") {
             send({ jsonrpc: "2.0", id: request.id, result: { content: [{ type: "text", text: "{not-json" }] } });

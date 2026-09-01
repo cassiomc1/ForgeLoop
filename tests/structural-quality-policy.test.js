@@ -45,11 +45,11 @@ test("omitted quality configuration is off and gate defaults fail closed", () =>
   assert.equal(normalizeStructuralQualityConfig(undefined), undefined);
   const policy = normalizeStructuralQualityConfig({ mode: "gate", provider: "fake" });
   assert.deepEqual(policy.dimensionBudgets, {
-    modularity: 0,
-    acyclicity: 0,
-    depth: 0,
-    equality: 0,
-    redundancy: 0,
+    modularity: null,
+    acyclicity: null,
+    depth: null,
+    equality: null,
+    redundancy: null,
   });
   assert.deepEqual(policy.minimums, {});
   assert.equal(policy.forbidNewCycles, true);
