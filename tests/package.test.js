@@ -7,7 +7,7 @@ import { TEMPLATE_PATHS } from "../src/core/templates.js";
 
 const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
 
-test("npm tarball contains the CLI, templates, and license notices only", () => {
+test("npm tarball contains the CLI, templates, published scenarios, and license notices", () => {
   const output = execFileSync(npmCommand, ["pack", "--dry-run", "--json"], {
     encoding: "utf8",
     shell: process.platform === "win32",
@@ -101,6 +101,10 @@ test("npm tarball contains the CLI, templates, and license notices only", () => 
     "docs/RELEASE_CHECKLIST_1_4.md",
     "docs/RELEASE_CHECKLIST_1_5_MCP.md",
     "docs/RELEASE_CHECKLIST_1_6_1.md",
+    // Benchmark scenarios are public package inputs; historical measurements
+    // remain repository evidence and must never inflate the core tarball.
+    ...listing.filter((entry) => entry.startsWith("benchmarks/execution-profiles/results")),
+    ...listing.filter((entry) => entry.startsWith(".forgeloop/") && entry !== ".forgeloop/forgeloop.gitignore"),
     // The MCP package ships separately, never inside the core tarball.
     ...listing.filter((entry) => entry.startsWith("integrations/mcp/")),
   ]) {
