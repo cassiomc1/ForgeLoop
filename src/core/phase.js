@@ -26,6 +26,7 @@ import {
   buildInformationGainProjection,
   evaluateStructuredDiagnosticStall,
 } from "./information-gain-projection.js";
+import { assertStructuralQualityExecutionReady } from "./structural-quality/service.js";
 
 function phaseError(code, message, artifacts = []) {
   const error = new Error(message);
@@ -132,6 +133,13 @@ async function assertPhasePrerequisites(target, state, toPhase, packageRoot, aut
       await readPersistedRoute(target, packageRoot, { taskId: scopedTaskId, routePath: options.routePath });
     } catch (error) {
       throw phaseError("E_PHASE_PREREQUISITE_MISSING", `Phase ${toPhase} requires ${routeRel}: ${error.message}`, [routeRel]);
+    }
+  }
+  if (toPhase === "EXECUTING" && scopedTaskId) {
+    try {
+      await assertStructuralQualityExecutionReady({ target, packageRoot, taskId: scopedTaskId });
+    } catch (error) {
+      throw phaseError(error.code, error.message, error.artifacts);
     }
   }
   if (hasExecutionStarted(toPhase)) {

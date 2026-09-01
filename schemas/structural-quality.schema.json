@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "forgeloop://schemas/structural-quality.schema.json",
+  "title": "ForgeLoop structural quality evidence",
+  "type": "object",
+  "required": ["schemaVersion", "protocolVersion", "role", "taskId", "capturedAt", "verificationCycle", "attempt", "bindings", "provider", "scope", "status", "reasonCodes"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "protocolVersion": { "const": 1 },
+    "role": { "enum": ["BASELINE", "EVALUATION"] },
+    "taskId": { "type": "string", "minLength": 1 },
+    "capturedAt": { "type": "string", "minLength": 1 },
+    "verificationCycle": { "oneOf": [{ "type": "integer" }, { "type": "null" }] },
+    "attempt": { "type": "integer" },
+    "status": { "enum": ["PASS", "FAIL", "BLOCKED", "NOT_OBSERVED"] },
+    "reasonCodes": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "errorCode": { "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+    "baselineSignal": { "oneOf": [{ "type": "integer" }, { "type": "null" }] },
+    "currentSignal": { "oneOf": [{ "type": "integer" }, { "type": "null" }] },
+    "bindings": {
+      "type": "object",
+      "required": ["contractFingerprint", "routeFingerprint", "policyFingerprint", "scopeFingerprint"],
+      "properties": {
+        "contractFingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "routeFingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "policyFingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "scopeFingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "baselineFingerprint": { "oneOf": [{ "type": "string", "pattern": "^[a-f0-9]{64}$" }, { "type": "null" }] },
+        "stateRevision": { "type": "integer" }
+      },
+      "additionalProperties": false
+    },
+    "provider": {
+      "type": "object",
+      "required": ["id", "version", "transport", "executionMode"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "version": { "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+        "transport": { "type": "string", "minLength": 1 },
+        "executionMode": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "detection": {
+      "type": "object",
+      "required": ["available", "providerId", "transport", "reasonCode"],
+      "properties": {
+        "available": { "type": "boolean" },
+        "providerId": { "type": "string", "minLength": 1 },
+        "providerVersion": { "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+        "transport": { "type": "string", "minLength": 1 },
+        "reasonCode": { "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] }
+      },
+      "additionalProperties": false
+    },
+    "scope": {
+      "type": "object",
+      "required": ["kind", "projectRoot", "rulesFingerprint"],
+      "properties": {
+        "kind": { "const": "PROJECT" },
+        "projectRoot": { "const": "." },
+        "rulesFingerprint": { "oneOf": [{ "type": "string", "pattern": "^[a-f0-9]{64}$" }, { "type": "null" }] }
+      },
+      "additionalProperties": false
+    },
+    "snapshot": { "$ref": "#/$defs/snapshot" },
+    "comparison": { "$ref": "#/$defs/comparison" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "rootCause": {
+      "type": "object",
+      "required": ["score", "raw"],
+      "properties": {
+        "score": { "type": "integer" },
+        "raw": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "snapshot": {
+      "type": "object",
+      "required": ["qualitySignal", "bottleneck", "rootCauses", "statistics", "diagnostics"],
+      "properties": {
+        "qualitySignal": { "type": "integer" },
+        "bottleneck": { "enum": ["modularity", "acyclicity", "depth", "equality", "redundancy"] },
+        "rootCauses": {
+          "type": "object",
+          "required": ["modularity", "acyclicity", "depth", "equality", "redundancy"],
+          "properties": {
+            "modularity": { "$ref": "#/$defs/rootCause" },
+            "acyclicity": { "$ref": "#/$defs/rootCause" },
+            "depth": { "$ref": "#/$defs/rootCause" },
+            "equality": { "$ref": "#/$defs/rootCause" },
+            "redundancy": { "$ref": "#/$defs/rootCause" }
+          },
+          "additionalProperties": false
+        },
+        "statistics": {
+          "type": "object",
+          "required": ["files", "lines", "importEdges", "crossModuleEdges"],
+          "properties": {
+            "files": { "oneOf": [{ "type": "integer" }, { "type": "null" }] },
+            "lines": { "oneOf": [{ "type": "integer" }, { "type": "null" }] },
+            "importEdges": { "oneOf": [{ "type": "integer" }, { "type": "null" }] },
+            "crossModuleEdges": { "oneOf": [{ "type": "integer" }, { "type": "null" }] }
+          },
+          "additionalProperties": false
+        },
+        "diagnostics": { "oneOf": [{ "type": "object" }, { "type": "null" }] }
+      },
+      "additionalProperties": false
+    },
+    "comparison": {
+      "type": "object",
+      "required": ["comparable", "qualityDelta", "rootCauseDeltas", "status", "reasonCodes"],
+      "properties": {
+        "comparable": { "type": "boolean" },
+        "qualityDelta": { "oneOf": [{ "type": "integer" }, { "type": "null" }] },
+        "rootCauseDeltas": { "type": "object" },
+        "failedConditions": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "status": { "enum": ["PASS", "FAIL", "BLOCKED", "NOT_OBSERVED"] },
+        "reasonCodes": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      },
+      "additionalProperties": false
+    }
+  }
+}

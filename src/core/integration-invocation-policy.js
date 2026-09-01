@@ -32,6 +32,7 @@ const READ_ONLY_COMMANDS = Object.freeze(new Set([
   "efficiency",
   "workspace-status", "handoff-list", "handoff-show", "responsibility-status",
   "attestation-verify", "attestation-status", "attestation-verify-range",
+  "quality-status",
 ]));
 
 const LOOP_MUTATION_COMMANDS = Object.freeze(new Set([
@@ -49,6 +50,8 @@ const STATIC_RISK_CLASSES = Object.freeze({
   ...Object.fromEntries([...LOOP_MUTATION_COMMANDS].map((name) => [name, INTEGRATION_RISK_CLASSES.LOOP_MUTATION])),
   "task-resume": INTEGRATION_RISK_CLASSES.CLAIM_REACQUISITION,
   "run-check": INTEGRATION_RISK_CLASSES.EXTERNAL_EXECUTION,
+  "quality-baseline": INTEGRATION_RISK_CLASSES.EXTERNAL_EXECUTION,
+  "quality-verify": INTEGRATION_RISK_CLASSES.EXTERNAL_EXECUTION,
   "run-action": INTEGRATION_RISK_CLASSES.EXTERNAL_EXECUTION,
   "reconcile-closure": INTEGRATION_RISK_CLASSES.EXTERNAL_EXECUTION,
   "action-propose": INTEGRATION_RISK_CLASSES.LOOP_MUTATION,
@@ -203,6 +206,17 @@ export function getForgeLoopCapabilities({ packageVersion = null } = {}) {
         modes: ["AUTO", "CHANGED", "CLAIMED", "FULL"],
         impactedMode: false,
       },
+      structuralQuality: {
+        version: 1,
+        supported: true,
+        schemaVersion: 1,
+        providerNeutral: true,
+        modes: ["off", "observe", "gate"],
+        builtInProviders: ["sentrux"],
+        commands: ["quality-baseline", "quality-verify", "quality-status"],
+        baselineImmutableAfterExecution: true,
+        maxOutputBytes: 2 * 1024 * 1024,
+      },
       codeAttestation: {
         version: 1,
         supported: true,
@@ -232,6 +246,7 @@ export function getForgeLoopCapabilities({ packageVersion = null } = {}) {
       { name: "task/responsibility", scope: "TASK" },
       { name: "task/verification-scope", scope: "TASK" },
       { name: "task/attestation", scope: "TASK" },
+      { name: "task/structural-quality", scope: "TASK" },
       { name: "task/actions", scope: "TASK" },
       { name: "task/action", scope: "TASK" },
       { name: "task/approvals", scope: "TASK" },

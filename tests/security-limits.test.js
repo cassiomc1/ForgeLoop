@@ -3,6 +3,7 @@ import { test } from "node:test";
 
 import { assertJsonLimits, JSON_LIMITS } from "../src/core/json-safety.js";
 import { assertSecretFree, validateReceipt } from "../src/core/receipt.js";
+import { normalizeStructuralQualitySnapshot } from "../src/core/structural-quality/provider.js";
 import { getPackageRoot } from "../src/core/templates.js";
 
 const packageRoot = getPackageRoot();
@@ -65,4 +66,16 @@ test("secret scanning covers nested mixed-case fields and common token values", 
   assert.throws(() => assertSecretFree({ nested: [{ privateKey: ["-----BEGIN RSA ", "PRIVATE KEY-----"].join("") }] }), /secret/i);
   assert.doesNotThrow(() => assertSecretFree({ nested: [{ tokenization: "safe", secretary: "safe" }] }));
   assert.doesNotThrow(() => assertSecretFree({ "credential-policy.md": "documentation" }));
+});
+
+test("structural-quality normalization rejects secret fields and outside paths", () => {
+  const snapshot = {
+    qualitySignal: 9000,
+    bottleneck: "modularity",
+    rootCauses: Object.fromEntries(["modularity", "acyclicity", "depth", "equality", "redundancy"].map((key) => [key, { score: 9000, raw: 0 }])),
+    statistics: { files: 1, lines: 1, importEdges: 0, crossModuleEdges: 0 },
+    diagnostics: { items: [{ path: "/tmp/outside.js" }] },
+  };
+  assert.throws(() => normalizeStructuralQualitySnapshot(snapshot, { projectPath: "/tmp/project" }), /outside|project/i);
+  assert.throws(() => normalizeStructuralQualitySnapshot({ ...snapshot, diagnostics: { token: "secret" } }, { projectPath: "/tmp/project" }), /secret/i);
 });

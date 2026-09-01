@@ -11,6 +11,9 @@ import { runUpdate } from "../commands/update.js";
 import { runActivate } from "../commands/activate.js";
 import { runAdvance } from "../commands/advance.js";
 import { runPreflight } from "../commands/preflight.js";
+import { runQualityBaseline } from "../commands/quality-baseline.js";
+import { runQualityVerify } from "../commands/quality-verify.js";
+import { runQualityStatus } from "../commands/quality-status.js";
 import { runComplete } from "../commands/complete.js";
 import { runAudit } from "../commands/audit.js";
 import { runReport } from "../commands/report.js";
@@ -132,6 +135,19 @@ export const COMMAND_EXECUTORS = {
     const result = await runPreflight({ target, packageRoot, strict: options.strict, taskId: options.taskId });
     return { result, exitCode: result.status === "READY" ? 0 : 1 };
   },
+  "quality-baseline": async ({ target, packageRoot, options, runtimeContext }) => {
+    const result = await runQualityBaseline({ target, packageRoot, taskId: options.taskId, replace: options.replace, timeoutMs: options.timeoutMs, runtimeContext });
+    return { result, exitCode: ["CAPTURED", "EXISTING", "REPLACED", "NOT_REQUESTED"].includes(result.status) ? 0 : 1 };
+  },
+  "quality-verify": async ({ target, packageRoot, options, authorityContext, runtimeContext }) => {
+    const result = await runQualityVerify({ target, packageRoot, taskId: options.taskId, timeoutMs: options.timeoutMs, authorityContext, runtimeContext });
+    const status = result.evaluation?.status ?? result.status;
+    return { result, exitCode: ["PASS", "NOT_OBSERVED", "CONVERGED", "NOT_REQUESTED"].includes(status) ? 0 : 1 };
+  },
+  "quality-status": async ({ target, packageRoot, options }) => ({
+    result: await runQualityStatus({ target, packageRoot, taskId: options.taskId }),
+    exitCode: 0,
+  }),
   advance: async ({ target, packageRoot, options, authorityContext, runtimeContext }) => ({
     result: await runAdvance({
       target,

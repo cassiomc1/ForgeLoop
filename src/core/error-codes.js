@@ -83,6 +83,45 @@ export const E_EXECUTION_PROFILE_SAFETY_FLOOR_INVALID = "E_EXECUTION_PROFILE_SAF
 export const E_USAGE_INVALID = "E_USAGE_INVALID";
 export const E_USAGE_SOURCE_INVALID = "E_USAGE_SOURCE_INVALID";
 export const E_EFFICIENCY_BASELINE_INVALID = "E_EFFICIENCY_BASELINE_INVALID";
+export const E_STRUCTURAL_QUALITY_CONFIGURATION_INVALID = "E_STRUCTURAL_QUALITY_CONFIGURATION_INVALID";
+export const E_STRUCTURAL_QUALITY_PROVIDER_INVALID = "E_STRUCTURAL_QUALITY_PROVIDER_INVALID";
+export const E_STRUCTURAL_QUALITY_PROVIDER_UNAVAILABLE = "E_STRUCTURAL_QUALITY_PROVIDER_UNAVAILABLE";
+export const E_STRUCTURAL_QUALITY_PROVIDER_VERSION_UNSUPPORTED = "E_STRUCTURAL_QUALITY_PROVIDER_VERSION_UNSUPPORTED";
+export const E_STRUCTURAL_QUALITY_PROVIDER_PROTOCOL_INVALID = "E_STRUCTURAL_QUALITY_PROVIDER_PROTOCOL_INVALID";
+export const E_STRUCTURAL_QUALITY_SCAN_FAILED = "E_STRUCTURAL_QUALITY_SCAN_FAILED";
+export const E_STRUCTURAL_QUALITY_TIMEOUT = "E_STRUCTURAL_QUALITY_TIMEOUT";
+export const E_STRUCTURAL_QUALITY_OUTPUT_LIMIT = "E_STRUCTURAL_QUALITY_OUTPUT_LIMIT";
+export const E_STRUCTURAL_QUALITY_BASELINE_MISSING = "E_STRUCTURAL_QUALITY_BASELINE_MISSING";
+export const E_STRUCTURAL_QUALITY_BASELINE_EXISTS = "E_STRUCTURAL_QUALITY_BASELINE_EXISTS";
+export const E_STRUCTURAL_QUALITY_BASELINE_PHASE_INVALID = "E_STRUCTURAL_QUALITY_BASELINE_PHASE_INVALID";
+export const E_STRUCTURAL_QUALITY_BASELINE_BINDING_MISMATCH = "E_STRUCTURAL_QUALITY_BASELINE_BINDING_MISMATCH";
+export const E_STRUCTURAL_QUALITY_EVALUATION_INCOMPARABLE = "E_STRUCTURAL_QUALITY_EVALUATION_INCOMPARABLE";
+export const E_STRUCTURAL_QUALITY_EVIDENCE_STALE = "E_STRUCTURAL_QUALITY_EVIDENCE_STALE";
+export const E_STRUCTURAL_QUALITY_REGRESSION = "E_STRUCTURAL_QUALITY_REGRESSION";
+
+const STRUCTURAL_QUALITY_ERROR_METADATA = Object.freeze(Object.fromEntries([
+  [E_STRUCTURAL_QUALITY_CONFIGURATION_INVALID, "Correct structuralQuality mode, provider ID, budgets, floors, or optimization limits in .forgeloop/config.json."],
+  [E_STRUCTURAL_QUALITY_PROVIDER_INVALID, "Use a provider implementing id, detect(input), and scan(input) with the documented normalized boundary."],
+  [E_STRUCTURAL_QUALITY_PROVIDER_UNAVAILABLE, "Install or expose the requested provider outside ForgeLoop, or use observe mode and record the limitation; ForgeLoop never auto-installs it."],
+  [E_STRUCTURAL_QUALITY_PROVIDER_VERSION_UNSUPPORTED, "Use Sentrux 0.5.5 or newer, or select a compatible provider through trusted runtime context."],
+  [E_STRUCTURAL_QUALITY_PROVIDER_PROTOCOL_INVALID, "Repair the provider MCP handshake or response shape; malformed external data cannot become evidence."],
+  [E_STRUCTURAL_QUALITY_SCAN_FAILED, "Inspect the provider failure and rerun quality-baseline or quality-verify after the external analyzer is healthy."],
+  [E_STRUCTURAL_QUALITY_TIMEOUT, "Use a responsive provider or a bounded timeout within the supported limit; never promote a timed-out scan."],
+  [E_STRUCTURAL_QUALITY_OUTPUT_LIMIT, "Reduce provider output or diagnostics; the 2 MiB combined process-output limit is fail-closed."],
+  [E_STRUCTURAL_QUALITY_BASELINE_MISSING, "Run forgeloop quality-baseline --task <id> after PLANNED and before EXECUTING."],
+  [E_STRUCTURAL_QUALITY_BASELINE_EXISTS, "Use the existing immutable baseline or request --replace while the task is still before EXECUTING."],
+  [E_STRUCTURAL_QUALITY_BASELINE_PHASE_INVALID, "Baseline replacement is forbidden after EXECUTING; repair the current task against its original baseline."],
+  [E_STRUCTURAL_QUALITY_BASELINE_BINDING_MISMATCH, "Reconcile contract, route, policy, scope, provider, or rules drift before using the baseline."],
+  [E_STRUCTURAL_QUALITY_EVALUATION_INCOMPARABLE, "Restore the baseline provider/version/rules/policy/scope bindings and rerun quality-verify."],
+  [E_STRUCTURAL_QUALITY_EVIDENCE_STALE, "Rerun quality-verify in the active verification cycle and refresh completion through the canonical receipt pipeline."],
+  [E_STRUCTURAL_QUALITY_REGRESSION, "Use the bottleneck and root-cause deltas to record an evidence-backed diagnosis, correct within scope, and verify a new cycle."],
+].map(([code, safeResolution]) => [code, Object.freeze({
+  code,
+  category: "structural-quality",
+  classification: "PUBLIC_STABLE",
+  meaning: "Structural-quality evidence did not satisfy its provider, artifact, comparison, or lifecycle boundary.",
+  safeResolution,
+})])));
 
 const EXTENSION_PUBLIC_ERROR_CODES = Object.freeze(Object.fromEntries([
   E_WORKSPACE_IDENTITY_UNAVAILABLE,
@@ -227,6 +266,7 @@ export const E_TRAJECTORY_REFERENCE_REQUIRED = "E_TRAJECTORY_REFERENCE_REQUIRED"
  */
 export const PUBLIC_ERROR_CODES = Object.freeze({
   ...EXTENSION_PUBLIC_ERROR_CODES,
+  ...STRUCTURAL_QUALITY_ERROR_METADATA,
   E_PREFLIGHT_NOT_READY: Object.freeze({
     code: "E_PREFLIGHT_NOT_READY",
     category: "preflight",
@@ -1044,6 +1084,21 @@ export const ALL_KNOWN_ERROR_CODES = Object.freeze(new Set([
   E_USAGE_INVALID,
   E_USAGE_SOURCE_INVALID,
   E_EFFICIENCY_BASELINE_INVALID,
+  E_STRUCTURAL_QUALITY_CONFIGURATION_INVALID,
+  E_STRUCTURAL_QUALITY_PROVIDER_INVALID,
+  E_STRUCTURAL_QUALITY_PROVIDER_UNAVAILABLE,
+  E_STRUCTURAL_QUALITY_PROVIDER_VERSION_UNSUPPORTED,
+  E_STRUCTURAL_QUALITY_PROVIDER_PROTOCOL_INVALID,
+  E_STRUCTURAL_QUALITY_SCAN_FAILED,
+  E_STRUCTURAL_QUALITY_TIMEOUT,
+  E_STRUCTURAL_QUALITY_OUTPUT_LIMIT,
+  E_STRUCTURAL_QUALITY_BASELINE_MISSING,
+  E_STRUCTURAL_QUALITY_BASELINE_EXISTS,
+  E_STRUCTURAL_QUALITY_BASELINE_PHASE_INVALID,
+  E_STRUCTURAL_QUALITY_BASELINE_BINDING_MISMATCH,
+  E_STRUCTURAL_QUALITY_EVALUATION_INCOMPARABLE,
+  E_STRUCTURAL_QUALITY_EVIDENCE_STALE,
+  E_STRUCTURAL_QUALITY_REGRESSION,
   E_RECONCILE_NOT_STALE,
   E_RECONCILE_PHASE_INVALID,
   E_RECONCILE_UNSUPPORTED_DRIFT,

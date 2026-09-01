@@ -35,6 +35,7 @@ All artifact schemas are defined in `schemas/*.schema.json`. Persisted artifact 
 | `task-state/<task-key>/approvals/approval-<id>.json` | `approval` | Protocol Managed | Append Decision Once | Action Approval Attestation |
 | `policy/capabilities.json` | `capability-policy` | Operator Or Agent | Mutable Configuration | Capability Policy Specification |
 | `task-state/<task-key>/evaluations/eval-<id>.json` | `trajectory-evaluation` | Protocol Compiled | Immutable Once Written | Trajectory Evaluation |
+| `task-state/<task-key>/structural-quality/baseline.json` | `structural-quality` | Protocol Compiled | Baseline Immutable After Execution | Structural Quality Evidence |
 | `task-state/<task-key>/usage.json` | `usage` | Actor Or Trusted Host | Overwritten On Usage Record | Informational Usage Telemetry |
 | `task-state/<task-key>/workspace-binding.json` | `workspace-binding` | Protocol Generated | Immutable After Bind | Workspace Identity Binding |
 | `task-state/<task-key>/handoffs/handoff-<id>.json` | `handoff-envelope` | Protocol Compiled | Immutable Once Written | Canonical Handoff Snapshot |
@@ -165,6 +166,7 @@ Readiness attestation evaluated prior to implementation.
 - `fingerprints` *(object, optional)*
 - `sources` *(object, optional)*
 - `policy` *(object, optional)*
+- `structuralQuality` *(object, optional)*
 
 <!-- END FORGELOOP GENERATED: schema:preflight -->
 
@@ -250,6 +252,28 @@ Local ForgeLoop configuration settings and policy bindings.
 - `policy` *(string, optional, minLength: 1)*
 - `requiredGates` *(array<string>, optional)*
 - `requiredEvidence` *(array<string>, optional)*
+- `structuralQuality` *(object, optional)*
+  - `mode` *(string, optional, enum: `off`, `observe`, `gate`)*
+  - `provider` *(string, optional, pattern: `^[a-z][a-z0-9-]{0,63}$`)*
+  - `maxRegressionPoints` *(integer, optional)*
+  - `dimensionBudgets` *(dimensionMap, optional)*
+    - `modularity` *(integer, optional)*
+    - `acyclicity` *(integer, optional)*
+    - `depth` *(integer, optional)*
+    - `equality` *(integer, optional)*
+    - `redundancy` *(integer, optional)*
+  - `forbidNewCycles` *(boolean, optional)*
+  - `minQualitySignal` *(integer or null, optional)*
+  - `minimums` *(minimumMap, optional)*
+    - `modularity` *(integer, optional)*
+    - `acyclicity` *(integer, optional)*
+    - `depth` *(integer, optional)*
+    - `equality` *(integer, optional)*
+    - `redundancy` *(integer, optional)*
+  - `optimization` *(object, optional)*
+    - `mode` *(string, optional, enum: `off`, `bounded`)*
+    - `maxExtraEvaluations` *(integer, optional)*
+    - `minGainPoints` *(integer, optional)*
 - `verification` *(object, optional)*
   - `checkers` *(array<object>, required)*
     - `checkId` *(string, required, minLength: 1)*
@@ -1075,3 +1099,92 @@ back-reference itself from the execution receipt.
 Optional external signing-provider bundle. Its presence is not proof of a
 valid signature; verification must be performed by the configured signing
 provider with the requested identity and issuer policy.
+
+### 2.32 `task-state/<taskKey>/structural-quality/`
+
+<!-- forgeloop-doc: schema=structural-quality artifact=.forgeloop/task-state/<task-key>/structural-quality/baseline.json -->
+
+Task-owned provider-neutral structural-quality evidence. The directory contains
+one immutable `baseline.json` and zero or more typed evaluations under
+`evaluations/cycle-<cycle>-attempt-<attempt>.json`. There is deliberately no
+`latest.json`; readers derive the latest evaluation by numeric cycle and
+attempt ordering.
+
+The baseline is captured before execution and cannot be replaced after
+`EXECUTING` begins. Evaluations bind the current verification cycle to the
+baseline, contract, route, policy, scope, provider identity, and persisted
+check projection. Portable bundles include the evidence needed for audit and
+validate it without starting the provider.
+
+#### Canonical Fields
+
+<!-- BEGIN FORGELOOP GENERATED: schema:structural-quality -->
+
+- `schemaVersion` *(number, required, const: 1)*
+- `protocolVersion` *(number, required, const: 1)*
+- `role` *(string, required, enum: `BASELINE`, `EVALUATION`)*
+- `taskId` *(string, required, minLength: 1)*
+- `capturedAt` *(string, required, minLength: 1)*
+- `verificationCycle` *(integer or null, required)*
+- `attempt` *(integer, required)*
+- `status` *(string, required, enum: `PASS`, `FAIL`, `BLOCKED`, `NOT_OBSERVED`)*
+- `reasonCodes` *(array<string>, required)*
+- `errorCode` *(string or null, optional)*
+- `baselineSignal` *(integer or null, optional)*
+- `currentSignal` *(integer or null, optional)*
+- `bindings` *(object, required)*
+  - `contractFingerprint` *(string, required, pattern: `^[a-f0-9]{64}$`)*
+  - `routeFingerprint` *(string, required, pattern: `^[a-f0-9]{64}$`)*
+  - `policyFingerprint` *(string, required, pattern: `^[a-f0-9]{64}$`)*
+  - `scopeFingerprint` *(string, required, pattern: `^[a-f0-9]{64}$`)*
+  - `baselineFingerprint` *(string or null, optional)*
+  - `stateRevision` *(integer, optional)*
+- `provider` *(object, required)*
+  - `id` *(string, required, minLength: 1)*
+  - `version` *(string or null, required)*
+  - `transport` *(string, required, minLength: 1)*
+  - `executionMode` *(string, required, minLength: 1)*
+- `detection` *(object, optional)*
+  - `available` *(boolean, required)*
+  - `providerId` *(string, required, minLength: 1)*
+  - `providerVersion` *(string or null, optional)*
+  - `transport` *(string, required, minLength: 1)*
+  - `reasonCode` *(string or null, required)*
+- `scope` *(object, required)*
+  - `kind` *(string, required, const: `PROJECT`)*
+  - `projectRoot` *(string, required, const: `.`)*
+  - `rulesFingerprint` *(string or null, required)*
+- `snapshot` *(snapshot, optional)*
+  - `qualitySignal` *(integer, required)*
+  - `bottleneck` *(string, required, enum: `modularity`, `acyclicity`, `depth`, `equality`, `redundancy`)*
+  - `rootCauses` *(object, required)*
+    - `modularity` *(rootCause, required)*
+      - `score` *(integer, required)*
+      - `raw` *(number, required)*
+    - `acyclicity` *(rootCause, required)*
+      - `score` *(integer, required)*
+      - `raw` *(number, required)*
+    - `depth` *(rootCause, required)*
+      - `score` *(integer, required)*
+      - `raw` *(number, required)*
+    - `equality` *(rootCause, required)*
+      - `score` *(integer, required)*
+      - `raw` *(number, required)*
+    - `redundancy` *(rootCause, required)*
+      - `score` *(integer, required)*
+      - `raw` *(number, required)*
+  - `statistics` *(object, required)*
+    - `files` *(integer or null, required)*
+    - `lines` *(integer or null, required)*
+    - `importEdges` *(integer or null, required)*
+    - `crossModuleEdges` *(integer or null, required)*
+  - `diagnostics` *(object or null, required)*
+- `comparison` *(comparison, optional)*
+  - `comparable` *(boolean, required)*
+  - `qualityDelta` *(integer or null, required)*
+  - `rootCauseDeltas` *(object, required)*
+  - `failedConditions` *(array<string>, optional)*
+  - `status` *(string, required, enum: `PASS`, `FAIL`, `BLOCKED`, `NOT_OBSERVED`)*
+  - `reasonCodes` *(array<string>, required)*
+
+<!-- END FORGELOOP GENERATED: schema:structural-quality -->

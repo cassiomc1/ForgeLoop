@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "role": "BASELINE",
+  "taskId": "schema-fixture",
+  "capturedAt": "2026-09-01T00:00:00.000Z",
+  "verificationCycle": null,
+  "attempt": 1,
+  "status": "PASS",
+  "reasonCodes": [],
+  "bindings": {
+    "contractFingerprint": "not-a-fingerprint",
+    "routeFingerprint": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "policyFingerprint": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "scopeFingerprint": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+  },
+  "provider": {
+    "id": "sentrux",
+    "version": "0.5.7",
+    "transport": "mcp-stdio",
+    "executionMode": "NATIVE_PROCESS"
+  },
+  "scope": {
+    "kind": "PROJECT",
+    "projectRoot": ".",
+    "rulesFingerprint": null
+  },
+  "snapshot": null
+}

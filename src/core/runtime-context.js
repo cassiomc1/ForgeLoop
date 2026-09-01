@@ -3,6 +3,7 @@ import {
   isVerificationExecutionAdapter,
   normalizeVerificationExecutionPolicy,
 } from "./verification-execution.js";
+import { STRUCTURAL_QUALITY_PROVIDER_ID_PATTERN } from "./structural-quality/constants.js";
 
 export const AUTHORITY_TRUST_MODES = Object.freeze(["NONE", "HOST_ATTESTED"]);
 
@@ -104,6 +105,32 @@ export function createForgeLoopContext(options = {}) {
       throw error;
     }
     context.usageProvider = options.usageProvider;
+  }
+  if (options?.structuralQualityProviders !== undefined) {
+    const configured = options.structuralQualityProviders instanceof Map
+      ? Object.fromEntries(options.structuralQualityProviders.entries())
+      : options.structuralQualityProviders;
+    if (!configured || typeof configured !== "object" || Array.isArray(configured)) {
+      const error = new Error("structuralQualityProviders must be an object or Map");
+      error.code = "E_STRUCTURAL_QUALITY_PROVIDER_INVALID";
+      throw error;
+    }
+    const providers = {};
+    for (const [id, provider] of Object.entries(configured)) {
+      if (!STRUCTURAL_QUALITY_PROVIDER_ID_PATTERN.test(id) || id === "sentrux") {
+        const error = new Error(`Invalid or reserved structural-quality provider ID: ${id}`);
+        error.code = "E_STRUCTURAL_QUALITY_PROVIDER_INVALID";
+        throw error;
+      }
+      if (typeof provider !== "function"
+        && (!provider || typeof provider !== "object" || Array.isArray(provider))) {
+        const error = new Error(`Structural-quality provider ${id} must be an object or factory`);
+        error.code = "E_STRUCTURAL_QUALITY_PROVIDER_INVALID";
+        throw error;
+      }
+      providers[id] = provider;
+    }
+    context.structuralQualityProviders = Object.freeze(providers);
   }
   return Object.freeze(context);
 }

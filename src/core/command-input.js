@@ -60,6 +60,7 @@ export function defaultCommandInputValues() {
     checkExecutionRef: null,
     checkProvenance: null,
     timeoutMs: null,
+    replace: false,
     scopeRef: null,
     commandArgv: [],
     checkType: null,
@@ -129,6 +130,17 @@ export function validateForgeLoopCommandInput({ command, input, help = false } =
   }
   if (command === "efficiency" && !help && !options.taskId) {
     throw inputError("efficiency requires --task");
+  }
+  if (["quality-baseline", "quality-verify", "quality-status"].includes(command) && !help && !options.taskId) {
+    throw inputError(`${command} requires --task`);
+  }
+  if (["quality-baseline", "quality-verify"].includes(command) && !help
+    && options.timeoutMs !== null && options.timeoutMs !== undefined
+    && (!Number.isInteger(options.timeoutMs) || options.timeoutMs < 0 || options.timeoutMs > 300000)) {
+    throw inputError(`${command} --timeout-ms must be between 0 and 300000`);
+  }
+  if (command !== "quality-baseline" && options.replace === true) {
+    throw inputError(`--replace is only valid for quality-baseline`);
   }
   if (command !== "usage-record" && options.usageSource !== undefined && options.usageSource !== "ACTOR_REPORTED") {
     throw inputError(`usageSource is not valid for ${command}`);

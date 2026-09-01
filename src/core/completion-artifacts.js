@@ -25,6 +25,7 @@ import { taskArtifactPath, taskExecutionPath } from "./task-paths.js";
 import { assertClaimsCoverChangedPaths } from "./task-scope.js";
 import { discoverTasks } from "./task-discovery.js";
 import { listActions } from "./actions.js";
+import { STRUCTURAL_QUALITY_REQUIREMENT } from "./structural-quality/constants.js";
 
 async function actionReceiptSummary(target, packageRoot, taskId) {
   const actions = await listActions(target, { packageRoot, taskId });
@@ -239,6 +240,7 @@ export async function requiredEvidenceForTarget({
     ...(contract.value.successCriteria ?? []),
     ...guideEvidence,
     ...(config.requiredEvidence ?? []),
+    ...(config.structuralQuality?.mode === "gate" ? [STRUCTURAL_QUALITY_REQUIREMENT] : []),
     ...additionalEvidence,
   ])].sort();
 }

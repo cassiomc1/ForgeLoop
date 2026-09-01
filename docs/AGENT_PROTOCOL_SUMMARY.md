@@ -90,6 +90,7 @@ Phases: RECEIVED, DISCOVERING, CONTRACT_READY, ROUTED, DESIGNING, PLANNED, EXECU
 | observabilityStability | n/a | yes |
 | reflection | 1 | yes |
 | responsibilityConstraints | 1 | yes |
+| structuralQuality | 1 | yes |
 | structuredTrace | 1 | yes |
 | taskClaimRecovery | 1 | yes |
 | taskInspection | 1 | yes |
@@ -131,6 +132,7 @@ Phases: RECEIVED, DISCOVERING, CONTRACT_READY, ROUTED, DESIGNING, PLANNED, EXECU
 | session | SESSION | .forgeloop/sessions/<session-id>.json | activation | SESSION_MARKER |
 | sources | PROJECT | .forgeloop/sources.json | source-registry | SOURCE_ATTESTATION |
 | state | TASK | .forgeloop/task-state/<task-key>/work-state.json | work-state | CANONICAL_LIFECYCLE_STATE |
+| structuralQuality | TASK | .forgeloop/task-state/<task-key>/structural-quality/baseline.json | structural-quality | STRUCTURAL_QUALITY_EVIDENCE |
 | usage | TASK | .forgeloop/task-state/<task-key>/usage.json | usage | INFORMATIONAL_USAGE_TELEMETRY |
 | verificationScope | TASK | .forgeloop/task-state/<task-key>/verification-scope.json | verification-scope | VERIFICATION_SCOPE_PLAN |
 | workspaceBinding | TASK | .forgeloop/task-state/<task-key>/workspace-binding.json | workspace-binding | WORKSPACE_IDENTITY_BINDING |
@@ -252,6 +254,9 @@ Phases: RECEIVED, DISCOVERING, CONTRACT_READY, ROUTED, DESIGNING, PLANNED, EXECU
 | --- | --- | --- |
 | audit | READ_ONLY | Performs read-only evaluation of verification receipt coverage and gate satisfaction. |
 | prepare-completion | MUTATING | Initializes execution-receipt.json with empty requirement evidence slots for the active cycle. |
+| quality-baseline | EXTERNAL_EXECUTION | Captures an immutable provider-neutral structural-quality baseline through the trusted analyzer adapter. |
+| quality-status | READ_ONLY | Projects persisted structural-quality baseline and evaluation status without invoking a provider. |
+| quality-verify | EXTERNAL_EXECUTION | Captures one bounded structural-quality evaluation and projects it into canonical verification evidence. |
 | record-check | MUTATING | Records structured verification evidence (command, manual review, or test output) against a requirement. |
 | record-terminal-result | MUTATING | Records external terminal result evidence (PUBLICATION or PRODUCTION_READINESS) into receipt. |
 | report | READ_ONLY | Emits a human-readable or structured JSON summary report of protocol state. |

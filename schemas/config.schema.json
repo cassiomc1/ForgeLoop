@@ -12,6 +12,28 @@
     "policy": { "type": "string", "minLength": 1 },
     "requiredGates": { "type": "array", "items": { "type": "string", "minLength": 1 } },
     "requiredEvidence": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "structuralQuality": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": { "enum": ["off", "observe", "gate"] },
+        "provider": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,63}$" },
+        "maxRegressionPoints": { "type": "integer" },
+        "dimensionBudgets": { "$ref": "#/$defs/dimensionMap" },
+        "forbidNewCycles": { "type": "boolean" },
+        "minQualitySignal": { "oneOf": [{ "type": "integer" }, { "type": "null" }] },
+        "minimums": { "$ref": "#/$defs/minimumMap" },
+        "optimization": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mode": { "enum": ["off", "bounded"] },
+            "maxExtraEvaluations": { "type": "integer" },
+            "minGainPoints": { "type": "integer" }
+          }
+        }
+      }
+    },
     "verification": {
       "type": "object",
       "required": ["checkers"],
@@ -67,6 +89,30 @@
           }
         }
       }
+    }
+  },
+  "$defs": {
+    "dimensionMap": {
+      "type": "object",
+      "properties": {
+        "modularity": { "type": "integer" },
+        "acyclicity": { "type": "integer" },
+        "depth": { "type": "integer" },
+        "equality": { "type": "integer" },
+        "redundancy": { "type": "integer" }
+      },
+      "additionalProperties": false
+    },
+    "minimumMap": {
+      "type": "object",
+      "properties": {
+        "modularity": { "type": "integer" },
+        "acyclicity": { "type": "integer" },
+        "depth": { "type": "integer" },
+        "equality": { "type": "integer" },
+        "redundancy": { "type": "integer" }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false

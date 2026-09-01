@@ -18,6 +18,7 @@ import { resolveResponsibilityStatus } from "./responsibility.js";
 import { readVerificationScope } from "./verification-scope.js";
 import { resolveAttestationStatus } from "./attestation.js";
 import { buildExecutionProfileContext } from "./execution-profile-context.js";
+import { projectStructuralQualityStatus } from "./structural-quality/service.js";
 
 /**
  * Canonical integration resource allowlist.
@@ -77,6 +78,7 @@ export const INTEGRATION_RESOURCE_DEFINITIONS = Object.freeze({
     scope: "TASK",
     description: "Local code-attestation status and trust level for one task.",
   }),
+  "task/structural-quality": Object.freeze({ scope: "TASK", description: "Read-only structural-quality baseline, evaluation, comparison, and next-action projection." }),
   "task/actions": Object.freeze({ scope: "TASK", description: "Canonical durable action summaries for one task." }),
   "task/action": Object.freeze({ scope: "TASK", description: "One canonical durable action artifact." }),
   "task/approvals": Object.freeze({ scope: "TASK", description: "Durable approval artifacts for one task." }),
@@ -157,6 +159,14 @@ export async function readForgeLoopIntegrationResource(uri, {
       }
       break;
     }
+    case "task/structural-quality": {
+      if (typeof taskId !== "string" || !taskId) {
+        const error = new Error(`Resource ${uri} requires a taskId`);
+        error.code = "E_TASK_REQUIRED";
+        throw error;
+      }
+      break;
+    }
     case "task/actions":
     case "task/action":
     case "task/approvals":
@@ -173,6 +183,13 @@ export async function readForgeLoopIntegrationResource(uri, {
   if (uri === "task/ownership") {
     const projection = await resolveTaskClaimState(projectPath, { taskId, packageRoot });
     return { uri, taskId, data: ownershipProjection(projection) };
+  }
+  if (uri === "task/structural-quality") {
+    return {
+      uri,
+      taskId,
+      data: await projectStructuralQualityStatus({ projectRoot: projectPath, target: projectPath, packageRoot, taskId }),
+    };
   }
   if (uri === "task/workspace-binding") {
     return { uri, taskId, data: await resolveWorkspaceBindingStatus(projectPath, { packageRoot, taskId }) };

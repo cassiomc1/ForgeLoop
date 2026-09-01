@@ -323,6 +323,20 @@
       "packaged": true
     },
     {
+      "path": "docs/STRUCTURAL_QUALITY.md",
+      "id": "structural-quality",
+      "class": "guide",
+      "audience": [
+        "user",
+        "integrator",
+        "maintainer"
+      ],
+      "canonicalFor": [
+        "structural-quality-feedback"
+      ],
+      "packaged": true
+    },
+    {
       "path": "docs/DOCUMENTATION_GUIDE.md",
       "id": "documentation-guide",
       "class": "guide",

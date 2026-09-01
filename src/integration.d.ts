@@ -60,7 +60,32 @@ export interface ForgeLoopContext {
   verificationExecutionAdapter?: Record<string, unknown>;
   verificationExecutionPolicy?: { requiredIsolation: string };
   usageProvider?: ForgeLoopUsageProvider;
+  structuralQualityProviders?: Readonly<Record<string, ForgeLoopStructuralQualityProvider | ForgeLoopStructuralQualityProviderFactory>>;
 }
+
+export interface ForgeLoopStructuralQualityProviderInput {
+  projectPath: string;
+  taskId: string;
+  timeoutMs: number;
+  maxOutputBytes: number;
+}
+
+export interface ForgeLoopStructuralQualityProvider {
+  id: string;
+  detect(input: ForgeLoopStructuralQualityProviderInput): Promise<Record<string, unknown>> | Record<string, unknown>;
+  scan(input: ForgeLoopStructuralQualityProviderInput): Promise<Record<string, unknown>> | Record<string, unknown>;
+}
+
+export type ForgeLoopStructuralQualityProviderFactory = (input: ForgeLoopStructuralQualityProviderInput) => ForgeLoopStructuralQualityProvider | Promise<ForgeLoopStructuralQualityProvider>;
+
+export declare const STRUCTURAL_QUALITY_ROOT_CAUSES: readonly ["modularity", "acyclicity", "depth", "equality", "redundancy"];
+export declare const STRUCTURAL_QUALITY_MODES: readonly ["off", "observe", "gate"];
+export declare const STRUCTURAL_QUALITY_STATUSES: readonly ["PASS", "FAIL", "BLOCKED", "NOT_OBSERVED"];
+export declare const STRUCTURAL_QUALITY_CHECK_ID: "structural-quality";
+export declare const STRUCTURAL_QUALITY_REQUIREMENT: string;
+export declare function assertStructuralQualityProvider(provider: unknown): ForgeLoopStructuralQualityProvider;
+export declare function normalizeStructuralQualitySnapshot(input: unknown, options?: { projectPath?: string | null }): Record<string, unknown>;
+export declare function normalizeStructuralQualityDetection(input?: Record<string, unknown>, defaults?: Record<string, unknown>): Record<string, unknown>;
 
 export interface ForgeLoopUsageProvider {
   getTaskUsage(input: { projectPath: string; taskId: string }): Promise<ForgeLoopUsage | Record<string, unknown>> | ForgeLoopUsage | Record<string, unknown>;

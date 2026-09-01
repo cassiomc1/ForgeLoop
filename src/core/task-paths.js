@@ -26,6 +26,7 @@ export const TASK_ARTIFACT_FILES = Object.freeze({
   responsibility: "responsibility.json",
   verificationScope: "verification-scope.json",
   attestations: "attestations",
+  structuralQuality: "structural-quality",
 });
 
 export const POLICY_ROOT = ".forgeloop/policy";
@@ -156,6 +157,28 @@ export function taskAttestationHistoryDirectory(taskId, verificationCycle) {
   return `${taskAttestationDirectory(taskId)}/history/cycle-${verificationCycle}`;
 }
 
+export function taskStructuralQualityDirectory(taskId) {
+  return `${taskDirectory(taskId)}/${TASK_ARTIFACT_FILES.structuralQuality}`;
+}
+
+export function taskStructuralQualityBaselinePath(taskId) {
+  return `${taskStructuralQualityDirectory(taskId)}/baseline.json`;
+}
+
+export function taskStructuralQualityEvaluationsDirectory(taskId) {
+  return `${taskStructuralQualityDirectory(taskId)}/evaluations`;
+}
+
+export function taskStructuralQualityEvaluationPath(taskId, verificationCycle, attempt) {
+  if (!Number.isInteger(verificationCycle) || verificationCycle < 1) {
+    throw new Error(`Invalid structural quality verification cycle: ${verificationCycle}`);
+  }
+  if (!Number.isInteger(attempt) || attempt < 1) {
+    throw new Error(`Invalid structural quality evaluation attempt: ${attempt}`);
+  }
+  return `${taskStructuralQualityEvaluationsDirectory(taskId)}/cycle-${verificationCycle}-attempt-${attempt}.json`;
+}
+
 export function taskCodeManifestHistoryPath(taskId, verificationCycle) {
   return `${taskAttestationHistoryDirectory(taskId, verificationCycle)}/code-manifest.json`;
 }
@@ -203,6 +226,7 @@ export function buildTaskArtifactPaths(taskId) {
     responsibility: `${dir}/${TASK_ARTIFACT_FILES.responsibility}`,
     verificationScope: `${dir}/${TASK_ARTIFACT_FILES.verificationScope}`,
     attestations: `${dir}/${TASK_ARTIFACT_FILES.attestations}`,
+    structuralQuality: `${dir}/${TASK_ARTIFACT_FILES.structuralQuality}`,
     codeManifest: taskCodeManifestPath(taskId),
     attestationStatement: taskAttestationStatementPath(taskId),
     attestationBundle: taskAttestationBundlePath(taskId),

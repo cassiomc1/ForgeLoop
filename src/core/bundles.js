@@ -8,7 +8,7 @@ import { validateChecksExecutionProvenance } from "./completion-artifacts.js";
 import { readExecutionArtifact } from "./execution.js";
 import { assertContinuitySemantics } from "./continuity.js";
 import { validateEventLedger } from "./events.js";
-import { taskArtifactPath, taskDirectory } from "./task-paths.js";
+import { taskArtifactPath, taskDirectory, taskStructuralQualityDirectory } from "./task-paths.js";
 import { resolveTaskClaimState } from "./task-claim-state.js";
 import { E_TASK_CLAIM_OWNERSHIP_INCONSISTENT } from "./error-codes.js";
 import { listActions } from "./actions.js";
@@ -19,6 +19,13 @@ import { validateWorkspaceBinding } from "./workspace-binding.js";
 import { validateCodeManifest, validateCodeManifestBindings } from "./code-manifest.js";
 import { assertAttestationStatementBindings } from "./attestation-verifier.js";
 import { validateAttestationStatement } from "./attestation.js";
+import {
+  listStructuralQualityEvaluations,
+  readStructuralQualityBaseline,
+  validateStructuralQualityArtifact,
+  validateStructuralQualityBindings,
+} from "./structural-quality/artifacts.js";
+import { normalizeStructuralQualityConfig, structuralQualityPolicyFingerprint } from "./structural-quality/policy.js";
 
 export const BUNDLE_SCHEMA_VERSION = 1;
 const BUNDLE_ROOT = ".forgeloop/tasks";
@@ -40,6 +47,96 @@ function bundleBindingError(code, message) {
   const error = new Error(message);
   error.code = code;
   return error;
+}
+
+function structuralQualityBundleKind(artifact) {
+  if (artifact === "structural-quality/baseline.json") return "baseline";
+  if (/^structural-quality\/evaluations\/cycle-\d+-attempt-\d+\.json$/u.test(artifact)) return "evaluation";
+  if (artifact.startsWith("structural-quality/")) {
+    throw bundleBindingError("E_BUNDLE_PATH_INVALID", `Unknown structural-quality bundle artifact: ${artifact}`);
+  }
+  return null;
+}
+
+function bundleQualityReference(reference, taskId) {
+  if (typeof reference !== "string" || reference.trim() === "") {
+    throw bundleBindingError("E_STRUCTURAL_QUALITY_EVIDENCE_STALE", "Structural-quality check has no artifact reference");
+  }
+  const normalized = reference.replaceAll("\\", "/");
+  const sourceRoot = taskStructuralQualityDirectory(taskId).replaceAll("\\", "/");
+  const suffix = normalized.startsWith(`${sourceRoot}/`)
+    ? normalized.slice(sourceRoot.length + 1)
+    : normalized.startsWith("structural-quality/")
+      ? normalized.slice("structural-quality/".length)
+      : null;
+  if (!suffix || !(suffix === "baseline.json" || /^evaluations\/cycle-\d+-attempt-\d+\.json$/u.test(suffix))) {
+    throw bundleBindingError("E_STRUCTURAL_QUALITY_EVIDENCE_STALE", "Structural-quality artifact reference escapes its task quality directory");
+  }
+  return `structural-quality/${suffix}`;
+}
+
+function structuralQualityCheckProjection(value) {
+  if (value.status === "PASS") return { status: "passed", evidenceKind: "OBSERVED" };
+  if (value.status === "FAIL") return { status: "failed", evidenceKind: "OBSERVED" };
+  if (value.status === "BLOCKED") return { status: "blocked", evidenceKind: "BLOCKED" };
+  return { status: "not-run", evidenceKind: "NOT_VERIFIED" };
+}
+
+function assertStructuralQualityBundleEvidence({ loaded, manifest, taskId }) {
+  const quality = loaded.structuralQuality;
+  if (!quality) return;
+  const baseline = quality.baseline;
+  const evaluations = quality.evaluations ?? [];
+  const qualityArtifacts = new Map();
+  if (baseline) qualityArtifacts.set("structural-quality/baseline.json", baseline);
+  for (const evaluation of evaluations) {
+    const name = `structural-quality/evaluations/cycle-${evaluation.verificationCycle}-attempt-${evaluation.attempt}.json`;
+    qualityArtifacts.set(name, evaluation);
+  }
+  for (const value of [baseline, ...evaluations].filter(Boolean)) {
+    if (value.taskId !== taskId) throw bundleBindingError("E_BUNDLE_TASK_MISMATCH", "Structural-quality artifact taskId does not match its bundle task");
+    const bindingErrors = validateStructuralQualityBindings(value);
+    if (bindingErrors.length > 0) throw bundleBindingError(bindingErrors[0].code, bindingErrors[0].message);
+  }
+  const baselineFingerprint = baseline ? canonicalFingerprint(baseline) : null;
+  const bundledConfig = loaded.config?.structuralQuality;
+  let policy = null;
+  if (bundledConfig) policy = normalizeStructuralQualityConfig(bundledConfig);
+  const expectedContractFingerprint = loaded.contract ? canonicalFingerprint(loaded.contract) : null;
+  const expectedRouteFingerprint = loaded.route ? canonicalFingerprint(loaded.route) : null;
+  for (const value of [baseline, ...evaluations].filter(Boolean)) {
+    if (baselineFingerprint && value.role === "EVALUATION" && value.bindings?.baselineFingerprint !== baselineFingerprint) {
+      throw bundleBindingError("E_STRUCTURAL_QUALITY_BASELINE_BINDING_MISMATCH", "Structural-quality evaluation does not bind the bundled baseline");
+    }
+    if (policy && value.bindings?.policyFingerprint !== structuralQualityPolicyFingerprint(policy)) {
+      throw bundleBindingError("E_STRUCTURAL_QUALITY_BASELINE_BINDING_MISMATCH", "Structural-quality artifact policy binding does not match bundled configuration");
+    }
+    if (expectedContractFingerprint && value.bindings?.contractFingerprint !== expectedContractFingerprint) {
+      throw bundleBindingError("E_STRUCTURAL_QUALITY_BASELINE_BINDING_MISMATCH", "Structural-quality contract binding does not match the bundled contract");
+    }
+    if (expectedRouteFingerprint && value.bindings?.routeFingerprint !== expectedRouteFingerprint) {
+      throw bundleBindingError("E_STRUCTURAL_QUALITY_BASELINE_BINDING_MISMATCH", "Structural-quality route binding does not match the bundled route");
+    }
+  }
+  const checks = [
+    ...(loaded.state?.checks ?? []),
+    ...(loaded.receipt?.checks ?? []),
+  ].filter((check) => check?.kind === "structural-quality");
+  for (const check of checks) {
+    const bundleReference = bundleQualityReference(check.details?.artifactRef, taskId);
+    const value = qualityArtifacts.get(bundleReference);
+    if (!value) throw bundleBindingError("E_STRUCTURAL_QUALITY_EVIDENCE_STALE", `Bundled structural-quality check references missing ${bundleReference}`);
+    if (check.details?.artifactFingerprint !== canonicalFingerprint(value)) {
+      throw bundleBindingError("E_STRUCTURAL_QUALITY_EVIDENCE_STALE", `Bundled structural-quality check fingerprint does not match ${bundleReference}`);
+    }
+    const expected = structuralQualityCheckProjection(value);
+    if (check.status !== expected.status || check.evidenceKind !== expected.evidenceKind) {
+      throw bundleBindingError("E_STRUCTURAL_QUALITY_EVIDENCE_STALE", `Bundled structural-quality check does not match ${bundleReference}`);
+    }
+  }
+  for (const artifact of manifest.artifacts.filter((item) => item.startsWith("structural-quality/"))) {
+    if (!qualityArtifacts.has(artifact)) throw bundleBindingError("E_STRUCTURAL_QUALITY_EVIDENCE_STALE", `Bundled structural-quality manifest entry was not loaded: ${artifact}`);
+  }
 }
 
 function assertBundledCodeManifestBindings({ loaded, ledger, taskId }) {
@@ -191,6 +288,22 @@ export async function exportTaskBundle(target, taskId, packageRoot) {
     if (destinationName === "verification-scope.json") exportedVerificationScope = copied;
   }
 
+  // Structural-quality evidence is provider output made portable by
+  // ForgeLoop. Copy typed artifacts rather than raw process output, and keep
+  // every immutable evaluation so an audit can inspect the complete attempt
+  // history without rescanning the project.
+  const qualityBaseline = await readStructuralQualityBaseline(target, taskId, packageRoot);
+  const qualityEvaluations = await listStructuralQualityEvaluations(target, taskId, packageRoot);
+  if (qualityBaseline) {
+    await writeJsonArtifact(target, `${directory}/structural-quality/baseline.json`, qualityBaseline.value, "structural-quality", packageRoot);
+    artifacts.push("structural-quality/baseline.json");
+  }
+  for (const evaluation of qualityEvaluations) {
+    const destination = `structural-quality/evaluations/cycle-${evaluation.value.verificationCycle}-attempt-${evaluation.value.attempt}.json`;
+    await writeJsonArtifact(target, `${directory}/${destination}`, evaluation.value, "structural-quality", packageRoot);
+    artifacts.push(destination);
+  }
+
   if (exportedWorkspaceBinding?.value) {
     exportedWorkspaceBinding.value = await validateWorkspaceBinding(exportedWorkspaceBinding.value, packageRoot);
     if (exportedWorkspaceBinding.value.taskId !== taskId) {
@@ -335,6 +448,22 @@ export async function readTaskBundle(target, taskId, packageRoot) {
   };
   const executions = {};
   for (const artifact of manifest.value.artifacts) {
+    const qualityKind = structuralQualityBundleKind(artifact);
+    if (qualityKind) {
+      const qualityArtifact = await readJsonArtifact(target, `${directory}/${artifact}`, "structural-quality", packageRoot);
+      validateStructuralQualityArtifact(qualityArtifact.value, artifact);
+      if (qualityArtifact.value.taskId !== taskId) {
+        throw bundleBindingError("E_BUNDLE_TASK_MISMATCH", `Structural-quality ${qualityKind} taskId does not match its bundle task`);
+      }
+      loaded.structuralQuality ??= { baseline: null, evaluations: [] };
+      if (qualityKind === "baseline") {
+        if (loaded.structuralQuality.baseline) throw bundleBindingError("E_STRUCTURAL_QUALITY_EVIDENCE_STALE", "A bundle cannot contain more than one structural-quality baseline");
+        loaded.structuralQuality.baseline = qualityArtifact.value;
+      } else {
+        loaded.structuralQuality.evaluations.push(qualityArtifact.value);
+      }
+      continue;
+    }
     if (artifact.startsWith("executions/") && artifact.endsWith(".json")) {
       const execution = await readJsonArtifact(target, `${directory}/${artifact}`, "execution", packageRoot);
       executions[execution.value.executionId] = execution.value;
@@ -414,6 +543,10 @@ export async function readTaskBundle(target, taskId, packageRoot) {
       }
     }
     loaded[mapping[0]] = loadedArtifact.value;
+  }
+  if (loaded.structuralQuality) {
+    loaded.structuralQuality.evaluations.sort((left, right) => left.verificationCycle - right.verificationCycle || left.attempt - right.attempt);
+    assertStructuralQualityBundleEvidence({ loaded, manifest: manifest.value, taskId });
   }
   const bundledLedger = loaded.codeManifest && manifest.value.artifacts.includes("events.ndjson")
     ? await validateEventLedger(target, packageRoot, { taskId, eventsPath: `${directory}/events.ndjson` })

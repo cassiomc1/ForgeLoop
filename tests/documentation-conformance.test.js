@@ -225,7 +225,7 @@ test("negative fixtures & mutation tests: validateDocumentationConformance detec
       await writeFile(docFile, docContent, "utf8");
 
       // Mutation 2: execution.exitCode corrupted to integer only
-      const mutDoc2 = mustReplace(docContent, "integer or null", "integer", `execution.exitCode (${eol === "\n" ? "LF" : "CRLF"})`);
+      const mutDoc2 = mustReplace(docContent, "- `exitCode` *(integer or null, required)", "- `exitCode` *(integer, required)", `execution.exitCode (${eol === "\n" ? "LF" : "CRLF"})`);
       await writeFile(docFile, mutDoc2, "utf8");
       const mut2 = await validateDocumentationConformance({ rootDir: tempDir });
       assert.equal(mut2.valid, false);

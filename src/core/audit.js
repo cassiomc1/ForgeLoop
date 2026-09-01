@@ -11,6 +11,7 @@ import { validateActionLedgerConsistency } from "./actions.js";
 import { readCodeManifest } from "./code-manifest.js";
 import { readAttestationStatement, validateAttestationStatement } from "./attestation.js";
 import { assertAttestationStatementBindings, verifyCodeManifestContent } from "./attestation-verifier.js";
+import { projectStructuralQualityStatus } from "./structural-quality/status.js";
 
 function sortErrors(errors) {
   return [...errors].sort((left, right) => left.code.localeCompare(right.code)
@@ -244,6 +245,33 @@ export async function evaluateAudit({
     policyStatus = { status: "NOT_APPLICABLE", provenRules: 0, inertRules: 0, unsupportedRules: 0, baselineViolations: 0, drift: false };
   }
 
+  let structuralQuality = {
+    mode: "off",
+    provider: null,
+    baseline: { status: "NOT_REQUESTED", qualitySignal: null, artifactRef: null, fingerprint: null },
+    current: { status: "NOT_OBSERVED", verificationCycle: null, attempt: null, qualitySignal: null, delta: null, bottleneck: null, artifactRef: null },
+    comparable: null,
+    completionRequired: false,
+    reasonCodes: [],
+    next: null,
+  };
+  if (taskId) {
+    try {
+      structuralQuality = await projectStructuralQualityStatus({ target, packageRoot, taskId });
+    } catch (error) {
+      structuralQuality = {
+        ...structuralQuality,
+        mode: "unknown",
+        reasonCodes: [error.code ?? "E_STRUCTURAL_QUALITY_EVIDENCE_STALE"],
+      };
+    }
+  }
+  const qualityEvidenceKind = structuralQuality.current.status === "PASS" || structuralQuality.current.status === "FAIL"
+    ? "OBSERVED"
+    : structuralQuality.current.status === "BLOCKED" || (structuralQuality.mode === "gate" && structuralQuality.baseline.status !== "OBSERVED")
+      ? "BLOCKED"
+      : structuralQuality.mode === "off" ? "NOT_REQUESTED" : "NOT_VERIFIED";
+
   return {
     schemaVersion: 1,
     protocolVersion: PROTOCOL_VERSION,
@@ -256,6 +284,15 @@ export async function evaluateAudit({
       manifest: Boolean(manifest),
     },
     policy: policyStatus,
+    structuralQuality: {
+      ...structuralQuality,
+      policy: structuralQuality.mode === "off" ? null : {
+        mode: structuralQuality.mode,
+        provider: structuralQuality.provider,
+        result: structuralQuality.current.status,
+      },
+      evidenceKind: qualityEvidenceKind,
+    },
     completion,
     attestation: {
       mode: attestation.mode,
@@ -282,6 +319,7 @@ export async function evaluateAudit({
       route: routeRel,
       state: stateRel,
       receipt: receiptRel,
+      structuralQuality: taskId ? taskArtifactPath(taskId, "structuralQuality") : null,
     },
   };
 }

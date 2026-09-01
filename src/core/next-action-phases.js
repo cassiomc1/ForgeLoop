@@ -1,5 +1,5 @@
 import { ARTIFACT_PATHS, readJsonArtifact } from "./artifacts.js";
-import { taskArtifactPath } from "./task-paths.js";
+import { taskArtifactPath, taskStructuralQualityDirectory } from "./task-paths.js";
 import { completionIdentityErrors, evaluateCompletion } from "./completion.js";
 import { readContract } from "./contract.js";
 import { evaluatePreflight, validatePersistedPreflight } from "./preflight.js";
@@ -20,6 +20,7 @@ import { listActions } from "./actions.js";
 import { listApprovals } from "./approvals.js";
 import { loadPolicyIdentity } from "./policy-engine.js";
 import { evaluateContinuityNextAction } from "./next-action-continuity.js";
+import { projectStructuralQualityStatus } from "./structural-quality/service.js";
 
 export const PHASES_REQUIRING_EXECUTION_CHRONOLOGY = new Set([
   "EXECUTING",
@@ -506,6 +507,16 @@ export async function resolveNextActionPhase({
     return decision(context, NEXT_ACTIONS.PLAN, artifactError("PHASE_DESIGNING", "Required gates are ready for planning"));
   }
   if (state.phase === "PLANNED") {
+    const quality = await projectStructuralQualityStatus({ target, packageRoot, taskId: explicitTaskId ?? state.taskId });
+    if (quality.mode === "gate" && quality.baseline.status !== "OBSERVED") {
+      return result({
+        ...context,
+        nextAction: NEXT_ACTIONS.CAPTURE_STRUCTURAL_QUALITY_BASELINE,
+        commands: [commandFor(NEXT_ACTIONS.CAPTURE_STRUCTURAL_QUALITY_BASELINE).replace("<id>", state.taskId)],
+        reasons: [artifactError("E_STRUCTURAL_QUALITY_BASELINE_MISSING", "Gate mode requires a structural-quality baseline before execution", [quality.baseline.artifactRef ?? taskArtifactPath(state.taskId, "structuralQuality")])],
+        requiredArtifacts: [taskArtifactPath(state.taskId, "structuralQuality")],
+      });
+    }
     const prerequisites = await evaluateStartExecutionPrerequisites({ target, state, packageRoot, taskId: explicitTaskId });
     if (prerequisites.errors.length > 0) {
       const preflightOnly = prerequisites.errors.every((error) => error.code.startsWith("E_PREFLIGHT_")
@@ -538,6 +549,32 @@ export async function resolveNextActionPhase({
     return decision(context, NEXT_ACTIONS.ENTER_VERIFYING, artifactError("PHASE_EXECUTING", "Execution is complete enough to enter verification"));
   }
   if (state.phase === "VERIFYING") {
+    const quality = await projectStructuralQualityStatus({ target, packageRoot, taskId: explicitTaskId ?? state.taskId });
+    if (quality.mode === "gate") {
+      if (quality.baseline.status !== "OBSERVED") {
+        return result({
+          ...context,
+          nextAction: NEXT_ACTIONS.RESOLVE_STRUCTURAL_QUALITY_BLOCKER,
+          reasons: [artifactError("E_STRUCTURAL_QUALITY_BASELINE_MISSING", "Structural-quality gate cannot verify without its immutable baseline", [taskArtifactPath(state.taskId, "structuralQuality")])],
+          requiredArtifacts: [taskArtifactPath(state.taskId, "structuralQuality")],
+        });
+      }
+      if (!quality.current.artifactRef || quality.current.verificationCycle !== (state.verificationCycle ?? 1)) {
+        return result({
+          ...context,
+          nextAction: NEXT_ACTIONS.VERIFY_STRUCTURAL_QUALITY,
+          commands: [commandFor(NEXT_ACTIONS.VERIFY_STRUCTURAL_QUALITY).replace("<id>", state.taskId)],
+          reasons: [artifactError("E_STRUCTURAL_QUALITY_EVIDENCE_STALE", "The current verification cycle has no structural-quality evaluation", [taskStructuralQualityDirectory(state.taskId)])],
+          requiredArtifacts: [taskStructuralQualityDirectory(state.taskId)],
+        });
+      }
+      if (quality.current.status === "FAIL") {
+        return decision(context, NEXT_ACTIONS.DIAGNOSE_STRUCTURAL_QUALITY_REGRESSION, artifactError("E_STRUCTURAL_QUALITY_REGRESSION", "Structural-quality verification detected a regression", [quality.current.artifactRef]));
+      }
+      if (quality.current.status === "BLOCKED") {
+        return decision(context, NEXT_ACTIONS.RESOLVE_STRUCTURAL_QUALITY_BLOCKER, artifactError("E_STRUCTURAL_QUALITY_EVALUATION_INCOMPARABLE", "Structural-quality verification is blocked", [quality.current.artifactRef]));
+      }
+    }
     const invalidChecks = checkListReasons(state);
     if (invalidChecks.length > 0) {
       return result({

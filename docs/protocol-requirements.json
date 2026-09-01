@@ -60,6 +60,18 @@
       "statement": "A signing integration MUST keep private keys, OIDC tokens, and credentials outside ForgeLoop artifacts.",
       "tests": ["tests/signing-provider.test.js"],
       "validator": "src/core/signing/"
+    },
+    "FL-SQ-001": {
+      "source": "LOOP_ENGINEERING.md",
+      "statement": "Structural-quality evidence MUST remain provider-neutral, task-bound, delta-first, and separate from behavioral, security, performance, accessibility, and publication truth.",
+      "tests": ["tests/structural-quality-policy.test.js", "tests/structural-quality-lifecycle.test.js"],
+      "validator": "src/core/structural-quality/service.js"
+    },
+    "FL-SQ-002": {
+      "source": "PROTOCOL_INTEGRATION.md",
+      "statement": "A structural-quality integration MUST preserve unavailable, malformed, stale, incomparable, and blocked provider results without promoting them to PASS.",
+      "tests": ["tests/sentrux-structural-quality-provider.test.js", "tests/structural-quality-artifacts.test.js"],
+      "validator": "src/core/structural-quality/provider.js"
     }
   }
 }

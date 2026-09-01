@@ -55,6 +55,7 @@
     "docs/ARTIFACT_REFERENCE.md",
     "docs/TROUBLESHOOTING.md",
     "docs/RECIPES.md",
+    "docs/STRUCTURAL_QUALITY.md",
     "docs/DOCUMENTATION_GUIDE.md",
     "docs/RELEASE_CHECKLIST.md",
     "scripts/CI_VALIDATORS.md",

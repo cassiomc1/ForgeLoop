@@ -18,6 +18,7 @@ import { readConfig } from "./config.js";
 import { resolveResponsibilityStatus } from "./responsibility.js";
 import { createCodeManifest, readCodeManifest, validateCodeManifestBindings, writeCodeManifest } from "./code-manifest.js";
 import { getActiveTaskTransaction, withTaskTransaction } from "./transaction.js";
+import { validateStructuralQualityCheckProvenance } from "./structural-quality/service.js";
 
 async function attestationConfiguration(target, packageRoot, errors) {
   try {
@@ -157,6 +158,26 @@ function repairNext(error) {
       return "Do not execute installation-capable verification commands without explicit scoped installation authority; use local equivalents or record NOT_VERIFIED.";
     case "E_VERIFICATION_TOOL_UNAVAILABLE":
       return "Use an available local verifier, an existing equivalent, or record NOT_VERIFIED if installation was not authorized.";
+    case "E_STRUCTURAL_QUALITY_CONFIGURATION_INVALID":
+      return "Repair structuralQuality configuration in .forgeloop/config.json and rerun preflight.";
+    case "E_STRUCTURAL_QUALITY_PROVIDER_UNAVAILABLE":
+    case "E_STRUCTURAL_QUALITY_PROVIDER_PROTOCOL_INVALID":
+    case "E_STRUCTURAL_QUALITY_SCAN_FAILED":
+    case "E_STRUCTURAL_QUALITY_TIMEOUT":
+    case "E_STRUCTURAL_QUALITY_OUTPUT_LIMIT":
+      return "Restore the trusted structural-quality provider and rerun quality-verify; do not promote an unavailable or malformed scan.";
+    case "E_STRUCTURAL_QUALITY_BASELINE_MISSING":
+      return "Run forgeloop quality-baseline --task <id> while the task is PLANNED, before execution begins.";
+    case "E_STRUCTURAL_QUALITY_BASELINE_EXISTS":
+    case "E_STRUCTURAL_QUALITY_BASELINE_PHASE_INVALID":
+      return "Keep the original baseline and correct the task against it; baseline replacement is only allowed before EXECUTING.";
+    case "E_STRUCTURAL_QUALITY_BASELINE_BINDING_MISMATCH":
+    case "E_STRUCTURAL_QUALITY_EVALUATION_INCOMPARABLE":
+      return "Reconcile provider, version, rules, policy, scope, contract, or route drift, then rerun quality-verify in the active cycle.";
+    case "E_STRUCTURAL_QUALITY_EVIDENCE_STALE":
+      return "Run quality-verify for the current verification cycle and refresh the receipt through the canonical completion pipeline.";
+    case "E_STRUCTURAL_QUALITY_REGRESSION":
+      return "Use the bottleneck and root-cause deltas to record an evidence-backed diagnosis, correct within scope, and verify a new cycle.";
     case "E_NEW_POLICY_VIOLATION":
       return "Resolve the new policy violation or record baseline if adopted debt before completion.";
     case "E_POLICY_WEAKENING":
@@ -431,6 +452,26 @@ export async function evaluateCompletion({
     });
     errors.push(...relationshipErrors);
     coverage = receipt?.value?.evidenceCoverage ?? [];
+  }
+
+  if (contract && route && state) {
+    const qualityChecks = [...new Map([
+      ...(state.checks ?? []),
+      ...(receipt?.value?.checks ?? []),
+    ].filter((check) => check?.kind === "structural-quality").map((check) => [check.id, check])).values()];
+    for (const check of qualityChecks) {
+      const provenanceErrors = await validateStructuralQualityCheckProvenance(check, {
+        target,
+        packageRoot,
+        taskId: contract.value.taskId,
+        state,
+        contract,
+        route,
+      });
+      for (const error of provenanceErrors) {
+        errors.push(issue(error.code ?? "E_STRUCTURAL_QUALITY_EVIDENCE_STALE", error.message, error.artifacts ?? [stateRel, receiptRel]));
+      }
+    }
   }
 
   const ledger = contract && state

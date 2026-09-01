@@ -48,6 +48,21 @@ test("structured CLI commands produce deterministic JSON contracts", async () =>
       assert.equal(first.stdout, second.stdout, command[0]);
       assert.doesNotThrow(() => JSON.parse(first.stdout), command[0]);
     }
+    const protocolInfo = JSON.parse(run(target, "protocol-info", "--json").stdout);
+    assert.deepEqual(protocolInfo.features.structuralQuality, {
+      version: 1,
+      supported: true,
+      schemaVersion: 1,
+      modes: ["off", "observe", "gate"],
+      builtInProviders: ["sentrux"],
+      commands: ["quality-baseline", "quality-verify", "quality-status"],
+      providerNeutral: true,
+      defaultProvider: "sentrux",
+      transport: "mcp-stdio",
+      rootCauses: ["modularity", "acyclicity", "depth", "equality", "redundancy"],
+      baselineImmutableAfterExecution: true,
+      optimizationMaxExtraEvaluations: 2,
+    });
   } finally {
     await rm(target, { recursive: true, force: true });
   }

@@ -2,8 +2,24 @@
 
 ## Unreleased
 
-- The 1.8.1 release notes below are the current release record; future changes
-  will be added to this section.
+### Added
+
+- Added a provider-neutral structural-quality feedback loop with immutable
+  task baselines, five normalized root-cause metrics, deterministic delta and
+  dimension budgets, and `off`/`observe`/`gate` modes.
+- Added bounded Sentrux MCP stdio integration, `quality-baseline`,
+  `quality-verify`, and read-only `quality-status` surfaces across the CLI,
+  integration API, and MCP projections.
+- Added typed, atomic, task-scoped quality artifacts, bundle validation,
+  completion provenance checks, and corrective lifecycle guidance.
+
+### Verification boundary
+
+- Structural quality remains separate from behavioral, security, performance,
+  accessibility, review, publication, and production-readiness evidence.
+- Sentrux is optional and user-managed; ForgeLoop does not install it, change
+  analytics preferences, or claim built-in static analysis or a universal
+  software-quality score.
 
 ## 1.8.1 - 2026-09-01
 

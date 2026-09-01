@@ -46,6 +46,20 @@ export {
 
 export { createForgeLoopContext } from "./core/runtime-context.js";
 export {
+  assertStructuralQualityProvider,
+  createStructuralQualityProviderRegistry,
+  normalizeStructuralQualityDetection,
+  normalizeStructuralQualitySnapshot,
+  resolveStructuralQualityProvider,
+} from "./core/structural-quality/provider.js";
+export {
+  STRUCTURAL_QUALITY_CHECK_ID,
+  STRUCTURAL_QUALITY_MODES,
+  STRUCTURAL_QUALITY_REQUIREMENT,
+  STRUCTURAL_QUALITY_ROOT_CAUSES,
+  STRUCTURAL_QUALITY_STATUSES,
+} from "./core/structural-quality/constants.js";
+export {
   PROFILE_CONTEXT_POLICIES,
   buildExecutionProfileContext,
   getExecutionProfileContextPolicy,
