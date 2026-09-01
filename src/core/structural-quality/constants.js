@@ -26,6 +26,7 @@ export const STRUCTURAL_QUALITY_MAX_EXTRA_EVALUATIONS = 2;
 
 export const STRUCTURAL_QUALITY_MEASUREMENT_MODEL = "structural-root-causes-v1";
 export const STRUCTURAL_QUALITY_SENTRUX_COMPATIBILITY_KEY = "sentrux-structural-root-causes-v1";
+export const STRUCTURAL_QUALITY_SENTRUX_VERIFIED_VERSIONS = Object.freeze(["0.5.5", "0.5.6", "0.5.7"]);
 
 export const STRUCTURAL_QUALITY_DEFAULT_DIMENSION_BUDGETS = Object.freeze(
   Object.fromEntries(STRUCTURAL_QUALITY_ROOT_CAUSES.map((cause) => [cause, null])),

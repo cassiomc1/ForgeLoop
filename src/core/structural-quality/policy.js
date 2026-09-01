@@ -10,6 +10,7 @@ import {
   STRUCTURAL_QUALITY_PROVIDER_ID_PATTERN,
   structuralQualityError,
 } from "./constants.js";
+import { structuralQualityProviderCompatibility } from "./provider.js";
 
 const POLICY_KEYS = new Set([
   "mode",
@@ -134,6 +135,12 @@ function assertComparableInputs(baseline, current) {
   const currentProvider = current?.provider;
   const baselineScope = baseline?.scope;
   const currentScope = current?.scope;
+  for (const provider of [baselineProvider, currentProvider]) {
+    if (provider?.id === "sentrux" && provider?.version !== undefined && provider?.version !== null) {
+      const compatibility = structuralQualityProviderCompatibility(provider);
+      if (!compatibility.supported) reasons.push("PROVIDER_VERSION_UNSUPPORTED");
+    }
+  }
   if (baselineProvider?.id !== undefined && currentProvider?.id !== undefined
     && baselineProvider.id !== currentProvider.id) reasons.push("PROVIDER_ID_CHANGED");
   if (baselineProvider?.measurementModel !== undefined && currentProvider?.measurementModel !== undefined
@@ -150,8 +157,6 @@ function assertComparableInputs(baseline, current) {
   }
   if (baselineScope?.providerConfigFingerprint !== undefined && currentScope?.providerConfigFingerprint !== undefined
     && baselineScope.providerConfigFingerprint !== currentScope.providerConfigFingerprint) reasons.push("PROVIDER_CONFIG_CHANGED");
-  if (baselineScope?.rulesFingerprint !== undefined && currentScope?.rulesFingerprint !== undefined
-    && baselineScope.rulesFingerprint !== currentScope.rulesFingerprint) reasons.push("RULES_CHANGED");
   if (baseline?.bindings?.policyFingerprint && current?.bindings?.policyFingerprint
     && baseline.bindings.policyFingerprint !== current.bindings.policyFingerprint) reasons.push("POLICY_CHANGED");
   if (baseline?.bindings?.scopeFingerprint && current?.bindings?.scopeFingerprint

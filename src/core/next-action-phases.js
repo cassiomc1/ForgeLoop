@@ -35,6 +35,24 @@ export function phaseRequiresExecutionChronology(phase) {
   return PHASES_REQUIRING_EXECUTION_CHRONOLOGY.has(phase);
 }
 
+function structuralQualityOptionalActions(quality, taskId) {
+  if (quality?.mode !== "observe") return [];
+  if (quality.baseline?.status !== "OBSERVED") {
+    return [{
+      action: NEXT_ACTIONS.CAPTURE_STRUCTURAL_QUALITY_BASELINE,
+      command: `forgeloop quality-baseline --task ${taskId} --json`,
+    }];
+  }
+  if (quality.freshness === "STALE" || quality.current?.verificationCycle === null
+    || quality.current?.verificationCycle === undefined) {
+    return [{
+      action: NEXT_ACTIONS.VERIFY_STRUCTURAL_QUALITY,
+      command: `forgeloop quality-verify --task ${taskId} --json`,
+    }];
+  }
+  return [];
+}
+
 export async function resolveNextActionPhase({
   target,
   packageRoot,
@@ -435,7 +453,7 @@ export async function resolveNextActionPhase({
   let executionPrerequisites = null;
   if (phaseNeedsChronology) {
     try {
-      executionPrerequisites = await evaluateStartExecutionPrerequisites({ target, state, packageRoot, taskId: explicitTaskId });
+      executionPrerequisites = await evaluateStartExecutionPrerequisites({ target, state, packageRoot, taskId: explicitTaskId, runtimeContext });
     } catch (error) {
       return result({
         ...context,
@@ -507,7 +525,7 @@ export async function resolveNextActionPhase({
     return decision(context, NEXT_ACTIONS.PLAN, artifactError("PHASE_DESIGNING", "Required gates are ready for planning"));
   }
   if (state.phase === "PLANNED") {
-    const quality = await projectStructuralQualityStatus({ target, packageRoot, taskId: explicitTaskId ?? state.taskId });
+    const quality = await projectStructuralQualityStatus({ target, packageRoot, taskId: explicitTaskId ?? state.taskId, runtimeContext });
     if (quality.mode === "gate" && quality.baseline.status !== "OBSERVED") {
       return result({
         ...context,
@@ -517,7 +535,7 @@ export async function resolveNextActionPhase({
         requiredArtifacts: [taskArtifactPath(state.taskId, "structuralQuality")],
       });
     }
-    const prerequisites = await evaluateStartExecutionPrerequisites({ target, state, packageRoot, taskId: explicitTaskId });
+    const prerequisites = await evaluateStartExecutionPrerequisites({ target, state, packageRoot, taskId: explicitTaskId, runtimeContext });
     if (prerequisites.errors.length > 0) {
       const preflightOnly = prerequisites.errors.every((error) => error.code.startsWith("E_PREFLIGHT_")
         || (error.code === "E_PHASE_CHRONOLOGY_INVALID"
@@ -541,7 +559,14 @@ export async function resolveNextActionPhase({
         missingArtifacts: preflightArtifact.missingArtifacts,
       });
     }
-    return decision(context, NEXT_ACTIONS.START_EXECUTION, artifactError("PHASE_PLANNED", "The persisted preflight is READY"));
+    return decision(
+      context,
+      NEXT_ACTIONS.START_EXECUTION,
+      artifactError("PHASE_PLANNED", "The persisted preflight is READY"),
+      [],
+      [],
+      structuralQualityOptionalActions(quality, state.taskId),
+    );
   }
   if (state.phase === "EXECUTING") {
     const continuityAction = await evaluateContinuityNextAction({ target, packageRoot, context });
@@ -549,7 +574,7 @@ export async function resolveNextActionPhase({
     return decision(context, NEXT_ACTIONS.ENTER_VERIFYING, artifactError("PHASE_EXECUTING", "Execution is complete enough to enter verification"));
   }
   if (state.phase === "VERIFYING") {
-    const quality = await projectStructuralQualityStatus({ target, packageRoot, taskId: explicitTaskId ?? state.taskId });
+    const quality = await projectStructuralQualityStatus({ target, packageRoot, taskId: explicitTaskId ?? state.taskId, runtimeContext });
     if (quality.mode === "gate") {
       if (quality.baseline.status !== "OBSERVED") {
         return result({
@@ -565,6 +590,15 @@ export async function resolveNextActionPhase({
           nextAction: NEXT_ACTIONS.VERIFY_STRUCTURAL_QUALITY,
           commands: [commandFor(NEXT_ACTIONS.VERIFY_STRUCTURAL_QUALITY).replace("<id>", state.taskId)],
           reasons: [artifactError("E_STRUCTURAL_QUALITY_EVIDENCE_STALE", "The current verification cycle has no structural-quality evaluation", [taskStructuralQualityDirectory(state.taskId)])],
+          requiredArtifacts: [taskStructuralQualityDirectory(state.taskId)],
+        });
+      }
+      if (quality.freshness === "STALE") {
+        return result({
+          ...context,
+          nextAction: NEXT_ACTIONS.VERIFY_STRUCTURAL_QUALITY,
+          commands: [commandFor(NEXT_ACTIONS.VERIFY_STRUCTURAL_QUALITY).replace("<id>", state.taskId)],
+          reasons: [artifactError("E_STRUCTURAL_QUALITY_EVIDENCE_STALE", "Structural-quality evidence is stale; fresh verification is required before review", [quality.current.artifactRef])],
           requiredArtifacts: [taskStructuralQualityDirectory(state.taskId)],
         });
       }
@@ -692,7 +726,14 @@ export async function resolveNextActionPhase({
       });
     }
     if (readiness.ready) {
-      return decision(context, NEXT_ACTIONS.ENTER_REVIEWING, artifactError("EVIDENCE_COVERED", "All required observed verification evidence is covered"));
+      return decision(
+        context,
+        NEXT_ACTIONS.ENTER_REVIEWING,
+        artifactError("EVIDENCE_COVERED", "All required observed verification evidence is covered"),
+        [],
+        [],
+        structuralQualityOptionalActions(quality, state.taskId),
+      );
     }
     const uncovered = [...readiness.invalid, ...readiness.partial, ...readiness.missing];
     return result({
@@ -711,6 +752,7 @@ export async function resolveNextActionPhase({
           [stateRel],
         )),
       requiredArtifacts: requiredArtifacts,
+      optionalActions: structuralQualityOptionalActions(quality, state.taskId),
     });
   }
   if (state.phase === "DIAGNOSING") {

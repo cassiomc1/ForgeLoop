@@ -137,14 +137,14 @@ async function assertPhasePrerequisites(target, state, toPhase, packageRoot, aut
   }
   if (toPhase === "EXECUTING" && scopedTaskId) {
     try {
-      await assertStructuralQualityExecutionReady({ target, packageRoot, taskId: scopedTaskId });
+      await assertStructuralQualityExecutionReady({ target, packageRoot, taskId: scopedTaskId, runtimeContext });
     } catch (error) {
       throw phaseError(error.code, error.message, error.artifacts);
     }
   }
   if (hasExecutionStarted(toPhase)) {
     try {
-      await assertExecutionPrerequisites({ target, state, packageRoot, ...options, taskId: scopedTaskId });
+      await assertExecutionPrerequisites({ target, state, packageRoot, ...options, taskId: scopedTaskId, runtimeContext });
     } catch (error) {
       throw phaseError(error.code, error.message, error.artifacts);
     }

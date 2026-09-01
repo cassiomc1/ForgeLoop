@@ -19,6 +19,10 @@
 - Added two-phase scan execution outside task mutation lock with atomic reservation and projection reconciliation on retry.
 - Added typed, atomic, task-scoped quality artifacts, bundle validation,
   completion provenance checks, and corrective lifecycle guidance.
+- Hardened structural-quality freshness with canonical provider scope binding,
+  fail-closed source fingerprints, explicit verified Sentrux versions, and
+  freshness-aware recovery, status, next-action, provenance, and completion
+  decisions.
 
 ### Verification boundary
 

@@ -29,7 +29,7 @@ function snapshot(overrides = {}) {
 
 function evidence(policyInput = { mode: "gate", provider: "fake" }, snapshotOverrides = {}) {
   const policy = normalizeStructuralQualityConfig(policyInput);
-  const scope = { kind: "PROJECT", projectRoot: ".", rulesFingerprint: null };
+  const scope = { kind: "PROJECT", projectRoot: ".", providerConfigFingerprint: null };
   return {
     provider: { id: policy.provider, version: "1.0.0" },
     scope,

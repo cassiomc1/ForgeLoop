@@ -198,7 +198,10 @@ type StructuralQualityProvider = {
 Providers declare `measurementModel` (such as `structural-root-causes-v1`) and
 an optional `compatibilityKey` (such as `sentrux-structural-root-causes-v1`).
 When baseline and evaluation share a compatibility key, non-breaking version
-differences between provider releases compare cleanly.
+differences between provider releases compare cleanly. Sentrux compatibility
+is explicit: the built-in adapter accepts only verified versions `0.5.5`,
+`0.5.6`, and `0.5.7`; future or malformed versions fail closed until
+explicitly verified.
 
 Runtime hosts may inject a provider through `createForgeLoopContext`. Provider
 IDs are lower-case stable names matching `^[a-z][a-z0-9-]{0,63}$`; the built-in
@@ -210,13 +213,15 @@ normalized, bounded, schema-validated, and semantically bound to the task.
 Sentrux is not a ForgeLoop npm dependency. ForgeLoop never installs, upgrades,
 or selects an arbitrary Sentrux executable. The built-in adapter invokes the
 trusted command name `sentrux --mcp` through a shell-free local MCP process, requires
-version `0.5.5` or newer, and strictly conforms to Sentrux tool argument schemas:
+  verified versions `0.5.5`, `0.5.6`, and `0.5.7`, and strictly conforms to Sentrux tool argument schemas:
 
 - `scan`: `arguments: { path: "<project-path>" }`
 - `health`: `arguments: {}`
 
 Sentrux-specific configuration (such as `.sentrux/rules.toml`) is owned
-exclusively by the Sentrux provider adapter via `scopeBinding()`.
+exclusively by the Sentrux provider adapter via `scopeBinding()`. The core
+resolver never scans for a rules file and custom providers do not inherit this
+binding unless they explicitly expose their own `scopeBinding()`.
 
 If Sentrux is absent, preserve the resulting `NOT_OBSERVED` or `BLOCKED` state
 and follow the configured mode. Install or upgrade Sentrux only through the
@@ -230,7 +235,19 @@ Sentrux Free. A missing diagnostics payload is therefore valid and remains
 `null`; it does not weaken the score comparison and does not become a fake
 diagnostic.
 
-## 13. Sentrux analytics are user choices
+## 13. Freshness and optional observe actions
+
+Baseline and observed `PASS`/`FAIL` artifacts must bind a stable source
+fingerprint. Unreadable files, unsafe symlinks, source drift during a scan,
+changed provider scope, and stale task bindings fail closed. `quality-status`,
+`next`, recovery, provenance, and completion reuse the same freshness
+validator and never promote a stale pass.
+
+In `observe` mode, `next` may expose baseline or verification as optional
+actions. These actions are advisory and do not spawn a provider from a
+read-only status or next-action query.
+
+## 14. Sentrux analytics are user choices
 
 ForgeLoop does not change Sentrux's global analytics preference. If the
 installed Sentrux version provides these commands, the user may inspect or
@@ -244,7 +261,7 @@ sentrux analytics off
 Those commands are outside ForgeLoop evidence and should be run only with the
 user's own authorization.
 
-## 14. CI example
+## 15. CI example
 
 CI can run the same project-local commands after initializing the task and
 configuring the provider on the runner:
@@ -262,7 +279,7 @@ Provider installation, runner identity, and remote publication are separate
 CI evidence. A green local or CI quality command does not imply a merge,
 publication, or deployment.
 
-## 15. Artifacts, locking, and projection reconciliation
+## 16. Artifacts, locking, and projection reconciliation
 
 Quality artifacts are task-owned and have no mutable `latest.json`:
 
@@ -277,6 +294,9 @@ The baseline is immutable after `EXECUTING`. External provider scans execute
 outside the task mutation lock to prevent starvation of concurrent operations.
 Pre-scan and post-scan source material fingerprints ensure observations are
 stable against mid-scan source drift (`E_STRUCTURAL_QUALITY_SOURCE_DRIFT`).
+Provider-owned `.sentrux` configuration is excluded from source material and
+is handled only by the Sentrux scope binding. Source symlinks are rejected by
+the fail-closed fingerprint policy.
 If an evaluation artifact was committed but check projection was interrupted,
 subsequent verification retries automatically reconcile and repair the canonical
 receipt check without rescanning or incrementing attempt counts.
@@ -285,7 +305,7 @@ Portable bundles include the baseline and evaluations required for audit.
 Bundle readers validate typed artifacts and fingerprints without rescanning
 the project or requiring Sentrux.
 
-## 16. Error-code troubleshooting table
+## 17. Error-code troubleshooting table
 
 | Code | Meaning | First safe action |
 | --- | --- | --- |

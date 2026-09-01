@@ -1163,7 +1163,6 @@ validate it without starting the provider.
   - `kind` *(string, required, const: `PROJECT`)*
   - `projectRoot` *(string, required, const: `.`)*
   - `providerConfigFingerprint` *(string or null, optional)*
-  - `rulesFingerprint` *(string or null, optional)*
 - `snapshot` *(snapshot, optional)*
   - `qualitySignal` *(integer, required, minimum: 0, maximum: 10000)*
   - `bottleneck` *(string, required, enum: `modularity`, `acyclicity`, `depth`, `equality`, `redundancy`)*
@@ -1198,3 +1197,8 @@ validate it without starting the provider.
   - `reasonCodes` *(array<string>, required)*
 
 <!-- END FORGELOOP GENERATED: schema:structural-quality -->
+
+For `BASELINE` artifacts and `PASS`/`FAIL` evaluations, `sourceMaterialFingerprint`
+and stable `sourceObservation` are conditionally required; their before and after
+fingerprints must equal the bound source fingerprint. `BLOCKED` and
+`NOT_OBSERVED` artifacts may omit these observed-source fields.

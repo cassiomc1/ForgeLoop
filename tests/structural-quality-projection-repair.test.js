@@ -104,7 +104,16 @@ test("orphaned evaluation artifact is reconciled and projected to receipt on ret
     const baseline = await readStructuralQualityBaseline(target, taskId, packageRoot);
     const sourceFingerprint = await computeMaterialSourceFingerprint(target);
     const fakeSnapshot = baseline.value.snapshot;
-    const policy = { mode: "gate", provider: "fake" };
+    const policy = {
+      mode: "gate",
+      provider: "fake",
+      maxRegressionPoints: 0,
+      dimensionBudgets: { modularity: null, acyclicity: null, depth: null, equality: null, redundancy: null },
+      forbidNewCycles: true,
+      minQualitySignal: null,
+      minimums: {},
+      optimization: { mode: "bounded", maxExtraEvaluations: 2, minGainPoints: 25 },
+    };
     const comparison = compareStructuralQuality({
       baseline: baseline.value,
       current: {

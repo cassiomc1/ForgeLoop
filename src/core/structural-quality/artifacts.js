@@ -93,6 +93,16 @@ export function validateStructuralQualityArtifact(value, label = "structural-qua
   } else {
     throw qualityArtifactError(E_STRUCTURAL_QUALITY_EVIDENCE_STALE, `${label} role must be BASELINE or EVALUATION`);
   }
+  const observed = value.role === "BASELINE" || ["PASS", "FAIL"].includes(value.status);
+  const sourceFingerprint = value.bindings?.sourceMaterialFingerprint;
+  if (observed) {
+    if (typeof sourceFingerprint !== "string" || !/^[a-f0-9]{64}$/u.test(sourceFingerprint)) {
+      throw qualityArtifactError(E_STRUCTURAL_QUALITY_EVIDENCE_STALE, `${label} observed evidence requires sourceMaterialFingerprint`);
+    }
+    if (!value.sourceObservation || value.sourceObservation.stable !== true) {
+      throw qualityArtifactError(E_STRUCTURAL_QUALITY_EVIDENCE_STALE, `${label} observed evidence requires a stable sourceObservation`);
+    }
+  }
   if (!value.detection || typeof value.detection !== "object" || Array.isArray(value.detection)) {
     throw qualityArtifactError(E_STRUCTURAL_QUALITY_EVIDENCE_STALE, `${label} detection metadata is required`);
   }
@@ -107,6 +117,14 @@ export function validateStructuralQualityArtifact(value, label = "structural-qua
       || typeof value.sourceObservation.afterFingerprint !== "string"
       || typeof value.sourceObservation.stable !== "boolean") {
       throw qualityArtifactError(E_STRUCTURAL_QUALITY_EVIDENCE_STALE, `${label} sourceObservation requires beforeFingerprint, afterFingerprint, and stable`);
+    }
+    if (value.sourceObservation.stable === true
+      && (value.sourceObservation.beforeFingerprint !== value.sourceObservation.afterFingerprint
+        || (typeof sourceFingerprint === "string" && value.sourceObservation.beforeFingerprint !== sourceFingerprint))) {
+      throw qualityArtifactError(E_STRUCTURAL_QUALITY_EVIDENCE_STALE, `${label} stable sourceObservation does not match its source binding`);
+    }
+    if (!value.sourceObservation.stable && ["PASS", "FAIL"].includes(value.status)) {
+      throw qualityArtifactError(E_STRUCTURAL_QUALITY_EVIDENCE_STALE, `${label} unstable sourceObservation cannot produce observed evidence`);
     }
   }
   normalizeStructuralQualityDetection(value.detection, {
@@ -283,9 +301,6 @@ export function validateStructuralQualityBindings(value, expected = {}) {
   }
   if (expected.providerVersion !== undefined && expected.providerVersion !== null && value.provider?.version !== expected.providerVersion) {
     errors.push({ code: E_STRUCTURAL_QUALITY_BASELINE_BINDING_MISMATCH, message: "Structural-quality provider version does not match the baseline" });
-  }
-  if (expected.rulesFingerprint !== undefined && value.scope?.rulesFingerprint !== expected.rulesFingerprint) {
-    errors.push({ code: E_STRUCTURAL_QUALITY_BASELINE_BINDING_MISMATCH, message: "Structural-quality rules fingerprint does not match the active scope" });
   }
   if (expected.baselineFingerprint !== undefined && bindings.baselineFingerprint !== expected.baselineFingerprint) {
     errors.push({ code: E_STRUCTURAL_QUALITY_BASELINE_BINDING_MISMATCH, message: "Structural-quality evaluation does not bind the active baseline" });

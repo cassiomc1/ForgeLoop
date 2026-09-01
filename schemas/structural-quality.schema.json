@@ -74,8 +74,7 @@
       "properties": {
         "kind": { "const": "PROJECT" },
         "projectRoot": { "const": "." },
-        "providerConfigFingerprint": { "oneOf": [{ "type": "string", "pattern": "^[a-f0-9]{64}$" }, { "type": "null" }] },
-        "rulesFingerprint": { "oneOf": [{ "type": "string", "pattern": "^[a-f0-9]{64}$" }, { "type": "null" }] }
+        "providerConfigFingerprint": { "oneOf": [{ "type": "string", "pattern": "^[a-f0-9]{64}$" }, { "type": "null" }] }
       },
       "additionalProperties": false
     },
@@ -139,5 +138,37 @@
       },
       "additionalProperties": false
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "role": { "const": "BASELINE" } } },
+      "then": {
+        "required": ["sourceObservation"],
+        "properties": {
+          "bindings": {
+            "required": ["sourceMaterialFingerprint"],
+            "properties": {
+              "sourceMaterialFingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+            }
+          },
+          "sourceObservation": { "properties": { "stable": { "const": true } } }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "enum": ["PASS", "FAIL"] } } },
+      "then": {
+        "required": ["sourceObservation"],
+        "properties": {
+          "bindings": {
+            "required": ["sourceMaterialFingerprint"],
+            "properties": {
+              "sourceMaterialFingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+            }
+          },
+          "sourceObservation": { "properties": { "stable": { "const": true } } }
+        }
+      }
+    }
+  ]
 }

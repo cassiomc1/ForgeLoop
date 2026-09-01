@@ -6,7 +6,7 @@ import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { createSentruxStructuralQualityProvider } from "../src/core/structural-quality/sentrux-mcp.js";
+import { createSentruxStructuralQualityProvider, sentruxCompatibilityForVersion } from "../src/core/structural-quality/sentrux-mcp.js";
 import { STRUCTURAL_QUALITY_MEASUREMENT_MODEL, STRUCTURAL_QUALITY_SENTRUX_COMPATIBILITY_KEY } from "../src/core/structural-quality/constants.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -133,6 +133,26 @@ test("protocol, identity, version, and provider failures fail closed", async () 
   const old = provider(projectPath, "valid", { SENTRUX_FAKE_VERSION: "0.5.4" });
   assert.equal((await old.detect(input(projectPath))).reasonCode, "E_STRUCTURAL_QUALITY_PROVIDER_VERSION_UNSUPPORTED");
   await assert.rejects(() => old.scan(input(projectPath)), { code: "E_STRUCTURAL_QUALITY_PROVIDER_VERSION_UNSUPPORTED" });
+});
+
+test("Sentrux measurement compatibility is explicit and future versions fail closed", async () => {
+  for (const version of ["0.5.5", "0.5.6", "0.5.7"]) {
+    assert.deepEqual(sentruxCompatibilityForVersion(version), {
+      supported: true,
+      measurementModel: STRUCTURAL_QUALITY_MEASUREMENT_MODEL,
+      compatibilityKey: STRUCTURAL_QUALITY_SENTRUX_COMPATIBILITY_KEY,
+    });
+  }
+  for (const version of ["0.5.4", "0.5.8", "0.6.0", "1.0.0", "0.5.7-beta.1", "malformed"]) {
+    assert.equal(sentruxCompatibilityForVersion(version).supported, false, version);
+  }
+  const projectPath = path.dirname(fixture);
+  for (const version of ["0.5.8", "0.6.0", "1.0.0"]) {
+    const future = provider(projectPath, "valid", { SENTRUX_FAKE_VERSION: version });
+    const detected = await future.detect(input(projectPath));
+    assert.equal(detected.available, false, version);
+    assert.equal(detected.reasonCode, "E_STRUCTURAL_QUALITY_PROVIDER_VERSION_UNSUPPORTED", version);
+  }
 });
 
 test("timeouts and combined stdout/stderr limits terminate the external process", async () => {

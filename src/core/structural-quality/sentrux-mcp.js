@@ -11,6 +11,7 @@ import {
   E_STRUCTURAL_QUALITY_PROVIDER_UNAVAILABLE,
   E_STRUCTURAL_QUALITY_PROVIDER_VERSION_UNSUPPORTED,
   E_STRUCTURAL_QUALITY_SCAN_FAILED,
+  E_STRUCTURAL_QUALITY_SOURCE_FINGERPRINT_UNAVAILABLE,
   E_STRUCTURAL_QUALITY_TIMEOUT,
 } from "../error-codes.js";
 import {
@@ -20,6 +21,7 @@ import {
   STRUCTURAL_QUALITY_MEASUREMENT_MODEL,
   STRUCTURAL_QUALITY_SENTRUX_COMPATIBILITY_KEY,
   STRUCTURAL_QUALITY_SENTRUX_MIN_VERSION,
+  STRUCTURAL_QUALITY_SENTRUX_VERIFIED_VERSIONS,
   structuralQualityError,
 } from "./constants.js";
 import { assertStructuralQualityProvider, normalizeStructuralQualityDetection, normalizeStructuralQualitySnapshot } from "./provider.js";
@@ -50,6 +52,17 @@ function versionAtLeast(actual, minimum) {
     if (left[index] !== right[index]) return left[index] > right[index];
   }
   return true;
+}
+
+export function sentruxCompatibilityForVersion(version) {
+  if (!STRUCTURAL_QUALITY_SENTRUX_VERIFIED_VERSIONS.includes(version)) {
+    return { supported: false, reasonCode: E_STRUCTURAL_QUALITY_PROVIDER_VERSION_UNSUPPORTED };
+  }
+  return {
+    supported: true,
+    measurementModel: STRUCTURAL_QUALITY_MEASUREMENT_MODEL,
+    compatibilityKey: STRUCTURAL_QUALITY_SENTRUX_COMPATIBILITY_KEY,
+  };
 }
 
 function parseJsonLine(line) {
@@ -275,7 +288,8 @@ async function openHandshake(options) {
     if (!isRecord(serverInfo) || serverInfo.name !== "sentrux" || typeof serverInfo.version !== "string") {
       throw mcpError(E_STRUCTURAL_QUALITY_PROVIDER_PROTOCOL_INVALID, "Sentrux initialize response has an invalid serverInfo identity");
     }
-    if (!versionAtLeast(serverInfo.version, STRUCTURAL_QUALITY_SENTRUX_MIN_VERSION)) {
+    if (!versionAtLeast(serverInfo.version, STRUCTURAL_QUALITY_SENTRUX_MIN_VERSION)
+      || !sentruxCompatibilityForVersion(serverInfo.version).supported) {
       throw mcpError(E_STRUCTURAL_QUALITY_PROVIDER_VERSION_UNSUPPORTED, `Sentrux ${serverInfo.version} is older than the supported ${STRUCTURAL_QUALITY_SENTRUX_MIN_VERSION}`);
     }
     session.notify("notifications/initialized");
@@ -332,18 +346,24 @@ function mergedSnapshot(scan, health, projectPath) {
 }
 
 async function sentruxScopeBinding(projectPath) {
-  let rulesFingerprint = null;
+  let providerConfigFingerprint = null;
   if (projectPath) {
     try {
       await assertSafePath(projectPath, SENTRUX_RULES_PATH);
-      const rulesAbsolute = ensureWithin(projectPath, SENTRUX_RULES_PATH);
-      if (await fileExists(rulesAbsolute)) rulesFingerprint = sha256(await readBytes(rulesAbsolute));
-    } catch {
-      // invalid path handled gracefully
+    } catch (error) {
+      throw mcpError(E_STRUCTURAL_QUALITY_SOURCE_FINGERPRINT_UNAVAILABLE, `Unable to fingerprint Sentrux configuration: ${error.message}`);
+    }
+    const rulesAbsolute = ensureWithin(projectPath, SENTRUX_RULES_PATH);
+    if (await fileExists(rulesAbsolute)) {
+      try {
+        providerConfigFingerprint = sha256(await readBytes(rulesAbsolute));
+      } catch (error) {
+        throw mcpError(E_STRUCTURAL_QUALITY_SOURCE_FINGERPRINT_UNAVAILABLE, `Unable to fingerprint Sentrux configuration: ${error.message}`);
+      }
     }
   }
   return {
-    providerConfigFingerprint: rulesFingerprint,
+    providerConfigFingerprint,
     measurementCompatibilityKey: STRUCTURAL_QUALITY_SENTRUX_COMPATIBILITY_KEY,
   };
 }

@@ -955,12 +955,15 @@ shell, arbitrary arguments, or a score override.
 
 ### Symptom: Structural-quality evidence is stale or incomparable
 
-#### Error Codes: `E_STRUCTURAL_QUALITY_BASELINE_BINDING_MISMATCH`, `E_STRUCTURAL_QUALITY_EVALUATION_INCOMPARABLE`, `E_STRUCTURAL_QUALITY_EVIDENCE_STALE`
+#### Error Codes: `E_STRUCTURAL_QUALITY_BASELINE_BINDING_MISMATCH`, `E_STRUCTURAL_QUALITY_EVALUATION_INCOMPARABLE`, `E_STRUCTURAL_QUALITY_EVIDENCE_STALE`, `E_STRUCTURAL_QUALITY_SOURCE_FINGERPRINT_UNAVAILABLE`
 
 The baseline and current evaluation no longer describe the same task inputs.
 Provider ID or version, policy, route, contract, scan scope, or
 `.sentrux/rules.toml` drift makes the comparison incomparable. A prior-cycle
-pass cannot satisfy a current-cycle gate.
+pass cannot satisfy a current-cycle gate. If source material cannot be read
+or contains an unsafe symlink, ForgeLoop returns
+`E_STRUCTURAL_QUALITY_SOURCE_FINGERPRINT_UNAVAILABLE` and does not persist a
+passing observation.
 
 Inspect the bound artifacts and current projection:
 
@@ -1188,10 +1191,11 @@ current-cycle validation.
 | `E_STRUCTURAL_QUALITY_PROVIDER_PROTOCOL_INVALID` | Structural-quality evidence did not satisfy its provider, artifact, comparison, or lifecycle boundary. | Repair the provider MCP handshake or response shape; malformed external data cannot become evidence. |
 | `E_STRUCTURAL_QUALITY_PROVIDER_TOOL_CONTRACT_INVALID` | Structural-quality evidence did not satisfy its provider, artifact, comparison, or lifecycle boundary. | Ensure the provider exposes the required scan and health tool argument schemas. |
 | `E_STRUCTURAL_QUALITY_PROVIDER_UNAVAILABLE` | Structural-quality evidence did not satisfy its provider, artifact, comparison, or lifecycle boundary. | Install or expose the requested provider outside ForgeLoop, or use observe mode and record the limitation; ForgeLoop never auto-installs it. |
-| `E_STRUCTURAL_QUALITY_PROVIDER_VERSION_UNSUPPORTED` | Structural-quality evidence did not satisfy its provider, artifact, comparison, or lifecycle boundary. | Use Sentrux 0.5.5 or newer, or select a compatible provider through trusted runtime context. |
+| `E_STRUCTURAL_QUALITY_PROVIDER_VERSION_UNSUPPORTED` | Structural-quality evidence did not satisfy its provider, artifact, comparison, or lifecycle boundary. | Use a verified Sentrux version (0.5.5, 0.5.6, or 0.5.7), or select a compatible provider through trusted runtime context. |
 | `E_STRUCTURAL_QUALITY_REGRESSION` | Structural-quality evidence did not satisfy its provider, artifact, comparison, or lifecycle boundary. | Use the bottleneck and root-cause deltas to record an evidence-backed diagnosis, correct within scope, and verify a new cycle. |
 | `E_STRUCTURAL_QUALITY_SCAN_FAILED` | Structural-quality evidence did not satisfy its provider, artifact, comparison, or lifecycle boundary. | Inspect the provider failure and rerun quality-baseline or quality-verify after the external analyzer is healthy. |
 | `E_STRUCTURAL_QUALITY_SOURCE_DRIFT` | Structural-quality evidence did not satisfy its provider, artifact, comparison, or lifecycle boundary. | Ensure the worktree is not mutated during provider observation and rerun quality-baseline or quality-verify. |
+| `E_STRUCTURAL_QUALITY_SOURCE_FINGERPRINT_UNAVAILABLE` | Structural-quality evidence did not satisfy its provider, artifact, comparison, or lifecycle boundary. | Repair unreadable or unsafe source material before structural-quality evidence can be trusted. |
 | `E_STRUCTURAL_QUALITY_TIMEOUT` | Structural-quality evidence did not satisfy its provider, artifact, comparison, or lifecycle boundary. | Use a responsive provider or a bounded timeout within the supported limit; never promote a timed-out scan. |
 | `E_TASK_ALREADY_EXISTS` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_TASK_ALREADY_RECOVERED` | The task already has active durable recovered state. | Inspect the existing recovery metadata; use task-resume to reacquire claims or leave the task recovered. |

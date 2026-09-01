@@ -66,7 +66,8 @@ async function setupBundleTarget(target) {
   }, "work-state", packageRoot);
 
   const policy = normalizeStructuralQualityConfig(config.structuralQuality);
-  const scope = { kind: "PROJECT", projectRoot: ".", rulesFingerprint: null };
+  const scope = { kind: "PROJECT", projectRoot: ".", providerConfigFingerprint: null };
+  const sourceMaterialFingerprint = "b".repeat(64);
   const base = {
     contractFingerprint: contractFingerprint(contract),
     routeFingerprint: routeArtifact.fingerprint,
@@ -83,7 +84,8 @@ async function setupBundleTarget(target) {
     attempt: 1,
     status: "PASS",
     reasonCodes: [],
-    bindings: { ...base, baselineFingerprint: null, stateRevision: 0 },
+    bindings: { ...base, baselineFingerprint: null, sourceMaterialFingerprint, stateRevision: 0 },
+    sourceObservation: { beforeFingerprint: sourceMaterialFingerprint, afterFingerprint: sourceMaterialFingerprint, stable: true },
     provider: { id: "fake", version: "1.0.0", transport: "test", executionMode: "test" },
     detection: { available: true, providerId: "fake", providerVersion: "1.0.0", transport: "test", reasonCode: null },
     scope,
@@ -100,7 +102,8 @@ async function setupBundleTarget(target) {
     attempt: 1,
     status: "PASS",
     reasonCodes: [],
-    bindings: { ...base, baselineFingerprint: baseline.fingerprint, stateRevision: 0 },
+    bindings: { ...base, baselineFingerprint: baseline.fingerprint, sourceMaterialFingerprint, stateRevision: 0 },
+    sourceObservation: { beforeFingerprint: sourceMaterialFingerprint, afterFingerprint: sourceMaterialFingerprint, stable: true },
     provider: { id: "fake", version: "1.0.0", transport: "test", executionMode: "test" },
     detection: { available: true, providerId: "fake", providerVersion: "1.0.0", transport: "test", reasonCode: null },
     scope,

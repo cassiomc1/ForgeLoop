@@ -100,6 +100,7 @@ export const E_STRUCTURAL_QUALITY_EVALUATION_INCOMPARABLE = "E_STRUCTURAL_QUALIT
 export const E_STRUCTURAL_QUALITY_MEASUREMENT_MODEL_MISMATCH = "E_STRUCTURAL_QUALITY_MEASUREMENT_MODEL_MISMATCH";
 export const E_STRUCTURAL_QUALITY_EVIDENCE_STALE = "E_STRUCTURAL_QUALITY_EVIDENCE_STALE";
 export const E_STRUCTURAL_QUALITY_SOURCE_DRIFT = "E_STRUCTURAL_QUALITY_SOURCE_DRIFT";
+export const E_STRUCTURAL_QUALITY_SOURCE_FINGERPRINT_UNAVAILABLE = "E_STRUCTURAL_QUALITY_SOURCE_FINGERPRINT_UNAVAILABLE";
 export const E_STRUCTURAL_QUALITY_OBSERVATION_EPOCH_STALE = "E_STRUCTURAL_QUALITY_OBSERVATION_EPOCH_STALE";
 export const E_STRUCTURAL_QUALITY_PROJECTION_INCOMPLETE = "E_STRUCTURAL_QUALITY_PROJECTION_INCOMPLETE";
 export const E_STRUCTURAL_QUALITY_REGRESSION = "E_STRUCTURAL_QUALITY_REGRESSION";
@@ -108,7 +109,7 @@ const STRUCTURAL_QUALITY_ERROR_METADATA = Object.freeze(Object.fromEntries([
   [E_STRUCTURAL_QUALITY_CONFIGURATION_INVALID, "Correct structuralQuality mode, provider ID, budgets, floors, or optimization limits in .forgeloop/config.json."],
   [E_STRUCTURAL_QUALITY_PROVIDER_INVALID, "Use a provider implementing id, detect(input), and scan(input) with the documented normalized boundary."],
   [E_STRUCTURAL_QUALITY_PROVIDER_UNAVAILABLE, "Install or expose the requested provider outside ForgeLoop, or use observe mode and record the limitation; ForgeLoop never auto-installs it."],
-  [E_STRUCTURAL_QUALITY_PROVIDER_VERSION_UNSUPPORTED, "Use Sentrux 0.5.5 or newer, or select a compatible provider through trusted runtime context."],
+  [E_STRUCTURAL_QUALITY_PROVIDER_VERSION_UNSUPPORTED, "Use a verified Sentrux version (0.5.5, 0.5.6, or 0.5.7), or select a compatible provider through trusted runtime context."],
   [E_STRUCTURAL_QUALITY_PROVIDER_PROTOCOL_INVALID, "Repair the provider MCP handshake or response shape; malformed external data cannot become evidence."],
   [E_STRUCTURAL_QUALITY_PROVIDER_TOOL_CONTRACT_INVALID, "Ensure the provider exposes the required scan and health tool argument schemas."],
   [E_STRUCTURAL_QUALITY_SCAN_FAILED, "Inspect the provider failure and rerun quality-baseline or quality-verify after the external analyzer is healthy."],
@@ -122,6 +123,7 @@ const STRUCTURAL_QUALITY_ERROR_METADATA = Object.freeze(Object.fromEntries([
   [E_STRUCTURAL_QUALITY_MEASUREMENT_MODEL_MISMATCH, "Use a compatible measurement model and provider across baseline and evaluation observations."],
   [E_STRUCTURAL_QUALITY_EVIDENCE_STALE, "Rerun quality-verify in the active verification cycle and refresh completion through the canonical receipt pipeline."],
   [E_STRUCTURAL_QUALITY_SOURCE_DRIFT, "Ensure the worktree is not mutated during provider observation and rerun quality-baseline or quality-verify."],
+  [E_STRUCTURAL_QUALITY_SOURCE_FINGERPRINT_UNAVAILABLE, "Repair unreadable or unsafe source material before structural-quality evidence can be trusted."],
   [E_STRUCTURAL_QUALITY_OBSERVATION_EPOCH_STALE, "Rerun quality-verify under the active task epoch without concurrent state mutations."],
   [E_STRUCTURAL_QUALITY_PROJECTION_INCOMPLETE, "Rerun quality-verify to reconcile and project the canonical check from the existing evaluation artifact."],
   [E_STRUCTURAL_QUALITY_REGRESSION, "Use the bottleneck and root-cause deltas to record an evidence-backed diagnosis, correct within scope, and verify a new cycle."],
@@ -1111,6 +1113,7 @@ export const ALL_KNOWN_ERROR_CODES = Object.freeze(new Set([
   E_STRUCTURAL_QUALITY_MEASUREMENT_MODEL_MISMATCH,
   E_STRUCTURAL_QUALITY_EVIDENCE_STALE,
   E_STRUCTURAL_QUALITY_SOURCE_DRIFT,
+  E_STRUCTURAL_QUALITY_SOURCE_FINGERPRINT_UNAVAILABLE,
   E_STRUCTURAL_QUALITY_OBSERVATION_EPOCH_STALE,
   E_STRUCTURAL_QUALITY_PROJECTION_INCOMPLETE,
   E_STRUCTURAL_QUALITY_REGRESSION,

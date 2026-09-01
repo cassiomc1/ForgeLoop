@@ -122,6 +122,7 @@ export function result({
   approvalRequired = undefined,
   capabilityDecision = undefined,
   reconciliationAuthorityRequired = undefined,
+  optionalActions = undefined,
 }) {
   const normalizedReasons = reasons
     .map((reason) => {
@@ -162,6 +163,7 @@ export function result({
     ...(reconciliationAuthorityRequired
       ? { reconciliationAuthorityRequired: structuredClone(reconciliationAuthorityRequired) }
       : {}),
+    ...(optionalActions?.length ? { optionalActions: structuredClone(optionalActions) } : {}),
   };
 }
 
@@ -244,7 +246,7 @@ export function recordTerminalResultCommandSpec(requirement) {
   };
 }
 
-export function decision(input, action, reason, requiredArtifacts = [], missingArtifacts = []) {
+export function decision(input, action, reason, requiredArtifacts = [], missingArtifacts = [], optionalActions = undefined) {
   const command = commandFor(action);
   return result({
     ...input,
@@ -253,6 +255,7 @@ export function decision(input, action, reason, requiredArtifacts = [], missingA
     ...(command ? { commands: [command] } : {}),
     requiredArtifacts,
     missingArtifacts,
+    optionalActions,
   });
 }
 

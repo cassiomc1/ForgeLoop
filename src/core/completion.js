@@ -467,6 +467,7 @@ export async function evaluateCompletion({
         state,
         contract,
         route,
+        runtimeContext,
       });
       for (const error of provenanceErrors) {
         errors.push(issue(error.code ?? "E_STRUCTURAL_QUALITY_EVIDENCE_STALE", error.message, error.artifacts ?? [stateRel, receiptRel]));

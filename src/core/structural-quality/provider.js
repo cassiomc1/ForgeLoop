@@ -2,6 +2,7 @@ import path from "node:path";
 
 import {
   E_STRUCTURAL_QUALITY_PROVIDER_INVALID,
+  E_STRUCTURAL_QUALITY_PROVIDER_VERSION_UNSUPPORTED,
   E_STRUCTURAL_QUALITY_PROVIDER_UNAVAILABLE,
 } from "../error-codes.js";
 import {
@@ -10,10 +11,26 @@ import {
   STRUCTURAL_QUALITY_PROVIDER_ID_PATTERN,
   STRUCTURAL_QUALITY_ROOT_CAUSES,
   structuralQualityError,
+  STRUCTURAL_QUALITY_SENTRUX_VERIFIED_VERSIONS,
 } from "./constants.js";
 
 const SECRET_KEY = /(token|secret|password|passwd|api[-_]?key|authorization|cookie|private[-_]?key|credential)/iu;
 const DETECTION_TRANSPORT = "mcp-stdio";
+
+export function structuralQualityProviderCompatibility({ id, version, measurementModel, compatibilityKey } = {}) {
+  if (id !== "sentrux") return { supported: true, measurementModel, compatibilityKey };
+  if (!STRUCTURAL_QUALITY_SENTRUX_VERIFIED_VERSIONS.includes(version)) {
+    return {
+      supported: false,
+      reasonCode: E_STRUCTURAL_QUALITY_PROVIDER_VERSION_UNSUPPORTED,
+    };
+  }
+  return {
+    supported: true,
+    measurementModel: "structural-root-causes-v1",
+    compatibilityKey: "sentrux-structural-root-causes-v1",
+  };
+}
 
 function isRecord(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);

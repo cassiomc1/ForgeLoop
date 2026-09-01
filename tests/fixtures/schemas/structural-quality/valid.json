@@ -17,7 +17,13 @@
     "policyFingerprint": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
     "scopeFingerprint": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
     "baselineFingerprint": null,
+    "sourceMaterialFingerprint": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
     "stateRevision": 1
+  },
+  "sourceObservation": {
+    "beforeFingerprint": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "afterFingerprint": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "stable": true
   },
   "provider": {
     "id": "sentrux",
@@ -28,7 +34,7 @@
   "scope": {
     "kind": "PROJECT",
     "projectRoot": ".",
-    "rulesFingerprint": null
+    "providerConfigFingerprint": null
   },
   "snapshot": {
     "qualitySignal": 7243,

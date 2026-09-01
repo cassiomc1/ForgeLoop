@@ -49,6 +49,7 @@ function bindings(baselineFingerprint = null) {
     policyFingerprint: fingerprint,
     scopeFingerprint: fingerprint,
     baselineFingerprint,
+    sourceMaterialFingerprint: fingerprint,
     stateRevision: 0,
   };
 }
@@ -65,9 +66,10 @@ function baselineValue(overrides = {}) {
     status: "PASS",
     reasonCodes: [],
     bindings: bindings(),
+    sourceObservation: { beforeFingerprint: fingerprint, afterFingerprint: fingerprint, stable: true },
     provider: { id: "fake", version: "1.0.0", transport: "test", executionMode: "runtime-context" },
     detection: { available: true, providerId: "fake", providerVersion: "1.0.0", transport: "test", reasonCode: null },
-    scope: { kind: "PROJECT", projectRoot: ".", rulesFingerprint: null },
+    scope: { kind: "PROJECT", projectRoot: ".", providerConfigFingerprint: null },
     snapshot: snapshot(),
     ...overrides,
   };
@@ -85,9 +87,10 @@ function evaluationValue(baselineFingerprint, overrides = {}) {
     status: "PASS",
     reasonCodes: [],
     bindings: bindings(baselineFingerprint),
+    sourceObservation: { beforeFingerprint: fingerprint, afterFingerprint: fingerprint, stable: true },
     provider: { id: "fake", version: "1.0.0", transport: "test", executionMode: "runtime-context" },
     detection: { available: true, providerId: "fake", providerVersion: "1.0.0", transport: "test", reasonCode: null },
-    scope: { kind: "PROJECT", projectRoot: ".", rulesFingerprint: null },
+    scope: { kind: "PROJECT", projectRoot: ".", providerConfigFingerprint: null },
     baselineSignal: 9000,
     currentSignal: 9000,
     snapshot: snapshot(),
@@ -184,4 +187,25 @@ test("semantic tampering is rejected even when the JSON schema still matches", a
   } finally {
     await rm(target, { recursive: true, force: true });
   }
+});
+
+test("observed artifacts require a stable source binding", () => {
+  assert.throws(
+    () => validateStructuralQualityArtifact(baselineValue({
+      bindings: { ...bindings(), sourceMaterialFingerprint: null },
+    }), "baseline.json"),
+    { code: "E_STRUCTURAL_QUALITY_EVIDENCE_STALE" },
+  );
+  assert.throws(
+    () => validateStructuralQualityArtifact(baselineValue({
+      sourceObservation: { beforeFingerprint: fingerprint, afterFingerprint: "b".repeat(64), stable: true },
+    }), "baseline.json"),
+    { code: "E_STRUCTURAL_QUALITY_EVIDENCE_STALE" },
+  );
+  assert.throws(
+    () => validateStructuralQualityArtifact(evaluationValue(fingerprint, {
+      sourceObservation: { beforeFingerprint: fingerprint, afterFingerprint: "b".repeat(64), stable: false },
+    }), "evaluation.json"),
+    { code: "E_STRUCTURAL_QUALITY_EVIDENCE_STALE" },
+  );
 });

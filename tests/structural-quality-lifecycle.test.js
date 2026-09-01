@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -62,7 +62,7 @@ async function setupTask(target, selectedTaskId = taskId, qualityConfig = { mode
   await runAdvance({ target, packageRoot, taskId: selectedTaskId, to: "PLANNED" });
 }
 
-function fakeContext(sequence) {
+function fakeContext(sequence, scopeBinding = null) {
   let index = 0;
   const provider = {
     id: "fake",
@@ -75,6 +75,7 @@ function fakeContext(sequence) {
       return { snapshot: snapshot(value), provider: { id: "fake", version: "1.0.0", transport: "test", executionMode: "test" } };
     },
   };
+  if (scopeBinding) provider.scopeBinding = scopeBinding;
   return createForgeLoopContext({ structuralQualityProviders: { fake: provider } });
 }
 
@@ -134,6 +135,9 @@ test("observe mode records provider absence without blocking the task", async ()
     await runPreflight({ target, packageRoot, taskId: `${taskId}-observe` });
     await runActivate({ target, packageRoot, taskId: `${taskId}-observe` });
     await runAdvance({ target, packageRoot, taskId: `${taskId}-observe`, to: "PLANNED" });
+    const plannedNext = await runNext({ target, packageRoot, taskId: `${taskId}-observe` });
+    assert.equal(plannedNext.nextAction, "START_EXECUTION");
+    assert.equal(plannedNext.optionalActions[0].action, "CAPTURE_STRUCTURAL_QUALITY_BASELINE");
     const result = await runQualityBaseline({ target, packageRoot, taskId: `${taskId}-observe`, runtimeContext: fakeContext([9000]) });
     assert.equal(result.status, "NOT_OBSERVED");
     await runAdvance({ target, packageRoot, taskId: `${taskId}-observe`, to: "EXECUTING" });
@@ -141,6 +145,71 @@ test("observe mode records provider absence without blocking the task", async ()
     const verification = await runQualityVerify({ target, packageRoot, taskId: `${taskId}-observe`, runtimeContext: fakeContext([9000]) });
     assert.equal(verification.evaluation.status, "NOT_OBSERVED");
     assert.equal(verification.check.status, "not-run");
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
+test("a passed structural evaluation becomes stale before lifecycle review when source changes", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-structural-freshness-source-"));
+  const selectedTaskId = `${taskId}-fresh-source`;
+  try {
+    await setupTask(target, selectedTaskId);
+    const runtimeContext = fakeContext([9000]);
+    await runQualityBaseline({ target, packageRoot, taskId: selectedTaskId, runtimeContext });
+    await runAdvance({ target, packageRoot, taskId: selectedTaskId, to: "EXECUTING", runtimeContext });
+    await runAdvance({ target, packageRoot, taskId: selectedTaskId, to: "VERIFYING", runtimeContext });
+    await runQualityVerify({ target, packageRoot, taskId: selectedTaskId, runtimeContext });
+    await writeFile(path.join(target, "source-change.txt"), "changed after quality verification\n");
+
+    const status = await runQualityStatus({ target, packageRoot, taskId: selectedTaskId });
+    assert.equal(status.persistedStatus, "PASS");
+    assert.equal(status.freshness, "STALE");
+    assert.equal(status.current.status, "BLOCKED");
+    assert.ok(status.reasonCodes.includes("E_STRUCTURAL_QUALITY_EVIDENCE_STALE"));
+    const next = await runNext({ target, packageRoot, taskId: selectedTaskId });
+    assert.equal(next.nextAction, "VERIFY_STRUCTURAL_QUALITY", JSON.stringify(next));
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
+test("provider scope changes make an evaluation incomparable", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-structural-freshness-scope-"));
+  const selectedTaskId = `${taskId}-fresh-scope`;
+  let providerConfigFingerprint = "a".repeat(64);
+  try {
+    await setupTask(target, selectedTaskId);
+    const runtimeContext = fakeContext([9000], async () => ({ providerConfigFingerprint }));
+    await runQualityBaseline({ target, packageRoot, taskId: selectedTaskId, runtimeContext });
+    await runAdvance({ target, packageRoot, taskId: selectedTaskId, to: "EXECUTING", runtimeContext });
+    providerConfigFingerprint = "b".repeat(64);
+    await runAdvance({ target, packageRoot, taskId: selectedTaskId, to: "VERIFYING", runtimeContext });
+    const changed = await runQualityVerify({ target, packageRoot, taskId: selectedTaskId, runtimeContext });
+    assert.equal(changed.evaluation.status, "BLOCKED");
+    assert.equal(changed.evaluation.comparison.comparable, false);
+    assert.ok(changed.evaluation.reasonCodes.includes("PROVIDER_CONFIG_CHANGED"));
+    assert.equal(changed.check.status, "blocked");
+  } finally {
+    await rm(target, { recursive: true, force: true });
+  }
+});
+
+test("custom providers remain independent of Sentrux rules configuration", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-structural-custom-scope-"));
+  const selectedTaskId = `${taskId}-custom-scope`;
+  try {
+    await setupTask(target, selectedTaskId, { mode: "gate", provider: "fake" });
+    await mkdir(path.join(target, ".sentrux"), { recursive: true });
+    await writeFile(path.join(target, ".sentrux", "rules.toml"), "rule = \"A\"\n");
+    const runtimeContext = fakeContext([9000]);
+    await runQualityBaseline({ target, packageRoot, taskId: selectedTaskId, runtimeContext });
+    await runAdvance({ target, packageRoot, taskId: selectedTaskId, to: "EXECUTING", runtimeContext });
+    await runAdvance({ target, packageRoot, taskId: selectedTaskId, to: "VERIFYING", runtimeContext });
+    await writeFile(path.join(target, ".sentrux", "rules.toml"), "rule = \"B\"\n");
+    const result = await runQualityVerify({ target, packageRoot, taskId: selectedTaskId, runtimeContext });
+    assert.equal(result.evaluation.status, "PASS");
+    assert.equal(result.evaluation.comparison.comparable, true);
   } finally {
     await rm(target, { recursive: true, force: true });
   }

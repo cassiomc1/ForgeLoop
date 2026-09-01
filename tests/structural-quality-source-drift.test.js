@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -18,6 +18,7 @@ import { createContract, writeContract } from "../src/core/contract.js";
 import { createForgeLoopContext } from "../src/core/runtime-context.js";
 import { getPackageRoot } from "../src/core/templates.js";
 import { validateStructuralQualityCheckProvenance } from "../src/core/structural-quality/service.js";
+import { computeMaterialSourceFingerprint } from "../src/core/structural-quality/source-fingerprint.js";
 import { readWorkState } from "../src/core/work-state.js";
 import { createSentruxStructuralQualityProvider } from "../src/core/structural-quality/sentrux-mcp.js";
 
@@ -166,5 +167,21 @@ test("provenance check rejects evaluation check if worktree was modified after v
     assert.ok(errors.some((err) => err.code === "E_STRUCTURAL_QUALITY_EVIDENCE_STALE"));
   } finally {
     await rm(target, { recursive: true, force: true });
+  }
+});
+
+test("source fingerprinting fails closed on unsafe symlinks", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-source-symlink-"));
+  const outside = await mkdtemp(path.join(os.tmpdir(), "forgeloop-source-outside-"));
+  try {
+    await writeFile(path.join(outside, "secret.txt"), "outside material\n");
+    await symlink(path.join(outside, "secret.txt"), path.join(target, "linked.txt"));
+    await assert.rejects(
+      () => computeMaterialSourceFingerprint(target),
+      { code: "E_STRUCTURAL_QUALITY_SOURCE_FINGERPRINT_UNAVAILABLE" },
+    );
+  } finally {
+    await rm(target, { recursive: true, force: true });
+    await rm(outside, { recursive: true, force: true });
   }
 });

@@ -1,11 +1,12 @@
 import { withResolvedTask } from "../core/task-command.js";
 import { projectStructuralQualityStatus } from "../core/structural-quality/status.js";
 
-export async function runQualityStatus({ target, packageRoot, taskId } = {}) {
+export async function runQualityStatus({ target, packageRoot, taskId, runtimeContext } = {}) {
   return withResolvedTask(target, { taskId, packageRoot }, async (ctx) => projectStructuralQualityStatus({
     target,
     packageRoot,
     taskId: ctx?.taskId ?? taskId,
+    runtimeContext,
   }), { explicitRequired: true });
 }
 

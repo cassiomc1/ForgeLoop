@@ -12,7 +12,8 @@
     "contractFingerprint": "not-a-fingerprint",
     "routeFingerprint": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
     "policyFingerprint": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-    "scopeFingerprint": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    "scopeFingerprint": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "sourceMaterialFingerprint": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
   },
   "provider": {
     "id": "sentrux",
@@ -23,7 +24,7 @@
   "scope": {
     "kind": "PROJECT",
     "projectRoot": ".",
-    "rulesFingerprint": null
+    "providerConfigFingerprint": null
   },
   "snapshot": null
 }
