@@ -536,6 +536,32 @@
       ],
       "packaged": true,
       "generator": "scripts/generate-agent-protocol-summary.mjs"
+    },
+    {
+      "path": "docs/KNOWLEDGE_INTEGRATION_GAP_ANALYSIS.md",
+      "id": "knowledge-integration-gap-analysis",
+      "class": "reference",
+      "audience": [
+        "maintainer",
+        "integrator"
+      ],
+      "canonicalFor": [
+        "knowledge-integration-audit"
+      ],
+      "packaged": false
+    },
+    {
+      "path": "docs/KNOWLEDGE_SOURCES.md",
+      "id": "knowledge-sources",
+      "class": "reference",
+      "audience": [
+        "maintainer",
+        "integrator"
+      ],
+      "canonicalFor": [
+        "knowledge-provenance"
+      ],
+      "packaged": true
     }
   ]
 }
