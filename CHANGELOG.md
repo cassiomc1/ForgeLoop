@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Changed
+
+- Release preparation for the next published ForgeLoop version is in progress.
+
+## 1.9.0 - 2026-09-02
+
 ### Added
 
 - Added a provider-neutral structural-quality feedback loop with immutable
@@ -31,6 +37,20 @@
 - Sentrux is optional and user-managed; ForgeLoop does not install it, change
   analytics preferences, or claim built-in static analysis or a universal
   software-quality score.
+
+### Changed
+
+- Published the canonical read-only `task/structural-quality` Integration API
+  resource and advertised its Structural Quality capability in `protocol-info`.
+- Added clean-room package-consumer coverage for public Integration API imports,
+  initialization, provider-absent `quality-status`, packaged schemas, and
+  referenced diagrams without installing Sentrux.
+- Verified Sentrux 0.5.7 interoperability while keeping Architecture Rules
+  provenance separate from the provider-neutral Structural Quality signal.
+- Corrected Windows path-containment comparisons for case-insensitive realpath
+  results and retained cross-platform regression coverage.
+- Kept `@cassiomc1/forgeloop-mcp` on its compatible `>=1.5.0 <2` core range;
+  no cosmetic MCP release is required for this additive core release.
 
 ## 1.8.1 - 2026-09-01
 
