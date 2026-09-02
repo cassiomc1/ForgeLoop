@@ -1,5 +1,9 @@
 # Knowledge integration gap analysis
 
+> **Status:** Historical gap analysis. The provider-neutral advisory-context
+> boundary described here was implemented in ForgeLoop 1.10.0. Current
+> operational guidance lives in [`docs/ADVISORY_CONTEXT.md`](./ADVISORY_CONTEXT.md).
+
 Snapshot date: 2026-09-01
 Target package: ForgeLoop 1.8.0
 Baseline: current `main` state at review start (`a4360ac9b24b19c74171fdbac3163b892d896484`, tag `v1.8.0`)

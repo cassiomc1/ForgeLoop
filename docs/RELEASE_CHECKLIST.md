@@ -16,6 +16,20 @@ preparation and verification checklist; it does not authorize publication.
 
 ## Protocol and attestation
 
+- [ ] `protocol-info` and the Integration API capability contracts agree.
+- [ ] `canonicalHandoffs` v2 is advertised consistently.
+- [ ] `advisoryContextProviders` v1 is advertised consistently.
+- [ ] Advisory context remains Integration-API-only.
+- [ ] `next`, `status`, and `task/context` invoke zero advisory providers.
+- [ ] Advisory request budgets are normalized before provider invocation.
+- [ ] Advisory results are never persisted by ForgeLoop.
+- [ ] Same-consumer handoff acceptance is idempotent.
+- [ ] Different-consumer handoff acceptance fails closed.
+- [ ] Concurrent acceptance creates one `HANDOFF_ACCEPTED` event.
+- [ ] Clean HEAD/branch drift rejects handoff acceptance.
+- [ ] Stale contract/route identity rejects handoff creation or acceptance.
+- [ ] An invalid event ledger projects `INCONSISTENT`.
+- [ ] Continuity lint remains non-authoritative and non-evidence.
 - [ ] `npm run dependency:policy` passes without adding runtime dependencies.
 - [ ] `npm run lint` passes.
 - [ ] `npm test` passes.

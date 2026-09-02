@@ -124,6 +124,30 @@ provide a universal exactly-once guarantee.
 | Signature confusion | A plain digest or platform publication signal is presented as a cryptographic signature | External signing-provider boundary | `ATTESTED` requires a valid external signature under the requested signer policy; private keys and tokens never enter persisted artifacts | Trust in the external signer and transparency infrastructure remains outside ForgeLoop | `tests/signing-provider.test.js` |
 | Incomplete revision coverage | A changed source path has no valid task attestation or overlaps another task with a conflicting digest | Provider-neutral range coverage evaluator | Changed, covered, uncovered, and overlapping paths are computed from the selected revision provider; enforcement fails closed on gaps or conflicts | Coverage is limited to the provider's observable revision/content boundary | `tests/attestation-coverage.test.js`, `tests/generic-ci-attestation.test.js` |
 
+## Advisory context provider boundary
+
+Advisory provider output is untrusted external input. ForgeLoop exposes only a
+bounded, allowlisted, non-evidence and non-executable projection through the
+Integration API. Provider identity and availability are explicit; no provider
+is discovered or invoked by lifecycle commands, and provider text is never
+treated as trusted protocol input.
+
+| Threat | Mitigation | Residual limitation | Test evidence |
+| --- | --- | --- | --- |
+| Prompt injection in advisory results | Portable text checks, authority-field stripping, and `actionability: NON_EXECUTABLE` prevent provider text from becoming commands or lifecycle instructions | A host may still choose to display or act on advisory text outside ForgeLoop | `tests/advisory-context-security.test.js`, `tests/portable-context.test.js` |
+| Secret leakage from provider output | Secret-like values are rejected in selected portable fields; unknown fields are discarded before logging or projection | Unknown encodings and secrets returned only through an external host remain outside this scanner | `tests/advisory-context-security.test.js` |
+| Provider identity substitution | Registry key and resolved provider `id` must match the declared identity | A host that controls the runtime registry can replace its own provider before the call | `tests/advisory-context-runtime.test.js` |
+| Unbounded provider retrieval | Query, item, total-output, raw-result, and timeout budgets are normalized and enforced before/while provider execution | The host controls provider resource usage outside the bounded call | `tests/advisory-context-service.test.js`, `tests/advisory-context-provider.test.js` |
+| Historical command replay from advisory text | Advisory output cannot satisfy command input, evidence, state, or next-action authority; recall is never automatic | A receiving host must still avoid copying untrusted text into its own command runner | `tests/advisory-context-security.test.js` |
+| Handoff acceptance replay | Acceptance is keyed by the immutable handoff and consumer identity and is checked against the append-only ledger | External systems may still deliver duplicate messages; callers must surface the canonical rejection | `tests/handoff-acceptance.test.js` |
+| Handoff double-consumption race | Serialized ledger append and exactly-once acceptance projection permit one consumer; same-consumer retry is idempotent | Filesystem privilege outside ForgeLoop can still corrupt local artifacts | `tests/handoff-acceptance.test.js`, `tests/concurrent-ledger.test.js` |
+| Stale Git checkout acceptance | Acceptance compares the handoff snapshot with the current branch and HEAD, work-state, contract, route, and changed paths | A separately privileged process can change the checkout immediately after validation | `tests/handoff-acceptance.test.js` |
+| Stale contract/route handoff | Handoff creation and acceptance bind contract and route fingerprints and fail closed on drift | The caller must create a fresh handoff after a legitimate contract or route change | `tests/handoff-envelope.test.js`, `tests/handoff-acceptance.test.js` |
+| Invalid ledger projection | Handoff readers validate digest, event relationships, and the complete ledger; invalid history projects `INCONSISTENT`, never `OPEN` or `ACCEPTED` | Local consistency validation is not remote attestation against a privileged rewrite | `tests/handoff-acceptance.test.js`, `tests/handoff-tamper.test.js` |
+
+ForgeLoop does not make advisory text trusted. It makes the boundary explicit,
+bounded, and fail-closed where protocol-owned interpretation is required.
+
 ## Structural-quality provider boundary
 
 Structural-quality observations are untrusted external data. The built-in

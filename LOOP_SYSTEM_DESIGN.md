@@ -465,6 +465,39 @@ The README explains the file set, activation behavior, current/relative/absolute
 target installation, first-run profile flow, local validation commands, and safe
 update practice.
 
+## Advisory and handoff trust boundaries
+
+Optional advisory context remains outside canonical lifecycle state and evidence:
+
+```text
+External advisory provider
+        |
+        v
+bounded recall input
+        |
+        v
+allowlist normalization
+        |
+        v
+ADVISORY / NON_EVIDENCE / NON_EXECUTABLE
+```
+
+Handoff acceptance is a separate operational receipt over an immutable snapshot:
+
+```text
+canonical state + current repository
+        |
+        v
+immutable handoff
+        |
+        v
+HANDOFF_ACCEPTED ledger receipt
+```
+
+Neither boundary transfers claims or creates evidence or authority. Advisory
+providers are lazy and opt-in through the Integration API; handoff acceptance
+is orthogonal to lifecycle phases and does not authorize the receiving harness.
+
 ## Out of scope
 
 - remote prompt services or databases;

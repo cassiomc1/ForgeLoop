@@ -1,8 +1,9 @@
-# Advisory Context & External Memory Boundary
+# Advisory Context & External Provider Boundary
 
 ## Overview
 
-ForgeLoop treats external memory as **optional, host-injected, lazy, and strictly advisory**.
+ForgeLoop treats external advisory context as **optional, host-injected, lazy,
+and strictly advisory**.
 
 The core invariant of the protocol is:
 
@@ -133,3 +134,41 @@ integer requests are clamped to the canonical maxima, and non-finite,
 non-integer, below-minimum, string, boolean, object, or null values fail before
 provider lookup with `E_ADVISORY_CONTEXT_REQUEST_INVALID`. Providers therefore
 never receive caller-requested budgets above ForgeLoop's supported maxima.
+
+## Replay safety and failure handling
+
+Advisory recall is an explicit host operation. ForgeLoop does not record a
+provider query, provider response, or item fingerprint in the task event ledger,
+and a later recall is never treated as proof that an earlier response was
+current. Hosts should re-query when context is needed and must independently
+validate any proposed action or lifecycle step against canonical state.
+
+Provider failures remain advisory failures and do not block the canonical loop.
+The public boundary reports these stable codes:
+
+| Code | Meaning |
+| --- | --- |
+| `E_ADVISORY_CONTEXT_PROVIDER_INVALID` | Provider identity or recall contract is invalid. |
+| `E_ADVISORY_CONTEXT_PROVIDER_UNAVAILABLE` | The requested provider is not registered in the runtime context. |
+| `E_ADVISORY_CONTEXT_QUERY_INVALID` | The query is empty, unsafe, or exceeds the query budget. |
+| `E_ADVISORY_CONTEXT_REQUEST_INVALID` | A recall budget has an invalid type, range, or numeric value. |
+| `E_ADVISORY_CONTEXT_RESULT_INVALID` | The provider returned an invalid result shape. |
+| `E_ADVISORY_CONTEXT_TIMEOUT` | Provider recall exceeded the bounded timeout. |
+| `E_ADVISORY_CONTEXT_OUTPUT_LIMIT` | The raw or normalized provider output exceeded a bounded limit. |
+| `E_PORTABLE_CONTEXT_INVALID` | Portable text contains unsafe controls, secrets, or unsupported content. |
+
+## What ForgeLoop Never Does Automatically
+
+- It does not look up a provider on startup.
+- It does not look up a provider for `status`, `next`, `preflight`, `complete`,
+  `task-show`, or the read-only `task/context` resource.
+- It does not persist provider results, queries, or provider metadata in
+  `.forgeloop/` or the event ledger.
+- It does not turn provider text into a command, lifecycle transition, check,
+  evidence record, approval, claim, or next action.
+- It does not infer provider trust from a package version, a source path, or a
+  host label. The provider identity contract is resolved at the Integration
+  API boundary and remains descriptive rather than authenticated authority.
+
+The host owns whether and when to display or use advisory context. ForgeLoop
+owns only the bounded normalization and trust-role projection.

@@ -457,6 +457,86 @@ operational context only: a handoff is not delegation, authority, independent
 review evidence, or completion evidence. Use `continuity.json` for mutable
 resume notes and canonical execution artifacts for proof.
 
+### Recipe 18A — Accept an Immutable Handoff Exactly Once
+
+After inspecting the snapshot and confirming that the receiving harness is
+actually consuming it, record the operational receipt:
+
+```bash
+forgeloop handoff-accept --task task-001 \
+  --handoff <handoffId> \
+  --consumer-id agent-session-42 \
+  --harness codex \
+  --json
+```
+
+Retrying with the same consumer is idempotent. A different consumer receives
+`E_HANDOFF_ALREADY_ACCEPTED`. Acceptance is operational only: it does not
+transfer claims, create evidence, approve delegation, or grant authority.
+
+### Recipe 18B — Diagnose an Inconsistent Handoff
+
+Inspect the derived projection and ledger before attempting any repair:
+
+```bash
+forgeloop handoff-list --task task-001 --json
+forgeloop handoff-show --task task-001 --id <handoffId> --json
+forgeloop validate-protocol --task task-001 --json
+```
+
+`INCONSISTENT` is fail-closed. Check the returned reason codes for a stale
+contract/route/repository snapshot, an unbound legacy handoff, a digest mismatch,
+or invalid acceptance history. Do not edit the immutable handoff or
+`events.ndjson`; create a fresh handoff after the canonical issue is resolved.
+
+### Recipe 18C — Use an Advisory Provider from a Host Integration
+
+Register a provider in runtime context and invoke recall explicitly:
+
+```javascript
+import {
+  createForgeLoopContext,
+  recallAdvisoryContext,
+} from "@cassiomc1/forgeloop/integration";
+
+const runtimeContext = createForgeLoopContext({
+  advisoryContextProviders: {
+    "host-context": {
+      id: "host-context",
+      recall: async ({ query }) => ({ items: await hostLookup(query) }),
+    },
+  },
+});
+
+const result = await recallAdvisoryContext({
+  target: ".",
+  taskId: "task-001",
+  providerName: "host-context",
+  query: "current authentication constraints",
+  runtimeContext,
+});
+```
+
+Recall is lazy, bounded, opt-in, non-persisted, non-evidence, and
+non-executable. Validate every proposed change against canonical state and
+verification instead of executing provider text.
+
+### Recipe 18D — Resume with Continuity Lint Warnings
+
+Treat lint findings as inspection hints only:
+
+```bash
+forgeloop continuity --task task-001 --json
+forgeloop reconcile-continuity --task task-001 --json
+forgeloop next --task task-001 --json
+```
+
+Findings such as `CONTINUITY_REMAINING_ALREADY_COMPLETED`,
+`CONTINUITY_FOCUS_ALREADY_COMPLETED`, `CONTINUITY_ITEM_ROLE_CONFLICT`,
+`CONTINUITY_INSPECT_PATH_MISSING`, and `CONTINUITY_EMPTY_HINT_SET` are
+non-authoritative and non-evidence. Refresh the note with
+`record-continuity` when useful, then follow the canonical next action.
+
 ---
 
 ### Recipe 19 — Apply a Responsibility Contract

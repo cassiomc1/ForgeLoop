@@ -31,6 +31,7 @@ relevant guides.
 - **Inspect a real ForgeLoop execution** → [`poc/README.md`](./poc/README.md)
 - **Full protocol specification** → [`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md)
 - **Integrating an AI harness** → [`PROTOCOL_INTEGRATION.md`](./PROTOCOL_INTEGRATION.md)
+- **Optional advisory context providers** → [`docs/ADVISORY_CONTEXT.md`](./docs/ADVISORY_CONTEXT.md)
 - **Agent bootstrap summary** → [`docs/AGENT_PROTOCOL_SUMMARY.md`](./docs/AGENT_PROTOCOL_SUMMARY.md)
 - **Continuing another harness's task** → [`docs/CROSS_HARNESS_CONTINUITY.md`](./docs/CROSS_HARNESS_CONTINUITY.md)
 - **CLI command reference** → [`docs/CLI_REFERENCE.md`](./docs/CLI_REFERENCE.md)
@@ -135,6 +136,14 @@ informational or completion-required. Sentrux is an optional user-managed
 sensor, not a ForgeLoop dependency or a universal software-quality score. See
 [`docs/STRUCTURAL_QUALITY.md`](./docs/STRUCTURAL_QUALITY.md).
 
+### Optional advisory context
+
+ForgeLoop can consume host-provided advisory context through the Integration
+API. Providers are lazy and opt-in, and ForgeLoop does not persist their
+results. Provider output is never lifecycle state, evidence, authority,
+completion truth, or next-action authority, and it is never executable as a
+protocol command. See [`docs/ADVISORY_CONTEXT.md`](./docs/ADVISORY_CONTEXT.md).
+
 ### Optional task boundaries and differential verification
 
 Workspace binding, immutable handoff envelopes, and responsibility contracts
@@ -231,6 +240,10 @@ authoritative. Hosts without `task/context` use balanced compatibility behavior
 and must not invent a local LIGHT heuristic. Optional context usage is
 host-reported or `UNKNOWN`; values are never estimated.
 
+`protocol-info --json` advertises the optional `advisoryContextProviders` v1
+capability, but advisory recall remains Integration API only. The stock CLI
+does not auto-recall providers and does not expose a `context-recall` command.
+
 Before npm publication, the same source checkout can be exercised without a
 network or package lookup:
 
@@ -302,6 +315,33 @@ forgeloop continuity --task example-task --json
 forgeloop reconcile-continuity --task example-task --json
 forgeloop next --task example-task --json
 ```
+
+For an explicit immutable handoff, use the complete operational flow:
+
+```bash
+forgeloop handoff-create --task example-task --recipient codex --json
+forgeloop handoff-list --task example-task --json
+forgeloop handoff-show --task example-task --id <handoff-id> --json
+forgeloop handoff-accept \
+  --task example-task \
+  --handoff <handoff-id> \
+  --consumer-id codex-session-42 \
+  --harness codex \
+  --json
+```
+
+Handoff projections use these statuses:
+
+```text
+OPEN         valid bound snapshot awaiting operational acceptance
+ACCEPTED     exactly-once operational receipt recorded
+UNBOUND      legacy handoff without exact work-state binding
+INCONSISTENT ledger, digest, or acceptance history is not trustworthy
+```
+
+Acceptance is `OPERATIONAL_RECEIPT_ONLY`: it transfers no claims and creates
+no evidence or authority. Same-consumer retries are idempotent; a different
+consumer receives a fail-closed `E_HANDOFF_ALREADY_ACCEPTED` result.
 
 See [`docs/CROSS_HARNESS_CONTINUITY.md`](./docs/CROSS_HARNESS_CONTINUITY.md) for full handoff and recovery procedures.
 

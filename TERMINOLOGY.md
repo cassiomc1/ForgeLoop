@@ -47,6 +47,18 @@
 | Attestation statement | A deterministic in-toto Statement v1 binding the code manifest to valid ForgeLoop completion evidence. |
 | Revision-range coverage | A post-completion result asking whether changed paths between two revisions are covered by valid task attestations. |
 | Generic CI | The provider-neutral range-verification boundary that thin platform adapters may invoke without adding platform trust rules to the core. |
+| Advisory Context | Optional host-provided information returned for human or agent consideration; it is not canonical task state, evidence, authority, completion truth, or next-action authority. |
+| Advisory Context Provider | A runtime-injected Integration API provider with a declared identity and bounded recall method; providers are lazy, opt-in, and not persisted by ForgeLoop. |
+| Portable Context | Bounded text normalized for transport, with control characters, secrets, unsafe paths, and unsupported fields rejected or discarded according to the canonical boundary. |
+| Handoff Acceptance | An exactly-once, ledger-backed operational receipt that records consumption of an immutable handoff without transferring claims or creating evidence or authority. |
+| Consumer ID | A caller-supplied descriptive key used to make handoff acceptance idempotent; it is not an authenticated identity. |
+| Acceptance Status | The derived handoff projection `OPEN`, `ACCEPTED`, `UNBOUND`, or `INCONSISTENT`; it is not a lifecycle phase. |
+| Continuity Lint | Non-authoritative, non-evidence diagnostics for stale or contradictory operational resume hints. |
+
+`consumerId` is not an authenticated identity. A `harness`, recipient hint,
+session label, or transport channel is descriptive metadata, not authority.
+The harness owns execution and presentation; ForgeLoop owns canonical state,
+evidence relationships, and validated lifecycle decisions.
 
 | Execution continuity | Bounded current-task implementation context used to resume the same ForgeLoop task across sessions or harnesses. |
 | Continuity artifact | `.forgeloop/continuity.json`; non-evidence operational context bound to canonical work state. |

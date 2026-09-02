@@ -26,6 +26,26 @@ export function unreleasedSection(changelog) {
   return nextHeading ? rest.slice(0, nextHeading.index) : rest;
 }
 
+export function releaseSection(changelog) {
+  const heading = /^##\s+(v?\d+\.\d+\.\d+)(?:\s+-[^\n]*)?\s*$/imu.exec(changelog);
+  if (!heading) return null;
+  const rest = changelog.slice(heading.index + heading[0].length);
+  const nextHeading = /^##\s/imu.exec(rest);
+  return {
+    version: heading[1].replace(/^v/u, ""),
+    section: nextHeading ? rest.slice(0, nextHeading.index) : rest,
+  };
+}
+
+function compareVersions(left, right) {
+  const leftParts = left.split(".").map(Number);
+  const rightParts = right.split(".").map(Number);
+  for (let index = 0; index < leftParts.length; index += 1) {
+    if (leftParts[index] !== rightParts[index]) return leftParts[index] - rightParts[index];
+  }
+  return 0;
+}
+
 export function stripHtmlComments(value) {
   const chunks = [];
   let cursor = 0;
@@ -55,11 +75,15 @@ export function hasMeaningfulUnreleasedContent(section) {
 
 export function checkChangelogFreshness({ changelog, tags = [], commitsSinceLatestTag = 0, allowEmpty = false } = {}) {
   const latestTag = latestReleaseTag(tags);
-  const section = unreleasedSection(changelog);
+  const unreleased = unreleasedSection(changelog);
+  const pendingRelease = releaseSection(changelog);
+  const pendingReleaseIsNewer = pendingRelease &&
+    (!latestTag || compareVersions(pendingRelease.version, latestTag.replace(/^v/u, "")) > 0);
+  const section = unreleased || (pendingReleaseIsNewer ? pendingRelease.section : "");
   const hasChanges = commitsSinceLatestTag > 0;
   const populated = hasMeaningfulUnreleasedContent(section);
   const ok = allowEmpty || !hasChanges || populated;
-  return { ok, latestTag, hasChanges, populated, section };
+  return { ok, latestTag, hasChanges, populated, section, pendingRelease };
 }
 
 async function run() {
@@ -71,7 +95,7 @@ async function run() {
     : Number(git(["rev-list", "--count", "HEAD"]));
   const result = checkChangelogFreshness({ changelog, tags, commitsSinceLatestTag, allowEmpty: process.argv.includes("--allow-empty") });
   if (!result.ok) {
-    console.error(`CHANGELOG.md has changes since ${result.latestTag ?? "the initial commit"} but the Unreleased section is empty.`);
+    console.error(`CHANGELOG.md has changes since ${result.latestTag ?? "the initial commit"} but no populated Unreleased or pending release section exists.`);
     process.exitCode = 1;
     return;
   }

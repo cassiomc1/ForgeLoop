@@ -9,3 +9,18 @@ ForgeLoop is vendor-neutral and does not use a supported-agent allowlist.
 The canonical integration contract is:
 
 [`PROTOCOL_INTEGRATION.md`](./PROTOCOL_INTEGRATION.md)
+
+## Current harness expectations
+
+These expectations apply to any compatible harness even though this filename is
+retained as a deprecated compatibility stub:
+
+- Feature-detect capability versions from `protocol-info --json` or the stable
+  Integration API; do not infer support from a package version.
+- Do not auto-recall advisory context, execute advisory text, or treat it as
+  state, evidence, authority, completion, or next-action truth.
+- Do not infer handoff acceptance from receiving a file or message. Run
+  `handoff-accept` only when the receiving harness actually consumes the
+  immutable handoff.
+- Preserve the distinction between `consumerId`, harness labels, and
+  authenticated identity; none grants authority or transfers claims.

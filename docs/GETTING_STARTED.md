@@ -439,6 +439,8 @@ the workflow needs those boundaries:
 forgeloop handoff-create --task <taskId> --note "Continue verification" --json
 forgeloop handoff-list --task <taskId> --json
 forgeloop handoff-show --task <taskId> --id <handoffId> --json
+forgeloop handoff-accept --task <taskId> --handoff <handoffId> \
+  --consumer-id <consumerId> --harness <harness> --json
 forgeloop responsibility-set --task <taskId> --label implementation --allowed-path src --required-check unit-tests --json
 forgeloop responsibility-status --task <taskId> --json
 ```
@@ -449,6 +451,26 @@ or HEAD alone is not enough. A handoff is immutable protocol-derived context,
 not delegation or evidence. A responsibility label is descriptive, not a
 coder/reviewer/cleaner role, and its allowed paths, required checks, and frozen
 inputs are mechanically enforced when present.
+
+### Optional advisory context
+
+An embedding host may inject an advisory provider through the Integration API
+when extra context is useful. This is not part of the minimum quickstart:
+
+```javascript
+const runtimeContext = createForgeLoopContext({
+  advisoryContextProviders: {
+    "host-context": {
+      id: "host-context",
+      recall: async ({ query }) => ({ items: await hostLookup(query) }),
+    },
+  },
+});
+```
+
+Recall is explicit, lazy, bounded, and non-persisted. Provider output is never
+state, evidence, authority, completion truth, or executable instructions. See
+[`ADVISORY_CONTEXT.md`](./ADVISORY_CONTEXT.md) for the full contract.
 
 ### Differential Verification Scope
 
