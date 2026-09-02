@@ -278,6 +278,7 @@ forgeloop handoff-accept \
 ```
 
 Acceptance enforces:
+
 1. **Unbroken Binding**: Handoff must contain `workStateFingerprint` (legacy unbound handoffs fail with `E_HANDOFF_ACCEPTANCE_UNBOUND`).
 2. **Freshness**: Work state, contract fingerprint, route fingerprint, changed paths, and the directly observed current repository branch and HEAD must match the handoff snapshot (any drift fails with `E_HANDOFF_STALE`).
 3. **Single Consumer**: The handoff can be accepted by at most one consumer. If another consumer attempts acceptance, it fails with `E_HANDOFF_ALREADY_ACCEPTED`. Retrying with the same `consumerId` is idempotent.
@@ -289,6 +290,7 @@ delegate work, authorize actions, approve review, or create verification evidenc
 ### 8.3 Acceptance Inspection
 
 Commands `handoff-show` and `handoff-list` project current acceptance status:
+
 - `OPEN`: Handoff is valid, bound, and waiting for acceptance.
 - `ACCEPTED`: Successfully accepted by a specific consumer.
 - `UNBOUND`: Legacy handoff envelope lacking work-state binding.

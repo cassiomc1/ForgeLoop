@@ -106,6 +106,7 @@ Every returned result is normalized, frozen, and stamped with immutable trust me
 ForgeLoop checks the raw result shape and item count, then selects bounded items and projects only allowlisted fields before portable safety inspection. Unknown raw fields—including secret-like or cyclic metadata—are discarded and are never copied or logged. A secret in a selected field still fails closed.
 
 Any raw fields returned by a provider that attempt to assert protocol authority are completely stripped during normalization:
+
 - `nextAction`, `command`, `phase`
 - `evidence`, `approval`, `authority`
 - `writeClaims`, `changedPaths`, `checkIds`
@@ -115,9 +116,11 @@ Only allowlisted fields (`title`, `summary`, `sourceRef`, `observedAt`, `confide
 ## Portable Safety Boundary
 
 All text flowing into or out of advisory recall is verified:
+
 - **Control Character Rejection**: ASCII control characters (`\x00-\x08`, `\x0B-\x0C`, `\x0E-\x1F`, `\x7F`) throw `E_PORTABLE_CONTEXT_INVALID`.
 - **Secret Scanning**: Inputs and outputs containing secret tokens (e.g., `Bearer <token>`, `ghp_`, AWS keys, private keys) throw `E_PORTABLE_CONTEXT_INVALID`.
 - **Budget Enforcements**:
+
   - Max query characters: 1,000 chars (`E_ADVISORY_CONTEXT_QUERY_INVALID`)
   - Max item summary: 4,000 chars (`E_ADVISORY_CONTEXT_OUTPUT_LIMIT`)
   - Default item limit: 6 items (max 20)
