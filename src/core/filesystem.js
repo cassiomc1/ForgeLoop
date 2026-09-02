@@ -73,6 +73,22 @@ export function ensureWithin(root, relativePath) {
   return path.join(root, normalized);
 }
 
+export function isPathWithin(root, candidate, { platform = process.platform } = {}) {
+  const pathApi = platform === "win32" ? path.win32 : path;
+  const normalizeForComparison = (value) => {
+    const normalized = pathApi.normalize(value);
+    return platform === "win32" ? normalized.toLowerCase() : normalized;
+  };
+  const relative = pathApi.relative(
+    normalizeForComparison(root),
+    normalizeForComparison(candidate),
+  );
+  return relative === ""
+    || (relative !== ".."
+      && !relative.startsWith(`..${pathApi.sep}`)
+      && !pathApi.isAbsolute(relative));
+}
+
 export async function assertSafePath(root, relativePath) {
   const destination = ensureWithin(root, relativePath);
   const absoluteRoot = path.resolve(root);
@@ -105,8 +121,7 @@ export async function assertSafePath(root, relativePath) {
       }
       const resolvedRoot = await realpathWithTransientWindowsRetry(absoluteRoot);
       const resolvedExisting = await realpathWithTransientWindowsRetry(existing);
-      const relativeResolved = path.relative(resolvedRoot, resolvedExisting);
-      if (relativeResolved === ".." || relativeResolved.startsWith(`..${path.sep}`) || path.isAbsolute(relativeResolved)) {
+      if (!isPathWithin(resolvedRoot, resolvedExisting)) {
         throw new Error(`Path escapes target directory: ${relativePath}`);
       }
       return destination;
