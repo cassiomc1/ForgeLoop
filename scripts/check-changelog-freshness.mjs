@@ -27,7 +27,7 @@ export function unreleasedSection(changelog) {
 }
 
 export function releaseSection(changelog) {
-  const heading = /^##\s+(v?\d+\.\d+\.\d+)(?:\s+-[^\n]*)?\s*$/imu.exec(changelog);
+  const heading = /^##[ \t]+(v?\d+\.\d+\.\d+)(?:[ \t]+-[^\r\n]*)?$/imu.exec(changelog);
   if (!heading) return null;
   const rest = changelog.slice(heading.index + heading[0].length);
   const nextHeading = /^##\s/imu.exec(rest);

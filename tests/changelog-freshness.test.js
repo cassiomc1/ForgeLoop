@@ -35,7 +35,7 @@ test("recognizes a populated pending release section before its tag exists", () 
   const changelog = `# Changelog\n\n## 1.10.0 - 2026-09-02\n\n- Add the release contract\n\n## 1.9.0 - 2026-08-30\n`;
   assert.deepEqual(releaseSection(changelog), {
     version: "1.10.0",
-    section: "\n- Add the release contract\n\n",
+    section: "\n\n- Add the release contract\n\n",
   });
   assert.equal(
     checkChangelogFreshness({
