@@ -93,9 +93,13 @@ commands in [`EXECUTION_PROFILE_BENCHMARKS.md`](./EXECUTION_PROFILE_BENCHMARKS.m
 The benchmark source policy accepts provider or host observations only and
 keeps unavailable or non-comparable measurements out of efficiency claims.
 
-### Advisory Memory & Handoff Acceptance
+### Advisory Context & Handoff Acceptance
 
-The programmatic integration API exposes lazy advisory context querying and exactly-once handoff acceptance:
+Capability negotiation is feature-first: `canonicalHandoffs` is v2 and
+`advisoryContextProviders` is v1. These capability-family versions are
+independent of Protocol v1, schema v1, and Integration API v1. The programmatic
+integration API exposes lazy advisory context querying and exactly-once handoff
+acceptance:
 
 ```javascript
 import {
@@ -105,7 +109,7 @@ import {
   resolveHandoffAcceptance,
 } from "@cassiomc1/forgeloop/integration";
 
-// 1. Register host-provided advisory memory
+// 1. Register host-provided advisory context
 const runtimeContext = createForgeLoopContext({
   advisoryContextProviders: {
     "host-memory": {
@@ -141,6 +145,13 @@ with `E_ADVISORY_CONTEXT_REQUEST_INVALID` before provider lookup. The registry
 key and resolved provider `id` must match. Handoff acceptance independently
 checks canonical state and the current repository branch/HEAD, and remains an
 exactly-once operational receipt with no evidence, claim transfer, or authority.
+
+Advisory context is not a canonical resource unless a future explicitly
+versioned resource introduces one. `protocol-info` advertises the optional
+provider capability, but the stock CLI never recalls it automatically and
+there is no stock `context-recall` command. A consumer that only understands
+`canonicalHandoffs` v1 may disable only the handoff-specific UI while retaining
+the rest of Protocol v1 functionality.
 
 ## Consumers
 
