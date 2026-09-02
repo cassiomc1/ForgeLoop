@@ -61,6 +61,58 @@ export interface ForgeLoopContext {
   verificationExecutionPolicy?: { requiredIsolation: string };
   usageProvider?: ForgeLoopUsageProvider;
   structuralQualityProviders?: Readonly<Record<string, ForgeLoopStructuralQualityProvider | ForgeLoopStructuralQualityProviderFactory>>;
+  advisoryContextProviders?: Readonly<Record<string, ForgeLoopAdvisoryContextProvider | ForgeLoopAdvisoryContextProviderFactory>>;
+}
+
+export interface ForgeLoopAdvisoryContextItem {
+  title?: string;
+  summary: string;
+  sourceRef?: string;
+  observedAt?: string;
+  confidence?: number;
+  itemFingerprint?: string;
+}
+
+export interface ForgeLoopAdvisoryContextRecallInput {
+  projectPath: string;
+  taskId: string;
+  query: string;
+  limit?: number;
+  maxItemChars?: number;
+  maxTotalChars?: number;
+  timeoutMs?: number;
+}
+
+export interface ForgeLoopAdvisoryContextRecallOutput {
+  items: Array<{
+    title?: string;
+    summary: string;
+    sourceRef?: string;
+    observedAt?: string;
+    confidence?: number;
+  }>;
+}
+
+export interface ForgeLoopAdvisoryContextProvider {
+  id: string;
+  version?: string;
+  recall(input: ForgeLoopAdvisoryContextRecallInput): Promise<ForgeLoopAdvisoryContextRecallOutput> | ForgeLoopAdvisoryContextRecallOutput;
+}
+
+export type ForgeLoopAdvisoryContextProviderFactory = () => ForgeLoopAdvisoryContextProvider | Promise<ForgeLoopAdvisoryContextProvider>;
+
+export interface ForgeLoopNormalizedAdvisoryContextResult {
+  provider: {
+    id: string;
+    version?: string;
+  };
+  taskId: string | null;
+  authority: "ADVISORY";
+  evidenceAuthority: "NONE";
+  actionability: "NON_EXECUTABLE";
+  trustRole: "NON_EVIDENCE_ADVISORY_CONTEXT";
+  persisted: false;
+  items: readonly ForgeLoopAdvisoryContextItem[];
 }
 
 export interface ForgeLoopStructuralQualityProviderInput {
