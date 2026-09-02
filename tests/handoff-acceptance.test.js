@@ -7,7 +7,7 @@ import {
   acceptCanonicalHandoff,
   resolveHandoffAcceptance,
 } from "../src/core/handoff-acceptance.js";
-import { createCanonicalHandoff, readCanonicalHandoff } from "../src/core/handoff.js";
+import { createCanonicalHandoff } from "../src/core/handoff.js";
 import { bindTaskWorkspace } from "../src/core/workspace-binding.js";
 import { validateEventLedger } from "../src/core/events.js";
 import { canonicalFingerprint, writeJsonArtifact } from "../src/core/artifacts.js";
@@ -20,7 +20,6 @@ import {
   E_HANDOFF_ACCEPTANCE_UNBOUND,
   E_HANDOFF_STALE,
   E_HANDOFF_ALREADY_ACCEPTED,
-  E_HANDOFF_ACCEPTANCE_INCONSISTENT,
 } from "../src/core/error-codes.js";
 
 const packageRoot = getPackageRoot();

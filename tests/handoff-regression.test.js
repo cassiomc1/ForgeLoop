@@ -3,7 +3,6 @@ import test from "node:test";
 
 import { runNext } from "../src/commands/next.js";
 import { runStatus } from "../src/commands/status.js";
-import { runComplete } from "../src/commands/complete.js";
 import { runHandoffCreate } from "../src/commands/handoff-create.js";
 import { runHandoffList } from "../src/commands/handoff-list.js";
 import { runHandoffShow } from "../src/commands/handoff-show.js";

@@ -4,7 +4,6 @@ import test from "node:test";
 import {
   normalizePortableText,
   assertPortableContextSafe,
-  PortableContextError,
 } from "../src/core/portable-context.js";
 import { E_PORTABLE_CONTEXT_INVALID } from "../src/core/error-codes.js";
 
