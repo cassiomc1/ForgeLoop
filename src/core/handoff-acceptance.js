@@ -2,6 +2,7 @@ import { canonicalFingerprint } from "./artifacts.js";
 import { readContract } from "./contract.js";
 import { readPersistedRoute } from "./route-artifact.js";
 import { readWorkState } from "./work-state.js";
+import { assertStateIdentity } from "./completion-relationships.js";
 import { compareRepositoryFingerprint, readCanonicalHandoff } from "./handoff.js";
 import { appendProtocolEvent, validateEventLedger } from "./events.js";
 import { currentChangedPaths, currentRepositoryFingerprint } from "./repository.js";
@@ -164,14 +165,21 @@ export async function acceptCanonicalHandoff(target, {
       }
 
       const contract = await readContract(target, packageRoot, { taskId });
+      const route = await readPersistedRoute(target, packageRoot, { taskId });
+      try {
+        assertStateIdentity({ contract, route, state: currentState });
+      } catch (error) {
+        throw acceptanceError(
+          E_HANDOFF_STALE,
+          `Current canonical task artifacts are not coherent with one another: ${error.message}`,
+        );
+      }
       if (contract.fingerprint !== handoff.state.contractFingerprint) {
         throw acceptanceError(
           E_HANDOFF_STALE,
           "Current contract fingerprint has drifted from handoff contractFingerprint",
         );
       }
-
-      const route = await readPersistedRoute(target, packageRoot, { taskId });
       if ((route.fingerprint ?? null) !== (handoff.state.routeFingerprint ?? null)) {
         throw acceptanceError(
           E_HANDOFF_STALE,

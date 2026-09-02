@@ -8,6 +8,7 @@ import { currentChangedPaths, currentRepositoryFingerprint } from "./repository.
 import { readContract } from "./contract.js";
 import { readPersistedRoute } from "./route-artifact.js";
 import { readWorkState } from "./work-state.js";
+import { assertStateIdentity } from "./completion-relationships.js";
 import { resolveTaskClaimState } from "./task-claim-state.js";
 import { readContinuity } from "./continuity.js";
 import { getPackageRoot } from "./templates.js";
@@ -99,6 +100,15 @@ export async function buildCanonicalHandoff(target, {
   ]);
   if (!state || !contract || !route || changedPaths === null || !claims.valid) {
     throw handoffError("E_HANDOFF_STATE_UNAVAILABLE", "Canonical task state, route, claims, and changed paths are required for a handoff");
+  }
+  try {
+    assertStateIdentity({ contract, route, state });
+  } catch (error) {
+    throw handoffError(
+      "E_HANDOFF_STATE_UNAVAILABLE",
+      `Canonical task artifacts are not coherent for handoff creation: ${error.message}`,
+      error.artifacts ?? [],
+    );
   }
   if (compareRepositoryFingerprint(state.repositoryFingerprint, repositoryFingerprint) === "MISMATCH") {
     throw handoffError(

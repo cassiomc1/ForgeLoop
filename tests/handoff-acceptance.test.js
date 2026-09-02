@@ -11,6 +11,7 @@ import { createCanonicalHandoff } from "../src/core/handoff.js";
 import { bindTaskWorkspace } from "../src/core/workspace-binding.js";
 import { validateEventLedger } from "../src/core/events.js";
 import { canonicalFingerprint, writeJsonArtifact } from "../src/core/artifacts.js";
+import { readContract, writeContract } from "../src/core/contract.js";
 import { taskHandoffPath } from "../src/core/task-paths.js";
 import { setupVerifyingTask } from "./helpers/durable-lifecycle.js";
 import { createGitRepository } from "./helpers/git-fixture.js";
@@ -160,6 +161,44 @@ test("stale handoff with drifted work state or changed paths fails acceptance", 
       }),
       (err) => err.code === E_HANDOFF_STALE,
     );
+  } finally {
+    await removeTempTree(target);
+  }
+});
+
+test("acceptance rejects incoherent canonical artifacts without appending HANDOFF_ACCEPTED", async () => {
+  const target = await createGitRepository("forgeloop-handoff-stale-");
+  const taskId = "task-accept-incoherent-artifacts";
+  const handoffId = "handoff-incoherent-artifacts";
+  try {
+    await setupVerifyingTask(target, packageRoot, { taskId });
+    await bindTaskWorkspace(target, { taskId, packageRoot });
+    await createCanonicalHandoff(target, { taskId, packageRoot, handoffId });
+
+    const contract = await readContract(target, packageRoot, { taskId });
+    await writeContract(target, {
+      ...contract.value,
+      objective: `${contract.value.objective} (incoherent acceptance fixture)`,
+    }, packageRoot, { taskId });
+
+    await assert.rejects(
+      () => acceptCanonicalHandoff(target, {
+        taskId,
+        handoffId,
+        consumerId: "consumer-1",
+        packageRoot,
+      }),
+      (error) => {
+        assert.equal(error.code, E_HANDOFF_STALE);
+        assert.match(error.message, /canonical task artifacts are not coherent with one another.*current contract/i);
+        return true;
+      },
+    );
+
+    const ledger = await validateEventLedger(target, packageRoot, { taskId });
+    assert.equal(ledger.valid, true);
+    assert.equal(ledger.events.filter((event) => event.event === "HANDOFF_CREATED").length, 1);
+    assert.equal(ledger.events.filter((event) => event.event === "HANDOFF_ACCEPTED").length, 0);
   } finally {
     await removeTempTree(target);
   }

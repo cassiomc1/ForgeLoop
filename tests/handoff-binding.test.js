@@ -6,10 +6,15 @@ import test from "node:test";
 import {
   buildCanonicalHandoff,
   createCanonicalHandoff,
+  listCanonicalHandoffs,
   validateCanonicalHandoff,
 } from "../src/core/handoff.js";
 import { canonicalFingerprint } from "../src/core/artifacts.js";
-import { readWorkState } from "../src/core/work-state.js";
+import { validateEventLedger } from "../src/core/events.js";
+import { readContract, writeContract } from "../src/core/contract.js";
+import { evaluateRoute } from "../src/core/router.js";
+import { persistRoute, readPersistedRoute } from "../src/core/route-artifact.js";
+import { readWorkState, writeWorkState } from "../src/core/work-state.js";
 import { bindTaskWorkspace } from "../src/core/workspace-binding.js";
 import { setupVerifyingTask } from "./helpers/durable-lifecycle.js";
 import { createGitRepository } from "./helpers/git-fixture.js";
@@ -17,6 +22,12 @@ import { removeTempTree } from "./helpers/rm-safe.js";
 import { getPackageRoot } from "../src/core/templates.js";
 
 const packageRoot = getPackageRoot();
+
+async function assertNoHandoffCreation(target, taskId) {
+  assert.deepEqual(await listCanonicalHandoffs(target, { taskId, packageRoot }), []);
+  const ledger = await validateEventLedger(target, packageRoot, { taskId });
+  assert.equal(ledger.events.some((event) => event.event === "HANDOFF_CREATED"), false);
+}
 
 test("buildCanonicalHandoff binds exact work state fingerprint", async () => {
   const target = await createGitRepository("forgeloop-handoff-binding-");
@@ -63,6 +74,94 @@ test("handoff creation rejects repository drift even when changed paths are empt
       () => createCanonicalHandoff(target, { taskId, packageRoot }),
       (err) => err.code === "E_HANDOFF_STATE_UNAVAILABLE",
     );
+  } finally {
+    await removeTempTree(target);
+  }
+});
+
+test("handoff creation rejects a stale contract before writing an artifact or event", async () => {
+  const target = await createGitRepository("forgeloop-handoff-binding-");
+  const taskId = "task-handoff-binding-stale-contract";
+  try {
+    await setupVerifyingTask(target, packageRoot, { taskId });
+    await bindTaskWorkspace(target, { taskId, packageRoot });
+
+    const contract = await readContract(target, packageRoot, { taskId });
+    await writeContract(target, {
+      ...contract.value,
+      objective: `${contract.value.objective} (stale state fixture)`,
+    }, packageRoot, { taskId });
+
+    await assert.rejects(
+      () => createCanonicalHandoff(target, { taskId, packageRoot }),
+      (error) => {
+        assert.equal(error.code, "E_HANDOFF_STATE_UNAVAILABLE");
+        assert.match(error.message, /canonical task artifacts are not coherent.*current contract/i);
+        assert.deepEqual(error.artifacts, [".forgeloop/current-contract.json", ".forgeloop/work-state.json"]);
+        return true;
+      },
+    );
+    await assertNoHandoffCreation(target, taskId);
+  } finally {
+    await removeTempTree(target);
+  }
+});
+
+test("handoff creation rejects a stale route before writing an artifact or event", async () => {
+  const target = await createGitRepository("forgeloop-handoff-binding-");
+  const taskId = "task-handoff-binding-stale-route";
+  try {
+    await setupVerifyingTask(target, packageRoot, { taskId });
+    await bindTaskWorkspace(target, { taskId, packageRoot });
+
+    const contract = await readContract(target, packageRoot, { taskId });
+    const route = await readPersistedRoute(target, packageRoot, { taskId });
+    await persistRoute(target, evaluateRoute({
+      ...route.value.input,
+      behaviorChange: !route.value.input.behaviorChange,
+    }), packageRoot, {
+      taskId,
+      contractFingerprint: contract.fingerprint,
+    });
+
+    await assert.rejects(
+      () => createCanonicalHandoff(target, { taskId, packageRoot }),
+      (error) => {
+        assert.equal(error.code, "E_HANDOFF_STATE_UNAVAILABLE");
+        assert.match(error.message, /canonical task artifacts are not coherent.*persisted route identity/i);
+        assert.deepEqual(error.artifacts, [".forgeloop/routing-result.json", ".forgeloop/work-state.json"]);
+        return true;
+      },
+    );
+    await assertNoHandoffCreation(target, taskId);
+  } finally {
+    await removeTempTree(target);
+  }
+});
+
+test("handoff creation rejects a route guide mismatch before writing an artifact or event", async () => {
+  const target = await createGitRepository("forgeloop-handoff-binding-");
+  const taskId = "task-handoff-binding-route-guides";
+  try {
+    await setupVerifyingTask(target, packageRoot, { taskId });
+    await bindTaskWorkspace(target, { taskId, packageRoot });
+
+    const state = await readWorkState(target, { packageRoot, taskId });
+    await writeWorkState(target, {
+      ...state,
+      selectedGuides: [...state.selectedGuides, "security"],
+    }, { packageRoot, taskId });
+
+    await assert.rejects(
+      () => createCanonicalHandoff(target, { taskId, packageRoot }),
+      (error) => {
+        assert.equal(error.code, "E_HANDOFF_STATE_UNAVAILABLE");
+        assert.match(error.message, /canonical task artifacts are not coherent.*persisted route identity/i);
+        assert.deepEqual(error.artifacts, [".forgeloop/routing-result.json", ".forgeloop/work-state.json"]);
+        return true;
+      },
+    );
+    await assertNoHandoffCreation(target, taskId);
   } finally {
     await removeTempTree(target);
   }
