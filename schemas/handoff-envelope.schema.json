@@ -27,6 +27,7 @@
         "phase": { "type": "string", "minLength": 1 },
         "revision": { "type": "integer", "minimum": 0 },
         "verificationCycle": { "type": "integer", "minimum": 1 },
+        "workStateFingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
         "contractFingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
         "routeFingerprint": { "oneOf": [{ "type": "string", "pattern": "^[a-f0-9]{64}$" }, { "type": "null" }] },
         "repositoryFingerprint": { "type": "object" },

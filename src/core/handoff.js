@@ -107,6 +107,7 @@ export async function buildCanonicalHandoff(target, {
       phase: WORK_PHASES.includes(state.phase) ? state.phase : "UNKNOWN",
       revision: state.revision ?? 0,
       verificationCycle: state.verificationCycle ?? 1,
+      workStateFingerprint: canonicalFingerprint(state),
       contractFingerprint: contract.fingerprint,
       routeFingerprint: route.fingerprint ?? null,
       repositoryFingerprint: state.repositoryFingerprint ?? { branch: null, head: null },
