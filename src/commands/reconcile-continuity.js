@@ -20,6 +20,9 @@ export function formatReconcileContinuityResult(result) {
     "Authority: OPERATIONAL_CONTEXT_ONLY",
     "Evidence: NONE",
   ];
+  if (result.lint) {
+    lines.push(`Lint: ${result.lint.passed ? "PASSED" : `${result.lint.violations.length} warning(s)`}`);
+  }
   if (result.reasonCodes?.length) lines.push(`Reason codes: ${result.reasonCodes.join(", ")}`);
   if (result.reasons?.length) lines.push(`Reasons: ${result.reasons.join(", ")}`);
   return `${lines.join("\n")}\n`;
