@@ -1,7 +1,7 @@
 {
   "feature": "structural-quality",
   "status": "PARTIALLY_VERIFIED",
-  "commit": "7caa13e6afcc30ec29a5c652230e77c3010ef16d",
+  "commit": "0cf112c9480fde34739145ac40a2e560009040d8",
   "ci": {
     "local": {
       "tests": "PASS",
