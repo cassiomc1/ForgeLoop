@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 
-import { resolveTarget, ensureWithin } from "../src/core/filesystem.js";
+import { resolveTarget, ensureWithin, isPathWithin } from "../src/core/filesystem.js";
 import {
   createManifest,
   readManifest,
@@ -80,4 +80,12 @@ test("rejects a destination whose existing parent is a symlink", async () => {
     await rm(target, { recursive: true, force: true });
     await rm(outside, { recursive: true, force: true });
   }
+});
+
+test("path containment is case-insensitive for Windows realpath results", () => {
+  const root = "C:\\Users\\RunnerAdmin\\AppData\\Local\\Temp\\forgeloop-test";
+  const inside = "c:\\users\\runneradmin\\appdata\\local\\temp\\forgeloop-test\\.forgeloop\\locks\\task.lock";
+  const outside = "c:\\users\\runneradmin\\appdata\\local\\temp\\other\\task.lock";
+  assert.equal(isPathWithin(root, inside, { platform: "win32" }), true);
+  assert.equal(isPathWithin(root, outside, { platform: "win32" }), false);
 });
