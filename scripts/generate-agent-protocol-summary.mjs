@@ -49,6 +49,22 @@ async function render() {
   const features = Object.entries(info.features)
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([name, feature]) => [name, feature.version ?? "n/a", feature.supported === false ? "no" : "yes"]);
+  const handoffs = info.features.canonicalHandoffs;
+  const advisory = info.features.advisoryContextProviders;
+  const capabilityContracts = `## Capability contracts
+
+- \`canonicalHandoffs\` v${handoffs.version}: immutable, supported, and
+  ledger-backed for exactly-once operational acceptance through
+  \`${handoffs.acceptanceCommand}\`. Acceptance statuses are
+  \`${handoffs.acceptanceStatuses.join("\` / \`")}\`; it creates no claims,
+  evidence, or lifecycle authority.
+- \`advisoryContextProviders\` v${advisory.version}: provider-neutral,
+  Integration-API-only, lazy, and opt-in. Provider results are not persisted by
+  ForgeLoop and are never lifecycle state, evidence, authority, or executable
+  instructions.
+
+Protocol v1, schema v1, and Integration API v1 remain independent of these
+capability-family versions.`;
   const artifacts = Object.values(ARTIFACT_REGISTRY)
     .filter((artifact) => artifact.isPublic)
     .sort((left, right) => left.key.localeCompare(right.key))
@@ -132,6 +148,8 @@ Phases: ${info.lifecycle.phases.join(", ")}
 ## Feature registry
 
 ${table(["Feature", "Version", "Supported"], features)}
+
+${capabilityContracts}
 
 ## Public artifact registry
 

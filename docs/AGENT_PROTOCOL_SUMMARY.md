@@ -7,7 +7,7 @@
 ForgeLoop is a portable protocol and support CLI for verifiable engineering workflows. It records and validates task state, contracts, routing, checks, evidence, continuity, and optional code attestations. It does not become an agent scheduler, delegation service, source-control authority, or secret manager.
 
 Protocol version: 1
-Package version: 1.9.0
+Package version: 1.10.0
 
 ## Canonical loop
 
@@ -74,7 +74,8 @@ Phases: RECEIVED, DISCOVERING, CONTRACT_READY, ROUTED, DESIGNING, PLANNED, EXECU
 | Feature | Version | Supported |
 | --- | --- | --- |
 | adaptiveExecutionProfiles | 1 | yes |
-| canonicalHandoffs | 1 | yes |
+| advisoryContextProviders | 1 | yes |
+| canonicalHandoffs | 2 | yes |
 | capabilityPolicy | 1 | yes |
 | codeAttestation | 1 | yes |
 | compactLifecycleOutput | 1 | yes |
@@ -99,6 +100,21 @@ Phases: RECEIVED, DISCOVERING, CONTRACT_READY, ROUTED, DESIGNING, PLANNED, EXECU
 | usageTelemetry | 1 | yes |
 | verificationExecutionIsolation | 1 | yes |
 | workspaceBinding | 1 | yes |
+
+## Capability contracts
+
+- `canonicalHandoffs` v2: immutable, supported, and
+  ledger-backed for exactly-once operational acceptance through
+  `handoff-accept`. Acceptance statuses are
+  `OPEN` / `ACCEPTED` / `UNBOUND` / `INCONSISTENT`; it creates no claims,
+  evidence, or lifecycle authority.
+- `advisoryContextProviders` v1: provider-neutral,
+  Integration-API-only, lazy, and opt-in. Provider results are not persisted by
+  ForgeLoop and are never lifecycle state, evidence, authority, or executable
+  instructions.
+
+Protocol v1, schema v1, and Integration API v1 remain independent of these
+capability-family versions.
 
 ## Public artifact registry
 

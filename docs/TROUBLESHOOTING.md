@@ -761,6 +761,38 @@ explicit operation only when the task's scope permits it.
 
 ---
 
+### Symptom: Advisory Context Recall Is Unavailable or Rejected
+
+#### Error Codes: `E_ADVISORY_CONTEXT_PROVIDER_INVALID`, `E_ADVISORY_CONTEXT_PROVIDER_UNAVAILABLE`, `E_ADVISORY_CONTEXT_QUERY_INVALID`, `E_ADVISORY_CONTEXT_REQUEST_INVALID`, `E_ADVISORY_CONTEXT_RESULT_INVALID`, `E_ADVISORY_CONTEXT_TIMEOUT`, `E_ADVISORY_CONTEXT_OUTPUT_LIMIT`, `E_PORTABLE_CONTEXT_INVALID`
+
+#### What it means
+
+The host's optional advisory provider is missing, malformed, unavailable, too
+slow, or returned content outside the bounded portable-context contract. These
+failures never become lifecycle, evidence, completion, or next-action failures.
+
+#### Safe recovery
+
+Inspect provider registration and normalize the request before retrying through
+the Integration API. Reduce query, item, total-output, and timeout values to the
+documented budgets, remove secrets/control characters, and ensure the provider
+returns only allowlisted item fields. If advisory context is unavailable,
+continue from canonical task state; do not fabricate a provider or execute its
+text.
+
+### Symptom: Continuity Lint Reports a Contradictory Hint
+
+Continuity lint is diagnostic only. Its findings do not change reconciliation,
+state, evidence, authority, or completion:
+
+| Finding | Meaning | Safe response |
+| --- | --- | --- |
+| `CONTINUITY_REMAINING_ALREADY_COMPLETED` | A remaining-work item is already recorded as completed. | Refresh the operational note; do not change canonical completion evidence. |
+| `CONTINUITY_FOCUS_ALREADY_COMPLETED` | The current focus ID is already completed. | Choose a current inspection focus or clear the hint. |
+| `CONTINUITY_ITEM_ROLE_CONFLICT` | An item appears in both remaining work and known issues. | Remove the contradictory hint through `record-continuity`. |
+| `CONTINUITY_INSPECT_PATH_MISSING` | An `inspectFirst` path is not present in the current target. | Reconcile the checkout and update the path hint. |
+| `CONTINUITY_EMPTY_HINT_SET` | No operational hint was supplied. | Treat the result as informational and follow canonical `next`. |
+
 ### Symptom: Handoff Is Invalid or Tampered
 
 #### Error Codes: `E_HANDOFF_INVALID`, `E_HANDOFF_STATE_UNAVAILABLE`, `E_HANDOFF_TAMPERED`, `E_HANDOFF_NOT_FOUND`, `E_HANDOFF_STALE`, `E_HANDOFF_ALREADY_ACCEPTED`, `E_HANDOFF_ACCEPTANCE_INCONSISTENT`

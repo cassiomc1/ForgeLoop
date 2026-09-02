@@ -11,6 +11,7 @@ import {
   validateForgeLoopCommandInput,
 } from "../src/integration.js";
 import { CLI_COMMAND_DEFINITIONS } from "../src/core/cli-command-definitions.js";
+import { protocolInfo } from "../src/core/protocol-info.js";
 
 test("integration API version is 1 and exported from the stable subpath", () => {
   assert.equal(FORGELOOP_INTEGRATION_API_VERSION, 1);
@@ -37,6 +38,37 @@ test("capabilities report versions, features, commands, and resources", () => {
   const resourceNames = capabilities.resources.map((resource) => resource.name);
   assert.ok(resourceNames.includes("task/ownership"));
   assert.ok(resourceNames.includes("task/context"));
+});
+
+test("protocol-info and Integration API expose matching advisory and handoff contracts", () => {
+  const protocol = protocolInfo();
+  const capabilities = getForgeLoopCapabilities();
+
+  assert.deepEqual(
+    protocol.features.canonicalHandoffs,
+    capabilities.features.canonicalHandoffs,
+  );
+  assert.equal(protocol.features.canonicalHandoffs.version, 2);
+  assert.equal(capabilities.features.canonicalHandoffs.version, 2);
+  assert.equal(protocol.features.canonicalHandoffs.exactlyOnceAcceptance, true);
+  assert.equal(capabilities.features.canonicalHandoffs.exactlyOnceAcceptance, true);
+  assert.equal(protocol.features.canonicalHandoffs.lifecycleAuthority, false);
+  assert.equal(capabilities.features.canonicalHandoffs.lifecycleAuthority, false);
+  assert.equal(protocol.features.canonicalHandoffs.evidenceAuthority, false);
+  assert.equal(capabilities.features.canonicalHandoffs.evidenceAuthority, false);
+
+  assert.deepEqual(
+    protocol.features.advisoryContextProviders,
+    capabilities.features.advisoryContextProviders,
+  );
+  assert.equal(protocol.features.advisoryContextProviders.integrationApiOnly, true);
+  assert.equal(capabilities.features.advisoryContextProviders.integrationApiOnly, true);
+  assert.equal(protocol.features.advisoryContextProviders.lifecycleAuthority, false);
+  assert.equal(capabilities.features.advisoryContextProviders.lifecycleAuthority, false);
+  assert.equal(protocol.features.advisoryContextProviders.evidenceAuthority, false);
+  assert.equal(capabilities.features.advisoryContextProviders.evidenceAuthority, false);
+  assert.equal(protocol.features.advisoryContextProviders.executable, false);
+  assert.equal(capabilities.features.advisoryContextProviders.executable, false);
 });
 
 test("verification adapter and isolation policy are runtime-only context", () => {

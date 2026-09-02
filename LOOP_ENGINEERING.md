@@ -1376,6 +1376,15 @@ completion. `CONTINUITY_CANNOT_GRANT_AUTHORITY`: continuity cannot authorize an
 installation or external action. <a id="FL-CONT-001"></a> **FL-CONT-001 — A receiving harness MUST reconcile**
 continuity against the current work state and checkout before acting on it.
 
+Canonical handoff acceptance is orthogonal to lifecycle phase transitions. The
+`HANDOFF_ACCEPTED` event is an exactly-once, ledger-backed operational receipt;
+it does not add a lifecycle phase, transfer claims, create evidence, authorize
+work, or approve review. A receiving harness runs `handoff-accept` only when it
+actually consumes the immutable handoff. Advisory context is also outside the
+canonical lifecycle: providers are lazy and opt-in through the Integration API,
+and their output cannot determine state, evidence, authority, completion, or
+the next action.
+
 ## Optional task boundaries and code attestation
 
 ForgeLoop keeps the following extensions optional so existing task artifacts
@@ -1398,6 +1407,10 @@ not delegate work, establish identity, grant authority, provide independent
 review evidence, or prove completion. An optional actor note or recipient hint
 is descriptive metadata only. This envelope is distinct from mutable
 `continuity.json`, which is operational resume context and non-evidence.
+
+`handoff-accept` records the receiver's operational consumption only. It does
+not make `consumerId`, `harness`, a recipient hint, or a handoff envelope an
+authenticated identity, delegation approval, or lifecycle authority.
 
 <a id="FL-SCOPE-001"></a> **FL-SCOPE-001 — A verification scope MUST narrow execution only from**
 current canonical changed paths, effective claims, or an explicit full-project

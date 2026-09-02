@@ -114,6 +114,33 @@ exists, compare the current checkout, and only then follow `forgeloop next`.
 Handoff notes can focus inspection, but only valid execution evidence,
 completion receipts, and the append-only ledger can satisfy verification.
 
+The complete immutable-handoff flow is:
+
+```bash
+forgeloop handoff-create --task auth-feature --recipient codex --json
+forgeloop handoff-list --task auth-feature --json
+forgeloop handoff-show --task auth-feature --id <handoff-id> --json
+forgeloop handoff-accept \
+  --task auth-feature \
+  --handoff <handoff-id> \
+  --consumer-id codex-session-42 \
+  --harness codex \
+  --json
+```
+
+Before acceptance, the receiver must inspect the immutable snapshot and
+reconcile all of its freshness bindings: the work-state fingerprint, contract
+identity, route identity, selected guides, current repository branch, current
+repository HEAD, changed paths, and the origin of the event ledger. Receiving a
+file or message is not acceptance. `handoff-accept` is run only when the
+receiving harness actually consumes the handoff.
+
+Acceptance retry semantics are deterministic: retrying with the same
+`consumerId` returns the existing operational receipt idempotently; a different
+consumer fails with `E_HANDOFF_ALREADY_ACCEPTED`. An old unbound handoff remains
+readable for historical continuity but is not acceptable and returns
+`E_HANDOFF_ACCEPTANCE_UNBOUND`.
+
 ---
 
 ## 4. Harness A — Recording Handoff Context

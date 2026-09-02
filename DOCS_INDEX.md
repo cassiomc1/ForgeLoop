@@ -15,7 +15,7 @@ integration and guide context. Use this map before editing documentation.
 | Need | Canonical source | Boundary |
 | --- | --- | --- |
 | Getting started tutorial | [`docs/GETTING_STARTED.md`](./docs/GETTING_STARTED.md) | First-time walkthrough from init to completion |
-| Cross-harness continuity | [`docs/CROSS_HARNESS_CONTINUITY.md`](./docs/CROSS_HARNESS_CONTINUITY.md) | Operational handoff and multi-tool resumption |
+| Cross-harness continuity | [`docs/CROSS_HARNESS_CONTINUITY.md`](./docs/CROSS_HARNESS_CONTINUITY.md) | Operational resume guidance, immutable handoffs, and multi-tool resumption |
 | Agent bootstrap summary | [`docs/AGENT_PROTOCOL_SUMMARY.md`](./docs/AGENT_PROTOCOL_SUMMARY.md) | Generated concise navigation aid for protocol invariants and commands |
 | CLI command reference | [`docs/CLI_REFERENCE.md`](./docs/CLI_REFERENCE.md) | Full syntax, options, and JSON examples for all commands |
 | Artifact and schema reference | [`docs/ARTIFACT_REFERENCE.md`](./docs/ARTIFACT_REFERENCE.md) | Purpose, mutability, and trust classifications of `.forgeloop/` |
@@ -25,12 +25,13 @@ integration and guide context. Use this map before editing documentation.
 | Structural quality feedback | [`docs/STRUCTURAL_QUALITY.md`](./docs/STRUCTURAL_QUALITY.md) | Provider-neutral baseline, delta policy, Sentrux boundary, lifecycle integration, and troubleshooting |
 | Diagnostic model | [`docs/DIAGNOSTIC_MODEL.md`](./docs/DIAGNOSTIC_MODEL.md) | Structured diagnostic cases, interventions, hypothesis dispositions, information gain |
 | Execution trace and observability | [`docs/EXECUTION_TRACE.md`](./docs/EXECUTION_TRACE.md) | `history`, `trace`, `reflect`, and task-level `inspect` read-only projections |
-| Workspace, handoff, responsibility, and scope | [`docs/ARTIFACT_REFERENCE.md`](./docs/ARTIFACT_REFERENCE.md) and [`docs/CLI_REFERENCE.md`](./docs/CLI_REFERENCE.md) | Optional task boundaries and deterministic verification planning |
+| Workspace, handoff, responsibility, and scope | [`docs/ARTIFACT_REFERENCE.md`](./docs/ARTIFACT_REFERENCE.md) and [`docs/CLI_REFERENCE.md`](./docs/CLI_REFERENCE.md) | Optional task boundaries, immutable handoffs, and deterministic verification planning |
+| Handoff acceptance | [`docs/CROSS_HARNESS_CONTINUITY.md`](./docs/CROSS_HARNESS_CONTINUITY.md) | Ledger-backed operational receipt; no claim transfer, evidence, or authority |
 | Code attestation and revision coverage | [`docs/CODE_ATTESTATION.md`](./docs/CODE_ATTESTATION.md) | Source-content manifests, in-toto statements, signatures, and range verification |
 | Revision and signing providers | [`docs/REVISION_PROVIDERS.md`](./docs/REVISION_PROVIDERS.md) and [`docs/SIGNING_PROVIDERS.md`](./docs/SIGNING_PROVIDERS.md) | Provider-neutral extension contracts |
 | Platform adapters | [`docs/PLATFORM_ADAPTERS.md`](./docs/PLATFORM_ADAPTERS.md) | Generic CI boundary and platform mapping guidance |
 | Universal integration API | [`docs/UNIVERSAL_INTEGRATION.md`](./docs/UNIVERSAL_INTEGRATION.md) | Programmatic integration subpath, envelope semantics, and consumer map |
-| Advisory context and memory boundary | [`docs/ADVISORY_CONTEXT.md`](./docs/ADVISORY_CONTEXT.md) | Lazy external advisory memory, non-evidence trust boundary, allowlist normalization, and safety rules |
+| Advisory context providers | [`docs/ADVISORY_CONTEXT.md`](./docs/ADVISORY_CONTEXT.md) | Optional external host context, non-evidence trust boundary, allowlist normalization, and safety rules |
 | Local-first MCP adapter | [`docs/MCP.md`](./docs/MCP.md) | stdio default, optional strict loopback HTTP; server modes/capabilities and canonical resources |
 | Adaptive execution-profile benchmarks | [`docs/EXECUTION_PROFILE_BENCHMARKS.md`](./docs/EXECUTION_PROFILE_BENCHMARKS.md) | Measured provider/host runs, robust statistics, paired/distribution deltas, tail status, outliers, and profile-aware host context |
 | Knowledge integration gap analysis | [`docs/KNOWLEDGE_INTEGRATION_GAP_ANALYSIS.md`](./docs/KNOWLEDGE_INTEGRATION_GAP_ANALYSIS.md) | Repository-only research audit of candidate coverage, proven gaps, canonical homes, context cost, and intentional skip/defer decisions |

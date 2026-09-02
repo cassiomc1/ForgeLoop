@@ -25,6 +25,9 @@ Two transports ship in one package:
 - **Recovery acknowledgement is not authorization.** `acknowledgeRecovery`
   in tool input only satisfies ForgeLoop's caller acknowledgement after the
   server was started with recovery capability.
+- **Advisory context is host-injected only.** The core Integration API supports
+  explicit provider injection, but the stock MCP adapter must not fabricate,
+  auto-discover, or persist an advisory provider or its results.
 
 ## Modes
 
@@ -84,6 +87,19 @@ content.
 Raw recovery artifacts, transaction journals, lock files, and unbounded event
 ledgers are intentionally not exposed.
 
+The `handoff-accept` mutating command is available only through a mode that
+allows loop mutations; `readonly` intentionally hides it. When exposed, it
+records one canonical `HANDOFF_ACCEPTED` operational receipt and preserves the
+same freshness, consumer-idempotency, ledger, and no-claim-transfer rules as
+the CLI and Integration API. MCP transport metadata cannot authenticate a
+`consumerId`, establish authority, or turn receipt of a message into
+acceptance.
+
+Advisory provider recall is not a stock MCP resource or command. A host that
+needs advisory context injects a provider into the core Integration API and
+performs an explicit bounded recall itself. MCP must never auto-recall context
+for startup, status, next, task/context, or any other canonical projection.
+
 The context resource is read-only. It lets an MCP host adapt presentation depth
 from the canonical resolved execution profile while preserving lifecycle
 phases, required gates, verification truth, authority, provenance, and
@@ -119,7 +135,7 @@ forgeloop-mcp-http --project /repo --mode safe          # 127.0.0.1:3333
 
 | Component | Current contract |
 | --- | --- |
-| ForgeLoop core package | `>=1.5.0 <2` dependency range; current repository generation `1.9.x` |
+| ForgeLoop core package | `>=1.5.0 <2` dependency range; current release `1.10.0` |
 | ForgeLoop protocol | `1` |
 | Integration API | `1` |
 | MCP package | `0.1.x` initial package |

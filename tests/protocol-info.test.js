@@ -47,6 +47,29 @@ test("protocol-info exposes a complete public compatibility handshake", () => {
   assert.equal(info.features.executionProfileContext.resolvedProfileAuthoritative, true);
   assert.deepEqual(info.features.contextUsageObservability.sources, ["HOST_REPORTED", "UNKNOWN"]);
   assert.equal(info.features.contextUsageObservability.estimation, false);
+  assert.deepEqual(info.features.canonicalHandoffs, {
+    version: 2,
+    supported: true,
+    immutable: true,
+    lifecycleAuthority: false,
+    evidenceAuthority: false,
+    exactlyOnceAcceptance: true,
+    acceptanceLedgerBacked: true,
+    acceptanceCommand: "handoff-accept",
+    acceptanceStatuses: ["OPEN", "ACCEPTED", "UNBOUND", "INCONSISTENT"],
+  });
+  assert.deepEqual(info.features.advisoryContextProviders, {
+    version: 1,
+    supported: true,
+    providerNeutral: true,
+    integrationApiOnly: true,
+    lazy: true,
+    optIn: true,
+    persistedByForgeLoop: false,
+    lifecycleAuthority: false,
+    evidenceAuthority: false,
+    executable: false,
+  });
   assert.ok(info.commands.some((command) => command.name === "protocol-info"));
   assert.ok(info.commands.some((command) => command.name === "task-resume"));
   assert.equal(info.errors.length, ALL_KNOWN_ERROR_CODES.size);

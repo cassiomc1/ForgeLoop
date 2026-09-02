@@ -38,6 +38,13 @@ MCP package boundary    -> MCP package tests + scripts/mcp-package-smoke.mjs
 
 Operational documentation must explain canonical behavior, not redefine it.
 
+Terminology must remain consistent across active documents: say “advisory
+context,” not “canonical memory”; “handoff acceptance,” not “ownership
+transfer”; and “operational receipt,” not “delegation.” Advisory output is
+never canonical state, evidence, authority, completion truth, or next-action
+authority. `consumerId`, harness names, recipient hints, and transport labels
+are descriptive values rather than authenticated identity or authority.
+
 Documentation-impact questions for integration/MCP changes:
 
 - Did a server mode or capability gate change?

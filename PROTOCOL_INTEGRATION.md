@@ -181,6 +181,37 @@ authority, provenance, and safety-floor decisions remain unchanged.
 validator-backed completion remains unchanged.
 ```
 
+## Capability negotiation
+
+The public capability handshake exposes additive capability families separately
+from Protocol v1, schema v1, and Integration API v1:
+
+| Capability family | Version | Boundary |
+| --- | --- | --- |
+| `canonicalHandoffs` | v2 | Immutable handoff snapshots with ledger-backed exactly-once operational acceptance |
+| `advisoryContextProviders` | v1 | Lazy, opt-in, provider-neutral Integration API injection only |
+
+`canonicalHandoffs` v2 advertises `supported: true`, immutable snapshots,
+`lifecycleAuthority: false`, `evidenceAuthority: false`,
+`exactlyOnceAcceptance: true`, `acceptanceLedgerBacked: true`, and the
+`handoff-accept` command with `OPEN`, `ACCEPTED`, `UNBOUND`, and `INCONSISTENT`
+status projections. Acceptance is an operational receipt only: it does not
+transfer claims or create evidence or authority, and it is orthogonal to phase
+transitions.
+
+`advisoryContextProviders` v1 is `integrationApiOnly: true`, lazy, and opt-in.
+Its results are never persisted by ForgeLoop and are never canonical state,
+evidence, authority, completion truth, next-action authority, or executable
+instructions. `protocol-info` may advertise the capability, but advisory
+recall remains a programmatic Integration API operation; there is no stock
+`context-recall` CLI command.
+
+A consumer that understands `canonicalHandoffs` v1 but not v2 may disable the
+handoff-specific UI while keeping Protocol v1 core functionality available.
+Consumers must feature-detect the capability family and must not mark the
+whole project incompatible merely because an optional capability version is
+newer.
+
 Optional observability is lazy. Reflection, trajectory evaluation, handoff,
 responsibility, attestation, benchmark analysis, and continuity artifacts are
 not required merely because the capability exists; policy, user/host request,

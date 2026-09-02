@@ -966,6 +966,19 @@ completion, or authority evidence.
 
 <!-- END FORGELOOP GENERATED: schema:handoff-envelope -->
 
+The handoff `state` binds the immutable snapshot to the exact
+`workStateFingerprint`, contract identity, route identity, selected-guide
+context, repository branch/HEAD fingerprint, changed paths, and historical
+write claims observed at creation. `HANDOFF_CREATED` records the envelope's
+relationship to the task ledger. A later `HANDOFF_ACCEPTED` event records only
+that one consumer operationally consumed the unchanged snapshot; it does not
+transfer claims, create evidence, or grant authority.
+
+Acceptance status is a derived projection from the immutable handoff, its
+digest, and the validated event ledger. Acceptance fields are intentionally not
+stored in the handoff JSON itself. Invalid or mismatched ledger history
+projects `INCONSISTENT`, never a successful acceptance.
+
 ### 2.27 `task-state/<taskKey>/responsibility.json`
 
 <!-- forgeloop-doc: schema=responsibility artifact=.forgeloop/task-state/<task-key>/responsibility.json -->

@@ -189,10 +189,15 @@ export function getForgeLoopCapabilities({ packageVersion = null } = {}) {
         explicitRebinding: false,
       },
       canonicalHandoffs: {
-        version: 1,
+        version: 2,
         supported: true,
         immutable: true,
         lifecycleAuthority: false,
+        evidenceAuthority: false,
+        exactlyOnceAcceptance: true,
+        acceptanceLedgerBacked: true,
+        acceptanceCommand: "handoff-accept",
+        acceptanceStatuses: ["OPEN", "ACCEPTED", "UNBOUND", "INCONSISTENT"],
       },
       advisoryContextProviders: {
         version: 1,

@@ -70,6 +70,12 @@ Valid statuses are `complete`, `complete-with-concerns`, `needs-context`, and
 Complete results also require structured observed or inferred verification
 evidence.
 
+Canonical handoff acceptance is not delegation acceptance. A handoff envelope
+and its `HANDOFF_ACCEPTED` operational receipt do not create a delegated task,
+approve a brief, transfer claims, or establish reviewer authority. Delegation
+authority remains in this canonical delegation contract and its validated task
+brief/result relationships.
+
 ## Review and integration
 
 An independent reviewer receives the approved brief, resulting diff,

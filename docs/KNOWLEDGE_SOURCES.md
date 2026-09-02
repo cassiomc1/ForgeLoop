@@ -8,6 +8,16 @@ Target: ForgeLoop 1.8.0 at current `main` state at review start
 This ledger records research inputs for the knowledge-integration review. It is
 not an endorsement list, a source-content mirror, or an evidence registry.
 
+## Current optional provider source class
+
+This note is an operational boundary added after the historical snapshot above;
+it does not rewrite that review's target version or accepted sources. A host may
+provide external advisory context through the ForgeLoop Integration API, but a
+knowledge source is not canonical task state, evidence, authority, completion,
+or next-action authority. Provider results remain lazy, opt-in, bounded, and
+non-persisted; provenance belongs to the host unless a separately versioned
+canonical artifact is introduced.
+
 ## User-provided revised plan
 
 Source: user-provided `FORGELOOP_LUNA_KNOWLEDGE_INTEGRATION_PLAN_REVISED.md`

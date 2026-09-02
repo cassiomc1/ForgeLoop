@@ -159,6 +159,15 @@ claims, lifecycle transitions, evidence binding, completion, and fail-closed
 trust decisions. Workspace binding, responsibility, narrow verification,
 signing, and MCP are not prerequisites for basic protocol compatibility.
 
+Handoff acceptance is orthogonal to the lifecycle transition graph. An
+orchestrator may call `handoff-accept` only after the receiving harness has
+actually consumed the immutable snapshot. The resulting `HANDOFF_ACCEPTED`
+event is an exactly-once operational receipt; it does not accept delegation,
+transfer claims, create evidence, authenticate `consumerId` or `harness`, or
+grant lifecycle or review authority. Advisory context is likewise optional,
+lazy, and Integration-API-only; it must not be loaded automatically or used as
+an executable instruction source.
+
 Focused visual fallbacks are maintained in the [Verification Trust
 Flow](./docs/REVISION_PROVIDERS.md#differential-verification-scope) and [Code
 Attestation Chain](./docs/CODE_ATTESTATION.md#completion-flow).

@@ -1,19 +1,42 @@
 # Changelog
 
-## Unreleased
+## 1.10.0 - 2026-09-02
 
 ### Added
 
-- Added portable context boundary (`src/core/portable-context.js`) with bounded string normalization, ASCII control character rejection, and secret scanning across all host-facing portable strings.
-- Added provider-neutral advisory context provider contract (`src/core/advisory-context/`) with lazy evaluation, non-evidence non-executable trust roles, strict allowlist normalization, authority stripping, and deterministic SHA-256 item fingerprinting.
-- Added explicit `recallAdvisoryContext` programmatic service to `@cassiomc1/forgeloop/integration`.
-- Bound canonical handoff creation to exact work-state snapshots via `state.workStateFingerprint` (`schemas/handoff-envelope.schema.json`, `src/core/handoff.js`).
-- Implemented exactly-once canonical handoff acceptance in the task event ledger via `acceptCanonicalHandoff` and CLI command `forgeloop handoff-accept`.
-- Exposed handoff acceptance status projection (`OPEN`, `ACCEPTED`, `UNBOUND`, `INCONSISTENT`) in `handoff-show` and `handoff-list`.
-- Added deterministic continuity semantic linting (`src/core/continuity-lint.js`) during `forgeloop reconcile-continuity` for completed-item references, conflicting continuity roles, missing `inspectFirst` paths, and empty operational hint sets.
-- Hardened advisory recall dispatch with finite integer budget validation, canonical pre-dispatch clamping, allowlist-first result projection, a raw provider-item ceiling, and exact provider registry-key identity checks.
-- Hardened handoff freshness and read projections with direct current branch/HEAD checks, fail-closed invalid-ledger status, concurrent exactly-once acceptance, and explicit operational-only acceptance output.
-- Added comprehensive advisory context documentation in `docs/ADVISORY_CONTEXT.md`.
+- Added the provider-neutral advisory context contract and explicit
+  `recallAdvisoryContext` Integration API service with portable-context safety,
+  allowlist normalization, authority stripping, bounded budgets, and
+  deterministic item fingerprints.
+- Added `handoff-accept` and derived `OPEN`, `ACCEPTED`, `UNBOUND`, and
+  `INCONSISTENT` acceptance projections for immutable handoffs.
+- Added deterministic continuity semantic linting for contradictory or stale
+  operational hints.
+
+### Changed
+
+- Canonical handoffs now bind exact work-state snapshots and coherent
+  contract, route, changed-path, and repository branch/HEAD identities.
+- Handoff acceptance checks current checkout freshness, invalid ledgers fail
+  closed, and concurrent acceptance is exactly once with same-consumer retry
+  idempotency.
+- Published `canonicalHandoffs` capability version 2 and mirrored the
+  `advisoryContextProviders` capability version 1 across public surfaces.
+
+### Security / trust boundary
+
+- Advisory context remains lazy, opt-in, non-persisted, non-evidence,
+  non-authoritative, and non-executable. Provider output is never canonical
+  state, completion truth, or next-action authority.
+- Handoff acceptance remains an operational receipt only. It transfers no
+  claims and creates no evidence, delegation, review, or authority.
+
+### Compatibility
+
+- Protocol v1 unchanged.
+- Schema v1 unchanged.
+- Integration API v1 unchanged.
+- Node.js `>=20` support unchanged.
 
 ## 1.9.0 - 2026-09-02
 
