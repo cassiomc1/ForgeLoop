@@ -2,14 +2,11 @@
 description: Universal verified project loop
 alwaysApply: true
 ---
-
 <!-- FORGELOOP_PROJECT_PROTOCOL=REQUIRED -->
 # Cursor — Universal Project Loop
-
 This project is ForgeLoop-enabled. If your execution environment loaded this
 file, ForgeLoop applies regardless of model, provider, IDE, agent, or runtime.
 Do not treat ForgeLoop as vendor-specific, optional, or to follow only "in spirit".
-
 1. Read [`LOOP_ENGINEERING.md`](../../LOOP_ENGINEERING.md) and [`PROTOCOL_INTEGRATION.md`](../../PROTOCOL_INTEGRATION.md).
 2. Confirm [`PROJECT_PROFILE.md`](../../PROJECT_PROFILE.md) from real sources; initialize if in `template` mode.
 3. Use [`GUIDE_ROUTER.md`](../../GUIDE_ROUTER.md) to activate relevant guides and report IDs.
@@ -23,6 +20,12 @@ Do not treat ForgeLoop as vendor-specific, optional, or to follow only "in spiri
 After implementation work for the current task is complete, run `forgeloop next` before returning a final result. Follow the returned lifecycle action until ForgeLoop reaches a terminal state or an explicit blocker.
 
 10. Report only demonstrated results and checks.
+
+When `structuralQuality` is enabled, capture its baseline after planning and
+before `EXECUTING`, evaluate the current cycle in `VERIFYING`, and route
+regressions through the existing diagnosis/correction loop. Do not claim
+`PASS` for unavailable evidence, replace a baseline after execution begins, or
+expand scope to chase a perfect score.
 
 Do not stop for non-blocking missing product details. When a safe, reversible
 local default exists, record it as an agent assumption and follow the Blocking vs Non-Blocking Decisions policy in `LOOP_ENGINEERING.md`.

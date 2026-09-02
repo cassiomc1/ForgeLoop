@@ -506,6 +506,7 @@ The ownership boundary for these extensions is explicit:
 | Handoff envelope | Creates immutable protocol-derived snapshots and verifies their digest and ledger relationships | Supplies any descriptive note or recipient hint; it cannot turn the envelope into delegation or evidence |
 | Responsibility contract | Validates allowed/read-only paths, required checks, and frozen-input fingerprints | Chooses the optional boundary and performs the work inside it |
 | Verification scope | Resolves `AUTO`, `CHANGED`, `CLAIMED`, or `FULL`, binds scoped-checker argv, and fails closed on stale or mismatched inputs | Declares checker configuration and consumes the returned scope without guessing a narrower one |
+| Structural quality | Owns provider-neutral baseline/evaluation artifacts, delta policy, typed check provenance, and lifecycle/completion semantics | Supplies or selects a runtime provider and consumes `quality-status`; it does not provide arbitrary executable or shell input |
 | RevisionProvider | Reads opaque revisions, exact bytes, normalized changes, and range coverage through the provider contract | Supplies or selects the provider and revision identifiers |
 | SigningProvider | Validates provider results and preserves `VERIFIED` versus `ATTESTED` semantics | Owns the external signer, identity/issuer policy, credentials, and availability |
 | Generic CI / MCP | Keeps canonical command, evidence, and trust semantics | Owns the platform job, transport, scheduling, and presentation layer |
@@ -525,6 +526,31 @@ fingerprint as a ForgeLoop signature.
 OIDC tokens, and credentials outside ForgeLoop artifacts. Signing and
 verification may use an external provider, while the persisted statement stays
 deterministic and provider-neutral.
+
+<a id="FL-SQ-002"></a> **FL-SQ-002 — A structural-quality integration MUST preserve unavailable, malformed, stale, incomparable, and blocked provider results without promoting them to PASS.**
+
+## Structural quality integration
+
+Structural quality is an optional provider-neutral capability. The public
+integration API exposes `StructuralQualityProvider`, normalized detection and
+snapshot types, and runtime provider injection through the context. Project
+configuration selects only a registered provider name and policy; it cannot
+select an executable path, shell command, arbitrary argument vector, raw score,
+or baseline.
+
+The canonical commands are `quality-baseline` and `quality-verify` for bounded
+provider execution and task mutation, plus read-only `quality-status`. MCP and
+the integration API consume the same declarative command definitions and
+preserve `PASS`, `FAIL`, `BLOCKED`, and `NOT_OBSERVED` without duplicating
+lifecycle logic. The read-only `task/structural-quality` resource never starts
+the provider.
+
+The built-in `sentrux` provider uses the local MCP stdio boundary, requires a
+supported version, and keeps output, timeout, path, and secret handling inside
+ForgeLoop's normalized evidence boundary. Sentrux is not a runtime dependency;
+installation and analytics preferences remain user-managed. Quality evidence
+does not replace behavioral, security, performance, accessibility, review,
+publication, or production-readiness evidence.
 
 ## Executable Policy Protocol Integration
 

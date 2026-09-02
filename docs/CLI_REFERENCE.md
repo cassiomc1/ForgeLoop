@@ -61,8 +61,8 @@ error codes. Default output and default JSON remain unchanged.
 | **Inspection & Diagnostics** | [`protocol-info`](#protocol-info), [`doctor`](#doctor), [`metrics`](#metrics), [`usage-record`](#usage-record), [`efficiency`](#efficiency), [`eval`](#eval), [`history`](#history), [`trace`](#trace), [`reflect`](#reflect), [`progress`](#progress), [`profile-interview`](#profile-interview), [`inspect`](#inspect), [`status`](#status), [`validate-state`](#validate-state), [`validate-protocol`](#validate-protocol) |
 | **Setup & Maintenance** | [`init`](#init), [`update`](#update), [`task-migrate`](#task-migrate), [`migrate-protocol`](#migrate-protocol), [`task-unlock`](#task-unlock), [`task-recover`](#task-recover), [`task-repair-legacy-recovery`](#task-repair-legacy-recovery), [`task-resume`](#task-resume) |
 | **Lifecycle & State** | [`activate`](#activate), [`route`](#route), [`preflight`](#preflight), [`advance`](#advance), [`next`](#next), [`record-diagnosis`](#record-diagnosis), [`record-intervention`](#record-intervention), [`record-hypothesis-disposition`](#record-hypothesis-disposition), [`record-decision-criterion`](#record-decision-criterion), [`complete`](#complete), [`clear-state`](#clear-state), [`reconcile-closure`](#reconcile-closure), [`task-create`](#task-create), [`task-list`](#task-list), [`task-show`](#task-show), [`task-lock-status`](#task-lock-status), [`task-scope`](#task-scope) |
+| **Verification & Completion** | [`quality-baseline`](#quality-baseline), [`quality-verify`](#quality-verify), [`quality-status`](#quality-status), [`prepare-completion`](#prepare-completion), [`run-check`](#run-check), [`record-check`](#record-check), [`record-terminal-result`](#record-terminal-result), [`audit`](#audit), [`report`](#report), [`validate-receipt`](#validate-receipt), [`verify-scope`](#verify-scope) |
 | **Cross-Harness Continuity** | [`continuity`](#continuity), [`record-continuity`](#record-continuity), [`reconcile-continuity`](#reconcile-continuity), [`clear-continuity`](#clear-continuity), [`handoff-create`](#handoff-create), [`handoff-list`](#handoff-list), [`handoff-show`](#handoff-show) |
-| **Verification & Completion** | [`prepare-completion`](#prepare-completion), [`run-check`](#run-check), [`record-check`](#record-check), [`record-terminal-result`](#record-terminal-result), [`audit`](#audit), [`report`](#report), [`validate-receipt`](#validate-receipt), [`verify-scope`](#verify-scope) |
 | **Durable Actions & Approvals** | [`run-action`](#run-action), [`action-propose`](#action-propose), [`action-record`](#action-record), [`action-show`](#action-show), [`action-reconcile`](#action-reconcile), [`action-verify`](#action-verify), [`action-authorize`](#action-authorize), [`approval-request`](#approval-request), [`approval-resolve`](#approval-resolve) |
 | **Policy & Auditing** | [`policy`](#policy), [`policy-discover`](#policy-discover), [`policy-status`](#policy-status), [`policy-diff`](#policy-diff), [`rule-verify`](#rule-verify), [`baseline`](#baseline), [`bundle`](#bundle) |
 | **workspace** | [`workspace-bind`](#workspace-bind), [`workspace-status`](#workspace-status) |
@@ -1234,6 +1234,89 @@ Evaluates task progress across verification cycles and detects stalls determinis
 ---
 
 ## 5. Completion & Reporting
+
+### `quality-baseline`
+
+Captures the provider observation that becomes the task's structural-quality
+baseline.
+
+- **Purpose**: Persist an immutable, task-bound structural-quality baseline before execution.
+- **When to use**: After a valid preflight checkpoint in `PLANNED`, before entering `EXECUTING`.
+- **Mutation**: Executes the configured provider, writes `baseline.json`, and appends a quality-baseline ledger event.
+- **Options**:
+
+<!-- BEGIN FORGELOOP GENERATED: cli:quality-baseline:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--replace`: replace a different baseline before EXECUTING
+- `--timeout-ms <number>`: bounded analyzer timeout in milliseconds
+- `--json`: emit baseline result as JSON
+
+<!-- END FORGELOOP GENERATED: cli:quality-baseline:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop quality-baseline --task task-001 --json
+  ```
+
+Use `--replace` only for an intentional pre-execution baseline replacement.
+The superseded fingerprint remains in the append-only ledger. The command
+does not accept an executable path, shell fragment, arbitrary arguments, score,
+or baseline value.
+
+### `quality-verify`
+
+Scans the current project through the configured structural-quality provider and
+compares it with the task baseline.
+
+- **Purpose**: Record a current-cycle structural-quality evaluation and project it into the canonical `structural-quality` check.
+- **When to use**: In `VERIFYING`, before `REVIEWING`.
+- **Mutation**: Executes the configured provider, writes a typed evaluation, and records the bound check/evidence projection.
+- **Options**:
+
+<!-- BEGIN FORGELOOP GENERATED: cli:quality-verify:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--timeout-ms <number>`: bounded analyzer timeout in milliseconds
+- `--json`: emit structural-quality verification as JSON
+
+<!-- END FORGELOOP GENERATED: cli:quality-verify:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop quality-verify --task task-001 --json
+  ```
+
+`PASS`, `FAIL`, `BLOCKED`, and `NOT_OBSERVED` remain distinct. A failed,
+unavailable, malformed, timed-out, truncated, stale, or incomparable provider
+result cannot become a passing check.
+
+### `quality-status`
+
+Projects the persisted structural-quality evidence without launching a provider.
+
+- **Purpose**: Inspect baseline, current-cycle status, policy comparison, and next guidance.
+- **When to use**: At any point when a read-only quality projection is needed.
+- **Mutation**: Read-only; it creates no provider process and writes no quality artifact.
+- **Options**:
+
+<!-- BEGIN FORGELOOP GENERATED: cli:quality-status:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--json`: emit persisted structural-quality status as JSON
+
+<!-- END FORGELOOP GENERATED: cli:quality-status:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop quality-status --task task-001 --json
+  ```
 
 ### `prepare-completion`
 

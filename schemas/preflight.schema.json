@@ -17,7 +17,8 @@
     "errors": { "type": "array", "items": { "type": "object" } },
     "fingerprints": { "type": "object" },
     "sources": { "type": "object" },
-    "policy": { "type": "object" }
+    "policy": { "type": "object" },
+    "structuralQuality": { "type": "object" }
   },
   "additionalProperties": false
 }

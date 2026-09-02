@@ -24,6 +24,7 @@
 - [Proportional Planning](#proportional-planning)
 - [Execution Loop](#execution-loop)
 - [Verification & Regression](#verification-and-regression)
+- [Structural Quality Feedback](#structural-quality-feedback)
 - [Evidence-Driven Correction](#evidence-driven-correction)
 - [Precedence & Stop Conditions](#precedence)
 - [Final Delivery](#final-delivery)
@@ -1207,6 +1208,33 @@ Choose checks that match the artifact and risk.
 
 Regression depth grows with risk: specific check, related tests, then suite,
 build, and integration validation when reasonable.
+
+<a id="FL-SQ-001"></a> **FL-SQ-001 — Structural-quality evidence MUST remain provider-neutral, task-bound, delta-first, and separate from other verification dimensions.**
+
+### Structural quality feedback
+
+Structural quality is an optional provider-neutral verification dimension. It
+is a measurement of dependency structure, not a guide, a static analyzer built
+into ForgeLoop, or a universal software-quality score. The external provider
+remains a replaceable sensor while ForgeLoop owns policy and evidence.
+
+When enabled, capture a task-bound baseline after planning and immediately
+before execution. In `VERIFYING`, record the current-cycle evaluation before
+entering `REVIEWING`. A gate requires a comparable current-cycle pass; observe
+mode exposes the result or limitation without adding a completion blocker;
+off mode does not resolve or launch a provider.
+
+The baseline is immutable after `EXECUTING`. Provider identity/version, policy,
+route, contract, scope, and rules drift makes observations incomparable. A
+regression follows the existing `VERIFYING -> DIAGNOSING -> CORRECTING ->
+VERIFYING` loop with evidence-backed diagnosis; ForgeLoop does not fabricate a
+diagnosis. Do not claim `PASS` for unavailable or malformed evidence.
+
+Optional optimization is bounded, advisory, and scope-safe. It may use at most
+two extra evaluations in a verification cycle, never becomes required for
+completion, never widens claims, and never chases a perfect score. See
+[`docs/STRUCTURAL_QUALITY.md`](./docs/STRUCTURAL_QUALITY.md) for the provider
+contract, policy fields, commands, artifact layout, and Sentrux boundary.
 
 ### Executable Policy & Autonomy-Preserving Invariants
 

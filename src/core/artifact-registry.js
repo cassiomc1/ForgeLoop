@@ -283,6 +283,18 @@ export const ARTIFACT_REGISTRY = Object.freeze({
     isPersisted: true,
     description: "Immutable trajectory evaluation results compiled from the canonical trace against a local reference scenario.",
   }),
+  structuralQuality: Object.freeze({
+    key: "structuralQuality",
+    scope: "TASK",
+    path: `${TASK_STATE_ROOT}/<task-key>/${TASK_ARTIFACT_FILES.structuralQuality}/baseline.json`,
+    schema: "structural-quality",
+    owner: "PROTOCOL_COMPILED",
+    mutability: "BASELINE_IMMUTABLE_AFTER_EXECUTION",
+    trustRole: "STRUCTURAL_QUALITY_EVIDENCE",
+    isPublic: true,
+    isPersisted: true,
+    description: "Typed, provider-neutral structural-quality baseline and evaluation evidence bound to task, route, policy, scope, and provider identity.",
+  }),
   usage: Object.freeze({
     key: "usage",
     scope: "TASK",

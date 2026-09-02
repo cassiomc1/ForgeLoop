@@ -36,6 +36,7 @@ relevant guides.
 - **CLI command reference** → [`docs/CLI_REFERENCE.md`](./docs/CLI_REFERENCE.md)
 - **Artifact & schema reference** → [`docs/ARTIFACT_REFERENCE.md`](./docs/ARTIFACT_REFERENCE.md)
 - **Operational recipes** → [`docs/RECIPES.md`](./docs/RECIPES.md)
+- **Structural quality feedback** → [`docs/STRUCTURAL_QUALITY.md`](./docs/STRUCTURAL_QUALITY.md)
 - **Troubleshooting & error codes** → [`docs/TROUBLESHOOTING.md`](./docs/TROUBLESHOOTING.md)
 - **Code attestation & revision coverage** → [`docs/CODE_ATTESTATION.md`](./docs/CODE_ATTESTATION.md)
 - **System architecture & safety** → [`LOOP_SYSTEM_DESIGN.md`](./LOOP_SYSTEM_DESIGN.md) & [`THREAT_MODEL.md`](./THREAT_MODEL.md)
@@ -70,6 +71,7 @@ changed the repository.
 | Accessibility | [`ENG/accessibility-eng.md`](./ENG/accessibility-eng.md) |
 | Web games | [`ENG/games-code-design-web-eng.md`](./ENG/games-code-design-web-eng.md) |
 | Documentation quality | [`ENG/documentation-quality-eng.md`](./ENG/documentation-quality-eng.md) |
+| Structural quality feedback | [`docs/STRUCTURAL_QUALITY.md`](./docs/STRUCTURAL_QUALITY.md) |
 
 Each guide declares its name, language, version, and review date in
 frontmatter. Repository validators keep the catalog and metadata synchronized.
@@ -123,6 +125,15 @@ attestation binds an exact source snapshot to the ForgeLoop evidence chain; it
 does not prove authorship or absolute security. See
 [`docs/CODE_ATTESTATION.md`](./docs/CODE_ATTESTATION.md) for configuration,
 read-only verification, signatures, and revision-range coverage.
+
+### Optional structural quality feedback
+
+Projects may enable a provider-neutral structural-quality comparison. Capture
+an immutable baseline before execution, verify the current cycle, and let the
+configured `off`, `observe`, or `gate` mode determine whether the result is
+informational or completion-required. Sentrux is an optional user-managed
+sensor, not a ForgeLoop dependency or a universal software-quality score. See
+[`docs/STRUCTURAL_QUALITY.md`](./docs/STRUCTURAL_QUALITY.md).
 
 ### Optional task boundaries and differential verification
 

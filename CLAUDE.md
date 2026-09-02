@@ -20,6 +20,12 @@ When working in this repository:
 1. After implementation work for the current task is complete, run `forgeloop next` before returning a final result. Follow the returned lifecycle action until ForgeLoop reaches a terminal state or an explicit blocker.
 1. Report current evidence, limitations, and publication state without claiming checks that were not run.
 
+When `structuralQuality` is enabled, capture its baseline after planning and
+before `EXECUTING`, evaluate the current cycle in `VERIFYING`, and use the
+existing diagnosis/correction lifecycle for regressions. Do not report
+unavailable evidence as `PASS`, replace a baseline after execution begins, or
+expand scope to pursue a perfect score.
+
 Do not stop for non-blocking missing product details. When a safe, reversible
 local default exists, record it as an agent assumption and follow the Blocking vs Non-Blocking Decisions policy in `LOOP_ENGINEERING.md`.
 

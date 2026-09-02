@@ -29,6 +29,10 @@ This guide provides symptom-first recovery procedures for common ForgeLoop proto
 - [Responsibility contract rejects a pass](#symptom-responsibility-contract-rejects-a-pass)
 - [Verification scope is stale or unresolved](#symptom-verification-scope-is-stale-or-unresolved)
 - [Attestation or revision coverage is invalid](#symptom-attestation-or-revision-coverage-is-invalid)
+- [Structural-quality evidence is missing or blocked](#symptom-structural-quality-evidence-is-missing-or-blocked)
+- [Structural-quality verification reports a regression](#symptom-structural-quality-verification-reports-a-regression)
+- [Structural-quality provider is unavailable or invalid](#symptom-structural-quality-provider-is-unavailable-or-invalid)
+- [Structural-quality evidence is stale or incomparable](#symptom-structural-quality-evidence-is-stale-or-incomparable)
 - [Another harness cannot resume the task](#symptom-another-harness-cannot-resume)
 - [Task claim conflict or recovered task](#symptom-task-creation-blocked-by-a-write-claim-conflict-e_task_scope_conflict)
 - [Stable Error & Reason Code Reference](#stable-error-and-reason-codes)
@@ -890,6 +894,88 @@ forgeloop next --task <id> --json
 
 ---
 
+### Symptom: Structural-quality evidence is missing or blocked
+
+#### Error Codes: `E_STRUCTURAL_QUALITY_BASELINE_MISSING`, `E_STRUCTURAL_QUALITY_BASELINE_PHASE_INVALID`, `E_STRUCTURAL_QUALITY_PROVIDER_UNAVAILABLE`
+
+This applies when structural quality is configured in `gate` mode but a valid
+baseline or current provider observation is unavailable. `preflight` can be
+ready before the baseline exists, but `PLANNED` cannot enter `EXECUTING` until
+the baseline is captured. A missing provider is a visible limitation in
+`observe` mode and a blocker in `gate` mode.
+
+Inspect the persisted projection without launching a provider:
+
+```bash
+forgeloop quality-status --task <id> --json
+forgeloop next --task <id> --json
+```
+
+Capture the baseline only in `PLANNED` after a valid preflight:
+
+```bash
+forgeloop quality-baseline --task <id> --json
+```
+
+Do not replace a baseline after execution begins. Install or upgrade Sentrux
+only through a separately authorized, user-managed process.
+
+### Symptom: Structural-quality verification reports a regression
+
+#### Error Code: `E_STRUCTURAL_QUALITY_REGRESSION`
+
+The current observation violated the configured aggregate, dimension, cycle, or
+minimum policy. An improving aggregate can still fail when a dimension budget
+or cycle rule fails. Inspect the evidence and follow the normal diagnosis and
+correction lifecycle. Use the evaluation artifact reference returned by
+`quality-verify` as evidence when recording the diagnosis.
+
+```bash
+forgeloop quality-status --task <id> --json
+forgeloop next --task <id> --json
+```
+
+The evaluation's bottleneck, root-cause deltas, failed conditions, and artifact
+reference are evidence. ForgeLoop does not auto-create a diagnosis and does not
+accept a repeated hypothesis without new information.
+
+### Symptom: Structural-quality provider is unavailable or invalid
+
+#### Error Codes: `E_STRUCTURAL_QUALITY_PROVIDER_INVALID`, `E_STRUCTURAL_QUALITY_PROVIDER_VERSION_UNSUPPORTED`, `E_STRUCTURAL_QUALITY_PROVIDER_PROTOCOL_INVALID`, `E_STRUCTURAL_QUALITY_SCAN_FAILED`, `E_STRUCTURAL_QUALITY_TIMEOUT`, `E_STRUCTURAL_QUALITY_OUTPUT_LIMIT`
+
+The provider boundary failed closed because detection, version, MCP protocol,
+scan, timeout, or output limits were not satisfied. Raw MCP streams are never
+persisted and partial provider output is never a passing observation.
+
+Use the configured mode's semantics: `observe` records `NOT_OBSERVED`, while
+`gate` records `BLOCKED` and keeps completion unavailable. Check the provider's
+own installation and logs, then rerun the same ForgeLoop command after the
+cause is understood. The project configuration cannot select an executable,
+shell, arbitrary arguments, or a score override.
+
+### Symptom: Structural-quality evidence is stale or incomparable
+
+#### Error Codes: `E_STRUCTURAL_QUALITY_BASELINE_BINDING_MISMATCH`, `E_STRUCTURAL_QUALITY_EVALUATION_INCOMPARABLE`, `E_STRUCTURAL_QUALITY_EVIDENCE_STALE`, `E_STRUCTURAL_QUALITY_SOURCE_FINGERPRINT_UNAVAILABLE`
+
+The baseline and current evaluation no longer describe the same task inputs.
+Provider ID or version, policy, route, contract, scan scope, or
+`.sentrux/rules.toml` drift makes the comparison incomparable. A prior-cycle
+pass cannot satisfy a current-cycle gate. If source material cannot be read
+or contains an unsafe symlink, ForgeLoop returns
+`E_STRUCTURAL_QUALITY_SOURCE_FINGERPRINT_UNAVAILABLE` and does not persist a
+passing observation.
+
+Inspect the bound artifacts and current projection:
+
+```bash
+forgeloop quality-status --task <id> --json
+forgeloop audit --task <id> --json
+```
+
+Resolve the legitimate drift through the normal task lifecycle. Do not edit a
+baseline or evaluation by hand, and do not use a bundle as a reason to bypass
+current-cycle validation.
+
 ## Stable Error and Reason Codes
 
 <!-- BEGIN FORGELOOP GENERATED: public-error-codes -->
@@ -1090,6 +1176,27 @@ forgeloop next --task <id> --json
 | `E_STATE_REVALIDATION_REQUIRED` | The work-state checkpoint must be revalidated before the lifecycle can continue. | Run forgeloop reconcile-closure for externally satisfied EXECUTING tasks, or inspect the freshness reasons for other drift. |
 | `E_STATE_TASK_MISMATCH` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_STRATEGY_OSCILLATION` | Correction history oscillates between previously exhausted strategies without new information. | Gather a genuinely new observation or test a materially different falsifiable hypothesis. |
+| `E_STRUCTURAL_QUALITY_BASELINE_BINDING_MISMATCH` | Structural-quality evidence did not satisfy its provider, artifact, comparison, or lifecycle boundary. | Reconcile contract, route, policy, scope, provider, or rules drift before using the baseline. |
+| `E_STRUCTURAL_QUALITY_BASELINE_EXISTS` | Structural-quality evidence did not satisfy its provider, artifact, comparison, or lifecycle boundary. | Use the existing immutable baseline or request --replace while the task is still before EXECUTING. |
+| `E_STRUCTURAL_QUALITY_BASELINE_MISSING` | Structural-quality evidence did not satisfy its provider, artifact, comparison, or lifecycle boundary. | Run forgeloop quality-baseline --task <id> after PLANNED and before EXECUTING. |
+| `E_STRUCTURAL_QUALITY_BASELINE_PHASE_INVALID` | Structural-quality evidence did not satisfy its provider, artifact, comparison, or lifecycle boundary. | Baseline replacement is forbidden after EXECUTING; repair the current task against its original baseline. |
+| `E_STRUCTURAL_QUALITY_CONFIGURATION_INVALID` | Structural-quality evidence did not satisfy its provider, artifact, comparison, or lifecycle boundary. | Correct structuralQuality mode, provider ID, budgets, floors, or optimization limits in .forgeloop/config.json. |
+| `E_STRUCTURAL_QUALITY_EVALUATION_INCOMPARABLE` | Structural-quality evidence did not satisfy its provider, artifact, comparison, or lifecycle boundary. | Restore the baseline provider/version/rules/policy/scope bindings and rerun quality-verify. |
+| `E_STRUCTURAL_QUALITY_EVIDENCE_STALE` | Structural-quality evidence did not satisfy its provider, artifact, comparison, or lifecycle boundary. | Rerun quality-verify in the active verification cycle and refresh completion through the canonical receipt pipeline. |
+| `E_STRUCTURAL_QUALITY_MEASUREMENT_MODEL_MISMATCH` | Structural-quality evidence did not satisfy its provider, artifact, comparison, or lifecycle boundary. | Use a compatible measurement model and provider across baseline and evaluation observations. |
+| `E_STRUCTURAL_QUALITY_OBSERVATION_EPOCH_STALE` | Structural-quality evidence did not satisfy its provider, artifact, comparison, or lifecycle boundary. | Rerun quality-verify under the active task epoch without concurrent state mutations. |
+| `E_STRUCTURAL_QUALITY_OUTPUT_LIMIT` | Structural-quality evidence did not satisfy its provider, artifact, comparison, or lifecycle boundary. | Reduce provider output or diagnostics; the 2 MiB combined process-output limit is fail-closed. |
+| `E_STRUCTURAL_QUALITY_PROJECTION_INCOMPLETE` | Structural-quality evidence did not satisfy its provider, artifact, comparison, or lifecycle boundary. | Rerun quality-verify to reconcile and project the canonical check from the existing evaluation artifact. |
+| `E_STRUCTURAL_QUALITY_PROVIDER_INVALID` | Structural-quality evidence did not satisfy its provider, artifact, comparison, or lifecycle boundary. | Use a provider implementing id, detect(input), and scan(input) with the documented normalized boundary. |
+| `E_STRUCTURAL_QUALITY_PROVIDER_PROTOCOL_INVALID` | Structural-quality evidence did not satisfy its provider, artifact, comparison, or lifecycle boundary. | Repair the provider MCP handshake or response shape; malformed external data cannot become evidence. |
+| `E_STRUCTURAL_QUALITY_PROVIDER_TOOL_CONTRACT_INVALID` | Structural-quality evidence did not satisfy its provider, artifact, comparison, or lifecycle boundary. | Ensure the provider exposes the required scan and health tool argument schemas. |
+| `E_STRUCTURAL_QUALITY_PROVIDER_UNAVAILABLE` | Structural-quality evidence did not satisfy its provider, artifact, comparison, or lifecycle boundary. | Install or expose the requested provider outside ForgeLoop, or use observe mode and record the limitation; ForgeLoop never auto-installs it. |
+| `E_STRUCTURAL_QUALITY_PROVIDER_VERSION_UNSUPPORTED` | Structural-quality evidence did not satisfy its provider, artifact, comparison, or lifecycle boundary. | Use a verified Sentrux version (0.5.5, 0.5.6, or 0.5.7), or select a compatible provider through trusted runtime context. |
+| `E_STRUCTURAL_QUALITY_REGRESSION` | Structural-quality evidence did not satisfy its provider, artifact, comparison, or lifecycle boundary. | Use the bottleneck and root-cause deltas to record an evidence-backed diagnosis, correct within scope, and verify a new cycle. |
+| `E_STRUCTURAL_QUALITY_SCAN_FAILED` | Structural-quality evidence did not satisfy its provider, artifact, comparison, or lifecycle boundary. | Inspect the provider failure and rerun quality-baseline or quality-verify after the external analyzer is healthy. |
+| `E_STRUCTURAL_QUALITY_SOURCE_DRIFT` | Structural-quality evidence did not satisfy its provider, artifact, comparison, or lifecycle boundary. | Ensure the worktree is not mutated during provider observation and rerun quality-baseline or quality-verify. |
+| `E_STRUCTURAL_QUALITY_SOURCE_FINGERPRINT_UNAVAILABLE` | Structural-quality evidence did not satisfy its provider, artifact, comparison, or lifecycle boundary. | Repair unreadable or unsafe source material before structural-quality evidence can be trusted. |
+| `E_STRUCTURAL_QUALITY_TIMEOUT` | Structural-quality evidence did not satisfy its provider, artifact, comparison, or lifecycle boundary. | Use a responsive provider or a bounded timeout within the supported limit; never promote a timed-out scan. |
 | `E_TASK_ALREADY_EXISTS` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_TASK_ALREADY_RECOVERED` | The task already has active durable recovered state. | Inspect the existing recovery metadata; use task-resume to reacquire claims or leave the task recovered. |
 | `E_TASK_AMBIGUOUS` | Multiple tasks exist in the project but no task selector was provided. | Select a task explicitly using --task <id> or FORGELOOP_TASK=<id>. |

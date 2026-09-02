@@ -26,3 +26,13 @@ test("dependency policy rejects runtime and unapproved development dependencies"
     "devDependencies:leftpad",
   ]);
 });
+
+test("structural quality keeps the production dependency set empty", () => {
+  const packageJson = {
+    dependencies: {},
+    devDependencies: { eslint: "^9.0.0", c8: "^12.0.0" },
+  };
+  const result = validateDependencyPolicy(packageJson);
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.violations, []);
+});

@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "role": "BASELINE",
+  "taskId": "schema-fixture",
+  "capturedAt": "2026-09-01T00:00:00.000Z",
+  "verificationCycle": null,
+  "attempt": 1,
+  "status": "PASS",
+  "reasonCodes": [],
+  "errorCode": null,
+  "baselineSignal": null,
+  "currentSignal": null,
+  "bindings": {
+    "contractFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "routeFingerprint": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "policyFingerprint": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "scopeFingerprint": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "baselineFingerprint": null,
+    "sourceMaterialFingerprint": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "stateRevision": 1
+  },
+  "sourceObservation": {
+    "beforeFingerprint": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "afterFingerprint": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "stable": true
+  },
+  "provider": {
+    "id": "sentrux",
+    "version": "0.5.7",
+    "transport": "mcp-stdio",
+    "executionMode": "NATIVE_PROCESS"
+  },
+  "scope": {
+    "kind": "PROJECT",
+    "projectRoot": ".",
+    "providerConfigFingerprint": null
+  },
+  "snapshot": {
+    "qualitySignal": 7243,
+    "bottleneck": "equality",
+    "rootCauses": {
+      "modularity": { "score": 6810, "raw": 0.5215 },
+      "acyclicity": { "score": 10000, "raw": 0 },
+      "depth": { "score": 8200, "raw": 2 },
+      "equality": { "score": 6550, "raw": 0.345 },
+      "redundancy": { "score": 9100, "raw": 0.09 }
+    },
+    "statistics": {
+      "files": 139,
+      "lines": 18420,
+      "importEdges": 402,
+      "crossModuleEdges": 88
+    },
+    "diagnostics": null
+  }
+}

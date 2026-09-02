@@ -22,6 +22,7 @@ integration and guide context. Use this map before editing documentation.
 | Durable actions and trajectory evidence | [`docs/EXECUTION_TRACE.md`](./docs/EXECUTION_TRACE.md) and [`docs/RECIPES.md`](./docs/RECIPES.md) | Action provenance, reconciliation, metrics, and project-local evaluation |
 | Troubleshooting and recovery | [`docs/TROUBLESHOOTING.md`](./docs/TROUBLESHOOTING.md) | Symptom-first recovery and stable error code reference |
 | Operational recipes | [`docs/RECIPES.md`](./docs/RECIPES.md) | Short copy-paste recipes for daily workflows |
+| Structural quality feedback | [`docs/STRUCTURAL_QUALITY.md`](./docs/STRUCTURAL_QUALITY.md) | Provider-neutral baseline, delta policy, Sentrux boundary, lifecycle integration, and troubleshooting |
 | Diagnostic model | [`docs/DIAGNOSTIC_MODEL.md`](./docs/DIAGNOSTIC_MODEL.md) | Structured diagnostic cases, interventions, hypothesis dispositions, information gain |
 | Execution trace and observability | [`docs/EXECUTION_TRACE.md`](./docs/EXECUTION_TRACE.md) | `history`, `trace`, `reflect`, and task-level `inspect` read-only projections |
 | Workspace, handoff, responsibility, and scope | [`docs/ARTIFACT_REFERENCE.md`](./docs/ARTIFACT_REFERENCE.md) and [`docs/CLI_REFERENCE.md`](./docs/CLI_REFERENCE.md) | Optional task boundaries and deterministic verification planning |
@@ -68,6 +69,7 @@ integration and guide context. Use this map before editing documentation.
 | **Inspecting `.forgeloop/` files** | [`docs/ARTIFACT_REFERENCE.md`](./docs/ARTIFACT_REFERENCE.md) |
 | **Fixing a broken or stale state** | [`docs/TROUBLESHOOTING.md`](./docs/TROUBLESHOOTING.md) |
 | **Looking for quick recipes** | [`docs/RECIPES.md`](./docs/RECIPES.md) |
+| **Configuring structural quality feedback** | [`docs/STRUCTURAL_QUALITY.md`](./docs/STRUCTURAL_QUALITY.md) |
 | **Understanding verification trust** | [`docs/REVISION_PROVIDERS.md`](./docs/REVISION_PROVIDERS.md#differential-verification-scope) |
 | **Understanding attestation trust** | [`docs/CODE_ATTESTATION.md`](./docs/CODE_ATTESTATION.md#trust-levels) |
 | **Maintaining generated diagrams** | [`docs/diagrams/README.md`](./docs/diagrams/README.md) |
@@ -89,6 +91,7 @@ integration and guide context. Use this map before editing documentation.
 - **Fix a blocked, stale, or invalid state**: [`docs/TROUBLESHOOTING.md`](./docs/TROUBLESHOOTING.md)
 - **Recover a stale task or reacquire released claims**: [`docs/RECIPES.md`](./docs/RECIPES.md#recipe-15--release-and-reacquire-claims-for-an-abandoned-task)
 - **Find operational copy-paste commands**: [`docs/RECIPES.md`](./docs/RECIPES.md)
+- **Measure structural quality without replacing tests**: [`docs/STRUCTURAL_QUALITY.md`](./docs/STRUCTURAL_QUALITY.md)
 - **Read the normative protocol specification**: [`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md)
 - **Integrate a new AI environment**: [`PROTOCOL_INTEGRATION.md`](./PROTOCOL_INTEGRATION.md)
 - **Map ForgeLoop state into an external runtime/orchestrator**: [`ORCHESTRATOR_INTEGRATION.md`](./ORCHESTRATOR_INTEGRATION.md)

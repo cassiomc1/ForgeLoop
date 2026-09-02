@@ -15,6 +15,8 @@ import { findTaskById } from "./task-discovery.js";
 import { buildTaskTrace } from "./trace.js";
 import { evaluateProgress } from "./progress.js";
 import { readEvents } from "./events.js";
+import { taskStructuralQualityDirectory } from "./task-paths.js";
+import { projectStructuralQualityStatus } from "./structural-quality/status.js";
 
 function reasonCodesFor({ state, trace, progress }) {
   const codes = [];
@@ -28,6 +30,40 @@ function reasonCodesFor({ state, trace, progress }) {
   return codes;
 }
 
+function structuralQualityIssues(quality, taskId) {
+  if (!quality || quality.mode !== "gate") return [];
+  const qualityPath = quality.current?.artifactRef ?? taskStructuralQualityDirectory(taskId);
+  if (quality.baseline?.status !== "OBSERVED") {
+    return [{
+      code: "E_STRUCTURAL_QUALITY_BASELINE_MISSING",
+      message: "Structural-quality gate evidence has no valid immutable baseline.",
+      path: taskStructuralQualityDirectory(taskId),
+    }];
+  }
+  if (!quality.current?.artifactRef) {
+    return [{
+      code: "E_STRUCTURAL_QUALITY_EVIDENCE_STALE",
+      message: "Structural-quality gate has no evaluation for the current verification cycle.",
+      path: qualityPath,
+    }];
+  }
+  if (quality.current.status === "FAIL") {
+    return [{
+      code: "E_STRUCTURAL_QUALITY_REGRESSION",
+      message: "Structural-quality verification detected a regression.",
+      path: qualityPath,
+    }];
+  }
+  if (quality.current.status === "BLOCKED") {
+    return [{
+      code: "E_STRUCTURAL_QUALITY_EVALUATION_INCOMPARABLE",
+      message: "Structural-quality verification is blocked or incomparable.",
+      path: qualityPath,
+    }];
+  }
+  return [];
+}
+
 async function buildTaskInspection({ target, packageRoot, taskId, state, classifiedStatus = null }) {
   const trace = await buildTaskTrace({ target, packageRoot, taskId });
   const events = await readEvents(target, packageRoot, { taskId });
@@ -39,6 +75,22 @@ async function buildTaskInspection({ target, packageRoot, taskId, state, classif
   )].sort();
 
   const issues = [];
+  let structuralQuality;
+  try {
+    structuralQuality = await projectStructuralQualityStatus({ target, packageRoot, taskId });
+  } catch (error) {
+    structuralQuality = {
+      mode: "off",
+      provider: null,
+      baseline: { status: "INVALID", qualitySignal: null, artifactRef: null, fingerprint: null },
+      current: { status: "NOT_OBSERVED", verificationCycle: null, attempt: null, qualitySignal: null, delta: null, bottleneck: null, artifactRef: null },
+      comparable: null,
+      completionRequired: false,
+      reasonCodes: [error.code ?? "E_STRUCTURAL_QUALITY_EVIDENCE_STALE"],
+      next: null,
+    };
+  }
+  issues.push(...structuralQualityIssues(structuralQuality, taskId));
   if (!trace.snapshot.consistent) {
     issues.push({ code: "E_TRACE_SNAPSHOT_INCONSISTENT", message: "Task artifacts changed while being read; rerun inspect for a consistent view." });
   }
@@ -98,6 +150,7 @@ async function buildTaskInspection({ target, packageRoot, taskId, state, classif
       valid: trace.integrity.valid,
       errors: trace.integrity.errors,
     },
+    structuralQuality,
     audit: {},
     completion: {},
     issues,
@@ -213,6 +266,17 @@ export async function inspectTarget({ target, packageRoot, contractFile = null, 
   const taskInspection = taskId
     ? await buildTaskInspection({ target, packageRoot, taskId, state: rawState, classifiedStatus: classifiedState.status })
     : null;
+  for (const issue of taskInspection?.issues ?? []) {
+    if (!issue.code.startsWith("E_STRUCTURAL_QUALITY")) continue;
+    findings.push({
+      code: issue.code,
+      severity: "error",
+      path: issue.path,
+      message: issue.message,
+      remediation: `Run forgeloop next --task ${taskId} --json and follow the structural-quality guidance.`,
+      evidence: createEvidence({ kind: "BLOCKED", source: issue.path, result: issue.code }),
+    });
+  }
   return {
     target: { path: target },
     authority: trustedAuthorityConfiguration({ target, authorityContext, runtimeContext }),

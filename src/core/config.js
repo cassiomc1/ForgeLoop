@@ -3,6 +3,7 @@ import { ARTIFACT_PATHS, readJsonArtifact, writeJsonArtifact } from "./artifacts
 import { E_ATTESTATION_CONFIGURATION_INVALID } from "./error-codes.js";
 import { normalizeVerificationConfiguration } from "./verification-scope-capability.js";
 import { EXECUTION_PROFILE_REQUESTS } from "./execution-profile.js";
+import { normalizeStructuralQualityConfig } from "./structural-quality/policy.js";
 
 export const CONFIG_SCHEMA_VERSION = 1;
 export const COMPLIANCE_MODES = Object.freeze(["advisory", "standard", "strict"]);
@@ -80,6 +81,7 @@ export function createConfig(input = {}) {
     }
     executionProfile = input.executionProfile;
   }
+  const structuralQuality = normalizeStructuralQualityConfig(input.structuralQuality);
   return {
     schemaVersion: CONFIG_SCHEMA_VERSION,
     protocolVersion: PROTOCOL_VERSION,
@@ -90,6 +92,7 @@ export function createConfig(input = {}) {
     ...(verification ? { verification } : {}),
     ...(attestation ? { attestation } : {}),
     ...(executionProfile ? { executionProfile } : {}),
+    ...(structuralQuality !== undefined ? { structuralQuality } : {}),
   };
 }
 

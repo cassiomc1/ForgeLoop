@@ -124,6 +124,30 @@ provide a universal exactly-once guarantee.
 | Signature confusion | A plain digest or platform publication signal is presented as a cryptographic signature | External signing-provider boundary | `ATTESTED` requires a valid external signature under the requested signer policy; private keys and tokens never enter persisted artifacts | Trust in the external signer and transparency infrastructure remains outside ForgeLoop | `tests/signing-provider.test.js` |
 | Incomplete revision coverage | A changed source path has no valid task attestation or overlaps another task with a conflicting digest | Provider-neutral range coverage evaluator | Changed, covered, uncovered, and overlapping paths are computed from the selected revision provider; enforcement fails closed on gaps or conflicts | Coverage is limited to the provider's observable revision/content boundary | `tests/attestation-coverage.test.js`, `tests/generic-ci-attestation.test.js` |
 
+## Structural-quality provider boundary
+
+Structural-quality observations are untrusted external data. The built-in
+adapter fixes the executable name to `sentrux`, passes `--mcp` with
+`shell: false`, validates the MCP handshake and minimum version, bounds
+combined stdout/stderr, and terminates a hung process. Project configuration
+cannot choose an executable path, shell fragment, arbitrary arguments, or a
+score. Runtime hosts may inject a provider only through the typed integration
+context.
+
+| Threat | Mitigation | Residual limitation | Test evidence |
+| --- | --- | --- | --- |
+| Malicious config launches `./sentrux` or another arbitrary executable | Config normalization rejects executable/argv/shell fields; built-in resolution uses the fixed `sentrux` command and shell-free spawn | A privileged host can launch its own process outside ForgeLoop | `tests/sentrux-structural-quality-provider.test.js` |
+| PATH resolves an unexpected executable | Provider/version/transport identity is recorded and the provider boundary remains explicit; portable artifacts omit absolute executable paths | PATH itself is host-managed and cannot prove binary provenance | `tests/sentrux-structural-quality-provider.test.js` |
+| Provider hangs, floods stdout/stderr, or sends malformed JSON-RPC | Monotonic request IDs, strict response validation, bounded output, timeout, SIGTERM, and bounded forced termination fail closed | A hostile process may still consume resources until the OS releases it | `tests/sentrux-structural-quality-provider.test.js` |
+| Provider leaks confidential fields or outside-project paths | Normalization applies secret scanning, string/list limits, project containment, and safe relative paths before persistence | Unknown encodings may require host-level review | `tests/structural-quality-provider.test.js` |
+| Provider version or provider configuration changes after baseline | Version, provider-config, policy, route, contract, and scope fingerprints bind baseline/current comparison; incompatible drift is incomparable | External files can change again after validation; architecture-rule provenance is intentionally a separate sensor | `tests/structural-quality-lifecycle.test.js`, `tests/structural-quality-policy.test.js` |
+| Agent launders a regression by replacing the baseline | Replacement is allowed only before `EXECUTING`; superseded fingerprints remain in the ledger | A separately privileged actor can rewrite all local artifacts | `tests/structural-quality-artifacts.test.js` |
+| Bundle quality evidence is tampered | Bundle import revalidates typed artifacts, bindings, fingerprints, cycle, and check references without rescanning | Local consistency is not remote attestation | `tests/structural-quality-bundle.test.js` |
+| Observe or diagnostic absence is misreported as success | Unavailable evidence maps to `NOT_OBSERVED`, absent diagnostics remain `null`, and only gate PASS satisfies the quality requirement | Provider capability still determines diagnostic detail | `tests/structural-quality-lifecycle.test.js`, `tests/sentrux-structural-quality-provider.test.js` |
+
+ForgeLoop never changes Sentrux analytics preferences, installs the provider,
+or treats Sentrux Free diagnostics as necessary for score correctness.
+
 ## Boundary rules
 
 - Safe paths are checked before reading or writing; no protocol field is a

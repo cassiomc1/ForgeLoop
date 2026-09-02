@@ -7,6 +7,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { validateTaskBrief } from "../src/core/delegation.js";
+import { createSentruxStructuralQualityProvider } from "../src/core/structural-quality/sentrux-mcp.js";
 import { readWorkState, writeWorkState, createWorkState, contractFingerprint } from "../src/core/work-state.js";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -104,4 +105,30 @@ test("delegation paths normalize Windows separators without platform assumptions
   assert.equal(isWithinWindows(root, "C:\\workspace\\project\\src\\file.js"), true);
   assert.equal(isWithinWindows(root, "C:\\workspace\\other\\file.js"), false);
   assert.equal(isWithinWindows(root, "D:\\other\\file.js"), false);
+});
+
+test("structural-quality MCP normalization survives portable Unicode paths", async () => {
+  const parent = await mkdtemp(path.join(os.tmpdir(), "forgeloop-quality-portable-"));
+  const target = path.join(parent, "quality project — 测试");
+  await mkdir(target);
+  const fixture = path.join(repositoryRoot, "tests", "fixtures", "fake-sentrux-mcp.mjs");
+  try {
+    const qualityProvider = createSentruxStructuralQualityProvider({
+      projectPath: target,
+      executable: process.execPath,
+      args: [fixture],
+      timeoutMs: 500,
+      env: { SENTRUX_FAKE_MODE: "valid" },
+    });
+    const result = await qualityProvider.scan({
+      projectPath: target,
+      taskId: "portable-quality",
+      timeoutMs: 500,
+      maxOutputBytes: 2 * 1024 * 1024,
+    });
+    assert.equal(result.snapshot.qualitySignal, 9000);
+    assert.equal(result.snapshot.statistics.crossModuleEdges, 2);
+  } finally {
+    await rm(parent, { recursive: true, force: true });
+  }
 });

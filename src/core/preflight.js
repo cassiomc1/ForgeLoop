@@ -28,6 +28,7 @@ import { PROFILE_PATH } from "./target-layout.js";
 import { readPersistedRoute } from "./route-artifact.js";
 import { validateEventLedger } from "./events.js";
 import { PROJECT_ARTIFACT_PATHS, taskArtifactPath } from "./task-paths.js";
+import { normalizeStructuralQualityConfig } from "./structural-quality/policy.js";
 
 const PREVIEW_DECISION_LIMIT = 10;
 const PREVIEW_DECISION_MAX_LENGTH = 240;
@@ -42,6 +43,17 @@ export async function evaluatePreflight({ target, packageRoot, strict = false, t
   const contract = await loadContract(target, packageRoot, errors, { taskId, contractPath });
   const route = await loadRoute(target, packageRoot, errors, { taskId, routePath });
   const config = await optionalConfig(target, packageRoot, errors);
+  if (config.structuralQuality !== undefined) {
+    try {
+      normalizeStructuralQualityConfig(config.structuralQuality);
+    } catch (error) {
+      errors.push(issue(
+        error.code ?? "E_STRUCTURAL_QUALITY_CONFIGURATION_INVALID",
+        error.message,
+        [PROJECT_ARTIFACT_PATHS.config],
+      ));
+    }
+  }
   const effectiveStrict = strict || config.complianceMode === "strict";
   if (effectiveStrict && profile.status !== "verified") {
     errors.push(issue("E_PROFILE_UNVERIFIED", "Strict preflight requires a verified project profile", [PROFILE_PATH]));
@@ -111,6 +123,26 @@ export async function evaluatePreflight({ target, packageRoot, strict = false, t
 
   const sortedErrors = sortIssues(errors);
   const effectiveTaskId = taskId ?? contract?.value?.taskId ?? state?.taskId ?? "unknown";
+  let structuralQuality = {
+    mode: config.structuralQuality?.mode ?? "off",
+    provider: config.structuralQuality?.mode && config.structuralQuality.mode !== "off"
+      ? config.structuralQuality.provider ?? "sentrux"
+      : null,
+    baseline: { status: config.structuralQuality?.mode && config.structuralQuality.mode !== "off" ? "MISSING" : "NOT_REQUESTED" },
+    current: { status: "NOT_OBSERVED" },
+    comparable: null,
+    completionRequired: config.structuralQuality?.mode === "gate",
+    reasonCodes: [],
+    next: config.structuralQuality?.mode === "gate" ? "CAPTURE_STRUCTURAL_QUALITY_BASELINE" : null,
+  };
+  if (effectiveTaskId !== "unknown") {
+    try {
+      const { projectStructuralQualityStatus } = await import("./structural-quality/service.js");
+      structuralQuality = await projectStructuralQualityStatus({ target, packageRoot, taskId: effectiveTaskId });
+    } catch (error) {
+      structuralQuality.reasonCodes = [error.code ?? "E_STRUCTURAL_QUALITY_EVIDENCE_STALE"];
+    }
+  }
   return {
     schemaVersion: 1,
     protocolVersion: 1,
@@ -140,6 +172,7 @@ export async function evaluatePreflight({ target, packageRoot, strict = false, t
       },
     } : {}),
     ...(sources ? { sources: { status: "valid", fingerprint: null } } : {}),
+    structuralQuality,
   };
 }
 

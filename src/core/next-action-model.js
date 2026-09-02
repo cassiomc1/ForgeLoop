@@ -12,6 +12,10 @@ export const NEXT_ACTIONS = Object.freeze({
   ENTER_VERIFYING: "ENTER_VERIFYING",
   CONTINUE_IMPLEMENTATION: "CONTINUE_IMPLEMENTATION",
   RECORD_VERIFICATION: "RECORD_VERIFICATION",
+  CAPTURE_STRUCTURAL_QUALITY_BASELINE: "CAPTURE_STRUCTURAL_QUALITY_BASELINE",
+  VERIFY_STRUCTURAL_QUALITY: "VERIFY_STRUCTURAL_QUALITY",
+  DIAGNOSE_STRUCTURAL_QUALITY_REGRESSION: "DIAGNOSE_STRUCTURAL_QUALITY_REGRESSION",
+  RESOLVE_STRUCTURAL_QUALITY_BLOCKER: "RESOLVE_STRUCTURAL_QUALITY_BLOCKER",
   DIAGNOSE: "DIAGNOSE",
   RECORD_DIAGNOSIS: "RECORD_DIAGNOSIS",
   CORRECT: "CORRECT",
@@ -118,6 +122,7 @@ export function result({
   approvalRequired = undefined,
   capabilityDecision = undefined,
   reconciliationAuthorityRequired = undefined,
+  optionalActions = undefined,
 }) {
   const normalizedReasons = reasons
     .map((reason) => {
@@ -158,6 +163,7 @@ export function result({
     ...(reconciliationAuthorityRequired
       ? { reconciliationAuthorityRequired: structuredClone(reconciliationAuthorityRequired) }
       : {}),
+    ...(optionalActions?.length ? { optionalActions: structuredClone(optionalActions) } : {}),
   };
 }
 
@@ -167,6 +173,9 @@ export function commandFor(action) {
     [NEXT_ACTIONS.RUN_PREFLIGHT]: "forgeloop preflight --json",
     [NEXT_ACTIONS.START_EXECUTION]: "forgeloop advance --to EXECUTING",
     [NEXT_ACTIONS.ENTER_VERIFYING]: "forgeloop advance --to VERIFYING",
+    [NEXT_ACTIONS.CAPTURE_STRUCTURAL_QUALITY_BASELINE]: "forgeloop quality-baseline --task <id> --json",
+    [NEXT_ACTIONS.VERIFY_STRUCTURAL_QUALITY]: "forgeloop quality-verify --task <id> --json",
+    [NEXT_ACTIONS.DIAGNOSE_STRUCTURAL_QUALITY_REGRESSION]: "forgeloop advance --to DIAGNOSING",
     [NEXT_ACTIONS.DIAGNOSE]: "forgeloop advance --to DIAGNOSING",
     [NEXT_ACTIONS.CORRECT]: "forgeloop advance --to CORRECTING",
     [NEXT_ACTIONS.ENTER_REVIEWING]: "forgeloop advance --to REVIEWING",
@@ -237,7 +246,7 @@ export function recordTerminalResultCommandSpec(requirement) {
   };
 }
 
-export function decision(input, action, reason, requiredArtifacts = [], missingArtifacts = []) {
+export function decision(input, action, reason, requiredArtifacts = [], missingArtifacts = [], optionalActions = undefined) {
   const command = commandFor(action);
   return result({
     ...input,
@@ -246,6 +255,7 @@ export function decision(input, action, reason, requiredArtifacts = [], missingA
     ...(command ? { commands: [command] } : {}),
     requiredArtifacts,
     missingArtifacts,
+    optionalActions,
   });
 }
 

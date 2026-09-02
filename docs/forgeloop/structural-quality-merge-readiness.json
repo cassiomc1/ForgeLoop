@@ -1,0 +1,35 @@
+{
+  "feature": "structural-quality",
+  "status": "PARTIALLY_VERIFIED",
+  "commit": "0cf112c9480fde34739145ac40a2e560009040d8",
+  "ci": {
+    "local": {
+      "tests": "PASS",
+      "coverage": "PASS",
+      "docsQuality": "PASS",
+      "packageSmoke": "PASS",
+      "dependencyReview": "PASS",
+      "performance": "PASS",
+      "forgeloopEvidence": "PASS"
+    },
+    "github": "PENDING"
+  },
+  "providers": {
+    "sentrux": {
+      "version": "0.5.7",
+      "compatibility": "VERIFIED",
+      "realE2E": "PASS"
+    }
+  },
+  "freshness": {
+    "sourceMutation": "PASS",
+    "scopeMutation": "PASS",
+    "configMutation": "PASS",
+    "providerMutation": "PASS",
+    "crashRecovery": "PASS"
+  },
+  "knownLimitations": [
+    "GitHub CI status is pending after push.",
+    "The real Sentrux E2E is locally verified; CI environments without the user-managed external executable leave it unobserved."
+  ]
+}

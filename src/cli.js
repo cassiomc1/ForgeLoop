@@ -13,6 +13,9 @@ import { formatValidateProtocolResult } from "./commands/validate-protocol.js";
 import { formatActivateResult } from "./commands/activate.js";
 import { formatAdvanceResult } from "./commands/advance.js";
 import { formatPreflightResult } from "./commands/preflight.js";
+import { formatQualityBaselineResult } from "./commands/quality-baseline.js";
+import { formatQualityVerifyResult } from "./commands/quality-verify.js";
+import { formatQualityStatusResult } from "./commands/quality-status.js";
 import { formatCompleteResult } from "./commands/complete.js";
 import { formatAuditResult } from "./commands/audit.js";
 import { formatReportResult } from "./commands/report.js";
@@ -377,6 +380,21 @@ export const COMMAND_HANDLERS = Object.freeze({
   preflight: async ({ target, packageRoot, options }) => {
     const { result, exitCode } = await COMMAND_EXECUTORS.preflight({ target, packageRoot, options });
     renderJsonOr(options, result, formatPreflightResult);
+    return exitCode;
+  },
+  "quality-baseline": async ({ target, packageRoot, options }) => {
+    const { result, exitCode } = await COMMAND_EXECUTORS["quality-baseline"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatQualityBaselineResult);
+    return exitCode;
+  },
+  "quality-verify": async ({ target, packageRoot, options }) => {
+    const { result, exitCode } = await COMMAND_EXECUTORS["quality-verify"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatQualityVerifyResult);
+    return exitCode;
+  },
+  "quality-status": async ({ target, packageRoot, options }) => {
+    const { result, exitCode } = await COMMAND_EXECUTORS["quality-status"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatQualityStatusResult);
     return exitCode;
   },
   advance: async ({ target, packageRoot, options }) => {

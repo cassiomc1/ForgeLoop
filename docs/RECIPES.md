@@ -28,6 +28,7 @@ Concise, copy-paste friendly recipes for common ForgeLoop tasks.
 20. [Configure Trusted Narrow Verification](#recipe-20--configure-trusted-narrow-verification)
 21. [Generate and Verify Code Attestation](#recipe-21--generate-and-verify-code-attestation)
 22. [Verify a Revision Range](#recipe-22--verify-a-revision-range)
+23. [Run Structural Quality Feedback](#recipe-23--run-structural-quality-feedback)
 
 ---
 
@@ -550,6 +551,36 @@ The verifier reports changed, covered, uncovered, and conflicting paths. A
 coverage gap or conflicting task digest is invalid; provider or invocation
 failure is an error. This post-completion range result is distinct from the
 pre-completion verification scope used by one checker.
+
+---
+
+### Recipe 23 — Run Structural Quality Feedback
+
+Enable `structuralQuality` in `.forgeloop/config.json` with `observe` for
+non-blocking evidence or `gate` for a completion requirement. The configured
+provider is selected by name; executable paths and shell fragments are not
+accepted.
+
+```bash
+# Capture after planning and before execution.
+forgeloop quality-baseline --task task-001 --json
+
+# Enter the normal lifecycle and evaluate the current verification cycle.
+forgeloop advance --task task-001 --to EXECUTING --json
+forgeloop advance --task task-001 --to VERIFYING --json
+forgeloop quality-verify --task task-001 --json
+
+# Inspect evidence without starting the provider.
+forgeloop quality-status --task task-001 --json
+```
+
+In `gate` mode, a failed comparison follows the existing
+`VERIFYING -> DIAGNOSING -> CORRECTING -> VERIFYING` loop. Record a diagnosis
+from the evaluation artifact before correcting code. In `observe` mode,
+unavailable or incomparable evidence remains visible as `NOT_OBSERVED` and
+does not block completion by itself. See
+[`STRUCTURAL_QUALITY.md`](./STRUCTURAL_QUALITY.md) for policy, provider,
+Sentrux, bundle, and error-code details.
 
 ## Run ForgeLoop through MCP (safe mode)
 

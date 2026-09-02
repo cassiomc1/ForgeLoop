@@ -87,6 +87,7 @@ export const TEMPLATE_PATHS = [
   "schemas/execution-profile-benchmark-scenario.schema.json",
   "schemas/execution-profile-benchmark-run.schema.json",
   "schemas/execution-profile-benchmark-aggregate.schema.json",
+  "schemas/structural-quality.schema.json",
 ];
 
 export function getPackageRoot() {
