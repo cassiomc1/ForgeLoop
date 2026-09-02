@@ -10,6 +10,7 @@ import {
 import { assertSafePath, ensureWithin, fileExists } from "./filesystem.js";
 import { PROTOCOL_VERSION, WORK_PHASES } from "./protocol.js";
 import { assertSecretFree } from "./receipt.js";
+import { normalizePortableText, assertPortableContextSafe } from "./portable-context.js";
 import { getPackageRoot } from "./templates.js";
 import { taskArtifactPath } from "./task-paths.js";
 
@@ -37,16 +38,11 @@ function continuityError(code, message, artifacts = [CONTINUITY_PATH]) {
 }
 
 function nonEmptyString(value, label, maxLength) {
-  if (typeof value !== "string" || value.trim() === "") {
-    throw continuityError("E_CONTINUITY_INVALID", `${label} must be a non-empty string`);
+  try {
+    return normalizePortableText(value, { label, maxLength });
+  } catch (error) {
+    throw continuityError("E_CONTINUITY_INVALID", error.message);
   }
-  if (value.length > maxLength) {
-    throw continuityError("E_CONTINUITY_INVALID", `${label} exceeds the ${maxLength}-character limit`);
-  }
-  if (/\p{Cc}/u.test(value)) {
-    throw continuityError("E_CONTINUITY_INVALID", `${label} contains control characters`);
-  }
-  return value;
 }
 
 function fingerprint(value, label) {
@@ -171,7 +167,11 @@ export function assertContinuitySemantics(input) {
       ? { resumeNote: nonEmptyString(input.resumeNote, "resumeNote", LIMITS.resumeNote) }
       : {}),
   };
-  assertSecretFree(normalized);
+  try {
+    assertPortableContextSafe(normalized);
+  } catch (error) {
+    throw continuityError("E_CONTINUITY_INVALID", error.message);
+  }
   return normalized;
 }
 

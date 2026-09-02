@@ -3,6 +3,7 @@ import { readdir } from "node:fs/promises";
 
 import { canonicalFingerprint, readJsonArtifact, writeJsonArtifact } from "./artifacts.js";
 import { assertSecretFree } from "./receipt.js";
+import { assertPortableContextSafe, normalizePortableText } from "./portable-context.js";
 import { appendProtocolEvent } from "./events.js";
 import { currentChangedPaths } from "./repository.js";
 import { readContract } from "./contract.js";
@@ -26,12 +27,13 @@ function handoffError(code, message, artifacts = []) {
   return error;
 }
 
-function optionalText(value, label) {
+function optionalText(value, label, maxLength = 2000) {
   if (value === undefined || value === null) return null;
-  if (typeof value !== "string" || value.trim() === "") {
+  try {
+    return normalizePortableText(value, { label, maxLength, optional: true });
+  } catch (error) {
     throw handoffError("E_HANDOFF_INVALID", `${label} must be a non-empty string when provided`);
   }
-  return value;
 }
 
 function pathList(value) {
@@ -44,7 +46,11 @@ function handoffWithoutDigest(value) {
 }
 
 export function validateHandoffDigest(handoff) {
-  assertSecretFree(handoff);
+  try {
+    assertPortableContextSafe(handoff);
+  } catch (error) {
+    throw handoffError("E_HANDOFF_INVALID", error.message);
+  }
   if (typeof handoff?.artifactDigest !== "string"
     || handoff.artifactDigest !== canonicalFingerprint(handoffWithoutDigest(handoff))) {
     throw handoffError("E_HANDOFF_TAMPERED", "Handoff artifact digest does not match its canonical content");
