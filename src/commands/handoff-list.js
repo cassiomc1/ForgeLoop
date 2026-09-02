@@ -1,12 +1,19 @@
 import { listCanonicalHandoffs } from "../core/handoff.js";
-import { validateEventLedger } from "../core/events.js";
-import { resolveHandoffAcceptance } from "../core/handoff-acceptance.js";
+import {
+  readHandoffAcceptanceLedger,
+  resolveHandoffAcceptance,
+} from "../core/handoff-acceptance.js";
 
 export async function runHandoffList({ target, packageRoot, taskId } = {}) {
   const handoffs = await listCanonicalHandoffs(target, { packageRoot, taskId });
-  const ledger = await validateEventLedger(target, packageRoot, { taskId }).catch(() => ({ events: [] }));
+  const ledger = await readHandoffAcceptanceLedger(target, packageRoot, { taskId });
   const handoffsWithAcceptance = handoffs.map((handoff) => {
-    const resolved = resolveHandoffAcceptance(ledger.events, handoff);
+    const resolved = resolveHandoffAcceptance({
+      events: ledger.events,
+      handoff,
+      ledgerValid: ledger.valid,
+      ledgerErrors: ledger.errors,
+    });
     return {
       ...handoff,
       acceptance: {
@@ -14,6 +21,7 @@ export async function runHandoffList({ target, packageRoot, taskId } = {}) {
         consumerId: resolved.consumerId ?? null,
         harness: resolved.harness ?? null,
         acceptedAt: resolved.acceptedAt ?? null,
+        ...(resolved.reasonCodes ? { reasonCodes: [...resolved.reasonCodes] } : {}),
       },
     };
   });

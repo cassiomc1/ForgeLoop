@@ -4,10 +4,13 @@ import {
   normalizePortableText,
   assertPortableContextSafe,
 } from "../portable-context.js";
-import { ADVISORY_CONTEXT_LIMITS } from "./constants.js";
 import {
-  assertAdvisoryContextProvider,
+  ADVISORY_CONTEXT_LIMITS,
+  normalizeAdvisoryRecallOptions,
+} from "./constants.js";
+import {
   normalizeAdvisoryContextResult,
+  resolveAdvisoryContextProvider,
 } from "./provider.js";
 import {
   E_ADVISORY_CONTEXT_PROVIDER_INVALID,
@@ -74,44 +77,33 @@ export async function recallAdvisoryContext({
     );
   }
 
-  const configured = runtimeContext?.advisoryContextProviders;
-  let entry = null;
-  if (configured) {
-    if (configured instanceof Map) {
-      entry = configured.get(providerName) ?? null;
-    } else if (typeof configured === "object") {
-      entry = configured[providerName] ?? null;
-    }
+  const effectiveOptions = normalizeAdvisoryRecallOptions({
+    limit,
+    maxItemChars,
+    maxTotalChars,
+    timeoutMs,
+  });
+
+  let provider;
+  try {
+    provider = await resolveAdvisoryContextProvider({
+      providers: runtimeContext?.advisoryContextProviders,
+      providerName,
+    });
+  } catch (err) {
+    throw serviceError(
+      E_ADVISORY_CONTEXT_PROVIDER_INVALID,
+      `Advisory context provider "${providerName}" failed validation: ${err.message}`,
+      err,
+    );
   }
 
-  if (!entry) {
+  if (!provider) {
     throw serviceError(
       E_ADVISORY_CONTEXT_PROVIDER_UNAVAILABLE,
       `Advisory context provider "${providerName}" is not registered in runtime context`,
     );
   }
-
-  let provider;
-  if (typeof entry === "function") {
-    try {
-      provider = await entry();
-      assertAdvisoryContextProvider(provider);
-    } catch (err) {
-      throw serviceError(
-        E_ADVISORY_CONTEXT_PROVIDER_INVALID,
-        `Advisory context provider factory for "${providerName}" failed: ${err.message}`,
-        err,
-      );
-    }
-  } else {
-    assertAdvisoryContextProvider(entry);
-    provider = entry;
-  }
-
-  const effectiveTimeoutMs = Math.min(
-    Math.max(1, timeoutMs ?? ADVISORY_CONTEXT_LIMITS.defaultTimeoutMs),
-    ADVISORY_CONTEXT_LIMITS.maxTimeoutMs,
-  );
 
   let timer;
   const timeoutPromise = new Promise((_, reject) => {
@@ -119,10 +111,10 @@ export async function recallAdvisoryContext({
       reject(
         serviceError(
           E_ADVISORY_CONTEXT_TIMEOUT,
-          `Advisory recall from provider "${providerName}" timed out after ${effectiveTimeoutMs}ms`,
+          `Advisory recall from provider "${providerName}" timed out after ${effectiveOptions.timeoutMs}ms`,
         ),
       );
-    }, effectiveTimeoutMs);
+    }, effectiveOptions.timeoutMs);
   });
 
   let rawResult;
@@ -132,10 +124,7 @@ export async function recallAdvisoryContext({
         projectPath: path.resolve(target),
         taskId,
         query: normalizedQuery,
-        limit,
-        maxItemChars,
-        maxTotalChars,
-        timeoutMs: effectiveTimeoutMs,
+        ...effectiveOptions,
       }),
     );
     rawResult = await Promise.race([recallPromise, timeoutPromise]);
@@ -146,8 +135,6 @@ export async function recallAdvisoryContext({
   return normalizeAdvisoryContextResult(rawResult, {
     provider,
     taskId,
-    limit,
-    maxItemChars,
-    maxTotalChars,
+    ...effectiveOptions,
   });
 }

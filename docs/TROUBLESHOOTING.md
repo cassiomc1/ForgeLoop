@@ -763,14 +763,16 @@ explicit operation only when the task's scope permits it.
 
 ### Symptom: Handoff Is Invalid or Tampered
 
-#### Error Codes: `E_HANDOFF_INVALID`, `E_HANDOFF_STATE_UNAVAILABLE`, `E_HANDOFF_TAMPERED`, `E_HANDOFF_NOT_FOUND`
+#### Error Codes: `E_HANDOFF_INVALID`, `E_HANDOFF_STATE_UNAVAILABLE`, `E_HANDOFF_TAMPERED`, `E_HANDOFF_NOT_FOUND`, `E_HANDOFF_STALE`, `E_HANDOFF_ALREADY_ACCEPTED`, `E_HANDOFF_ACCEPTANCE_INCONSISTENT`
 
 #### What it means
 
 The immutable handoff envelope is malformed, its state is unavailable, its
 digest no longer matches, or the requested snapshot does not exist. A handoff
 note is not delegation, authority, independent review evidence, or completion
-evidence.
+evidence. Acceptance is exactly-once operational receipt only. The current
+repository branch and HEAD are checked directly, so clean committed checkout
+drift can make a handoff stale even when changed paths are empty.
 
 #### Safe recovery
 
@@ -780,6 +782,12 @@ forgeloop handoff-show --task <id> --id <handoffId> --json
 forgeloop continuity --task <id> --json
 forgeloop reconcile-continuity --task <id> --json
 ```
+
+If `handoff-list` or `handoff-show` reports `INCONSISTENT`, inspect the
+`reasonCodes` field. The commands validate the event ledger before projecting
+acceptance and never turn an unreadable or invalid ledger into an empty ledger.
+Repair the named ledger through the canonical protocol workflow; do not edit
+`events.ndjson` by hand.
 
 Use the last valid handoff or continuity only to focus inspection, then trust
 the canonical task state and checkout. Never repair a handoff by editing or
@@ -1006,6 +1014,7 @@ current-cycle validation.
 | `E_ADVISORY_CONTEXT_PROVIDER_INVALID` | Advisory context provider configuration or interface implementation is invalid. | Use a provider implementing id, recall(input) with bounded query parameters; advisory context is optional. |
 | `E_ADVISORY_CONTEXT_PROVIDER_UNAVAILABLE` | Requested advisory context provider is not registered in runtime context. | Register the provider in runtime context before recall, or proceed without advisory context; provider failure never blocks canonical lifecycle. |
 | `E_ADVISORY_CONTEXT_QUERY_INVALID` | Advisory context query failed portable-context validation or exceeded budget. | Provide a bounded query free of control characters and secret-like values. |
+| `E_ADVISORY_CONTEXT_REQUEST_INVALID` | Advisory context recall budgets are not finite integer values within the supported request contract. | Provide finite integer limit, maxItemChars, maxTotalChars, and timeoutMs values; oversized valid values are clamped to documented maxima. |
 | `E_ADVISORY_CONTEXT_RESULT_INVALID` | Advisory context provider returned an invalid result structure. | Ensure provider returns items with string summary and optional title, sourceRef, observedAt, confidence. |
 | `E_ADVISORY_CONTEXT_TIMEOUT` | Advisory context recall exceeded its execution timeout. | Use a responsive provider or increase timeout within limits; advisory context is optional. |
 | `E_APPROVAL_ALREADY_RESOLVED` | Approval is one-time resolvable and has already been approved or rejected. | Request a new approval if another decision is required. |

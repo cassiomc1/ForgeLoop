@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { writeFile } from "node:fs/promises";
 import test from "node:test";
 
-import { buildCanonicalHandoff, validateCanonicalHandoff } from "../src/core/handoff.js";
+import {
+  buildCanonicalHandoff,
+  createCanonicalHandoff,
+  validateCanonicalHandoff,
+} from "../src/core/handoff.js";
 import { canonicalFingerprint } from "../src/core/artifacts.js";
 import { readWorkState } from "../src/core/work-state.js";
 import { bindTaskWorkspace } from "../src/core/workspace-binding.js";
@@ -37,6 +43,26 @@ test("buildCanonicalHandoff binds exact work state fingerprint", async () => {
 
     const validated = await validateCanonicalHandoff(target, handoff, { taskId, packageRoot });
     assert.equal(validated.state.workStateFingerprint, expectedFingerprint);
+  } finally {
+    await removeTempTree(target);
+  }
+});
+
+test("handoff creation rejects repository drift even when changed paths are empty", async () => {
+  const target = await createGitRepository("forgeloop-handoff-binding-");
+  const taskId = "task-handoff-binding-repository-drift";
+  try {
+    await setupVerifyingTask(target, packageRoot, { taskId });
+    await bindTaskWorkspace(target, { taskId, packageRoot });
+
+    await writeFile(`${target}/repository-only.txt`, "repository drift", "utf8");
+    execFileSync("git", ["-C", target, "add", "repository-only.txt"]);
+    execFileSync("git", ["-C", target, "-c", "user.name=ForgeLoop Test", "-c", "user.email=test@example.com", "commit", "-m", "repository drift"]);
+
+    await assert.rejects(
+      () => createCanonicalHandoff(target, { taskId, packageRoot }),
+      (err) => err.code === "E_HANDOFF_STATE_UNAVAILABLE",
+    );
   } finally {
     await removeTempTree(target);
   }

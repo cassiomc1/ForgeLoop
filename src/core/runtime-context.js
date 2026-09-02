@@ -5,6 +5,7 @@ import {
 } from "./verification-execution.js";
 import { STRUCTURAL_QUALITY_PROVIDER_ID_PATTERN } from "./structural-quality/constants.js";
 import { E_ADVISORY_CONTEXT_PROVIDER_INVALID } from "./error-codes.js";
+import { assertAdvisoryContextProviderIdentity } from "./advisory-context/provider.js";
 
 export const AUTHORITY_TRUST_MODES = Object.freeze(["NONE", "HOST_ATTESTED"]);
 
@@ -154,6 +155,9 @@ export function createForgeLoopContext(options = {}) {
         const error = new Error(`Advisory-context provider ${id} must be an object or factory`);
         error.code = E_ADVISORY_CONTEXT_PROVIDER_INVALID;
         throw error;
+      }
+      if (typeof provider !== "function") {
+        assertAdvisoryContextProviderIdentity(provider, id);
       }
       providers[id] = provider;
     }

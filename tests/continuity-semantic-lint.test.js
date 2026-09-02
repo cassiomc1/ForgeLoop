@@ -1,106 +1,148 @@
 import assert from "node:assert/strict";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
 
+import { createContinuity, writeContinuity } from "../src/core/continuity.js";
 import { lintContinuity } from "../src/core/continuity-lint.js";
 import { reconcileContinuity } from "../src/core/continuity-reconciliation.js";
+import { canonicalFingerprint } from "../src/core/artifacts.js";
 import { setupVerifyingTask } from "./helpers/durable-lifecycle.js";
 import { createGitRepository } from "./helpers/git-fixture.js";
 import { removeTempTree } from "./helpers/rm-safe.js";
 import { getPackageRoot } from "../src/core/templates.js";
-import { writeJsonArtifact } from "../src/core/artifacts.js";
 
 const packageRoot = getPackageRoot();
 
-test("clean continuity passes lint without violations", () => {
-  const result = lintContinuity({
-    resumeNote: "Refactored the authentication token refresh pipeline.",
-    decisions: ["Use rotating refresh tokens stored in secure cookie."],
+function continuity(overrides = {}) {
+  return createContinuity({
+    taskId: "task-lint-1",
+    workStateFingerprint: "a".repeat(64),
+    contractFingerprint: "b".repeat(64),
+    phase: "EXECUTING",
+    repositoryFingerprint: { branch: null, head: null },
+    updatedAt: "2026-09-02T12:00:00.000Z",
+    remainingWork: [],
+    knownIssues: [],
+    changedAreas: [],
+    inspectFirst: [],
+    ...overrides,
   });
+}
 
-  assert.equal(result.passed, true);
-  assert.equal(result.violations.length, 0);
+test("clean schema-valid continuity passes lint without legacy text heuristics", async () => {
+  const value = continuity({
+    resumeNote: "TODO is part of the historical note; all tests pass is not evidence here.",
+  });
+  const result = await lintContinuity({ continuity: value, state: { completedSteps: [] } });
+
+  assert.equal(result.status, "PASS");
+  assert.deepEqual(result.findings, []);
 });
 
-test("lint flags EMPTY_DECISION on whitespace or empty items", () => {
-  const result = lintContinuity({
-    decisions: ["Valid decision", "   ", ""],
+test("lint warns when remaining work or focus is already completed", async () => {
+  const value = continuity({
+    currentFocus: { id: "implementation", summary: "Revisit implementation" },
+    remainingWork: [{ id: "implementation", summary: "Revisit implementation" }],
+  });
+  const result = await lintContinuity({
+    continuity: value,
+    state: { completedSteps: ["implementation"] },
   });
 
-  assert.equal(result.passed, false);
-  const emptyViolations = result.violations.filter((v) => v.ruleId === "EMPTY_DECISION");
-  assert.equal(emptyViolations.length, 2);
-  assert.equal(emptyViolations[0].field, "decisions[1]");
-  assert.equal(emptyViolations[1].field, "decisions[2]");
+  assert.equal(result.status, "WARN");
+  assert.deepEqual(result.findings, [
+    {
+      code: "CONTINUITY_REMAINING_ALREADY_COMPLETED",
+      severity: "WARN",
+      field: "remainingWork[0]",
+      itemId: "implementation",
+    },
+    {
+      code: "CONTINUITY_FOCUS_ALREADY_COMPLETED",
+      severity: "WARN",
+      field: "currentFocus",
+      itemId: "implementation",
+    },
+  ]);
 });
 
-test("lint flags OVERSIZED_NOTE when note exceeds 4000 characters", () => {
-  const result = lintContinuity({
-    notes: ["a".repeat(4001)],
+test("lint warns when an item is assigned both remaining-work and known-issue roles", async () => {
+  const value = continuity({
+    remainingWork: [{ id: "provider-boundary", summary: "Finish provider boundary" }],
+    knownIssues: [{ id: "provider-boundary", summary: "Provider boundary is incomplete" }],
   });
+  const result = await lintContinuity({ continuity: value, state: { completedSteps: [] } });
 
-  assert.equal(result.passed, false);
-  const oversized = result.violations.find((v) => v.ruleId === "OVERSIZED_NOTE");
-  assert.ok(oversized);
-  assert.equal(oversized.field, "notes[0]");
+  assert.equal(result.status, "WARN");
+  assert.deepEqual(result.findings, [{
+    code: "CONTINUITY_ITEM_ROLE_CONFLICT",
+    severity: "WARN",
+    field: "remainingWork[0]",
+    itemId: "provider-boundary",
+  }]);
 });
 
-test("lint flags PLACEHOLDER_TEXT on placeholder markers", () => {
-  const result = lintContinuity({
-    resumeNote: "Need to check TODO before continuing",
-    decisions: ["Status is TBD"],
-  });
-
-  assert.equal(result.passed, false);
-  const placeholders = result.violations.filter((v) => v.ruleId === "PLACEHOLDER_TEXT");
-  assert.equal(placeholders.length, 2);
-});
-
-test("lint flags CONTROL_CHARACTERS on unescaped control chars", () => {
-  const result = lintContinuity({
-    resumeNote: "bad\u0000text",
-  });
-
-  assert.equal(result.passed, false);
-  const control = result.violations.find((v) => v.ruleId === "CONTROL_CHARACTERS");
-  assert.ok(control);
-  assert.equal(control.field, "resumeNote");
-});
-
-test("lint flags UNSTRUCTURED_EVIDENCE_CLAIM on informal claims", () => {
-  const phrases = [
-    "all tests pass",
-    "verified manually",
-    "looks good",
-    "tests passed",
-    "working now",
-  ];
-
-  for (const phrase of phrases) {
-    const result = lintContinuity({
-      notes: [`I checked the code and ${phrase}`],
+test("lint warns for missing inspectFirst paths using target-contained checks", async () => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-continuity-lint-"));
+  try {
+    await writeFile(path.join(target, "present.txt"), "present", "utf8");
+    const result = await lintContinuity({
+      target,
+      continuity: continuity({ inspectFirst: ["present.txt", "missing.txt"] }),
+      state: { completedSteps: [] },
     });
-    assert.equal(result.passed, false, `Expected violation for '${phrase}'`);
-    const claim = result.violations.find((v) => v.ruleId === "UNSTRUCTURED_EVIDENCE_CLAIM");
-    assert.ok(claim, `Expected UNSTRUCTURED_EVIDENCE_CLAIM for '${phrase}'`);
+
+    assert.equal(result.status, "WARN");
+    assert.deepEqual(result.findings, [{
+      code: "CONTINUITY_INSPECT_PATH_MISSING",
+      severity: "WARN",
+      field: "inspectFirst[1]",
+      itemId: null,
+    }]);
+  } finally {
+    await rm(target, { recursive: true, force: true });
   }
 });
 
-test("reconcileContinuity includes lint summary and does not block reconciliation", async () => {
+test("empty operational hints produce informational lint without changing PASS status", async () => {
+  const result = await lintContinuity({ continuity: continuity(), state: { completedSteps: [] } });
+
+  assert.equal(result.status, "PASS");
+  assert.deepEqual(result.findings, [{
+    code: "CONTINUITY_EMPTY_HINT_SET",
+    severity: "INFO",
+    field: "continuity",
+    itemId: null,
+  }]);
+});
+
+test("lint does not mutate continuity and reconciliation classification ignores lint warnings", async () => {
+  const value = continuity({
+    remainingWork: [{ id: "implementation", summary: "Already completed" }],
+  });
+  const before = structuredClone(value);
+  const result = await lintContinuity({ continuity: value, state: { completedSteps: ["implementation"] } });
+  assert.deepEqual(value, before);
+  assert.equal(result.status, "WARN");
+
   const target = await createGitRepository("forgeloop-lint-reconcile-");
   const taskId = "task-lint-reconcile";
   try {
     await setupVerifyingTask(target, packageRoot, { taskId });
-
-    const { writeContinuity } = await import("../src/core/continuity.js");
+    const { readWorkState } = await import("../src/core/work-state.js");
+    const state = await readWorkState(target, { packageRoot, taskId });
     await writeContinuity(target, {
-      resumeNote: "TODO: fix remaining items and all tests pass",
+      remainingWork: [{ id: "implementation", summary: "Already completed" }],
+      inspectFirst: ["src/index.js"],
     }, { taskId, packageRoot });
 
     const reconciled = await reconcileContinuity({ target, packageRoot, taskId });
-    assert.ok(reconciled.lint, "reconciled continuity must include lint result");
-    assert.equal(reconciled.lint.passed, false);
-    assert.ok(reconciled.lint.violations.some((v) => v.ruleId === "PLACEHOLDER_TEXT"));
-    assert.ok(reconciled.lint.violations.some((v) => v.ruleId === "UNSTRUCTURED_EVIDENCE_CLAIM"));
+    assert.equal(reconciled.classification, "FRESH");
+    assert.equal(reconciled.lint.status, "WARN");
+    assert.ok(reconciled.lint.findings.some((finding) => finding.code === "CONTINUITY_REMAINING_ALREADY_COMPLETED"));
+    assert.equal(canonicalFingerprint(state), reconciled.continuity.workStateFingerprint);
   } finally {
     await removeTempTree(target);
   }

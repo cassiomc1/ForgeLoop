@@ -7,6 +7,12 @@ import {
 } from "../src/integration.js";
 import { packageRoot, setupAbandonedTask, withRecoveryTarget } from "./helpers/task-recovery-fixture.js";
 import { readWorkState, createWorkState, writeWorkState } from "../src/core/work-state.js";
+import { setupVerifyingTask } from "./helpers/durable-lifecycle.js";
+import { createGitRepository } from "./helpers/git-fixture.js";
+import { removeTempTree } from "./helpers/rm-safe.js";
+import { bindTaskWorkspace } from "../src/core/workspace-binding.js";
+import { runHandoffCreate } from "../src/commands/handoff-create.js";
+import { runHandoffAccept } from "../src/commands/handoff-accept.js";
 
 test("resource allowlist is closed and ownership is canonical", async () => {
   await assert.rejects(
@@ -99,6 +105,44 @@ test("task resources require an existing subject and protocol/info works without
       }),
     );
   });
+});
+
+test("task/handoffs projects invalid ledgers as INCONSISTENT", async () => {
+  const target = await createGitRepository("forgeloop-resource-handoff-");
+  const taskId = "resource-handoff-ledger-invalid";
+  try {
+    await setupVerifyingTask(target, packageRoot, { taskId });
+    await bindTaskWorkspace(target, { taskId, packageRoot });
+    const created = await runHandoffCreate({ target, packageRoot, taskId });
+    await runHandoffAccept({
+      target,
+      packageRoot,
+      taskId,
+      handoffId: created.handoff.handoffId,
+      consumerId: "resource-consumer",
+    });
+
+    const { appendProtocolEvent } = await import("../src/core/events.js");
+    await appendProtocolEvent(target, {
+      taskId,
+      event: "HANDOFF_ACCEPTED",
+      details: {
+        handoffId: created.handoff.handoffId,
+        handoffDigest: created.handoff.artifactDigest,
+        consumerId: "second-consumer",
+      },
+    }, packageRoot, { taskId });
+
+    const resource = await readForgeLoopIntegrationResource("task/handoffs", {
+      projectPath: target,
+      packageRoot,
+      taskId,
+    });
+    assert.equal(resource.data.handoffs[0].acceptance.status, "INCONSISTENT");
+    assert.ok(resource.data.handoffs[0].acceptance.reasonCodes.includes("E_HANDOFF_ALREADY_ACCEPTED"));
+  } finally {
+    await removeTempTree(target);
+  }
 });
 
 test("contract and continuity resources resolve for an existing task", async () => {

@@ -189,7 +189,7 @@ export async function reconcileContinuity({ target, packageRoot, taskId = null }
         path: ".forgeloop/continuity.json",
         present: false,
         latestHandoff,
-        lint: { passed: true, violations: [] },
+        lint: { status: "PASS", findings: [] },
         diagnosticContext: await deriveDiagnosticContextSafe({ target, packageRoot, state }),
       };
     }
@@ -202,7 +202,15 @@ export async function reconcileContinuity({ target, packageRoot, taskId = null }
       present: true,
       error: error.message,
       latestHandoff,
-      lint: { passed: false, violations: [{ ruleId: "INVALID", field: "continuity", message: error.message }] },
+      lint: {
+        status: "WARN",
+        findings: [{
+          code: error.code ?? "CONTINUITY_INVALID",
+          severity: "WARN",
+          field: "continuity",
+          itemId: null,
+        }],
+      },
     };
   }
 
@@ -232,7 +240,11 @@ export async function reconcileContinuity({ target, packageRoot, taskId = null }
     fingerprint: continuityArtifact.fingerprint,
     continuity: continuityArtifact.value,
     latestHandoff,
-    lint: lintContinuity(continuityArtifact.value),
+    lint: await lintContinuity({
+      target,
+      continuity: continuityArtifact.value,
+      state,
+    }),
     diagnosticContext: await deriveDiagnosticContextSafe({ target, packageRoot, state }),
   };
 }

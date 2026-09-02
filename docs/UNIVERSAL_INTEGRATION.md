@@ -135,6 +135,13 @@ const acceptance = await acceptCanonicalHandoff(".", {
 
 See [`ADVISORY_CONTEXT.md`](./ADVISORY_CONTEXT.md) for full trust boundary specifications, portable text sanitization rules, and budget enforcement.
 
+Advisory recall budgets are normalized before provider dispatch: valid oversized
+integer requests are clamped, while invalid finite/integer/minimum types fail
+with `E_ADVISORY_CONTEXT_REQUEST_INVALID` before provider lookup. The registry
+key and resolved provider `id` must match. Handoff acceptance independently
+checks canonical state and the current repository branch/HEAD, and remains an
+exactly-once operational receipt with no evidence, claim transfer, or authority.
+
 ## Consumers
 
 | Surface | Entry |

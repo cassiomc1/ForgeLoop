@@ -5,6 +5,7 @@ import { parseArgs } from "../src/cli.js";
 import { runHandoffCreate } from "../src/commands/handoff-create.js";
 import { runHandoffList } from "../src/commands/handoff-list.js";
 import { runHandoffShow } from "../src/commands/handoff-show.js";
+import { formatHandoffAcceptResult } from "../src/commands/handoff-accept.js";
 import { getPackageRoot } from "../src/core/templates.js";
 import { setupVerifyingTask } from "./helpers/durable-lifecycle.js";
 import { createGitRepository } from "./helpers/git-fixture.js";
@@ -79,6 +80,17 @@ test("handoff-accept CLI parser and executor accept handoff and update inspectio
     assert.equal(acceptRes.accepted, true);
     assert.equal(acceptRes.consumerId, "agent-codex");
     assert.equal(acceptRes.harness, "codex");
+    assert.equal(formatHandoffAcceptResult(acceptRes), [
+      `FORGELOOP HANDOFF ACCEPTED: ${created.handoff.handoffId}`,
+      "consumer: agent-codex",
+      "harness: codex",
+      `at: ${acceptRes.acceptedAt}`,
+      "idempotent: no",
+      "authority: OPERATIONAL_RECEIPT_ONLY",
+      "evidence: NONE",
+      "claims transferred: NO",
+      "",
+    ].join("\n"));
 
     const shown = await runHandoffShow({
       target,
@@ -96,6 +108,28 @@ test("handoff-accept CLI parser and executor accept handoff and update inspectio
       taskId: "handoff-cli-002",
     });
     assert.equal(list.handoffs[0].acceptance.status, "ACCEPTED");
+
+    const { appendProtocolEvent } = await import("../src/core/events.js");
+    await appendProtocolEvent(target, {
+      taskId: "handoff-cli-002",
+      event: "HANDOFF_ACCEPTED",
+      details: {
+        handoffId: created.handoff.handoffId,
+        handoffDigest: created.handoff.artifactDigest,
+        consumerId: "second-consumer",
+      },
+    }, packageRoot, { taskId: "handoff-cli-002" });
+
+    const inconsistentList = await runHandoffList({ target, packageRoot, taskId: "handoff-cli-002" });
+    const inconsistentShow = await runHandoffShow({
+      target,
+      packageRoot,
+      taskId: "handoff-cli-002",
+      handoffId: created.handoff.handoffId,
+    });
+    assert.equal(inconsistentList.handoffs[0].acceptance.status, "INCONSISTENT");
+    assert.equal(inconsistentShow.acceptance.status, "INCONSISTENT");
+    assert.ok(inconsistentShow.acceptance.reasonCodes.includes("E_HANDOFF_ALREADY_ACCEPTED"));
   } finally {
     await removeTempTree(target);
   }

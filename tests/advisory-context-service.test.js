@@ -4,8 +4,10 @@ import test from "node:test";
 import { createForgeLoopContext } from "../src/core/runtime-context.js";
 import { recallAdvisoryContext } from "../src/core/advisory-context/service.js";
 import {
+  E_ADVISORY_CONTEXT_PROVIDER_INVALID,
   E_ADVISORY_CONTEXT_PROVIDER_UNAVAILABLE,
   E_ADVISORY_CONTEXT_QUERY_INVALID,
+  E_ADVISORY_CONTEXT_REQUEST_INVALID,
   E_ADVISORY_CONTEXT_TIMEOUT,
   E_ADVISORY_CONTEXT_OUTPUT_LIMIT,
   E_PORTABLE_CONTEXT_INVALID,
@@ -151,6 +153,109 @@ test("successful recall returns normalized advisory result", async () => {
   assert.equal(result.items.length, 1);
   assert.equal(result.items[0].title, "Auth Design");
   assert.match(result.items[0].itemFingerprint, /^[a-f0-9]{64}$/);
+});
+
+test("provider receives the same bounded effective options used for normalization", async () => {
+  let received;
+  const runtimeContext = createForgeLoopContext({
+    advisoryContextProviders: {
+      "bounded-memory": {
+        id: "bounded-memory",
+        recall(input) {
+          received = input;
+          return { items: [{ summary: "bounded result" }] };
+        },
+      },
+    },
+  });
+
+  await recallAdvisoryContext({
+    target: ".",
+    taskId: "task-bounded-options",
+    providerName: "bounded-memory",
+    query: "bounded query",
+    limit: 999,
+    maxItemChars: 999999,
+    maxTotalChars: 999999,
+    timeoutMs: 999999,
+    runtimeContext,
+  });
+
+  assert.equal(received.limit, 20);
+  assert.equal(received.maxItemChars, 4000);
+  assert.equal(received.maxTotalChars, 16000);
+  assert.equal(received.timeoutMs, 30000);
+});
+
+test("invalid advisory budgets are rejected before provider lookup or invocation", async () => {
+  let providerCalls = 0;
+  let factoryCalls = 0;
+  const runtimeContext = createForgeLoopContext({
+    advisoryContextProviders: {
+      "bounded-memory": () => {
+        factoryCalls += 1;
+        return {
+          id: "bounded-memory",
+          recall() {
+            providerCalls += 1;
+            return { items: [] };
+          },
+        };
+      },
+    },
+  });
+
+  for (const options of [
+    { limit: Number.NaN },
+    { maxItemChars: Number.POSITIVE_INFINITY },
+    { maxTotalChars: "500" },
+    { timeoutMs: false },
+    { limit: 0 },
+    { timeoutMs: 1.5 },
+    { maxTotalChars: null },
+  ]) {
+    await assert.rejects(
+      () => recallAdvisoryContext({
+        target: ".",
+        taskId: "task-invalid-budget",
+        providerName: "bounded-memory",
+        query: "valid query",
+        runtimeContext,
+        ...options,
+      }),
+      (err) => err.code === E_ADVISORY_CONTEXT_REQUEST_INVALID,
+    );
+  }
+
+  assert.equal(factoryCalls, 0);
+  assert.equal(providerCalls, 0);
+});
+
+test("resolved provider identity must match the requested registry key", async () => {
+  let providerCalls = 0;
+  const runtimeContext = {
+    advisoryContextProviders: {
+      requested: {
+        id: "different-provider",
+        recall() {
+          providerCalls += 1;
+          return { items: [] };
+        },
+      },
+    },
+  };
+
+  await assert.rejects(
+    () => recallAdvisoryContext({
+      target: ".",
+      taskId: "task-provider-identity",
+      providerName: "requested",
+      query: "identity",
+      runtimeContext,
+    }),
+    (err) => err.code === E_ADVISORY_CONTEXT_PROVIDER_INVALID,
+  );
+  assert.equal(providerCalls, 0);
 });
 
 test("oversized provider output throws E_ADVISORY_CONTEXT_OUTPUT_LIMIT", async () => {

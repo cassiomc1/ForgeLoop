@@ -108,6 +108,7 @@ export const E_STRUCTURAL_QUALITY_REGRESSION = "E_STRUCTURAL_QUALITY_REGRESSION"
 export const E_ADVISORY_CONTEXT_PROVIDER_INVALID = "E_ADVISORY_CONTEXT_PROVIDER_INVALID";
 export const E_ADVISORY_CONTEXT_PROVIDER_UNAVAILABLE = "E_ADVISORY_CONTEXT_PROVIDER_UNAVAILABLE";
 export const E_ADVISORY_CONTEXT_QUERY_INVALID = "E_ADVISORY_CONTEXT_QUERY_INVALID";
+export const E_ADVISORY_CONTEXT_REQUEST_INVALID = "E_ADVISORY_CONTEXT_REQUEST_INVALID";
 export const E_ADVISORY_CONTEXT_RESULT_INVALID = "E_ADVISORY_CONTEXT_RESULT_INVALID";
 export const E_ADVISORY_CONTEXT_TIMEOUT = "E_ADVISORY_CONTEXT_TIMEOUT";
 export const E_ADVISORY_CONTEXT_OUTPUT_LIMIT = "E_ADVISORY_CONTEXT_OUTPUT_LIMIT";
@@ -306,6 +307,13 @@ const ADVISORY_CONTEXT_AND_HANDOFF_ERROR_METADATA = Object.freeze(Object.fromEnt
     classification: "PUBLIC_STABLE",
     meaning: "Advisory context query failed portable-context validation or exceeded budget.",
     safeResolution: "Provide a bounded query free of control characters and secret-like values.",
+  })],
+  [E_ADVISORY_CONTEXT_REQUEST_INVALID, Object.freeze({
+    code: E_ADVISORY_CONTEXT_REQUEST_INVALID,
+    category: "advisory-context",
+    classification: "PUBLIC_STABLE",
+    meaning: "Advisory context recall budgets are not finite integer values within the supported request contract.",
+    safeResolution: "Provide finite integer limit, maxItemChars, maxTotalChars, and timeoutMs values; oversized valid values are clamped to documented maxima.",
   })],
   [E_ADVISORY_CONTEXT_RESULT_INVALID, Object.freeze({
     code: E_ADVISORY_CONTEXT_RESULT_INVALID,
@@ -1301,6 +1309,7 @@ export const ALL_KNOWN_ERROR_CODES = Object.freeze(new Set([
   E_ADVISORY_CONTEXT_PROVIDER_INVALID,
   E_ADVISORY_CONTEXT_PROVIDER_UNAVAILABLE,
   E_ADVISORY_CONTEXT_QUERY_INVALID,
+  E_ADVISORY_CONTEXT_REQUEST_INVALID,
   E_ADVISORY_CONTEXT_RESULT_INVALID,
   E_ADVISORY_CONTEXT_TIMEOUT,
   E_ADVISORY_CONTEXT_OUTPUT_LIMIT,

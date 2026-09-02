@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { writeFile } from "node:fs/promises";
 import test from "node:test";
 
@@ -10,7 +11,6 @@ import { createCanonicalHandoff, readCanonicalHandoff } from "../src/core/handof
 import { bindTaskWorkspace } from "../src/core/workspace-binding.js";
 import { validateEventLedger } from "../src/core/events.js";
 import { canonicalFingerprint, writeJsonArtifact } from "../src/core/artifacts.js";
-import { readWorkState, writeWorkState } from "../src/core/work-state.js";
 import { taskHandoffPath } from "../src/core/task-paths.js";
 import { setupVerifyingTask } from "./helpers/durable-lifecycle.js";
 import { createGitRepository } from "./helpers/git-fixture.js";
@@ -166,6 +166,57 @@ test("stale handoff with drifted work state or changed paths fails acceptance", 
   }
 });
 
+test("acceptance rejects clean repository HEAD drift independently of changed paths", async () => {
+  const target = await createGitRepository("forgeloop-handoff-stale-");
+  const taskId = "task-accept-clean-head-drift";
+  const handoffId = "handoff-clean-head-drift";
+  try {
+    await setupVerifyingTask(target, packageRoot, { taskId });
+    await bindTaskWorkspace(target, { taskId, packageRoot });
+    await createCanonicalHandoff(target, { taskId, packageRoot, handoffId });
+
+    await writeFile(`${target}/repository-only.txt`, "repository-only drift", "utf8");
+    execFileSync("git", ["-C", target, "add", "repository-only.txt"]);
+    execFileSync("git", ["-C", target, "-c", "user.name=ForgeLoop Test", "-c", "user.email=test@example.com", "commit", "-m", "repository-only drift"]);
+
+    await assert.rejects(
+      () => acceptCanonicalHandoff(target, {
+        taskId,
+        handoffId,
+        consumerId: "consumer-1",
+        packageRoot,
+      }),
+      (err) => err.code === E_HANDOFF_STALE,
+    );
+  } finally {
+    await removeTempTree(target);
+  }
+});
+
+test("acceptance rejects branch drift even when the repository HEAD is unchanged", async () => {
+  const target = await createGitRepository("forgeloop-handoff-stale-");
+  const taskId = "task-accept-branch-drift";
+  const handoffId = "handoff-branch-drift";
+  try {
+    await setupVerifyingTask(target, packageRoot, { taskId });
+    await bindTaskWorkspace(target, { taskId, packageRoot });
+    await createCanonicalHandoff(target, { taskId, packageRoot, handoffId });
+    execFileSync("git", ["-C", target, "checkout", "-b", "handoff-branch-drift"]);
+
+    await assert.rejects(
+      () => acceptCanonicalHandoff(target, {
+        taskId,
+        handoffId,
+        consumerId: "consumer-1",
+        packageRoot,
+      }),
+      (err) => err.code === E_HANDOFF_STALE,
+    );
+  } finally {
+    await removeTempTree(target);
+  }
+});
+
 test("resolveHandoffAcceptance accurately projects acceptance status", async () => {
   const handoff = {
     handoffId: "h-1",
@@ -218,6 +269,70 @@ test("resolveHandoffAcceptance accurately projects acceptance status", async () 
   assert.deepEqual(resolveHandoffAcceptance(mismatchEvents, handoff), {
     status: "INCONSISTENT",
   });
+
+  assert.deepEqual(resolveHandoffAcceptance({
+    events,
+    handoff,
+    ledgerValid: false,
+    ledgerErrors: [
+      { code: "E_LEDGER_HASH_INVALID" },
+      { code: "E_HANDOFF_ALREADY_ACCEPTED" },
+      { code: "E_LEDGER_HASH_INVALID" },
+    ],
+  }), {
+    status: "INCONSISTENT",
+    reasonCodes: ["E_HANDOFF_ALREADY_ACCEPTED", "E_LEDGER_HASH_INVALID"],
+  });
+});
+
+test("concurrent different consumers produce one acceptance event", async () => {
+  const target = await createGitRepository("forgeloop-handoff-concurrency-");
+  const taskId = "task-accept-concurrent-different";
+  const handoffId = "handoff-concurrent-different";
+  try {
+    await setupVerifyingTask(target, packageRoot, { taskId });
+    await bindTaskWorkspace(target, { taskId, packageRoot });
+    await createCanonicalHandoff(target, { taskId, packageRoot, handoffId });
+
+    const results = await Promise.allSettled([
+      acceptCanonicalHandoff(target, { taskId, handoffId, consumerId: "consumer-a", packageRoot }),
+      acceptCanonicalHandoff(target, { taskId, handoffId, consumerId: "consumer-b", packageRoot }),
+    ]);
+    assert.equal(results.filter((result) => result.status === "fulfilled").length, 1);
+    assert.equal(results.filter((result) => result.status === "rejected").length, 1);
+    assert.equal(results.find((result) => result.status === "rejected").reason.code, E_HANDOFF_ALREADY_ACCEPTED);
+
+    const ledger = await validateEventLedger(target, packageRoot, { taskId });
+    assert.equal(ledger.events.filter((event) => event.event === "HANDOFF_ACCEPTED").length, 1);
+  } finally {
+    await removeTempTree(target);
+  }
+});
+
+test("concurrent same-consumer retries are idempotent with one acceptance event", async () => {
+  const target = await createGitRepository("forgeloop-handoff-concurrency-");
+  const taskId = "task-accept-concurrent-same";
+  const handoffId = "handoff-concurrent-same";
+  try {
+    await setupVerifyingTask(target, packageRoot, { taskId });
+    await bindTaskWorkspace(target, { taskId, packageRoot });
+    await createCanonicalHandoff(target, { taskId, packageRoot, handoffId });
+
+    const results = await Promise.allSettled([
+      acceptCanonicalHandoff(target, { taskId, handoffId, consumerId: "consumer-same", packageRoot }),
+      acceptCanonicalHandoff(target, { taskId, handoffId, consumerId: "consumer-same", packageRoot }),
+    ]);
+    assert.equal(results.every((result) => result.status === "fulfilled"), true);
+    assert.deepEqual(
+      results.map((result) => result.value.idempotent).sort(),
+      [false, true],
+    );
+
+    const ledger = await validateEventLedger(target, packageRoot, { taskId });
+    assert.equal(ledger.events.filter((event) => event.event === "HANDOFF_ACCEPTED").length, 1);
+  } finally {
+    await removeTempTree(target);
+  }
 });
 
 test("validateEventLedger catches duplicate HANDOFF_ACCEPTED and inconsistent creation", async () => {

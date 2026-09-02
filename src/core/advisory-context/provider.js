@@ -7,6 +7,7 @@ import {
 import {
   ADVISORY_CONTEXT_LIMITS,
   ADVISORY_CONTEXT_TRUST,
+  normalizeAdvisoryRecallOptions,
 } from "./constants.js";
 import {
   E_ADVISORY_CONTEXT_PROVIDER_INVALID,
@@ -55,6 +56,17 @@ export function assertAdvisoryContextProvider(provider) {
   return provider;
 }
 
+export function assertAdvisoryContextProviderIdentity(provider, expectedId) {
+  assertAdvisoryContextProvider(provider);
+  if (provider.id !== expectedId) {
+    throw providerError(
+      E_ADVISORY_CONTEXT_PROVIDER_INVALID,
+      `Provider id "${provider.id}" does not match requested registry key "${expectedId}"`,
+    );
+  }
+  return provider;
+}
+
 export function createAdvisoryContextProviderRegistry({ providers = {} } = {}) {
   if (!providers || typeof providers !== "object" || Array.isArray(providers)) {
     throw providerError(
@@ -74,13 +86,7 @@ export function createAdvisoryContextProviderRegistry({ providers = {} } = {}) {
     if (typeof entry === "function") {
       map.set(key, entry);
     } else {
-      assertAdvisoryContextProvider(entry);
-      if (entry.id !== key) {
-        throw providerError(
-          E_ADVISORY_CONTEXT_PROVIDER_INVALID,
-          `Provider id "${entry.id}" does not match registry key "${key}"`,
-        );
-      }
+      assertAdvisoryContextProviderIdentity(entry, key);
       map.set(key, entry);
     }
   }
@@ -98,12 +104,30 @@ export function createAdvisoryContextProviderRegistry({ providers = {} } = {}) {
   });
 }
 
+export async function resolveAdvisoryContextProvider({ providers, providerName } = {}) {
+  if (!providers || typeof providerName !== "string") return null;
+
+  let entry = null;
+  if (providers instanceof Map) {
+    entry = providers.get(providerName) ?? null;
+  } else if (typeof providers.get === "function" && typeof providers.has === "function") {
+    entry = providers.get(providerName) ?? null;
+  } else if (typeof providers === "object" && !Array.isArray(providers)) {
+    entry = providers[providerName] ?? null;
+  }
+  if (!entry) return null;
+
+  const provider = typeof entry === "function" ? await entry() : entry;
+  return assertAdvisoryContextProviderIdentity(provider, providerName);
+}
+
 export function normalizeAdvisoryContextResult(raw, {
   provider,
   taskId,
-  limit = ADVISORY_CONTEXT_LIMITS.defaultItems,
-  maxItemChars = ADVISORY_CONTEXT_LIMITS.defaultMaxItemChars,
-  maxTotalChars = ADVISORY_CONTEXT_LIMITS.defaultMaxTotalChars,
+  limit,
+  maxItemChars,
+  maxTotalChars,
+  timeoutMs,
 } = {}) {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
     throw providerError(
@@ -112,8 +136,6 @@ export function normalizeAdvisoryContextResult(raw, {
     );
   }
 
-  assertPortableContextSafe(raw, { label: "advisory context raw result" });
-
   if (!Array.isArray(raw.items)) {
     throw providerError(
       E_ADVISORY_CONTEXT_RESULT_INVALID,
@@ -121,20 +143,20 @@ export function normalizeAdvisoryContextResult(raw, {
     );
   }
 
-  const effectiveLimit = Math.min(
-    Math.max(1, limit ?? ADVISORY_CONTEXT_LIMITS.defaultItems),
-    ADVISORY_CONTEXT_LIMITS.maxItems,
-  );
-  const effectiveMaxItemChars = Math.min(
-    Math.max(100, maxItemChars ?? ADVISORY_CONTEXT_LIMITS.defaultMaxItemChars),
-    ADVISORY_CONTEXT_LIMITS.maxItemChars,
-  );
-  const effectiveMaxTotalChars = Math.min(
-    Math.max(500, maxTotalChars ?? ADVISORY_CONTEXT_LIMITS.defaultMaxTotalChars),
-    ADVISORY_CONTEXT_LIMITS.maxTotalChars,
-  );
+  const effectiveOptions = normalizeAdvisoryRecallOptions({
+    limit,
+    maxItemChars,
+    maxTotalChars,
+    timeoutMs,
+  });
+  if (raw.items.length > ADVISORY_CONTEXT_LIMITS.maxProviderReturnedItems) {
+    throw providerError(
+      E_ADVISORY_CONTEXT_OUTPUT_LIMIT,
+      `Advisory context provider returned ${raw.items.length} items, exceeding the raw item ceiling of ${ADVISORY_CONTEXT_LIMITS.maxProviderReturnedItems}`,
+    );
+  }
 
-  const selectedItems = raw.items.slice(0, effectiveLimit);
+  const selectedItems = raw.items.slice(0, effectiveOptions.limit);
   let totalChars = 0;
   const normalizedItems = [];
 
@@ -158,7 +180,7 @@ export function normalizeAdvisoryContextResult(raw, {
     try {
       summary = normalizePortableText(item.summary, {
         label: `items[${i}].summary`,
-        maxLength: effectiveMaxItemChars,
+        maxLength: effectiveOptions.maxItemChars,
       });
     } catch (err) {
       throw providerError(E_ADVISORY_CONTEXT_RESULT_INVALID, err.message);
@@ -226,10 +248,10 @@ export function normalizeAdvisoryContextResult(raw, {
       + (observedAt?.length ?? 0);
 
     totalChars += itemCharLength;
-    if (totalChars > effectiveMaxTotalChars) {
+    if (totalChars > effectiveOptions.maxTotalChars) {
       throw providerError(
         E_ADVISORY_CONTEXT_OUTPUT_LIMIT,
-        `Advisory context output exceeded the total character limit of ${effectiveMaxTotalChars} (accumulated ${totalChars})`,
+        `Advisory context output exceeded the total character limit of ${effectiveOptions.maxTotalChars} (accumulated ${totalChars})`,
       );
     }
 

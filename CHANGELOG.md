@@ -10,7 +10,9 @@
 - Bound canonical handoff creation to exact work-state snapshots via `state.workStateFingerprint` (`schemas/handoff-envelope.schema.json`, `src/core/handoff.js`).
 - Implemented exactly-once canonical handoff acceptance in the task event ledger via `acceptCanonicalHandoff` and CLI command `forgeloop handoff-accept`.
 - Exposed handoff acceptance status projection (`OPEN`, `ACCEPTED`, `UNBOUND`, `INCONSISTENT`) in `handoff-show` and `handoff-list`.
-- Added deterministic continuity semantic linting (`src/core/continuity-lint.js`) during `forgeloop reconcile-continuity` with rules for `EMPTY_DECISION`, `OVERSIZED_NOTE`, `PLACEHOLDER_TEXT`, `CONTROL_CHARACTERS`, and `UNSTRUCTURED_EVIDENCE_CLAIM`.
+- Added deterministic continuity semantic linting (`src/core/continuity-lint.js`) during `forgeloop reconcile-continuity` for completed-item references, conflicting continuity roles, missing `inspectFirst` paths, and empty operational hint sets.
+- Hardened advisory recall dispatch with finite integer budget validation, canonical pre-dispatch clamping, allowlist-first result projection, a raw provider-item ceiling, and exact provider registry-key identity checks.
+- Hardened handoff freshness and read projections with direct current branch/HEAD checks, fail-closed invalid-ledger status, concurrent exactly-once acceptance, and explicit operational-only acceptance output.
 - Added comprehensive advisory context documentation in `docs/ADVISORY_CONTEXT.md`.
 
 ## 1.9.0 - 2026-09-02

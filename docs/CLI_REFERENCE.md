@@ -158,6 +158,9 @@ Lists immutable handoff snapshots for a task.
 
 - **Purpose**: Inspect existing handoff snapshots without changing them.
 - **Mutation**: Read-only.
+- **Acceptance projection**: Derives `OPEN`, `ACCEPTED`, `UNBOUND`, or
+  `INCONSISTENT` from the validated event ledger. Invalid or unreadable ledgers
+  are fail-closed and expose `reasonCodes`; they are never treated as empty.
 - **Options**:
 
 <!-- BEGIN FORGELOOP GENERATED: cli:handoff-list:options -->
@@ -179,6 +182,8 @@ Lists immutable handoff snapshots for a task.
 Reads and verifies one immutable handoff snapshot.
 
 - **Purpose**: Inspect one handoff by ID and validate its digest and bindings.
+- **Acceptance projection**: Uses the same fail-closed ledger-derived status as
+  `handoff-list`.
 - **Mutation**: Read-only.
 - **Options**:
 
@@ -203,6 +208,12 @@ Records exactly-once acceptance of an immutable handoff into the task event ledg
 
 - **Purpose**: Bind an incoming consumer/harness to an immutable handoff snapshot.
 - **Mutation**: Appends a `HANDOFF_ACCEPTED` event.
+- **Freshness**: Acceptance requires the current canonical state and directly
+  observed repository branch/HEAD to match the immutable snapshot, including a
+  clean committed HEAD drift check.
+- **Human output**: Reports `authority: OPERATIONAL_RECEIPT_ONLY`,
+  `evidence: NONE`, and `claims transferred: NO`; acceptance is exactly-once
+  operational receipt only.
 - **Options**:
 
 <!-- BEGIN FORGELOOP GENERATED: cli:handoff-accept:options -->
@@ -940,6 +951,9 @@ Records operational handoff context before pausing or switching tools.
 Reconciles continuity with the active work state and checkout.
 
 - **Purpose**: Compares continuity bindings against the canonical work state, contract, phase, repository fingerprint, and checkout state.
+- **Lint**: Returns deterministic `PASS`/`WARN` findings for stale completed
+  item references, role conflicts, missing `inspectFirst` paths, and empty hint
+  sets without changing reconciliation classification.
 - **When to use**: When starting a session in an active task.
 - **Mutation**: Read-only.
 - **Options**:

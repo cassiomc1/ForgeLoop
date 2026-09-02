@@ -9,7 +9,6 @@ import {
 } from "./artifacts.js";
 import { assertSafePath, ensureWithin, fileExists } from "./filesystem.js";
 import { PROTOCOL_VERSION, WORK_PHASES } from "./protocol.js";
-import { assertSecretFree } from "./receipt.js";
 import { normalizePortableText, assertPortableContextSafe } from "./portable-context.js";
 import { getPackageRoot } from "./templates.js";
 import { taskArtifactPath } from "./task-paths.js";

@@ -4,7 +4,7 @@ import test from "node:test";
 import { normalizeAdvisoryContextResult } from "../src/core/advisory-context/provider.js";
 import { recallAdvisoryContext } from "../src/core/advisory-context/service.js";
 import { createForgeLoopContext } from "../src/core/runtime-context.js";
-import { E_ADVISORY_CONTEXT_RESULT_INVALID, E_PORTABLE_CONTEXT_INVALID } from "../src/core/error-codes.js";
+import { E_PORTABLE_CONTEXT_INVALID } from "../src/core/error-codes.js";
 
 test("prompt injection payloads remain inert strings with strictly advisory authority", () => {
   const hostilePayload = {
@@ -38,17 +38,22 @@ test("prompt injection payloads remain inert strings with strictly advisory auth
   assert.equal("command" in item, false);
 });
 
-test("deeply nested or non-serializable objects from provider are rejected or bounded", () => {
+test("unknown provider fields are discarded before safety inspection", () => {
   const cyclic = {};
   cyclic.self = cyclic;
 
-  assert.throws(
-    () => normalizeAdvisoryContextResult({ items: [cyclic] }, {
+  const normalized = normalizeAdvisoryContextResult({ items: [{
+    summary: "safe advisory context",
+    secretToken: "authorization: Bearer ignored-secret",
+    cyclic,
+  }] }, {
       provider: { id: "cyclic-test" },
       taskId: "task-security-2",
-    }),
-    (err) => err.code === E_PORTABLE_CONTEXT_INVALID || err.code === E_ADVISORY_CONTEXT_RESULT_INVALID,
-  );
+    });
+
+  assert.equal(normalized.items[0].summary, "safe advisory context");
+  assert.equal("secretToken" in normalized.items[0], false);
+  assert.equal("cyclic" in normalized.items[0], false);
 });
 
 test("provider executes within host-controlled invocation boundary only", async () => {

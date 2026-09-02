@@ -54,7 +54,7 @@ const runtimeContext = createForgeLoopContext({
 });
 ```
 
-Provider IDs must match `^[a-z0-9][a-z0-9_-]*$`. Providers may be plain objects or async factory functions.
+Provider IDs must match `^[a-z0-9][a-z0-9_-]*$`. Providers may be plain objects or async factory functions. The registry key and the resolved provider `id` must match exactly; a factory that resolves to another identity fails with `E_ADVISORY_CONTEXT_PROVIDER_INVALID` before `recall` is called.
 
 ## Querying Advisory Context
 
@@ -103,6 +103,8 @@ Every returned result is normalized, frozen, and stamped with immutable trust me
 
 ## Normalization & Authority Stripping
 
+ForgeLoop checks the raw result shape and item count, then selects bounded items and projects only allowlisted fields before portable safety inspection. Unknown raw fields—including secret-like or cyclic metadata—are discarded and are never copied or logged. A secret in a selected field still fails closed.
+
 Any raw fields returned by a provider that attempt to assert protocol authority are completely stripped during normalization:
 - `nextAction`, `command`, `phase`
 - `evidence`, `approval`, `authority`
@@ -119,5 +121,12 @@ All text flowing into or out of advisory recall is verified:
   - Max query characters: 1,000 chars (`E_ADVISORY_CONTEXT_QUERY_INVALID`)
   - Max item summary: 4,000 chars (`E_ADVISORY_CONTEXT_OUTPUT_LIMIT`)
   - Default item limit: 6 items (max 20)
-  - Default total characters: 16,000 chars (`E_ADVISORY_CONTEXT_OUTPUT_LIMIT`)
+  - Default total characters: 6,000 chars (max 16,000) (`E_ADVISORY_CONTEXT_OUTPUT_LIMIT`)
+  - Raw provider result ceiling: 100 items (`E_ADVISORY_CONTEXT_OUTPUT_LIMIT`)
   - Default timeout: 5,000 ms, max 30,000 ms (`E_ADVISORY_CONTEXT_TIMEOUT`)
+
+ForgeLoop normalizes recall limits before provider dispatch. Valid oversized
+integer requests are clamped to the canonical maxima, and non-finite,
+non-integer, below-minimum, string, boolean, object, or null values fail before
+provider lookup with `E_ADVISORY_CONTEXT_REQUEST_INVALID`. Providers therefore
+never receive caller-requested budgets above ForgeLoop's supported maxima.

@@ -22,7 +22,15 @@ export async function runHandoffAccept({
 }
 
 export function formatHandoffAcceptResult(result) {
-  const idempotency = result.idempotent ? " (idempotent)" : "";
-  const harness = result.harness ? ` (${result.harness})` : "";
-  return `FORGELOOP HANDOFF ACCEPTED: ${result.handoffId}\nconsumer: ${result.consumerId}${harness}${idempotency}\nat: ${result.acceptedAt}\n\n`;
+  return [
+    `FORGELOOP HANDOFF ACCEPTED: ${result.handoffId}`,
+    `consumer: ${result.consumerId}`,
+    `harness: ${result.harness ?? "none"}`,
+    `at: ${result.acceptedAt}`,
+    `idempotent: ${result.idempotent ? "yes" : "no"}`,
+    "authority: OPERATIONAL_RECEIPT_ONLY",
+    "evidence: NONE",
+    "claims transferred: NO",
+    "",
+  ].join("\n");
 }

@@ -2,9 +2,9 @@ import { canonicalFingerprint } from "./artifacts.js";
 import { readContract } from "./contract.js";
 import { readPersistedRoute } from "./route-artifact.js";
 import { readWorkState } from "./work-state.js";
-import { readCanonicalHandoff } from "./handoff.js";
+import { compareRepositoryFingerprint, readCanonicalHandoff } from "./handoff.js";
 import { appendProtocolEvent, validateEventLedger } from "./events.js";
-import { currentChangedPaths } from "./repository.js";
+import { currentChangedPaths, currentRepositoryFingerprint } from "./repository.js";
 import { withTaskTransaction } from "./transaction.js";
 import { getPackageRoot } from "./templates.js";
 import {
@@ -25,7 +25,28 @@ function acceptanceError(code, message) {
   return error;
 }
 
-export function resolveHandoffAcceptance(events, handoff) {
+function uniqueSorted(values) {
+  return [...new Set(values.filter(Boolean))].sort();
+}
+
+export function resolveHandoffAcceptance(input = {}, legacyHandoff) {
+  const projection = Array.isArray(input)
+    ? { events: input, handoff: legacyHandoff }
+    : input;
+  const {
+    events = [],
+    handoff,
+    ledgerValid = true,
+    ledgerErrors = [],
+  } = projection ?? {};
+
+  if (ledgerValid !== true) {
+    return {
+      status: "INCONSISTENT",
+      reasonCodes: uniqueSorted(ledgerErrors.map((error) => typeof error === "string" ? error : error?.code)),
+    };
+  }
+
   if (!handoff?.state?.workStateFingerprint) {
     return { status: "UNBOUND" };
   }
@@ -53,6 +74,21 @@ export function resolveHandoffAcceptance(events, handoff) {
     ...(accepted.details?.harness ? { harness: accepted.details.harness } : {}),
     acceptedAt: accepted.at,
   };
+}
+
+export async function readHandoffAcceptanceLedger(target, packageRoot = getPackageRoot(), { taskId } = {}) {
+  try {
+    return await validateEventLedger(target, packageRoot, { taskId });
+  } catch (error) {
+    return {
+      valid: false,
+      events: [],
+      errors: [{
+        code: error.code ?? "E_EVENT_INVALID",
+        message: error.message,
+      }],
+    };
+  }
 }
 
 export async function acceptCanonicalHandoff(target, {
@@ -143,14 +179,11 @@ export async function acceptCanonicalHandoff(target, {
         );
       }
 
-      if (
-        currentState.repositoryFingerprint?.head
-        && handoff.state.repositoryFingerprint?.head
-        && currentState.repositoryFingerprint.head !== handoff.state.repositoryFingerprint.head
-      ) {
+      const repositoryFingerprint = await currentRepositoryFingerprint(target);
+      if (compareRepositoryFingerprint(handoff.state.repositoryFingerprint, repositoryFingerprint) === "MISMATCH") {
         throw acceptanceError(
           E_HANDOFF_STALE,
-          "Current repository HEAD has drifted from handoff snapshot",
+          "Current repository branch or HEAD has drifted from handoff snapshot",
         );
       }
 

@@ -2,10 +2,9 @@ import { randomUUID } from "node:crypto";
 import { readdir } from "node:fs/promises";
 
 import { canonicalFingerprint, readJsonArtifact, writeJsonArtifact } from "./artifacts.js";
-import { assertSecretFree } from "./receipt.js";
 import { assertPortableContextSafe, normalizePortableText } from "./portable-context.js";
 import { appendProtocolEvent } from "./events.js";
-import { currentChangedPaths } from "./repository.js";
+import { currentChangedPaths, currentRepositoryFingerprint } from "./repository.js";
 import { readContract } from "./contract.js";
 import { readPersistedRoute } from "./route-artifact.js";
 import { readWorkState } from "./work-state.js";
@@ -45,6 +44,16 @@ function handoffWithoutDigest(value) {
   return body;
 }
 
+export function compareRepositoryFingerprint(expected, current) {
+  const expectedUnavailable = !expected || (expected.branch === null && expected.head === null);
+  const currentUnavailable = !current || (current.branch === null && current.head === null);
+  if (expectedUnavailable && currentUnavailable) return "NOT_VERIFIED";
+  if (expectedUnavailable !== currentUnavailable) return "MISMATCH";
+  return expected.branch === current.branch && expected.head === current.head
+    ? "MATCH"
+    : "MISMATCH";
+}
+
 export function validateHandoffDigest(handoff) {
   try {
     assertPortableContextSafe(handoff);
@@ -79,16 +88,23 @@ export async function buildCanonicalHandoff(target, {
   createdAt = new Date().toISOString(),
 } = {}) {
   if (!taskId) throw handoffError("E_HANDOFF_STATE_UNAVAILABLE", "taskId is required to build a handoff");
-  const [state, contract, route, claims, changedPaths, continuity] = await Promise.all([
+  const [state, contract, route, claims, changedPaths, continuity, repositoryFingerprint] = await Promise.all([
     readWorkState(target, { packageRoot, taskId }),
     readContract(target, packageRoot, { taskId }),
     readPersistedRoute(target, packageRoot, { taskId }),
     resolveTaskClaimState(target, { packageRoot, taskId }),
     currentChangedPaths(target),
     currentContinuity(target, packageRoot, taskId),
+    currentRepositoryFingerprint(target),
   ]);
   if (!state || !contract || !route || changedPaths === null || !claims.valid) {
     throw handoffError("E_HANDOFF_STATE_UNAVAILABLE", "Canonical task state, route, claims, and changed paths are required for a handoff");
+  }
+  if (compareRepositoryFingerprint(state.repositoryFingerprint, repositoryFingerprint) === "MISMATCH") {
+    throw handoffError(
+      "E_HANDOFF_STATE_UNAVAILABLE",
+      "Canonical repository fingerprint has drifted from current repository state",
+    );
   }
   const checkItems = [...(state.checks ?? [])];
   const executionRefs = pathList(checkItems.map((check) => check.executionRef).filter(Boolean));
@@ -110,7 +126,7 @@ export async function buildCanonicalHandoff(target, {
       workStateFingerprint: canonicalFingerprint(state),
       contractFingerprint: contract.fingerprint,
       routeFingerprint: route.fingerprint ?? null,
-      repositoryFingerprint: state.repositoryFingerprint ?? { branch: null, head: null },
+      repositoryFingerprint,
       writeClaims: pathList(claims.effectiveWriteClaims ?? []),
       changedPaths: pathList(changedPaths),
     },

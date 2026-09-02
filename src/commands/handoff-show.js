@@ -1,16 +1,24 @@
 import { readCanonicalHandoff } from "../core/handoff.js";
-import { validateEventLedger } from "../core/events.js";
-import { resolveHandoffAcceptance } from "../core/handoff-acceptance.js";
+import {
+  readHandoffAcceptanceLedger,
+  resolveHandoffAcceptance,
+} from "../core/handoff-acceptance.js";
 
 export async function runHandoffShow({ target, packageRoot, taskId, handoffId } = {}) {
   const artifact = await readCanonicalHandoff(target, { packageRoot, taskId, handoffId });
-  const ledger = await validateEventLedger(target, packageRoot, { taskId }).catch(() => ({ events: [] }));
-  const resolved = resolveHandoffAcceptance(ledger.events, artifact.value);
+  const ledger = await readHandoffAcceptanceLedger(target, packageRoot, { taskId });
+  const resolved = resolveHandoffAcceptance({
+    events: ledger.events,
+    handoff: artifact.value,
+    ledgerValid: ledger.valid,
+    ledgerErrors: ledger.errors,
+  });
   const acceptance = {
     status: resolved.status,
     consumerId: resolved.consumerId ?? null,
     harness: resolved.harness ?? null,
     acceptedAt: resolved.acceptedAt ?? null,
+    ...(resolved.reasonCodes ? { reasonCodes: [...resolved.reasonCodes] } : {}),
   };
   return {
     taskId,

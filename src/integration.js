@@ -83,11 +83,14 @@ export { recallAdvisoryContext } from "./core/advisory-context/service.js";
 export {
   ADVISORY_CONTEXT_LIMITS,
   ADVISORY_CONTEXT_TRUST,
+  normalizeAdvisoryRecallOptions,
 } from "./core/advisory-context/constants.js";
 export {
   assertAdvisoryContextProvider,
+  assertAdvisoryContextProviderIdentity,
   createAdvisoryContextProviderRegistry,
   normalizeAdvisoryContextResult,
+  resolveAdvisoryContextProvider,
 } from "./core/advisory-context/provider.js";
 export {
   normalizePortableText,

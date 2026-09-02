@@ -93,6 +93,13 @@ export interface ForgeLoopAdvisoryContextRecallOutput {
   }>;
 }
 
+export interface ForgeLoopAdvisoryRecallOptions {
+  limit: number;
+  maxItemChars: number;
+  maxTotalChars: number;
+  timeoutMs: number;
+}
+
 export interface ForgeLoopAdvisoryContextProvider {
   id: string;
   version?: string;
@@ -263,12 +270,18 @@ export declare function recallAdvisoryContext(input: {
 }): Promise<ForgeLoopNormalizedAdvisoryContextResult>;
 export declare const ADVISORY_CONTEXT_LIMITS: Readonly<Record<string, number>>;
 export declare const ADVISORY_CONTEXT_TRUST: Readonly<Record<string, unknown>>;
+export declare function normalizeAdvisoryRecallOptions(input?: Partial<ForgeLoopAdvisoryRecallOptions>): ForgeLoopAdvisoryRecallOptions;
 export declare function assertAdvisoryContextProvider(provider: unknown): ForgeLoopAdvisoryContextProvider;
+export declare function assertAdvisoryContextProviderIdentity(provider: unknown, expectedId: string): ForgeLoopAdvisoryContextProvider;
 export declare function createAdvisoryContextProviderRegistry(options?: { providers?: Record<string, unknown> }): {
   get(id: string): unknown;
   has(id: string): boolean;
   list(): string[];
 };
+export declare function resolveAdvisoryContextProvider(options: {
+  providers?: Record<string, unknown> | Map<string, unknown> | { get(id: string): unknown; has(id: string): boolean };
+  providerName: string;
+}): Promise<ForgeLoopAdvisoryContextProvider | null>;
 export declare function normalizeAdvisoryContextResult(raw: unknown, options?: Record<string, unknown>): ForgeLoopNormalizedAdvisoryContextResult;
 export declare function normalizePortableText(value: unknown, options?: { label?: string; maxLength?: number; optional?: boolean }): string | null;
 export declare function assertPortableContextSafe<T = unknown>(value: T, options?: { label?: string }): T;
@@ -289,9 +302,15 @@ export declare function acceptCanonicalHandoff(target: string, options: {
   harness: string | null;
   acceptedAt: string;
 }>;
-export declare function resolveHandoffAcceptance(events: readonly unknown[], handoff: unknown): {
+export declare function resolveHandoffAcceptance(input: {
+  events?: readonly unknown[];
+  handoff: unknown;
+  ledgerValid?: boolean;
+  ledgerErrors?: readonly ({ code?: string } | string)[];
+}): {
   status: "OPEN" | "ACCEPTED" | "INCONSISTENT" | "UNBOUND";
   consumerId?: string;
   harness?: string;
   acceptedAt?: string;
+  reasonCodes?: readonly string[];
 };

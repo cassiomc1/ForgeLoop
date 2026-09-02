@@ -45,6 +45,20 @@ test("runtime context registration does not call advisory provider", () => {
   assert.equal(calls, 0);
 });
 
+test("runtime context rejects direct providers whose identity differs from the registry key", () => {
+  assert.throws(
+    () => createForgeLoopContext({
+      advisoryContextProviders: {
+        requested: {
+          id: "different-provider",
+          recall() {},
+        },
+      },
+    }),
+    (err) => err.code === E_ADVISORY_CONTEXT_PROVIDER_INVALID,
+  );
+});
+
 test("runtime context accepts Map of providers", () => {
   const providersMap = new Map([
     ["mem-1", { id: "mem-1", recall() {} }],
