@@ -112,6 +112,7 @@ export function projectExecutionProfileContext({
   route,
   state,
   nextAction,
+  runtimeContext,
 } = {}) {
   if (typeof taskId !== "string" || !taskId) throw contextError("E_TASK_REQUIRED", "taskId is required");
   if (!contract || typeof contract !== "object" || Array.isArray(contract)) {
@@ -126,6 +127,18 @@ export function projectExecutionProfileContext({
   const profile = route.executionProfile ? assertExecutionProfile(route.executionProfile) : legacyExecutionProfile();
   const resolvedProfile = profile.resolved;
   const policy = getExecutionProfileContextPolicy(resolvedProfile);
+  const available = [...OPTIONAL_CONTEXT_BY_PROFILE[resolvedProfile]];
+  const advisoryProviders = runtimeContext?.advisoryContextProviders;
+  const hasAdvisory = Boolean(
+    advisoryProviders && (
+      advisoryProviders instanceof Map
+        ? advisoryProviders.size > 0
+        : Object.keys(advisoryProviders).length > 0
+    ),
+  );
+  if (hasAdvisory && !available.includes("advisory-context")) {
+    available.push("advisory-context");
+  }
   return {
     schemaVersion: 1,
     protocolVersion: 1,
@@ -140,7 +153,7 @@ export function projectExecutionProfileContext({
     verificationRequirements: verificationRequirements(contract),
     contextPolicy: policy,
     optionalContext: {
-      available: [...OPTIONAL_CONTEXT_BY_PROFILE[resolvedProfile]],
+      available,
       loaded: [],
     },
     invariants: { ...PROFILE_INVARIANTS },
@@ -173,5 +186,6 @@ export async function buildExecutionProfileContext({
     route: routeArtifact.value,
     state,
     nextAction,
+    runtimeContext,
   });
 }

@@ -194,6 +194,18 @@ export function getForgeLoopCapabilities({ packageVersion = null } = {}) {
         immutable: true,
         lifecycleAuthority: false,
       },
+      advisoryContextProviders: {
+        version: 1,
+        supported: true,
+        providerNeutral: true,
+        integrationApiOnly: true,
+        lazy: true,
+        optIn: true,
+        persistedByForgeLoop: false,
+        lifecycleAuthority: false,
+        evidenceAuthority: false,
+        executable: false,
+      },
       responsibilityConstraints: {
         version: 1,
         supported: true,
