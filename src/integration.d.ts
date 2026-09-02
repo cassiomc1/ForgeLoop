@@ -250,3 +250,28 @@ export declare function classifyForgeLoopInvocation(command: string, input?: For
 export declare function readForgeLoopIntegrationResource(uri: string, input?: Record<string, unknown>): Promise<Record<string, unknown>>;
 export declare function resolveForgeLoopProjectRoot(projectPath?: string, input?: { cwd?: string }): Promise<string>;
 export declare function createForgeLoopContext(input?: Record<string, unknown>): ForgeLoopContext;
+export declare function recallAdvisoryContext(input: {
+  target: string;
+  taskId: string;
+  providerName: string;
+  query: string;
+  limit?: number;
+  maxItemChars?: number;
+  maxTotalChars?: number;
+  timeoutMs?: number;
+  runtimeContext?: ForgeLoopContext | Record<string, unknown>;
+}): Promise<ForgeLoopNormalizedAdvisoryContextResult>;
+export declare const ADVISORY_CONTEXT_LIMITS: Readonly<Record<string, number>>;
+export declare const ADVISORY_CONTEXT_TRUST: Readonly<Record<string, unknown>>;
+export declare function assertAdvisoryContextProvider(provider: unknown): ForgeLoopAdvisoryContextProvider;
+export declare function createAdvisoryContextProviderRegistry(options?: { providers?: Record<string, unknown> }): {
+  get(id: string): unknown;
+  has(id: string): boolean;
+  list(): string[];
+};
+export declare function normalizeAdvisoryContextResult(raw: unknown, options?: Record<string, unknown>): ForgeLoopNormalizedAdvisoryContextResult;
+export declare function normalizePortableText(value: unknown, options?: { label?: string; maxLength?: number; optional?: boolean }): string | null;
+export declare function assertPortableContextSafe<T = unknown>(value: T, options?: { label?: string }): T;
+export declare class PortableContextError extends Error {
+  code: string;
+}
