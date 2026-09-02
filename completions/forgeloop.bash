@@ -120,7 +120,7 @@ _forgeloop() {
     doctor) COMPREPLY=( $(compgen -W '--adopt --fix --help --json --path --strict --version' -- "$cur") );;
     efficiency) COMPREPLY=( $(compgen -W '--baseline --help --json --path --task --version' -- "$cur") );;
     eval) COMPREPLY=( $(compgen -W '--help --json --path --scenario --task --version' -- "$cur") );;
-    handoff-accept) COMPREPLY=( $(compgen -W '--consumer-id --handoff --harness --help --id --json --path --task --version' -- "$cur") );;
+    handoff-accept) COMPREPLY=( $(compgen -W '--consumer-id --handoff --harness --help --json --path --task --version' -- "$cur") );;
     handoff-create) COMPREPLY=( $(compgen -W '--help --json --note --path --recipient --task --version' -- "$cur") );;
     handoff-list) COMPREPLY=( $(compgen -W '--help --json --path --task --version' -- "$cur") );;
     handoff-show) COMPREPLY=( $(compgen -W '--help --id --json --path --task --version' -- "$cur") );;

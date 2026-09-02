@@ -210,7 +210,6 @@ Records exactly-once acceptance of an immutable handoff into the task event ledg
 - `--path <directory>`: target project directory (default: current directory)
 - `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
 - `--handoff <id>`: handoff identifier
-- `--id <id>`: handoff identifier
 - `--consumer-id <id>`: consumer identifier accepting the handoff
 - `--harness <name>`: optional harness accepting the handoff
 - `--json`: emit acceptance result as JSON

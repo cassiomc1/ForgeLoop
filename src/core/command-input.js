@@ -159,7 +159,7 @@ export function validateForgeLoopCommandInput({ command, input, help = false } =
   }
   if (command === "handoff-accept" && !help) {
     if (!options.handoffId) {
-      throw inputError("handoff-accept requires --handoff or --id");
+      throw inputError("handoff-accept requires --handoff");
     }
     if (!options.consumerId) {
       throw inputError("handoff-accept requires --consumer-id");

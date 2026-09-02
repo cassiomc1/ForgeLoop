@@ -1180,7 +1180,6 @@ export const CLI_COMMAND_DEFINITIONS = Object.freeze({
       ...CLI_COMMON_OPTIONS,
       ...CLI_TASK_OPTION,
       "--handoff": Object.freeze({ targetKey: "handoffId", parseType: "string", takesValue: true, valueName: "id", missingValueMessage: "--handoff requires a handoff ID", description: "handoff identifier" }),
-      "--id": Object.freeze({ targetKey: "handoffId", parseType: "string", takesValue: true, valueName: "id", missingValueMessage: "--id requires a handoff ID", description: "handoff identifier" }),
       "--consumer-id": Object.freeze({ targetKey: "consumerId", parseType: "string", takesValue: true, valueName: "id", missingValueMessage: "--consumer-id requires a consumer ID", description: "consumer identifier accepting the handoff" }),
       "--harness": Object.freeze({ targetKey: "harness", parseType: "string", takesValue: true, valueName: "name", missingValueMessage: "--harness requires a harness name", description: "optional harness accepting the handoff" }),
       "--json": Object.freeze({ targetKey: "json", parseType: "boolean", takesValue: false, description: "emit acceptance result as JSON" }),

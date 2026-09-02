@@ -177,7 +177,6 @@ complete -c forgeloop -f -n '__fish_seen_subcommand_from handoff-accept' -l 'con
 complete -c forgeloop -f -n '__fish_seen_subcommand_from handoff-accept' -l 'handoff' -d 'handoff identifier'
 complete -c forgeloop -f -n '__fish_seen_subcommand_from handoff-accept' -l 'harness' -d 'optional harness accepting the handoff'
 complete -c forgeloop -f -n '__fish_seen_subcommand_from handoff-accept' -l 'help' -d 'show this help'
-complete -c forgeloop -f -n '__fish_seen_subcommand_from handoff-accept' -l 'id' -d 'handoff identifier'
 complete -c forgeloop -f -n '__fish_seen_subcommand_from handoff-accept' -l 'json' -d 'emit acceptance result as JSON'
 complete -c forgeloop -f -n '__fish_seen_subcommand_from handoff-accept' -l 'path' -d 'target project directory (default: current directory)'
 complete -c forgeloop -f -n '__fish_seen_subcommand_from handoff-accept' -l 'task' -d 'task ID to operate on (when omitted, resolved from context or single active task)'
