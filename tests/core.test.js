@@ -89,3 +89,19 @@ test("path containment is case-insensitive for Windows realpath results", () => 
   assert.equal(isPathWithin(root, inside, { platform: "win32" }), true);
   assert.equal(isPathWithin(root, outside, { platform: "win32" }), false);
 });
+
+test("path containment normalizes Windows extended-length realpath prefixes", () => {
+  const root = "C:\\Users\\RunnerAdmin\\AppData\\Local\\Temp\\forgeloop-test";
+  const inside = "\\\\?\\C:\\Users\\RunnerAdmin\\AppData\\Local\\Temp\\forgeloop-test\\.forgeloop\\locks\\task.lock";
+  const outside = "\\\\?\\C:\\Users\\RunnerAdmin\\AppData\\Local\\Temp\\other\\task.lock";
+  assert.equal(isPathWithin(root, inside, { platform: "win32" }), true);
+  assert.equal(isPathWithin(root, outside, { platform: "win32" }), false);
+});
+
+test("path containment normalizes Windows extended-length UNC realpath prefixes", () => {
+  const root = "\\\\server\\share\\forgeloop-test";
+  const inside = "\\\\?\\UNC\\server\\share\\forgeloop-test\\.forgeloop\\locks\\task.lock";
+  const outside = "\\\\?\\UNC\\server\\share\\other\\task.lock";
+  assert.equal(isPathWithin(root, inside, { platform: "win32" }), true);
+  assert.equal(isPathWithin(root, outside, { platform: "win32" }), false);
+});
