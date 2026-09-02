@@ -42,7 +42,7 @@ const LOOP_MUTATION_COMMANDS = Object.freeze(new Set([
   "record-terminal-result", "complete",
   "record-intervention", "record-hypothesis-disposition",
   "usage-record",
-  "workspace-bind", "handoff-create", "responsibility-set", "verify-scope", "attestation-create",
+  "workspace-bind", "handoff-create", "handoff-accept", "responsibility-set", "verify-scope", "attestation-create",
 ]));
 
 const STATIC_RISK_CLASSES = Object.freeze({

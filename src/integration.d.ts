@@ -275,3 +275,23 @@ export declare function assertPortableContextSafe<T = unknown>(value: T, options
 export declare class PortableContextError extends Error {
   code: string;
 }
+export declare function acceptCanonicalHandoff(target: string, options: {
+  taskId: string;
+  handoffId: string;
+  consumerId: string;
+  harness?: string | null;
+  packageRoot?: string;
+}): Promise<{
+  accepted: boolean;
+  idempotent: boolean;
+  handoffId: string;
+  consumerId: string;
+  harness: string | null;
+  acceptedAt: string;
+}>;
+export declare function resolveHandoffAcceptance(events: readonly unknown[], handoff: unknown): {
+  status: "OPEN" | "ACCEPTED" | "INCONSISTENT" | "UNBOUND";
+  consumerId?: string;
+  harness?: string;
+  acceptedAt?: string;
+};

@@ -77,6 +77,7 @@ import { formatWorkspaceStatusResult } from "./commands/workspace-status.js";
 import { formatHandoffCreateResult } from "./commands/handoff-create.js";
 import { formatHandoffListResult } from "./commands/handoff-list.js";
 import { formatHandoffShowResult } from "./commands/handoff-show.js";
+import { formatHandoffAcceptResult } from "./commands/handoff-accept.js";
 import { formatResponsibilitySetResult } from "./commands/responsibility-set.js";
 import { formatResponsibilityStatusResult } from "./commands/responsibility-status.js";
 import { formatVerifyScopeResult } from "./commands/verify-scope.js";
@@ -461,6 +462,11 @@ export const COMMAND_HANDLERS = Object.freeze({
   "handoff-show": async ({ target, packageRoot, options }) => {
     const { result, exitCode } = await COMMAND_EXECUTORS["handoff-show"]({ target, packageRoot, options });
     renderJsonOr(options, result, formatHandoffShowResult);
+    return exitCode;
+  },
+  "handoff-accept": async ({ target, packageRoot, options }) => {
+    const { result, exitCode } = await COMMAND_EXECUTORS["handoff-accept"]({ target, packageRoot, options });
+    renderJsonOr(options, result, formatHandoffAcceptResult);
     return exitCode;
   },
   "responsibility-set": async ({ target, packageRoot, options }) => {

@@ -70,6 +70,8 @@ export function defaultCommandInputValues() {
     recipientHint: null,
     handoffNote: null,
     handoffId: null,
+    consumerId: null,
+    harness: null,
     responsibilityLabel: null,
     responsibilityAllowedPaths: [],
     responsibilityReadOnlyPaths: [],
@@ -148,12 +150,20 @@ export function validateForgeLoopCommandInput({ command, input, help = false } =
   if (options.compact === true && !["next", "task-show"].includes(command)) {
     throw inputError(`compact output is not valid for ${command}`);
   }
-  if (["workspace-bind", "workspace-status", "handoff-create", "handoff-list", "handoff-show", "responsibility-set", "responsibility-status", "verify-scope", "attestation-create", "attestation-status", "attestation-verify"].includes(command)
+  if (["workspace-bind", "workspace-status", "handoff-create", "handoff-list", "handoff-show", "handoff-accept", "responsibility-set", "responsibility-status", "verify-scope", "attestation-create", "attestation-status", "attestation-verify"].includes(command)
     && !options.taskId) {
     throw inputError(`${command} requires --task`);
   }
   if (command === "handoff-show" && !help && !options.handoffId) {
     throw inputError("handoff-show requires --id");
+  }
+  if (command === "handoff-accept" && !help) {
+    if (!options.handoffId) {
+      throw inputError("handoff-accept requires --handoff or --id");
+    }
+    if (!options.consumerId) {
+      throw inputError("handoff-accept requires --consumer-id");
+    }
   }
   if (command === "responsibility-set" && !help && !options.responsibilityLabel) {
     throw inputError("responsibility-set requires --label");

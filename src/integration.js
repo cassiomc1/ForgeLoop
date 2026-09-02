@@ -94,5 +94,9 @@ export {
   assertPortableContextSafe,
   PortableContextError,
 } from "./core/portable-context.js";
+export {
+  acceptCanonicalHandoff,
+  resolveHandoffAcceptance,
+} from "./core/handoff-acceptance.js";
 
 export const FORGELOOP_INTEGRATION_API_VERSION = FORGELOOP_INTEGRATION_RUNTIME_VERSION;

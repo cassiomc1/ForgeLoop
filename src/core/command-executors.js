@@ -73,6 +73,7 @@ import { runWorkspaceStatus } from "../commands/workspace-status.js";
 import { runHandoffCreate } from "../commands/handoff-create.js";
 import { runHandoffList } from "../commands/handoff-list.js";
 import { runHandoffShow } from "../commands/handoff-show.js";
+import { runHandoffAccept } from "../commands/handoff-accept.js";
 import { runResponsibilitySet } from "../commands/responsibility-set.js";
 import { runResponsibilityStatus } from "../commands/responsibility-status.js";
 import { runVerifyScope } from "../commands/verify-scope.js";
@@ -234,6 +235,17 @@ export const COMMAND_EXECUTORS = {
   }),
   "handoff-show": async ({ target, packageRoot, options }) => ({
     result: await runHandoffShow({ target, packageRoot, taskId: options.taskId, handoffId: options.handoffId }),
+    exitCode: 0,
+  }),
+  "handoff-accept": async ({ target, packageRoot, options }) => ({
+    result: await runHandoffAccept({
+      target,
+      packageRoot,
+      taskId: options.taskId,
+      handoffId: options.handoffId,
+      consumerId: options.consumerId,
+      harness: options.harness,
+    }),
     exitCode: 0,
   }),
   "responsibility-set": async ({ target, packageRoot, options }) => ({
