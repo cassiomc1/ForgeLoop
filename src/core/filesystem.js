@@ -73,11 +73,27 @@ export function ensureWithin(root, relativePath) {
   return path.join(root, normalized);
 }
 
+function normalizeWindowsPathForComparison(value) {
+  const lowerValue = value.toLowerCase();
+  let normalized = value;
+  if (lowerValue.startsWith("\\\\?\\unc\\")) {
+    normalized = `\\\\${value.slice(8)}`;
+  } else if (lowerValue.startsWith("\\\\.\\unc\\")) {
+    normalized = `\\\\${value.slice(8)}`;
+  } else if (lowerValue.startsWith("\\\\?\\")) {
+    normalized = value.slice(4);
+  } else if (lowerValue.startsWith("\\\\.\\")) {
+    normalized = value.slice(4);
+  }
+  return path.win32.normalize(normalized).toLowerCase();
+}
+
 export function isPathWithin(root, candidate, { platform = process.platform } = {}) {
   const pathApi = platform === "win32" ? path.win32 : path;
   const normalizeForComparison = (value) => {
-    const normalized = pathApi.normalize(value);
-    return platform === "win32" ? normalized.toLowerCase() : normalized;
+    return platform === "win32"
+      ? normalizeWindowsPathForComparison(value)
+      : pathApi.normalize(value);
   };
   const relative = pathApi.relative(
     normalizeForComparison(root),
