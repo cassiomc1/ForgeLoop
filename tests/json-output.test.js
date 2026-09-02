@@ -56,6 +56,7 @@ test("structured CLI commands produce deterministic JSON contracts", async () =>
       modes: ["off", "observe", "gate"],
       builtInProviders: ["sentrux"],
       commands: ["quality-baseline", "quality-verify", "quality-status"],
+      resource: "task/structural-quality",
       providerNeutral: true,
       defaultProvider: "sentrux",
       transport: "mcp-stdio",
