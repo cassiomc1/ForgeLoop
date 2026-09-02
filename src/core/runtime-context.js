@@ -4,6 +4,8 @@ import {
   normalizeVerificationExecutionPolicy,
 } from "./verification-execution.js";
 import { STRUCTURAL_QUALITY_PROVIDER_ID_PATTERN } from "./structural-quality/constants.js";
+import { E_ADVISORY_CONTEXT_PROVIDER_INVALID } from "./error-codes.js";
+import { assertAdvisoryContextProviderIdentity } from "./advisory-context/provider.js";
 
 export const AUTHORITY_TRUST_MODES = Object.freeze(["NONE", "HOST_ATTESTED"]);
 
@@ -131,6 +133,35 @@ export function createForgeLoopContext(options = {}) {
       providers[id] = provider;
     }
     context.structuralQualityProviders = Object.freeze(providers);
+  }
+  if (options?.advisoryContextProviders !== undefined) {
+    const configured = options.advisoryContextProviders instanceof Map
+      ? Object.fromEntries(options.advisoryContextProviders.entries())
+      : options.advisoryContextProviders;
+    if (!configured || typeof configured !== "object" || Array.isArray(configured)) {
+      const error = new Error("advisoryContextProviders must be an object or Map");
+      error.code = E_ADVISORY_CONTEXT_PROVIDER_INVALID;
+      throw error;
+    }
+    const providers = {};
+    for (const [id, provider] of Object.entries(configured)) {
+      if (!/^[a-z0-9][a-z0-9_-]*$/.test(id)) {
+        const error = new Error(`Invalid advisory-context provider ID: ${id}`);
+        error.code = E_ADVISORY_CONTEXT_PROVIDER_INVALID;
+        throw error;
+      }
+      if (typeof provider !== "function"
+        && (!provider || typeof provider !== "object" || Array.isArray(provider))) {
+        const error = new Error(`Advisory-context provider ${id} must be an object or factory`);
+        error.code = E_ADVISORY_CONTEXT_PROVIDER_INVALID;
+        throw error;
+      }
+      if (typeof provider !== "function") {
+        assertAdvisoryContextProviderIdentity(provider, id);
+      }
+      providers[id] = provider;
+    }
+    context.advisoryContextProviders = Object.freeze(providers);
   }
   return Object.freeze(context);
 }

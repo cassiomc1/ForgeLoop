@@ -4,6 +4,7 @@ import { test } from "node:test";
 import { assertJsonLimits, JSON_LIMITS } from "../src/core/json-safety.js";
 import { assertSecretFree, validateReceipt } from "../src/core/receipt.js";
 import { normalizeStructuralQualitySnapshot } from "../src/core/structural-quality/provider.js";
+import { normalizePortableText, assertPortableContextSafe } from "../src/core/portable-context.js";
 import { getPackageRoot } from "../src/core/templates.js";
 
 const packageRoot = getPackageRoot();
@@ -78,4 +79,20 @@ test("structural-quality normalization rejects secret fields and outside paths",
   };
   assert.throws(() => normalizeStructuralQualitySnapshot(snapshot, { projectPath: "/tmp/project" }), /outside|project/i);
   assert.throws(() => normalizeStructuralQualitySnapshot({ ...snapshot, diagnostics: { token: "secret" } }, { projectPath: "/tmp/project" }), /secret/i);
+});
+
+test("portable context rejects control characters, secret tokens, and oversized inputs", () => {
+  assert.throws(
+    () => normalizePortableText("bad\u0000text", { label: "field", maxLength: 100 }),
+    (error) => error.code === "E_PORTABLE_CONTEXT_INVALID",
+  );
+  assert.throws(
+    () => normalizePortableText("toolong", { label: "field", maxLength: 4 }),
+    (error) => error.code === "E_PORTABLE_CONTEXT_INVALID",
+  );
+  assert.throws(
+    () => assertPortableContextSafe({ text: "authorization: Bearer my-secret-token" }),
+    (error) => error.code === "E_PORTABLE_CONTEXT_INVALID",
+  );
+  assert.doesNotThrow(() => assertPortableContextSafe({ text: "safe operational text" }));
 });

@@ -160,6 +160,16 @@ export function validateKnownEventDetails(event) {
       }
       assertFingerprint(event.details.digest, "HANDOFF_CREATED details.digest");
       return;
+    case "HANDOFF_ACCEPTED":
+      if (!event.details || typeof event.details !== "object" || Array.isArray(event.details)
+        || typeof event.details.handoffId !== "string" || !/^handoff-[A-Za-z0-9_-]+$/.test(event.details.handoffId)
+        || typeof event.details.handoffDigest !== "string"
+        || typeof event.details.consumerId !== "string" || !event.details.consumerId.trim()
+        || (event.details.harness !== undefined && (typeof event.details.harness !== "string" || !event.details.harness.trim()))) {
+        throw protocolError("E_EVENT_INVALID", "HANDOFF_ACCEPTED requires a valid handoffId, handoffDigest, and consumerId");
+      }
+      assertFingerprint(event.details.handoffDigest, "HANDOFF_ACCEPTED details.handoffDigest");
+      return;
     case "RESPONSIBILITY_SET":
       assertStructuredArtifactEvent(event, ["responsibilityFingerprint"], "RESPONSIBILITY_SET");
       if (typeof event.details.label !== "string" || !event.details.label) {
@@ -513,6 +523,8 @@ export async function validateEventLedger(target, packageRoot, options = {}) {
   const seen = new Set();
   let lastMilestone = -1;
   const milestoneCounts = new Map();
+  const createdHandoffs = new Map();
+  const acceptedHandoffs = new Set();
   for (const [index, event] of events.entries()) {
     if (event.seq !== index + 1) {
       errors.push({ code: "E_EVENT_INVALID", message: `event sequence must be ${index + 1}` });
@@ -583,6 +595,26 @@ export async function validateEventLedger(target, packageRoot, options = {}) {
     }
     if (event.event === "COMPLETION_REJECTED" && !seen.has("VERIFICATION_STARTED")) {
       errors.push({ code: "E_PHASE_CHRONOLOGY_INVALID", message: "completion rejected before verification started" });
+    }
+    if (event.event === "HANDOFF_CREATED") {
+      if (event.details?.handoffId) {
+        createdHandoffs.set(event.details.handoffId, event.details.digest);
+      }
+    }
+    if (event.event === "HANDOFF_ACCEPTED") {
+      const hId = event.details?.handoffId;
+      if (hId) {
+        if (acceptedHandoffs.has(hId)) {
+          errors.push({ code: "E_HANDOFF_ALREADY_ACCEPTED", message: `duplicate HANDOFF_ACCEPTED for handoffId ${hId}` });
+        } else {
+          acceptedHandoffs.add(hId);
+          if (!createdHandoffs.has(hId)) {
+            errors.push({ code: "E_HANDOFF_ACCEPTANCE_INCONSISTENT", message: `HANDOFF_ACCEPTED has no preceding HANDOFF_CREATED for handoffId ${hId}` });
+          } else if (createdHandoffs.get(hId) !== event.details?.handoffDigest) {
+            errors.push({ code: "E_HANDOFF_ACCEPTANCE_INCONSISTENT", message: `HANDOFF_ACCEPTED digest mismatch for handoffId ${hId}` });
+          }
+        }
+      }
     }
   }
   validateLegacyRecoveryMigrations(events, errors, {

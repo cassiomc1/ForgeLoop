@@ -105,6 +105,19 @@ export const E_STRUCTURAL_QUALITY_OBSERVATION_EPOCH_STALE = "E_STRUCTURAL_QUALIT
 export const E_STRUCTURAL_QUALITY_PROJECTION_INCOMPLETE = "E_STRUCTURAL_QUALITY_PROJECTION_INCOMPLETE";
 export const E_STRUCTURAL_QUALITY_REGRESSION = "E_STRUCTURAL_QUALITY_REGRESSION";
 
+export const E_ADVISORY_CONTEXT_PROVIDER_INVALID = "E_ADVISORY_CONTEXT_PROVIDER_INVALID";
+export const E_ADVISORY_CONTEXT_PROVIDER_UNAVAILABLE = "E_ADVISORY_CONTEXT_PROVIDER_UNAVAILABLE";
+export const E_ADVISORY_CONTEXT_QUERY_INVALID = "E_ADVISORY_CONTEXT_QUERY_INVALID";
+export const E_ADVISORY_CONTEXT_REQUEST_INVALID = "E_ADVISORY_CONTEXT_REQUEST_INVALID";
+export const E_ADVISORY_CONTEXT_RESULT_INVALID = "E_ADVISORY_CONTEXT_RESULT_INVALID";
+export const E_ADVISORY_CONTEXT_TIMEOUT = "E_ADVISORY_CONTEXT_TIMEOUT";
+export const E_ADVISORY_CONTEXT_OUTPUT_LIMIT = "E_ADVISORY_CONTEXT_OUTPUT_LIMIT";
+export const E_PORTABLE_CONTEXT_INVALID = "E_PORTABLE_CONTEXT_INVALID";
+export const E_HANDOFF_ACCEPTANCE_UNBOUND = "E_HANDOFF_ACCEPTANCE_UNBOUND";
+export const E_HANDOFF_STALE = "E_HANDOFF_STALE";
+export const E_HANDOFF_ALREADY_ACCEPTED = "E_HANDOFF_ALREADY_ACCEPTED";
+export const E_HANDOFF_ACCEPTANCE_INCONSISTENT = "E_HANDOFF_ACCEPTANCE_INCONSISTENT";
+
 const STRUCTURAL_QUALITY_ERROR_METADATA = Object.freeze(Object.fromEntries([
   [E_STRUCTURAL_QUALITY_CONFIGURATION_INVALID, "Correct structuralQuality mode, provider ID, budgets, floors, or optimization limits in .forgeloop/config.json."],
   [E_STRUCTURAL_QUALITY_PROVIDER_INVALID, "Use a provider implementing id, detect(input), and scan(input) with the documented normalized boundary."],
@@ -273,12 +286,100 @@ export const E_APPROVAL_ALREADY_RESOLVED = "E_APPROVAL_ALREADY_RESOLVED";
 export const E_TRAJECTORY_SCENARIO_INVALID = "E_TRAJECTORY_SCENARIO_INVALID";
 export const E_TRAJECTORY_REFERENCE_REQUIRED = "E_TRAJECTORY_REFERENCE_REQUIRED";
 
+const ADVISORY_CONTEXT_AND_HANDOFF_ERROR_METADATA = Object.freeze(Object.fromEntries([
+  [E_ADVISORY_CONTEXT_PROVIDER_INVALID, Object.freeze({
+    code: E_ADVISORY_CONTEXT_PROVIDER_INVALID,
+    category: "advisory-context",
+    classification: "PUBLIC_STABLE",
+    meaning: "Advisory context provider configuration or interface implementation is invalid.",
+    safeResolution: "Use a provider implementing id, recall(input) with bounded query parameters; advisory context is optional.",
+  })],
+  [E_ADVISORY_CONTEXT_PROVIDER_UNAVAILABLE, Object.freeze({
+    code: E_ADVISORY_CONTEXT_PROVIDER_UNAVAILABLE,
+    category: "advisory-context",
+    classification: "PUBLIC_STABLE",
+    meaning: "Requested advisory context provider is not registered in runtime context.",
+    safeResolution: "Register the provider in runtime context before recall, or proceed without advisory context; provider failure never blocks canonical lifecycle.",
+  })],
+  [E_ADVISORY_CONTEXT_QUERY_INVALID, Object.freeze({
+    code: E_ADVISORY_CONTEXT_QUERY_INVALID,
+    category: "advisory-context",
+    classification: "PUBLIC_STABLE",
+    meaning: "Advisory context query failed portable-context validation or exceeded budget.",
+    safeResolution: "Provide a bounded query free of control characters and secret-like values.",
+  })],
+  [E_ADVISORY_CONTEXT_REQUEST_INVALID, Object.freeze({
+    code: E_ADVISORY_CONTEXT_REQUEST_INVALID,
+    category: "advisory-context",
+    classification: "PUBLIC_STABLE",
+    meaning: "Advisory context recall budgets are not finite integer values within the supported request contract.",
+    safeResolution: "Provide finite integer limit, maxItemChars, maxTotalChars, and timeoutMs values; oversized valid values are clamped to documented maxima.",
+  })],
+  [E_ADVISORY_CONTEXT_RESULT_INVALID, Object.freeze({
+    code: E_ADVISORY_CONTEXT_RESULT_INVALID,
+    category: "advisory-context",
+    classification: "PUBLIC_STABLE",
+    meaning: "Advisory context provider returned an invalid result structure.",
+    safeResolution: "Ensure provider returns items with string summary and optional title, sourceRef, observedAt, confidence.",
+  })],
+  [E_ADVISORY_CONTEXT_TIMEOUT, Object.freeze({
+    code: E_ADVISORY_CONTEXT_TIMEOUT,
+    category: "advisory-context",
+    classification: "PUBLIC_STABLE",
+    meaning: "Advisory context recall exceeded its execution timeout.",
+    safeResolution: "Use a responsive provider or increase timeout within limits; advisory context is optional.",
+  })],
+  [E_ADVISORY_CONTEXT_OUTPUT_LIMIT, Object.freeze({
+    code: E_ADVISORY_CONTEXT_OUTPUT_LIMIT,
+    category: "advisory-context",
+    classification: "PUBLIC_STABLE",
+    meaning: "Advisory context output exceeded the configured character or item limit.",
+    safeResolution: "Reduce query scope, limit items, or truncate oversized summaries at the provider.",
+  })],
+  [E_PORTABLE_CONTEXT_INVALID, Object.freeze({
+    code: E_PORTABLE_CONTEXT_INVALID,
+    category: "portable-context",
+    classification: "PUBLIC_STABLE",
+    meaning: "Text or object failed portable-context safety, character, or secret limits.",
+    safeResolution: "Ensure text is bounded, contains no control characters, and contains no secret-like values.",
+  })],
+  [E_HANDOFF_ACCEPTANCE_UNBOUND, Object.freeze({
+    code: E_HANDOFF_ACCEPTANCE_UNBOUND,
+    category: "handoff",
+    classification: "PUBLIC_STABLE",
+    meaning: "Handoff snapshot lacks required workStateFingerprint binding.",
+    safeResolution: "Create a fresh handoff from the current ForgeLoop version before accepting it.",
+  })],
+  [E_HANDOFF_STALE, Object.freeze({
+    code: E_HANDOFF_STALE,
+    category: "handoff",
+    classification: "PUBLIC_STABLE",
+    meaning: "Handoff snapshot has drifted from the current canonical task state or repository.",
+    safeResolution: "Create a new fresh handoff from the current task state instead of accepting a stale snapshot.",
+  })],
+  [E_HANDOFF_ALREADY_ACCEPTED, Object.freeze({
+    code: E_HANDOFF_ALREADY_ACCEPTED,
+    category: "handoff",
+    classification: "PUBLIC_STABLE",
+    meaning: "Handoff was already accepted by a different consumer.",
+    safeResolution: "Create a new handoff for the new consumer; do not manually edit acceptance events.",
+  })],
+  [E_HANDOFF_ACCEPTANCE_INCONSISTENT, Object.freeze({
+    code: E_HANDOFF_ACCEPTANCE_INCONSISTENT,
+    category: "handoff",
+    classification: "PUBLIC_STABLE",
+    meaning: "Handoff acceptance disagrees with task event ledger history.",
+    safeResolution: "Verify ledger integrity and require a preceding valid HANDOFF_CREATED event.",
+  })],
+]));
+
 /**
  * Public, stable ForgeLoop error and reason codes documented for users and harnesses.
  */
 export const PUBLIC_ERROR_CODES = Object.freeze({
   ...EXTENSION_PUBLIC_ERROR_CODES,
   ...STRUCTURAL_QUALITY_ERROR_METADATA,
+  ...ADVISORY_CONTEXT_AND_HANDOFF_ERROR_METADATA,
   E_PREFLIGHT_NOT_READY: Object.freeze({
     code: "E_PREFLIGHT_NOT_READY",
     category: "preflight",
@@ -1205,6 +1306,18 @@ export const ALL_KNOWN_ERROR_CODES = Object.freeze(new Set([
   E_FAILURE_SIGNATURE_INVALID,
   E_STRATEGY_OSCILLATION,
   "E_TRACE_SNAPSHOT_INCONSISTENT",
+  E_ADVISORY_CONTEXT_PROVIDER_INVALID,
+  E_ADVISORY_CONTEXT_PROVIDER_UNAVAILABLE,
+  E_ADVISORY_CONTEXT_QUERY_INVALID,
+  E_ADVISORY_CONTEXT_REQUEST_INVALID,
+  E_ADVISORY_CONTEXT_RESULT_INVALID,
+  E_ADVISORY_CONTEXT_TIMEOUT,
+  E_ADVISORY_CONTEXT_OUTPUT_LIMIT,
+  E_PORTABLE_CONTEXT_INVALID,
+  E_HANDOFF_ACCEPTANCE_UNBOUND,
+  E_HANDOFF_STALE,
+  E_HANDOFF_ALREADY_ACCEPTED,
+  E_HANDOFF_ACCEPTANCE_INCONSISTENT,
 ]));
 
 /**

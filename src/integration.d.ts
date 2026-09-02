@@ -61,6 +61,65 @@ export interface ForgeLoopContext {
   verificationExecutionPolicy?: { requiredIsolation: string };
   usageProvider?: ForgeLoopUsageProvider;
   structuralQualityProviders?: Readonly<Record<string, ForgeLoopStructuralQualityProvider | ForgeLoopStructuralQualityProviderFactory>>;
+  advisoryContextProviders?: Readonly<Record<string, ForgeLoopAdvisoryContextProvider | ForgeLoopAdvisoryContextProviderFactory>>;
+}
+
+export interface ForgeLoopAdvisoryContextItem {
+  title?: string;
+  summary: string;
+  sourceRef?: string;
+  observedAt?: string;
+  confidence?: number;
+  itemFingerprint?: string;
+}
+
+export interface ForgeLoopAdvisoryContextRecallInput {
+  projectPath: string;
+  taskId: string;
+  query: string;
+  limit?: number;
+  maxItemChars?: number;
+  maxTotalChars?: number;
+  timeoutMs?: number;
+}
+
+export interface ForgeLoopAdvisoryContextRecallOutput {
+  items: Array<{
+    title?: string;
+    summary: string;
+    sourceRef?: string;
+    observedAt?: string;
+    confidence?: number;
+  }>;
+}
+
+export interface ForgeLoopAdvisoryRecallOptions {
+  limit: number;
+  maxItemChars: number;
+  maxTotalChars: number;
+  timeoutMs: number;
+}
+
+export interface ForgeLoopAdvisoryContextProvider {
+  id: string;
+  version?: string;
+  recall(input: ForgeLoopAdvisoryContextRecallInput): Promise<ForgeLoopAdvisoryContextRecallOutput> | ForgeLoopAdvisoryContextRecallOutput;
+}
+
+export type ForgeLoopAdvisoryContextProviderFactory = () => ForgeLoopAdvisoryContextProvider | Promise<ForgeLoopAdvisoryContextProvider>;
+
+export interface ForgeLoopNormalizedAdvisoryContextResult {
+  provider: {
+    id: string;
+    version?: string;
+  };
+  taskId: string | null;
+  authority: "ADVISORY";
+  evidenceAuthority: "NONE";
+  actionability: "NON_EXECUTABLE";
+  trustRole: "NON_EVIDENCE_ADVISORY_CONTEXT";
+  persisted: false;
+  items: readonly ForgeLoopAdvisoryContextItem[];
 }
 
 export interface ForgeLoopStructuralQualityProviderInput {
@@ -198,3 +257,60 @@ export declare function classifyForgeLoopInvocation(command: string, input?: For
 export declare function readForgeLoopIntegrationResource(uri: string, input?: Record<string, unknown>): Promise<Record<string, unknown>>;
 export declare function resolveForgeLoopProjectRoot(projectPath?: string, input?: { cwd?: string }): Promise<string>;
 export declare function createForgeLoopContext(input?: Record<string, unknown>): ForgeLoopContext;
+export declare function recallAdvisoryContext(input: {
+  target: string;
+  taskId: string;
+  providerName: string;
+  query: string;
+  limit?: number;
+  maxItemChars?: number;
+  maxTotalChars?: number;
+  timeoutMs?: number;
+  runtimeContext?: ForgeLoopContext | Record<string, unknown>;
+}): Promise<ForgeLoopNormalizedAdvisoryContextResult>;
+export declare const ADVISORY_CONTEXT_LIMITS: Readonly<Record<string, number>>;
+export declare const ADVISORY_CONTEXT_TRUST: Readonly<Record<string, unknown>>;
+export declare function normalizeAdvisoryRecallOptions(input?: Partial<ForgeLoopAdvisoryRecallOptions>): ForgeLoopAdvisoryRecallOptions;
+export declare function assertAdvisoryContextProvider(provider: unknown): ForgeLoopAdvisoryContextProvider;
+export declare function assertAdvisoryContextProviderIdentity(provider: unknown, expectedId: string): ForgeLoopAdvisoryContextProvider;
+export declare function createAdvisoryContextProviderRegistry(options?: { providers?: Record<string, unknown> }): {
+  get(id: string): unknown;
+  has(id: string): boolean;
+  list(): string[];
+};
+export declare function resolveAdvisoryContextProvider(options: {
+  providers?: Record<string, unknown> | Map<string, unknown> | { get(id: string): unknown; has(id: string): boolean };
+  providerName: string;
+}): Promise<ForgeLoopAdvisoryContextProvider | null>;
+export declare function normalizeAdvisoryContextResult(raw: unknown, options?: Record<string, unknown>): ForgeLoopNormalizedAdvisoryContextResult;
+export declare function normalizePortableText(value: unknown, options?: { label?: string; maxLength?: number; optional?: boolean }): string | null;
+export declare function assertPortableContextSafe<T = unknown>(value: T, options?: { label?: string }): T;
+export declare class PortableContextError extends Error {
+  code: string;
+}
+export declare function acceptCanonicalHandoff(target: string, options: {
+  taskId: string;
+  handoffId: string;
+  consumerId: string;
+  harness?: string | null;
+  packageRoot?: string;
+}): Promise<{
+  accepted: boolean;
+  idempotent: boolean;
+  handoffId: string;
+  consumerId: string;
+  harness: string | null;
+  acceptedAt: string;
+}>;
+export declare function resolveHandoffAcceptance(input: {
+  events?: readonly unknown[];
+  handoff: unknown;
+  ledgerValid?: boolean;
+  ledgerErrors?: readonly ({ code?: string } | string)[];
+}): {
+  status: "OPEN" | "ACCEPTED" | "INCONSISTENT" | "UNBOUND";
+  consumerId?: string;
+  harness?: string;
+  acceptedAt?: string;
+  reasonCodes?: readonly string[];
+};

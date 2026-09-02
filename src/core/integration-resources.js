@@ -14,6 +14,7 @@ import { readJsonArtifact } from "./artifacts.js";
 import { taskDirectory } from "./task-paths.js";
 import { resolveWorkspaceBindingStatus } from "./workspace-binding.js";
 import { listCanonicalHandoffs } from "./handoff.js";
+import { readHandoffAcceptanceLedger, resolveHandoffAcceptance } from "./handoff-acceptance.js";
 import { resolveResponsibilityStatus } from "./responsibility.js";
 import { readVerificationScope } from "./verification-scope.js";
 import { resolveAttestationStatus } from "./attestation.js";
@@ -196,7 +197,26 @@ export async function readForgeLoopIntegrationResource(uri, {
   }
   if (uri === "task/handoffs") {
     const handoffs = await listCanonicalHandoffs(projectPath, { packageRoot, taskId });
-    return { uri, taskId, data: { taskId, count: handoffs.length, handoffs } };
+    const ledger = await readHandoffAcceptanceLedger(projectPath, packageRoot, { taskId });
+    const projectedHandoffs = handoffs.map((handoff) => {
+      const resolved = resolveHandoffAcceptance({
+        events: ledger.events,
+        handoff,
+        ledgerValid: ledger.valid,
+        ledgerErrors: ledger.errors,
+      });
+      return {
+        ...handoff,
+        acceptance: {
+          status: resolved.status,
+          consumerId: resolved.consumerId ?? null,
+          harness: resolved.harness ?? null,
+          acceptedAt: resolved.acceptedAt ?? null,
+          ...(resolved.reasonCodes ? { reasonCodes: [...resolved.reasonCodes] } : {}),
+        },
+      };
+    });
+    return { uri, taskId, data: { taskId, count: projectedHandoffs.length, handoffs: projectedHandoffs } };
   }
   if (uri === "task/responsibility") {
     return { uri, taskId, data: await resolveResponsibilityStatus(projectPath, { packageRoot, taskId }) };

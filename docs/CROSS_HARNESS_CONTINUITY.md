@@ -251,3 +251,61 @@ Every discovery adapter (`AGENTS.md`, `CLAUDE.md`, `.cursor/rules/project-loop.m
 > Discover task namespaces with ForgeLoop; if exactly one active task is healthy it may be selected implicitly; if multiple active tasks exist, select with `--task` or `FORGELOOP_TASK`.
 > Inspect the existing task, reconcile continuity when present, inspect the checkout, and run `forgeloop next`.
 > A change of harness, model, provider, IDE, process, terminal, or session does not create a new task.
+
+---
+
+## 8. Canonical Handoff Acceptance & State Binding
+
+### 8.1 Work-State Binding
+
+Handoff envelopes (`.forgeloop/task-state/<taskKey>/handoffs/handoff-*.json`) bind to the exact lifecycle state snapshot at creation time via `state.workStateFingerprint`.
+The envelope itself remains strictly immutable after creation.
+A handoff is acceptable only when both canonical state and the current repository
+checkout still match that immutable snapshot. A clean Git HEAD or branch change
+can make a handoff stale even when the worktree has no uncommitted changes.
+
+### 8.2 Exactly-Once Handoff Acceptance
+
+Harnesses taking ownership of an existing handoff record their acceptance into the task event ledger using `handoff-accept`:
+
+```bash
+forgeloop handoff-accept \
+  --task auth-feature \
+  --handoff handoff-001 \
+  --consumer-id agent-session-42 \
+  --harness cursor \
+  --json
+```
+
+Acceptance enforces:
+
+1. **Unbroken Binding**: Handoff must contain `workStateFingerprint` (legacy unbound handoffs fail with `E_HANDOFF_ACCEPTANCE_UNBOUND`).
+2. **Freshness**: Work state, contract fingerprint, route fingerprint, changed paths, and the directly observed current repository branch and HEAD must match the handoff snapshot (any drift fails with `E_HANDOFF_STALE`).
+3. **Single Consumer**: The handoff can be accepted by at most one consumer. If another consumer attempts acceptance, it fails with `E_HANDOFF_ALREADY_ACCEPTED`. Retrying with the same `consumerId` is idempotent.
+4. **Ledger Integrity**: An immutable `HANDOFF_ACCEPTED` event is appended to `events.ndjson`.
+
+Acceptance is exactly-once operational receipt only. It does not transfer claims,
+delegate work, authorize actions, approve review, or create verification evidence.
+
+### 8.3 Acceptance Inspection
+
+Commands `handoff-show` and `handoff-list` project current acceptance status:
+
+- `OPEN`: Handoff is valid, bound, and waiting for acceptance.
+- `ACCEPTED`: Successfully accepted by a specific consumer.
+- `UNBOUND`: Legacy handoff envelope lacking work-state binding.
+- `INCONSISTENT`: Digest, ledger validation, or acceptance event mismatch detected. An unreadable or invalid ledger is never projected as `OPEN` or `ACCEPTED`; its unique sorted ledger error codes are exposed as `reasonCodes`.
+
+### 8.4 Semantic Continuity Linting
+
+When running `forgeloop reconcile-continuity`, ForgeLoop executes deterministic
+semantic lint checks against schema-valid operational hints. It warns when a
+remaining-work item or current focus ID is already in `state.completedSteps`,
+when an ID appears in both `remainingWork` and `knownIssues`, or when a relative
+`inspectFirst` path is missing from the target. If all operational hints are
+empty, it emits the informational `CONTINUITY_EMPTY_HINT_SET` finding while the
+lint status remains `PASS`.
+
+Lint results use `{ status: "PASS" | "WARN", findings: [...] }`. They are
+non-authoritative, non-evidence diagnostics and do not change reconciliation
+classification or lifecycle state.

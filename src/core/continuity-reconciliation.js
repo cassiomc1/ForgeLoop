@@ -1,6 +1,7 @@
 import { canonicalFingerprint } from "./artifacts.js";
 import { assertContinuitySemantics, readContinuity } from "./continuity.js";
 import { WORK_TRANSITIONS } from "./protocol.js";
+import { lintContinuity } from "./continuity-lint.js";
 
 const RECONCILIATION_CODE = "E_CONTINUITY_RECONCILIATION_REQUIRED";
 
@@ -188,6 +189,7 @@ export async function reconcileContinuity({ target, packageRoot, taskId = null }
         path: ".forgeloop/continuity.json",
         present: false,
         latestHandoff,
+        lint: { status: "PASS", findings: [] },
         diagnosticContext: await deriveDiagnosticContextSafe({ target, packageRoot, state }),
       };
     }
@@ -200,6 +202,15 @@ export async function reconcileContinuity({ target, packageRoot, taskId = null }
       present: true,
       error: error.message,
       latestHandoff,
+      lint: {
+        status: "WARN",
+        findings: [{
+          code: error.code ?? "CONTINUITY_INVALID",
+          severity: "WARN",
+          field: "continuity",
+          itemId: null,
+        }],
+      },
     };
   }
 
@@ -229,6 +240,11 @@ export async function reconcileContinuity({ target, packageRoot, taskId = null }
     fingerprint: continuityArtifact.fingerprint,
     continuity: continuityArtifact.value,
     latestHandoff,
+    lint: await lintContinuity({
+      target,
+      continuity: continuityArtifact.value,
+      state,
+    }),
     diagnosticContext: await deriveDiagnosticContextSafe({ target, packageRoot, state }),
   };
 }

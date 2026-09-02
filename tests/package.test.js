@@ -218,3 +218,22 @@ test("documentation manifest packaged:true entries always ship in the core tarba
     );
   }
 });
+
+test("public integration exports include advisory context, portable context, and handoff acceptance", async () => {
+  const integration = await import("../src/integration.js");
+  const expectedExports = [
+    "recallAdvisoryContext",
+    "acceptCanonicalHandoff",
+    "resolveHandoffAcceptance",
+    "ADVISORY_CONTEXT_LIMITS",
+    "ADVISORY_CONTEXT_TRUST",
+    "assertAdvisoryContextProvider",
+    "normalizeAdvisoryContextResult",
+    "normalizePortableText",
+    "assertPortableContextSafe",
+  ];
+
+  for (const exp of expectedExports) {
+    assert.ok(exp in integration, `missing public integration export: ${exp}`);
+  }
+});

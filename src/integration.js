@@ -79,5 +79,27 @@ export {
   VERIFICATION_EXECUTION_POLICY_MODES,
   VERIFICATION_ISOLATION_MODES,
 } from "./core/verification-execution.js";
+export { recallAdvisoryContext } from "./core/advisory-context/service.js";
+export {
+  ADVISORY_CONTEXT_LIMITS,
+  ADVISORY_CONTEXT_TRUST,
+  normalizeAdvisoryRecallOptions,
+} from "./core/advisory-context/constants.js";
+export {
+  assertAdvisoryContextProvider,
+  assertAdvisoryContextProviderIdentity,
+  createAdvisoryContextProviderRegistry,
+  normalizeAdvisoryContextResult,
+  resolveAdvisoryContextProvider,
+} from "./core/advisory-context/provider.js";
+export {
+  normalizePortableText,
+  assertPortableContextSafe,
+  PortableContextError,
+} from "./core/portable-context.js";
+export {
+  acceptCanonicalHandoff,
+  resolveHandoffAcceptance,
+} from "./core/handoff-acceptance.js";
 
 export const FORGELOOP_INTEGRATION_API_VERSION = FORGELOOP_INTEGRATION_RUNTIME_VERSION;

@@ -950,6 +950,7 @@ completion, or authority evidence.
   - `phase` *(string, required, minLength: 1)*
   - `revision` *(integer, required, minimum: 0)*
   - `verificationCycle` *(integer, required, minimum: 1)*
+  - `workStateFingerprint` *(string, optional, pattern: `^[a-f0-9]{64}$`)*
   - `contractFingerprint` *(string, required, pattern: `^[a-f0-9]{64}$`)*
   - `routeFingerprint` *(string or null, required)*
   - `repositoryFingerprint` *(object, required)*

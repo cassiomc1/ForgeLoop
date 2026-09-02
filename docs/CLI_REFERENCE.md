@@ -66,6 +66,7 @@ error codes. Default output and default JSON remain unchanged.
 | **Durable Actions & Approvals** | [`run-action`](#run-action), [`action-propose`](#action-propose), [`action-record`](#action-record), [`action-show`](#action-show), [`action-reconcile`](#action-reconcile), [`action-verify`](#action-verify), [`action-authorize`](#action-authorize), [`approval-request`](#approval-request), [`approval-resolve`](#approval-resolve) |
 | **Policy & Auditing** | [`policy`](#policy), [`policy-discover`](#policy-discover), [`policy-status`](#policy-status), [`policy-diff`](#policy-diff), [`rule-verify`](#rule-verify), [`baseline`](#baseline), [`bundle`](#bundle) |
 | **workspace** | [`workspace-bind`](#workspace-bind), [`workspace-status`](#workspace-status) |
+| **task** | [`handoff-accept`](#handoff-accept) |
 | **scope** | [`responsibility-set`](#responsibility-set), [`responsibility-status`](#responsibility-status) |
 | **attestation** | [`attestation-create`](#attestation-create), [`attestation-verify`](#attestation-verify), [`attestation-status`](#attestation-status), [`attestation-verify-range`](#attestation-verify-range) |
 
@@ -157,6 +158,9 @@ Lists immutable handoff snapshots for a task.
 
 - **Purpose**: Inspect existing handoff snapshots without changing them.
 - **Mutation**: Read-only.
+- **Acceptance projection**: Derives `OPEN`, `ACCEPTED`, `UNBOUND`, or
+  `INCONSISTENT` from the validated event ledger. Invalid or unreadable ledgers
+  are fail-closed and expose `reasonCodes`; they are never treated as empty.
 - **Options**:
 
 <!-- BEGIN FORGELOOP GENERATED: cli:handoff-list:options -->
@@ -178,6 +182,8 @@ Lists immutable handoff snapshots for a task.
 Reads and verifies one immutable handoff snapshot.
 
 - **Purpose**: Inspect one handoff by ID and validate its digest and bindings.
+- **Acceptance projection**: Uses the same fail-closed ledger-derived status as
+  `handoff-list`.
 - **Mutation**: Read-only.
 - **Options**:
 
@@ -194,6 +200,37 @@ Reads and verifies one immutable handoff snapshot.
 
   ```bash
   forgeloop handoff-show --task task-001 --id handoff-001 --json
+  ```
+
+### `handoff-accept`
+
+Records exactly-once acceptance of an immutable handoff into the task event ledger.
+
+- **Purpose**: Bind an incoming consumer/harness to an immutable handoff snapshot.
+- **Mutation**: Appends a `HANDOFF_ACCEPTED` event.
+- **Freshness**: Acceptance requires the current canonical state and directly
+  observed repository branch/HEAD to match the immutable snapshot, including a
+  clean committed HEAD drift check.
+- **Human output**: Reports `authority: OPERATIONAL_RECEIPT_ONLY`,
+  `evidence: NONE`, and `claims transferred: NO`; acceptance is exactly-once
+  operational receipt only.
+- **Options**:
+
+<!-- BEGIN FORGELOOP GENERATED: cli:handoff-accept:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--handoff <id>`: handoff identifier
+- `--consumer-id <id>`: consumer identifier accepting the handoff
+- `--harness <name>`: optional harness accepting the handoff
+- `--json`: emit acceptance result as JSON
+
+<!-- END FORGELOOP GENERATED: cli:handoff-accept:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop handoff-accept --task task-001 --handoff handoff-001 --consumer-id agent-42 --json
   ```
 
 ### `responsibility-set`
@@ -914,6 +951,9 @@ Records operational handoff context before pausing or switching tools.
 Reconciles continuity with the active work state and checkout.
 
 - **Purpose**: Compares continuity bindings against the canonical work state, contract, phase, repository fingerprint, and checkout state.
+- **Lint**: Returns deterministic `PASS`/`WARN` findings for stale completed
+  item references, role conflicts, missing `inspectFirst` paths, and empty hint
+  sets without changing reconciliation classification.
 - **When to use**: When starting a session in an active task.
 - **Mutation**: Read-only.
 - **Options**:
