@@ -576,6 +576,21 @@
         "knowledge-provenance"
       ],
       "packaged": true
+    },
+    {
+      "path": "docs/ADVISORY_CONTEXT.md",
+      "id": "advisory-context",
+      "class": "reference",
+      "audience": [
+        "harness",
+        "integrator",
+        "maintainer"
+      ],
+      "canonicalFor": [
+        "advisory-context",
+        "external-memory"
+      ],
+      "packaged": true
     }
   ]
 }

@@ -93,6 +93,48 @@ commands in [`EXECUTION_PROFILE_BENCHMARKS.md`](./EXECUTION_PROFILE_BENCHMARKS.m
 The benchmark source policy accepts provider or host observations only and
 keeps unavailable or non-comparable measurements out of efficiency claims.
 
+### Advisory Memory & Handoff Acceptance
+
+The programmatic integration API exposes lazy advisory context querying and exactly-once handoff acceptance:
+
+```javascript
+import {
+  createForgeLoopContext,
+  recallAdvisoryContext,
+  acceptCanonicalHandoff,
+  resolveHandoffAcceptance,
+} from "@cassiomc1/forgeloop/integration";
+
+// 1. Register host-provided advisory memory
+const runtimeContext = createForgeLoopContext({
+  advisoryContextProviders: {
+    "host-memory": {
+      id: "host-memory",
+      recall: async ({ query }) => ({ items: [...] }),
+    },
+  },
+});
+
+// 2. Explicitly query advisory context (strictly non-evidence, non-executable)
+const advisoryResult = await recallAdvisoryContext({
+  target: ".",
+  taskId: "task-1",
+  providerName: "host-memory",
+  query: "authentication tokens",
+  runtimeContext,
+});
+
+// 3. Exactly-once handoff acceptance
+const acceptance = await acceptCanonicalHandoff(".", {
+  taskId: "task-1",
+  handoffId: "handoff-001",
+  consumerId: "agent-session-42",
+  harness: "cursor",
+});
+```
+
+See [`ADVISORY_CONTEXT.md`](./ADVISORY_CONTEXT.md) for full trust boundary specifications, portable text sanitization rules, and budget enforcement.
+
 ## Consumers
 
 | Surface | Entry |

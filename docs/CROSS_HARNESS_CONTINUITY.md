@@ -251,3 +251,50 @@ Every discovery adapter (`AGENTS.md`, `CLAUDE.md`, `.cursor/rules/project-loop.m
 > Discover task namespaces with ForgeLoop; if exactly one active task is healthy it may be selected implicitly; if multiple active tasks exist, select with `--task` or `FORGELOOP_TASK`.
 > Inspect the existing task, reconcile continuity when present, inspect the checkout, and run `forgeloop next`.
 > A change of harness, model, provider, IDE, process, terminal, or session does not create a new task.
+
+---
+
+## 8. Canonical Handoff Acceptance & State Binding
+
+### 8.1 Work-State Binding
+
+Handoff envelopes (`.forgeloop/task-state/<taskKey>/handoffs/handoff-*.json`) bind to the exact lifecycle state snapshot at creation time via `state.workStateFingerprint`.
+The envelope itself remains strictly immutable after creation.
+
+### 8.2 Exactly-Once Handoff Acceptance
+
+Harnesses taking ownership of an existing handoff record their acceptance into the task event ledger using `handoff-accept`:
+
+```bash
+forgeloop handoff-accept \
+  --task auth-feature \
+  --handoff handoff-001 \
+  --consumer-id agent-session-42 \
+  --harness cursor \
+  --json
+```
+
+Acceptance enforces:
+1. **Unbroken Binding**: Handoff must contain `workStateFingerprint` (legacy unbound handoffs fail with `E_HANDOFF_ACCEPTANCE_UNBOUND`).
+2. **Freshness**: Work state, contract fingerprint, route fingerprint, and changed paths must match the handoff snapshot (any drift fails with `E_HANDOFF_STALE`).
+3. **Single Consumer**: The handoff can be accepted by at most one consumer. If another consumer attempts acceptance, it fails with `E_HANDOFF_ALREADY_ACCEPTED`. Retrying with the same `consumerId` is idempotent.
+4. **Ledger Integrity**: An immutable `HANDOFF_ACCEPTED` event is appended to `events.ndjson`.
+
+### 8.3 Acceptance Inspection
+
+Commands `handoff-show` and `handoff-list` project current acceptance status:
+- `OPEN`: Handoff is valid, bound, and waiting for acceptance.
+- `ACCEPTED`: Successfully accepted by a specific consumer.
+- `UNBOUND`: Legacy handoff envelope lacking work-state binding.
+- `INCONSISTENT`: Digest or ledger event mismatch detected.
+
+### 8.4 Semantic Continuity Linting
+
+When running `forgeloop reconcile-continuity`, ForgeLoop executes deterministic semantic lint checks across continuity text to prevent quality degradation across handoffs:
+- `EMPTY_DECISION`: Flags empty or whitespace-only decisions.
+- `OVERSIZED_NOTE`: Warns when notes exceed 4,000 characters.
+- `PLACEHOLDER_TEXT`: Flags markers like `TODO`, `TBD`, `FIXME`, `N/A`, or `placeholder`.
+- `CONTROL_CHARACTERS`: Flags unescaped ASCII control characters.
+- `UNSTRUCTURED_EVIDENCE_CLAIM`: Flags informal verification assertions (e.g., "all tests pass", "looks good", "verified manually") that lack structured evidence references.
+
+Linting produces non-blocking warnings and never fails valid reconciliation.

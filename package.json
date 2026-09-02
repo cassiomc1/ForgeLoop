@@ -51,6 +51,7 @@
     "docs/assets/diagrams",
     "docs/GETTING_STARTED.md",
     "docs/CROSS_HARNESS_CONTINUITY.md",
+    "docs/ADVISORY_CONTEXT.md",
     "docs/CLI_REFERENCE.md",
     "docs/ARTIFACT_REFERENCE.md",
     "docs/TROUBLESHOOTING.md",

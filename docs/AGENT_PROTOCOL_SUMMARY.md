@@ -248,6 +248,12 @@ Phases: RECEIVED, DISCOVERING, CONTRACT_READY, ROUTED, DESIGNING, PLANNED, EXECU
 | responsibility-set | MUTATING | Creates immutable, mechanically verifiable constraints for a task pass. |
 | responsibility-status | READ_ONLY | Validates active responsibility constraints against current paths, inputs, and checks. |
 
+### task
+
+| Command | Mutation | Purpose |
+| --- | --- | --- |
+| handoff-accept | MUTATING | Accepts an immutable handoff exactly once in the task event ledger. |
+
 ### verification
 
 | Command | Mutation | Purpose |
@@ -301,8 +307,12 @@ Phases: RECEIVED, DISCOVERING, CONTRACT_READY, ROUTED, DESIGNING, PLANNED, EXECU
 | E_ATTESTATION_TARGET_REF_INVALID | A ForgeLoop boundary, artifact, provider, or attestation validation condition was not satisfied. |
 | E_ATTESTATION_UNSIGNED | A ForgeLoop boundary, artifact, provider, or attestation validation condition was not satisfied. |
 | E_CLI_INVOCATION_INVALID | A ForgeLoop boundary, artifact, provider, or attestation validation condition was not satisfied. |
+| E_HANDOFF_ACCEPTANCE_INCONSISTENT | Handoff acceptance disagrees with task event ledger history. |
+| E_HANDOFF_ACCEPTANCE_UNBOUND | Handoff snapshot lacks required workStateFingerprint binding. |
+| E_HANDOFF_ALREADY_ACCEPTED | Handoff was already accepted by a different consumer. |
 | E_HANDOFF_INVALID | A ForgeLoop boundary, artifact, provider, or attestation validation condition was not satisfied. |
 | E_HANDOFF_NOT_FOUND | A ForgeLoop boundary, artifact, provider, or attestation validation condition was not satisfied. |
+| E_HANDOFF_STALE | Handoff snapshot has drifted from the current canonical task state or repository. |
 | E_HANDOFF_STATE_UNAVAILABLE | A ForgeLoop boundary, artifact, provider, or attestation validation condition was not satisfied. |
 | E_HANDOFF_TAMPERED | A ForgeLoop boundary, artifact, provider, or attestation validation condition was not satisfied. |
 | E_RESPONSIBILITY_FROZEN_INPUT_DRIFT | A ForgeLoop boundary, artifact, provider, or attestation validation condition was not satisfied. |

@@ -66,6 +66,7 @@ error codes. Default output and default JSON remain unchanged.
 | **Durable Actions & Approvals** | [`run-action`](#run-action), [`action-propose`](#action-propose), [`action-record`](#action-record), [`action-show`](#action-show), [`action-reconcile`](#action-reconcile), [`action-verify`](#action-verify), [`action-authorize`](#action-authorize), [`approval-request`](#approval-request), [`approval-resolve`](#approval-resolve) |
 | **Policy & Auditing** | [`policy`](#policy), [`policy-discover`](#policy-discover), [`policy-status`](#policy-status), [`policy-diff`](#policy-diff), [`rule-verify`](#rule-verify), [`baseline`](#baseline), [`bundle`](#bundle) |
 | **workspace** | [`workspace-bind`](#workspace-bind), [`workspace-status`](#workspace-status) |
+| **task** | [`handoff-accept`](#handoff-accept) |
 | **scope** | [`responsibility-set`](#responsibility-set), [`responsibility-status`](#responsibility-status) |
 | **attestation** | [`attestation-create`](#attestation-create), [`attestation-verify`](#attestation-verify), [`attestation-status`](#attestation-status), [`attestation-verify-range`](#attestation-verify-range) |
 
@@ -194,6 +195,32 @@ Reads and verifies one immutable handoff snapshot.
 
   ```bash
   forgeloop handoff-show --task task-001 --id handoff-001 --json
+  ```
+
+### `handoff-accept`
+
+Records exactly-once acceptance of an immutable handoff into the task event ledger.
+
+- **Purpose**: Bind an incoming consumer/harness to an immutable handoff snapshot.
+- **Mutation**: Appends a `HANDOFF_ACCEPTED` event.
+- **Options**:
+
+<!-- BEGIN FORGELOOP GENERATED: cli:handoff-accept:options -->
+
+- `--path <directory>`: target project directory (default: current directory)
+- `--task <id>`: task ID to operate on (when omitted, resolved from context or single active task)
+- `--handoff <id>`: handoff identifier
+- `--id <id>`: handoff identifier
+- `--consumer-id <id>`: consumer identifier accepting the handoff
+- `--harness <name>`: optional harness accepting the handoff
+- `--json`: emit acceptance result as JSON
+
+<!-- END FORGELOOP GENERATED: cli:handoff-accept:options -->
+
+- **Example**:
+
+  ```bash
+  forgeloop handoff-accept --task task-001 --handoff handoff-001 --consumer-id agent-42 --json
   ```
 
 ### `responsibility-set`

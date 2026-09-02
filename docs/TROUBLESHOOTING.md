@@ -1002,6 +1002,12 @@ current-cycle validation.
 | `E_ACTION_STATE_MISMATCH` | Requested durable action transition is not part of the canonical state machine. | Inspect current action state with forgeloop action-show and use a legal transition; never edit action artifacts by hand. |
 | `E_ACTION_VERIFICATION_INVALID` | Verification evidence does not resolve to a canonical passed ForgeLoop artifact bound to this task and action. | Supply a canonical execution or check reference produced by run-check for this task; arbitrary strings fail closed. |
 | `E_ACTION_VERIFICATION_REQUIRED` | The action cannot reach VERIFIED through this surface; canonical independent postcondition evidence is required. | Run an independent verification check, then record it with forgeloop action-verify; exit code 0 alone is not verification. |
+| `E_ADVISORY_CONTEXT_OUTPUT_LIMIT` | Advisory context output exceeded the configured character or item limit. | Reduce query scope, limit items, or truncate oversized summaries at the provider. |
+| `E_ADVISORY_CONTEXT_PROVIDER_INVALID` | Advisory context provider configuration or interface implementation is invalid. | Use a provider implementing id, recall(input) with bounded query parameters; advisory context is optional. |
+| `E_ADVISORY_CONTEXT_PROVIDER_UNAVAILABLE` | Requested advisory context provider is not registered in runtime context. | Register the provider in runtime context before recall, or proceed without advisory context; provider failure never blocks canonical lifecycle. |
+| `E_ADVISORY_CONTEXT_QUERY_INVALID` | Advisory context query failed portable-context validation or exceeded budget. | Provide a bounded query free of control characters and secret-like values. |
+| `E_ADVISORY_CONTEXT_RESULT_INVALID` | Advisory context provider returned an invalid result structure. | Ensure provider returns items with string summary and optional title, sourceRef, observedAt, confidence. |
+| `E_ADVISORY_CONTEXT_TIMEOUT` | Advisory context recall exceeded its execution timeout. | Use a responsive provider or increase timeout within limits; advisory context is optional. |
 | `E_APPROVAL_ALREADY_RESOLVED` | Approval is one-time resolvable and has already been approved or rejected. | Request a new approval if another decision is required. |
 | `E_APPROVAL_INVALID` | Approval artifact is malformed or does not bind the required fingerprint tuple. | Request a new approval with forgeloop approval-request; never hand-edit approval artifacts. |
 | `E_APPROVAL_STALE` | Approval no longer matches the current action fingerprint, contract fingerprint, task revision, or capability. | Request and resolve a fresh approval against the current action revision. |
@@ -1090,8 +1096,12 @@ current-cycle validation.
 | `E_GATE_REQUIRED` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_GATE_STALE` | Referenced gate artifact changed after approval. | Update artifact SHA-256 in gate file. |
 | `E_GATE_UNVERIFIED` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
+| `E_HANDOFF_ACCEPTANCE_INCONSISTENT` | Handoff acceptance disagrees with task event ledger history. | Verify ledger integrity and require a preceding valid HANDOFF_CREATED event. |
+| `E_HANDOFF_ACCEPTANCE_UNBOUND` | Handoff snapshot lacks required workStateFingerprint binding. | Create a fresh handoff from the current ForgeLoop version before accepting it. |
+| `E_HANDOFF_ALREADY_ACCEPTED` | Handoff was already accepted by a different consumer. | Create a new handoff for the new consumer; do not manually edit acceptance events. |
 | `E_HANDOFF_INVALID` | A ForgeLoop boundary, artifact, provider, or attestation validation condition was not satisfied. | Inspect the structured command result, correct the named boundary or artifact, then retry the canonical command. |
 | `E_HANDOFF_NOT_FOUND` | A ForgeLoop boundary, artifact, provider, or attestation validation condition was not satisfied. | Inspect the structured command result, correct the named boundary or artifact, then retry the canonical command. |
+| `E_HANDOFF_STALE` | Handoff snapshot has drifted from the current canonical task state or repository. | Create a new fresh handoff from the current task state instead of accepting a stale snapshot. |
 | `E_HANDOFF_STATE_UNAVAILABLE` | A ForgeLoop boundary, artifact, provider, or attestation validation condition was not satisfied. | Inspect the structured command result, correct the named boundary or artifact, then retry the canonical command. |
 | `E_HANDOFF_TAMPERED` | A ForgeLoop boundary, artifact, provider, or attestation validation condition was not satisfied. | Inspect the structured command result, correct the named boundary or artifact, then retry the canonical command. |
 | `E_HYPOTHESIS_DISPOSITION_EVIDENCE_INVALID` | Hypothesis disposition evidence references do not resolve to checks of the active cycle. | Reference at least one check ID recorded in the active verification cycle. |
@@ -1124,6 +1134,7 @@ current-cycle validation.
 | `E_POLICY_PROOF_STALE` | Mutation verification proof is stale due to checker or fixture modifications. | Re-run forgeloop rule-verify to refresh mutation proof. |
 | `E_POLICY_SNAPSHOT_WRITE_FAILED` | Failed to persist task policy snapshot during preflight. | Ensure the target task directory is writable and repair filesystem permissions. |
 | `E_POLICY_WEAKENING` | Policy rules were weakened during task execution without explicit authority. | Restore the original policy configuration. |
+| `E_PORTABLE_CONTEXT_INVALID` | Text or object failed portable-context safety, character, or secret limits. | Ensure text is bounded, contains no control characters, and contains no secret-like values. |
 | `E_PREFLIGHT_EVENT_MISSING` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_PREFLIGHT_GATES_STALE` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
 | `E_PREFLIGHT_GATE_EVENT_MISSING` | A ForgeLoop protocol validation or lifecycle condition was not satisfied. | Inspect the structured command result, correct the named artifact or prerequisite, then run forgeloop next --json. |
