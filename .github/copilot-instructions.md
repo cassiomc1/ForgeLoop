@@ -21,7 +21,6 @@ Use these instructions across the repository while preserving local rules.
 After implementation work for the current task is complete, run `forgeloop next` before returning a final result. Follow the returned lifecycle action until ForgeLoop reaches a terminal state or an explicit blocker.
 
 - Report results, checks actually run, limitations, and publication state.
-
 - When `structuralQuality` is enabled, capture its baseline after planning and
   before `EXECUTING`, evaluate the current cycle in `VERIFYING`, and route
   regressions through the existing diagnosis/correction loop. Never claim

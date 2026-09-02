@@ -54,6 +54,8 @@ compatibility key (`compatibilityKey`), task/contract/route bindings, source
 material fingerprints, scan scope, provider config fingerprints, and optional
 cycle/minimum conditions. Any mismatch is incomparable; it is never treated as a pass.
 An explicit per-dimension failure fails the gate even when the aggregate signal improves.
+Architecture-rule provenance is recorded separately and does not change Structural
+Quality comparability when the measured source and provider scope are unchanged.
 
 ## 5. Modes
 
@@ -219,13 +221,29 @@ trusted command name `sentrux --mcp` through a shell-free local MCP process, req
 - `health`: `arguments: {}`
 
 Sentrux-specific configuration (such as `.sentrux/rules.toml`) is owned
-exclusively by the Sentrux provider adapter via `scopeBinding()`. The core
-resolver never scans for a rules file and custom providers do not inherit this
-binding unless they explicitly expose their own `scopeBinding()`.
+exclusively by the Sentrux provider adapter via `scopeBinding()`. The adapter
+records its SHA-256 as `scope.architectureRulesFingerprint` for provenance, but
+the rules file is a separate Architecture Rules Sensor: changing it does not
+make unchanged Structural Quality measurements incomparable. Generic provider
+configuration remains a Structural Quality scope input and still invalidates
+incompatible observations. The core resolver never scans for a rules file and
+custom providers do not inherit this binding unless they explicitly expose their
+own `scopeBinding()`.
 
 If Sentrux is absent, preserve the resulting `NOT_OBSERVED` or `BLOCKED` state
 and follow the configured mode. Install or upgrade Sentrux only through the
 user's normal, separately authorized process.
+
+The repository includes a real-provider interoperability scenario covering the
+public baseline/verify path and an intentional `A -> B -> C -> A` cycle:
+
+```bash
+node --test tests/real-sentrux-structural-quality.test.js
+```
+
+The scenario runs when the user-managed `sentrux` executable reports a verified
+version; environments without that external executable leave the scenario
+unobserved rather than substituting a fake provider.
 
 ## 12. Sentrux Free versus optional diagnostics
 
@@ -296,7 +314,8 @@ Pre-scan and post-scan source material fingerprints ensure observations are
 stable against mid-scan source drift (`E_STRUCTURAL_QUALITY_SOURCE_DRIFT`).
 Provider-owned `.sentrux` configuration is excluded from source material and
 is handled only by the Sentrux scope binding. Source symlinks are rejected by
-the fail-closed fingerprint policy.
+the fail-closed fingerprint policy. Rules provenance is retained in the scope,
+but is not folded into the Structural Quality comparison fingerprint.
 If an evaluation artifact was committed but check projection was interrupted,
 subsequent verification retries automatically reconcile and repair the canonical
 receipt check without rescanning or incrementing attempt counts.
@@ -321,8 +340,8 @@ the project or requiring Sentrux.
 | `E_STRUCTURAL_QUALITY_BASELINE_MISSING` | A gate task has no valid baseline. | Capture it in `PLANNED` after a valid preflight checkpoint. |
 | `E_STRUCTURAL_QUALITY_BASELINE_EXISTS` | A different baseline already exists. | Keep the immutable baseline, or use authorized `--replace` before execution. |
 | `E_STRUCTURAL_QUALITY_BASELINE_PHASE_INVALID` | Baseline replacement was attempted after execution began. | Repair against the existing baseline in a new verification cycle. |
-| `E_STRUCTURAL_QUALITY_BASELINE_BINDING_MISMATCH` | Baseline bindings no longer match the task inputs. | Inspect policy, route, scope, and rules drift; do not bypass the binding. |
-| `E_STRUCTURAL_QUALITY_EVALUATION_INCOMPARABLE` | Current and baseline observations cannot be compared. | Resolve provider/version/policy/scope/rules drift and verify again. |
+| `E_STRUCTURAL_QUALITY_BASELINE_BINDING_MISMATCH` | Baseline bindings no longer match the task inputs. | Inspect policy, route, provider scope, and source drift; do not bypass the binding. |
+| `E_STRUCTURAL_QUALITY_EVALUATION_INCOMPARABLE` | Current and baseline observations cannot be compared. | Resolve provider/version/policy/provider-scope drift and verify again; architecture-rule changes alone are informational. |
 | `E_STRUCTURAL_QUALITY_MEASUREMENT_MODEL_MISMATCH` | Measurement models differ between baseline and evaluation. | Ensure baseline and evaluation share a compatible measurement model. |
 | `E_STRUCTURAL_QUALITY_EVIDENCE_STALE` | A quality check is from an old cycle or points to stale evidence. | Run the current-cycle verification and record its canonical check. |
 | `E_STRUCTURAL_QUALITY_SOURCE_DRIFT` | Source material was mutated during provider observation. | Ensure worktree remains stable during quality scans and rerun verification. |

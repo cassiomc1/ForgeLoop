@@ -346,7 +346,7 @@ function mergedSnapshot(scan, health, projectPath) {
 }
 
 async function sentruxScopeBinding(projectPath) {
-  let providerConfigFingerprint = null;
+  let architectureRulesFingerprint = null;
   if (projectPath) {
     try {
       await assertSafePath(projectPath, SENTRUX_RULES_PATH);
@@ -356,14 +356,14 @@ async function sentruxScopeBinding(projectPath) {
     const rulesAbsolute = ensureWithin(projectPath, SENTRUX_RULES_PATH);
     if (await fileExists(rulesAbsolute)) {
       try {
-        providerConfigFingerprint = sha256(await readBytes(rulesAbsolute));
+        architectureRulesFingerprint = sha256(await readBytes(rulesAbsolute));
       } catch (error) {
         throw mcpError(E_STRUCTURAL_QUALITY_SOURCE_FINGERPRINT_UNAVAILABLE, `Unable to fingerprint Sentrux configuration: ${error.message}`);
       }
     }
   }
   return {
-    providerConfigFingerprint,
+    architectureRulesFingerprint,
     measurementCompatibilityKey: STRUCTURAL_QUALITY_SENTRUX_COMPATIBILITY_KEY,
   };
 }

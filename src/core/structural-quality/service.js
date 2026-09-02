@@ -65,15 +65,30 @@ function configuredPolicy(config) {
 
 async function scopeIdentity(target, provider = null, providerId = null) {
   let providerConfigFingerprint = null;
+  let architectureRulesFingerprint = null;
   const effectiveProviderId = provider?.id ?? providerId;
   if (provider && typeof provider.scopeBinding === "function") {
     const binding = await provider.scopeBinding({ projectPath: target });
     providerConfigFingerprint = binding?.providerConfigFingerprint ?? null;
+    architectureRulesFingerprint = binding?.architectureRulesFingerprint ?? null;
   }
-  const scope = { kind: "PROJECT", projectRoot: ".", providerConfigFingerprint };
+  const scope = {
+    kind: "PROJECT",
+    projectRoot: ".",
+    providerConfigFingerprint,
+    ...(architectureRulesFingerprint !== null ? { architectureRulesFingerprint } : {}),
+  };
   return {
     scope,
-    scopeFingerprint: canonicalFingerprint({ providerId: effectiveProviderId, ...scope }),
+    // Architecture rules are a separate policy sensor. They are retained for
+    // provenance, but must not make identical Structural Quality measurements
+    // incomparable when a project rule changes.
+    scopeFingerprint: canonicalFingerprint({
+      providerId: effectiveProviderId,
+      kind: scope.kind,
+      projectRoot: scope.projectRoot,
+      providerConfigFingerprint: scope.providerConfigFingerprint,
+    }),
   };
 }
 

@@ -142,3 +142,19 @@ test("provider, policy, and scope drift make the comparison incomparable", () =>
   scopeDrift.bindings.scopeFingerprint = "c".repeat(64);
   assert.equal(compareStructuralQuality({ baseline, current: scopeDrift, policy }).comparable, false);
 });
+
+test("architecture-rules provenance does not change Structural Quality comparability", () => {
+  const policy = { mode: "gate", provider: "fake" };
+  const baseline = evidence(policy);
+  baseline.scope.architectureRulesFingerprint = "a".repeat(64);
+  const current = evidence(policy);
+  current.scope.architectureRulesFingerprint = "b".repeat(64);
+  assert.deepEqual(compareStructuralQuality({ baseline, current, policy }), {
+    comparable: true,
+    qualityDelta: 0,
+    rootCauseDeltas: { modularity: 0, acyclicity: 0, depth: 0, equality: 0, redundancy: 0 },
+    failedConditions: [],
+    status: "PASS",
+    reasonCodes: [],
+  });
+});

@@ -1163,6 +1163,7 @@ validate it without starting the provider.
   - `kind` *(string, required, const: `PROJECT`)*
   - `projectRoot` *(string, required, const: `.`)*
   - `providerConfigFingerprint` *(string or null, optional)*
+  - `architectureRulesFingerprint` *(string, optional, pattern: `^[a-f0-9]{64}$`)*
 - `snapshot` *(snapshot, optional)*
   - `qualitySignal` *(integer, required, minimum: 0, maximum: 10000)*
   - `bottleneck` *(string, required, enum: `modularity`, `acyclicity`, `depth`, `equality`, `redundancy`)*

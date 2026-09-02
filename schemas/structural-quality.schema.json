@@ -74,7 +74,8 @@
       "properties": {
         "kind": { "const": "PROJECT" },
         "projectRoot": { "const": "." },
-        "providerConfigFingerprint": { "oneOf": [{ "type": "string", "pattern": "^[a-f0-9]{64}$" }, { "type": "null" }] }
+        "providerConfigFingerprint": { "oneOf": [{ "type": "string", "pattern": "^[a-f0-9]{64}$" }, { "type": "null" }] },
+        "architectureRulesFingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
       },
       "additionalProperties": false
     },

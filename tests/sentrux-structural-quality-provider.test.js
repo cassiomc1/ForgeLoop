@@ -84,15 +84,17 @@ test("Sentrux adapter owns .sentrux/rules.toml scopeBinding", async () => {
   try {
     const sentruxProvider = provider(tmpDir);
     const initialScope = await sentruxProvider.scopeBinding({ projectPath: tmpDir });
-    assert.equal(initialScope.providerConfigFingerprint, null);
+    assert.equal(initialScope.architectureRulesFingerprint, null);
+    assert.equal(initialScope.providerConfigFingerprint, undefined);
     assert.equal(initialScope.measurementCompatibilityKey, STRUCTURAL_QUALITY_SENTRUX_COMPATIBILITY_KEY);
 
     await mkdir(path.join(tmpDir, ".sentrux"), { recursive: true });
     await writeFile(path.join(tmpDir, ".sentrux", "rules.toml"), 'version = "1.0"\n');
     const updatedScope = await sentruxProvider.scopeBinding({ projectPath: tmpDir });
-    assert.ok(typeof updatedScope.providerConfigFingerprint === "string" && updatedScope.providerConfigFingerprint.length === 64);
+    assert.ok(typeof updatedScope.architectureRulesFingerprint === "string" && updatedScope.architectureRulesFingerprint.length === 64);
+    assert.equal(updatedScope.providerConfigFingerprint, undefined);
   } finally {
-    await rm(tmpDir, { recursive: true, force: true });
+    await rm(tmpDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 

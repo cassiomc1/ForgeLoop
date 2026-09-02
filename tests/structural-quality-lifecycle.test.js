@@ -120,7 +120,7 @@ test("gate lifecycle captures a baseline, fails closed on regression, and passes
     assert.equal(next.nextAction, "ENTER_REVIEWING", JSON.stringify(next));
     await runAdvance({ target, packageRoot, taskId, to: "REVIEWING" });
   } finally {
-    await rm(target, { recursive: true, force: true });
+    await rm(target, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -146,7 +146,7 @@ test("observe mode records provider absence without blocking the task", async ()
     assert.equal(verification.evaluation.status, "NOT_OBSERVED");
     assert.equal(verification.check.status, "not-run");
   } finally {
-    await rm(target, { recursive: true, force: true });
+    await rm(target, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -170,7 +170,7 @@ test("a passed structural evaluation becomes stale before lifecycle review when 
     const next = await runNext({ target, packageRoot, taskId: selectedTaskId });
     assert.equal(next.nextAction, "VERIFY_STRUCTURAL_QUALITY", JSON.stringify(next));
   } finally {
-    await rm(target, { recursive: true, force: true });
+    await rm(target, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -191,7 +191,7 @@ test("provider scope changes make an evaluation incomparable", async () => {
     assert.ok(changed.evaluation.reasonCodes.includes("PROVIDER_CONFIG_CHANGED"));
     assert.equal(changed.check.status, "blocked");
   } finally {
-    await rm(target, { recursive: true, force: true });
+    await rm(target, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -211,7 +211,7 @@ test("custom providers remain independent of Sentrux rules configuration", async
     assert.equal(result.evaluation.status, "PASS");
     assert.equal(result.evaluation.comparison.comparable, true);
   } finally {
-    await rm(target, { recursive: true, force: true });
+    await rm(target, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -250,7 +250,7 @@ test("concurrent quality evaluations allocate unique attempts under the task loc
     assert.equal(converged.status, "CONVERGED");
     assert.equal(converged.evaluation.status, "PASS");
   } finally {
-    await rm(target, { recursive: true, force: true });
+    await rm(target, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
 
@@ -275,6 +275,6 @@ test("bounded attempt limits preserve a blocked gate outcome", async () => {
     assert.equal(limited.status, "BLOCKED");
     assert.equal(limited.evaluation.status, "BLOCKED");
   } finally {
-    await rm(target, { recursive: true, force: true });
+    await rm(target, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });
