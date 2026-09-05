@@ -44,7 +44,7 @@ Final local validation on Node 26.8.1/macOS:
 | Core package smoke and packed MCP stdio smoke | Passed. |
 | Lint | Zero errors; 116 complexity warnings remain visible. |
 | Complexity ratchet and dependency policy | Passed. |
-| Documentation, Markdown, protocol validation, secret scan | Passed. |
+| Documentation, Markdown, protocol and repository-content checks | Passed. |
 | CLI startup | Median 91.2 ms, seven samples, 1,000 ms budget. |
 | Synthetic transaction compaction | 1,000 transactions; 4,096,000 payload bytes reclaimed; all 1,000 manifests retained. Enumeration 41.8 ms; compaction 81.34 seconds during concurrent test load. |
 

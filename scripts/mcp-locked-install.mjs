@@ -1,9 +1,23 @@
-import { copyFileSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { runNpm } from "./npm-command.mjs";
 const source = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../integrations/mcp");
+
+function replaceLocalPackage(target, tarball) {
+  const manifest = JSON.parse(execFileSync("tar", ["-xOf", tarball, "package/package.json"], { encoding: "utf8" }));
+  if (!["@cassiomc1/forgeloop", "@cassiomc1/forgeloop-mcp"].includes(manifest.name)) {
+    throw new Error(`Unexpected local package: ${manifest.name}`);
+  }
+  const destination = path.join(target, "node_modules", manifest.name);
+  // npm ci has already installed the locked dependency graph. Extract only our
+  // locally built packages without asking npm to resolve registry metadata again.
+  rmSync(destination, { recursive: true, force: true });
+  mkdirSync(destination, { recursive: true });
+  execFileSync("tar", ["-xzf", tarball, "--strip-components=1", "-C", destination]);
+}
 
 export function installLockedMcp({ target, tarballs }) {
   const lockBytes = readFileSync(path.join(source, "package-lock.json"));
@@ -20,7 +34,7 @@ export function installLockedMcp({ target, tarballs }) {
     writeFileSync(path.join(target, "package-lock.json"), JSON.stringify(smokeLock, null, 2));
   }
   runNpm(["ci", "--ignore-scripts", "--no-audit", "--no-fund"], { cwd: target, stdio: "pipe" });
-  runNpm(["install", "--offline", "--ignore-scripts", "--no-save", "--package-lock=false", "--no-audit", "--no-fund", ...tarballs], { cwd: target, stdio: "pipe" });
+  for (const tarball of tarballs) replaceLocalPackage(target, tarball);
   const installed = {};
   for (const [relative, record] of Object.entries(lock.packages)) {
     if (!relative || relative === "node_modules/@cassiomc1/forgeloop") continue;

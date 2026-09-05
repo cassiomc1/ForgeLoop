@@ -193,7 +193,9 @@ Canonical ForgeLoop errors (e.g. `E_TASK_SCOPE_CONFLICT`,
 The adapter commits its own lockfile and declares both server and test-client
 SDK versions. `npm run mcp:setup` installs that lock with lifecycle scripts
 disabled, then substitutes the locally packed core offline. Packed smoke uses
-the same dependency graph and substitutes both local tarballs. Both paths
+the same dependency graph and substitutes both local tarballs using the system
+`tar` command. This replacement does not resolve registry metadata or require a
+warm npm cache; `npm ci` still retrieves the locked dependencies. Both paths
 verify resolved dependency versions and print lock/tarball SHA-256 identities.
 The adapter remains a separate package; these dependencies are not added to
 the ForgeLoop core runtime.
