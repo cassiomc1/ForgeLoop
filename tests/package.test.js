@@ -195,6 +195,29 @@ test("CI covers supported versions and platforms without duplicate full-suite pa
   for (const expected of ["ubuntu-latest:20", "ubuntu-latest:22", "ubuntu-latest:24", "macos-latest:20", "macos-latest:24", "windows-latest:20", "windows-latest:24"]) assert.ok(pairs.includes(expected), expected);
 });
 
+test("legacy required validation context rejects failed, skipped, or missing prerequisites", async () => {
+  const workflow = parseYaml(await readFile(".github/workflows/docs-quality.yml", "utf8"));
+  const gate = workflow.jobs["required-validation"];
+  assert.equal(gate.name, "validate (22)");
+  assert.equal(gate.if, "${{ always() }}");
+  assert.deepEqual(gate.needs, ["validate", "cli-portability", "docs-diagram"]);
+  const script = /^node -e '([\s\S]+)'$/u.exec(gate.steps[0].run)?.[1];
+  assert.ok(script);
+  const runGate = results => execFileSync(process.execPath, ["-e", script], {
+    env: { ...process.env, REQUIRED_RESULTS: JSON.stringify(results) }, stdio: "pipe",
+  });
+  const passed = Object.fromEntries(gate.needs.map(name => [name, { result: "success" }]));
+  assert.doesNotThrow(() => runGate(passed));
+  for (const name of gate.needs) {
+    for (const result of ["failure", "cancelled", "skipped"]) {
+      assert.throws(() => runGate({ ...passed, [name]: { result } }));
+    }
+    const missing = { ...passed };
+    delete missing[name];
+    assert.throws(() => runGate(missing));
+  }
+});
+
 test("published package metadata declares the repository license and integration types", async () => {
   const packageJson = JSON.parse(await readFile("package.json", "utf8"));
   const mcpPackageJson = JSON.parse(await readFile("integrations/mcp/package.json", "utf8"));

@@ -158,6 +158,20 @@ jobs:
       - name: Test npm CLI and portability fixtures
         run: npm test
 
+  required-validation:
+    # Retain the branch ruleset's historical context without duplicating suites.
+    name: validate (22)
+    needs: [validate, cli-portability, docs-diagram]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Require every validation job to succeed
+        env:
+          REQUIRED_RESULTS: ${{ toJSON(needs) }}
+        run: >-
+          node -e 'const results = JSON.parse(process.env.REQUIRED_RESULTS); for (const name of ["validate", "cli-portability", "docs-diagram"]) { if (results[name]?.result !== "success") throw new Error(`${name} did not succeed`); }'
+
   docs-diagram:
     name: Verify generated Archify diagram
     runs-on: ubuntu-latest

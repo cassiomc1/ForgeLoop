@@ -49,6 +49,11 @@ with no repeated platform/version pair in that workflow. Node 24 Linux also
 collects coverage. Package-content tests share one pack listing within their
 process. The dedicated Windows main-branch workflow remains separate.
 
+The historical required status `validate (22)` is retained as an aggregate
+gate over validation, the full portability matrix, and diagram checks. It
+fails if any prerequisite fails, is cancelled, or is skipped. This preserves
+the existing branch ruleset without running another duplicate test suite.
+
 `npm run lint`, `npm run complexity:check`, and
 `npm run critical-coverage:check` retain independent purposes: syntax and
 usage correctness, hotspot growth, and coverage of critical modules. Packed
