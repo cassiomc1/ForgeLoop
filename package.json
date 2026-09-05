@@ -1,6 +1,6 @@
 {
   "name": "@cassiomc1/forgeloop",
-  "version": "1.10.0",
+  "version": "1.10.1",
   "description": "Portable, verifiable engineering protocol for AI coding environments and developer workflows",
   "repository": {
     "type": "git",
@@ -59,6 +59,7 @@
     "docs/STRUCTURAL_QUALITY.md",
     "docs/DOCUMENTATION_GUIDE.md",
     "docs/RELEASE_CHECKLIST.md",
+    "docs/PACKAGE_CONTENTS.md",
     "scripts/CI_VALIDATORS.md",
     "docs/MCP.md",
     "docs/UNIVERSAL_INTEGRATION.md",

@@ -38,6 +38,7 @@ integration and guide context. Use this map before editing documentation.
 | Knowledge sources and provenance | [`docs/KNOWLEDGE_SOURCES.md`](./docs/KNOWLEDGE_SOURCES.md) | Snapshot, licensing observations, source roles, accepted/skipped concepts, and reuse boundaries |
 | Documentation guide | [`docs/DOCUMENTATION_GUIDE.md`](./docs/DOCUMENTATION_GUIDE.md) | Rules and checklist for modifying documentation |
 | Current release checklist | [`docs/RELEASE_CHECKLIST.md`](./docs/RELEASE_CHECKLIST.md) | Package, protocol, attestation, integration, and publication gates |
+| Core npm package contents | [`docs/PACKAGE_CONTENTS.md`](./docs/PACKAGE_CONTENTS.md) | Published consumer surface, intentional inclusions, exclusions, and clean-room verification |
 | ForgeLoop 1.6.1 release checklist (historical) | [`docs/RELEASE_CHECKLIST_1_6_1.md`](./docs/RELEASE_CHECKLIST_1_6_1.md) | Verification adapter boundary, isolation invariants, and publication gates |
 | ForgeLoop 1.5/MCP release checklist (historical) | [`docs/RELEASE_CHECKLIST_1_5_MCP.md`](./docs/RELEASE_CHECKLIST_1_5_MCP.md) | Integration API v1, MCP package, and publication gates |
 | ForgeLoop 1.4 release checklist | [`docs/RELEASE_CHECKLIST_1_4.md`](./docs/RELEASE_CHECKLIST_1_4.md) | Claim-recovery, compatibility, package, and publication gates |
@@ -105,6 +106,7 @@ is historical evidence and is not part of the published core package.
 - **Integrate a new AI environment**: [`PROTOCOL_INTEGRATION.md`](./PROTOCOL_INTEGRATION.md)
 - **Map ForgeLoop state into an external runtime/orchestrator**: [`ORCHESTRATOR_INTEGRATION.md`](./ORCHESTRATOR_INTEGRATION.md)
 - **Edit documentation safely**: [`docs/DOCUMENTATION_GUIDE.md`](./docs/DOCUMENTATION_GUIDE.md)
+- **Audit the npm package boundary**: [`docs/PACKAGE_CONTENTS.md`](./docs/PACKAGE_CONTENTS.md)
 - **Verify source-content attestations**: [`docs/CODE_ATTESTATION.md`](./docs/CODE_ATTESTATION.md)
 - **Understand narrow verification and checker binding**: [`docs/REVISION_PROVIDERS.md`](./docs/REVISION_PROVIDERS.md#differential-verification-scope)
 - **Inspect the governed diagrams**: [`docs/diagrams/README.md`](./docs/diagrams/README.md)

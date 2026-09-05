@@ -9,6 +9,26 @@
 - Add lock-safe transaction payload compaction and reproducible MCP dependency verification.
 - Consolidate CI verification and report absent lifecycle receipts as NOT_VERIFIED.
 
+## 1.10.1 - 2026-09-05
+
+### Changed
+
+- Audited the core npm package boundary and documented the intentional
+  consumer contents and repository-only exclusions in
+  `docs/PACKAGE_CONTENTS.md`.
+- Added a source-completeness invariant so every maintained `src/**/*.js`
+  runtime module is shipped, while the four retired compatibility helpers
+  remain explicitly excluded.
+- Added the clean-room package smoke gate to the tag-triggered npm
+  publication workflow before trusted provenance publishing.
+- Refreshed release documentation, package metadata, and generated protocol
+  summary for the 1.10.1 patch release.
+
+### Compatibility
+
+- Protocol v1, schema v1, Integration API v1, and Node.js `>=20` support are
+  unchanged.
+
 ## 1.10.0 - 2026-09-02
 
 ### Added

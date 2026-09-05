@@ -475,6 +475,19 @@
       "packaged": true
     },
     {
+      "path": "docs/PACKAGE_CONTENTS.md",
+      "id": "package-contents",
+      "class": "reference",
+      "audience": [
+        "user",
+        "maintainer"
+      ],
+      "canonicalFor": [
+        "package-contents"
+      ],
+      "packaged": true
+    },
+    {
       "path": "docs/CODE_ATTESTATION.md",
       "id": "code-attestation",
       "class": "normative",
