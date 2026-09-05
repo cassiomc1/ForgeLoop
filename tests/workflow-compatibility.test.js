@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { classifyDecision } from "../src/core/decision-classification.js";
+import { classifyDecision } from "./helpers/decision-classification.js";
 import {
   EXTERNAL_WORKFLOW_REASON_CODES,
   QUESTION_SOURCES,
   classifyWorkflowCompatibility,
-} from "../src/core/workflow-compatibility.js";
+} from "./helpers/workflow-compatibility.js";
 
 test("mandatory approval conflicts with NON_BLOCKING in autonomous mode without asking", () => {
   const result = classifyWorkflowCompatibility({

@@ -6,14 +6,12 @@ import { test } from "node:test";
 
 import {
   resolveForgeLoopProjectRoot,
-  INTEGRATION_LIMITS,
 } from "@cassiomc1/forgeloop/integration";
 import {
   sanitizeClientMessage,
   sanitizeErrorPayload,
 } from "../src/error-sanitization.js";
 import { enforceOutputBound, envelopeToToolResult } from "../src/error-mapping.js";
-import { removeTempTree } from "../../../tests/helpers/rm-safe.js";
 
 test("project-root matrix matches canonical CLI semantics", async () => {
   const base = await mkdtemp(path.join(tmpdir(), "forgeloop-root-matrix-"));

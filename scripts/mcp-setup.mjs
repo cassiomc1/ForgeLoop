@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { installLockedMcp } from "./mcp-locked-install.mjs";
 // Installs local dependencies for the ForgeLoop MCP package using a locally
 // packed ForgeLoop core tarball (the core is not published from this repo
 // without separate authorization). Safe to re-run.
@@ -17,15 +18,7 @@ const tarballPath = path.join(repoRoot, tarballName);
 const temp = mkdtempSync(path.join(mcpDir, ".core-tarball-"));
 try {
   copyFileSync(tarballPath, path.join(temp, tarballName));
-  runNpm([
-    "install",
-    "--no-save",
-    "--no-audit",
-    "--no-fund",
-    path.join(temp, tarballName),
-    "@modelcontextprotocol/server@^2.0.0",
-    "@modelcontextprotocol/client@^2.0.0",
-  ], { cwd: mcpDir, stdio: "inherit" });
+  installLockedMcp({ target: mcpDir, tarballs: [path.join(temp, tarballName)] });
   console.log("ForgeLoop MCP dependencies installed.");
 } finally {
   rmSync(temp, { recursive: true, force: true });

@@ -393,8 +393,8 @@ DESTRUCTIVE_ACTION_REQUIRED
 ```
 
 Multiple reasonable aesthetic or positioning choices do not justify a question.
-The deterministic support helper in `src/core/decision-classification.js`
-validates this boundary; it does not use an LLM or parse natural language.
+The executable test example in `tests/helpers/decision-classification.js`
+illustrates this boundary; runtime authority remains with this protocol and the task contract. The example does not use an LLM or parse natural language.
 
 ### Contract-before-clarification sequence
 
@@ -508,8 +508,8 @@ The compatibility distinction is explicit:
 "Installed" and "compatible" are different claims. A harness can have an
 external workflow installed and still be `INCOMPATIBLE WITH AUTONOMOUS MODE`.
 Use that wording instead of calling the workflow broken. The deterministic
-support helper in `src/core/workflow-compatibility.js` evaluates this boundary;
-it does not modify `src/core/decision-classification.js`, invoke an LLM, or
+test example in `tests/helpers/workflow-compatibility.js` exercises this boundary;
+it does not modify `tests/helpers/decision-classification.js`, invoke an LLM, or
 redesign a runtime, arbiter, supervisor, or approval broker.
 
 For the sixth blind conformance run, exclude mandatory-approval workflows at

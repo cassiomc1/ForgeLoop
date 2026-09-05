@@ -1,3 +1,4 @@
+import { recordExecutedFakeCheck } from "./helpers/executed-fake-check.js";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
@@ -10,8 +11,7 @@ import { ARTIFACT_PATHS } from "../src/core/artifacts.js";
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { appendProtocolEvent } from "../src/core/events.js";
 import { advanceWorkState } from "../src/core/phase.js";
-import { recordCheck as recordCheckArtifact } from "../src/core/completion-artifacts.js";
-import { recordManualCheck } from "./helpers/record-check-compat.js";
+import { recordCheck } from "../src/core/completion-artifacts.js";
 import { runComplete } from "../src/commands/complete.js";
 import { evaluateRoute } from "../src/core/router.js";
 import { persistRoute } from "../src/core/route-artifact.js";
@@ -21,7 +21,6 @@ import { createWorkState, writeWorkState } from "../src/core/work-state.js";
 const root = path.resolve(".");
 const cliPath = path.join(root, "src", "cli.js");
 const packageRoot = getPackageRoot();
-const recordCheck = (input) => recordManualCheck(recordCheckArtifact, input);
 
 function runCli(target, ...args) {
   return spawnSync(process.execPath, [cliPath, ...args, "--path", target], {
@@ -252,7 +251,7 @@ test("standalone completion CLI rejects actor-selected authority sources", async
         trustMode: "HOST_ATTESTED",
         trustedAuthorityFile: authorityFile,
       };
-      await recordCheck({
+      await recordExecutedFakeCheck(recordCheck, {
         target,
         packageRoot,
         id: "install-check",

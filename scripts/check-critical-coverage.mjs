@@ -8,6 +8,15 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 const summaryPath = path.join(repositoryRoot, "coverage", "coverage-summary.json");
 
 export const CRITICAL_COVERAGE_THRESHOLDS = Object.freeze({
+  "src/core/next-action.js": { lines: 90, branches: 80 },
+  "src/core/next-action-phases.js": { lines: 70, branches: 70 },
+  "src/core/verification-execution.js": { lines: 85, branches: 70 },
+  "src/core/transaction.js": { lines: 90, branches: 75 },
+  "src/core/completion.js": { lines: 85, branches: 55 },
+  "src/core/preflight.js": { lines: 90, branches: 75 },
+  "src/core/events.js": { lines: 85, branches: 75 },
+  "src/core/installation-authority.js": { lines: 95, branches: 90 },
+  "src/core/trusted-authority.js": { lines: 85, branches: 70 },
   "src/core/repository.js": { lines: 80, branches: 60 },
   "src/core/policy-discovery.js": { lines: 75, branches: 45 },
   "src/core/policy-adapters.js": { lines: 70, branches: 45 },

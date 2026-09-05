@@ -7,10 +7,8 @@ import { writeFile } from "node:fs/promises";
 import { removeTempTree } from "./helpers/rm-safe.js";
 import { runPreflight } from "../src/commands/preflight.js";
 import { prepareCompletion } from "../src/core/completion-artifacts.js";
-import { recordCheck as recordCheckArtifact } from "../src/core/completion-artifacts.js";
-import { recordManualCheck } from "./helpers/record-check-compat.js";
+import { recordCheck } from "../src/core/completion-artifacts.js";
 
-const recordCheck = (input) => recordManualCheck(recordCheckArtifact, input);
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { appendProtocolEvent, validateEventLedger, readEvents } from "../src/core/events.js";
 import { advanceWorkState } from "../src/core/phase.js";
@@ -77,7 +75,7 @@ async function setupToVerifyingThenFail(target) {
   await advanceWorkState(target, "EXECUTING", { packageRoot });
   await advanceWorkState(target, "VERIFYING", { packageRoot });
   await prepareCompletion({ target, packageRoot });
-  await recordCheck({
+  await recordCheck({ kind: "manual-review",
     target,
     packageRoot,
     id: "check-lint",

@@ -13,7 +13,7 @@ import {
 } from "../src/core/artifacts.js";
 import { contractFingerprint, createContract, readContract, writeContract } from "../src/core/contract.js";
 import { createConfig } from "../src/core/config.js";
-import { createGate } from "../src/core/gates.js";
+import { createGate } from "./helpers/gates.js";
 import { createSourceRegistry } from "../src/core/sources.js";
 import { evaluateRoute } from "../src/core/router.js";
 import { persistRoute } from "../src/core/route-artifact.js";

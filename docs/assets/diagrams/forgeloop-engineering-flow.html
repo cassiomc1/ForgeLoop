@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark" data-preset="signal-flow" data-present="true">
 <head>
-      <meta name="forgeloop-diagram-source-sha256" content="a83128a8639db5db497ac552cfdbc318839e6451c718581fbfcd064e3e869981">
+      <meta name="forgeloop-diagram-source-sha256" content="0bfd5bbf8d6bbeaec23db543deb1e99844321c77b3c7feb21ee0cc877bbba9a9">
     <meta name="forgeloop-diagram-renderer" content="archify@2.15.0 (e1ac748f19cf805e44bf74fb93c796662152e273)">
 <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -40,6 +40,15 @@
   <style>
       /* Keep boundary labels clear of the first node in each group. */
       [data-composition-frame-kind="group"] + text { transform: translateY(-18px); }
+      @media (max-width: 720px) {
+        html:not([data-present="true"]) .toolbar {
+          top: 0;
+          right: 0;
+          width: 100%;
+          flex-wrap: wrap;
+          justify-content: flex-start;
+        }
+      }
 
     /* ==========================================================
        THEME VARIABLES — switch by toggling [data-theme] on <html>
@@ -4865,10 +4874,10 @@
         <div class="pulse-dot"></div>
         <h1>ForgeLoop Evidence-First Engineering Flow</h1>
       </div>
-      <p class="subtitle">Typed intent → scoped work → observed evidence → validator-backed closure</p>
+      <p class="subtitle">Structured intent → project-bound work → observed evidence → valid closure</p>
     </div>
 
-    <script id="archify-guided-views-data" type="application/json">[{"id":"contract-to-work","label":"Contract to work","focus":["request","profile","contract","route","gates","preflight","work"],"note":"Follow how a request becomes scoped, routed, and safe to execute."},{"id":"evidence-to-close","label":"Evidence to close","focus":["work","evidence","review","valid"],"note":"See the evidence and review boundary that makes completion trustworthy."},{"id":"recovery-loop","label":"Recovery loop","focus":["evidence","diagnose","correct","preflight","blocked"],"note":"Failures return to diagnosis and correction before another claim is made."}]</script>
+    <script id="archify-guided-views-data" type="application/json">[{"id":"contract-to-work","label":"Contract to work","focus":["request","profile","contract","route","gates","preflight","work"],"note":"Structured obligations and explicit risks set the profile; exclusions do not create required actions."},{"id":"evidence-to-close","label":"Evidence to close","focus":["work","evidence","review","valid"],"note":"See the evidence and review boundary that makes completion trustworthy."},{"id":"recovery-loop","label":"Recovery loop","focus":["evidence","diagnose","correct","preflight","blocked"],"note":"Before execution, blocked refresh needs a valid ledger and revised route. Later failures use diagnosis and correction."}]</script>
 
     <div class="guided-views no-print" id="guided-views" hidden aria-label="Guided diagram views">
       <button id="guided-view-prev" type="button" aria-label="Previous guided view" title="Previous guided view ([)">&#8592;</button>
@@ -4911,9 +4920,9 @@
 
     <!-- Main Diagram -->
     <div class="diagram-container" data-detail-level="read">
-      <svg viewBox="0 0 720 900" role="img" aria-labelledby="archify-diagram-title archify-diagram-description" data-animation="trace" data-preset="signal-flow" data-quality-profile="showcase">
+      <svg viewBox="0 0 850 900" role="img" aria-labelledby="archify-diagram-title archify-diagram-description" data-animation="trace" data-preset="signal-flow" data-quality-profile="showcase">
         <title id="archify-diagram-title">ForgeLoop Evidence-First Engineering Flow</title>
-        <desc id="archify-diagram-description">Typed intent → scoped work → observed evidence → validator-backed closure</desc>
+        <desc id="archify-diagram-description">Structured intent → project-bound work → observed evidence → valid closure</desc>
         <!-- Definitions -->
         <defs>
           <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
@@ -5065,19 +5074,19 @@
         <text data-detail="fine" x="500" y="265" class="t-security" font-size="7" text-anchor="middle">Preflight</text>
         </g>
 
-        <g id="node-work" data-node-id="work" data-node-label="Execution" tabindex="0" role="button" aria-label="Focus Execution, checkpoint, Resumable Execution › Route + authorize" aria-pressed="false" data-node-kind="backend" data-node-sublabel="checkpoint" data-node-context="Resumable Execution › Route + authorize">
-          <title>Execution · checkpoint · Resumable Execution › Route + authorize</title>
+        <g id="node-work" data-node-id="work" data-node-label="Execution" tabindex="0" role="button" aria-label="Focus Execution, root + task, Resumable Execution › Route + authorize" aria-pressed="false" data-node-kind="backend" data-node-sublabel="root + task" data-node-context="Resumable Execution › Route + authorize">
+          <title>Execution · root + task · Resumable Execution › Route + authorize</title>
           <rect x="469" y="341" width="62" height="52" rx="6" class="c-mask"/>
           <rect x="469" y="341" width="62" height="52" rx="6" class="c-backend" data-animate="node" style="--step:6" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(475 347) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
           <text data-detail-anchor x="500" y="362" class="t-primary" font-size="10" font-weight="600" text-anchor="middle">Execution</text>
-          <text data-detail="context" x="500" y="379" class="t-muted" font-size="8" text-anchor="middle">checkpoint</text>
+          <text data-detail="context" x="500" y="379" class="t-muted" font-size="8" text-anchor="middle">root + task</text>
         </g>
 
-        <g id="node-evidence" data-node-id="evidence" data-node-label="Evidence" tabindex="0" role="button" aria-label="Focus Evidence, scope + checks, Evidence Ledger › Evidence boundary › Route + authorize" aria-pressed="false" data-node-kind="database" data-node-sublabel="scope + checks" data-node-tag="observed" data-node-context="Evidence Ledger › Evidence boundary › Route + authorize">
-          <title>Evidence · scope + checks · Evidence Ledger › Evidence boundary › Route + authorize · observed</title>
+        <g id="node-evidence" data-node-id="evidence" data-node-label="Evidence" tabindex="0" role="button" aria-label="Focus Evidence, run-check, Evidence Ledger › Evidence boundary › Route + authorize" aria-pressed="false" data-node-kind="database" data-node-sublabel="run-check" data-node-tag="observed" data-node-context="Evidence Ledger › Evidence boundary › Route + authorize">
+          <title>Evidence · run-check · Evidence Ledger › Evidence boundary › Route + authorize · observed</title>
           <rect x="465" y="457" width="70" height="68" rx="6" class="c-mask"/>
           <rect x="465" y="457" width="70" height="68" rx="6" class="c-database" data-animate="node" style="--step:7" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(471 463) scale(0.6875)">
@@ -5085,7 +5094,7 @@
             <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
           </g>
           <text data-detail-anchor x="500" y="478" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Evidence</text>
-          <text data-detail="context" x="500" y="495" class="t-muted" font-size="7.3" text-anchor="middle">scope + checks</text>
+          <text data-detail="context" x="500" y="495" class="t-muted" font-size="8" text-anchor="middle">run-check</text>
         <text data-detail="fine" x="500" y="513" class="t-database" font-size="7" text-anchor="middle">observed</text>
         </g>
 
@@ -5383,6 +5392,7 @@
           <li>&bull; Workspace binding is optional but blocks mismatched execution</li>
           <li>&bull; Failures return to diagnosis before another claim</li>
           <li>&bull; Completion is validator-backed, not inferred from a screenshot</li>
+          <li>&bull; Blocked pre-execution refresh requires a valid ledger and revised route</li>
         </ul>
       </div>
 
@@ -5396,6 +5406,7 @@
           <li>&bull; run-check binds exact commands to an execution reference</li>
           <li>&bull; record-check covers manual observations</li>
           <li>&bull; Drift reopens verification instead of being hidden</li>
+          <li>&bull; Matching task IDs never authorize cross-project transaction reuse</li>
         </ul>
       </div>
 

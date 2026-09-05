@@ -17,7 +17,7 @@ import { listActions } from "./actions.js";
 import { readConfig } from "./config.js";
 import { resolveResponsibilityStatus } from "./responsibility.js";
 import { createCodeManifest, readCodeManifest, validateCodeManifestBindings, writeCodeManifest } from "./code-manifest.js";
-import { getActiveTaskTransaction, withTaskTransaction } from "./transaction.js";
+import { getTaskTransaction, withTaskTransaction } from "./transaction.js";
 import { validateStructuralQualityCheckProvenance } from "./structural-quality/service.js";
 
 async function attestationConfiguration(target, packageRoot, errors) {
@@ -856,7 +856,7 @@ async function runCompleteInternal({
 
 export async function runComplete(options = {}) {
   const taskId = options.taskId ?? null;
-  if (options.persist !== false && taskId && !getActiveTaskTransaction()) {
+  if (options.persist !== false && taskId && !(await getTaskTransaction(options.target))) {
     return withTaskTransaction({
       target: options.target,
       taskId,

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { buildToolRegistrations, commandToToolName } from "../src/tool-registry.js";
+import { buildToolRegistrations } from "../src/tool-registry.js";
 import { resolveLaunchPolicy, SERVER_MODES } from "../src/capability-policy.js";
 
 const policy = resolveLaunchPolicy({ mode: SERVER_MODES.SAFE });

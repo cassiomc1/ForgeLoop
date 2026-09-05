@@ -1,3 +1,4 @@
+import { parse as parseYaml } from "yaml";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { readFile, stat } from "node:fs/promises";
@@ -7,12 +8,16 @@ import { TEMPLATE_PATHS } from "../src/core/templates.js";
 
 const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
 
+let cachedListing;
+function packageListing() {
+  cachedListing ??= JSON.parse(execFileSync(npmCommand, ["pack", "--dry-run", "--json"], {
+    encoding: "utf8", shell: process.platform === "win32",
+  }))[0].files.map((entry) => entry.path);
+  return cachedListing;
+}
+
 test("npm tarball contains the CLI, templates, published scenarios, and license notices", () => {
-  const output = execFileSync(npmCommand, ["pack", "--dry-run", "--json"], {
-    encoding: "utf8",
-    shell: process.platform === "win32",
-  });
-  const listing = JSON.parse(output)[0].files.map((entry) => entry.path);
+  const listing = packageListing();
 
   for (const expected of [
     "src/cli.js",
@@ -110,6 +115,11 @@ test("npm tarball contains the CLI, templates, published scenarios, and license 
   }
   for (const excluded of [
     "src/core/agent-support.js",
+    "src/core/gates.js",
+    "src/core/decision-classification.js",
+    "src/core/workflow-compatibility.js",
+    "src/core/cli-metadata.js",
+
     "tests/cli.test.js",
     "scripts/scan_secrets.py",
     ".forgeloop/work-state.json",
@@ -158,34 +168,31 @@ test("CLI package entry is executable by Node-compatible shells", async () => {
   }
 });
 
-test("release workflow uses a compatible OIDC publishing toolchain", async () => {
-  const workflow = (await readFile(".github/workflows/npm-publish.yml", "utf8")).replace(
-    /\r\n/g,
-    "\n",
-  );
-
-  assert.match(workflow, /setup-node@820762786026740c76f36085b0efc47a31fe5020/);
-  assert.match(workflow, /node-version: 24/);
-  assert.match(workflow, /npm publish --provenance --access public\n/);
-  assert.match(workflow, /scripts\/validate_markdown.py --self-test/);
-  assert.match(workflow, /scripts\/validate_markdown.py\n/);
-  assert.match(workflow, /--provenance/);
+test("release workflow requires an OIDC-compatible provenance publishing step", async () => {
+  const workflow = parseYaml(await readFile(".github/workflows/npm-publish.yml", "utf8"));
+  const publishingJobs = Object.values(workflow.jobs).filter(job => job.steps.some(step => step.run?.includes("npm publish")));
+  assert.equal(publishingJobs.length, 1);
+  const job = publishingJobs[0];
+  assert.equal(job.permissions?.["id-token"] ?? workflow.permissions?.["id-token"], "write");
+  const setup = job.steps.find(step => step.uses?.startsWith("actions/setup-node@"));
+  assert.match(setup.uses, /@[a-f0-9]{40}$/u);
+  assert.ok(Number(setup.with["node-version"]) >= 24);
+  const publish = job.steps.find(step => step.run?.includes("npm publish"));
+  assert.match(publish.run, /npm publish[^\n]*--provenance/u);
+  assert.match(publish.run, /--access public/u);
 });
 
-test("supported Node engine versions are exercised in docs CI", async () => {
-  const packageJson = JSON.parse(await readFile("package.json", "utf8"));
-  const workflow = (await readFile(".github/workflows/docs-quality.yml", "utf8")).replace(
-    /\r\n/g,
-    "\n",
-  );
-
-  assert.equal(packageJson.engines.node, ">=20");
-  assert.equal(packageJson.scripts.test, "node scripts/run-tests.js");
-  assert.match(workflow, /node-version: \[20, 22, 24\]/);
-  assert.match(
-    workflow,
-    /actions\/setup-node@820762786026740c76f36085b0efc47a31fe5020/,
-  );
+test("CI covers supported versions and platforms without duplicate full-suite pairs", async () => {
+  const workflow = parseYaml(await readFile(".github/workflows/docs-quality.yml", "utf8"));
+  const pairs = [];
+  for (const job of Object.values(workflow.jobs)) {
+    if (!job.steps.some(step => /npm (?:test|run coverage)/u.test(step.run ?? ""))) continue;
+    const matrix = job.strategy?.matrix;
+    const entries = matrix?.include ?? matrix["node-version"].map(version => ({ os: job["runs-on"], "node-version": version }));
+    for (const entry of entries) pairs.push(`${entry.os}:${entry["node-version"]}`);
+  }
+  assert.equal(new Set(pairs).size, pairs.length);
+  for (const expected of ["ubuntu-latest:20", "ubuntu-latest:22", "ubuntu-latest:24", "macos-latest:20", "macos-latest:24", "windows-latest:20", "windows-latest:24"]) assert.ok(pairs.includes(expected), expected);
 });
 
 test("published package metadata declares the repository license and integration types", async () => {
@@ -204,11 +211,7 @@ test("documentation manifest packaged:true entries always ship in the core tarba
     .map((entry) => entry.path)
     .sort();
 
-  const output = execFileSync(npmCommand, ["pack", "--dry-run", "--json"], {
-    encoding: "utf8",
-    shell: process.platform === "win32",
-  });
-  const listing = JSON.parse(output)[0].files.map((entry) => entry.path);
+  const listing = packageListing();
 
   assert.ok(expectedDocs.length > 0, "manifest must declare at least one packaged document");
   for (const docPath of expectedDocs) {

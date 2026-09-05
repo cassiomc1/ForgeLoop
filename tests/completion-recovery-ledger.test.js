@@ -7,10 +7,8 @@ import { test } from "node:test";
 import { removeTempTree } from "./helpers/rm-safe.js";
 import { runComplete } from "../src/commands/complete.js";
 import { runPreflight } from "../src/commands/preflight.js";
-import { prepareCompletion, recordCheck as recordCheckArtifact } from "../src/core/completion-artifacts.js";
-import { recordManualCheck } from "./helpers/record-check-compat.js";
+import { prepareCompletion, recordCheck } from "../src/core/completion-artifacts.js";
 
-const recordCheck = (input) => recordManualCheck(recordCheckArtifact, input);
 import { ARTIFACT_PATHS, readJsonArtifact } from "../src/core/artifacts.js";
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { appendProtocolEvent, validateCompletionRecoveryAuthorization, validateEventLedger } from "../src/core/events.js";
@@ -85,7 +83,7 @@ test("completion rejection binds to ledger and authorizes REVIEWING -> VERIFYING
     await prepareCompletion({ target, packageRoot });
 
     // 2. Only record 1 of 2 checks ("tests" recorded, "build" missing)
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "unit-tests",
@@ -133,7 +131,7 @@ test("completion rejection binds to ledger and authorizes REVIEWING -> VERIFYING
     assert.equal(state.lastCompletionAttempt, undefined); // Cleared on re-entry
 
     // 6. Record missing check in cycle 2
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "build-check",
@@ -162,7 +160,7 @@ test("forged recovery attempt (fake lastCompletionAttempt without ledger event) 
     await setupTarget(target);
     await advanceWorkState(target, "VERIFYING", { packageRoot });
     await prepareCompletion({ target, packageRoot });
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "unit-tests",
@@ -246,7 +244,7 @@ test("rejection event idempotency prevents duplicate events on repeated failed c
     await prepareCompletion({ target, packageRoot });
 
     // Record partial check
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "unit-tests",

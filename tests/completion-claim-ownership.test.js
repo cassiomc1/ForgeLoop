@@ -6,9 +6,7 @@ import { test } from "node:test";
 
 import { runTaskCreate } from "../src/commands/task-create.js";
 import { runComplete } from "../src/commands/complete.js";
-import { prepareCompletion, recordCheck as recordCheckArtifact } from "../src/core/completion-artifacts.js";
-import { recordManualCheck } from "./helpers/record-check-compat.js";
-const recordCheck = (input) => recordManualCheck(recordCheckArtifact, input);
+import { prepareCompletion, recordCheck } from "../src/core/completion-artifacts.js";
 import { runPreflight } from "../src/commands/preflight.js";
 import { resolveTaskClaimState, collectTaskClaimEvidence } from "../src/core/task-claim-state.js";
 import { validateCompletionOwnershipProof } from "../src/core/completion-ownership.js";
@@ -91,7 +89,7 @@ async function setupTaskToVerifying(target, taskId, { claims = ["tests"] } = {})
 
 async function completeOfficially(target, taskId, claims) {
   for (const [index, requirement] of claims.entries()) {
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       taskId,

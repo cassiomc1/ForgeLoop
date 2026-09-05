@@ -31,6 +31,7 @@ export function getForgeLoopPackageVersion() {
 }
 
 export {
+  FORGELOOP_INTEGRATION_RUNTIME_VERSION,
   executeForgeLoopCommand,
   validateForgeLoopCommandInput,
   defaultCommandInputValues,

@@ -7,10 +7,8 @@ import { createHash } from "node:crypto";
 import { removeTempTree } from "./helpers/rm-safe.js";
 import { runPreflight } from "../src/commands/preflight.js";
 import { prepareCompletion } from "../src/core/completion-artifacts.js";
-import { recordCheck as recordCheckArtifact } from "../src/core/completion-artifacts.js";
-import { recordManualCheck } from "./helpers/record-check-compat.js";
+import { recordCheck } from "../src/core/completion-artifacts.js";
 
-const recordCheck = (input) => recordManualCheck(recordCheckArtifact, input);
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { appendProtocolEvent, readEvents } from "../src/core/events.js";
 import { advanceWorkState } from "../src/core/phase.js";
@@ -374,7 +372,7 @@ async function setupToDiagnosing(target, { successCriteria = ["lint"], scoped = 
   await advanceWorkState(target, "EXECUTING", { packageRoot, ...taskOptions });
   await advanceWorkState(target, "VERIFYING", { packageRoot, ...taskOptions });
   await prepareCompletion({ target, packageRoot, ...taskOptions });
-  await recordCheck({
+  await recordCheck({ kind: "manual-review",
     target,
     packageRoot,
     id: "check-lint",
@@ -433,7 +431,7 @@ test("public lifecycle: no-gain stall agrees across phase, progress, reflect and
 
     // same failure again in cycle 2
     await prepareCompletion({ target, packageRoot });
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "check-lint",
@@ -503,7 +501,7 @@ test("public lifecycle: meaningful new information clears the stall", async () =
     });
     await advanceWorkState(target, "VERIFYING", { packageRoot });
     await prepareCompletion({ target, packageRoot });
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "check-lint",
@@ -551,7 +549,7 @@ async function driveRepeatedFailureCycle(target, cycle, scoped = false) {
   });
   await advanceWorkState(target, "VERIFYING", { packageRoot, ...taskOptions });
   await prepareCompletion({ target, packageRoot, ...taskOptions });
-  await recordCheck({
+  await recordCheck({ kind: "manual-review",
     target,
     packageRoot,
     id: "check-lint",

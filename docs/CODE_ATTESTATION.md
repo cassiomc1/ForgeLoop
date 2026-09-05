@@ -139,3 +139,12 @@ distinguished from invalid attestations by the stable exit-code contract:
 
 See [`REVISION_PROVIDERS.md`](./REVISION_PROVIDERS.md) and
 [`SIGNING_PROVIDERS.md`](./SIGNING_PROVIDERS.md) for extension boundaries.
+
+## Receipt availability in repository CI
+
+The repository audit workflow checks supplied task receipts individually with
+an explicit task ID. A checkout without a receipt reports `NOT_VERIFIED`.
+That is absence of lifecycle evidence, not an attestation trust level; it does
+not mean `PROCESSED`, `VERIFIED`, or `ATTESTED`. CI does not fabricate a receipt
+from successful repository tests. Transaction payload compaction preserves
+the manifests and ledgers needed to inspect the original history.

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { AsyncLocalStorage } from "node:async_hooks";
-import { mkdir, open, readdir, readFile, rename, stat, truncate, unlink } from "node:fs/promises";
+import { mkdir, open, readdir, readFile, realpath, rename, stat, truncate, unlink } from "node:fs/promises";
 import { setTimeout as delay } from "node:timers/promises";
 import path from "node:path";
 
@@ -15,6 +15,18 @@ const transactionContext = new AsyncLocalStorage();
 export function getActiveTaskTransaction() {
   return transactionContext.getStore() ?? null;
 }
+
+export async function getTaskTransaction(target) {
+  const transaction = getActiveTaskTransaction();
+  if (transaction && transaction.target !== await realpath(target)) {
+    const error = new Error("Cannot reuse a task transaction for a different project");
+    error.code = "E_TASK_CONTEXT_MISMATCH";
+    throw error;
+  }
+  return transaction;
+}
+
+const TERMINAL_STATUSES = new Set(["COMMITTED", "ROLLED_BACK", "ABORTED"]);
 
 function transactionPath(transactionId) {
   return `${TRANSACTION_ROOT}/${transactionId}`;
@@ -33,7 +45,7 @@ export async function findIncompleteTransactions(target) {
     if (!entry.isDirectory()) continue;
     try {
       const manifest = JSON.parse(await readFile(path.join(root, entry.name, "manifest.json"), "utf8"));
-      if (manifest.status !== "COMMITTED") found.push(manifest);
+      if (!TERMINAL_STATUSES.has(manifest.status)) found.push(manifest);
     } catch {
       found.push({ transactionId: entry.name, status: "ABANDONED", malformed: true });
     }
@@ -50,6 +62,7 @@ async function rollbackPublishedWrites(target, root, manifest) {
   for (const entry of writes) {
     if (!entry || typeof entry !== "object") continue;
     const relativePath = writePath(entry);
+    await assertSafePath(target, relativePath);
     if (entry.kind === "APPEND") {
       if (!entry.appendStarted) continue;
       const destination = ensureWithin(target, relativePath);
@@ -82,11 +95,15 @@ export async function recoverIncompleteTransactions(target) {
     try {
       const manifest = JSON.parse(await readFile(ensureWithin(target, manifestPath), "utf8"));
       if (manifest.status !== "COMMITTING") continue;
-      await rollbackPublishedWrites(target, root, manifest);
-      manifest.status = "ROLLED_BACK";
-      manifest.recoveredAt = new Date().toISOString();
-      await writeManifest(target, manifestPath, manifest);
-      recovered.push({ transactionId: manifest.transactionId, status: manifest.status });
+      await withTaskLock(target, manifest.lockTaskId ?? manifest.taskId ?? "transaction-recovery", "recover-transaction", async () => {
+        const current = JSON.parse(await readFile(ensureWithin(target, manifestPath), "utf8"));
+        if (current.status !== "COMMITTING") return;
+        await rollbackPublishedWrites(target, root, current);
+        current.status = "ROLLED_BACK";
+        current.recoveredAt = new Date().toISOString();
+        await writeManifest(target, manifestPath, current);
+        recovered.push({ transactionId: current.transactionId, status: current.status });
+      });
     } catch (error) {
       recovered.push({ transactionId: entry.name, status: "RECOVERY_FAILED", error: error.message });
     }
@@ -103,7 +120,8 @@ export async function withTaskTransaction({
   recordCommitEvent = false,
 } = {}, callback) {
   if (!target || !taskId) throw new Error("target and taskId are required for a task transaction");
-  const activeTransaction = getActiveTaskTransaction();
+  target = await realpath(target);
+  const activeTransaction = await getTaskTransaction(target);
   if (activeTransaction) {
     if (activeTransaction.taskId !== taskId) {
       throw new Error(`cannot nest task transaction for ${taskId} inside ${activeTransaction.taskId}`);
@@ -118,9 +136,10 @@ export async function withTaskTransaction({
     const manifestPath = `${root}/manifest.json`;
     await assertSafePath(target, manifestPath);
     await mkdir(ensureWithin(target, stageRoot), { recursive: true });
-    const manifest = { schemaVersion: 1, transactionId, taskId, operation, lockId: lock.lockId, startedAt: new Date().toISOString(), status: "STAGING", writes: [] };
+    const manifest = { schemaVersion: 1, transactionId, taskId, lockTaskId, operation, lockId: lock.lockId, startedAt: new Date().toISOString(), status: "STAGING", writes: [] };
     await writeManifest(target, manifestPath, manifest);
     const tx = {
+      target,
       transactionId,
       taskId,
       lock,
@@ -274,7 +293,9 @@ export async function withTaskTransaction({
           manifest.rollbackError = { message: rollbackError.message };
         }
       } else {
-        manifest.status = "ABANDONED";
+        // Staging has not published any writes; retain the diagnostic record
+        // without requiring recovery of a project that was never modified.
+        manifest.status = "ABORTED";
       }
       manifest.failedAt = new Date().toISOString();
       manifest.error = { message: error.message };

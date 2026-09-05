@@ -8,10 +8,8 @@ import { test } from "node:test";
 import { removeTempTree } from "./helpers/rm-safe.js";
 import { runComplete } from "../src/commands/complete.js";
 import { runPreflight } from "../src/commands/preflight.js";
-import { prepareCompletion, recordCheck as recordCheckArtifact } from "../src/core/completion-artifacts.js";
-import { recordManualCheck } from "./helpers/record-check-compat.js";
+import { prepareCompletion, recordCheck } from "../src/core/completion-artifacts.js";
 
-const recordCheck = (input) => recordManualCheck(recordCheckArtifact, input);
 import { ARTIFACT_PATHS, canonicalFingerprint } from "../src/core/artifacts.js";
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { appendProtocolEvent, validateEventLedger } from "../src/core/events.js";
@@ -119,7 +117,7 @@ async function setupReviewedTarget(target) {
     target,
     packageRoot,
     id: "tests",
-    kind: "command",
+    kind: "manual-review",
     requirement: "tests",
     status: "passed",
     evidenceKind: "OBSERVED",
@@ -187,7 +185,7 @@ test("post-execution paths reject foreign or stale persisted preflight before mu
           target,
           packageRoot,
           id: "tests",
-          kind: "command",
+          kind: "manual-review",
           requirement: "tests",
           status: "passed",
           evidenceKind: "OBSERVED",
@@ -246,7 +244,7 @@ test("post-execution paths reject foreign or stale persisted preflight before mu
           target,
           packageRoot,
           id: "tests",
-          kind: "command",
+          kind: "manual-review",
           requirement: "tests",
           status: "passed",
           evidenceKind: "OBSERVED",
@@ -323,7 +321,7 @@ test("recordCheck stores observed evidence and completion recognizes it", async 
       target,
       packageRoot,
       id: "tests",
-      kind: "command",
+      kind: "manual-review",
       requirement: "tests",
       status: "passed",
       evidenceKind: "OBSERVED",
@@ -376,23 +374,23 @@ test("recordCheck rejects invalid and contradictory evidence before writing", as
     };
 
     await assert.rejects(
-      () => recordCheck({ ...input, status: "unknown", evidenceKind: "OBSERVED" }),
+      () => recordCheck({ ...input, kind: "manual-review", status: "unknown", evidenceKind: "OBSERVED" }),
       (error) => error.code === "E_CHECK_INVALID",
     );
     await assert.rejects(
-      () => recordCheck({ ...input, status: "passed", evidenceKind: "UNKNOWN" }),
+      () => recordCheck({ ...input, kind: "manual-review", status: "passed", evidenceKind: "UNKNOWN" }),
       (error) => error.code === "E_EVIDENCE_KIND_INVALID",
     );
     await assert.rejects(
-      () => recordCheck({ ...input, status: "passed", evidenceKind: "NOT_VERIFIED" }),
+      () => recordCheck({ ...input, kind: "manual-review", status: "passed", evidenceKind: "NOT_VERIFIED" }),
       (error) => error.code === "E_CHECK_STATUS_CONTRADICTION",
     );
     await assert.rejects(
-      () => recordCheck({ ...input, status: "passed", evidenceKind: "OBSERVED", details: "not an object" }),
+      () => recordCheck({ ...input, kind: "manual-review", status: "passed", evidenceKind: "OBSERVED", details: "not an object" }),
       (error) => error.code === "E_CHECK_INVALID",
     );
     await assert.rejects(
-      () => recordCheck({ ...input, status: "passed", evidenceKind: "OBSERVED", command: "echo sk-1234567890" }),
+      () => recordCheck({ ...input, kind: "manual-review", status: "passed", evidenceKind: "OBSERVED", command: "echo sk-1234567890" }),
       /secret/i,
     );
   });
@@ -415,7 +413,7 @@ test("recordCheck rejects a stale receipt binding before writing state, receipt,
         target,
         packageRoot,
         id: "tests",
-        kind: "command",
+        kind: "manual-review",
         requirement: "tests",
         status: "passed",
         evidenceKind: "OBSERVED",
@@ -440,7 +438,7 @@ test("recordCheck requires a prepared receipt and rejects a symlink target", asy
         target,
         packageRoot,
         id: "tests",
-        kind: "command",
+        kind: "manual-review",
         requirement: "tests",
         status: "passed",
         evidenceKind: "OBSERVED",
@@ -476,7 +474,7 @@ test("recordCheck keeps verification evidence before REVIEWING", async () => {
         target,
         packageRoot,
         id: "tests",
-        kind: "command",
+        kind: "manual-review",
         requirement: "tests",
         status: "passed",
         evidenceKind: "OBSERVED",
@@ -494,7 +492,7 @@ test("recordCheck rejects future evidence for a lifecycle-owned criterion", asyn
     await prepareCompletion({ target, packageRoot });
 
     await assert.rejects(
-      () => recordCheck({
+      () => recordCheck({ kind: "manual-review",
         target,
         packageRoot,
         id: "future-complete",
@@ -514,7 +512,7 @@ test("evidence-only completion rejection supports a second legal verification cy
   await withTarget(async (target) => {
     await setupTarget(target);
     await prepareCompletion({ target, packageRoot });
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "tests-incomplete",
@@ -549,7 +547,7 @@ test("evidence-only completion rejection supports a second legal verification cy
     assert.equal(verifying.verificationCycle, 2);
     assert.equal(verifying.lastCompletionAttempt, undefined);
     await prepareCompletion({ target, packageRoot });
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "tests-complete",

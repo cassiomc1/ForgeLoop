@@ -7,7 +7,6 @@ import { test } from "node:test";
 import { COMMANDS, parseArgs } from "../src/cli.js";
 import { ARTIFACT_REGISTRY } from "../src/core/artifact-registry.js";
 import { CLI_COMMAND_DEFINITIONS } from "../src/core/cli-command-definitions.js";
-import { CLI_COMMAND_METADATA } from "../src/core/cli-metadata.js";
 import { ALL_KNOWN_ERROR_CODES, PUBLIC_ERROR_CODES } from "../src/core/error-codes.js";
 import { readSchema } from "../src/core/schema-validation.js";
 import { getPackageRoot } from "../src/core/templates.js";
@@ -154,20 +153,15 @@ test("ARTIFACT_REGISTRY covers all public schemas and matches ARTIFACT_REFERENCE
   }
 });
 
-test("CLI_COMMAND_DEFINITIONS and CLI_COMMAND_METADATA cover every declared command with valid options", () => {
-  assert.deepEqual(Object.keys(CLI_COMMAND_METADATA).sort(), Object.keys(CLI_COMMAND_DEFINITIONS).sort());
+test("CLI_COMMAND_DEFINITIONS covers every declared command with valid options", () => {
   for (const command of COMMANDS) {
     const def = CLI_COMMAND_DEFINITIONS[command];
-    const meta = CLI_COMMAND_METADATA[command];
     assert.ok(def, `Command ${command} must exist in CLI_COMMAND_DEFINITIONS`);
-    assert.ok(meta, `Command ${command} must exist in CLI_COMMAND_METADATA`);
     assert.equal(def.name, command);
-    assert.equal(meta.name, command);
     assert.ok(["lifecycle", "continuity", "verification", "policy-audit", "project-maintenance", "diagnostics", "actions", "task", "workspace", "scope", "attestation"].includes(def.category));
     assert.ok(["READ_ONLY", "MUTATING", "EXTERNAL_EXECUTION"].includes(def.mutation));
-    assert.ok(Array.isArray(meta.options));
-    assert.ok(meta.options.includes("--help"));
-    assert.ok(meta.options.includes("--version"));
+    assert.ok(Object.keys(def.options).includes("--help"));
+    assert.ok(Object.keys(def.options).includes("--version"));
   }
 });
 

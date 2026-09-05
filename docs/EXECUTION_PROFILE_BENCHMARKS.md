@@ -421,3 +421,13 @@ The source policy is intentionally narrow: provider or host observations are
 accepted for benchmark claims, while actor-reported or absent telemetry stays
 non-comparable. This is an efficiency observation boundary, not verification
 evidence and not an external publication result.
+
+## Contract signals and exclusions
+
+Profile selection reads string and structured success/verification
+requirements, including nested requirements and explicit publication or
+production-readiness types. Constraints and stop conditions describe
+boundaries and are excluded from obligation scanning. For example, a
+constraint saying “No publication” does not create a publication requirement.
+An explicit route risk remains authoritative and can still raise the safety
+floor. Profiles classify work; they do not grant execution authority.

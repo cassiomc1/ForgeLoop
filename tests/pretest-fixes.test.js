@@ -1,3 +1,4 @@
+import { parse as parseYaml } from "yaml";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -5,30 +6,15 @@ import { test } from "node:test";
 
 const repositoryRoot = path.resolve(".");
 
-test("ForgeLoop audit checks for a receipt only after checkout", async () => {
-  const workflow = (await readFile(
-    path.join(repositoryRoot, ".github/workflows/forgeloop-audit.yml"),
-    "utf8",
-  )).replaceAll("\r\n", "\n");
-
-  assert.doesNotMatch(workflow, /audit:\n\s+if:/);
-  assert.match(workflow, /audit:\n\s+runs-on: ubuntu-latest\n\s+steps:/);
-  assert.match(
-    workflow,
-    /- name: Check out repository\n\s+uses: actions\/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1/,
-  );
-  assert.match(
-    workflow,
-    /- name: Set up Node\.js\n\s+uses: actions\/setup-node@820762786026740c76f36085b0efc47a31fe5020/,
-  );
-  assert.match(
-    workflow,
-    /- name: Install locked Node toolchain\n\s+run: npm ci --ignore-scripts/,
-  );
-  assert.match(
-    workflow,
-    /- name: Audit ForgeLoop receipt\n\s+if: \$\{\{ hashFiles\('\.forgeloop\/execution-receipt\.json'\) != '' \}\}\n\s+run: node src\/cli\.js audit --strict/,
-  );
+test("ForgeLoop receipt discovery runs after checkout without skipping absent evidence", async () => {
+  const workflow = parseYaml(await readFile(path.join(repositoryRoot, ".github/workflows/forgeloop-audit.yml"), "utf8"));
+  const audit = workflow.jobs.audit;
+  assert.equal(audit.if, undefined);
+  const checkout = audit.steps.findIndex(step => step.uses?.startsWith("actions/checkout@"));
+  const verify = audit.steps.findIndex(step => step.run === "node scripts/audit-receipts.mjs");
+  assert.ok(checkout >= 0 && verify > checkout);
+  assert.equal(audit.steps[verify].if, undefined);
+  assert.ok(audit.steps.slice(checkout + 1, verify).some(step => step.run === "npm ci --ignore-scripts"));
 });
 
 test("Lychee excludes only documented unavailable references", async () => {

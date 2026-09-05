@@ -1299,3 +1299,15 @@ current-cycle validation.
 | `E_WORKSPACE_IDENTITY_UNAVAILABLE` | A ForgeLoop boundary, artifact, provider, or attestation validation condition was not satisfied. | Inspect the structured command result, correct the named boundary or artifact, then retry the canonical command. |
 
 <!-- END FORGELOOP GENERATED: public-error-codes -->
+
+## Revised contract after a blocked preflight
+
+Before execution starts, a revised contract and route can leave the old
+checkpoint stale. Run `forgeloop next --task <id> --json`. When the validated
+history ends in a blocked preflight and the new route binds the revised
+contract, it offers `clear-state` followed by `preflight`. Execute those in
+that order, satisfy any remaining gates, and require `READY` again.
+
+This recovery guidance is unavailable after execution has started, for an
+invalid ledger, or when the new route does not match the contract. Preserve
+those barriers and follow the task's canonical recovery guidance.

@@ -46,3 +46,21 @@ quarterly and must not be removed automatically.
 PRs must explain the task contract, verification evidence, migration impact,
 and compatibility impact. Never commit secrets, external credentials, or
 unverified publication claims.
+
+## Focused verification and maintenance
+
+`npm test -- tests/transaction.test.js` runs a selected file. Directories select
+all nested test files; helpers and fixtures are excluded. Name filters such as
+`npm test -- --test-name-pattern='transaction' tests/transaction.test.js` are
+forwarded to Node. Unsupported options and unmatched selectors fail explicitly.
+
+Run `npm run complexity:check` with lint. Reductions are welcome; increases to
+the committed hotspot budget require an explicit explanation and review.
+TypeScript and YAML are development-only dependencies for packed-consumer and
+semantic workflow verification; the core runtime has no npm dependencies.
+
+Transaction payload maintenance is opt-in:
+`npm run transactions:compact -- --path /path/to/project --retain-days 7`
+previews the operation; add `--apply` to compact eligible payloads. Manifests,
+ledgers, recent transactions, and ambiguous outcomes remain intact. See the
+[Astra implementation record](docs/ASTRA_IMPLEMENTATION.md) for boundaries.

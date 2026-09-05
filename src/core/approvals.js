@@ -1,7 +1,7 @@
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import { getActiveTaskTransaction, withTaskTransaction } from "./transaction.js";
+import { getTaskTransaction, withTaskTransaction } from "./transaction.js";
 import { appendProtocolEvent } from "./events.js";
 import { canonicalFingerprint } from "./artifacts.js";
 import {
@@ -49,7 +49,7 @@ async function writeApprovalFile(target, taskId, approval) {
   const relPath = taskApprovalPath(taskId, approval.approvalId);
   await assertSafePath(target, relPath);
   const serialized = `${JSON.stringify(approval, null, 2)}\n`;
-  const activeTransaction = getActiveTaskTransaction();
+  const activeTransaction = (await getTaskTransaction(target));
   if (activeTransaction) {
     await activeTransaction.stageText(relPath, serialized);
   } else {

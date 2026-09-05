@@ -85,7 +85,11 @@
     "scripts/check-changelog-freshness.mjs",
     "scripts/write-forgeloop-attestation-summary.mjs",
     "completions",
-    "integrations/generic-ci"
+    "integrations/generic-ci",
+    "!src/core/gates.js",
+    "!src/core/decision-classification.js",
+    "!src/core/workflow-compatibility.js",
+    "!src/core/cli-metadata.js"
   ],
   "scripts": {
     "test": "node scripts/run-tests.js",
@@ -123,11 +127,15 @@
     "benchmark:profiles:check": "node scripts/validate-execution-profile-benchmarks.mjs",
     "benchmark:profiles:outliers": "node scripts/report-execution-profile-outliers.mjs",
     "benchmark:profiles:tail-analysis": "node scripts/report-tail-interpretation.mjs",
-    "benchmark:profiles:regression": "node scripts/check-efficiency-regression.mjs"
+    "benchmark:profiles:regression": "node scripts/check-efficiency-regression.mjs",
+    "transactions:compact": "node scripts/compact-transactions.mjs",
+    "complexity:check": "node scripts/check-complexity.mjs"
   },
   "devDependencies": {
     "c8": "^12.0.0",
-    "eslint": "^9.39.5"
+    "eslint": "^9.39.5",
+    "typescript": "7.0.2",
+    "yaml": "2.9.0"
   },
   "exports": {
     ".": "./src/cli.js",

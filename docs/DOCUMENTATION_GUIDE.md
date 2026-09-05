@@ -24,7 +24,7 @@ ForgeLoop strictly separates normative protocol definitions from operational doc
 When updating documentation, always derive content from its authoritative source:
 
 ```text
-CLI syntax truth        -> CLI registry / parser (src/cli.js, src/core/cli-command-definitions.js, src/core/cli-metadata.js)
+CLI syntax truth        -> CLI registry / parser (src/cli.js, src/core/cli-command-definitions.js)
 Artifact shape truth    -> JSON schemas (schemas/*.schema.json, src/core/artifact-registry.js)
 Lifecycle truth         -> protocol / state machine (src/core/protocol.js)
 Reason-code truth       -> exported protocol constants (src/core/error-codes.js, src/core/protocol.js)
@@ -119,7 +119,7 @@ conformance checks detect omissions.
 
 | Documentation Area | Canonical Machine Source | Conformance Validator |
 | --- | --- | --- |
-| **CLI commands & flags** | `CLI_COMMAND_METADATA` (`src/core/cli-metadata.js`) & `src/cli.js` | `scripts/validate_documentation_conformance.mjs` |
+| **CLI commands & flags** | `CLI_COMMAND_DEFINITIONS` (`src/core/cli-command-definitions.js`) & `src/cli.js` | `scripts/validate_documentation_conformance.mjs` |
 | **Artifact paths** | `ARTIFACT_REGISTRY` & `task-paths.js` | `scripts/validate_documentation_conformance.mjs` |
 | **Artifact fields & types** | `schemas/*.schema.json` | `scripts/validate_documentation_conformance.mjs` |
 | **Enums & consts** | `schemas/*.schema.json` | `scripts/validate_documentation_conformance.mjs` |

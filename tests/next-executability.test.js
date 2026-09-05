@@ -7,10 +7,8 @@ import { test } from "node:test";
 import { removeTempTree } from "./helpers/rm-safe.js";
 import { runComplete } from "../src/commands/complete.js";
 import { runPreflight } from "../src/commands/preflight.js";
-import { prepareCompletion, recordCheck as recordCheckArtifact } from "../src/core/completion-artifacts.js";
-import { recordManualCheck } from "./helpers/record-check-compat.js";
+import { prepareCompletion, recordCheck } from "../src/core/completion-artifacts.js";
 
-const recordCheck = (input) => recordManualCheck(recordCheckArtifact, input);
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { appendProtocolEvent } from "../src/core/events.js";
 import { recordDiagnosis } from "../src/core/diagnosis.js";
@@ -109,7 +107,7 @@ test("every lifecycle action recommended by next is executable and makes progres
     assert.ok(next.commands.length > 0);
 
     // Record check
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "unit-tests",
@@ -194,7 +192,7 @@ test("product correction loop commands recommended by next are executable (P2-8 
     await prepareCompletion({ target, packageRoot });
 
     // 1. Record failed check
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "unit-tests-c1",
@@ -245,7 +243,7 @@ test("product correction loop commands recommended by next are executable (P2-8 
     await advanceWorkState(target, "VERIFYING", { packageRoot });
 
     // 9. In VERIFYING (cycle 2): record passing check
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "unit-tests-c2",
@@ -318,7 +316,7 @@ test("evidence recovery loop commands recommended by next are executable (P2-8 C
     await prepareCompletion({ target, packageRoot });
 
     // Only record 1 of 2 checks
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "unit-tests",
@@ -344,7 +342,7 @@ test("evidence recovery loop commands recommended by next are executable (P2-8 C
     await advanceWorkState(target, "VERIFYING", { packageRoot });
 
     // Record missing check
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "build-check",

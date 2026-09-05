@@ -1,4 +1,3 @@
-import { INTEGRATION_LIMITS } from "@cassiomc1/forgeloop/integration";
 
 const SECRET_PATTERNS = [
   // Bearer / Authorization headers

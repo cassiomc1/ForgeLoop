@@ -5,7 +5,7 @@ import { assertSecretFree } from "./receipt.js";
 import { assertJsonBytes, assertJsonLimits } from "./json-safety.js";
 import { assertSchema, readSchema } from "./schema-validation.js";
 import { getPackageRoot } from "./templates.js";
-import { getActiveTaskTransaction, withTaskTransaction } from "./transaction.js";
+import { getTaskTransaction, withTaskTransaction } from "./transaction.js";
 
 export const ARTIFACT_PATHS = Object.freeze({
   contract: ".forgeloop/current-contract.json",
@@ -76,7 +76,7 @@ export async function readJsonArtifact(
   }
 
   const artifactPath = ensureWithin(target, relativePath);
-  const transaction = getActiveTaskTransaction();
+  const transaction = (await getTaskTransaction(target));
   const stagedText = transaction ? await transaction.readText(relativePath) : null;
   if (stagedText === null && !(await fileExists(artifactPath))) {
     throw new ArtifactError(
@@ -124,7 +124,7 @@ export async function writeJsonArtifact(
   } catch (error) {
     throw artifactError("ARTIFACT_PATH_INVALID", relativePath, error);
   }
-  const activeTransaction = getActiveTaskTransaction();
+  const activeTransaction = (await getTaskTransaction(target));
   if (!activeTransaction && taskId && !dryRun) {
     return withTaskTransaction({ target, taskId, operation, packageRoot }, async () => (
       writeJsonArtifact(target, relativePath, value, schemaName, packageRoot, { dryRun, taskId, operation })

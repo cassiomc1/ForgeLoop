@@ -3,6 +3,7 @@
 // both tarballs into a temp project, and drives the installed MCP server over
 // stdio with the official MCP client. Verifies publication boundaries.
 import { execFileSync } from "node:child_process";
+import { installLockedMcp } from "./mcp-locked-install.mjs";
 import { runNpm } from "./npm-command.mjs";
 import { copyFileSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
@@ -21,23 +22,9 @@ const mcpTarball = pack(mcpDir);
 const temp = mkdtempSync(path.join(repoRoot, ".mcp-smoke-"));
 
 try {
-  writeFileSync(path.join(temp, "package.json"), JSON.stringify({
-    name: "forgeloop-mcp-smoke",
-    version: "0.0.0",
-    private: true,
-    type: "module",
-  }, null, 2));
   copyFileSync(coreTarball, path.join(temp, path.basename(coreTarball)));
   copyFileSync(mcpTarball, path.join(temp, path.basename(mcpTarball)));
-
-  runNpm([
-    "install",
-    "--no-audit",
-    "--no-fund",
-    path.join(temp, path.basename(coreTarball)),
-    path.join(temp, path.basename(mcpTarball)),
-    "@modelcontextprotocol/client@^2.0.0",
-  ], { cwd: temp, stdio: "pipe" });
+  installLockedMcp({ target: temp, tarballs: [path.join(temp, path.basename(coreTarball)), path.join(temp, path.basename(mcpTarball))] });
 
   const smoke = `
 import { Client } from "@modelcontextprotocol/client";

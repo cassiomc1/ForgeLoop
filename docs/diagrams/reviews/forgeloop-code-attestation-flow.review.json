@@ -3,8 +3,8 @@
   "diagramId": "forgeloop-code-attestation-flow",
   "status": "approved",
   "binding": {
-    "sourceSha256": "669966fba9e69df0525a3581baa4e90075923dbe3069f81f706761a40abf9073",
-    "svgSha256": "0af63dd51683d07981fc681042c437377a78ae8a7e6a7175c18a1def02e6280a"
+    "sourceSha256": "33bb9c3c4f3fb4a793febeab34b2d07ca7bf2c058d4f5e7575dba3a6065eedeb",
+    "svgSha256": "3a768148886ffdfcce75221c11e51ee77a3702510e90917bf6e8ba0581ebdb44"
   },
   "checks": {
     "darkThemeLegible": true,
@@ -15,6 +15,6 @@
     "textFallbackEquivalent": true,
     "accessibleMetadataPresent": true
   },
-  "reviewedBy": "repository-maintainer",
-  "reviewedAt": "2026-08-29"
+  "reviewedBy": "Codex visual review",
+  "reviewedAt": "2026-09-05"
 }

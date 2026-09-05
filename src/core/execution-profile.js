@@ -66,24 +66,37 @@ function contractCollections(contract) {
 
 function contractSignals(contract) {
   const collections = contractCollections(contract);
+  const obligations = [];
+  const types = new Set();
+  function collect(requirement) {
+    if (typeof requirement === "string") obligations.push(requirement);
+    else if (requirement && typeof requirement === "object") {
+      if (typeof requirement.text === "string") obligations.push(requirement.text);
+      types.add(requirement.type);
+      if (Array.isArray(requirement.requirements)) requirement.requirements.forEach(collect);
+    }
+  }
+  collections.successCriteria.forEach(collect);
+  if (Array.isArray(contract?.verification)) contract.verification.forEach(collect);
   const riskText = collections.risks.join(" ").toLowerCase();
+  // Constraints and stop conditions describe boundaries, not obligations.
+  // Declared route risks remain authoritative even when a constraint excludes
+  // an operation; do not try to interpret prose negation as authorization.
   const allText = [
     ...collections.deliverables,
-    ...collections.successCriteria,
-    ...collections.constraints,
-    ...collections.stopConditions,
+    ...obligations,
   ].join(" ").toLowerCase();
   const combinedText = `${riskText} ${allText}`;
   const signals = {
     secrets: /\bsecrets?\b|\bcredentials?\b|\bpasswords?\b|\bprivate keys?\b/.test(combinedText),
     personalData: /\bpersonal[- ]data\b|\bpii\b|\bsensitive data\b/.test(combinedText),
-    publication: /\bpublication\b|\bpublish(?:ing|ed)?\b|\bdeploy(?:ment|ed)?\b/.test(combinedText),
+    publication: types.has("PUBLICATION") || /\bpublication\b|\bpublish(?:ing|ed)?\b|\bdeploy(?:ment|ed)?\b/.test(combinedText),
     destructive: /\bdestructive\b|\birreversible\b|\bdrop database\b|\bdelete production\b/.test(combinedText),
     migration: /\bmigration\b|\bmigrate\b|\bschema change\b|\birreversible persistence\b/.test(combinedText),
     payment: /\bpayments?\b|\bcheckout\b|\bbilling\b/.test(combinedText),
     externalMutation: /\bexternal mutation\b|\bmutate(?:s|d)? external\b|\bpublish(?:ing|ed)?\b/.test(combinedText),
     authoritySensitiveExternalMutation: /\bauthority[- ]sensitive\b|\bhost[- ]authorized external\b|\bexternal mutation requiring authority\b/.test(combinedText),
-    broadProductionValidation: /\bbroad production validation\b|\bproduction validation\b|\bvalidate in production\b/.test(combinedText),
+    broadProductionValidation: types.has("PRODUCTION_READINESS") || /\bbroad production validation\b|\bproduction validation\b|\bvalidate in production\b/.test(combinedText),
   };
   return signals;
 }

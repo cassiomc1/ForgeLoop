@@ -180,10 +180,8 @@ test("the 33rd in-flight request is shed with 503 E_MCP_HTTP_BUSY", async () => 
 
   // Deterministic hold: each accepted request parks on this gate until we
   // release it. No sleeps — shedding is observed purely by occupancy.
-  let held = 0;
   const releaseQueue = [];
   const requestGate = () => new Promise((resolve) => {
-    held += 1;
     releaseQueue.push(resolve);
   });
 
@@ -195,11 +193,6 @@ test("the 33rd in-flight request is shed with 503 E_MCP_HTTP_BUSY", async () => 
   });
   try {
     const base = `http://127.0.0.1:${listener.port}`;
-    const envelope = {
-      [PROTOCOL_VERSION_META_KEY]: MODERN_PROTOCOL_VERSION,
-      [CLIENT_INFO_META_KEY]: { name: "busy-client", version: "0.0.1" },
-      [CLIENT_CAPABILITIES_META_KEY]: {},
-    };
     const heldPromises = [];
     for (let i = 0; i < HTTP_TRANSPORT_BOUNDS.maxInFlightRequests; i += 1) {
       heldPromises.push(fetch(base + "/mcp", {
