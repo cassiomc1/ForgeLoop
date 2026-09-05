@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { access, readdir, readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { test } from "node:test";
 
@@ -20,24 +20,10 @@ test("preflight facade keeps its public exports", () => {
   assert.equal(typeof preflight.runPreflight, "function");
 });
 
-test("next-action responsibilities have explicit internal module boundaries", async () => {
-  for (const file of [
-    "src/core/next-action-model.js",
-    "src/core/next-action-artifacts.js",
-    "src/core/next-action-phases.js",
-    "src/core/next-action-continuity.js",
-  ]) {
-    await access(path.join(repositoryRoot, file));
-  }
-});
-
-test("preflight responsibilities have explicit internal module boundaries", async () => {
-  for (const file of [
-    "src/core/preflight-model.js",
-    "src/core/preflight-loaders.js",
-    "src/core/preflight-consistency.js",
-  ]) {
-    await access(path.join(repositoryRoot, file));
+test("runtime modules do not import development-only helpers or the CLI entrypoint", async () => {
+  for (const file of await listJavaScriptFiles(path.join(repositoryRoot, "src", "core"))) {
+    const source = await readFile(file, "utf8");
+    assert.doesNotMatch(source, /(?:from\s*|import\s*\()["'][^"']*(?:tests\/helpers|scripts\/|\/cli\.js)["']/u, file);
   }
 });
 

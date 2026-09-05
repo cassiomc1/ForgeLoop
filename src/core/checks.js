@@ -134,36 +134,3 @@ export function assertCheckList(value, label = "checks", options = {}) {
   });
   return value;
 }
-
-function requiredChecksSatisfiedBy(checks, requiredValues, selector, { allowInferred = false } = {}) {
-  assertCheckList(checks);
-  if (!Array.isArray(requiredValues)) throw checkError("E_CHECK_INVALID", "required values must be an array");
-  const errors = [];
-  for (const value of requiredValues) {
-    const candidates = checks.filter((check) => selector(check) === value);
-    const check = candidates.find((candidate) => candidate.status === "passed"
-      && (allowInferred || candidate.evidenceKind === "OBSERVED"))
-      ?? candidates.find((candidate) => candidate.status === "passed")
-      ?? candidates[0];
-    if (!check) {
-      errors.push(checkError("E_EVIDENCE_REQUIRED", `Required check is missing: ${value}`, [value]));
-      continue;
-    }
-    if (check.status !== "passed") {
-      errors.push(checkError("E_EVIDENCE_REQUIRED", `Required check is not passed: ${value}`, [value]));
-      continue;
-    }
-    if (!allowInferred && check.evidenceKind !== "OBSERVED") {
-      errors.push(checkError("E_EVIDENCE_KIND_INVALID", `Required check must be observed: ${value}`, [value]));
-    }
-  }
-  return errors;
-}
-
-export function requiredChecksSatisfied(checks, requiredIds, options = {}) {
-  return requiredChecksSatisfiedBy(checks, requiredIds, (check) => check.id, options);
-}
-
-export function requiredChecksSatisfiedForRequirements(checks, requiredRequirements, options = {}) {
-  return requiredChecksSatisfiedBy(checks, requiredRequirements, (check) => check.requirement, options);
-}

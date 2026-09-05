@@ -6,7 +6,7 @@ import test from "node:test";
 
 import { runPreflight } from "../src/commands/preflight.js";
 import { proposeAction, transitionAction, transitionAuthorizedAction } from "../src/core/actions.js";
-import { prepareCompletion, recordCheck as recordCheckArtifact } from "../src/core/completion-artifacts.js";
+import { prepareCompletion, recordCheck } from "../src/core/completion-artifacts.js";
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { appendProtocolEvent } from "../src/core/events.js";
 import { advanceWorkState } from "../src/core/phase.js";
@@ -17,9 +17,7 @@ import { buildTaskReflection } from "../src/core/reflection.js";
 import { createTaskDescriptor, writeTaskDescriptor } from "../src/core/task-descriptor.js";
 import { getPackageRoot } from "../src/core/templates.js";
 import { createWorkState, writeWorkState } from "../src/core/work-state.js";
-import { recordManualCheck } from "./helpers/record-check-compat.js";
 
-const recordCheck = (input) => recordManualCheck(recordCheckArtifact, input);
 const packageRoot = getPackageRoot();
 const TASK_ID = "task-reflection-ambiguity";
 
@@ -69,7 +67,7 @@ async function setupToDiagnosing(target) {
   await advanceWorkState(target, "EXECUTING", { packageRoot, taskId: TASK_ID });
   await advanceWorkState(target, "VERIFYING", { packageRoot, taskId: TASK_ID });
   await prepareCompletion({ target, packageRoot, taskId: TASK_ID });
-  await recordCheck({
+  await recordCheck({ kind: "manual-review",
     target,
     packageRoot,
     taskId: TASK_ID,
@@ -126,7 +124,7 @@ test("COMMIT_UNKNOWN adds reconciliation guidance without downgrading STALLED", 
     });
     await advanceWorkState(target, "VERIFYING", { packageRoot, taskId: TASK_ID });
     await prepareCompletion({ target, packageRoot, taskId: TASK_ID });
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       taskId: TASK_ID,

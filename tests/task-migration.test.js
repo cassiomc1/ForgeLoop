@@ -14,7 +14,7 @@ import { getPackageRoot } from "../src/core/templates.js";
 import { createWorkState, writeWorkState } from "../src/core/work-state.js";
 import { createContract, writeContract } from "../src/core/contract.js";
 import { readTaskDescriptor } from "../src/core/task-descriptor.js";
-import { createGate } from "../src/core/gates.js";
+import { createGate } from "./helpers/gates.js";
 import { writeJsonArtifact } from "../src/core/artifacts.js";
 import {
   E_TASK_MIGRATION_IDENTITY_MISMATCH,

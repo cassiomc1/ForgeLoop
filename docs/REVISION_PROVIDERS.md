@@ -134,3 +134,12 @@ provider semantics fail closed.
 An implementation should be tested for deterministic identity, exact bytes,
 binary and empty files, Unicode and space-containing paths, symlinks,
 Gitlinks, deletions, renames, path traversal, and stable error mapping.
+
+### Focused test selection and evidence
+
+A test-runner filter chooses what a command executes. It does not establish a
+canonical differential verification scope. Use `run-check` to bind executed
+commands to evidence, and supply a fresh canonical scope reference when the
+checker requires one. A manual observation must declare `manual-review`;
+command metadata alone does not prove that a process ran. Packed TypeScript
+consumer checks and critical lifecycle coverage complement these boundaries.

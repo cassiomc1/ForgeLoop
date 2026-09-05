@@ -147,8 +147,10 @@ test("withTaskTransaction leaves an inspectable recovery record when the callbac
       throw new Error("injected failure");
     }), /injected failure/);
     const incomplete = await findIncompleteTransactions(target);
-    assert.equal(incomplete.length, 1);
-    assert.equal(incomplete[0].status, "ABANDONED");
+    assert.deepEqual(incomplete, []);
+    const ids = await readdir(path.join(target, ".forgeloop/.txn"));
+    const manifest = JSON.parse(await readFile(path.join(target, ".forgeloop/.txn", ids[0], "manifest.json"), "utf8"));
+    assert.equal(manifest.status, "ABORTED");
   } finally {
     await rm(target, { recursive: true, force: true });
   }

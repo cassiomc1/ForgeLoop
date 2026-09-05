@@ -561,3 +561,26 @@ canonical trace/reflection evidence. They preserve unknown usage values and
 only compare efficiency when a project-local reference scenario exists. The
 existing diagnostic and reflection model remains the authority for information
 gain, intervention effectiveness, failure signatures, and oscillation.
+
+## Transaction identity and diagnostic retention
+
+The transaction context binds the physical project root and task ID. Nested
+operations reject cross-project reuse, even when task IDs match. Filesystem
+aliases of the same physical project remain compatible. Reads and writes of
+transaction-aware artifacts enforce the same project boundary.
+
+Committed transactions, successful rollbacks, and failures aborted before
+publication are terminal. `doctor --fix` recovers eligible committing
+transactions under their task locks, then recomputes incomplete findings.
+This does not imply that an ambiguous external action was reconciled.
+
+Repository maintenance can preview or compact old terminal stage/backup
+payloads with `npm run transactions:compact`. Manifests and event ledgers
+remain intact; recent, ambiguous, invalid, locked, and unsafe records are
+preserved. See [maintenance usage](CONTRIBUTING.md#focused-verification-and-maintenance).
+
+Lifecycle selection keeps common identity, freshness, gates, and chronology
+checks ahead of phase-specific resolvers. Planning, verification, review,
+recovery, and pending-action modules organize decisions without changing that
+precedence. Executable protocol examples under `tests/helpers` are test
+fixtures, not runtime policy authorities.

@@ -8,10 +8,8 @@ import { removeTempTree } from "./helpers/rm-safe.js";
 import { runComplete } from "../src/commands/complete.js";
 import { runPreflight } from "../src/commands/preflight.js";
 import { runRecordTerminalResult } from "../src/commands/record-terminal-result.js";
-import { prepareCompletion, recordCheck as recordCheckArtifact } from "../src/core/completion-artifacts.js";
-import { recordManualCheck } from "./helpers/record-check-compat.js";
+import { prepareCompletion, recordCheck } from "../src/core/completion-artifacts.js";
 
-const recordCheck = (input) => recordManualCheck(recordCheckArtifact, input);
 import { ARTIFACT_PATHS, readJsonArtifact } from "../src/core/artifacts.js";
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { appendProtocolEvent, validateEventLedger } from "../src/core/events.js";
@@ -109,7 +107,7 @@ test("recording PUBLICATION terminal result satisfies explicit publication requi
 
     await advanceWorkState(target, "VERIFYING", { packageRoot });
     await prepareCompletion({ target, packageRoot });
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "tests-check",
@@ -184,7 +182,7 @@ test("recording PRODUCTION_READINESS terminal result satisfies explicit producti
 
     await advanceWorkState(target, "VERIFYING", { packageRoot });
     await prepareCompletion({ target, packageRoot });
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "tests-check",
@@ -340,7 +338,7 @@ test("T-P0-04 & T-P0-05: requirement-specific evidence binding and multi-termina
     });
     await advanceWorkState(target, "VERIFYING", { packageRoot });
     await prepareCompletion({ target, packageRoot });
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "tests-check",
@@ -397,7 +395,7 @@ test("T-P0-06: global publication status without matching requirement evidence i
     });
     await advanceWorkState(target, "VERIFYING", { packageRoot });
     await prepareCompletion({ target, packageRoot });
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "tests-check",
@@ -522,7 +520,7 @@ test("duplicate requirement text with distinct IDs requires independent evidence
     });
     await advanceWorkState(target, "VERIFYING", { packageRoot });
     await prepareCompletion({ target, packageRoot });
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "tests-check",
@@ -586,7 +584,7 @@ test("duplicate production readiness text with distinct IDs requires independent
     });
     await advanceWorkState(target, "VERIFYING", { packageRoot });
     await prepareCompletion({ target, packageRoot });
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "tests-check",

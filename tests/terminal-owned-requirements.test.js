@@ -7,10 +7,8 @@ import { test } from "node:test";
 import { removeTempTree } from "./helpers/rm-safe.js";
 import { runComplete } from "../src/commands/complete.js";
 import { runPreflight } from "../src/commands/preflight.js";
-import { prepareCompletion, recordCheck as recordCheckArtifact } from "../src/core/completion-artifacts.js";
-import { recordManualCheck } from "./helpers/record-check-compat.js";
+import { prepareCompletion, recordCheck } from "../src/core/completion-artifacts.js";
 
-const recordCheck = (input) => recordManualCheck(recordCheckArtifact, input);
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { appendProtocolEvent } from "../src/core/events.js";
 import { advanceWorkState } from "../src/core/phase.js";
@@ -87,7 +85,7 @@ test("cannot claim premature passed OBSERVED check for LIFECYCLE requirement (Ma
 
     // Attempting to record passed + OBSERVED for lifecycle requirement must throw E_FUTURE_LIFECYCLE_EVIDENCE
     await assert.rejects(
-      () => recordCheck({
+      () => recordCheck({ kind: "manual-review",
         target,
         packageRoot,
         id: "lifecycle-check",
@@ -114,7 +112,7 @@ test("cannot claim premature passed OBSERVED check for PUBLICATION requirement (
 
     // Attempting to record passed + OBSERVED for publication requirement must throw E_FUTURE_LIFECYCLE_EVIDENCE
     await assert.rejects(
-      () => recordCheck({
+      () => recordCheck({ kind: "manual-review",
         target,
         packageRoot,
         id: "pub-check",
@@ -141,7 +139,7 @@ test("cannot claim premature passed OBSERVED check for PRODUCTION_READINESS requ
 
     // Attempting to record passed + OBSERVED for production readiness requirement must throw E_FUTURE_LIFECYCLE_EVIDENCE
     await assert.rejects(
-      () => recordCheck({
+      () => recordCheck({ kind: "manual-review",
         target,
         packageRoot,
         id: "deploy-check",
@@ -213,7 +211,7 @@ test("standard vs strict closure requirements (Matrix P & Q)", async () => {
     await setupTarget(target);
     await advanceWorkState(target, "VERIFYING", { packageRoot });
     await prepareCompletion({ target, packageRoot });
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "tests-pass",
@@ -239,7 +237,7 @@ test("local task without publication requirement completes with local-only and n
     });
     await advanceWorkState(target, "VERIFYING", { packageRoot });
     await prepareCompletion({ target, packageRoot });
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "tests-pass",
@@ -267,7 +265,7 @@ test("publication explicitly required but local-only rejects completion (P1-6 Te
     });
     await advanceWorkState(target, "VERIFYING", { packageRoot });
     await prepareCompletion({ target, packageRoot });
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "tests-pass",
@@ -293,7 +291,7 @@ test("production readiness explicitly required but not-verified rejects completi
     });
     await advanceWorkState(target, "VERIFYING", { packageRoot });
     await prepareCompletion({ target, packageRoot });
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "tests-pass",

@@ -61,3 +61,20 @@ three workflow diagrams because the pinned wrapper currently maps only
 an explicit renderer mapping before it can be added as an active diagram.
 Additional safety-boundary, resume, or provider visuals remain intentionally
 deferred until their mappings are proven.
+
+## Current behavioral boundaries
+
+The engineering explorer describes structured obligations, project/task-bound
+transactions, and bounded refresh of blocked pre-execution checkpoints. Its
+later correction loop still returns through verification.
+
+The verification explorer distinguishes test filtering from a canonical
+verification scope and executed command evidence from explicit manual review.
+The attestation explorer distinguishes absent CI receipts (`NOT_VERIFIED`)
+from attestation trust levels and notes that payload compaction preserves
+transaction manifests and event history.
+
+These explanations are part of the JSON sources and generated explorers;
+matching textual fallbacks live in the README, revision-provider guide, and
+attestation guide. Re-render before renewing a visual review, then inspect
+the new output at desktop and narrow widths before binding the review hashes.

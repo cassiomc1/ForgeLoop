@@ -1,0 +1,271 @@
+{
+  "src/cli.js": [
+    34
+  ],
+  "src/commands/baseline.js": [
+    31
+  ],
+  "src/commands/doctor.js": [
+    63
+  ],
+  "src/commands/init.js": [
+    40
+  ],
+  "src/commands/quality-verify.js": [
+    32
+  ],
+  "src/commands/status.js": [
+    26
+  ],
+  "src/commands/update.js": [
+    48,
+    35
+  ],
+  "src/commands/validate-protocol.js": [
+    50
+  ],
+  "src/core/action-ledger-projection.js": [
+    61
+  ],
+  "src/core/action-model.js": [
+    27
+  ],
+  "src/core/advisory-context/provider.js": [
+    45
+  ],
+  "src/core/attestation-coverage.js": [
+    44
+  ],
+  "src/core/attestation-verifier.js": [
+    43
+  ],
+  "src/core/attestation.js": [
+    45
+  ],
+  "src/core/audit.js": [
+    65
+  ],
+  "src/core/bundles.js": [
+    55,
+    43,
+    40
+  ],
+  "src/core/checks.js": [
+    31
+  ],
+  "src/core/code-manifest.js": [
+    37,
+    28
+  ],
+  "src/core/command-input.js": [
+    99
+  ],
+  "src/core/command-resolution.js": [
+    42
+  ],
+  "src/core/completion-artifacts.js": [
+    78,
+    58,
+    57,
+    39
+  ],
+  "src/core/completion-recovery-rebind.js": [
+    26
+  ],
+  "src/core/completion-relationships.js": [
+    65
+  ],
+  "src/core/completion.js": [
+    161,
+    73,
+    72
+  ],
+  "src/core/config.js": [
+    41
+  ],
+  "src/core/conformance.js": [
+    84
+  ],
+  "src/core/continuity-lint.js": [
+    29
+  ],
+  "src/core/continuity.js": [
+    34
+  ],
+  "src/core/delegation.js": [
+    32
+  ],
+  "src/core/diagnosis-model.js": [
+    26
+  ],
+  "src/core/diagnosis.js": [
+    28
+  ],
+  "src/core/diagnostic-model.js": [
+    38
+  ],
+  "src/core/diagnostic-record.js": [
+    45,
+    26
+  ],
+  "src/core/efficiency.js": [
+    26
+  ],
+  "src/core/events.js": [
+    59,
+    59,
+    27
+  ],
+  "src/core/evidence-readiness.js": [
+    40,
+    27
+  ],
+  "src/core/execution-prerequisites.js": [
+    27
+  ],
+  "src/core/execution-profile-benchmarks.js": [
+    35
+  ],
+  "src/core/execution-profile.js": [
+    54
+  ],
+  "src/core/failure-surface.js": [
+    31
+  ],
+  "src/core/handoff-acceptance.js": [
+    26
+  ],
+  "src/core/information-gain-projection.js": [
+    40
+  ],
+  "src/core/inspect.js": [
+    55
+  ],
+  "src/core/installation-authority.js": [
+    26
+  ],
+  "src/core/integration-resources.js": [
+    56
+  ],
+  "src/core/next-action-phases.js": [
+    51
+  ],
+  "src/core/next-action-review-phase.js": [
+    28
+  ],
+  "src/core/next-action-verification-phase.js": [
+    27
+  ],
+  "src/core/npm-classifier.js": [
+    41
+  ],
+  "src/core/phase.js": [
+    93
+  ],
+  "src/core/policy-diff.js": [
+    55
+  ],
+  "src/core/policy-discovery.js": [
+    49
+  ],
+  "src/core/policy-engine.js": [
+    45
+  ],
+  "src/core/policy-mutation.js": [
+    29
+  ],
+  "src/core/preflight-consistency.js": [
+    33,
+    32
+  ],
+  "src/core/preflight-model.js": [
+    33
+  ],
+  "src/core/preflight.js": [
+    69,
+    29
+  ],
+  "src/core/progress.js": [
+    66
+  ],
+  "src/core/receipt.js": [
+    33
+  ],
+  "src/core/reconcile-closure.js": [
+    39
+  ],
+  "src/core/recovery-history.js": [
+    31
+  ],
+  "src/core/reflection.js": [
+    43
+  ],
+  "src/core/revision/git.js": [
+    30
+  ],
+  "src/core/router.js": [
+    47
+  ],
+  "src/core/runtime-context.js": [
+    39
+  ],
+  "src/core/schema-validation.js": [
+    41
+  ],
+  "src/core/signing/sigstore.js": [
+    33
+  ],
+  "src/core/structural-quality/artifacts.js": [
+    61
+  ],
+  "src/core/structural-quality/policy.js": [
+    57,
+    39
+  ],
+  "src/core/structural-quality/provider.js": [
+    31
+  ],
+  "src/core/structural-quality/sentrux-mcp.js": [
+    41
+  ],
+  "src/core/structural-quality/service.js": [
+    53,
+    44,
+    37,
+    27
+  ],
+  "src/core/task-conflict-inspection.js": [
+    46,
+    37
+  ],
+  "src/core/task-context.js": [
+    32
+  ],
+  "src/core/task-migration.js": [
+    51
+  ],
+  "src/core/task-recovery.js": [
+    32
+  ],
+  "src/core/trace.js": [
+    61,
+    47,
+    41
+  ],
+  "src/core/trajectory-evaluation.js": [
+    36
+  ],
+  "src/core/trajectory-metrics.js": [
+    35
+  ],
+  "src/core/trusted-authority.js": [
+    35
+  ],
+  "src/core/verification-scope.js": [
+    33
+  ],
+  "src/core/work-state.js": [
+    66,
+    26
+  ]
+}

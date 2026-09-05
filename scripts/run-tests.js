@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { spawnSync } from "node:child_process";
-import { readdir } from "node:fs/promises";
+import { discoverTests, selectTests } from "./test-selection.mjs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -10,13 +10,10 @@ const repositoryRoot = path.resolve(
   "..",
 );
 const testDirectory = path.join(repositoryRoot, "tests");
-const entries = await readdir(testDirectory, { withFileTypes: true });
-const testFiles = entries
-  .filter((entry) => entry.isFile() && entry.name.endsWith(".test.js"))
-  .map((entry) => path.join(testDirectory, entry.name))
-  .sort();
+const testFiles = await discoverTests(testDirectory);
+const argv = selectTests(testFiles, process.argv.slice(2), repositoryRoot);
 
-const result = spawnSync(process.execPath, ["--test", ...testFiles], {
+const result = spawnSync(process.execPath, argv, {
   cwd: repositoryRoot,
   stdio: "inherit",
 });

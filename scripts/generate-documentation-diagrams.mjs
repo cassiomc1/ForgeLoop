@@ -106,6 +106,15 @@ function withGeneratorMeta(html, sourceSha256) {
   const metadata = `    <meta name="forgeloop-diagram-source-sha256" content="${sourceSha256}">\n    <meta name="forgeloop-diagram-renderer" content="archify@${ARCHIFY_VERSION} (${ARCHIFY_COMMIT})">\n`;
   const layoutOverrides = `\n      /* Keep boundary labels clear of the first node in each group. */
       [data-composition-frame-kind="group"] + text { transform: translateY(-18px); }
+      @media (max-width: 720px) {
+        html:not([data-present="true"]) .toolbar {
+          top: 0;
+          right: 0;
+          width: 100%;
+          flex-wrap: wrap;
+          justify-content: flex-start;
+        }
+      }
 `;
   const presentationHtml = html.replace(/<html\b([^>]*)>/i, (openingTag, attributes) => {
     if (/\bdata-present\s*=/.test(attributes)) return openingTag;

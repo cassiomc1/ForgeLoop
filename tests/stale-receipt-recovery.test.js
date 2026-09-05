@@ -1,3 +1,4 @@
+import { recordExecutedFakeCheck } from "./helpers/executed-fake-check.js";
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import os from "node:os";
@@ -5,10 +6,8 @@ import path from "node:path";
 import { test } from "node:test";
 
 import { removeTempTree } from "./helpers/rm-safe.js";
-import { prepareCompletion, recordCheck as recordCheckArtifact } from "../src/core/completion-artifacts.js";
-import { recordManualCheck } from "./helpers/record-check-compat.js";
+import { prepareCompletion, recordCheck } from "../src/core/completion-artifacts.js";
 
-const recordCheck = (input) => recordManualCheck(recordCheckArtifact, input);
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { appendProtocolEvent } from "../src/core/events.js";
 import { advanceWorkState } from "../src/core/phase.js";
@@ -100,7 +99,7 @@ test("stale receipt recovery: prepare-completion is recoverable and next returns
         target,
         packageRoot,
         id: `check-${req}`,
-        kind: "command",
+        kind: "manual-review",
         requirement: req,
         status: "passed",
         evidenceKind: "OBSERVED",
@@ -178,7 +177,7 @@ test("installation authority enforcement: recordCheck, evaluateCompletion, and e
     // Attempting to record an unauthorized install-capable command must throw E_INSTALLATION_AUTHORITY_REQUIRED
     await assert.rejects(
       async () => {
-        await recordCheck({
+        await recordExecutedFakeCheck(recordCheck, {
           target,
           packageRoot,
           id: "modlens-check",
@@ -195,7 +194,7 @@ test("installation authority enforcement: recordCheck, evaluateCompletion, and e
     // Self-asserted boolean alone without canonical authority grant must be REJECTED
     await assert.rejects(
       async () => {
-        await recordCheck({
+        await recordExecutedFakeCheck(recordCheck, {
           target,
           packageRoot,
           id: "modlens-check-self-assert",
@@ -215,7 +214,7 @@ test("installation authority enforcement: recordCheck, evaluateCompletion, and e
     // Missing authority reference without a host context must request authority.
     await assert.rejects(
       async () => {
-        await recordCheck({
+        await recordExecutedFakeCheck(recordCheck, {
           target,
           packageRoot,
           id: "modlens-check-missing-auth",
@@ -251,7 +250,7 @@ test("installation authority enforcement: recordCheck, evaluateCompletion, and e
     );
     await assert.rejects(
       async () => {
-        await recordCheck({
+        await recordExecutedFakeCheck(recordCheck, {
           target,
           packageRoot,
           id: "modlens-check-local-fake",
@@ -293,7 +292,7 @@ test("installation authority enforcement: recordCheck, evaluateCompletion, and e
     // Attempting to record with wrong tool scope must throw E_AUTHORITY_SCOPE_MISMATCH
     await assert.rejects(
       async () => {
-        await recordCheck({
+        await recordExecutedFakeCheck(recordCheck, {
           target,
           packageRoot,
           id: "modlens-check-wrong-scope",
@@ -330,7 +329,7 @@ test("installation authority enforcement: recordCheck, evaluateCompletion, and e
     );
 
     // If recorded with canonical authority reference, it succeeds
-    const authorizedRecord = await recordCheck({
+    const authorizedRecord = await recordExecutedFakeCheck(recordCheck, {
       target,
       packageRoot,
       id: "modlens-check-auth",
@@ -348,7 +347,7 @@ test("installation authority enforcement: recordCheck, evaluateCompletion, and e
     assert.equal(authorizedRecord.check.status, "passed");
 
     // Non-installing resolution succeeds without special authorization
-    const nonInstallingRecord = await recordCheck({
+    const nonInstallingRecord = await recordExecutedFakeCheck(recordCheck, {
       target,
       packageRoot,
       id: "modlens-check-no-install",

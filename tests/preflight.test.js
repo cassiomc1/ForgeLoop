@@ -8,7 +8,7 @@ import { test } from "node:test";
 import { ARTIFACT_PATHS } from "../src/core/artifacts.js";
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { appendProtocolEvent, validateEventLedger } from "../src/core/events.js";
-import { createGate } from "../src/core/gates.js";
+import { createGate } from "./helpers/gates.js";
 import { persistGate } from "../src/core/gate-artifact.js";
 import { formatPreflightResult, runPreflight } from "../src/commands/preflight.js";
 import { evaluateRoute } from "../src/core/router.js";

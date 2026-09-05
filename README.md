@@ -462,6 +462,19 @@ validator-backed completion. Drift reopens verification, and migration keeps
 modified or unmanaged files for review. The terminal result is one of
 `VALID`, `INCOMPLETE`, `STALE`, `INCONSISTENT`, or `INVALID`.
 
+Before execution, profile selection reads structured obligations and explicit
+risks; exclusion constraints are not required actions. After a blocked
+preflight and contract revision, `next` may guide a checkpoint refresh through
+`clear-state` and a fresh preflight. This path requires a valid pre-execution
+ledger and routing bound to the revised contract. Execution transactions bind
+the physical project and task; a matching task ID in another project cannot
+reuse them. See [recovery guidance](./docs/TROUBLESHOOTING.md#revised-contract-after-a-blocked-preflight).
+
+CI audits each supplied task receipt explicitly. With no receipt it reports
+`NOT_VERIFIED`; green repository tests alone do not establish lifecycle
+completion or attestation. For contributor checks and safe payload retention,
+see [CONTRIBUTING.md](./CONTRIBUTING.md#focused-verification-and-maintenance).
+
 ## Protocol compatibility
 
 The npm package version is independent of protocol version. The current

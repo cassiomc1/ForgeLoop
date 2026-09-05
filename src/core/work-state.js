@@ -19,7 +19,7 @@ import { assertJsonBytes } from "./json-safety.js";
 import { assertCoverageList } from "./coverage.js";
 import { canonicalFingerprint } from "./artifacts.js";
 import { taskArtifactPath } from "./task-paths.js";
-import { getActiveTaskTransaction, withTaskTransaction } from "./transaction.js";
+import { getTaskTransaction, withTaskTransaction } from "./transaction.js";
 
 export const WORK_STATE_PATH = ".forgeloop/work-state.json";
 
@@ -245,7 +245,7 @@ export async function readWorkState(target, options = {}) {
   const statePath = ensureWithin(target, relPath);
   let state;
   try {
-    const transaction = getActiveTaskTransaction();
+    const transaction = (await getTaskTransaction(target));
     const staged = transaction ? await transaction.readText(relPath) : null;
     if (staged === null) {
       if (!(await fileExists(statePath))) return null;
@@ -290,7 +290,7 @@ export async function writeWorkState(target, state, options = {}) {
   await validateStoredState(state, packageRoot);
   await assertSafePath(target, relPath);
   const serialized = `${JSON.stringify(state, null, 2)}\n`;
-  const transaction = getActiveTaskTransaction();
+  const transaction = (await getTaskTransaction(target));
   if (!dryRun && transaction) {
     await transaction.stageText(relPath, serialized);
   } else {
@@ -306,7 +306,7 @@ export async function mutateWorkState(target, { expectedRevision, packageRoot = 
     error.code = "E_STATE_REVISION_CONFLICT";
     throw error;
   }
-  if (!getActiveTaskTransaction()) {
+  if (!(await getTaskTransaction(target))) {
     return withTaskTransaction({
       target,
       taskId: taskId ?? "legacy-work-state",
@@ -331,7 +331,7 @@ export async function mutateWorkState(target, { expectedRevision, packageRoot = 
 }
 
 export async function initializeWorkState(target, state, { packageRoot = getPackageRoot(), taskId, statePath } = {}) {
-  if (getActiveTaskTransaction()) {
+  if ((await getTaskTransaction(target))) {
     const current = await readWorkState(target, { packageRoot, taskId, statePath });
     if (current) return current;
     await writeWorkState(target, state, { packageRoot, taskId, statePath });

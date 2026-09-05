@@ -11,7 +11,7 @@ import { PROTOCOL_VERSION } from "./protocol.js";
 import { isRecoverableCompletionEvidenceCode } from "./completion-recovery.js";
 
 import { taskArtifactPath } from "./task-paths.js";
-import { getActiveTaskTransaction, withTaskTransaction } from "./transaction.js";
+import { getTaskTransaction, withTaskTransaction } from "./transaction.js";
 
 import { assertDiagnosisDetails } from "./diagnosis-model.js";
 import {
@@ -311,7 +311,7 @@ export function buildProtocolEvent(input, { checkpoint } = {}) {
 }
 
 export async function previewProtocolEvent(target, input, packageRoot, options = {}) {
-  const activeTransaction = getActiveTaskTransaction();
+  const activeTransaction = (await getTaskTransaction(target));
   if (!activeTransaction) {
     return withTaskTransaction({
       target,
@@ -337,7 +337,7 @@ export async function readEvents(target, packageRoot, options = {}) {
   const relPath = options?.eventsPath ?? options?.relativePath ?? (options?.taskId ? taskArtifactPath(options.taskId, "events") : ARTIFACT_PATHS.events);
   await assertSafePath(target, relPath);
   const eventsPath = ensureWithin(target, relPath);
-  const transaction = getActiveTaskTransaction();
+  const transaction = (await getTaskTransaction(target));
   if (transaction) {
     const stagedText = await transaction.readText(relPath);
     if (stagedText !== null) return parseEventsText(stagedText, relPath, packageRoot);
@@ -355,7 +355,7 @@ export async function readEventTail(target, packageRoot, options = {}) {
   const relPath = options?.eventsPath ?? options?.relativePath ?? (options?.taskId ? taskArtifactPath(options.taskId, "events") : ARTIFACT_PATHS.events);
   await assertSafePath(target, relPath);
   const eventsPath = ensureWithin(target, relPath);
-  const transaction = getActiveTaskTransaction();
+  const transaction = (await getTaskTransaction(target));
   if (transaction) {
     const stagedText = await transaction.readText(relPath);
     if (stagedText !== null) {
@@ -411,7 +411,7 @@ async function parseEventsText(text, relPath, packageRoot) {
 }
 
 export async function appendProtocolEvent(target, input, packageRoot, options = {}) {
-  const activeTransaction = getActiveTaskTransaction();
+  const activeTransaction = (await getTaskTransaction(target));
   if (typeof input?.taskId !== "string" || !input.taskId) throw protocolError("E_EVENT_INVALID", "event taskId is required");
   if (typeof input?.event !== "string" || !input.event) throw protocolError("E_EVENT_INVALID", "event type is required");
   const relPath = options?.eventsPath ?? options?.relativePath ?? (options?.taskId ? taskArtifactPath(options.taskId, "events") : ARTIFACT_PATHS.events);

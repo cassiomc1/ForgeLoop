@@ -5,7 +5,7 @@ import {
   E_TASK_RECOVERY_AUTHORITY_INVALID,
 } from "./error-codes.js";
 import { taskArtifactPath } from "./task-paths.js";
-import { getActiveTaskTransaction } from "./transaction.js";
+import { getTaskTransaction } from "./transaction.js";
 import { classifyRecoveryHistory } from "./recovery-history.js";
 
 export const TASK_RECOVERY_SCHEMA_VERSION = 1;
@@ -86,7 +86,7 @@ export function writeTaskRecovery(target, recovery, packageRoot) {
 }
 
 export async function clearTaskRecovery(target, { taskId } = {}) {
-  const transaction = getActiveTaskTransaction();
+  const transaction = (await getTaskTransaction(target));
   if (!transaction) {
     throw new Error("clearTaskRecovery requires an active task transaction");
   }

@@ -13,16 +13,14 @@ import { formatNextActionResult } from "../src/commands/next.js";
 import { runPreflight } from "../src/commands/preflight.js";
 import { ARTIFACT_PATHS } from "../src/core/artifacts.js";
 import { createCheck } from "../src/core/checks.js";
-import { prepareCompletion, recordCheck as recordCheckArtifact } from "../src/core/completion-artifacts.js";
-import { recordManualCheck } from "./helpers/record-check-compat.js";
+import { prepareCompletion, recordCheck } from "../src/core/completion-artifacts.js";
 
-const recordCheck = (input) => recordManualCheck(recordCheckArtifact, input);
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { coverageForRequirements } from "../src/core/coverage.js";
 import { createEvidence } from "../src/core/evidence.js";
 import { appendProtocolEvent, validateEventLedger } from "../src/core/events.js";
 import { diagnosisFingerprint } from "../src/core/diagnosis-model.js";
-import { createGate } from "../src/core/gates.js";
+import { createGate } from "./helpers/gates.js";
 import { persistGate } from "../src/core/gate-artifact.js";
 import { advanceWorkState } from "../src/core/phase.js";
 import { evaluateRoute } from "../src/core/router.js";
@@ -232,7 +230,7 @@ async function setupCompletedTarget(target) {
     target,
     packageRoot,
     id: "tests",
-    kind: "command",
+    kind: "manual-review",
     requirement: "tests",
     status: "passed",
     evidenceKind: "OBSERVED",
@@ -514,7 +512,7 @@ test("verification decisions require observed evidence and surface failed checks
         target,
         packageRoot,
         id: "tests",
-        kind: "command",
+        kind: "manual-review",
         requirement: "tests",
         status: "passed",
         evidenceKind: "OBSERVED",
@@ -535,7 +533,7 @@ test("verification decisions require observed evidence and surface failed checks
         target,
         packageRoot,
         id: "tests",
-        kind: "command",
+        kind: "manual-review",
         requirement: "tests",
         status: "passed",
         evidenceKind: "OBSERVED",
@@ -560,7 +558,7 @@ test("verification decisions require observed evidence and surface failed checks
         target,
         packageRoot,
         id: "tests",
-        kind: "command",
+        kind: "manual-review",
         requirement: "tests",
         status: "failed",
         evidenceKind: "OBSERVED",
@@ -607,7 +605,7 @@ test("normal next-driven success path prepares the receipt before record-check",
       target,
       packageRoot,
       id: "tests",
-      kind: "command",
+      kind: "manual-review",
       requirement: "tests",
       status: "passed",
       evidenceKind: "OBSERVED",
@@ -655,7 +653,7 @@ test("review decisions require coverage before receipt or completion", async (t)
       target,
       packageRoot,
       id: "tests",
-      kind: "command",
+      kind: "manual-review",
       requirement: "tests",
       status: "passed",
       evidenceKind: "OBSERVED",
@@ -706,7 +704,7 @@ test("completion identity rejects foreign receipt or state without mutation", as
       target,
       packageRoot,
       id: "tests",
-      kind: "command",
+      kind: "manual-review",
       requirement: "tests",
       status: "passed",
       evidenceKind: "OBSERVED",

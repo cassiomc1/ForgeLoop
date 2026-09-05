@@ -12,7 +12,7 @@ import { Client } from "@modelcontextprotocol/client";
 import { InMemoryTransport } from "@modelcontextprotocol/server";
 
 import { createForgeLoopMcpServer, mcpServerVersion } from "../src/server.js";
-import { resolveLaunchPolicy, SERVER_MODES } from "../src/capability-policy.js";
+import { SERVER_MODES } from "../src/capability-policy.js";
 import { removeTempTree } from "../../../tests/helpers/rm-safe.js";
 
 async function connectServer({ mode = SERVER_MODES.SAFE, projectPath = "." } = {}) {

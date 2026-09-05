@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Bind transactions to physical projects and close rolled-back or aborted transactions correctly.
+- Normalize structured profile obligations and guide safe pre-execution checkpoint refresh.
+- Align public TypeScript exports and add packed-consumer checks.
+- Split lifecycle phase decisions, improve test selection and evidence fixtures, and enforce complexity and critical-coverage budgets.
+- Add lock-safe transaction payload compaction and reproducible MCP dependency verification.
+- Consolidate CI verification and report absent lifecycle receipts as NOT_VERIFIED.
+
 ## 1.10.0 - 2026-09-02
 
 ### Added

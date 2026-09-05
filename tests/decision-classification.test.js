@@ -5,17 +5,9 @@ import {
   BLOCKING_REASON_CODES,
   canAskUser,
   classifyDecision,
-} from "../src/core/decision-classification.js";
+} from "./helpers/decision-classification.js";
 
-const nonBlockingDecisions = [
-  ["unspecified fictional brand name", { local: true, reversible: true }],
-  ["unspecified practice-area emphasis", { local: true, reversible: true }],
-  ["unspecified visual tone within a premium requirement", { local: true, reversible: true }],
-  ["unspecified fictional office location", { local: true, reversible: true }],
-  ["unspecified demo contact values", { local: true, reversible: true }],
-  ["unspecified fictional attorney names", { local: true, reversible: true }],
-  ["unspecified representative services", { local: true, reversible: true }],
-];
+const nonBlockingDecisions = [["safe local default", { local: true, reversible: true }]];
 
 for (const [description, flags] of nonBlockingDecisions) {
   test(`${description} is classified before asking`, () => {
@@ -32,11 +24,8 @@ for (const [description, flags] of nonBlockingDecisions) {
 
 const blockingDecisions = [
   ["the firm's real legal name", { realBusinessFact: true }, "REAL_BUSINESS_FACT_REQUIRED"],
-  ["the real phone number", { realBusinessFact: true }, "REAL_BUSINESS_FACT_REQUIRED"],
   ["the real production domain", { external: true }, "EXTERNAL_AUTHORITY_REQUIRED"],
   ["an authoritative production domain", { authoritative: true }, "EXTERNAL_AUTHORITY_REQUIRED"],
-  ["a production CRM connection", { external: true }, "EXTERNAL_AUTHORITY_REQUIRED"],
-  ["real attorney credentials", { realBusinessFact: true }, "REAL_BUSINESS_FACT_REQUIRED"],
   ["regulated compliance claims", { regulatedClaim: true }, "REGULATED_CLAIM_REQUIRED"],
   ["payment information", { sensitive: true }, "SENSITIVE_VALUE_REQUIRED"],
   ["a destructive operation", { destructive: true }, "DESTRUCTIVE_ACTION_REQUIRED"],
@@ -85,4 +74,13 @@ test("blocking reason codes are stable and finite", () => {
     "REGULATED_CLAIM_REQUIRED",
     "DESTRUCTIVE_ACTION_REQUIRED",
   ]);
+});
+
+test("decision rules preserve precedence and reject malformed question authorization", () => {
+  assert.equal(classifyDecision({ external: true, realBusinessFact: true }).reasonCode, "REAL_BUSINESS_FACT_REQUIRED");
+  assert.equal(classifyDecision({ local: false }).reasonCode, "REAL_BUSINESS_FACT_REQUIRED");
+  assert.equal(classifyDecision({ irreversible: true }).reasonCode, "IRREVERSIBLE_DECISION_REQUIRED");
+  for (const value of [null, [], "external", 0]) {
+    assert.equal(canAskUser(classifyDecision(value)), false);
+  }
 });

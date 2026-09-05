@@ -186,8 +186,6 @@ async function setupAmbiguousActionMcp(target, taskId) {
 }
 
 test("trusted MCP provider settles reconciliation; args and flag alone cannot", async () => {
-  const { mkdtemp, rm } = await import("node:os" && "node:fs/promises");
-  void mkdtemp;
   const os = await import("node:os");
   const fs = await import("node:fs/promises");
 

@@ -3,7 +3,7 @@
  * always preserved; the adapter only adds transport metadata. Stack traces,
  * environment values, and raw child-process stderr are never exposed.
  */
-import { sanitizeErrorPayload, sanitizeClientMessage } from "./error-sanitization.js";
+import { sanitizeErrorPayload } from "./error-sanitization.js";
 import { assertMcpOutputWithinBound } from "./output-policy.js";
 
 /**

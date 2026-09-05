@@ -134,10 +134,9 @@ test("task-resume succeeds after the conflicting owner reaches canonical COMPLET
     await setupRecoverableTask(target, { taskId: "completed-owner", writeClaims: ["tests"] });
     const ownerState = await readWorkState(target, { packageRoot, taskId: "completed-owner" });
     await writeWorkState(target, createWorkState({ ...ownerState, repositoryFingerprint: ownerRepo }), { packageRoot, taskId: "completed-owner" });
-    const { prepareCompletion, recordCheck: recordCheckArtifact } = await import("../src/core/completion-artifacts.js");
-    const { recordManualCheck } = await import("./helpers/record-check-compat.js");
+    const { prepareCompletion, recordCheck } = await import("../src/core/completion-artifacts.js");
     await prepareCompletion({ target, packageRoot, taskId: "completed-owner" });
-    await recordManualCheck(recordCheckArtifact, {
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       taskId: "completed-owner",
@@ -148,7 +147,7 @@ test("task-resume succeeds after the conflicting owner reaches canonical COMPLET
       command: "npm test",
       result: "Passed",
     });
-    await recordManualCheck(recordCheckArtifact, {
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       taskId: "completed-owner",

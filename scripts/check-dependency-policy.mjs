@@ -7,6 +7,8 @@ import { fileURLToPath } from "node:url";
 export const APPROVED_DEV_DEPENDENCIES = Object.freeze([
   "c8",
   "eslint",
+  "typescript",
+  "yaml",
 ]);
 
 const RUNTIME_DEPENDENCY_GROUPS = Object.freeze([

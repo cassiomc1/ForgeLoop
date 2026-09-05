@@ -1,8 +1,17 @@
-<svg data-archify-version="2.15.0" data-forgeloop-source-sha256="6fe11b0530cc6640f7b0f07d0f2d7e5a1f961745491f39016b340bc354af0e79" data-theme="dark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 900" role="img" aria-labelledby="archify-diagram-title archify-diagram-description" data-animation="trace" data-preset="signal-flow" data-quality-profile="showcase">
+<svg data-archify-version="2.15.0" data-forgeloop-source-sha256="ba0016d705a7d89be0cdff7529b29112e844ef806ae9f87a1bbff8db8c109043" data-theme="dark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 850 900" role="img" aria-labelledby="archify-diagram-title archify-diagram-description" data-animation="trace" data-preset="signal-flow" data-quality-profile="showcase">
     <style>
       .c-bg-rect { fill: var(--bg); }
 /* Keep boundary labels clear of the first node in each group. */
       [data-composition-frame-kind="group"] + text { transform: translateY(-18px); }
+      @media (max-width: 720px) {
+        html:not([data-present="true"]) .toolbar {
+          top: 0;
+          right: 0;
+          width: 100%;
+          flex-wrap: wrap;
+          justify-content: flex-start;
+        }
+      }
 
     /* ==========================================================
        THEME VARIABLES — switch by toggling [data-theme] on &lt;html>

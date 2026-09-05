@@ -4,7 +4,6 @@ import { test } from "node:test";
 import { packageRoot as fixturePackageRoot, setupAbandonedTask, withRecoveryTarget } from "../../../tests/helpers/task-recovery-fixture.js";
 import { runTaskRecover } from "../../../src/commands/task-recover.js";
 import { executeForgeLoopCommand } from "@cassiomc1/forgeloop/integration";
-import { runTaskCreate } from "../../../src/commands/task-create.js";
 
 
 /**

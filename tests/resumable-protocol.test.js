@@ -8,7 +8,7 @@ import { removeTempTree } from "./helpers/rm-safe.js";
 import { ARTIFACT_PATHS } from "../src/core/artifacts.js";
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { validateEventLedger } from "../src/core/events.js";
-import { createGate } from "../src/core/gates.js";
+import { createGate } from "./helpers/gates.js";
 import { persistGate } from "../src/core/gate-artifact.js";
 import { getNextAction, NEXT_ACTIONS } from "../src/core/next-action.js";
 import { evaluateRoute } from "../src/core/router.js";

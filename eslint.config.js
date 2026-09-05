@@ -1,5 +1,7 @@
 const nodeGlobals = Object.freeze({
   AbortController: "readonly",
+  Headers: "readonly",
+  Request: "readonly",
   Buffer: "readonly",
   URL: "readonly",
   URLSearchParams: "readonly",
@@ -14,7 +16,7 @@ const nodeGlobals = Object.freeze({
 export default [
   {
     ignores: [
-      "node_modules/**",
+      "**/node_modules/**",
       "coverage/**",
       ".worktrees/**",
       "docs/assets/**",
@@ -22,7 +24,7 @@ export default [
     ],
   },
   {
-    files: ["src/**/*.js", "scripts/**/*.mjs", "tests/**/*.js", "eslint.config.js"],
+    files: ["src/**/*.js", "scripts/**/*.{js,mjs}", "integrations/mcp/{src,bin,tests}/**/*.js", "tests/**/*.js", "eslint.config.js"],
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",

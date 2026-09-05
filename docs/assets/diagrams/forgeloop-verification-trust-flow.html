@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark" data-preset="signal-flow" data-present="true">
 <head>
-      <meta name="forgeloop-diagram-source-sha256" content="6fe11b0530cc6640f7b0f07d0f2d7e5a1f961745491f39016b340bc354af0e79">
+      <meta name="forgeloop-diagram-source-sha256" content="ba0016d705a7d89be0cdff7529b29112e844ef806ae9f87a1bbff8db8c109043">
     <meta name="forgeloop-diagram-renderer" content="archify@2.15.0 (e1ac748f19cf805e44bf74fb93c796662152e273)">
 <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -40,6 +40,15 @@
   <style>
       /* Keep boundary labels clear of the first node in each group. */
       [data-composition-frame-kind="group"] + text { transform: translateY(-18px); }
+      @media (max-width: 720px) {
+        html:not([data-present="true"]) .toolbar {
+          top: 0;
+          right: 0;
+          width: 100%;
+          flex-wrap: wrap;
+          justify-content: flex-start;
+        }
+      }
 
     /* ==========================================================
        THEME VARIABLES — switch by toggling [data-theme] on <html>
@@ -4868,7 +4877,7 @@
       <p class="subtitle">Canonical scope planning before exact command execution</p>
     </div>
 
-    <script id="archify-guided-views-data" type="application/json">[{"id":"scope-resolution","label":"Resolve verification scope","focus":["claims","changes","checker","cycle","fingerprints","scope"],"note":"Follow the trusted inputs that determine whether a checker may narrow its execution."},{"id":"exact-execution","label":"Bind exact execution","focus":["scope","argv","observed"],"note":"See how the resolved scope binds the exact argv and observed execution evidence."},{"id":"fail-closed","label":"Fail closed when trust is missing","focus":["checker","full","unresolved","reject"],"note":"No trusted checker means AUTO uses FULL; explicit narrowing without one is unresolved."}]</script>
+    <script id="archify-guided-views-data" type="application/json">[{"id":"scope-resolution","label":"Resolve verification scope","focus":["claims","changes","checker","cycle","fingerprints","scope"],"note":"Follow the trusted inputs that determine whether a checker may narrow its execution."},{"id":"exact-execution","label":"Bind exact execution","focus":["scope","argv","observed"],"note":"run-check proves execution; manual-review is explicit. Test filters do not establish canonical verification scope."},{"id":"fail-closed","label":"Fail closed when trust is missing","focus":["checker","full","unresolved","reject"],"note":"No trusted checker means AUTO uses FULL; explicit narrowing without one is unresolved."}]</script>
 
     <div class="guided-views no-print" id="guided-views" hidden aria-label="Guided diagram views">
       <button id="guided-view-prev" type="button" aria-label="Previous guided view" title="Previous guided view ([)">&#8592;</button>
@@ -4911,7 +4920,7 @@
 
     <!-- Main Diagram -->
     <div class="diagram-container" data-detail-level="read">
-      <svg viewBox="0 0 720 900" role="img" aria-labelledby="archify-diagram-title archify-diagram-description" data-animation="trace" data-preset="signal-flow" data-quality-profile="showcase">
+      <svg viewBox="0 0 850 900" role="img" aria-labelledby="archify-diagram-title archify-diagram-description" data-animation="trace" data-preset="signal-flow" data-quality-profile="showcase">
         <title id="archify-diagram-title">ForgeLoop Verification Trust Flow</title>
         <desc id="archify-diagram-description">Canonical scope planning before exact command execution</desc>
         <!-- Definitions -->
@@ -5368,6 +5377,7 @@
           <li>&bull; AUTO uses CHANGED or CLAIMED only with a trusted scoped checker</li>
           <li>&bull; Without that capability, AUTO resolves safely to FULL</li>
           <li>&bull; Explicit CHANGED or CLAIMED without a checker returns unresolved</li>
+          <li>&bull; A test name or file filter is not a canonical scope boundary</li>
         </ul>
       </div>
 
@@ -5380,6 +5390,7 @@
           <li>&bull; RevisionProvider changes and task claims are canonical inputs</li>
           <li>&bull; Contract, repository, and cycle fingerprints bind the scope</li>
           <li>&bull; argv prefix and selected paths are checked before launch</li>
+          <li>&bull; Manual evidence declares manual-review; command metadata is not execution</li>
         </ul>
       </div>
 

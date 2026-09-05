@@ -1,5 +1,6 @@
+import { removeTempTree } from "./helpers/rm-safe.js";
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -16,26 +17,13 @@ import { createTaskDescriptor, writeTaskDescriptor } from "../src/core/task-desc
 
 const packageRoot = getPackageRoot();
 
-async function rimrafWithRetry(target) {
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    try {
-      await rm(target, { recursive: true, force: true });
-      return;
-    } catch (error) {
-      const code = error?.code;
-      const isTransient = code === "EBUSY" || code === "EPERM" || code === "ENOTEMPTY";
-      if (!isTransient || attempt === 4) throw error;
-      await new Promise((resolve) => setTimeout(resolve, 30 * (attempt + 1)));
-    }
-  }
-}
 
 async function withTarget(run) {
   const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-preflight-reactivation-"));
   try {
     await run(target);
   } finally {
-    await rimrafWithRetry(target);
+    await removeTempTree(target);
   }
 }
 
@@ -110,9 +98,8 @@ test("preflight returns READY with fresh details after a BLOCKED outcome superse
         routingFingerprint: revisedRoute.fingerprint,
       },
     }, packageRoot, { taskId });
-    const { unlink } = await import("node:fs/promises");
-    const { taskDirectory } = await import("../src/core/task-paths.js");
-    await unlink(path.join(target, taskDirectory(taskId), "work-state.json"));
+    const { runClearState } = await import("../src/commands/clear-state.js");
+    await runClearState({ target, taskId, packageRoot });
 
     // The gate is satisfied; preflight must be able to return READY again.
     const preflight = await runPreflight({ target, packageRoot, taskId });
@@ -251,5 +238,28 @@ test("a PREFLIGHT_READY refresh after execution milestones keeps the ledger vali
     assert.equal(ledger.valid, true, JSON.stringify(ledger.errors ?? []));
     const readyEvents = ledger.events.filter((event) => event.event === "PREFLIGHT_READY" && event.taskId === taskId);
     assert.equal(readyEvents.length, 2);
+  });
+});
+
+test("public routing and next guidance recover a pre-execution blocked checkpoint", async () => {
+  await withTarget(async (target) => {
+    const { executeForgeLoopCommand } = await import("../src/integration.js");
+    const taskId = "public-reactivation";
+    await writeTaskDescriptor(target, createTaskDescriptor({ taskId, writeClaims: ["package.json"] }), packageRoot);
+    await writeContract(target, buildContract(taskId, "Document a security boundary."), packageRoot, { taskId });
+    const invoke = (command, input = {}) => executeForgeLoopCommand({ command, projectPath: target, input: { taskId, ...input } });
+    const routed = await invoke("route", { workType: "documentation", surfaces: ["documentation"], risks: ["secrets"] });
+    assert.equal(routed.ok, true, JSON.stringify(routed));
+    const blocked = await invoke("preflight");
+    assert.equal(blocked.result?.status, "BLOCKED", JSON.stringify(blocked));
+    await writeContract(target, buildContract(taskId, "Clarify existing usage documentation."), packageRoot, { taskId });
+    const revised = await invoke("route", { workType: "documentation", surfaces: ["documentation"] });
+    assert.equal(revised.ok, true, JSON.stringify(revised));
+    const next = await invoke("next");
+    assert.deepEqual(next.result.commandSpecs.map(spec => spec.commandId).sort(), ["clear-state", "preflight"]);
+    const cleared = await invoke("clear-state");
+    assert.equal(cleared.ok, true, JSON.stringify(cleared));
+    const ready = await invoke("preflight");
+    assert.equal(ready.result?.status, "READY", JSON.stringify(ready));
   });
 });

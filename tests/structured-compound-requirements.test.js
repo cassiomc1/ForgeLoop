@@ -9,7 +9,6 @@ import { createContract, contractFingerprint, writeContract, validateContract } 
 import { createCheck } from "../src/core/checks.js";
 import { classifyRequirement, evaluateRequiredEvidence } from "../src/core/evidence-readiness.js";
 import { getPackageRoot } from "../src/core/templates.js";
-import { recordManualCheck } from "./helpers/record-check-compat.js";
 
 const packageRoot = getPackageRoot();
 
@@ -211,8 +210,7 @@ test("compound child FAIL drives DIAGNOSE (P1-5 Test A)", async () => {
   const { runPreflight } = await import("../src/commands/preflight.js");
   const { appendProtocolEvent } = await import("../src/core/events.js");
   const { createWorkState, writeWorkState } = await import("../src/core/work-state.js");
-  const { prepareCompletion, recordCheck: recordCheckArtifact } = await import("../src/core/completion-artifacts.js");
-  const recordCheck = (input) => recordManualCheck(recordCheckArtifact, input);
+  const { prepareCompletion, recordCheck } = await import("../src/core/completion-artifacts.js");
 
   await withTarget(async (target) => {
     const contract = createContract({
@@ -270,7 +268,7 @@ test("compound child FAIL drives DIAGNOSE (P1-5 Test A)", async () => {
     await prepareCompletion({ target, packageRoot });
 
     // Child 1 passes
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "chk-c1",
@@ -282,7 +280,7 @@ test("compound child FAIL drives DIAGNOSE (P1-5 Test A)", async () => {
     });
 
     // Child 2 fails
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "chk-c2",
@@ -306,8 +304,7 @@ test("compound child BLOCKED drives RESOLVE_BLOCKER (P1-5 Test B)", async () => 
   const { runPreflight } = await import("../src/commands/preflight.js");
   const { appendProtocolEvent } = await import("../src/core/events.js");
   const { createWorkState, writeWorkState } = await import("../src/core/work-state.js");
-  const { prepareCompletion, recordCheck: recordCheckArtifact } = await import("../src/core/completion-artifacts.js");
-  const recordCheck = (input) => recordManualCheck(recordCheckArtifact, input);
+  const { prepareCompletion, recordCheck } = await import("../src/core/completion-artifacts.js");
 
   await withTarget(async (target) => {
     const contract = createContract({
@@ -365,7 +362,7 @@ test("compound child BLOCKED drives RESOLVE_BLOCKER (P1-5 Test B)", async () => 
     await prepareCompletion({ target, packageRoot });
 
     // Child 1 passes
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "chk-c1",
@@ -377,7 +374,7 @@ test("compound child BLOCKED drives RESOLVE_BLOCKER (P1-5 Test B)", async () => 
     });
 
     // Child 2 blocked
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "chk-c2",

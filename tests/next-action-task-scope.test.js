@@ -6,7 +6,7 @@ import { test } from "node:test";
 
 import { runComplete } from "../src/commands/complete.js";
 import { runPreflight } from "../src/commands/preflight.js";
-import { prepareCompletion, recordCheck as recordCheckArtifact } from "../src/core/completion-artifacts.js";
+import { prepareCompletion, recordCheck } from "../src/core/completion-artifacts.js";
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { appendProtocolEvent } from "../src/core/events.js";
 import { getNextAction, NEXT_ACTIONS } from "../src/core/next-action.js";
@@ -18,10 +18,8 @@ import { taskArtifactPath } from "../src/core/task-paths.js";
 import { getPackageRoot } from "../src/core/templates.js";
 import { createWorkState, writeWorkState } from "../src/core/work-state.js";
 import { removeTempTree } from "./helpers/rm-safe.js";
-import { recordManualCheck } from "./helpers/record-check-compat.js";
 
 const packageRoot = getPackageRoot();
-const recordCheck = (input) => recordManualCheck(recordCheckArtifact, input);
 
 async function withTarget(run) {
   const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-next-task-scope-"));
@@ -128,7 +126,7 @@ test("NEXT-TASK-2: REVIEWING completion recovery reads the selected task's ledge
     // Task B reaches REVIEWING with one of two requirements covered and a
     // REJECTED completion attempt bound to B's own task-scoped ledger.
     await setupTaskTo(target, "task-b", "VERIFYING", { claims: ["src/b"] });
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       taskId: "task-b",
@@ -155,7 +153,7 @@ test("NEXT-TASK-2: a rejection in task A's ledger never authorizes recovery for 
     // Task A is rejected once (cycle 1) and then completes on cycle 2, so its
     // ledger retains a COMPLETION_REJECTED event while A becomes COMPLETE.
     await setupTaskTo(target, "task-a", "VERIFYING", { claims: ["src/a"] });
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       taskId: "task-a",
@@ -172,7 +170,7 @@ test("NEXT-TASK-2: a rejection in task A's ledger never authorizes recovery for 
 
     // Cycle 2: recover into VERIFYING, cover the missing requirement, complete.
     await advanceWorkState(target, "VERIFYING", { packageRoot, taskId: "task-a" });
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       taskId: "task-a",
@@ -190,7 +188,7 @@ test("NEXT-TASK-2: a rejection in task A's ledger never authorizes recovery for 
     // Task B is then created and reaches REVIEWING with no rejection of its
     // own; task A is COMPLETE, so B is the only non-complete task.
     await setupTaskTo(target, "task-b", "VERIFYING", { claims: ["src/b"] });
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       taskId: "task-b",

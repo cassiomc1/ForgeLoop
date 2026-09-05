@@ -57,6 +57,13 @@ integration and guide context. Use this map before editing documentation.
 | Code Attestation Chain | [`docs/CODE_ATTESTATION.md`](./docs/CODE_ATTESTATION.md#completion-flow) | Completion, exact-content manifest, in-toto statement, optional signing, and range coverage |
 | Real Execution Proof of Concept (PoC) | [`poc/README.md`](./poc/README.md) | Non-normative, reproducible public engineering workload, audit evidence, and technical audit. Normative behavior remains owned by [`LOOP_ENGINEERING.md`](./LOOP_ENGINEERING.md). |
 
+## Recent implementation review
+
+The repository-local [Astra implementation record](./docs/ASTRA_IMPLEMENTATION.md)
+maps the completed findings to code, tests, measurements, and remaining limits.
+Use the canonical guides below for operational instructions; the audit record
+is historical evidence and is not part of the published core package.
+
 ## Audience map
 
 | I am a... | Start here |

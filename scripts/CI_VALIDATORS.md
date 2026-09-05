@@ -40,3 +40,27 @@ Maintainers should distinguish between actual documentation link failures and ex
 
 - **Link-content failure (`Lychee`)**: The link checking step runs with `--verbose` and outputs the exact failing URL along with the HTTP status code (e.g. 404, 403). If a documentation URL is broken, update the link in the source Markdown. If a legitimate external host blocks shared CI runners or aggressively rate-limits CI automation, add a minimal, targeted exclusion in `.lychee.toml` with an explanatory comment.
 - **Action-download / Runner infrastructure failure (GitHub 429/502/503)**: When GitHub Actions fails during action checkout or tool download before running the test steps, this is a transient infrastructure issue rather than a project defect. Rerun the workflow without modifying project files.
+
+## Node verification and receipt availability
+
+The documentation workflow runs the documentation/tooling gates once on
+Linux with Node 24. Full suites cover Linux 20/22/24 and macOS/Windows 20/24,
+with no repeated platform/version pair in that workflow. Node 24 Linux also
+collects coverage. Package-content tests share one pack listing within their
+process. The dedicated Windows main-branch workflow remains separate.
+
+The historical required status `validate (22)` is retained as an aggregate
+gate over validation, the full portability matrix, and diagram checks. It
+fails if any prerequisite fails, is cancelled, or is skipped. This preserves
+the existing branch ruleset without running another duplicate test suite.
+
+`npm run lint`, `npm run complexity:check`, and
+`npm run critical-coverage:check` retain independent purposes: syntax and
+usage correctness, hotspot growth, and coverage of critical modules. Packed
+TypeScript consumers validate the public declarations; YAML-based tests
+validate workflow semantics. The core runtime remains dependency-free.
+
+`scripts/audit-receipts.mjs` runs after checkout. It audits supplied scoped
+receipts with explicit task IDs, fails on an invalid audit, and reports
+`NOT_VERIFIED` when none are supplied. This repository job does not create
+lifecycle evidence from CI test results.

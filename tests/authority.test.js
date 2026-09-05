@@ -1,3 +1,4 @@
+import { recordExecutedFakeCheck } from "./helpers/executed-fake-check.js";
 import assert from "node:assert/strict";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
@@ -21,11 +22,9 @@ import { createWorkState, writeWorkState } from "../src/core/work-state.js";
 import { appendProtocolEvent } from "../src/core/events.js";
 import { runPreflight } from "../src/commands/preflight.js";
 import { advanceWorkState } from "../src/core/phase.js";
-import { prepareCompletion, recordCheck as recordCheckArtifact } from "../src/core/completion-artifacts.js";
-import { recordManualCheck } from "./helpers/record-check-compat.js";
+import { prepareCompletion, recordCheck } from "../src/core/completion-artifacts.js";
 import { removeTempTree } from "./helpers/rm-safe.js";
 
-const recordCheck = (input) => recordManualCheck(recordCheckArtifact, input);
 
 const packageRoot = getPackageRoot();
 
@@ -211,7 +210,7 @@ test("audit and complete revalidate installation authority from the external hos
     const prepared = await prepareCompletion({ target, packageRoot, authorityContext });
 
     // Record check for visual-check with authorityRef
-    await recordCheck({
+    await recordExecutedFakeCheck(recordCheck, {
       target,
       packageRoot,
       id: "check-visual",
@@ -232,7 +231,7 @@ test("audit and complete revalidate installation authority from the external hos
         target,
         packageRoot,
         id: `check-${req}`,
-        kind: "command",
+        kind: "manual-review",
         requirement: req,
         status: "passed",
         evidenceKind: "OBSERVED",

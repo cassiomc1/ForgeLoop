@@ -129,11 +129,12 @@ export interface ForgeLoopStructuralQualityProviderInput {
   maxOutputBytes: number;
 }
 
-export interface ForgeLoopStructuralQualityProvider {
-  id: string;
+export type ForgeLoopStructuralQualityProvider = { id: string } & ({
+  observe(input: ForgeLoopStructuralQualityProviderInput): Promise<Record<string, unknown>> | Record<string, unknown>;
+} | {
   detect(input: ForgeLoopStructuralQualityProviderInput): Promise<Record<string, unknown>> | Record<string, unknown>;
   scan(input: ForgeLoopStructuralQualityProviderInput): Promise<Record<string, unknown>> | Record<string, unknown>;
-}
+});
 
 export type ForgeLoopStructuralQualityProviderFactory = (input: ForgeLoopStructuralQualityProviderInput) => ForgeLoopStructuralQualityProvider | Promise<ForgeLoopStructuralQualityProvider>;
 
@@ -314,3 +315,18 @@ export declare function resolveHandoffAcceptance(input: {
   acceptedAt?: string;
   reasonCodes?: readonly string[];
 };
+
+export declare const E_VERIFICATION_EXECUTION_INVALID: "E_VERIFICATION_EXECUTION_INVALID";
+export declare const E_VERIFICATION_ISOLATION_UNAVAILABLE: "E_VERIFICATION_ISOLATION_UNAVAILABLE";
+export declare function createStructuralQualityProviderRegistry(options?: {
+  providers?: Readonly<Record<string, ForgeLoopStructuralQualityProvider | ForgeLoopStructuralQualityProviderFactory>>;
+  builtIns?: Readonly<Record<string, ForgeLoopStructuralQualityProvider | ForgeLoopStructuralQualityProviderFactory>>;
+}): { resolve(name: string, input: ForgeLoopStructuralQualityProviderInput): Promise<ForgeLoopStructuralQualityProvider> };
+export declare function resolveStructuralQualityProvider(options: {
+  providerName?: string;
+  target: string;
+  taskId: string;
+  timeoutMs?: number;
+  maxOutputBytes?: number;
+  runtimeContext?: ForgeLoopContext;
+}): Promise<ForgeLoopStructuralQualityProvider>;

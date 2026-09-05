@@ -1217,3 +1217,18 @@ For `BASELINE` artifacts and `PASS`/`FAIL` evaluations, `sourceMaterialFingerpri
 and stable `sourceObservation` are conditionally required; their before and after
 fingerprints must equal the bound source fingerprint. `BLOCKED` and
 `NOT_OBSERVED` artifacts may omit these observed-source fields.
+
+## Transaction diagnostics and retention
+
+`.forgeloop/.txn/<transactionId>/manifest.json` records transaction identity,
+status, staged writes, and recovery diagnostics. `COMMITTED`, `ROLLED_BACK`,
+and `ABORTED` are terminal; an aborted staging callback did not publish its
+staged writes. A successful recovery is not reported as incomplete on the next
+doctor inspection. The transaction lock still protects recovery from live
+writers.
+
+The repository maintenance command described in
+[CONTRIBUTING.md](../CONTRIBUTING.md#focused-verification-and-maintenance)
+compacts eligible stage/backup payloads only. It retains manifests and ledgers,
+so historical manifest enumeration remains linear. These diagnostics are not
+substitutes for a valid execution receipt or external-action reconciliation.

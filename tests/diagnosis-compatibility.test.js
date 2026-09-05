@@ -16,10 +16,8 @@ import { recordDiagnosis } from "../src/core/diagnosis.js";
 import { recordDecisionCriterion } from "../src/core/settlement.js";
 import { getNextAction } from "../src/core/next-action.js";
 import { runPreflight } from "../src/commands/preflight.js";
-import { prepareCompletion, recordCheck as recordCheckArtifact } from "../src/core/completion-artifacts.js";
-import { recordManualCheck } from "./helpers/record-check-compat.js";
+import { prepareCompletion, recordCheck } from "../src/core/completion-artifacts.js";
 
-const recordCheck = (input) => recordManualCheck(recordCheckArtifact, input);
 const packageRoot = getPackageRoot();
 
 test("protocol compatibility - protocolVersion remains 1", () => {
@@ -129,7 +127,7 @@ test("protocol compatibility - work-state.diagnosedHypothesis is maintained as p
     await advanceWorkState(target, "VERIFYING", packageRoot);
     await prepareCompletion({ target, packageRoot });
 
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "check-failing",
@@ -225,7 +223,7 @@ test("protocol compatibility - legacy DIAGNOSING state with only mutable diagnos
     await advanceWorkState(target, "VERIFYING", packageRoot);
     await prepareCompletion({ target, packageRoot });
 
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "check-auth",

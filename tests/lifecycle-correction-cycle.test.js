@@ -7,10 +7,8 @@ import { test } from "node:test";
 import { removeTempTree } from "./helpers/rm-safe.js";
 import { runComplete } from "../src/commands/complete.js";
 import { runPreflight } from "../src/commands/preflight.js";
-import { prepareCompletion, recordCheck as recordCheckArtifact } from "../src/core/completion-artifacts.js";
-import { recordManualCheck } from "./helpers/record-check-compat.js";
+import { prepareCompletion, recordCheck } from "../src/core/completion-artifacts.js";
 
-const recordCheck = (input) => recordManualCheck(recordCheckArtifact, input);
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { appendProtocolEvent, validateEventLedger } from "../src/core/events.js";
 import { advanceWorkState } from "../src/core/phase.js";
@@ -90,7 +88,7 @@ test("full failed-check -> diagnose -> correct -> verify-again -> complete cycle
     await prepareCompletion({ target, packageRoot });
 
     // 2. Record failed observed check in cycle 1
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "unit-tests",
@@ -143,7 +141,7 @@ test("full failed-check -> diagnose -> correct -> verify-again -> complete cycle
     assert.equal(state.verificationCycle, 2);
 
     // 10. Record passed observed check in cycle 2
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "unit-tests",
@@ -189,7 +187,7 @@ test("multiple corrections (cycles 1, 2 FAIL -> cycle 3 PASS) increment cycles m
     // Cycle 1
     await advanceWorkState(target, "VERIFYING", packageRoot);
     await prepareCompletion({ target, packageRoot });
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "tests-c1",
@@ -214,7 +212,7 @@ test("multiple corrections (cycles 1, 2 FAIL -> cycle 3 PASS) increment cycles m
     // Cycle 2
     state = await advanceWorkState(target, "VERIFYING", packageRoot);
     assert.equal(state.verificationCycle, 2);
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "tests-c2",
@@ -239,7 +237,7 @@ test("multiple corrections (cycles 1, 2 FAIL -> cycle 3 PASS) increment cycles m
     // Cycle 3
     state = await advanceWorkState(target, "VERIFYING", packageRoot);
     assert.equal(state.verificationCycle, 3);
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "tests-c3",
@@ -271,7 +269,7 @@ test("cycle 1 PASS superseded by cycle 2 FAIL causes overall FAIL (historical pa
     // Cycle 1 failed check
     await advanceWorkState(target, "VERIFYING", packageRoot);
     await prepareCompletion({ target, packageRoot });
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "test-suite",
@@ -297,7 +295,7 @@ test("cycle 1 PASS superseded by cycle 2 FAIL causes overall FAIL (historical pa
     // Cycle 2 failed
     state = await advanceWorkState(target, "VERIFYING", packageRoot);
     assert.equal(state.verificationCycle, 2);
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "test-suite",

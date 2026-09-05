@@ -6,10 +6,8 @@ import { test } from "node:test";
 
 import { removeTempTree } from "./helpers/rm-safe.js";
 import { runPreflight } from "../src/commands/preflight.js";
-import { prepareCompletion, recordCheck as recordCheckArtifact } from "../src/core/completion-artifacts.js";
-import { recordManualCheck } from "./helpers/record-check-compat.js";
+import { prepareCompletion, recordCheck } from "../src/core/completion-artifacts.js";
 
-const recordCheck = (input) => recordManualCheck(recordCheckArtifact, input);
 import { createContract, contractFingerprint, writeContract } from "../src/core/contract.js";
 import { appendProtocolEvent } from "../src/core/events.js";
 import { recordDiagnosis } from "../src/core/diagnosis.js";
@@ -86,7 +84,7 @@ test("Test A & D: Historical Fail in cycle 1 -> New Pass in cycle 2 with same ID
     await setupTarget(target);
 
     // Cycle 1: record failed check
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "unit-tests",
@@ -119,7 +117,7 @@ test("Test A & D: Historical Fail in cycle 1 -> New Pass in cycle 2 with same ID
     assert.equal(state.verificationCycle, 2);
 
     // Cycle 2: record passing check with same ID
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "unit-tests",
@@ -141,7 +139,7 @@ test("Test E: Historical Fail in cycle 1 -> New Pass in cycle 2 with DIFFERENT c
     await setupTarget(target);
 
     // Cycle 1: record failed check with ID tests-old
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "tests-old",
@@ -171,7 +169,7 @@ test("Test E: Historical Fail in cycle 1 -> New Pass in cycle 2 with DIFFERENT c
     await advanceWorkState(target, "VERIFYING", { packageRoot });
 
     // Cycle 2: record passing check with ID tests-new for same requirement
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "tests-new",
@@ -200,7 +198,7 @@ test("Test B: Historical Blocked in cycle 1 -> New Pass in cycle 2 results in EN
     await setupTarget(target);
 
     // Cycle 1: record blocked check
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "browser-check-c1",
@@ -230,7 +228,7 @@ test("Test B: Historical Blocked in cycle 1 -> New Pass in cycle 2 results in EN
     await advanceWorkState(target, "VERIFYING", { packageRoot });
 
     // Cycle 2: record passing check
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "browser-check-c2",
@@ -252,7 +250,7 @@ test("Test C: Historical Pass in cycle 1 -> New Fail in cycle 2 results in DIAGN
     await setupTarget(target);
 
     // Cycle 1: record passed check
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "test-c1",
@@ -267,7 +265,7 @@ test("Test C: Historical Pass in cycle 1 -> New Fail in cycle 2 results in DIAGN
     assert.equal(next.nextAction, NEXT_ACTIONS.ENTER_REVIEWING);
 
     // Cycle 1 also had a failure to investigate
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "test-c1-fail",
@@ -293,7 +291,7 @@ test("Test C: Historical Pass in cycle 1 -> New Fail in cycle 2 results in DIAGN
     await advanceWorkState(target, "CORRECTING", { packageRoot });
     await advanceWorkState(target, "VERIFYING", { packageRoot });
 
-    await recordCheck({
+    await recordCheck({ kind: "manual-review",
       target,
       packageRoot,
       id: "test-c2",

@@ -1,5 +1,6 @@
+import { removeTempTree } from "./helpers/rm-safe.js";
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -20,26 +21,13 @@ import { createTaskDescriptor, writeTaskDescriptor } from "../src/core/task-desc
 
 const packageRoot = getPackageRoot();
 
-async function rimrafWithRetry(target) {
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    try {
-      await rm(target, { recursive: true, force: true });
-      return;
-    } catch (error) {
-      const code = error?.code;
-      const isTransient = code === "EBUSY" || code === "EPERM" || code === "ENOTEMPTY";
-      if (!isTransient || attempt === 4) throw error;
-      await new Promise((resolve) => setTimeout(resolve, 30 * (attempt + 1)));
-    }
-  }
-}
 
 async function withTarget(run) {
   const target = await mkdtemp(path.join(os.tmpdir(), "forgeloop-recovery-rebind-"));
   try {
     await run(target);
   } finally {
-    await rimrafWithRetry(target);
+    await removeTempTree(target);
   }
 }
 

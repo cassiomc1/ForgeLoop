@@ -116,16 +116,7 @@ async function adoptAdapters({ target, manifest, adoptPaths, findings }) {
 
 export async function runDoctor({ target, packageRoot, adoptPaths = [], strict = false, fix = false }) {
   const findings = [];
-  const incompleteTransactions = await findIncompleteTransactions(target);
-  for (const transaction of incompleteTransactions) {
-    findings.push(finding(
-      "E_TRANSACTION_INCOMPLETE",
-      "error",
-      `.forgeloop/.txn/${transaction.transactionId}`,
-      `Transaction ${transaction.transactionId} is ${transaction.status} and requires inspection or deterministic recovery.`,
-      "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
-    ));
-  }
+  let incompleteTransactions = await findIncompleteTransactions(target);
   if (fix && incompleteTransactions.some((transaction) => transaction.status === "COMMITTING")) {
     const recovered = await recoverIncompleteTransactions(target);
     for (const transaction of recovered) {
@@ -136,6 +127,16 @@ export async function runDoctor({ target, packageRoot, adoptPaths = [], strict =
         `Transaction recovery result: ${transaction.status}.`,
       ));
     }
+    incompleteTransactions = await findIncompleteTransactions(target);
+  }
+  for (const transaction of incompleteTransactions) {
+    findings.push(finding(
+      "E_TRANSACTION_INCOMPLETE",
+      "error",
+      `.forgeloop/.txn/${transaction.transactionId}`,
+      `Transaction ${transaction.transactionId} is ${transaction.status} and requires inspection or deterministic recovery.`,
+      "Run forgeloop doctor --fix only after ensuring no active process owns the task lock.",
+    ));
   }
   let manifest = null;
   let manifestChanged = false;
