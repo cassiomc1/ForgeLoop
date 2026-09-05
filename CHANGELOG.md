@@ -2,14 +2,35 @@
 
 ## Unreleased
 
-- Bind transactions to physical projects and close rolled-back or aborted transactions correctly.
-- Normalize structured profile obligations and guide safe pre-execution checkpoint refresh.
-- Align public TypeScript exports and add packed-consumer checks.
-- Split lifecycle phase decisions, improve test selection and evidence fixtures, and enforce complexity and critical-coverage budgets.
-- Add lock-safe transaction payload compaction and reproducible MCP dependency verification.
-- Consolidate CI verification and report absent lifecycle receipts as NOT_VERIFIED.
+- Record the protocol-correctness, Integration API, and tooling changes that
+  shipped inside published package 1.10.1 under the 1.10.1 release notes
+  instead of an `Unreleased` section, so the package version identifies the
+  behavior it actually contains.
 
 ## 1.10.1 - 2026-09-05
+
+### Added
+
+- Exported `FORGELOOP_INTEGRATION_RUNTIME_VERSION` from the public
+  `./integration` entry point. The constant was declared in
+  `src/integration.d.ts` and used internally, but the module never re-exported
+  it, so the declared name did not match the runtime surface.
+- Added public type declarations for the existing
+  `E_VERIFICATION_EXECUTION_INVALID` and
+  `E_VERIFICATION_ISOLATION_UNAVAILABLE` codes and for
+  `createStructuralQualityProviderRegistry` and
+  `resolveStructuralQualityProvider`.
+- Added `commands` and `commandSpecs` to the `RESOLVE_BLOCKER` result for
+  `REVALIDATION_REQUIRED`, so `next` guides a safe pre-execution checkpoint
+  refresh instead of leaving the blocker unexplained. `next` still writes
+  nothing, and the suggested `clear-state` command remains a mutating
+  operation the caller must authorize.
+- Added the repository-only `transactions:compact` maintenance command for
+  lock-safe transaction payload compaction. It retains every manifest and
+  ledger, records `compactedAt`, skips non-terminal or recent transactions,
+  and is not part of the published package.
+- Added the `complexity:check` budget gate and deterministic test-selection
+  tooling.
 
 ### Changed
 
@@ -23,11 +44,54 @@
   publication workflow before trusted provenance publishing.
 - Refreshed release documentation, package metadata, and generated protocol
   summary for the 1.10.1 patch release.
+- Structured `successCriteria` entries and `contract.verification` now
+  contribute execution-profile obligation signals; previously structured
+  entries were stringified and never matched. `constraints` and
+  `stopConditions` no longer contribute, and the `PUBLICATION` and
+  `PRODUCTION_READINESS` requirement types force their corresponding
+  signals. Profiles remain guidance only, and already-persisted routes are
+  not re-derived.
+- Split the lifecycle phase decisions in `next-action-phases.js` into
+  per-phase modules. No `nextAction` value, reason code, phase name, or
+  ordering changed.
+- Widened `ForgeLoopStructuralQualityProvider` to accept either `observe()`
+  or `detect()` plus `scan()`.
+- Pinned the MCP adapter dependency to an exact version with a committed
+  lockfile for reproducible verification.
+- The receipt audit workflow now always runs and reports `NOT_VERIFIED` when
+  no lifecycle receipt is supplied, instead of silently skipping. This is a
+  CI reporting change only; no protocol artifact, CLI result, or Integration
+  API response is affected.
+
+### Fixed
+
+- Task transactions now bind to the canonicalized physical project root.
+  Reusing an active transaction against a different project fails closed with
+  `E_TASK_CONTEXT_MISMATCH` across every transaction-aware read and write.
+- `ROLLED_BACK` and `ABORTED` transactions are now terminal, so `doctor` and
+  `inspect` no longer report a completed rollback or a pre-publication abort
+  as `E_TRANSACTION_INCOMPLETE`.
+- Transaction recovery now runs under the transaction's task lock and
+  re-reads the manifest inside the lock, skipping any transaction another
+  writer already advanced past `COMMITTING`, so recovery no longer races a
+  live writer.
+- Rollback replay validates every recorded write path with a symlink-aware
+  check before unlinking or renaming.
 
 ### Compatibility
 
 - Protocol v1, schema v1, Integration API v1, and Node.js `>=20` support are
-  unchanged.
+  unchanged. `protocol-info --json` is unchanged apart from `packageVersion`,
+  and no schema was modified.
+- Observable additions for consumers that read `.forgeloop/` directly:
+  `.forgeloop/.txn/<id>/manifest.json` gains an optional `lockTaskId`, its
+  `status` domain gains `ABORTED` for the pre-publication abort case, and it
+  gains an optional `compactedAt` after maintenance compaction. A reader that
+  validates transaction status against a closed set must accept `ABORTED`.
+- The four retired compatibility helpers `src/core/gates.js`,
+  `src/core/decision-classification.js`, `src/core/workflow-compatibility.js`,
+  and `src/core/cli-metadata.js` are excluded from the published tarball. The
+  package `exports` map already prevented deep imports of them.
 
 ## 1.10.0 - 2026-09-02
 
