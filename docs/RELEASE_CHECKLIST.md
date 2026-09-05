@@ -13,6 +13,12 @@ preparation and verification checklist; it does not authorize publication.
 - [ ] `npm pack --dry-run` contains the required scenario definitions but no
       raw or aggregate benchmark results, tests, local state, or repository
       metadata.
+- [ ] [`docs/PACKAGE_CONTENTS.md`](./PACKAGE_CONTENTS.md) matches the current
+      `package.json` file list and documents intentional inclusions and
+      exclusions.
+- [ ] Every maintained `src/**/*.js` module is present in the candidate
+      tarball; only the four explicitly retired compatibility helpers are
+      excluded.
 
 ## Protocol and attestation
 
@@ -62,6 +68,8 @@ preparation and verification checklist; it does not authorize publication.
 ## Integration and cross-platform evidence
 
 - [ ] `npm run pack:check` and `npm run pack:smoke` pass.
+- [ ] The npm publication workflow runs `npm run pack:smoke` before its
+      provenance-backed publish step.
 - [ ] `npm run mcp:test` either runs the configured MCP tests or reports the
       single actionable setup prerequisite.
 - [ ] `npm run mcp:pack:check` passes when MCP dependencies are available.

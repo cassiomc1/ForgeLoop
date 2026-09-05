@@ -45,6 +45,7 @@
     { "path": "docs/RELEASE_CHECKLIST_1_5_MCP.md", "status": "reviewed", "action": "unchanged", "sourceOfTruth": ["docs/MCP.md", "docs/UNIVERSAL_INTEGRATION.md"] },
     { "path": "docs/RELEASE_CHECKLIST_1_6_1.md", "status": "reviewed", "action": "new", "sourceOfTruth": ["package.json", "src/core/verification-execution.js", "src/core/protocol-info.js", ".github/workflows/npm-publish.yml", "scripts/verify_release_identity.mjs"] },
     { "path": "docs/RELEASE_CHECKLIST.md", "status": "reviewed", "action": "updated", "sourceOfTruth": ["package.json", ".github/workflows/", "scripts/", "docs/EXECUTION_PROFILE_BENCHMARKS.md"] },
+    { "path": "docs/PACKAGE_CONTENTS.md", "status": "reviewed", "action": "new", "sourceOfTruth": ["package.json", "tests/package.test.js", "scripts/package_smoke.mjs", "docs/RELEASE_CHECKLIST.md"] },
     { "path": "docs/CODE_ATTESTATION.md", "status": "reviewed", "action": "new", "sourceOfTruth": ["src/core/attestation.js", "src/core/attestation-verifier.js", "schemas/code-attestation.schema.json", "schemas/in-toto-statement.schema.json"] },
     { "path": "docs/REVISION_PROVIDERS.md", "status": "reviewed", "action": "new", "sourceOfTruth": ["src/core/revision/", "src/core/code-manifest.js"] },
     { "path": "docs/SIGNING_PROVIDERS.md", "status": "reviewed", "action": "new", "sourceOfTruth": ["src/core/signing/", "src/core/attestation-verifier.js"] },

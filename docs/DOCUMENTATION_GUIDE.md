@@ -29,7 +29,7 @@ Artifact shape truth    -> JSON schemas (schemas/*.schema.json, src/core/artifac
 Lifecycle truth         -> protocol / state machine (src/core/protocol.js)
 Reason-code truth       -> exported protocol constants (src/core/error-codes.js, src/core/protocol.js)
 Guide registry truth    -> canonical guide registry (src/config/guides.json)
-Package contents truth  -> package.json + package tests (tests/package.test.js)
+Package contents truth  -> package.json + docs/PACKAGE_CONTENTS.md + package tests (tests/package.test.js)
 Documentation routing   -> DOCS_INDEX.md
 Integration API truth   -> src/integration.js (exports, envelope, limits, risk classes, resources)
 MCP behavior truth      -> integrations/mcp/src/* and integrations/mcp/package.json
@@ -128,7 +128,7 @@ conformance checks detect omissions.
 | **Stable error codes** | `PUBLIC_ERROR_CODES` (`src/core/error-codes.js`) | `scripts/validate_documentation_conformance.mjs` |
 | **Discovery resume rules** | `DISCOVERY_SURFACES` & `nativeShim` | `scripts/validate_documentation_conformance.mjs` |
 | **Task-layout path freshness** | `TASK_LAYOUT_DOCUMENTS` & `task-paths.js` | `scripts/validate_documentation_conformance.mjs` |
-| **Package-shipped docs** | `package.json` (`files`) | `tests/package.test.js` |
+| **Package-shipped docs and runtime** | `package.json` (`files`) + `docs/PACKAGE_CONTENTS.md` | `tests/package.test.js` + `scripts/package_smoke.mjs` |
 | **Architecture and trust diagrams** | `docs/diagrams/manifest.json` plus each typed workflow source | `scripts/check-documentation-diagrams.mjs` and `scripts/documentation-diagram-inventory.mjs` |
 
 ---

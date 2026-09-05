@@ -1,12 +1,32 @@
 import { parse as parseYaml } from "yaml";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { readFile, stat } from "node:fs/promises";
+import { readdir, readFile, stat } from "node:fs/promises";
+import path from "node:path";
 import { test } from "node:test";
 
 import { TEMPLATE_PATHS } from "../src/core/templates.js";
 
 const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
+const RETIRED_RUNTIME_SOURCES = new Set([
+  "src/core/cli-metadata.js",
+  "src/core/decision-classification.js",
+  "src/core/gates.js",
+  "src/core/workflow-compatibility.js",
+]);
+
+async function runtimeSourcePaths(directory = "src") {
+  const paths = [];
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    const fullPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      paths.push(...await runtimeSourcePaths(fullPath));
+    } else if (entry.isFile() && entry.name.endsWith(".js")) {
+      paths.push(fullPath.split(path.sep).join("/"));
+    }
+  }
+  return paths.sort();
+}
 
 let cachedListing;
 function packageListing() {
@@ -158,6 +178,23 @@ test("npm tarball contains the CLI, templates, published scenarios, and license 
   }
 });
 
+test("npm tarball ships every maintained runtime module", async () => {
+  const listing = packageListing();
+  const runtimeSources = await runtimeSourcePaths();
+
+  assert.ok(runtimeSources.length > 0, "src must contain runtime JavaScript modules");
+  for (const sourcePath of runtimeSources) {
+    const retired = RETIRED_RUNTIME_SOURCES.has(sourcePath);
+    assert.equal(
+      listing.includes(sourcePath),
+      !retired,
+      retired
+        ? `retired runtime module was unexpectedly packaged: ${sourcePath}`
+        : `maintained runtime module is missing from the package: ${sourcePath}`,
+    );
+  }
+});
+
 test("CLI package entry is executable by Node-compatible shells", async () => {
   const cli = (await readFile("src/cli.js", "utf8")).replace(/\r\n/g, "\n");
   const metadata = await stat("src/cli.js");
@@ -180,6 +217,9 @@ test("release workflow requires an OIDC-compatible provenance publishing step", 
   const publish = job.steps.find(step => step.run?.includes("npm publish"));
   assert.match(publish.run, /npm publish[^\n]*--provenance/u);
   assert.match(publish.run, /--access public/u);
+  const smoke = job.steps.find(step => step.run?.includes("npm run pack:smoke"));
+  assert.ok(smoke, "publication must smoke-test the packed package before publishing");
+  assert.ok(job.steps.indexOf(smoke) < job.steps.indexOf(publish), "package smoke must run before npm publish");
 });
 
 test("CI covers supported versions and platforms without duplicate full-suite pairs", async () => {

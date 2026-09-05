@@ -107,6 +107,8 @@ jobs:
           }
           console.log(`Inspected ${paths.length} package files (${report.size} bytes packed)`);
           NODE
+      - name: Smoke-test packed package
+        run: npm run pack:smoke
       - name: Verify documentation conformance
         run: npm run docs:check
       - name: Run repository validators
